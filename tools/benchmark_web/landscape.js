@@ -3,16 +3,22 @@
 import "./history.js";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { chartSidebar, panelStyle, reserveChart, viewOptions } from "./view.js";
+
+window.XffLandscapeView = viewOptions;
 
 window.XffLandscape = function createLandscape(root, figures) {
-  root.style.cssText =
-    "position:relative;width:100%;height:850px;min-width:320px;overflow:hidden";
+  reserveChart(root);
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true });
   } catch {
-    root.textContent =
+    const message = document.createElement("p");
+    message.textContent =
       "The 3D chart requires WebGL2. All measurements remain available in the tables below.";
+    message.style.cssText =
+      "position:absolute;left:12px;bottom:12px;max-width:90%";
+    root.append(message);
     return { update() {}, resize() {} };
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -30,14 +36,33 @@ window.XffLandscape = function createLandscape(root, figures) {
     "Benchmark landscape. Arrow keys rotate; plus and minus zoom; Home resets. Full measurements follow in tables.",
   );
   const tooltip = document.createElement("div");
+  tooltip.className = "landscape-hover-panel";
   tooltip.hidden = true;
-  tooltip.style.cssText =
-    "position:absolute;z-index:3;background:#fff;color:#172333;border:1px solid #667;border-radius:4px;box-shadow:0 2px 10px #0003;padding:8px;pointer-events:none;font:12px system-ui;max-width:90%";
-  root.append(tooltip);
+  tooltip.style.cssText = panelStyle + ";background:#fff;pointer-events:none";
+  const hoverStyle = document.createElement("style");
+  hoverStyle.textContent = `.landscape-hover-table{border-collapse:collapse;width:100%;margin:0;border:0;font:inherit}
+    .landscape-hover-table th,.landscape-hover-table td{border:0;padding:2px 4px;vertical-align:top;background:transparent}
+    .landscape-hover-table th{text-align:left;font-weight:500;white-space:nowrap}
+    .landscape-hover-table td{text-align:right;overflow-wrap:anywhere}`;
+  root.append(hoverStyle);
   const legend = document.createElement("div");
-  legend.style.cssText =
-    "position:absolute;left:12px;top:12px;background:#fffffff0;padding:8px;font:12px system-ui;color:#172333;max-width:90%";
-  root.append(legend);
+  legend.className = "landscape-legend-panel";
+  legend.style.cssText = panelStyle;
+  chartSidebar(root).append(legend, tooltip);
+  const legendMarker = document.createElement("div");
+  legendMarker.className = "landscape-legend-marker";
+  legendMarker.hidden = true;
+  legendMarker.style.cssText =
+    "position:absolute;top:-4px;width:3px;height:20px;background:#111;box-shadow:0 0 0 1px #ffe600;transform:translateX(-50%);pointer-events:none";
+  let legendExtent = 1;
+  const minimumPerformance = { value: -1e30 };
+  const contextOpacity = { value: 0.5 };
+  let showThresholdPlane = true;
+  const previewShader = `uniform float minimumPerformance; uniform float contextOpacity;
+    uniform bool contextPass; varying float measured;
+    float previewAlpha(){bool below=measured<minimumPerformance;
+    if(below!=contextPass || (contextPass && contextOpacity==0.0))discard;
+    return contextPass ? contextOpacity : 1.0;}`;
   let contents = new THREE.Group();
   scene.add(contents);
   let labels = [],
@@ -115,6 +140,11 @@ window.XffLandscape = function createLandscape(root, figures) {
   observer.observe(root);
   controls.addEventListener("change", () => {
     clearHover();
+    if (showThresholdPlane && root.dataset.minimum !== undefined)
+      showPerformanceValue(
+        minimumPerformance.value,
+        (minimumPerformance.value / legendExtent) * 2,
+      );
     draw();
   });
   function line(points) {
@@ -127,9 +157,11 @@ window.XffLandscape = function createLandscape(root, figures) {
   }
   function clearHover() {
     tooltip.hidden = true;
+    legendMarker.hidden = true;
     root
       .querySelectorAll(".hover-axis-value")
       .forEach((element) => element.remove());
+    labels = labels.filter(({ temporary }) => !temporary);
     guides.children.forEach((line) => {
       line.geometry.dispose();
       line.material.dispose();
@@ -142,6 +174,12 @@ window.XffLandscape = function createLandscape(root, figures) {
   }
   function showHover(point) {
     clearHover();
+    legendMarker.hidden = false;
+    legendMarker.style.left = `${Math.max(0, Math.min(1, (point.value + legendExtent) / (2 * legendExtent))) * 100}%`;
+    legendMarker.setAttribute(
+      "aria-label",
+      `Selected value: ${point.value}${root.dataset.metric === "percent" ? "%" : " log10"}`,
+    );
     const { x, y, z } = point.position;
     const feet = [
       new THREE.Vector3(x, -2, 4),
@@ -181,28 +219,43 @@ window.XffLandscape = function createLandscape(root, figures) {
         element.style.fontWeight = "bold";
       }
     }
-    // A measurement need not land on a vertical-axis tick; label its exact height.
-    const tag = document.createElement("span");
-    const metric = root.dataset.metric;
-    tag.textContent = `${Number(point.value.toFixed(2))}${metric === "percent" ? "%" : ""}`;
-    tag.style.cssText =
-      "position:absolute;background:#ffe49b;font:12px monospace;padding:2px;pointer-events:none";
-    const projected = feet[2].clone().project(camera);
-    tag.style.left = `${((projected.x + 1) * width) / 2}px`;
-    tag.style.top = `${((1 - projected.y) * height) / 2}px`;
-    tag.style.transform = "translate(-100%,-50%)";
-    tag.className = "hover-axis-value";
-    root.append(tag);
+    showPerformanceValue(point.value, y);
     draw();
   }
+  function showPerformanceValue(value, y) {
+    // Measurements and preview planes need not land on an existing axis tick.
+    for (const { element, position, outward } of labels) {
+      if (!outward && Math.abs(position.y - y) < 0.00001) {
+        element.style.background = "#ffe49b";
+        element.style.fontWeight = "bold";
+      }
+    }
+    const tag = document.createElement("span");
+    const metric = root.dataset.metric;
+    tag.textContent = `${Number(value.toFixed(2))}${metric === "percent" ? "%" : ""}`;
+    tag.style.cssText =
+      "position:absolute;background:#ffe49b;font:12px monospace;padding:2px;pointer-events:none";
+    tag.className = "hover-axis-value";
+    root.append(tag);
+    labels.push({
+      element: tag,
+      position: new THREE.Vector3(-4, y, -4),
+      align: "right",
+      temporary: true,
+    });
+  }
   function clear() {
+    minimumPerformance.value = -1e30;
+    delete root.dataset.minimum;
     clearHover();
     scene.remove(contents);
+    const geometries = new Set();
     contents.traverse((object) => {
-      object.geometry?.dispose();
+      if (object.geometry) geometries.add(object.geometry);
       object.material?.map?.dispose();
       object.material?.dispose();
     });
+    geometries.forEach((geometry) => geometry.dispose());
     contents = new THREE.Group();
     scene.add(contents);
     labels.forEach(({ element }) => element.remove());
@@ -214,24 +267,73 @@ window.XffLandscape = function createLandscape(root, figures) {
     order = "similarity",
     metric = "percent",
     nextFigures = figures,
+    view = {},
   ) {
     figures = nextFigures;
     clear();
     root.dataset.metric = metric;
+    root.dataset.range = view.limit ?? "auto";
+    root.dataset.overflow = view.overflow || "cap";
     const figure = figures[order][metric],
       axes = figure.layout.scene,
       colors = figure.layout.coloraxis;
     const flat = figure.data
       .flatMap((surface) => surface.y.flat())
       .filter((value) => value !== null);
-    const ymax = Math.max(...(axes.yaxis.range || flat).map(Math.abs), 0.01);
+    const ymax =
+      view.limit ?? Math.max(...(axes.yaxis.range || flat).map(Math.abs), 0.01);
+    legendExtent = ymax;
+    const cut = view.overflow === "cut";
     const xmax = Math.max(...axes.xaxis.tickvals.map(Math.abs), 0.01);
     const zmax = Math.max(...axes.zaxis.tickvals.map(Math.abs), 0.01);
     const position = (x, y, z) =>
       new THREE.Vector3((x / xmax) * 4, (y / ymax) * 2, (z / zmax) * 4);
+    const preview = new THREE.Group();
+    preview.visible = false;
+    contents.add(preview);
+    const context = new THREE.Group();
+    preview.add(context);
+    function addContext(geometry, material, ObjectType) {
+      const translucent = material.clone();
+      translucent.uniforms.minimumPerformance = minimumPerformance;
+      translucent.uniforms.contextOpacity = contextOpacity;
+      translucent.uniforms.contextPass.value = true;
+      translucent.transparent = true;
+      translucent.depthWrite = false;
+      translucent.forceSinglePass = true;
+      context.add(new ObjectType(geometry, translucent));
+    }
+    const plane = new THREE.Group();
+    const planeGeometry = new THREE.PlaneGeometry(8, 8);
+    plane.rotation.x = -Math.PI / 2;
+    plane.add(
+      new THREE.Mesh(
+        planeGeometry,
+        new THREE.MeshBasicMaterial({
+          color: "#e2b946",
+          opacity: 0.08,
+          transparent: true,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        }),
+      ),
+    );
+    plane.add(
+      new THREE.LineSegments(
+        new THREE.EdgesGeometry(planeGeometry),
+        new THREE.LineBasicMaterial({
+          color: "#7b6525",
+          opacity: 0.7,
+          transparent: true,
+          depthWrite: false,
+        }),
+      ),
+    );
+    preview.add(plane);
     for (const surface of figure.data) {
       const positions = [],
         values = [],
+        rangeValues = [],
         indices = [],
         points = [],
         valid = [];
@@ -241,14 +343,25 @@ window.XffLandscape = function createLandscape(root, figures) {
           const value = surface.y[row][column];
           const vertex = position(
             surface.x[row][column],
-            value ?? 0,
+            Math.max(-ymax, Math.min(ymax, value ?? 0)),
             surface.z[row][column],
           );
           positions.push(...vertex.toArray());
           values.push(surface.surfacecolor[row][column] ?? 0);
-          valid.push(value !== null);
+          rangeValues.push(value ?? 0);
+          valid.push(value !== null && (!cut || Math.abs(value) <= ymax));
+          let text = view.normalized
+            ? surface.normalized_text?.[row][column] ||
+              surface.text[row][column]
+            : surface.text[row][column];
+          if (value !== null && Math.abs(value) > ymax) {
+            text = text.replace(
+              "</tbody></table>",
+              `<tr><th scope="row">Capped at</th><td>${value > 0 ? "+" : "-"}${ymax}${metric === "percent" ? "%" : " (log10)"}</td></tr></tbody></table>`,
+            );
+          }
           points.push({
-            text: surface.text[row][column],
+            text,
             position: vertex,
             value,
             row,
@@ -277,10 +390,18 @@ window.XffLandscape = function createLandscape(root, figures) {
         new THREE.Float32BufferAttribute(values, 1),
       );
       geometry.setIndex(indices);
+      geometry.setAttribute(
+        "rangeValue",
+        new THREE.Float32BufferAttribute(rangeValues, 1),
+      );
       const stops = colors.colorscale;
       const material = new THREE.ShaderMaterial({
         side: THREE.DoubleSide,
         uniforms: {
+          minimumPerformance,
+          contextOpacity,
+          contextPass: { value: false },
+          rangeLimit: { value: ymax },
           thresholds: {
             value: stops.map(
               (stop) => stop[0] * (colors.cmax - colors.cmin) + colors.cmin,
@@ -289,12 +410,16 @@ window.XffLandscape = function createLandscape(root, figures) {
           palette: { value: stops.map((stop) => new THREE.Color(stop[1])) },
         },
         vertexShader:
-          "attribute float performanceValue; varying float value; void main(){value=performanceValue;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}",
+          "attribute float performanceValue; attribute float rangeValue; varying float value; varying float measured; void main(){value=performanceValue;measured=rangeValue;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}",
         // Interpolate the measurement first, then map through the approved color scale.
-        fragmentShader: `uniform float thresholds[${stops.length}]; uniform vec3 palette[${stops.length}]; varying float value;
-          void main(){vec3 c=palette[0];for(int i=1;i<${stops.length};i++){
+        fragmentShader: `${previewShader}
+          uniform float thresholds[${stops.length}]; uniform vec3 palette[${stops.length}]; uniform float rangeLimit; varying float value;
+          void main(){float alpha=previewAlpha();vec3 c=palette[0];for(int i=1;i<${stops.length};i++){
           float t=clamp((value-thresholds[i-1])/(thresholds[i]-thresholds[i-1]),0.0,1.0);
-          if(value>=thresholds[i-1])c=mix(palette[i-1],palette[i],t);}gl_FragColor=vec4(c,1.0);
+          if(value>=thresholds[i-1])c=mix(palette[i-1],palette[i],t);}
+          if(measured>rangeLimit)c=vec3(0.08,1.0,0.3);
+          if(measured< -rangeLimit)c=vec3(1.0,0.05,0.12);
+          gl_FragColor=vec4(c,alpha);
           #include <colorspace_fragment>
           }`,
       });
@@ -302,20 +427,50 @@ window.XffLandscape = function createLandscape(root, figures) {
       mesh.userData.points = points;
       contents.add(mesh);
       surfaces.push(mesh);
+      addContext(geometry, material, THREE.Mesh);
       // Keep isolated observations visible when a row, column or neighboring cell is missing.
       const dots = points.filter((_, index) => valid[index]);
       const dotGeometry = new THREE.BufferGeometry().setFromPoints(
         dots.map((point) => point.position),
       );
-      const dotMaterial = new THREE.PointsMaterial({
-        color: "#172333",
-        size: 2,
-        sizeAttenuation: false,
+      const dotMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+          minimumPerformance,
+          contextOpacity,
+          contextPass: { value: false },
+          pointSize: { value: 2 * renderer.getPixelRatio() },
+        },
+        vertexShader:
+          "attribute vec3 color; attribute float rangeValue; uniform float pointSize; varying vec3 tint; varying float measured; void main(){tint=color;measured=rangeValue;gl_PointSize=pointSize;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}",
+        fragmentShader: `${previewShader}\nvarying vec3 tint; void main(){gl_FragColor=vec4(tint,previewAlpha());\n#include <colorspace_fragment>\n}`,
       });
+      dotGeometry.setAttribute(
+        "rangeValue",
+        new THREE.Float32BufferAttribute(
+          dots.map((point) => point.value),
+          1,
+        ),
+      );
+      dotGeometry.setAttribute(
+        "color",
+        new THREE.Float32BufferAttribute(
+          dots.flatMap((point) =>
+            new THREE.Color(
+              point.value > ymax
+                ? "#4fff95"
+                : point.value < -ymax
+                  ? "#ff3f61"
+                  : "#172333",
+            ).toArray(),
+          ),
+          3,
+        ),
+      );
       const markers = new THREE.Points(dotGeometry, dotMaterial);
       markers.userData.points = dots;
       contents.add(markers);
       surfaces.push(markers);
+      addContext(dotGeometry, dotMaterial, THREE.Points);
     }
     axes.xaxis.tickvals.forEach((value, index) => {
       const x = (value / xmax) * 4;
@@ -337,15 +492,23 @@ window.XffLandscape = function createLandscape(root, figures) {
         new THREE.Vector3(1, 0, 0),
       );
     });
-    const ticks = axes.yaxis.tickvals || [-ymax, -ymax / 2, 0, ymax / 2, ymax];
+    const ticks = (!view.limit && axes.yaxis.tickvals) || [
+      -ymax,
+      -ymax / 2,
+      0,
+      ymax / 2,
+      ymax,
+    ];
+    const tickLabels =
+      (!view.limit && axes.yaxis.ticktext) ||
+      ticks.map(
+        (value) =>
+          `${metric === "factor" && value > 0 ? "+" : ""}${Number(value.toPrecision(6))}${metric === "percent" ? "%" : ""}`,
+      );
     ticks.forEach((value, index) => {
       const y = (value / ymax) * 2;
       line([new THREE.Vector3(-4, y, -4), new THREE.Vector3(4, y, -4)]);
-      label(
-        axes.yaxis.ticktext?.[index] ?? `${Number(value.toFixed(1))}%`,
-        new THREE.Vector3(-4.2, y, -4),
-        "right",
-      );
+      label(tickLabels[index], new THREE.Vector3(-4.2, y, -4), "right");
     });
     planeTitle(
       axes.xaxis.title.text,
@@ -363,6 +526,7 @@ window.XffLandscape = function createLandscape(root, figures) {
     const title = document.createElement("div");
     title.textContent = axes.yaxis.title.text;
     const bar = document.createElement("div");
+    bar.className = "landscape-legend-scale";
     // Sample the same percentage palette along the displayed vertical coordinate.
     // Logarithmic heights are uniformly spaced here, just as on the vertical axis.
     const gradient = Array.from({ length: 101 }, (_, index) => {
@@ -385,19 +549,93 @@ window.XffLandscape = function createLandscape(root, figures) {
       }
       return `#${color.getHexString()} ${index}%`;
     });
-    bar.style.cssText = `width:320px;max-width:100%;height:12px;margin:4px 0;background:linear-gradient(to right,${gradient.join(",")})`;
+    bar.style.cssText = `position:relative;width:100%;height:12px;margin:4px 0;background:linear-gradient(to right,${gradient.join(",")})`;
+    bar.append(legendMarker);
+    const filterNote = document.createElement("div");
+    const filterHint = "Hover scale to preview a minimum; leave to restore.";
+    filterNote.textContent = filterHint;
+    const previewOptions = document.createElement("div");
+    previewOptions.style.cssText =
+      "display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;max-width:320px;margin-top:4px";
+    const belowLabel = document.createElement("label");
+    belowLabel.textContent = "Below threshold: ";
+    const below = document.createElement("select");
+    below.className = "landscape-preview-opacity";
+    for (const [value, text] of [
+      ["0.5", "50% transparent"],
+      ["0.25", "75% transparent"],
+      ["0", "Hide"],
+    ])
+      below.add(new Option(text, value));
+    below.value = String(contextOpacity.value);
+    below.addEventListener("change", () => {
+      contextOpacity.value = Number(below.value);
+      draw();
+    });
+    belowLabel.append(below);
+    const planeLabel = document.createElement("label");
+    const planeToggle = document.createElement("input");
+    planeToggle.type = "checkbox";
+    planeToggle.className = "landscape-preview-plane";
+    planeToggle.checked = showThresholdPlane;
+    planeToggle.addEventListener("change", () => {
+      showThresholdPlane = planeToggle.checked;
+      plane.visible = showThresholdPlane;
+      clearHover();
+      if (preview.visible && showThresholdPlane)
+        showPerformanceValue(minimumPerformance.value, plane.position.y);
+      draw();
+    });
+    planeLabel.append(planeToggle, " Threshold plane");
+    previewOptions.append(belowLabel, planeLabel);
+    bar.addEventListener("pointermove", (event) => {
+      const bounds = bar.getBoundingClientRect();
+      const fraction = Math.max(
+        0,
+        Math.min(1, (event.clientX - bounds.left) / bounds.width),
+      );
+      minimumPerformance.value = (2 * fraction - 1) * ymax;
+      preview.visible = true;
+      plane.visible = showThresholdPlane;
+      plane.position.y = (2 * fraction - 1) * 2;
+      root.dataset.minimum = minimumPerformance.value;
+      clearHover();
+      if (showThresholdPlane)
+        showPerformanceValue(minimumPerformance.value, plane.position.y);
+      legendMarker.hidden = false;
+      legendMarker.style.left = `${fraction * 100}%`;
+      filterNote.textContent = `Preview minimum: ${minimumPerformance.value.toFixed(2)}${metric === "percent" ? "%" : " log10"}`;
+      draw();
+    });
+    bar.addEventListener("pointerleave", () => {
+      minimumPerformance.value = -1e30;
+      preview.visible = false;
+      delete root.dataset.minimum;
+      clearHover();
+      filterNote.textContent = filterHint;
+      draw();
+    });
     const scale = document.createElement("div");
     scale.className = "landscape-legend-ticks";
-    scale.style.cssText =
-      "position:relative;height:18px;width:320px;max-width:100%";
+    scale.style.cssText = "position:relative;height:18px;width:100%";
     ticks.forEach((value, index) => {
       const tick = document.createElement("span");
-      tick.textContent =
-        axes.yaxis.ticktext?.[index] ?? `${Number(value.toFixed(1))}%`;
+      tick.textContent = tickLabels[index];
       tick.style.cssText = `position:absolute;left:${((value + ymax) / (2 * ymax)) * 100}%;transform:translateX(-50%)`;
       scale.append(tick);
     });
-    legend.append(title, bar, scale);
+    const scaleAxis = document.createElement("div");
+    const inset = Math.max(...tickLabels.map((text) => text.length)) / 2 + 1;
+    scaleAxis.style.margin = `0 ${inset}ch`;
+    scaleAxis.append(bar, scale);
+    legend.append(title, scaleAxis, filterNote, previewOptions);
+    const note = document.createElement("div");
+    note.textContent = view.limit
+      ? cut
+        ? "Out of range: cut off"
+        : "Out of range: capped in bright green/red"
+      : "Range: Auto";
+    legend.append(note);
     resize();
   }
   const ray = new THREE.Raycaster();
@@ -407,9 +645,6 @@ window.XffLandscape = function createLandscape(root, figures) {
       new THREE.Vector2((x / width) * 2 - 1, 1 - (y / height) * 2),
       camera,
     );
-    const hit = ray.intersectObjects(surfaces)[0];
-    if (!hit) return null;
-    if (!hit.face) return hit.object.userData.points[hit.index];
     // Compare projected corners; never transpose row and column after task reordering.
     const distance = (point) => {
       const projected = point.position.clone().project(camera);
@@ -418,11 +653,18 @@ window.XffLandscape = function createLandscape(root, figures) {
         (((1 - projected.y) * height) / 2 - y) ** 2
       );
     };
-    return [hit.face.a, hit.face.b, hit.face.c]
-      .map((index) => hit.object.userData.points[index])
-      .reduce((best, point) =>
-        distance(point) < distance(best) ? point : best,
-      );
+    for (const hit of ray.intersectObjects(surfaces)) {
+      const candidates = (
+        hit.face ? [hit.face.a, hit.face.b, hit.face.c] : [hit.index]
+      )
+        .map((index) => hit.object.userData.points[index])
+        .filter((point) => point.value >= minimumPerformance.value);
+      if (candidates.length)
+        return candidates.reduce((best, point) =>
+          distance(point) < distance(best) ? point : best,
+        );
+    }
+    return null;
   }
   canvas.addEventListener("pointermove", (event) => {
     if (event.buttons) return;
@@ -437,8 +679,6 @@ window.XffLandscape = function createLandscape(root, figures) {
     tooltip.hidden = false;
     // All record text has already been escaped by the Python figure generator.
     tooltip.innerHTML = point.text;
-    tooltip.style.left = `${Math.max(0, Math.min(width - tooltip.offsetWidth, event.clientX - rect.left + 14))}px`;
-    tooltip.style.top = `${Math.max(0, Math.min(height - tooltip.offsetHeight, event.clientY - rect.top + 14))}px`;
   });
   canvas.addEventListener("pointerleave", () => {
     clearHover();

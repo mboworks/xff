@@ -252,6 +252,9 @@ class BenchmarkHistoryTest(unittest.TestCase):
 
             with mock.patch.object(history.subprocess, "check_output", side_effect=git):
                 history.reference_pages(root, pulls, root)
+            links = json.loads((root / 'version-links.json').read_text())
+            self.assertIn({'label': 'Release v1.0.0', 'href': 'https://github.com/mboworks/xff/releases/tag/v1.0.0'}, links[HEAD])
+            self.assertIn({'label': 'PR #9', 'href': 'https://github.com/mboworks/xff/pull/9'}, links[HEAD])
             for reference in ("tag/1.0.0", "pr/9"):
                 html = (root / reference / "index.html").read_text()
                 self.assertIn('url=../../runs/2/1/', html)

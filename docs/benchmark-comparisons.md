@@ -346,13 +346,77 @@ run/attempt for each platform and commit. Platform labels include architecture w
 Switching platforms preserves the selected commit when available; otherwise it selects that
 platform's newest report. A single available version disables the slider.
 
-The selected report link shows branch/PR/tag, commit, time and run/attempt; it opens the full tables
-and raw-data link. Scale, order and camera state survive version changes. Each chart retains its
+The chart's upper-left panel holds the version slider above a compact table: version position,
+linked commit, PR/release, revision date, measurement date when recorded, and platform. All rows
+remain visible, using explicit placeholders for missing information. Platform details come last
+in a reserved three-line area; their full text remains available in the tooltip.
+Revision date identifies the code revision. Measured uses the recorded completion date for both
+CI backfills and local runs; older revisions can therefore have newer measurement dates.
+The commit opens the full report, including tables and raw data;
+its tooltip retains the full branch, time and run/attempt information. The performance scale sits
+in a separate outlined panel directly below it, with inset endpoints to keep long tick labels
+inside the border. Scale, order and camera state survive version changes. Each chart retains its
 own measurement contract and automatically scaled axes/colors: moving the slider is exploration,
 not a paired cross-host or cross-version regression claim. Missing versions are not interpolated.
-The overview downloads only the selected report's generated landscape JSON. Interrupted requests
-cannot overwrite newer selections; failures hide the previous chart and leave its selected report
-link available. Generated payloads expire with their raw reports under existing retention.
+The overview downloads only the selected report's generated landscape JSON. While loading, the
+previous chart and its report link remain visible; the new data replaces them in place without
+collapsing the chart or resetting the camera. Interrupted requests cannot overwrite newer
+selections. A reserved status line keeps the version card and the panels below it stationary
+during loading and failure transitions. Longer errors remain available in the status tooltip.
+On failure the panel explains which requested version could not load; the previous
+chart and its matching metadata remain visible, and the slider remains usable. Generated payloads
+expire with their raw reports under existing retention.
+
+The version selection includes links to the matching PR and release when those references are
+known. The chart reserves its full height before loading; changing versions, worker pairs, range,
+or scale does not collapse the rendering area. Reports with three measured worker counts offer
+all three pairs (`1/3`, `1/10`, and `3/10`); no unmeasured allocation is synthesized.
+
+### View range and selection
+
+**Range** offers Auto and symmetric limits of +/-20%, 50%, 100%, or 200% in percentage mode;
+logarithmic mode uses +/-0.2, 0.5, 1, or 2. The default is +/-100% (+/-1 in logarithmic mode),
+so changing versions retains the same vertical scale. **Cap** places outliers at the boundary and marks
+them bright green or red. **Cut off** hides outlying observations and surface cells touching
+them, leaving gaps rather than inventing measurements. Hover cards always retain actual values.
+
+A black bar with a yellow outline marks the hovered measurement on the color legend. Capped
+values pin it to the appropriate endpoint. Hovering over the legend temporarily emphasizes values
+above the pointed-to performance level. **Below threshold** offers increasing transparency:
+50% transparent (the default), 75% transparent, or Hide. **Threshold plane** shows a subtle
+horizontal plane at that level and highlights its exact performance value on the vertical axis,
+including between ticks. It is enabled by default. Leaving the legend restores the full view
+and removes the plane and its axis highlight.
+The two preferences persist across version, worker-pair, and scale changes. This preview changes
+neither the selected range nor the source data.
+
+### Reference-window timing normalization
+
+**Timings** selects raw or reference-normalized hover information. For each compatible task,
+tree shape, fileset size, worker allocation, platform/machine series and reference-tool identity,
+take the arithmetic mean of five reference times. The first five measurements share the first
+five-reference window; starting at measurement five the window is the current reference plus
+the four preceding references. Fewer than five compatible measurements make normalization
+unavailable; the card explains this and retains raw timings.
+
+The correction is `window reference mean / this run's reference time`. Multiply only this
+version's XFF timing by that factor: XFF results are never averaged across versions. Within-run
+fastest-sample selection remains the recorded measurement policy. The card shows the normalized
+XFF time, reference mean, correction, and separate rows for the window's measurement count
+(or unavailability reason), window start date and window end date. Unavailable windows omit the date rows.
+The card presents these values together with task, tree, allocation and file count in an aligned table.
+Each report's generated `normalization.json` retains the full window identities and commit hashes.
+Reference binaries, invocation arguments,
+fixtures, machine series and CPU allocations must match; CI and local series remain separate.
+Ordinary CI and its replacement backfills share reference history: the recorded runner labels
+`github-hosted ubuntu-latest` / `github-ci-linux` and
+`github-hosted macos-latest` / `github-ci-macos` identify the same respective hosted runner
+classes. This label equivalence does not relax machine, reference, fixture or allocation checks.
+
+This is presentation only. Raw report JSON and the measurement tables remain unchanged. The
+percentage/factor landscape also remains unchanged because its same-run XFF/reference ratio
+already applies the reference correction. Normalized absolute timings are useful for viewing
+variation shared with the reference tool, but cannot eliminate XFF-specific noise.
 
 One shared, pinned Three.js renderer bundle is published alongside the reports; no external CDN is used.
 Standalone previews embed the same bundle for offline use.
@@ -398,6 +462,9 @@ or network access. Published pages share one bundle under the benchmark assets d
 Drag to rotate, scroll to zoom, and right-drag to pan. Axis titles are printed on the base plane;
 rotation remains unrestricted. Tick labels stay horizontal and extend outward from their axes.
 Focus the canvas for arrow-key rotation, +/- zoom and Home reset, or use the Reset view button.
+Hover cards occupy the third panel in the chart's upper-left information column, below the
+version and performance-scale panels. Showing or hiding a hover card does not move the panels
+above it or change the chart height; guides still highlight the selected measurement.
 Missing WebGL2 leaves an explanatory message and the complete measurement tables available.
 The chart resizes when its container changes or its disclosure reopens. Rendering is event-driven;
 there is no idle animation loop. Single observations remain visible as points even when missing

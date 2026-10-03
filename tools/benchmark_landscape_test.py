@@ -8,6 +8,7 @@ import math
 from pathlib import Path
 import tempfile
 import unittest
+import xml.etree.ElementTree as element_tree
 
 import benchmark_landscape as landscape
 
@@ -23,7 +24,40 @@ def report(cpus=(1, 4)):
                       for task, reference in [('fast', 2), ('slow', 0.5)]]}
 
 
+def hover_values(text):
+    return {row.find('th').text: row.find('td').text
+            for row in element_tree.fromstring(text).findall('./tbody/tr')}
+
+
 class BenchmarkLandscapeTest(unittest.TestCase):
+    def test_normalized_timings_follow_cells_without_changing_relative_values(self):
+        data = report(cpus=(1, 3, 10))
+        timings = {
+            landscape.benchmark_normalization.cell_key(task, 'rg'): {
+                'status': 'available', 'factor': task['cpus'],
+                'reference_mean_seconds': task['files'], 'xff_seconds': task['cpus'] * task['files'],
+                'window': [{'commit': str(index) * 40, 'date': f'2026-10-0{index}T00:00:00Z'}
+                           for index in range(1, 6)],
+            } for task in data['tasks']}
+        for mode in landscape.ORDER_LABELS:
+            for metric in ('factor', 'percent'):
+                original = landscape.figure(data, mode, metric)
+                rendered = landscape.figure(data, mode, metric, normalization=timings)
+                for before, surface in zip(original['data'], rendered['data']):
+                    for field in ('x', 'y', 'z', 'text', 'surfacecolor'):
+                        self.assertEqual(surface[field], before[field])
+                    for row in surface['normalized_text']:
+                        for text in row:
+                            cells = hover_values(text)
+                            self.assertIn('Reference-normalized XFF', cells)
+                            self.assertEqual(cells['Reference window'], '5 measurements')
+                            self.assertEqual(cells['Window start'], '2026-10-01')
+                            self.assertEqual(cells['Window end'], '2026-10-05')
+                            self.assertNotIn('1111111111', text)
+        text = landscape.normalized_hover(landscape.hover_table([('Raw', '1 ms')]),
+                                          {'status': 'unavailable', 'reason': '<missing>'})
+        self.assertEqual(hover_values(text), {'Raw': '1 ms', 'Reference window': 'Unavailable: <missing>'})
+
     def test_three_worker_grid_labels_and_hover_use_actual_allocations(self):
         data = report(cpus=(1, 3))
         for order in landscape.ORDER_LABELS:
@@ -35,7 +69,8 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                                  ['Broad / 1 worker', 'Deep / 1 worker',
                                   'Broad / 3 workers', 'Deep / 3 workers'])
                 for surface in figure['data'][2:]:
-                    self.assertTrue(all('3 workers /' in cell for row in surface['text'] for cell in row))
+                    self.assertTrue(all(hover_values(cell)['Allocation'] == '3 workers'
+                                        for row in surface['text'] for cell in row))
         self.assertIn('right: 3 workers, small to large', landscape.render(data, '/* renderer */'))
 
     def test_landscape_rejects_missing_or_ambiguous_allocation_groups(self):
@@ -55,7 +90,8 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                 self.assertIn(f'{left} worker', title)
                 self.assertIn(f'{right} workers', title)
                 for surface, cpu in zip(figure['data'], (left, left, right, right)):
-                    self.assertTrue(all(f'{cpu} worker' in text for row in surface['text'] for text in row))
+                    self.assertTrue(all(hover_values(text)['Allocation'].startswith(f'{cpu} worker')
+                                        for row in surface['text'] for text in row))
                     self.assertEqual(surface['x'], sorted(surface['x']))
         rendered = landscape.render(data, '')
         self.assertIn('id="allocations"', rendered)
@@ -219,6 +255,9 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                               head_branch='main', created_at=f'2026-09-{run:02d}T12:00:00Z')
                 data = dict(tool_comparisons=report(cpus=(1, 3) if platform == 'macos' else (1, 4)),
                             platform=platform, source=source)
+                if platform == 'macos':
+                    data.update(kind='backfill', purpose='ci-replacement', head=sha * 40,
+                                revision={'date': source['created_at']}, completed_at='2026-10-02T12:00:00Z')
                 (folder / 'report.json').write_text(json.dumps(data))
                 (folder / 'index.html').write_text('<h1>Report</h1>')
             self.assertEqual(landscape.publish(root, '/* renderer */'), 4)
@@ -229,6 +268,8 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                              [('linux', 1, 2), ('macos', 2, 1), ('linux', 3, 1)])
             self.assertLess(first.index('benchmark-explorer'), first.index('<table>'))
             for row in catalog:
+                self.assertEqual(row['measurement_date'], '2026-10-02T12:00:00Z'
+                                 if row['platform'] == 'macos' else None)
                 payload = json.loads((root / row['figures']).read_text())
                 self.assertEqual(set(payload), set(landscape.ORDER_LABELS))
                 expected = '3 workers' if row['platform'] == 'macos' else '4 workers'
@@ -259,11 +300,13 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                         for column, text in enumerate(values):
                             z = surface['z'][row][column]
                             task, reference = tasks[z].strip().rsplit(' / ', 1)
-                            self.assertIn(f'{task} / xff vs {reference}', text)
+                            cells = hover_values(text)
+                            self.assertEqual(cells['Task'], task)
+                            self.assertEqual(cells['Reference tool'], reference)
                             count = files[surface['x'][row][column]].strip()
-                            self.assertIn(f'{count} files', text)
-                            self.assertIn(f'Relative performance: {surface["y"][row][column]:+.2f}%', text)
-                            self.assertTrue(text.startswith('Deep' if z > 0 else 'Broad'))
+                            self.assertEqual(cells['File count'], count)
+                            self.assertEqual(cells['Relative performance'], f'{surface["y"][row][column]:+.2f}%')
+                            self.assertEqual(cells['Tree'], 'Deep' if z > 0 else 'Broad')
 
     def test_missing_observations_remain_holes(self):
         data = report()

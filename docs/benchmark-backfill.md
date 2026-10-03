@@ -199,8 +199,10 @@ Pages response alone cannot mark stale content as successfully published.
 
 ## Presentation normalization
 
-Raw results remain unchanged. Reference-window normalization belongs in the presentation layer,
-separately from collection. Worker allocations and machine series remain separate. Multiplying
-reference and XFF elapsed times by the same normalization factor does not change their same-run
-ratio or compensate for different CPU allocations. This workflow retains all observations needed
-for that presentation work; it does not normalize samples while collecting or resuming.
+Raw results remain unchanged. Publication calculates reference-window corrections for the
+presentation layer, separately from collection. Worker allocations and machine series remain
+separate. The first five measurements share their five-reference mean; subsequent measurements
+use the current reference plus four prior ones. Scale each individual XFF time by that window
+mean divided by its own reference time. XFF results are not averaged across versions.
+The **Timings** selector exposes this information in hover cards; raw reports and ratios remain
+unchanged. See [Reference-window timing normalization](benchmark-comparisons.md#reference-window-timing-normalization).

@@ -307,7 +307,7 @@ def render_site(root, pulls, repository):
                  ''.join(row for _, row in sorted(local_rows, reverse=True)) + '</table>' if local_rows else ''))
 
 
-def reference_pages(root, pulls, repository_path):
+def reference_pages(root, pulls, repository_path, repository="mboworks/xff"):
     """Resolve stable PR/tag URLs without inventing measurements or rerunning them."""
     records = []
     for path in benchmark_records.paths(root):
@@ -320,17 +320,28 @@ def reference_pages(root, pulls, repository_path):
     tags = subprocess.check_output(
         ["git", "-C", str(repository_path), "tag", "--list", "v*"], text=True).splitlines()
     references = {}
+    version_links = {}
+    def add_link(commit, label, path):
+        if commit:
+            value = {'label': label, 'href': f'https://github.com/{repository}/{path}'}
+            links = version_links.setdefault(commit, [])
+            if value not in links:
+                links.append(value)
     for tag in tags:
         if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag):
             continue
         commit = subprocess.check_output(
             ["git", "-C", str(repository_path), "rev-parse", f"{tag}^{{commit}}"], text=True).strip()
         references[f"tag/{tag[1:]}"] = (f"Release {tag}", commit, None)
+        add_link(commit, f'Release {tag}', f'releases/tag/{tag}')
     for pull in pulls:
         number = int(pull["number"])
         if number < 1:
             raise ValueError("invalid PR number")
         references[f"pr/{number}"] = (f"PR {number}", pull.get("merge_commit_sha") if pull.get("merged_at") else None, number)
+        add_link(pull.get('merge_commit_sha') if pull.get('merged_at') else None, f'PR #{number}', f'pull/{number}')
+        add_link(pull.get('head', {}).get('sha'), f'PR #{number}', f'pull/{number}')
+    (root / 'version-links.json').write_text(json.dumps(version_links, indent=2) + '\n')
     for relative, (label, commit, number) in references.items():
         candidates = {}
         for record, report_path in records:
@@ -413,7 +424,7 @@ def main():
         pulls = [pull for group in pages for pull in group] if pages and isinstance(pages[0], list) else pages
         (args.root / "index.html").write_text(render_site(args.root, pulls, args.repository))
         if args.action == "refresh":
-            reference_pages(args.root, pulls, args.checkout)
+            reference_pages(args.root, pulls, args.checkout, args.repository)
     return 0
 
 

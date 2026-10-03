@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 
 import benchmark_matrix as matrix
+import benchmark_normalization
 import benchmark_records
 
 
@@ -114,7 +115,33 @@ def allocation_groups(report):
     return groups[:2] if len(groups) >= 2 and len(set(groups)) == len(groups) and groups[0] > 0 else None
 
 
-def figure(report, order='similarity', metric='percent', groups=None):
+def hover_rows(rows):
+    return ''.join(f'<tr><th scope="row">{html.escape(label)}</th><td>{html.escape(value)}</td></tr>'
+                   for label, value in rows)
+
+
+def hover_table(rows):
+    return '<table class="landscape-hover-table"><tbody>' + hover_rows(rows) + '</tbody></table>'
+
+
+def normalized_hover(text, value):
+    if not text.endswith('</tbody></table>'):
+        return text
+    if not value or value['status'] != 'available':
+        reason = value['reason'] if value else 'No compatible reference history is available.'
+        rows = [('Reference window', 'Unavailable: ' + reason)]
+    else:
+        window = value['window']
+        first, last = window[0]['date'][:10], window[-1]['date'][:10]
+        rows = [('Reference-normalized XFF', f'{value["xff_seconds"] * 1000:.3f} ms'),
+                ('Window reference mean', f'{value["reference_mean_seconds"] * 1000:.3f} ms'),
+                ('Correction factor', f'{value["factor"]:.4f}'),
+                ('Reference window', f'{len(window)} measurements'),
+                ('Window start', first), ('Window end', last)]
+    return text.removesuffix('</tbody></table>') + hover_rows(rows) + '</tbody></table>'
+
+
+def figure(report, order='similarity', metric='percent', groups=None, normalization=None):
     """Keep CPU/tree quadrants disconnected; never fill missing observations."""
     if metric not in ('percent', 'factor'):
         raise ValueError('unknown comparison metric')
@@ -147,27 +174,31 @@ def figure(report, order='similarity', metric='percent', groups=None):
         ticks.extend(xs)
         labels.extend(f'{n:,}' for n in ordered)
         for dataset, direction in (('broad', -1), ('deep', 1)):
-            xgrid, ygrid, zgrid, hover = [], [], [], []
+            xgrid, ygrid, zgrid, hover, normalized = [], [], [], [], []
             for index, (task, reference) in enumerate(pairs, 1):
                 values, texts = [], []
                 for count in ordered:
                     row = lookup.get((dataset, cpu, count, task, reference))
                     values.append(None if row is None else 100 * (1 - row['xff_over_reference']))
-                    texts.append('Missing measurement' if row is None else
-                                 f'{dataset.title()} / {html.escape(task)} / xff vs {html.escape(reference)}'
-                                 f'<br>{matrix.allocation_label(report, cpu)} / {count:,} files'
-                                 f'<br>Relative performance: {values[-1]:+.2f}%'
-                                 f'<br>Performance factor: {1 / row["xff_over_reference"]:.2f}x (reference/xff)'
-                                 f'<br>xff/reference: {row["xff_over_reference"]:.2f}'
-                                 f'<br>xff: {row["xff_seconds"] * 1000:.3f} ms'
-                                 f'<br>reference: {row["reference_seconds"] * 1000:.3f} ms')
+                    texts.append('Missing measurement' if row is None else hover_table([
+                        ('Task', task), ('Tree', dataset.title()),
+                        ('Allocation', matrix.allocation_label(report, cpu)), ('File count', f'{count:,}'),
+                        ('Reference tool', reference), ('Relative performance', f'{values[-1]:+.2f}%'),
+                        ('Performance factor', f'{1 / row["xff_over_reference"]:.2f}x (reference/xff)'),
+                        ('xff/reference', f'{row["xff_over_reference"]:.2f}'),
+                        ('XFF time', f'{row["xff_seconds"] * 1000:.3f} ms'),
+                        ('Reference time', f'{row["reference_seconds"] * 1000:.3f} ms'),
+                    ]))
                 xgrid.append(xs)
                 ygrid.append(values)
                 zgrid.append([direction * index] * len(xs))
                 hover.append(texts)
+                normalized.append([normalized_hover(text, (normalization or {}).get(
+                    benchmark_normalization.cell_key({'dataset': dataset, 'name': task, 'cpus': cpu, 'files': count}, reference)))
+                    for count, text in zip(ordered, texts)])
             traces.append(dict(type='surface', x=xgrid, y=ygrid, z=zgrid,
                                surfacecolor=ygrid, coloraxis='coloraxis', connectgaps=False,
-                               text=hover, hoverinfo='text',
+                               text=hover, normalized_text=normalized, hoverinfo='text',
                                name=f'{dataset.title()} / {matrix.allocation_label(report, cpu)}',
                                lighting=dict(ambient=1, diffuse=0, specular=0),
                                showscale=False))
@@ -216,17 +247,27 @@ def figure(report, order='similarity', metric='percent', groups=None):
     return result
 
 
-def figures(report):
-    result = {mode: {metric: figure(report, mode, metric) for metric in ('percent', 'factor')}
+def figures(report, normalization=None):
+    result = {mode: {metric: figure(report, mode, metric, normalization=normalization) for metric in ('percent', 'factor')}
               for mode in ORDER_LABELS}
     if len(report['contract']['cpu_counts']) > 2:
         result['allocation_pairs'] = [
             dict(value=f'{left}/{right}',
                  label=f'{matrix.allocation_label(report, left)} / {matrix.allocation_label(report, right)}',
-                 figures={mode: {metric: figure(report, mode, metric, (left, right))
+                 figures={mode: {metric: figure(report, mode, metric, (left, right), normalization)
                                  for metric in ('percent', 'factor')} for mode in ORDER_LABELS})
             for left, right in itertools.combinations(sorted(report['contract']['cpu_counts']), 2)]
     return result
+
+
+def view_controls(attribute):
+    return ('<label>Range: <select ' + attribute + '="range"><option value="auto">Auto</option>'
+            + ''.join(f'<option value="{value}"' + (' selected' if value == 1 else '') + f'>+/- {int(value * 100)}%</option>'
+                      for value in (0.2, 0.5, 1, 2)) + '</select></label> '
+            '<label>Out of range: <select ' + attribute + '="overflow">'
+            '<option value="cap">Cap</option><option value="cut">Cut off</option></select></label> '
+            '<label>Timings: <select ' + attribute + '="normalization">'
+            '<option value="reference">Reference normalized</option><option value="raw">Raw</option></select></label> ')
 
 
 def history_panel(catalog):
@@ -238,7 +279,7 @@ def history_panel(catalog):
             'Only retained successful reports with comparison data appear. '
             'Each chart compares xff with reference tools measured in that run; '
             'different dates, machines or measurement contracts are not paired performance comparisons. '
-            'Axes and colors rescale for each report.</p>'
+            'The default +/-100% range keeps the vertical scale fixed across versions; Auto fits each report.</p>'
             '<details open><summary>3D comparison chart (show/hide)</summary>'
             '<p>Drag to rotate; right-drag to pan; scroll to zoom. Focus the chart for arrow-key rotation, '
             '+/- zoom and Home reset. Percentage = 100 &times; (1 - xff/reference time); '
@@ -247,16 +288,26 @@ def history_panel(catalog):
             '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:.75rem">'
             '<label>Scale: <select data-control="metric"><option value="percent">Percentage</option>'
             '<option value="factor">Logarithmic</option></select></label> '
+            + view_controls('data-control') +
             '<label>Order: <select data-control="order">' +
             ''.join('<option value="' + key + '">' + label + '</option>'
                     for key, label in ORDER_LABELS.items()) + '</select></label> '
             '<label>Platform: <select data-control="platform"></select></label> '
             '<label data-allocation-label hidden>Workers: <select data-control="allocations"></select></label> '
-            '<label style="display:flex;align-items:center;gap:.4rem">Version: '
-            '<input data-control="version" type="range" min="0" max="0" step="1" value="0"></label>'
             '<button type="button" data-reset style="margin-left:auto">Reset view</button></div>'
-            '<p><a data-report>Selected report</a></p><p role="status" aria-live="polite"></p>'
-            '<div data-chart></div></details>'
+            '<div data-chart><div data-version-panel>'
+            '<label style="display:flex;align-items:center;gap:.5rem;margin-bottom:4px">Version '
+            '<input data-control="version" type="range" min="0" max="0" step="1" value="0" '
+            'style="flex:1;min-width:0"></label>'
+            '<table class="landscape-version-table"><tbody>'
+            '<tr><th scope="row">Version</th><td data-version-count></td></tr>'
+            '<tr><th scope="row">Commit</th><td><a data-report title="Open the full benchmark report"></a></td></tr>'
+            '<tr data-links-row><th scope="row">PR / Release</th><td data-version-links>Not available</td></tr>'
+            '<tr><th scope="row">Revision date</th><td data-revision-date></td></tr>'
+            '<tr data-measured-row><th scope="row">Measured</th><td data-measured>Not recorded</td></tr>'
+            '<tr><th scope="row">Platform</th><td data-platform></td></tr>'
+            '<tr><th scope="row">Details</th><td><div data-platform-details></div></td></tr>'
+            '</tbody></table><div role="status" aria-live="polite" hidden></div></div></div></details>'
             '<script src="assets/three-landscape.js"></script><script>'
             'window.XffBenchmarkHistory(document.getElementById("benchmark-explorer"),' + data + ');'
             '</script></section>')
@@ -286,8 +337,8 @@ def publish_history(root, catalog):
     page.write_text(text[:insertion] + start + history_panel(entries) + end + text[insertion:], encoding='utf-8')
 
 
-def render(report, javascript):
-    plots = figures(report)
+def render(report, javascript, normalization=None):
+    plots = figures(report, normalization)
     groups = allocation_groups(report)
     plot = json.dumps(plots, allow_nan=False, ensure_ascii=False).replace('<', '\\u003c')
     return ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
@@ -315,8 +366,13 @@ def render(report, javascript):
             'relative performance. All file counts, CPU groups and tree shapes receive equal weight.</p>'
             '<p>Performance factor = reference time / xff time: 2x is twice as fast; 0.5x is half as fast. '
             'Factor heights and tick labels use log10: 0 is parity, +1 means 10x, -1 means 0.1x. Colors and task order keep the same meaning in both views.</p>'
+            '<p>Range limits affect only the view. Cap shows outliers at the boundary in bright green/red; '
+            'Cut off hides outliers and surface cells that touch them. Hover cards retain the original values. '
+            'Reference-normalized timings scale each XFF time by its five-measurement reference window mean '
+            'divided by its own reference time. Ratios and the raw tables are unchanged; unavailable windows are labeled.</p>'
             '<label>Scale: <select id="metric"><option value="percent">Percentage</option>'
             '<option value="factor">Logarithmic</option></select></label> '
+            + view_controls('id') +
             '<label>Task order: <select id="task-order">' +
             ''.join('<option value="' + key + '">' + label + '</option>'
                     for key, label in ORDER_LABELS.items()) + '</select></label>'
@@ -330,8 +386,11 @@ def render(report, javascript):
             'for(const pair of figures.allocation_pairs||[]){allocations.add(new Option(pair.label,pair.value));}'
             'document.getElementById("allocation-label").hidden=!figures.allocation_pairs;'
             'function updateLandscape(){const selected=figures.allocation_pairs?.find(pair=>pair.value===allocations.value)?.figures||figures;'
-            'chart.update(document.getElementById("task-order").value,document.getElementById("metric").value,selected);}'
-            'for(const id of ["task-order","metric","allocations"])document.getElementById(id).addEventListener("change",updateLandscape);'
+            'const metric=document.getElementById("metric").value;'
+            'chart.update(document.getElementById("task-order").value,metric,selected,'
+            'window.XffLandscapeView(metric,document.getElementById("range"),document.getElementById("overflow"),document.getElementById("normalization")));}'
+            'for(const id of ["task-order","metric","allocations","range","overflow","normalization"])document.getElementById(id).addEventListener("change",updateLandscape);'
+            'updateLandscape();'
             'document.getElementById("reset-landscape").addEventListener("click",()=>chart.reset());</script></details>'
             '<h2>Measurements</h2>' + matrix.render_html(report) + '</body></html>')
 
@@ -345,8 +404,12 @@ def publish(root, javascript):
     end_marker = '<!-- benchmark-landscape:end -->'
     count = 0
     catalog = []
-    for path in benchmark_records.paths(root):
-        record = json.loads(path.read_text())
+    links_path = root / 'version-links.json'
+    version_links = json.loads(links_path.read_text()) if links_path.exists() else {}
+    records = [(path, json.loads(path.read_text())) for path in benchmark_records.paths(root)]
+    windows = benchmark_normalization.reference_windows([(path.relative_to(root).as_posix(), record)
+                                                        for path, record in records])
+    for path, record in records:
         report = record.get('tool_comparisons')
         if not report or allocation_groups(report) is None:
             continue
@@ -354,9 +417,11 @@ def publish(root, javascript):
             continue
         source = record.get('source')
         local = benchmark_records.is_local(record)
+        normalization = windows.get(path.relative_to(root).as_posix(), {})
+        path.with_name('normalization.json').write_text(json.dumps(normalization, allow_nan=False), encoding='utf-8')
         if source or local:
             payload = path.with_name('landscape.json')
-            payload.write_text(json.dumps(figures(report), allow_nan=False), encoding='utf-8')
+            payload.write_text(json.dumps(figures(report, normalization), allow_nan=False), encoding='utf-8')
             contract = report.get('contract', {})
             platform = benchmark_records.platform_key(record) or contract.get('platform', 'Unknown platform')
             machine = contract.get('machine', record.get('contract', {}).get('machine', ''))
@@ -371,12 +436,15 @@ def publish(root, javascript):
             if benchmark_records.is_backfill(record):
                 label = 'CI backfill / ' + commit[:10]
             catalog.append(dict(platform=platform, commit=commit, label=label,
+                                links=version_links.get(commit, []),
                                 date=benchmark_records.reference_time(record),
+                                measurement_date=record.get('completed_at'),
                                 backfill=benchmark_records.is_backfill(record),
                                 **(dict(measured=record['completed_at'], local=True) if local else
                                    dict(run=int(source['id']), attempt=int(source['run_attempt']))),
                                 report=path.parent.relative_to(root).as_posix() + '/',
-                                figures=payload.relative_to(root).as_posix(), identity=matrix.platform_title(report)))
+                                figures=payload.relative_to(root).as_posix(), identity=matrix.platform_title(report),
+                                platform_details=contract.get('platform', 'Platform details not recorded')))
         page = path.with_name('index.html')
         text = page.read_text()
         if start_marker in text:
@@ -386,7 +454,7 @@ def publish(root, javascript):
                 raise ValueError('incomplete landscape section')
             text = before + after
         # Keep existing provenance, baseline tables and all detailed metrics intact.
-        document = render(report, '')
+        document = render(report, '', normalization)
         fragment = document.split('<h1>Benchmark comparison landscape</h1>', 1)[1].split('<h2>Measurements</h2>', 1)[0]
         script = html.escape(Path(os.path.relpath(asset, page.parent)).as_posix(), quote=True)
         fragment = fragment.replace('<script></script>', f'<script src="{script}"></script>')
