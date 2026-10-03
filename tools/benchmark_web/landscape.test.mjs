@@ -57,6 +57,17 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
     await page.goto(pathToFileURL(output).href);
     await page.waitForFunction(() => typeof chart !== "undefined");
     assert.equal(await page.locator("#landscape canvas").count(), 1);
+    assert.equal(await page.locator("#range").inputValue(), "1");
+    assert.equal(
+      await page.locator("#landscape").getAttribute("data-range"),
+      "100",
+    );
+    await page.selectOption("#metric", "factor");
+    assert.equal(
+      await page.locator("#landscape").getAttribute("data-range"),
+      "1",
+    );
+    await page.selectOption("#range", "auto");
     await page.selectOption("#normalization", "raw");
     for (const order of ["similarity", "average", "alphabetical"]) {
       for (const metric of ["percent", "factor"]) {
@@ -98,6 +109,26 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
         const box = await page.locator("#landscape canvas").boundingBox();
         await page.mouse.move(box.x + point.x, box.y + point.y);
         assert.equal(await page.locator(".hover-axis-value").count(), 1);
+        const hoverTable = page.locator(".landscape-hover-table");
+        assert.equal(await hoverTable.isVisible(), true);
+        assert.deepEqual(
+          (await hoverTable.locator("th").allTextContents()).slice(0, 5),
+          ["Task", "Tree", "Allocation", "File count", "Reference tool"],
+        );
+        assert.equal(
+          await hoverTable
+            .locator("th")
+            .first()
+            .evaluate((element) => getComputedStyle(element).textAlign),
+          "left",
+        );
+        assert.equal(
+          await hoverTable
+            .locator("td")
+            .first()
+            .evaluate((element) => getComputedStyle(element).textAlign),
+          "right",
+        );
         const indicator = page.locator(".landscape-legend-marker");
         assert.equal(await indicator.isVisible(), true);
         const expectedPosition = await page.evaluate(
@@ -211,6 +242,64 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
     assert.equal(
       await page.locator("#landscape").getAttribute("data-minimum"),
       null,
+    );
+    const captureCanvas = () =>
+      page.evaluate(() => {
+        chart.resize();
+        return document.querySelector("#landscape canvas").toDataURL();
+      });
+    assert.equal(
+      await page.locator(".landscape-preview-opacity").inputValue(),
+      "0.25",
+    );
+    assert.deepEqual(
+      await page.locator(".landscape-preview-opacity option").allTextContents(),
+      ["50% transparent", "75% transparent", "Hide"],
+    );
+    assert.equal(
+      await page.locator(".landscape-preview-plane").isChecked(),
+      true,
+    );
+    await page.locator(".landscape-preview-plane").uncheck();
+    const unfilteredImage = await captureCanvas();
+    const previews = [];
+    for (const value of ["0", "0.5", "0.25"]) {
+      await page.selectOption(".landscape-preview-opacity", value);
+      await page.mouse.move(
+        legendBox.x + legendBox.width / 2,
+        legendBox.y + legendBox.height / 2,
+      );
+      previews.push(await captureCanvas());
+      await page.mouse.move(0, 0);
+      assert.equal(await captureCanvas(), unfilteredImage);
+    }
+    assert.equal(
+      new Set(previews).size,
+      3,
+      "hide and both transparency levels render differently",
+    );
+    await page.locator(".landscape-preview-plane").check();
+    await page.mouse.move(
+      legendBox.x + legendBox.width / 2,
+      legendBox.y + legendBox.height / 2,
+    );
+    assert.notEqual(
+      await captureCanvas(),
+      previews[2],
+      "threshold plane is rendered",
+    );
+    await page.mouse.move(0, 0);
+    assert.equal(await captureCanvas(), unfilteredImage);
+    await page.selectOption(".landscape-preview-opacity", "0.5");
+    await page.locator(".landscape-preview-plane").uncheck();
+    await page.selectOption("#metric", "factor");
+    assert.equal(
+      await page.locator(".landscape-preview-opacity").inputValue(),
+      "0.5",
+    );
+    assert.equal(
+      await page.locator(".landscape-preview-plane").isChecked(),
+      false,
     );
     assert.equal(
       await page.evaluate(() => JSON.stringify(figures)),
@@ -358,6 +447,14 @@ publish(root, Path(sys.argv[2]).read_text())
     await page.selectOption('[data-control="platform"]', "linux");
     await waitCommit("b");
     assert.equal(
+      await page.locator('[data-control="range"]').inputValue(),
+      "1",
+    );
+    assert.equal(
+      await page.locator("[data-chart]").getAttribute("data-range"),
+      "100",
+    );
+    assert.equal(
       await page.locator("[data-version-links] a").getAttribute("href"),
       "https://github.com/owner/project/releases/tag/v1.0.0",
     );
@@ -365,6 +462,8 @@ publish(root, Path(sys.argv[2]).read_text())
     const host = page.locator("[data-chart]");
     const originalBox = await host.boundingBox();
     const originalCanvas = await host.locator("canvas").elementHandle();
+    await page.selectOption(".landscape-preview-opacity", "0.5");
+    await page.locator(".landscape-preview-plane").uncheck();
     let releaseResponse, requestStarted;
     const heldResponse = new Promise((resolve) => {
       releaseResponse = resolve;
@@ -389,6 +488,14 @@ publish(root, Path(sys.argv[2]).read_text())
     );
     releaseResponse();
     await waitCommit("a");
+    assert.equal(
+      await page.locator(".landscape-preview-opacity").inputValue(),
+      "0.5",
+    );
+    assert.equal(
+      await page.locator(".landscape-preview-plane").isChecked(),
+      false,
+    );
     assert.equal(
       await page.locator("[data-version-links] a").getAttribute("href"),
       "https://github.com/owner/project/pull/12",

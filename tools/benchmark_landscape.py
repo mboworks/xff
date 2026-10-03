@@ -115,15 +115,30 @@ def allocation_groups(report):
     return groups[:2] if len(groups) >= 2 and len(set(groups)) == len(groups) and groups[0] > 0 else None
 
 
+def hover_rows(rows):
+    return ''.join(f'<tr><th scope="row">{html.escape(label)}</th><td>{html.escape(value)}</td></tr>'
+                   for label, value in rows)
+
+
+def hover_table(rows):
+    return '<table class="landscape-hover-table"><tbody>' + hover_rows(rows) + '</tbody></table>'
+
+
 def normalized_hover(text, value):
+    if not text.endswith('</tbody></table>'):
+        return text
     if not value or value['status'] != 'available':
         reason = value['reason'] if value else 'No compatible reference history is available.'
-        return text + '<br>Reference normalization unavailable: ' + html.escape(reason)
-    window = ', '.join(item['commit'][:10] for item in value['window'])
-    return (text + f'<br>Reference-normalized XFF: {value["xff_seconds"] * 1000:.3f} ms'
-            f'<br>Window reference mean: {value["reference_mean_seconds"] * 1000:.3f} ms'
-            f'<br>Correction: {value["factor"]:.4f}'
-            '<br>Reference window: ' + html.escape(window))
+        rows = [('Reference normalization', 'Unavailable: ' + reason)]
+    else:
+        window = value['window']
+        first, last = window[0]['date'][:10], window[-1]['date'][:10]
+        dates = first if first == last else f'{first} to {last}'
+        rows = [('Reference-normalized XFF', f'{value["xff_seconds"] * 1000:.3f} ms'),
+                ('Window reference mean', f'{value["reference_mean_seconds"] * 1000:.3f} ms'),
+                ('Correction factor', f'{value["factor"]:.4f}'),
+                ('Reference window', f'{len(window)} measurements, {dates}')]
+    return text.removesuffix('</tbody></table>') + hover_rows(rows) + '</tbody></table>'
 
 
 def figure(report, order='similarity', metric='percent', groups=None, normalization=None):
@@ -165,14 +180,15 @@ def figure(report, order='similarity', metric='percent', groups=None, normalizat
                 for count in ordered:
                     row = lookup.get((dataset, cpu, count, task, reference))
                     values.append(None if row is None else 100 * (1 - row['xff_over_reference']))
-                    texts.append('Missing measurement' if row is None else
-                                 f'{dataset.title()} / {html.escape(task)} / xff vs {html.escape(reference)}'
-                                 f'<br>{matrix.allocation_label(report, cpu)} / {count:,} files'
-                                 f'<br>Relative performance: {values[-1]:+.2f}%'
-                                 f'<br>Performance factor: {1 / row["xff_over_reference"]:.2f}x (reference/xff)'
-                                 f'<br>xff/reference: {row["xff_over_reference"]:.2f}'
-                                 f'<br>xff: {row["xff_seconds"] * 1000:.3f} ms'
-                                 f'<br>reference: {row["reference_seconds"] * 1000:.3f} ms')
+                    texts.append('Missing measurement' if row is None else hover_table([
+                        ('Task', task), ('Tree', dataset.title()),
+                        ('Allocation', matrix.allocation_label(report, cpu)), ('File count', f'{count:,}'),
+                        ('Reference tool', reference), ('Relative performance', f'{values[-1]:+.2f}%'),
+                        ('Performance factor', f'{1 / row["xff_over_reference"]:.2f}x (reference/xff)'),
+                        ('xff/reference', f'{row["xff_over_reference"]:.2f}'),
+                        ('XFF time', f'{row["xff_seconds"] * 1000:.3f} ms'),
+                        ('Reference time', f'{row["reference_seconds"] * 1000:.3f} ms'),
+                    ]))
                 xgrid.append(xs)
                 ygrid.append(values)
                 zgrid.append([direction * index] * len(xs))
@@ -246,7 +262,7 @@ def figures(report, normalization=None):
 
 def view_controls(attribute):
     return ('<label>Range: <select ' + attribute + '="range"><option value="auto">Auto</option>'
-            + ''.join(f'<option value="{value}">+/- {int(value * 100)}%</option>'
+            + ''.join(f'<option value="{value}"' + (' selected' if value == 1 else '') + f'>+/- {int(value * 100)}%</option>'
                       for value in (0.2, 0.5, 1, 2)) + '</select></label> '
             '<label>Out of range: <select ' + attribute + '="overflow">'
             '<option value="cap">Cap</option><option value="cut">Cut off</option></select></label> '
@@ -263,7 +279,7 @@ def history_panel(catalog):
             'Only retained successful reports with comparison data appear. '
             'Each chart compares xff with reference tools measured in that run; '
             'different dates, machines or measurement contracts are not paired performance comparisons. '
-            'Axes and colors rescale for each report.</p>'
+            'The default +/-100% range keeps the vertical scale fixed across versions; Auto fits each report.</p>'
             '<details open><summary>3D comparison chart (show/hide)</summary>'
             '<p>Drag to rotate; right-drag to pan; scroll to zoom. Focus the chart for arrow-key rotation, '
             '+/- zoom and Home reset. Percentage = 100 &times; (1 - xff/reference time); '

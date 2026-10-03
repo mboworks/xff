@@ -364,13 +364,18 @@ all three pairs (`1/3`, `1/10`, and `3/10`); no unmeasured allocation is synthes
 ### View range and selection
 
 **Range** offers Auto and symmetric limits of +/-20%, 50%, 100%, or 200% in percentage mode;
-logarithmic mode uses +/-0.2, 0.5, 1, or 2. **Cap** places outliers at the boundary and marks
+logarithmic mode uses +/-0.2, 0.5, 1, or 2. The default is +/-100% (+/-1 in logarithmic mode),
+so changing versions retains the same vertical scale. **Cap** places outliers at the boundary and marks
 them bright green or red. **Cut off** hides outlying observations and surface cells touching
 them, leaving gaps rather than inventing measurements. Hover cards always retain actual values.
 
 A black bar with a yellow outline marks the hovered measurement on the color legend. Capped
-values pin it to the appropriate endpoint. Hovering over the legend temporarily hides values
-below the pointed-to performance level; leaving restores the full view. This preview changes
+values pin it to the appropriate endpoint. Hovering over the legend temporarily emphasizes values
+above the pointed-to performance level. **Below threshold** offers increasing transparency:
+50% transparent, 75% transparent (the default), or Hide. **Threshold plane** shows a subtle
+horizontal plane at that level and is enabled by default. Leaving the legend restores the full
+view and removes the plane.
+The two preferences persist across version, worker-pair, and scale changes. This preview changes
 neither the selected range nor the source data.
 
 ### Reference-window timing normalization
@@ -385,8 +390,10 @@ unavailable; the card explains this and retains raw timings.
 The correction is `window reference mean / this run's reference time`. Multiply only this
 version's XFF timing by that factor: XFF results are never averaged across versions. Within-run
 fastest-sample selection remains the recorded measurement policy. The card shows the normalized
-XFF time, reference mean, correction, and the five commit IDs. Each report's generated
-`normalization.json` contains the full window identities. Reference binaries, invocation arguments,
+XFF time, reference mean, correction, and the window's measurement count and date range.
+The card presents these values together with task, tree, allocation and file count in an aligned table.
+Each report's generated `normalization.json` retains the full window identities and commit hashes.
+Reference binaries, invocation arguments,
 fixtures, machine series and CPU allocations must match; CI and local series remain separate.
 
 This is presentation only. Raw report JSON and the measurement tables remain unchanged. The

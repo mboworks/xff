@@ -206,7 +206,8 @@ Measured follow-ups (see the P07/P08 sections of `docs/performance-analysis.md`)
 - [x] Replace benchmark versions in place while preserving chart space and camera state during loading.
 - [x] Add percentage/logarithmic range presets and bright capped outliers or cut-off gaps.
 - [x] Expose every measured CPU pair and link selected versions to their PR/releases where available.
-- [x] Track hovered points on the legend and preview a minimum-performance filter while hovering the scale.
+- [x] Track hovered points on the legend and preview a minimum-performance threshold while hovering the scale,
+      with selectable 50%/75% transparency or hiding below it and an optional threshold plane.
 
 - [x] Add a benchmark overview landscape with platform selection and a slider over retained measured commits.
 

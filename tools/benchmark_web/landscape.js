@@ -34,8 +34,14 @@ window.XffLandscape = function createLandscape(root, figures) {
   const tooltip = document.createElement("div");
   tooltip.hidden = true;
   tooltip.style.cssText =
-    "position:absolute;top:12px;right:12px;z-index:3;background:#fff;color:#172333;border:1px solid #667;border-radius:4px;box-shadow:0 2px 10px #0003;padding:8px;pointer-events:none;font:12px system-ui;max-width:90%";
+    "position:absolute;top:12px;right:12px;z-index:3;background:#fff;color:#172333;border:1px solid #667;border-radius:4px;box-shadow:0 2px 10px #0003;padding:8px;pointer-events:none;font:12px system-ui;width:max-content;max-width:min(90%,520px)";
   root.append(tooltip);
+  const hoverStyle = document.createElement("style");
+  hoverStyle.textContent = `.landscape-hover-table{border-collapse:collapse;width:100%;margin:0;border:0;font:inherit}
+    .landscape-hover-table th,.landscape-hover-table td{border:0;padding:2px 4px;vertical-align:top;background:transparent}
+    .landscape-hover-table th{text-align:left;font-weight:500;white-space:nowrap}
+    .landscape-hover-table td{text-align:right;overflow-wrap:anywhere}`;
+  root.append(hoverStyle);
   const legend = document.createElement("div");
   legend.style.cssText =
     "position:absolute;left:12px;top:12px;background:#fffffff0;padding:8px;font:12px system-ui;color:#172333;max-width:90%";
@@ -47,6 +53,13 @@ window.XffLandscape = function createLandscape(root, figures) {
     "position:absolute;top:-4px;width:3px;height:20px;background:#111;box-shadow:0 0 0 1px #ffe600;transform:translateX(-50%);pointer-events:none";
   let legendExtent = 1;
   const minimumPerformance = { value: -1e30 };
+  const contextOpacity = { value: 0.25 };
+  let showThresholdPlane = true;
+  const previewShader = `uniform float minimumPerformance; uniform float contextOpacity;
+    uniform bool contextPass; varying float measured;
+    float previewAlpha(){bool below=measured<minimumPerformance;
+    if(below!=contextPass || (contextPass && contextOpacity==0.0))discard;
+    return contextPass ? contextOpacity : 1.0;}`;
   let contents = new THREE.Group();
   scene.add(contents);
   let labels = [],
@@ -216,11 +229,13 @@ window.XffLandscape = function createLandscape(root, figures) {
     delete root.dataset.minimum;
     clearHover();
     scene.remove(contents);
+    const geometries = new Set();
     contents.traverse((object) => {
-      object.geometry?.dispose();
+      if (object.geometry) geometries.add(object.geometry);
       object.material?.map?.dispose();
       object.material?.dispose();
     });
+    geometries.forEach((geometry) => geometry.dispose());
     contents = new THREE.Group();
     scene.add(contents);
     labels.forEach(({ element }) => element.remove());
@@ -253,6 +268,48 @@ window.XffLandscape = function createLandscape(root, figures) {
     const zmax = Math.max(...axes.zaxis.tickvals.map(Math.abs), 0.01);
     const position = (x, y, z) =>
       new THREE.Vector3((x / xmax) * 4, (y / ymax) * 2, (z / zmax) * 4);
+    const preview = new THREE.Group();
+    preview.visible = false;
+    contents.add(preview);
+    const context = new THREE.Group();
+    preview.add(context);
+    function addContext(geometry, material, ObjectType) {
+      const translucent = material.clone();
+      translucent.uniforms.minimumPerformance = minimumPerformance;
+      translucent.uniforms.contextOpacity = contextOpacity;
+      translucent.uniforms.contextPass.value = true;
+      translucent.transparent = true;
+      translucent.depthWrite = false;
+      translucent.forceSinglePass = true;
+      context.add(new ObjectType(geometry, translucent));
+    }
+    const plane = new THREE.Group();
+    const planeGeometry = new THREE.PlaneGeometry(8, 8);
+    plane.rotation.x = -Math.PI / 2;
+    plane.add(
+      new THREE.Mesh(
+        planeGeometry,
+        new THREE.MeshBasicMaterial({
+          color: "#e2b946",
+          opacity: 0.08,
+          transparent: true,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        }),
+      ),
+    );
+    plane.add(
+      new THREE.LineSegments(
+        new THREE.EdgesGeometry(planeGeometry),
+        new THREE.LineBasicMaterial({
+          color: "#7b6525",
+          opacity: 0.7,
+          transparent: true,
+          depthWrite: false,
+        }),
+      ),
+    );
+    preview.add(plane);
     for (const surface of figure.data) {
       const positions = [],
         values = [],
@@ -273,15 +330,18 @@ window.XffLandscape = function createLandscape(root, figures) {
           values.push(surface.surfacecolor[row][column] ?? 0);
           rangeValues.push(value ?? 0);
           valid.push(value !== null && (!cut || Math.abs(value) <= ymax));
+          let text = view.normalized
+            ? surface.normalized_text?.[row][column] ||
+              surface.text[row][column]
+            : surface.text[row][column];
+          if (value !== null && Math.abs(value) > ymax) {
+            text = text.replace(
+              "</tbody></table>",
+              `<tr><th scope="row">Capped at</th><td>${value > 0 ? "+" : "-"}${ymax}${metric === "percent" ? "%" : " (log10)"}</td></tr></tbody></table>`,
+            );
+          }
           points.push({
-            text:
-              (view.normalized
-                ? surface.normalized_text?.[row][column] ||
-                  surface.text[row][column]
-                : surface.text[row][column]) +
-              (value !== null && Math.abs(value) > ymax
-                ? `<br>Capped at ${value > 0 ? "+" : "-"}${ymax}${metric === "percent" ? "%" : " (log10)"}`
-                : ""),
+            text,
             position: vertex,
             value,
             row,
@@ -319,6 +379,8 @@ window.XffLandscape = function createLandscape(root, figures) {
         side: THREE.DoubleSide,
         uniforms: {
           minimumPerformance,
+          contextOpacity,
+          contextPass: { value: false },
           rangeLimit: { value: ymax },
           thresholds: {
             value: stops.map(
@@ -330,13 +392,14 @@ window.XffLandscape = function createLandscape(root, figures) {
         vertexShader:
           "attribute float performanceValue; attribute float rangeValue; varying float value; varying float measured; void main(){value=performanceValue;measured=rangeValue;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}",
         // Interpolate the measurement first, then map through the approved color scale.
-        fragmentShader: `uniform float thresholds[${stops.length}]; uniform vec3 palette[${stops.length}]; uniform float rangeLimit; uniform float minimumPerformance; varying float value; varying float measured;
-          void main(){if(measured<minimumPerformance)discard;vec3 c=palette[0];for(int i=1;i<${stops.length};i++){
+        fragmentShader: `${previewShader}
+          uniform float thresholds[${stops.length}]; uniform vec3 palette[${stops.length}]; uniform float rangeLimit; varying float value;
+          void main(){float alpha=previewAlpha();vec3 c=palette[0];for(int i=1;i<${stops.length};i++){
           float t=clamp((value-thresholds[i-1])/(thresholds[i]-thresholds[i-1]),0.0,1.0);
           if(value>=thresholds[i-1])c=mix(palette[i-1],palette[i],t);}
           if(measured>rangeLimit)c=vec3(0.08,1.0,0.3);
           if(measured< -rangeLimit)c=vec3(1.0,0.05,0.12);
-          gl_FragColor=vec4(c,1.0);
+          gl_FragColor=vec4(c,alpha);
           #include <colorspace_fragment>
           }`,
       });
@@ -344,6 +407,7 @@ window.XffLandscape = function createLandscape(root, figures) {
       mesh.userData.points = points;
       contents.add(mesh);
       surfaces.push(mesh);
+      addContext(geometry, material, THREE.Mesh);
       // Keep isolated observations visible when a row, column or neighboring cell is missing.
       const dots = points.filter((_, index) => valid[index]);
       const dotGeometry = new THREE.BufferGeometry().setFromPoints(
@@ -352,12 +416,13 @@ window.XffLandscape = function createLandscape(root, figures) {
       const dotMaterial = new THREE.ShaderMaterial({
         uniforms: {
           minimumPerformance,
+          contextOpacity,
+          contextPass: { value: false },
           pointSize: { value: 2 * renderer.getPixelRatio() },
         },
         vertexShader:
           "attribute vec3 color; attribute float rangeValue; uniform float pointSize; varying vec3 tint; varying float measured; void main(){tint=color;measured=rangeValue;gl_PointSize=pointSize;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}",
-        fragmentShader:
-          "uniform float minimumPerformance; varying vec3 tint; varying float measured; void main(){if(measured<minimumPerformance)discard;gl_FragColor=vec4(tint,1.0);\n#include <colorspace_fragment>\n}",
+        fragmentShader: `${previewShader}\nvarying vec3 tint; void main(){gl_FragColor=vec4(tint,previewAlpha());\n#include <colorspace_fragment>\n}`,
       });
       dotGeometry.setAttribute(
         "rangeValue",
@@ -385,6 +450,7 @@ window.XffLandscape = function createLandscape(root, figures) {
       markers.userData.points = dots;
       contents.add(markers);
       surfaces.push(markers);
+      addContext(dotGeometry, dotMaterial, THREE.Points);
     }
     axes.xaxis.tickvals.forEach((value, index) => {
       const x = (value / xmax) * 4;
@@ -468,6 +534,37 @@ window.XffLandscape = function createLandscape(root, figures) {
     const filterNote = document.createElement("div");
     const filterHint = "Hover scale to preview a minimum; leave to restore.";
     filterNote.textContent = filterHint;
+    const previewOptions = document.createElement("div");
+    previewOptions.style.cssText =
+      "display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;max-width:320px;margin-top:4px";
+    const belowLabel = document.createElement("label");
+    belowLabel.textContent = "Below threshold: ";
+    const below = document.createElement("select");
+    below.className = "landscape-preview-opacity";
+    for (const [value, text] of [
+      ["0.5", "50% transparent"],
+      ["0.25", "75% transparent"],
+      ["0", "Hide"],
+    ])
+      below.add(new Option(text, value));
+    below.value = String(contextOpacity.value);
+    below.addEventListener("change", () => {
+      contextOpacity.value = Number(below.value);
+      draw();
+    });
+    belowLabel.append(below);
+    const planeLabel = document.createElement("label");
+    const planeToggle = document.createElement("input");
+    planeToggle.type = "checkbox";
+    planeToggle.className = "landscape-preview-plane";
+    planeToggle.checked = showThresholdPlane;
+    planeToggle.addEventListener("change", () => {
+      showThresholdPlane = planeToggle.checked;
+      plane.visible = showThresholdPlane;
+      draw();
+    });
+    planeLabel.append(planeToggle, " Threshold plane");
+    previewOptions.append(belowLabel, planeLabel);
     bar.addEventListener("pointermove", (event) => {
       const bounds = bar.getBoundingClientRect();
       const fraction = Math.max(
@@ -475,6 +572,9 @@ window.XffLandscape = function createLandscape(root, figures) {
         Math.min(1, (event.clientX - bounds.left) / bounds.width),
       );
       minimumPerformance.value = (2 * fraction - 1) * ymax;
+      preview.visible = true;
+      plane.visible = showThresholdPlane;
+      plane.position.y = (2 * fraction - 1) * 2;
       root.dataset.minimum = minimumPerformance.value;
       clearHover();
       legendMarker.hidden = false;
@@ -484,6 +584,7 @@ window.XffLandscape = function createLandscape(root, figures) {
     });
     bar.addEventListener("pointerleave", () => {
       minimumPerformance.value = -1e30;
+      preview.visible = false;
       delete root.dataset.minimum;
       clearHover();
       filterNote.textContent = filterHint;
@@ -499,7 +600,7 @@ window.XffLandscape = function createLandscape(root, figures) {
       tick.style.cssText = `position:absolute;left:${((value + ymax) / (2 * ymax)) * 100}%;transform:translateX(-50%)`;
       scale.append(tick);
     });
-    legend.append(title, bar, scale, filterNote);
+    legend.append(title, bar, scale, filterNote, previewOptions);
     if (view.limit) {
       const note = document.createElement("div");
       note.textContent = cut
