@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Keep benchmark hover cards in the chart's top-right corner instead of following the pointer.
+
 - Run three complete-matrix benchmark shards on both platforms: one measured round each for PRs and three each for main, pooling raw samples before fastest-run selection.
 
 - Use the toolchains_llvm 1.11.0 release in place of the Git override.

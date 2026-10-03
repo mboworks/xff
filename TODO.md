@@ -202,6 +202,8 @@ Measured follow-ups (see the P07/P08 sections of `docs/performance-analysis.md`)
 
 ## Benchmark visualization follow-up
 
+- [x] Keep the hover card at the rendering area's top-right corner instead of following the pointer.
+
 - [x] Add a benchmark overview landscape with platform selection and a slider over retained measured commits.
 
 - [x] Compare Three.js with Plotly using the same benchmark JSON; record startup/update and bundle

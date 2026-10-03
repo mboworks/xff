@@ -32,7 +32,7 @@ window.XffLandscape = function createLandscape(root, figures) {
   const tooltip = document.createElement("div");
   tooltip.hidden = true;
   tooltip.style.cssText =
-    "position:absolute;z-index:3;background:#fff;color:#172333;border:1px solid #667;border-radius:4px;box-shadow:0 2px 10px #0003;padding:8px;pointer-events:none;font:12px system-ui;max-width:90%";
+    "position:absolute;top:12px;right:12px;z-index:3;background:#fff;color:#172333;border:1px solid #667;border-radius:4px;box-shadow:0 2px 10px #0003;padding:8px;pointer-events:none;font:12px system-ui;max-width:90%";
   root.append(tooltip);
   const legend = document.createElement("div");
   legend.style.cssText =
@@ -437,8 +437,6 @@ window.XffLandscape = function createLandscape(root, figures) {
     tooltip.hidden = false;
     // All record text has already been escaped by the Python figure generator.
     tooltip.innerHTML = point.text;
-    tooltip.style.left = `${Math.max(0, Math.min(width - tooltip.offsetWidth, event.clientX - rect.left + 14))}px`;
-    tooltip.style.top = `${Math.max(0, Math.min(height - tooltip.offsetHeight, event.clientY - rect.top + 14))}px`;
   });
   canvas.addEventListener("pointerleave", () => {
     clearHover();

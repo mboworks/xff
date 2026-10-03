@@ -398,6 +398,7 @@ or network access. Published pages share one bundle under the benchmark assets d
 Drag to rotate, scroll to zoom, and right-drag to pan. Axis titles are printed on the base plane;
 rotation remains unrestricted. Tick labels stay horizontal and extend outward from their axes.
 Focus the canvas for arrow-key rotation, +/- zoom and Home reset, or use the Reset view button.
+Hover cards stay in the chart's top-right corner while guides highlight the selected measurement.
 Missing WebGL2 leaves an explanatory message and the complete measurement tables available.
 The chart resizes when its container changes or its disclosure reopens. Rendering is event-driven;
 there is no idle animation loop. Single observations remain visible as points even when missing
