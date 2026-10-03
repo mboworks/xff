@@ -243,13 +243,13 @@ class BenchmarkCampaignTest(unittest.TestCase):
                         'tool_comparisons': job_data(plan(), plan()['jobs'][0])[1]['tool_comparisons']}
             event = {'id': 1, 'run_attempt': 1, 'created_at': '2026-09-01T13:00:00Z',
                      'event': 'push', 'head_branch': 'main', 'head_sha': HEAD, 'pull_requests': []}
-            history.retain(site, original, event, 100)
-            history.retain(site, original, dict(event, id=3, head_branch='v1.0.0'), 100)
+            history.retain(site, original, event)
+            history.retain(site, original, dict(event, id=3, head_branch='v1.0.0'))
             path = site / 'runs/1/1/linux/report.json'
             saved = path.read_bytes()
             campaign.retain(site, artifacts, source(), 'owner/repo')
             incoming = dict(original, head='f' * 40)
-            history.retain(site, incoming, dict(event, id=2, head_sha='f' * 40, created_at='2026-10-02T00:00:00Z'), 1)
+            history.retain(site, incoming, dict(event, id=2, head_sha='f' * 40, created_at='2026-10-02T00:00:00Z'))
             self.assertEqual(path.read_bytes(), saved)
             pulls = [{'number': 12, 'merge_commit_sha': HEAD, 'merged_at': '2026-09-01T12:00:00Z'}]
             rendered = history.render_site(site, pulls, 'owner/repo')

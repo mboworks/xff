@@ -775,12 +775,13 @@ test_suite(
         ":clang_tidy_pre_push_test",
         ":clang_tidy_runner_test",
         ":clang_tidy_scope_test",
-        ":compact_coverage_test",
+        ":compact_site_test",
         ":coverage_html_test",
         ":coverage_index_test",
         ":coverage_lcovrc_test",
         ":coverage_policy_test",
         ":coverage_sources_test",
+        ":coverage_storage_test",
         ":coverage_test",
         ":extras_test",
         ":fix_compile_commands_test",
@@ -790,6 +791,7 @@ test_suite(
         ":release_notes_test",
         ":release_site_test",
         ":site_artwork_test",
+        ":site_storage_test",
         ":verify_benchmark_publication_test",
     ],
 )
@@ -836,13 +838,19 @@ py_library(
     name = "benchmark_local_lib",
     srcs = ["benchmark_local.py"],
     imports = ["."],
-    deps = [":benchmark_campaign_lib"],
+    deps = [
+        ":benchmark_campaign_lib",
+        ":benchmark_records_lib",
+    ],
 )
 
 py_binary(
     name = "benchmark_local",
     srcs = ["benchmark_local.py"],
-    deps = [":benchmark_campaign_lib"],
+    deps = [
+        ":benchmark_campaign_lib",
+        ":benchmark_records_lib",
+    ],
 )
 
 py_test(
@@ -865,6 +873,7 @@ py_library(
         ":benchmark_compare_lib",
         ":benchmark_fixture_lib",
         ":benchmark_matrix_lib",
+        ":benchmark_records_lib",
         ":benchmark_shards_lib",
     ],
 )
@@ -876,6 +885,7 @@ py_binary(
         ":benchmark_compare_lib",
         ":benchmark_fixture_lib",
         ":benchmark_matrix_lib",
+        ":benchmark_records_lib",
         ":benchmark_shards_lib",
     ],
 )
@@ -937,6 +947,7 @@ py_library(
     name = "benchmark_matrix_lib",
     srcs = ["benchmark_matrix.py"],
     imports = ["."],
+    deps = [":benchmark_records_lib"],
 )
 
 py_test(
@@ -998,7 +1009,10 @@ py_library(
     name = "benchmark_shards_lib",
     srcs = ["benchmark_shards.py"],
     imports = ["."],
-    deps = [":benchmark_matrix_lib"],
+    deps = [
+        ":benchmark_matrix_lib",
+        ":benchmark_records_lib",
+    ],
 )
 
 py_binary(
@@ -1007,6 +1021,7 @@ py_binary(
     deps = [
         ":benchmark_compare_lib",
         ":benchmark_matrix_lib",
+        ":benchmark_records_lib",
     ],
 )
 
@@ -1105,23 +1120,67 @@ py_test(
 )
 
 py_library(
-    name = "compact_coverage_lib",
-    srcs = ["compact_coverage.py"],
+    name = "site_storage_lib",
+    srcs = ["site_storage.py"],
     imports = ["."],
 )
 
+py_library(
+    name = "coverage_storage_lib",
+    srcs = ["coverage_storage.py"],
+    imports = ["."],
+)
+
+py_library(
+    name = "compact_site_lib",
+    srcs = ["compact_site.py"],
+    data = [
+        "coverage_viewer.js",
+        "site_page.js",
+        "site_storage.js",
+    ],
+    imports = ["."],
+    deps = [
+        ":coverage_storage_lib",
+        ":site_storage_lib",
+    ],
+)
+
 py_binary(
-    name = "compact_coverage",
-    srcs = ["compact_coverage.py"],
+    name = "compact_site",
+    srcs = ["compact_site.py"],
+    data = [
+        "coverage_viewer.js",
+        "site_page.js",
+        "site_storage.js",
+    ],
+    deps = [
+        ":coverage_storage_lib",
+        ":site_storage_lib",
+    ],
 )
 
 py_test(
-    name = "compact_coverage_test",
+    name = "compact_site_test",
     size = "small",
-    srcs = ["compact_coverage_test.py"],
+    srcs = ["compact_site_test.py"],
     data = ["//:python_workflow_test_data"],
     deps = [
-        ":compact_coverage_lib",
+        ":compact_site_lib",
         ":test_paths_lib",
     ],
+)
+
+py_test(
+    name = "coverage_storage_test",
+    size = "small",
+    srcs = ["coverage_storage_test.py"],
+    deps = [":coverage_storage_lib"],
+)
+
+py_test(
+    name = "site_storage_test",
+    size = "small",
+    srcs = ["site_storage_test.py"],
+    deps = [":site_storage_lib"],
 )

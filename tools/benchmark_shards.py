@@ -9,6 +9,7 @@ import platform
 from pathlib import Path
 
 import benchmark_matrix
+import benchmark_records
 
 
 def fixture_key(task):
@@ -222,8 +223,8 @@ def merge_reports(records, baseline_root=None):
 
 def latest_reference(root, machine):
     candidates = []
-    for path in root.glob('runs/*/*/**/report.json'):
-        record = json.loads(path.read_text())
+    for path in benchmark_records.run_paths(root):
+        record = benchmark_records.read(path)
         report = record.get('tool_comparisons')
         source = record.get('source', {})
         if (report and report['contract'].get('machine') == machine

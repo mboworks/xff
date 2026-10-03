@@ -10,6 +10,8 @@ from functools import partial
 import hashlib
 import html
 import json
+
+import benchmark_records
 import os
 from pathlib import Path
 import platform
@@ -102,8 +104,8 @@ def pinned_cpus(ids):
 def revisions(repo, references, history_root=None, history_platform='macos'):
     references = list(references)
     if history_root:
-        for path in sorted(history_root.glob('runs/*/*/**/report.json')):
-            record = json.loads(path.read_text())
+        for path in benchmark_records.run_paths(history_root):
+            record = benchmark_records.read(path)
             report = record.get('tool_comparisons')
             identity = report.get('contract', {}).get('platform', '').lower() if report else ''
             prefixes = ('macos', 'darwin') if history_platform == 'macos' else ('linux',)
@@ -277,7 +279,7 @@ def run(args, batch):
         basename = 'benchmark-report-' + ('macos' if sys.platform == 'darwin' else 'linux') + '-' + platform.machine().lower()
         path = folder / (basename + '.json')
         if path.exists():
-            record = json.loads(path.read_text())
+            record = benchmark_records.read(path)
             if (record['batch'] != batch['identity'] or record['head'] != sha
                     or record['tool_comparisons']['tools']['xff']['sha256'] != build_record['sha256']):
                 raise ValueError('saved report does not match batch/binary: ' + sha)

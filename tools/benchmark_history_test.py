@@ -3,6 +3,7 @@
 """Test benchmark compatibility, source association, rendering, and retention."""
 
 import argparse
+import gzip
 import json
 from pathlib import Path
 import re
@@ -46,10 +47,10 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn("Tool comparisons", history.render_report(value))
         self.assertIn("&lt;fzf&gt;", history.render_report(value))
         with tempfile.TemporaryDirectory() as directory:
-            history.retain(Path(directory), value, source(), 2)
+            history.retain(Path(directory), value, source())
             comparison["tools"]["xff"]["sha256"] = "different"
             with self.assertRaisesRegex(ValueError, "head binary"):
-                history.retain(Path(directory), value, source(2), 2)
+                history.retain(Path(directory), value, source(2))
 
     def test_workflow_keeps_measurement_unprivileged_and_publication_serialized(self):
         measure = repository_file(".github/workflows/benchmarks.yml").read_text()
@@ -74,7 +75,7 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertNotIn(": write", waiter)
         self.assertIn("ref: main\n          path: source", publish)
         self.assertIn("Verify live benchmark publication", publish)
-        self.assertIn("--keep=100", publish)
+        self.assertNotIn("--keep=100", publish)
         self.assertIn("retention-days: 30", measure)
         self.assertIn("shard: [0, 1, 2]", measure)
         self.assertIn("--shard-plan=benchmark-plan.json", measure)
@@ -85,7 +86,7 @@ class BenchmarkHistoryTest(unittest.TestCase):
         aggregate = measure.split('\n  aggregate:', 1)[1]
         self.assertIn('fail-fast: false', aggregate)
         self.assertIn("--repetitions=9 --keep=7", measure)
-        self.assertIn("git -C site add benchmarks", publish)
+        self.assertIn("git -C site add --all", publish)
 
     def test_pr_and_main_measurements_use_the_same_runner_identity(self):
         pattern = r"--runner-class=['\"]([^'\"]+)['\"]"
@@ -102,7 +103,7 @@ class BenchmarkHistoryTest(unittest.TestCase):
             root = Path(directory)
             event = source(event="push")
             event.update(head_branch="v1.0.0", reference_time="2026-09-18T10:00:00Z")
-            history.retain(root, record(), event, 100)
+            history.retain(root, record(), event)
             pulls = [{"number": 9, "merged_at": "2026-09-19T12:00:00Z", "merge_commit_sha": HEAD}]
             rendered = history.render_site(root, pulls, "owner/repo")
             self.assertIn("v1.0.0", rendered)
@@ -183,39 +184,43 @@ class BenchmarkHistoryTest(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     history.measure_pair(args)
 
-    def test_retention_keeps_newest_and_preserves_run_attempt_identity(self):
+    def test_retention_keeps_all_history_and_preserves_run_attempt_identity(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            history.retain(root, record(), source(2), keep=2)
+            history.retain(root, record(), source(2))
             history.render_site(root, [], "owner/repo")
-            history.retain(root, record(), source(1), keep=2)
+            history.retain(root, record(), source(1))
             stale_payload = root / "runs/1/1/landscape.json"
             stale_payload.write_text("{}")
-            history.retain(root, record(), source(3), keep=2)
-            self.assertFalse(stale_payload.exists())
-            self.assertFalse((root / "runs/1").exists())
+            history.retain(root, record(), source(3))
+            self.assertTrue(stale_payload.exists())
+            self.assertTrue((root / "runs/1").exists())
             self.assertTrue((root / "runs/2/1/report.json").exists())
-            history.retain(root, record(), source(3), keep=2)
+            history.retain(root, record(), source(3))
+            packed = root / "runs/3/1/report.json"
+            packed.with_suffix('.json.gz').write_bytes(gzip.compress(packed.read_bytes()))
+            packed.unlink()
+            history.retain(root, record(), source(3))
             changed = record()
             changed["samples"]["head"][0]["measurements"][0]["elapsed_seconds"] = 10
             with self.assertRaisesRegex(ValueError, "cannot change"):
-                history.retain(root, changed, source(3), keep=2)
-            history.retain(root, record(), source(3, 2), keep=2)
-            self.assertFalse((root / "runs/2").exists())
+                history.retain(root, changed, source(3))
+            history.retain(root, record(), source(3, 2))
+            self.assertTrue((root / "runs/2").exists())
             self.assertTrue((root / "runs/3/2/report.json").exists())
 
     def test_source_commit_must_match_and_paths_are_not_supplied_by_artifact(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             with self.assertRaisesRegex(ValueError, "does not match"):
-                history.retain(root, record(), source(sha=BASE), 2)
+                history.retain(root, record(), source(sha=BASE))
             for sha in ("short", "../../outside", "<script>"):
                 value = record()
                 value["base"] = sha
                 with self.assertRaises(ValueError):
-                    history.retain(root, value, source(), 2)
+                    history.retain(root, value, source())
             with self.assertRaises(ValueError):
-                history.retain(root, record(), source(run=0), 2)
+                history.retain(root, record(), source(run=0))
             with self.assertRaises(ValueError):
                 history.render_site(root, [], "../../outside")
 
@@ -223,11 +228,11 @@ class BenchmarkHistoryTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             pulls = [{"number": 9, "merged_at": "2026-09-19T12:00:00Z", "merge_commit_sha": BASE, "state": "closed"}]
-            history.retain(root, record(), source(5), 100)
-            history.retain(root, record(), source(6, 2), 100)
+            history.retain(root, record(), source(5))
+            history.retain(root, record(), source(6, 2))
             post = record()
             post["head"], post["base"] = BASE, HEAD
-            history.retain(root, post, source(3, event="push", sha=BASE), 100)
+            history.retain(root, post, source(3, event="push", sha=BASE))
             rendered = history.render_site(root, pulls, "owner/repo")
             self.assertEqual(rendered.count("PR 9 pre-merge"), 1)
             self.assertEqual(rendered.count("PR 9 post-merge"), 1)
@@ -243,9 +248,9 @@ class BenchmarkHistoryTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             pulls = [{"number": 9, "merge_commit_sha": HEAD, "merged_at": "2026-09-19T12:00:00Z"}]
-            history.retain(root, record(), source(1), 100)
-            history.retain(root, record(), source(2, event="push"), 100)
-            history.retain(root, record(), source(3), 100)  # Later pre-merge cannot win.
+            history.retain(root, record(), source(1))
+            history.retain(root, record(), source(2, event="push"))
+            history.retain(root, record(), source(3))  # Later pre-merge cannot win.
 
             def git(command, text):
                 self.assertTrue(text)
@@ -265,15 +270,14 @@ class BenchmarkHistoryTest(unittest.TestCase):
                 self.assertTrue((root / "runs/2/1/index.html").is_file())
             self.assertIn("No retained benchmark", (root / "tag/2.0.0/index.html").read_text())
             self.assertFalse((root / "tag/-invalid").exists())
-            # Retention removes the exact matching measurement; do not keep a dangling redirect
-            # or substitute a newer benchmark from a different commit.
+            # New measurements never expire release or merged-PR measurements.
             changed = record()
             changed["head"] = BASE
-            history.retain(root, changed, source(4, event="push", sha=BASE), 1)
+            history.retain(root, changed, source(4, event="push", sha=BASE))
             with mock.patch.object(history.subprocess, "check_output", side_effect=git):
                 history.reference_pages(root, pulls, root)
-            self.assertIn("No retained benchmark", (root / "tag/1.0.0/index.html").read_text())
-            self.assertIn("No retained benchmark", (root / "pr/9/index.html").read_text())
+            self.assertIn('url=../../runs/2/1/', (root / "tag/1.0.0/index.html").read_text())
+            self.assertIn('url=../../runs/2/1/', (root / "pr/9/index.html").read_text())
             self.assertIn('url=../../runs/4/1/', (root / "tag/2.0.0/index.html").read_text())
             with mock.patch.object(history.subprocess, "check_output", return_value=""):
                 history.reference_pages(root, [], root)
@@ -289,7 +293,7 @@ class BenchmarkHistoryTest(unittest.TestCase):
             root = Path(directory)
             for platform_key in ('linux', 'macos'):
                 value = dict(record(), platform=platform_key)
-                history.retain(root, value, source(2, event='push'), 100)
+                history.retain(root, value, source(2, event='push'))
                 self.assertTrue((root / 'runs/2/1' / platform_key / 'report.json').is_file())
             rendered = history.render_site(root, [], 'owner/repo')
             self.assertIn('runs/2/1/linux/', rendered)
@@ -302,7 +306,7 @@ class BenchmarkHistoryTest(unittest.TestCase):
             self.assertNotIn('http-equiv', page)
             self.assertIn('href="../../../../"', (root / 'runs/2/1/macos/index.html').read_text())
             with self.assertRaisesRegex(ValueError, 'platform'):
-                history.retain(root, dict(record(), platform='../bad'), source(3), 100)
+                history.retain(root, dict(record(), platform='../bad'), source(3))
 
     def test_release_refresh_does_not_download_measurement_artifacts(self):
         publish = repository_file(".github/workflows/benchmark_pages.yml").read_text()

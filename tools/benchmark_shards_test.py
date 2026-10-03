@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Complete case ownership and strict shard aggregation."""
 import copy
+import gzip
 import json
 from pathlib import Path
 import tempfile
@@ -269,6 +270,9 @@ class BenchmarkShardsTest(unittest.TestCase):
                 (destination / 'report.json').write_text(json.dumps({
                     'source': {'id': run, 'created_at': str(run), 'event': 'push', 'head_branch': branch},
                     'tool_comparisons': {'contract': {'machine': machine}, 'marker': run}}))
+            packed = root / 'runs/3/1/macos/report.json'
+            packed.with_suffix('.json.gz').write_bytes(gzip.compress(packed.read_bytes()))
+            packed.unlink()
             self.assertEqual(shards.latest_reference(root, 'arm64')['marker'], 3)
             self.assertIsNone(shards.latest_reference(root, 'other'))
 
