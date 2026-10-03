@@ -29,6 +29,14 @@ the pattern unless `-e` or `-f` supplies explicit patterns. Additional rg paths 
 existing roots. After `--xff`, native segments contribute file-filter expressions.
 Their boolean expression continues across rg segments, including parenthesized groups.
 
+The global-argument pass processes argv once. A registered mode selector changes the
+active mode immediately; each mode uses its own index of explicitly declared spellings.
+Required values and native primary operands are consumed before the next option boundary,
+so values such as `--rg` remain literal. The pass retains the resolved primary descriptors
+and borrowed token views; a second pass builds the native expression once. Neither pass
+searches ahead for a mode selector, speculatively tries another grammar, or reconstructs
+and reparses a command line. Per-file evaluation uses the resulting expression.
+
 ## Select files with XFF, then select lines with rg
 
 XFF combines its native file and metadata predicates with rg's concise content search:

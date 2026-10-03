@@ -86,6 +86,13 @@ regresses 3-11% across the two sessions. Keep this tradeoff visible when compari
 
 ## Content-search output controls
 
+- [x] Replace speculative mode scanning with one registry-driven global pass and one expression
+      pass; retain resolved primary descriptors, borrow token text, and dispatch operators and
+      context controls through typed effects. Generate separate constexpr indexes per mode.
+- [ ] Compare the forthcoming constexpr perfect-hash map with compact trie/automaton lookup for
+      registered flag spellings. Preserve exact unknown-input rejection, explicit aliases and
+      per-mode tables; benchmark whole-command parsing as well as lookup and table size.
+
 - [x] Accept native flags, roots and matchers before the first `--rg`; preserve file filters,
       literal operands, configuration order and repeated mode transitions, with execution tests
       and prominent documentation of combined file selection and matching-line output.

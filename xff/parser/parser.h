@@ -49,7 +49,10 @@ inline mbo::types::OptionalRef<const Expr> AsConstOptionalExpr(const std::unique
 // (precedence ! > -a > -o, implicit -a between adjacent predicates, ( )
 // grouping). Returns an error for an unknown predicate, a predicate missing
 // arguments, an unexpected operator, or unbalanced parentheses.
-absl::StatusOr<Command> Parse(const std::vector<std::string>& args);
+absl::StatusOr<Command> Parse(
+    const std::vector<std::string>& args,
+    registry::Mode mode = registry::Mode::kXff,
+    std::size_t start = 0);
 
 // Enforces the active find/xff style on a parsed command. Under the strict find
 // style (registry::Style::kFind, selected by --config=find), any expression

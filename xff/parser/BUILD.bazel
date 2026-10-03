@@ -22,10 +22,11 @@ package(default_visibility = ["//visibility:private"])
 cc_library(
     name = "parser_cc",
     srcs = [
+        "arguments.cc",
         "parser.cc",
-        "rg.cc",
     ],
     hdrs = [
+        "arguments.h",
         "ast.h",
         "diagnostics.h",
         "parser.h",

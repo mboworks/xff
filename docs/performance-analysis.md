@@ -1722,3 +1722,56 @@ candidate. The full binary is 7,801,992 bytes before stripping (no matching full
 measured), directly links only libc++/libSystem, and has 40 initializer calls for `--version`,
 with no CoreFoundation initializer. Formatting/policy hooks passed at the measurement stage;
 clang-tidy and CI validation are tracked separately in the pull request.
+
+## Registered mode parsing and lookup experiments (PR #956)
+
+The command parser now has one global-argument pass with immediate mode switches and one
+expression-building pass. It consumes declared operands before checking another flag, retains
+resolved descriptors and borrows token text until constructing the owned expression. Context
+directions and boolean operators have typed effects in their constexpr registrations. Native,
+find and rg lookups use separate generated sorted indexes; no runtime catalog scan or speculative
+grammar retry is needed. This is an interim representation behind the lookup API, suitable for
+replacement by the planned constexpr perfect-hash map or trie.
+
+A local macOS ARM64 pilot used optimized Clang builds and five repetitions of at least 0.1 seconds
+per case; the table reports median CPU time. The unchanged old executable was rerun after the
+experiments to check drift. These parser timings exclude process startup, filesystem work, config
+loading and per-file evaluation. They do not explain or dismiss CI's whole-program advisories.
+
+| Native name predicates | Previous parser (us) | Registered passes (us) | Change |
+| ---------------------: | -------------------: | ---------------------: | -----: |
+|                      1 |                1.197 |                  0.212 | -82.3% |
+|                      4 |                1.588 |                  0.848 | -46.6% |
+|                     16 |                2.922 |                  3.163 |  +8.2% |
+|                     64 |               10.754 |                 14.575 | +35.5% |
+|                    256 |               46.991 |                 62.442 | +32.9% |
+
+Common short commands improve; long repeated expressions still cost more because the global
+pass now resolves every operator and operand boundary. Reusing descriptors and borrowing token
+text reduces that overhead but does not remove it. The next lookup implementation must retain
+these long-expression cases alongside startup cases, rather than optimizing only a tiny command.
+
+The reproducible `//xff/cli:globals_benchmark` compares identical explicitly registered mode
+vocabularies, with equal numbers of successful lookups and unknown spellings formed by appending
+`-unknown`. It validates all implementations against production lookup before timing. Table
+construction is excluded; each algorithm has a separate mode-specific table. Results below are
+median nanoseconds per lookup. The flat-hash prototype stores precomputed hashes with linear
+probing; it is not yet the proposed collision-free constexpr map. The sparse trie uses sibling
+edges; the direct automaton uses 128 character transitions per node and therefore more memory.
+
+| Lookup representation        | XFF (ns) | rg (ns) |
+| ---------------------------- | -------: | ------: |
+| Original linear catalog scan |   170.79 |  182.99 |
+| Generated sorted index       |    33.44 |   33.77 |
+| Flat hash prototype          |    16.41 |   15.55 |
+| Sparse trie                  |    76.12 |   72.71 |
+| Direct character automaton   |    23.60 |   22.99 |
+
+Both hash lookup and direct transitions beat the interim sorted index in this warm-cache pilot.
+A sparse trie does not. No theoretical complexity claim substitutes for measuring the layout.
+Repeat with realistic flag frequencies, cold caches, expression vocabularies and Linux before
+choosing the shared library implementation. Measure table/binary size as well as lookup latency.
+HAMT persistence and structural sharing are not needed for an immutable flag vocabulary;
+string interning adds little when names already have static storage, unless it performs the
+name-to-descriptor mapping directly. Unknown inputs must still be rejected by an exact spelling
+check, even if hashes of all registered keys are collision-free.

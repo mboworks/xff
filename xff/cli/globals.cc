@@ -38,6 +38,7 @@
 #include "xff/presentation/format/format.h"
 #include "xff/registry/consumers.h"
 #include "xff/registry/registry.h"
+#include "xff/registry/spelling_index.h"
 #include "xff/values/values.h"
 
 namespace xff::cli {
@@ -916,6 +917,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "rg modes use every detected core. `all` always means every detected core.",
         .see_also = "output,stats",
         .alias_modes = registry::Modes::kNative,
+        .alias_argument = "N",
+        .canonicalize_alias = true,
         .rg =
             registry::CompatibilitySpelling{
                 .name = "--threads",
@@ -985,6 +988,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     },
     {
         .name = "--case",
+        .alias = "-i",
         .display = "--case=<MODE>, -i, -s[-|+]",
         .group = "matching",
         .header = "Matching",
@@ -1342,6 +1346,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     },
     {
         .name = "--format",
+        .alias = "-0",
         .display = "--format=<FORMAT>",
         .group = "format",
         .header = "Result formatting",
@@ -1372,6 +1377,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .values = kFormatValues,
         .topic = "output",
         .value_check = GlobalFlag::ValueCheck::kEnum,
+        .alias_modes = registry::Modes::kNative,
     },
     {
         .name = "--no-header",
@@ -1578,6 +1584,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "archive",
         .repetition = GlobalFlag::Repetition::kAccumulate,
         .cli_only = true,
+        .adds_root = true,
         .rg =
             registry::CompatibilitySpelling{
                 .argument = "NAME=PATH",
@@ -2121,6 +2128,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep,--match-output,-diff,--diff-context",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kSharedContext,
+        .context_effect = GlobalFlag::ContextEffect::kBoth,
         .rg =
             registry::CompatibilitySpelling{
                 .alias = "-C",
@@ -2141,6 +2149,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep,-diff",
         .see_also = "content,regex",
         .required_consumer = registry::ModifierConsumer::kSharedContext,
+        .context_effect = GlobalFlag::ContextEffect::kAfter,
         .rg =
             registry::CompatibilitySpelling{
                 .name = "--after-context",
@@ -2162,6 +2171,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep,-diff",
         .see_also = "content,regex",
         .required_consumer = registry::ModifierConsumer::kSharedContext,
+        .context_effect = GlobalFlag::ContextEffect::kBefore,
         .rg =
             registry::CompatibilitySpelling{
                 .name = "--before-context",
@@ -3522,6 +3532,65 @@ static_assert(
     }(),
     "compatibility spellings must be unique within each mode");
 
+constexpr auto kGlobalIndex = [] {
+  registry::SpellingIndex<kGlobals.size() * 2> result;
+  for (std::size_t i = 0; i < kGlobals.size(); ++i) {
+    const auto& flag = kGlobals.at(i);
+    for (const auto mode : registry::kModes) {
+      if (registry::Supports(flag.modes, mode)) {
+        result.Add(mode, flag.name, i);
+        if (registry::Supports(flag.alias_modes, mode)) {
+          result.Add(mode, flag.alias, i);
+        }
+      }
+    }
+  }
+  result.Sort();
+  return result;
+}();
+
+constexpr auto kSignIndex = [] {
+  constexpr auto kCapacity = [] {
+    std::size_t size = 0;
+    for (const auto& flag : kGlobals) {
+      size += flag.sign_forms.size();
+    }
+    return size;
+  }();
+  registry::SpellingIndex<kCapacity> result;
+  for (std::size_t i = 0; i < kGlobals.size(); ++i) {
+    const auto& flag = kGlobals.at(i);
+    for (const auto mode : registry::kModes) {
+      if (registry::Supports(flag.modes, mode) && registry::Supports(flag.alias_modes, mode)) {
+        for (const auto spelling : flag.sign_forms) {
+          result.Add(mode, spelling, i);
+        }
+      }
+    }
+  }
+  result.Sort();
+  return result;
+}();
+
+constexpr auto kCompatibilityIndex = [] {
+  registry::SpellingIndex<kCompatibility.size() * 2> result;
+  for (std::size_t i = 0; i < kCompatibility.size(); ++i) {
+    const auto& option = kCompatibility.at(i);
+    for (const auto mode : registry::kModes) {
+      if (registry::Supports(option.modes, mode)) {
+        result.Add(mode, option.name, i);
+        result.Add(mode, option.alias, i);
+      }
+    }
+  }
+  result.Sort();
+  return result;
+}();
+
+static_assert(
+    kGlobalIndex.valid && kSignIndex.valid && kCompatibilityIndex.valid,
+    "each registered spelling must identify one flag in its mode");
+
 }  // namespace
 
 absl::Span<const GlobalFlag> Globals() {
@@ -3539,54 +3608,30 @@ absl::Span<const registry::CompatibilityOption> CompatibilityOptions() {
 mbo::types::OptionalRef<const registry::CompatibilityOption> LookupCompatibilityOption(
     std::string_view name,
     registry::Mode mode) {
-  for (const auto& option : kCompatibility) {
-    if (registry::Supports(option.modes, mode)
-        && (option.name == name || (!option.alias.empty() && option.alias == name))) {
-      return option;
-    }
-  }
-  return std::nullopt;
+  const auto index = kCompatibilityIndex.Find(name, mode);
+  return index.has_value() ? mbo::types::OptionalRef<const registry::CompatibilityOption>(kCompatibility.at(*index))
+                           : std::nullopt;
 }
 
 mbo::types::OptionalRef<const GlobalFlag> LookupGlobal(std::string_view name, registry::Mode mode) {
-  for (const GlobalFlag& flag : kGlobals) {
-    if (registry::Supports(flag.modes, mode)
-        && (flag.name == name
-            || (registry::Supports(flag.alias_modes, mode) && !flag.alias.empty() && flag.alias == name))) {
-      return flag;
-    }
-  }
-  return std::nullopt;
+  const auto index = kGlobalIndex.Find(name, mode);
+  return index.has_value() ? mbo::types::OptionalRef<const GlobalFlag>(kGlobals.at(*index)) : std::nullopt;
 }
 
 mbo::types::OptionalRef<const GlobalFlag> LookupGlobalArgument(std::string_view arg, registry::Mode mode) {
-  if (const mbo::types::OptionalRef<const GlobalFlag> exact = LookupGlobal(arg, mode); exact.has_value()) {
-    return exact;
+  const auto equals = arg.find('=');
+  const auto name = arg.substr(0, equals);
+  if (const auto flag = LookupGlobal(name, mode); flag.has_value()) {
+    return equals == std::string_view::npos || flag->display.contains('=') ? flag : std::nullopt;
   }
-  if (mode != registry::Mode::kRg && arg == "-0") {
-    return LookupGlobal("--format");
+  if (const auto index = kSignIndex.Find(arg, mode); index.has_value()) {
+    return kGlobals.at(*index);
   }
-  if (mode != registry::Mode::kRg && arg == "-i") {
-    return LookupGlobal("--case");
-  }
-  if (mode != registry::Mode::kRg && arg.starts_with("-j") && arg.size() > 2 && !arg.starts_with("-j=")) {
-    return LookupGlobal("--jobs");
-  }
-  for (const GlobalFlag& flag : Globals()) {
-    if (!flag.alias_argument.empty() && registry::Supports(flag.alias_modes, mode)
-        && registry::Supports(flag.modes, mode) && arg.starts_with(flag.alias)
+  if (arg.size() > 2 && arg.front() == '-' && arg.at(1) != '-') {
+    const auto flag = LookupGlobal(arg.substr(0, 2), mode);
+    if (flag.has_value() && !flag->alias_argument.empty()
         && !registry::Lookup(arg.substr(0, arg.find(':'))).has_value()) {
       return flag;
-    }
-    if (registry::Supports(flag.alias_modes, mode) && registry::Supports(flag.modes, mode)
-        && absl::c_contains(flag.sign_forms, arg)) {
-      return flag;
-    }
-  }
-  if (const std::string_view::size_type equals = arg.find('='); equals != std::string_view::npos) {
-    const mbo::types::OptionalRef<const GlobalFlag> valued = LookupGlobal(arg.substr(0, equals), mode);
-    if (valued.has_value() && absl::StrContains(valued->display, '=')) {
-      return valued;
     }
   }
   return std::nullopt;
@@ -3605,7 +3650,7 @@ absl::StatusOr<GlobalAliasArgument> ParseGlobalAliasArgument(
     return absl::InvalidArgumentError(absl::StrCat(flag.alias, " requires ", flag.alias_argument));
   }
   return GlobalAliasArgument{
-      .token = absl::StrCat(flag.alias, "=", value),
+      .token = absl::StrCat(flag.canonicalize_alias ? flag.name : flag.alias, "=", value),
       .consumes_next = consumes_next,
   };
 }

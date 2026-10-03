@@ -28,6 +28,7 @@ cc_library(
         "descriptor.h",
         "mode.h",
         "registry.h",
+        "spelling_index.h",
     ],
     visibility = ["//xff:__subpackages__"],
     deps = [

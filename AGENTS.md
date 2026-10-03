@@ -189,8 +189,8 @@ Two limits, both about noise:
   primary's argument run (an `-exec` command's args, a `-printf` format), where a
   `--flag` is a literal argument to that primary / the child command; a bare `--`
   ends option parsing and disables hoisting. Single-dash globals stay leading-only
-  (they are ambiguous with primaries). The parser handles this in ExprParser's
-  `SkipGlobals()` + the roots loop.
+  (they are ambiguous with primaries). The argument pass handles global options and mode switches,
+  preserving complete primary argument runs for the expression pass.
 - **Flag-only; no subcommands.** xff is a single-purpose tool (like `fd` /
   `ripgrep`), so meta operations are flags (`--help`, `--man`, `--help=full --help-format=markdown`,
   `--explain`), never `git`-style subcommands; find and xff share one grammar,

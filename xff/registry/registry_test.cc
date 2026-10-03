@@ -223,6 +223,34 @@ TEST_F(RegistryTest, EveryDescriptorCarriesAWellFormedSummary) {
   }
 }
 
+TEST_F(RegistryTest, ModeIndexesResolveOnlyTheirRegisteredSpellings) {
+  for (const auto mode : kModes) {
+    for (const auto& descriptor : All()) {
+      for (const auto spelling : {descriptor.name, descriptor.alias}) {
+        if (spelling.empty()) {
+          continue;
+        }
+        if (Supports(descriptor.modes, mode)) {
+          EXPECT_THAT(Lookup(spelling, mode), Optional(Ref(descriptor))) << spelling;
+        } else {
+          EXPECT_THAT(Lookup(spelling, mode), Eq(std::nullopt)) << spelling;
+        }
+      }
+    }
+    EXPECT_THAT(Lookup("-name-unknown", mode), Eq(std::nullopt));
+    EXPECT_THAT(Lookup("", mode), Eq(std::nullopt));
+  }
+}
+
+TEST_F(RegistryTest, EveryOperatorDeclaresItsSemantics) {
+  for (const auto& descriptor : All()) {
+    EXPECT_THAT(descriptor.operation != Operator::kNone, Eq(descriptor.kind == Kind::kOperator)) << descriptor.name;
+  }
+  for (const std::string_view spelling : {"-o", "-or", "+"}) {
+    EXPECT_THAT(Lookup(spelling), Optional(Field(&Descriptor::operation, Operator::kOr)));
+  }
+}
+
 TEST_F(RegistryTest, AllEnumeratesTheSameDescriptorsLookupResolves) {
   // All() and Lookup() must read the same table, so generators and the parser
   // never drift: each enumerated descriptor resolves back to itself by name.

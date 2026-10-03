@@ -804,17 +804,17 @@ absl::StatusOr<GrepContext> ResolveGrepContext(const std::vector<std::string>& g
       continue;
     }
     const std::string_view value = global.substr(equals + 1);
-    if (flag->name == "--context") {
+    if (flag->context_effect == cli::GlobalFlag::ContextEffect::kBoth) {
       result.specified = true;
       MBO_ASSIGN_OR_RETURN(const ContextSides sides, ParseContextSpec(value));
       result.before = sides.before.value_or(result.before);
       result.after = sides.after.value_or(result.after);
-    } else if (flag->name == "--context-before") {
+    } else if (flag->context_effect == cli::GlobalFlag::ContextEffect::kBefore) {
       result.specified = true;
       if (!absl::SimpleAtoi(value, &result.before)) {
         return absl::InvalidArgumentError(absl::StrCat("bad ", flag->name, " value '", value, "'"));
       }
-    } else if (flag->name == "--context-after") {
+    } else if (flag->context_effect == cli::GlobalFlag::ContextEffect::kAfter) {
       result.specified = true;
       if (!absl::SimpleAtoi(value, &result.after)) {
         return absl::InvalidArgumentError(absl::StrCat("bad ", flag->name, " value '", value, "'"));
