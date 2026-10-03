@@ -12,8 +12,13 @@
 - [x] Accept flat single-artifact and nested multi-artifact shard downloads; validate the
       complete shard set before deriving report filenames, and keep platform aggregation independent.
 - [x] Reject undersized runners before measurement; use the same 1/3 grid on both hosted
-      platforms, pinned on Linux and on one measurement host for macOS. Leave one Linux vCPU
+      platforms, pinned on Linux and requested workers on macOS. Leave one Linux vCPU
       outside the benchmark mask for background work. Preserve strict shard identity checks.
+- [x] Use three complete-matrix sample shards on both hosted platforms: one measured round
+      per PR shard, three per main shard; pool raw samples before selecting fastest 2/3 or 7/9.
+      Share compiled binaries, rotate participant order, and preserve per-sample shard provenance.
+- [ ] Verify the first sharded PR/main runs and published results; compare measurement and
+      end-to-end wall times, including the extra warm-up and fixture setup costs.
 - [x] Add a CI-only historical backfill workflow for macOS and Linux replacement campaigns,
       plus a standalone tool for additional local Mac/Zen 5 series. Freeze revisions, driver,
       tools and allocations; build before measuring, resume verified records, report incomplete

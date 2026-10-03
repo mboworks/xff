@@ -312,15 +312,44 @@ class BenchmarkCompareTest(unittest.TestCase):
             self.skipTest('Bazel supplies xff executable')
         tool_names = {'xff': {'path': str(BINARY)}, 'find': {}, 'rg': {}, 'fzf': {}}
         names = [name for name, _, _ in compare.scenarios(Path('.'), [], tool_names)]
-        plan = compare.benchmark_shards.make_plan([2, 4], [1], 3, task_names=names)
-        with mock.patch.object(compare.shutil, 'which', return_value=None):
-            records = [{'head': 'same-source', 'tool_comparisons': compare.collect_scales(
-                BINARY, [2, 4], depth=2, repetitions=1, keep=1, cpu_counts=[1],
-                shard_plan=plan, shard_index=index)} for index in range(3)]
-        combined = compare.benchmark_shards.merge_reports(records)['tool_comparisons']
-        self.assertEqual(len(combined['tasks']), 4 * len(names))
-        self.assertEqual({task['shard_index'] for task in combined['tasks']}, {0, 1, 2})
-        self.assertIn('Tool comparisons', compare.render(combined))
+        for partition in ('balanced', 'samples'):
+            with self.subTest(partition=partition):
+                plan = compare.benchmark_shards.make_plan([2, 4], [1], 3, task_names=names,
+                                                         partition=partition, repetitions=3, keep=2)
+                with mock.patch.object(compare.shutil, 'which', return_value=None):
+                    records = [{'head': 'same-source', 'tool_comparisons': compare.collect_scales(
+                        BINARY, [2, 4], depth=2, repetitions=1, keep=1, cpu_counts=[1],
+                        shard_plan=plan, shard_index=index)} for index in range(3)]
+                combined = compare.benchmark_shards.merge_reports(records)['tool_comparisons']
+                self.assertEqual(len(combined['tasks']), 4 * len(names))
+                if partition == 'balanced':
+                    self.assertEqual({task['shard_index'] for task in combined['tasks']}, {0, 1, 2})
+                else:
+                    self.assertEqual(combined['contract']['repetitions'], 3)
+                    self.assertEqual(combined['contract']['retained'], 2)
+                self.assertIn('Tool comparisons', compare.render(combined))
+
+    def test_sample_shard_cli_plan_and_collection_policy(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / 'plan.json'
+            with mock.patch('sys.argv', ['benchmark_shards.py', '--plan', '--partition=samples', '--files=10',
+                                         '--cpus=1', '--cpus=3', '--count=3', '--repetitions=3', '--keep=2',
+                                         '--output', str(output)]):
+                compare.benchmark_shards.main()
+            plan = json.loads(output.read_text())
+        calls = []
+        def collect(binary, files, depth, repetitions, **kwargs):
+            calls.append((kwargs['cpus'], kwargs['round_offset'], kwargs['shapes']))
+            return {'tools': {}, 'contract': {'files': files}, 'tasks': []}
+        with mock.patch.object(compare, 'collect', side_effect=collect), mock.patch.object(compare, 'cpu_allocation'):
+            for index in range(3):
+                compare.collect_scales(Path('/unused'), [10], repetitions=1, keep=1, cpu_counts=[1, 3],
+                                       shard_plan=plan, shard_index=index)
+            for repetitions, keep in ((3, 2), (2, 1)):
+                with self.subTest(repetitions=repetitions), self.assertRaisesRegex(ValueError, 'every planned round'):
+                    compare.collect_scales(Path('/unused'), [10], repetitions=repetitions, keep=keep, cpu_counts=[1, 3],
+                                           shard_plan=plan)
+        self.assertEqual(calls, [(cpu, index, ['broad', 'deep']) for index in range(3) for cpu in (1, 3)])
 
     def test_custom_manifest_with_binary_and_links_matches_real_xff(self):
         if BINARY is None:

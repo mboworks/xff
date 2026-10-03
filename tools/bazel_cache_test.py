@@ -90,7 +90,7 @@ class BazelCacheTest(unittest.TestCase):
         workflow = (root / ".github/workflows/main.yml").read_text()
         sections = re.split(r"^  ([a-z][a-z0-9-]*):$", workflow, flags=re.MULTILINE)
         jobs = dict(zip(sections[1::2], sections[2::2], strict=True))
-        self.assertIn("benchmark-compare", jobs)
+        self.assertIn("benchmark-build", jobs)
         cached_jobs = []
         for name, section in jobs.items():
             restores = section.count("uses: ./.github/actions/bazel-cache-restore")
@@ -100,7 +100,7 @@ class BazelCacheTest(unittest.TestCase):
                 continue
             cached_jobs.append(name)
             with self.subTest(job=name):
-                if name == "benchmark-compare":
+                if name == "benchmark-build":
                     self.assertIn("if: github.event_name == 'pull_request'", section)
                     self.assertEqual(restores, 1)
                     self.assertEqual(saves, 0)

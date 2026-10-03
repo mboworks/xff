@@ -52,6 +52,15 @@ def policy(report):
     return f"median of {contract['repetitions']} runs"
 
 
+def sampling_text(report):
+    sampling = report.get('sample_shards')
+    if not sampling:
+        return ''
+    return (f"Each of {sampling['count']} shards measures the complete matrix with {sampling['repetitions']} measured "
+            'round(s) per case and a discarded warm-up. Raw samples are pooled before fastest-run selection; '
+            'sample shard IDs identify their hosts and invocations. Host variation can still affect the result.')
+
+
 def task_key(task):
     return f"{task['dataset']}/{task['name']}/{task['cpus']}/{task['files']}"
 
@@ -227,6 +236,8 @@ def render_html(report):
               'Ratio tables: xff/reference, greater than 1 means xff is slower. '
               'Dark red ratios mean xff is slower; dark green means faster; equal ratios stay neutral. '
               'Vs main is the change in that ratio, not the raw elapsed-time change.</p>']
+    if sampling_text(report):
+        result.append('<p>' + html.escape(sampling_text(report)) + '</p>')
     if alarm_text(report):
         result.append('<p>' + html.escape(alarm_text(report)) + '</p>')
     if baseline_text(report):
@@ -289,6 +300,8 @@ def render_html(report):
 def render_markdown(report):
     output = ['# Tool comparisons', '', policy(report) + '; absolute tables: elapsed milliseconds.', '',
               'Ratio tables: xff/reference; greater than 1 means xff is slower. Vs main is the change in that ratio.', '']
+    if sampling_text(report):
+        output.extend([sampling_text(report), ''])
     if alarm_text(report):
         output.extend([alarm_text(report), ''])
     if baseline_text(report):

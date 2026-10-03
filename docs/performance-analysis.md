@@ -9,7 +9,9 @@ The driver also checked capacity only when Linux affinity was available, allowin
 four-worker request on a three-CPU host. Retrying aggregation cannot repair those measurements.
 
 GitHub's documented standard ARM64 macOS capacity is three CPUs; Linux remains four.
-The workflows use one/three workers on both platforms, with the full Mac matrix on one host.
+The workflows use one/three workers on both platforms. Ordinary PR and main comparisons use
+three complete-matrix sample shards per platform, so each host measures both tree shapes and
+worker counts. Historical backfill still keeps each replayed revision on one host.
 Linux pins three of the four available vCPUs, leaving headroom for background work; this is
 not an exclusive CPU reservation and does not eliminate hosted contention.
 Both platforms now check capacity before build/measurement. Unpinned historical comparisons also
@@ -220,10 +222,21 @@ commands. v4 is not a portable default; separate generic/v3/v4 distributions rem
 ## Measurement overhead
 
 Fixture identity is now computed once per fixture, rather than repeatedly for every task.
-Post-merge comparison work is split across three complete-fixture shards per platform, preserving
-all tools and repetitions on one host per cell. Shards share the same compiled binary and retain
-provenance; mismatched or incomplete reports fail aggregation. These changes shorten orchestration
-without changing the measured child processes or relaxing correctness checks.
+PR and main comparisons use three full-matrix sample shards per platform, sharing the same
+compiled binary. PR shards each retain one measured round per case; main shards each retain three.
+The aggregator pools raw rounds and selects the fastest two of three or seven of nine per tool.
+Each sample retains its shard/round identity, and shard provenance records the hashed host ID.
+Both shapes and worker settings therefore appear on every host. Within each round XFF and reference
+tools share a runner, while the participant starting order rotates across shards.
+
+This trades more aggregate work for shorter expected measurement latency: discarded warm-ups make
+six total tool rounds per PR case and twelve per main case, versus four and ten in a serial run.
+Fixture creation also occurs on each shard. Linux already had three fixture shards, so no Linux
+main speedup is claimed without measurement. Matching hardware contracts cannot remove background
+load or host variation; fastest-run selection can favor a faster host differently for different
+tools. Aggregation rejects incomplete matrices, mismatched commands/fixtures/tool identities,
+wrong sample counts and incompatible CPU environments. The [measurement contract](benchmark-comparisons.md#measurement-shards)
+documents the sampling and comparability tradeoffs.
 
 ## PCRE2 JIT/SIMD verification and RE2 comparison
 

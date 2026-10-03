@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Run three complete-matrix benchmark shards on both platforms: one measured round each for PRs and three each for main, pooling raw samples before fastest-run selection.
+
 - Use the toolchains_llvm 1.11.0 release in place of the Git override.
 
 - Prefix benchmark backfill progress with local timestamps and revision positions.
@@ -20,7 +22,7 @@
 - Add CI benchmark backfills and a resumable local collection tool with frozen contracts and physical-core pinning on Linux.
 - Use one/three-worker CI benchmark grids on both platforms, leaving one Linux vCPU outside the measurement mask.
 
-- Validate benchmark runner capacity before measurement; keep macOS's complete one/three-worker matrix on one host and explain incompatible shard identities.
+- Validate benchmark runner capacity before measurement and explain incompatible shard identities.
 
 - Build with Clang/LLVM 23.1.2 and its matching formatter; retain LLVM 22.1.8 with its instrumented libc++ for MSan.
 

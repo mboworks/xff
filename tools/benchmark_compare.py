@@ -229,7 +229,8 @@ def cpu_allocation(cpus, require_cpu_affinity=False):
 
 
 def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_tools=False,
-            fixture_parent=None, require_memory=False, cpus=1, require_cpu_affinity=False, keep=None, fixtures=None, progress=None, shapes=("broad", "deep")):
+            fixture_parent=None, require_memory=False, cpus=1, require_cpu_affinity=False, keep=None, fixtures=None, progress=None,
+            shapes=("broad", "deep"), round_offset=0):
     progress = progress or MeasurementProgress()
     keep = min(7, repetitions) if keep is None else keep
     if not 1 <= keep <= repetitions:
@@ -289,7 +290,7 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
                 completed = 0
                 total = len(labels) * (repetitions + 1)
                 for repetition in range(repetitions + 1):
-                    offset = (len(report['tasks']) - 1 + repetition) % len(labels) if labels else 0
+                    offset = (len(report['tasks']) - 1 + repetition + round_offset) % len(labels) if labels else 0
                     order = labels[offset:] + labels[:offset]
                     for label in order:
                         entry = task["participants"][label]
@@ -320,6 +321,9 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
     selected = benchmark_shards.assigned_fixtures(shard_plan, shard_index) if shard_plan else None
     if shard_plan and (list(file_counts) != shard_plan['file_counts'] or list(cpu_counts) != shard_plan['cpu_counts'] or fixtures):
         raise ValueError('shard plan requires its exact standard fixture grid')
+    sampling = benchmark_shards.sample_policy(shard_plan) if shard_plan else None
+    if sampling and (repetitions, min(7, repetitions) if keep is None else keep) != (sampling[0], sampling[0]):
+        raise ValueError('sample shard must retain every planned round')
     combined = None
     invocation = {"files": list(file_counts), "cpus": list(cpu_counts), "depth": depth,
                   "fixtures": [{"dataset": shape, "files": count, "source_sha256": value[1],
@@ -337,6 +341,7 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
             report = collect(binary, files, min(files, depth), repetitions, require_tools=require_tools,
                              fixture_parent=fixture_parent, require_memory=require_memory, cpus=cpus,
                              require_cpu_affinity=require_cpu_affinity, keep=keep, progress=progress, shapes=shapes,
+                             round_offset=shard_index * sampling[0] if sampling else 0,
                              fixtures={shape: value for (shape, count), value in fixtures.items() if count == files}
                              if fixtures is not None else None)
             completed_scales += 1
@@ -363,6 +368,7 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
         raise ValueError('shard contains no measurements')
     if shard_plan:
         combined['contract']['shard'] = {'index': shard_index, 'plan': shard_plan}
+        combined['host_id'] = hashlib.sha256(platform.node().encode()).hexdigest()
     return combined
 
 
@@ -439,7 +445,7 @@ def main():
                         help='Check capacity for --cpus before building or measuring; no binary/report required')
     parser.add_argument('--render-only', action='store_true',
                         help='Render an existing --report JSON without running measurements; requires --html or --summary')
-    parser.add_argument('--shard-plan', type=Path, help='Use a shared complete-fixture shard plan')
+    parser.add_argument('--shard-plan', type=Path, help='Use a shared fixture or sample shard plan')
     parser.add_argument('--shard-index', type=int, help='Zero-based shard index; requires --shard-plan')
     parser.add_argument('--worker', type=Path)
     parser.add_argument('--binary', type=Path)
