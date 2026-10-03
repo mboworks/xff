@@ -2111,9 +2111,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "-grep context lines: N both sides, or A:N,B:N,C:N for after/before/both",
         .details = "`--context=2` is grep's `-C 2` (two lines either side); the A / B / C keys inside the "
                    "value select one side (`--context=A:3,B:1`), which is what `--after-context` and "
-                   "`--before-context` spell one at a time. xff has NO single-dash `-A` / `-B` / `-C`: those "
-                   "letters are unclaimed for now (see TODO.md), and a single-dash flag would be an "
-                   "expression primary under xff's dash-count rule rather than a whole-run option. "
+                   "`--before-context` spell one at a time. In rg mode, `-C N` / `-CN` selects both sides, "
+                   "`-A N` / `-AN` selects after-context, and `-B N` / `-BN` selects before-context. "
+                   "These short forms require rg mode; use the long forms in native XFF/find mode or INI files. "
                    "A final symmetric before/after context also supplies the default for contextual `-diff` output, "
                    "unless `--diff-context` or a per-action count overrides it.",
         .affects = "-grep,--match-output,-diff,--diff-context",
@@ -2131,7 +2131,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "grep-output",
         .header = "Content-match output",
         .summary = "with -grep, print N lines of context after each match (= --context=A:N)",
-        .details = "Together with the other context settings, a final symmetric context also supplies the "
+        .details = "In rg mode, `-A N` and `-AN` are aliases; native XFF/find mode and INI files use the long form. "
+                   "Together with the other context settings, a final symmetric context also supplies the "
                    "default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.",
         .affects = "-grep,-diff",
         .see_also = "content,regex",
@@ -2148,7 +2149,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "grep-output",
         .header = "Content-match output",
         .summary = "with -grep, print N lines of context before each match (= --context=B:N)",
-        .details = "Together with the other context settings, a final symmetric context also supplies the "
+        .details = "In rg mode, `-B N` and `-BN` are aliases; native XFF/find mode and INI files use the long form. "
+                   "Together with the other context settings, a final symmetric context also supplies the "
                    "default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.",
         .affects = "-grep,-diff",
         .see_also = "content,regex",

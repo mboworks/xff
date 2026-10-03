@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Clarify rg-only `-A`, `-B`, and `-C` context aliases and verify their value forms and mode boundaries.
+
 - Simplify redundant macOS platform labels in benchmark cards and keep archived pre-merge reports out of the current PR preview selector.
 
 - Publish current PR benchmark previews as soon as both platform comparisons finish, with a compact reference-adjusted overview and advisory regression comments.
