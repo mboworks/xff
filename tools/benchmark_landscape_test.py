@@ -51,7 +51,8 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                             cells = hover_values(text)
                             self.assertIn('Reference-normalized XFF', cells)
                             self.assertEqual(cells['Reference window'], '5 measurements')
-                            self.assertEqual(cells['Window dates'], '2026-10-01 to 2026-10-05')
+                            self.assertEqual(cells['Window start'], '2026-10-01')
+                            self.assertEqual(cells['Window end'], '2026-10-05')
                             self.assertNotIn('1111111111', text)
         text = landscape.normalized_hover(landscape.hover_table([('Raw', '1 ms')]),
                                           {'status': 'unavailable', 'reason': '<missing>'})

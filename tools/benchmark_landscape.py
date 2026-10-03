@@ -133,11 +133,11 @@ def normalized_hover(text, value):
     else:
         window = value['window']
         first, last = window[0]['date'][:10], window[-1]['date'][:10]
-        dates = first if first == last else f'{first} to {last}'
         rows = [('Reference-normalized XFF', f'{value["xff_seconds"] * 1000:.3f} ms'),
                 ('Window reference mean', f'{value["reference_mean_seconds"] * 1000:.3f} ms'),
                 ('Correction factor', f'{value["factor"]:.4f}'),
-                ('Reference window', f'{len(window)} measurements'), ('Window dates', dates)]
+                ('Reference window', f'{len(window)} measurements'),
+                ('Window start', first), ('Window end', last)]
     return text.removesuffix('</tbody></table>') + hover_rows(rows) + '</tbody></table>'
 
 
