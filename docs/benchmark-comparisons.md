@@ -397,6 +397,10 @@ The card presents these values together with task, tree, allocation and file cou
 Each report's generated `normalization.json` retains the full window identities and commit hashes.
 Reference binaries, invocation arguments,
 fixtures, machine series and CPU allocations must match; CI and local series remain separate.
+Ordinary CI and its replacement backfills share reference history: the recorded runner labels
+`github-hosted ubuntu-latest` / `github-ci-linux` and
+`github-hosted macos-latest` / `github-ci-macos` identify the same respective hosted runner
+classes. This label equivalence does not relax machine, reference, fixture or allocation checks.
 
 This is presentation only. Raw report JSON and the measurement tables remain unchanged. The
 percentage/factor landscape also remains unchanged because its same-run XFF/reference ratio

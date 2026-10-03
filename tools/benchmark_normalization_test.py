@@ -61,6 +61,9 @@ class BenchmarkNormalizationTest(unittest.TestCase):
                 lambda report: report['tasks'][0].update(fixture_identity='different'),
                 lambda report: report['tasks'][0].update(cpus=3),
                 lambda report: report['contract'].update(machine='arm64'),
+                lambda report: report['contract'].update(runner_class='different-host'),
+                lambda report: report['contract'].update(storage={'filesystem': 'disk'}),
+                lambda report: report['contract'].update(affinity_by_cpu_count={'1': None}),
                 lambda report: report['tasks'][0]['participants']['rg'].update(pipeline=[['rg', '--different']])):
             with self.subTest(change=change):
                 inputs = records(6)
@@ -69,6 +72,33 @@ class BenchmarkNormalizationTest(unittest.TestCase):
                 self.assertEqual(next(iter(values[inputs[-1][0]].values()))['status'], 'unavailable')
                 first = next(iter(values[inputs[0][0]].values()))
                 self.assertEqual(first['reference_mean_seconds'], 6)
+
+    def test_ci_backfill_and_main_runner_names_share_reference_history(self):
+        for platform, runner in (('linux', 'ubuntu-latest'), ('macos', 'macos-latest')):
+            with self.subTest(platform=platform):
+                inputs = records(6)
+                for index, (_, record) in enumerate(inputs):
+                    record['platform'] = platform
+                    record['source'].update(event='push', head_branch='main')
+                    contract = record['tool_comparisons']['contract']
+                    if index < 5:
+                        record.update(kind='backfill', purpose='ci-replacement',
+                                      series='github-ci-' + platform,
+                                      revision={'date': record['source']['created_at']})
+                        contract['runner_class'] = 'github-ci-' + platform
+                    else:
+                        contract['runner_class'] = 'github-hosted ' + runner
+                original = copy.deepcopy(inputs)
+                values = normalization.reference_windows(inputs)
+                current = next(iter(values[inputs[-1][0]].values()))
+                self.assertEqual(current['status'], 'available')
+                self.assertEqual(current['reference_mean_seconds'], 8)
+                self.assertEqual([row['report'] for row in current['window']],
+                                 [identity for identity, _ in inputs[1:]])
+                self.assertEqual(inputs, original)
+                inputs[-1][1]['tool_comparisons']['contract']['runner_class'] = 'github-hosted different-runner'
+                values = normalization.reference_windows(inputs)
+                self.assertEqual(next(iter(values[inputs[-1][0]].values()))['status'], 'unavailable')
 
     def test_duplicate_commit_uses_latest_attempt_once(self):
         inputs = records(5)

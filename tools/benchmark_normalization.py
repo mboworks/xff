@@ -14,6 +14,21 @@ def cell_key(task, reference):
                        task['cpus'], task['files'], reference])
 
 
+def compatibility(record):
+    contract = matrix.compatibility(record['tool_comparisons'])
+    # XFF's build changes across versions; replay batches identify jobs, not workloads.
+    contract.pop('build_identity', None)
+    contract.pop('batch', None)
+    if not benchmark_records.is_local(record):
+        platform = benchmark_records.platform_key(record)
+        runner = {'linux': 'ubuntu-latest', 'macos': 'macos-latest'}.get(platform)
+        # Ordinary CI and its replacement campaign use the same hosted runner class
+        # under different names. Keep every actual machine/workload constraint.
+        if runner and contract.get('runner_class') == 'github-hosted ' + runner:
+            contract['runner_class'] = 'github-ci-' + platform
+    return contract
+
+
 def reference_windows(records):
     """Use the first five references initially, then the current and four prior."""
     selected = {}
@@ -55,12 +70,7 @@ def reference_windows(records):
                 if missing:
                     results[identity][key] = {'status': 'unavailable', 'reason': 'Incomplete measurement identity.'}
                     continue
-                contract = matrix.compatibility(report)
-                # XFF's build is precisely what changes across measured versions.
-                contract.pop('build_identity', None)
-                # CI backfill batches identify individual replay jobs, not workloads.
-                # Machine series and the actual fixture/reference contracts remain checked.
-                contract.pop('batch', None)
+                contract = compatibility(record)
                 xff_args = [command[1:] for command in task['participants']['xff'].get('pipeline', [])]
                 grouping = json.dumps([series, contract, key, matrix.cell_contract(task),
                                       matrix.participant_contract(report, reference, entry), xff_args], sort_keys=True)
