@@ -111,6 +111,19 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
         assert.equal(await page.locator(".hover-axis-value").count(), 1);
         const hoverTable = page.locator(".landscape-hover-table");
         assert.equal(await hoverTable.isVisible(), true);
+        const hoverPanel = page.locator(".landscape-hover-panel");
+        const hoverBounds = await hoverPanel.boundingBox();
+        const scaleBounds = await page
+          .locator(".landscape-legend-panel")
+          .boundingBox();
+        assert.equal(hoverBounds.x, scaleBounds.x);
+        assert.ok(hoverBounds.y >= scaleBounds.y + scaleBounds.height + 8);
+        assert.equal(
+          await hoverPanel.evaluate(
+            (element) => getComputedStyle(element).pointerEvents,
+          ),
+          "none",
+        );
         assert.deepEqual(
           (await hoverTable.locator("th").allTextContents()).slice(0, 5),
           ["Task", "Tree", "Allocation", "File count", "Reference tool"],
@@ -404,10 +417,10 @@ for run, platform, commit in [(1, 'linux', 'a'), (2, 'linux', 'b'), (3, 'macos',
     source = dict(id=run, run_attempt=1, head_sha=commit * 40, head_branch='main', created_at=f'2026-09-{run:02d}')
     (folder / 'report.json').write_text(json.dumps(dict(tool_comparisons=report(), platform=platform, source=source)))
     (folder / 'index.html').write_text('<h1>Report</h1>')
-folder = root / 'local/macos-test/batch' / ('a' * 40)
+folder = root / 'local/macos-test/batch' / ('c' * 40)
 folder.mkdir(parents=True)
 (folder / 'report.json').write_text(json.dumps(dict(tool_comparisons=report(cpus=(1, 3, 10)),
-    platform='macos', kind='backfill', purpose='local-addition', series='macos-test', head='a' * 40,
+    platform='macos', kind='backfill', purpose='local-addition', series='macos-test', head='c' * 40,
     revision=dict(date='2026-09-01T00:00:00Z'), completed_at='2026-10-02T00:00:00Z')))
 (folder / 'index.html').write_text('<h1>Local report</h1>')
 publish(root, Path(sys.argv[2]).read_text())
@@ -503,7 +516,21 @@ publish(root, Path(sys.argv[2]).read_text())
       "2 of 2",
     );
     assert.equal(await page.locator("[data-platform]").textContent(), "linux");
-    assert.equal(await page.locator("[data-measured-row]").isVisible(), false);
+    assert.equal(await page.locator("[data-measured-row]").isVisible(), true);
+    assert.equal(
+      await page.locator("[data-measured]").textContent(),
+      "Not recorded",
+    );
+    assert.equal(
+      await page
+        .locator(".landscape-version-table tr:last-child th")
+        .textContent(),
+      "Details",
+    );
+    assert.equal(
+      (await page.locator("[data-platform-details]").boundingBox()).height,
+      48,
+    );
     for (const panel of [versionPanel, legendPanel])
       assert.equal(
         await panel.evaluate(
@@ -614,7 +641,12 @@ publish(root, Path(sys.argv[2]).read_text())
       '[data-control="platform"]',
       "Local / macos-test / ",
     );
-    await waitCommit("a");
+    await waitCommit("c");
+    assert.equal(await page.locator("[data-links-row]").isVisible(), true);
+    assert.equal(
+      await page.locator("[data-version-links]").textContent(),
+      "Not available",
+    );
     for (const value of ["1/10", "3/10", "1/3"]) {
       await page.selectOption('[data-control="allocations"]', value);
       assert.equal(

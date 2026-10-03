@@ -18,6 +18,7 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     .landscape-version-table th,.landscape-version-table td{padding:2px 4px;border:0;vertical-align:top;background:transparent}
     .landscape-version-table th{text-align:left;font-weight:500;white-space:nowrap}
     .landscape-version-table td{text-align:right;overflow-wrap:anywhere}
+    [data-platform-details]{height:48px;line-height:16px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
     [data-version-panel] [role=status]{margin-top:4px}`;
   host.append(versionStyle);
   const metric = root.querySelector('[data-control="metric"]');
@@ -61,12 +62,13 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
       root.querySelector("[data-platform]").textContent = record.platform;
       root.querySelector("[data-platform-details]").textContent =
         record.platform_details || record.identity;
+      root.querySelector("[data-platform-details]").title =
+        record.platform_details || record.identity;
       const date = root.querySelector("[data-revision-date]");
       date.textContent = record.date.slice(0, 10);
       date.title = record.date;
-      root.querySelector("[data-measured-row]").hidden = !record.local;
       root.querySelector("[data-measured]").textContent =
-        record.measured?.slice(0, 10) || "";
+        record.measured?.slice(0, 10) || "Not recorded";
       root.querySelector("[data-measured]").title = record.measured || "";
       versionLinks.replaceChildren();
       for (const link of record.links || []) {
@@ -78,8 +80,8 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
         if (versionLinks.childElementCount) versionLinks.append(" / ");
         versionLinks.append(anchor);
       }
-      root.querySelector("[data-links-row]").hidden =
-        !versionLinks.childElementCount;
+      if (!versionLinks.childElementCount)
+        versionLinks.textContent = "Not available";
     }
     if (!chart) showReport();
     version.setAttribute("aria-valuetext", reportText);

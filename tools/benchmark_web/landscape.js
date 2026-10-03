@@ -36,10 +36,9 @@ window.XffLandscape = function createLandscape(root, figures) {
     "Benchmark landscape. Arrow keys rotate; plus and minus zoom; Home resets. Full measurements follow in tables.",
   );
   const tooltip = document.createElement("div");
+  tooltip.className = "landscape-hover-panel";
   tooltip.hidden = true;
-  tooltip.style.cssText =
-    "position:absolute;top:12px;right:12px;z-index:3;background:#fff;color:#172333;border:1px solid #667;border-radius:4px;box-shadow:0 2px 10px #0003;padding:8px;pointer-events:none;font:12px system-ui;width:max-content;max-width:min(90%,520px)";
-  root.append(tooltip);
+  tooltip.style.cssText = panelStyle + ";background:#fff;pointer-events:none";
   const hoverStyle = document.createElement("style");
   hoverStyle.textContent = `.landscape-hover-table{border-collapse:collapse;width:100%;margin:0;border:0;font:inherit}
     .landscape-hover-table th,.landscape-hover-table td{border:0;padding:2px 4px;vertical-align:top;background:transparent}
@@ -49,7 +48,7 @@ window.XffLandscape = function createLandscape(root, figures) {
   const legend = document.createElement("div");
   legend.className = "landscape-legend-panel";
   legend.style.cssText = panelStyle;
-  chartSidebar(root).append(legend);
+  chartSidebar(root).append(legend, tooltip);
   const legendMarker = document.createElement("div");
   legendMarker.className = "landscape-legend-marker";
   legendMarker.hidden = true;
@@ -550,7 +549,7 @@ window.XffLandscape = function createLandscape(root, figures) {
       }
       return `#${color.getHexString()} ${index}%`;
     });
-    bar.style.cssText = `position:relative;width:320px;max-width:100%;height:12px;margin:4px 0;background:linear-gradient(to right,${gradient.join(",")})`;
+    bar.style.cssText = `position:relative;width:100%;height:12px;margin:4px 0;background:linear-gradient(to right,${gradient.join(",")})`;
     bar.append(legendMarker);
     const filterNote = document.createElement("div");
     const filterHint = "Hover scale to preview a minimum; leave to restore.";
@@ -618,23 +617,25 @@ window.XffLandscape = function createLandscape(root, figures) {
     });
     const scale = document.createElement("div");
     scale.className = "landscape-legend-ticks";
-    scale.style.cssText =
-      "position:relative;height:18px;width:320px;max-width:100%";
+    scale.style.cssText = "position:relative;height:18px;width:100%";
     ticks.forEach((value, index) => {
       const tick = document.createElement("span");
       tick.textContent = tickLabels[index];
-      const anchor = index === 0 ? 0 : index === ticks.length - 1 ? -100 : -50;
-      tick.style.cssText = `position:absolute;left:${((value + ymax) / (2 * ymax)) * 100}%;transform:translateX(${anchor}%)`;
+      tick.style.cssText = `position:absolute;left:${((value + ymax) / (2 * ymax)) * 100}%;transform:translateX(-50%)`;
       scale.append(tick);
     });
-    legend.append(title, bar, scale, filterNote, previewOptions);
-    if (view.limit) {
-      const note = document.createElement("div");
-      note.textContent = cut
+    const scaleAxis = document.createElement("div");
+    const inset = Math.max(...tickLabels.map((text) => text.length)) / 2 + 1;
+    scaleAxis.style.margin = `0 ${inset}ch`;
+    scaleAxis.append(bar, scale);
+    legend.append(title, scaleAxis, filterNote, previewOptions);
+    const note = document.createElement("div");
+    note.textContent = view.limit
+      ? cut
         ? "Out of range: cut off"
-        : "Out of range: capped in bright green/red";
-      legend.append(note);
-    }
+        : "Out of range: capped in bright green/red"
+      : "Range: Auto";
+    legend.append(note);
     resize();
   }
   const ray = new THREE.Raycaster();

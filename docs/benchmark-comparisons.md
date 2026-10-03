@@ -347,10 +347,13 @@ Switching platforms preserves the selected commit when available; otherwise it s
 platform's newest report. A single available version disables the slider.
 
 The chart's upper-left panel holds the version slider above a compact table: version position,
-linked commit, PR/release when known, platform, platform details and revision date. Local series
-also show the measurement date. The commit opens the full report, including tables and raw data;
+linked commit, PR/release, platform, revision date and measurement date when recorded. All rows
+remain visible, using explicit placeholders for missing information. Platform details come last
+in a reserved three-line area; their full text remains available in the tooltip.
+The commit opens the full report, including tables and raw data;
 its tooltip retains the full branch, time and run/attempt information. The performance scale sits
-in a separate outlined panel directly below it. Scale, order and camera state survive version changes. Each chart retains its
+in a separate outlined panel directly below it, with inset endpoints to keep long tick labels
+inside the border. Scale, order and camera state survive version changes. Each chart retains its
 own measurement contract and automatically scaled axes/colors: moving the slider is exploration,
 not a paired cross-host or cross-version regression claim. Missing versions are not interpolated.
 The overview downloads only the selected report's generated landscape JSON. While loading, the
@@ -455,7 +458,9 @@ or network access. Published pages share one bundle under the benchmark assets d
 Drag to rotate, scroll to zoom, and right-drag to pan. Axis titles are printed on the base plane;
 rotation remains unrestricted. Tick labels stay horizontal and extend outward from their axes.
 Focus the canvas for arrow-key rotation, +/- zoom and Home reset, or use the Reset view button.
-Hover cards stay in the chart's top-right corner while guides highlight the selected measurement.
+Hover cards occupy the third panel in the chart's upper-left information column, below the
+version and performance-scale panels. Showing or hiding a hover card does not move the panels
+above it or change the chart height; guides still highlight the selected measurement.
 Missing WebGL2 leaves an explanatory message and the complete measurement tables available.
 The chart resizes when its container changes or its disclosure reopens. Rendering is event-driven;
 there is no idle animation loop. Single observations remain visible as points even when missing

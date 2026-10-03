@@ -7,7 +7,7 @@ export function reserveChart(root) {
 }
 
 export const panelStyle =
-  "background:#fffffff0;color:#172333;border:1px solid #667;border-radius:4px;box-shadow:0 2px 10px #0002;padding:8px;font:12px system-ui;min-width:0";
+  "background:#fffffff0;color:#172333;border:1px solid #667;border-radius:4px;box-shadow:0 2px 10px #0002;padding:8px;font:12px system-ui;min-width:0;pointer-events:auto";
 
 export function chartSidebar(root) {
   let sidebar = root.querySelector(".landscape-sidebar");
@@ -15,7 +15,7 @@ export function chartSidebar(root) {
     sidebar = document.createElement("div");
     sidebar.className = "landscape-sidebar";
     sidebar.style.cssText =
-      "position:absolute;left:12px;top:12px;z-index:2;display:grid;gap:8px;width:340px;max-width:calc(100% - 24px)";
+      "position:absolute;left:12px;top:12px;z-index:2;display:grid;gap:8px;width:340px;max-width:calc(100% - 24px);pointer-events:none";
     root.append(sidebar);
   }
   return sidebar;

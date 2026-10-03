@@ -202,7 +202,8 @@ Measured follow-ups (see the P07/P08 sections of `docs/performance-analysis.md`)
 
 ## Benchmark visualization follow-up
 
-- [x] Keep the hover card at the rendering area's top-right corner instead of following the pointer.
+- [x] Keep the hover card in a stable panel below the version and performance-scale cards,
+      instead of following the pointer.
 - [x] Replace benchmark versions in place while preserving chart space and camera state during loading.
 - [x] Add percentage/logarithmic range presets and bright capped outliers or cut-off gaps.
 - [x] Expose every measured CPU pair and link selected versions to their PR/releases where available.
