@@ -437,7 +437,7 @@
     "report": "backfills/36952332747/2/macos/0ab588d69fe6115538b3e43e4b2020a72187144d/",
     "figures": "backfills/36952332747/2/macos/0ab588d69fe6115538b3e43e4b2020a72187144d/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -459,7 +459,7 @@
     "report": "backfills/36952332747/2/macos/0c80a02e7329f89595f3c9a63274d61ecbff3496/",
     "figures": "backfills/36952332747/2/macos/0c80a02e7329f89595f3c9a63274d61ecbff3496/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -481,7 +481,7 @@
     "report": "backfills/36952332747/2/macos/0f184124aab0f391e451b109c99307416cbf9d2a/",
     "figures": "backfills/36952332747/2/macos/0f184124aab0f391e451b109c99307416cbf9d2a/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -503,7 +503,7 @@
     "report": "backfills/36952332747/2/macos/134b25424bd4d21c55c9ede887c7523e89f73843/",
     "figures": "backfills/36952332747/2/macos/134b25424bd4d21c55c9ede887c7523e89f73843/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -525,7 +525,7 @@
     "report": "backfills/36952332747/2/macos/32af598d6fc203a6b07eadb4e8a6410bf40256ab/",
     "figures": "backfills/36952332747/2/macos/32af598d6fc203a6b07eadb4e8a6410bf40256ab/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -547,7 +547,7 @@
     "report": "backfills/36952332747/2/macos/4331864b62fb1bdc8e8ffee6722d2b0b6cdc98bb/",
     "figures": "backfills/36952332747/2/macos/4331864b62fb1bdc8e8ffee6722d2b0b6cdc98bb/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -569,7 +569,7 @@
     "report": "backfills/36952332747/2/macos/6574a7e18b26fe0803d53eba3c35cf1ffacfc81a/",
     "figures": "backfills/36952332747/2/macos/6574a7e18b26fe0803d53eba3c35cf1ffacfc81a/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -591,7 +591,7 @@
     "report": "backfills/36952332747/2/macos/709d085b833e7ee3f9fdeabec4939969b39cb560/",
     "figures": "backfills/36952332747/2/macos/709d085b833e7ee3f9fdeabec4939969b39cb560/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -613,7 +613,7 @@
     "report": "backfills/36952332747/2/macos/8d7963e2a66be3fd9dcc4cd517761957e099faa1/",
     "figures": "backfills/36952332747/2/macos/8d7963e2a66be3fd9dcc4cd517761957e099faa1/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -635,7 +635,7 @@
     "report": "backfills/36952332747/2/macos/9fc7117f9388ddacfe0b14f673d4acf49a86efb7/",
     "figures": "backfills/36952332747/2/macos/9fc7117f9388ddacfe0b14f673d4acf49a86efb7/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -657,7 +657,7 @@
     "report": "backfills/36952332747/2/macos/aebd53b799031be1018348e8afcfe3dbcbd248d7/",
     "figures": "backfills/36952332747/2/macos/aebd53b799031be1018348e8afcfe3dbcbd248d7/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -679,7 +679,7 @@
     "report": "backfills/36952332747/2/macos/c5f3dc93efd18fdd18fc3b7a5538c23bf3bafda0/",
     "figures": "backfills/36952332747/2/macos/c5f3dc93efd18fdd18fc3b7a5538c23bf3bafda0/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -701,7 +701,7 @@
     "report": "backfills/36952332747/2/macos/c91e823c4577d640ea84591669794221105ed445/",
     "figures": "backfills/36952332747/2/macos/c91e823c4577d640ea84591669794221105ed445/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -723,7 +723,7 @@
     "report": "backfills/36952332747/2/macos/cb882b639a5db96cd4ff6001de81db8d6a3cf609/",
     "figures": "backfills/36952332747/2/macos/cb882b639a5db96cd4ff6001de81db8d6a3cf609/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -745,7 +745,7 @@
     "report": "backfills/36952332747/2/macos/d3bfe71b4271eedeb8ed4301dbcd357ef6ed1a99/",
     "figures": "backfills/36952332747/2/macos/d3bfe71b4271eedeb8ed4301dbcd357ef6ed1a99/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -767,7 +767,7 @@
     "report": "backfills/36952332747/2/macos/d8dd4f608e030be77cdefde8575e0b1a5fffe820/",
     "figures": "backfills/36952332747/2/macos/d8dd4f608e030be77cdefde8575e0b1a5fffe820/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -789,7 +789,7 @@
     "report": "backfills/36952332747/2/macos/e22306a3756a58467dc0884758b89a2469787bb0/",
     "figures": "backfills/36952332747/2/macos/e22306a3756a58467dc0884758b89a2469787bb0/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -811,7 +811,7 @@
     "report": "backfills/36952332747/2/macos/e9def2a4e0430f0dbb074124be796d072ccc6706/",
     "figures": "backfills/36952332747/2/macos/e9def2a4e0430f0dbb074124be796d072ccc6706/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "macos / arm64",
@@ -833,7 +833,7 @@
     "report": "backfills/36952332747/2/macos/ed28be9eb60150089eb7aaae052244aad1c6e534/",
     "figures": "backfills/36952332747/2/macos/ed28be9eb60150089eb7aaae052244aad1c6e534/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -855,7 +855,7 @@
     "report": "local/macos-m5-pro/4cb5882beb8cb5fe204dcc12a316a343be93e9634ec0adb2dae27aea4789574d/623cab238f6a2ede58b20f538d310c1e12c60dfc/",
     "figures": "local/macos-m5-pro/4cb5882beb8cb5fe204dcc12a316a343be93e9634ec0adb2dae27aea4789574d/623cab238f6a2ede58b20f538d310c1e12c60dfc/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -877,7 +877,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/0ab588d69fe6115538b3e43e4b2020a72187144d/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/0ab588d69fe6115538b3e43e4b2020a72187144d/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -899,7 +899,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/0c80a02e7329f89595f3c9a63274d61ecbff3496/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/0c80a02e7329f89595f3c9a63274d61ecbff3496/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -921,7 +921,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/0f184124aab0f391e451b109c99307416cbf9d2a/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/0f184124aab0f391e451b109c99307416cbf9d2a/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -943,7 +943,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/134b25424bd4d21c55c9ede887c7523e89f73843/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/134b25424bd4d21c55c9ede887c7523e89f73843/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -965,7 +965,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/32af598d6fc203a6b07eadb4e8a6410bf40256ab/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/32af598d6fc203a6b07eadb4e8a6410bf40256ab/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -987,7 +987,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/6574a7e18b26fe0803d53eba3c35cf1ffacfc81a/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/6574a7e18b26fe0803d53eba3c35cf1ffacfc81a/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -1009,7 +1009,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/709d085b833e7ee3f9fdeabec4939969b39cb560/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/709d085b833e7ee3f9fdeabec4939969b39cb560/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -1031,7 +1031,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/8d7963e2a66be3fd9dcc4cd517761957e099faa1/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/8d7963e2a66be3fd9dcc4cd517761957e099faa1/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -1053,7 +1053,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/9fc7117f9388ddacfe0b14f673d4acf49a86efb7/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/9fc7117f9388ddacfe0b14f673d4acf49a86efb7/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -1075,7 +1075,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/aebd53b799031be1018348e8afcfe3dbcbd248d7/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/aebd53b799031be1018348e8afcfe3dbcbd248d7/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -1097,7 +1097,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/c5f3dc93efd18fdd18fc3b7a5538c23bf3bafda0/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/c5f3dc93efd18fdd18fc3b7a5538c23bf3bafda0/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -1119,7 +1119,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/c91e823c4577d640ea84591669794221105ed445/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/c91e823c4577d640ea84591669794221105ed445/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -1141,7 +1141,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/cb882b639a5db96cd4ff6001de81db8d6a3cf609/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/cb882b639a5db96cd4ff6001de81db8d6a3cf609/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -1163,7 +1163,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/d3bfe71b4271eedeb8ed4301dbcd357ef6ed1a99/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/d3bfe71b4271eedeb8ed4301dbcd357ef6ed1a99/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -1185,7 +1185,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/e22306a3756a58467dc0884758b89a2469787bb0/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/e22306a3756a58467dc0884758b89a2469787bb0/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -1207,7 +1207,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/e9def2a4e0430f0dbb074124be796d072ccc6706/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/e9def2a4e0430f0dbb074124be796d072ccc6706/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "Local / macos-m5-pro / arm64",
@@ -1229,7 +1229,7 @@
     "report": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/ed28be9eb60150089eb7aaae052244aad1c6e534/",
     "figures": "local/macos-m5-pro/f42764bd1008b327d2065aeb23e4a77f2bf8e0ac3c6d4ff95e3504e8a3bcc120/ed28be9eb60150089eb7aaae052244aad1c6e534/landscape.json",
     "identity": "xff benchmarks - macOS-26.6-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1273,7 +1273,7 @@
     "report": "runs/35682209638/1/macos/",
     "figures": "runs/35682209638/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1317,7 +1317,7 @@
     "report": "runs/35794381777/1/macos/",
     "figures": "runs/35794381777/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1361,7 +1361,7 @@
     "report": "runs/35913272585/1/macos/",
     "figures": "runs/35913272585/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1405,7 +1405,7 @@
     "report": "runs/35922050448/1/macos/",
     "figures": "runs/35922050448/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1449,7 +1449,7 @@
     "report": "runs/35933889889/1/macos/",
     "figures": "runs/35933889889/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1493,7 +1493,7 @@
     "report": "runs/35965995946/1/macos/",
     "figures": "runs/35965995946/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1537,7 +1537,7 @@
     "report": "runs/36058333848/1/macos/",
     "figures": "runs/36058333848/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1581,7 +1581,7 @@
     "report": "runs/36065554985/1/macos/",
     "figures": "runs/36065554985/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1625,7 +1625,7 @@
     "report": "runs/36114811551/1/macos/",
     "figures": "runs/36114811551/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1669,7 +1669,7 @@
     "report": "runs/36332325841/2/macos/",
     "figures": "runs/36332325841/2/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1713,7 +1713,7 @@
     "report": "runs/36343833148/1/macos/",
     "figures": "runs/36343833148/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1757,7 +1757,7 @@
     "report": "runs/36347566333/1/macos/",
     "figures": "runs/36347566333/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1801,7 +1801,7 @@
     "report": "runs/36349914021/1/macos/",
     "figures": "runs/36349914021/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1845,7 +1845,7 @@
     "report": "runs/36352919920/1/macos/",
     "figures": "runs/36352919920/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1889,7 +1889,7 @@
     "report": "runs/36385395032/1/macos/",
     "figures": "runs/36385395032/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1933,7 +1933,7 @@
     "report": "runs/36484190760/1/macos/",
     "figures": "runs/36484190760/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -1977,7 +1977,7 @@
     "report": "runs/36907159606/1/macos/",
     "figures": "runs/36907159606/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -2021,7 +2021,7 @@
     "report": "runs/36939320284/1/macos/",
     "figures": "runs/36939320284/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -2065,7 +2065,7 @@
     "report": "runs/36943227149/1/macos/",
     "figures": "runs/36943227149/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -2109,7 +2109,7 @@
     "report": "runs/37026017922/1/macos/",
     "figures": "runs/37026017922/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -2153,7 +2153,7 @@
     "report": "runs/37045582888/1/macos/",
     "figures": "runs/37045582888/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -2197,7 +2197,7 @@
     "report": "runs/37053401596/1/macos/",
     "figures": "runs/37053401596/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -2241,7 +2241,7 @@
     "report": "runs/37063599463/1/macos/",
     "figures": "runs/37063599463/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -2285,7 +2285,7 @@
     "report": "runs/37073099602/1/macos/",
     "figures": "runs/37073099602/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -2329,7 +2329,7 @@
     "report": "runs/37125962839/1/macos/",
     "figures": "runs/37125962839/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -2373,7 +2373,7 @@
     "report": "runs/37129611871/1/macos/",
     "figures": "runs/37129611871/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
@@ -2417,50 +2417,50 @@
     "report": "runs/37133622645/1/macos/",
     "figures": "runs/37133622645/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
-  },
-  {
-    "platform": "macos / arm64",
-    "commit": "6f1fa9c14f9f149f2bb52c37f0e3b921b3dc7000",
-    "label": "PR 955 / 6f1fa9c14f",
-    "source": "pr-955",
-    "source_label": "PR #955 preview",
-    "links": [
-      {
-        "label": "PR #955 preview",
-        "href": "https://github.com/mboworks/xff/pull/955"
-      }
-    ],
-    "date": "2026-10-03T16:47:30Z",
-    "measurement_date": "2026-10-03T17:38:03Z",
-    "backfill": false,
-    "run": 37138152127,
-    "attempt": 2,
-    "report": "previews/955/37138152127/2/macos/",
-    "figures": "previews/955/37138152127/2/macos/landscape.json",
-    "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
     "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
-    "commit": "6f1fa9c14f9f149f2bb52c37f0e3b921b3dc7000",
-    "label": "PR 955 / 6f1fa9c14f",
-    "source": "pr-955",
-    "source_label": "PR #955 preview",
+    "commit": "91064c283fa90445db48ec598e4e052fb9d37261",
+    "label": "main / 91064c283f",
+    "source": "merged",
+    "source_label": "Merged history",
     "links": [
       {
-        "label": "PR #955 preview",
+        "label": "PR #955",
         "href": "https://github.com/mboworks/xff/pull/955"
       }
     ],
-    "date": "2026-10-03T16:47:30Z",
-    "measurement_date": "2026-10-03T17:38:08Z",
+    "date": "2026-10-03T18:23:18Z",
+    "measurement_date": null,
     "backfill": false,
-    "run": 37138152127,
-    "attempt": 2,
-    "report": "previews/955/37138152127/2/linux/",
-    "figures": "previews/955/37138152127/2/linux/landscape.json",
+    "run": 37144001533,
+    "attempt": 1,
+    "report": "runs/37144001533/1/linux/",
+    "figures": "runs/37144001533/1/linux/landscape.json",
     "identity": "xff benchmarks - Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
     "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
+  },
+  {
+    "platform": "macos / arm64",
+    "commit": "91064c283fa90445db48ec598e4e052fb9d37261",
+    "label": "main / 91064c283f",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #955",
+        "href": "https://github.com/mboworks/xff/pull/955"
+      }
+    ],
+    "date": "2026-10-03T18:23:18Z",
+    "measurement_date": null,
+    "backfill": false,
+    "run": 37144001533,
+    "attempt": 1,
+    "report": "runs/37144001533/1/macos/",
+    "figures": "runs/37144001533/1/macos/landscape.json",
+    "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "platform_details": "macOS 26.6.2 / arm64"
   }
 ]
