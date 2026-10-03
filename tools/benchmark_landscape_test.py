@@ -46,6 +46,12 @@ def preview_report():
 
 
 class BenchmarkLandscapeTest(unittest.TestCase):
+    def test_platform_details_remove_redundant_macos_architecture(self):
+        self.assertEqual(landscape.platform_details('macOS-26.6-arm64-arm-64bit-Mach-O'), 'macOS 26.6 / arm64')
+        self.assertEqual(landscape.platform_details('macOS-15.5-x86_64-i386-64bit'), 'macOS 15.5 / x86_64')
+        self.assertEqual(landscape.platform_details('Linux-6.8-x86_64'), 'Linux-6.8-x86_64')
+        self.assertEqual(landscape.platform_details('custom-platform'), 'custom-platform')
+
     def test_incremental_preview_publication_preserves_merged_pages_and_removes_stale_selection(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -75,6 +81,21 @@ class BenchmarkLandscapeTest(unittest.TestCase):
             landscape.publish(root, '/* renderer */', [], True)
             self.assertNotIn('pr-952', (root / 'catalog.json').read_text())
             self.assertTrue(path.exists())
+
+    def test_archived_premerge_reports_are_not_current_pr_selections(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'index.html').write_text('<h1>History</h1>')
+            archived = root / 'runs/1/1/linux'
+            archived.mkdir(parents=True)
+            (archived / 'report.json').write_text(json.dumps(dict(tool_comparisons=report(), platform='linux',
+                head='a' * 40, source=dict(id=1, run_attempt=1, head_branch='old-pr', event='pull_request',
+                                          pull_requests=[{'number': 900}], created_at='2026-09-01T00:00:00Z'))))
+            (archived / 'index.html').write_text('<h1>Archived PR</h1>')
+            self.assertEqual(landscape.publish(root, '/* renderer */', []), 1)
+            self.assertEqual(json.loads((root / 'catalog.json').read_text()), [])
+            self.assertIn('Comparison landscape', (archived / 'index.html').read_text())
+            self.assertTrue((archived / 'report.json').exists())
 
     def test_normalized_timings_follow_cells_without_changing_relative_values(self):
         data = report(cpus=(1, 3, 10))

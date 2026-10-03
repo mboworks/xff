@@ -12,6 +12,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 
 import benchmark_matrix as matrix
 import benchmark_normalization
@@ -25,6 +26,14 @@ ORDER_LABELS = {
     'average': 'Average performance, best at center',
     'alphabetical': 'Alphabetical',
 }
+
+
+def platform_details(value):
+    """Short display name only; retain the complete platform contract in raw data."""
+    match = re.fullmatch(r'(macOS-[^-]+)-(arm64|x86_64)(?:-(?:arm|i386|x86_64))?-64bit(?:-Mach-O)?', value)
+    if match:
+        return match[1].replace('macOS-', 'macOS ') + ' / ' + match[2]
+    return value
 
 
 def ordered_pairs(rows, mode):
@@ -433,7 +442,7 @@ def publish(root, javascript, previews=(), incremental=False, repository='mbowor
         preview = benchmark_records.is_preview(record)
         normalization = windows.get(path.relative_to(root).as_posix(), {})
         path.with_name('normalization.json').write_text(json.dumps(normalization, allow_nan=False), encoding='utf-8')
-        if source or local:
+        if (source or local) and (not preview or path in previews):
             payload = path.with_name('landscape.json')
             payload.write_text(json.dumps(figures(report, normalization), allow_nan=False), encoding='utf-8')
             contract = report.get('contract', {})
@@ -464,7 +473,7 @@ def publish(root, javascript, previews=(), incremental=False, repository='mbowor
                                    dict(run=int(source['id']), attempt=int(source['run_attempt']))),
                                 report=path.parent.relative_to(root).as_posix() + '/',
                                 figures=payload.relative_to(root).as_posix(), identity=matrix.platform_title(report),
-                                platform_details=contract.get('platform', 'Platform details not recorded')))
+                                platform_details=platform_details(contract.get('platform', 'Platform details not recorded'))))
         page = path.with_name('index.html')
         text = page.read_text()
         if start_marker in text:
