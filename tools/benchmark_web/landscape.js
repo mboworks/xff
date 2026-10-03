@@ -137,6 +137,11 @@ window.XffLandscape = function createLandscape(root, figures) {
   observer.observe(root);
   controls.addEventListener("change", () => {
     clearHover();
+    if (showThresholdPlane && root.dataset.minimum !== undefined)
+      showPerformanceValue(
+        minimumPerformance.value,
+        (minimumPerformance.value / legendExtent) * 2,
+      );
     draw();
   });
   function line(points) {
@@ -153,6 +158,7 @@ window.XffLandscape = function createLandscape(root, figures) {
     root
       .querySelectorAll(".hover-axis-value")
       .forEach((element) => element.remove());
+    labels = labels.filter(({ temporary }) => !temporary);
     guides.children.forEach((line) => {
       line.geometry.dispose();
       line.material.dispose();
@@ -210,19 +216,30 @@ window.XffLandscape = function createLandscape(root, figures) {
         element.style.fontWeight = "bold";
       }
     }
-    // A measurement need not land on a vertical-axis tick; label its exact height.
+    showPerformanceValue(point.value, y);
+    draw();
+  }
+  function showPerformanceValue(value, y) {
+    // Measurements and preview planes need not land on an existing axis tick.
+    for (const { element, position, outward } of labels) {
+      if (!outward && Math.abs(position.y - y) < 0.00001) {
+        element.style.background = "#ffe49b";
+        element.style.fontWeight = "bold";
+      }
+    }
     const tag = document.createElement("span");
     const metric = root.dataset.metric;
-    tag.textContent = `${Number(point.value.toFixed(2))}${metric === "percent" ? "%" : ""}`;
+    tag.textContent = `${Number(value.toFixed(2))}${metric === "percent" ? "%" : ""}`;
     tag.style.cssText =
       "position:absolute;background:#ffe49b;font:12px monospace;padding:2px;pointer-events:none";
-    const projected = feet[2].clone().project(camera);
-    tag.style.left = `${((projected.x + 1) * width) / 2}px`;
-    tag.style.top = `${((1 - projected.y) * height) / 2}px`;
-    tag.style.transform = "translate(-100%,-50%)";
     tag.className = "hover-axis-value";
     root.append(tag);
-    draw();
+    labels.push({
+      element: tag,
+      position: new THREE.Vector3(-4, y, -4),
+      align: "right",
+      temporary: true,
+    });
   }
   function clear() {
     minimumPerformance.value = -1e30;
@@ -561,6 +578,9 @@ window.XffLandscape = function createLandscape(root, figures) {
     planeToggle.addEventListener("change", () => {
       showThresholdPlane = planeToggle.checked;
       plane.visible = showThresholdPlane;
+      clearHover();
+      if (preview.visible && showThresholdPlane)
+        showPerformanceValue(minimumPerformance.value, plane.position.y);
       draw();
     });
     planeLabel.append(planeToggle, " Threshold plane");
@@ -577,6 +597,8 @@ window.XffLandscape = function createLandscape(root, figures) {
       plane.position.y = (2 * fraction - 1) * 2;
       root.dataset.minimum = minimumPerformance.value;
       clearHover();
+      if (showThresholdPlane)
+        showPerformanceValue(minimumPerformance.value, plane.position.y);
       legendMarker.hidden = false;
       legendMarker.style.left = `${fraction * 100}%`;
       filterNote.textContent = `Preview minimum: ${minimumPerformance.value.toFixed(2)}${metric === "percent" ? "%" : " log10"}`;

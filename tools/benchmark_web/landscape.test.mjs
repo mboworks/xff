@@ -288,6 +288,33 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
       previews[2],
       "threshold plane is rendered",
     );
+    assert.equal(await page.locator(".hover-axis-value").textContent(), "0%");
+    for (const metric of ["percent", "factor"]) {
+      await page.selectOption("#metric", metric);
+      await page.selectOption("#range", "1");
+      const scale = await page.locator(".landscape-legend-scale").boundingBox();
+      await page.mouse.move(
+        scale.x + scale.width * 0.63,
+        scale.y + scale.height / 2,
+      );
+      assert.equal(
+        await page.locator(".hover-axis-value").textContent(),
+        metric === "percent" ? "26%" : "0.26",
+      );
+      const beforeOrbit = await page.locator(".hover-axis-value").boundingBox();
+      await page.locator("#landscape canvas").focus();
+      await page.keyboard.press("ArrowRight");
+      assert.equal(await page.locator(".hover-axis-value").isVisible(), true);
+      assert.notDeepEqual(
+        await page.locator(".hover-axis-value").boundingBox(),
+        beforeOrbit,
+      );
+      await page.keyboard.press("Home");
+      await page.mouse.move(0, 0);
+      assert.equal(await page.locator(".hover-axis-value").count(), 0);
+    }
+    await page.selectOption("#metric", "percent");
+    await page.selectOption("#range", "auto");
     await page.mouse.move(0, 0);
     assert.equal(await captureCanvas(), unfilteredImage);
     await page.selectOption(".landscape-preview-opacity", "0.5");
