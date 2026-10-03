@@ -74,7 +74,8 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn("retention-days: 30", measure)
         self.assertIn("shard: [0, 1, 2]", measure)
         self.assertIn("--shard-plan=benchmark-plan.json", measure)
-        self.assertIn("--reference-root=benchmark-history/benchmarks", measure)
+        self.assertIn("--partition=samples --repetitions=9 --keep=7", measure)
+        self.assertIn("--repetitions=3 --keep=3", measure)
         self.assertIn("--merge-directory=shards --output=benchmark-main.json", measure)
         self.assertNotIn('shards/*/*.json', measure)
         aggregate = measure.split('\n  aggregate:', 1)[1]
