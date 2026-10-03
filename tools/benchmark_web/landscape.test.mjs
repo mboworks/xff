@@ -407,7 +407,7 @@ import sys, json
 from pathlib import Path
 sys.path.insert(0, sys.argv[1])
 from benchmark_landscape import publish
-from benchmark_landscape_test import report
+from benchmark_landscape_test import report, preview_report
 root = Path(sys.argv[3])
 (root / 'index.html').write_text('<h1>History</h1><table><tr><td>Original</td></tr></table>')
 (root / 'version-links.json').write_text(json.dumps({'a' * 40: [dict(label='PR #12', href='https://github.com/owner/project/pull/12')], 'b' * 40: [dict(label='Release v1.0.0', href='https://github.com/owner/project/releases/tag/v1.0.0')]}))
@@ -427,7 +427,13 @@ folder.mkdir(parents=True)
     platform='macos', kind='backfill', purpose='local-addition', series='macos-test', head='c' * 40,
     revision=dict(date='2026-09-01T00:00:00Z'), completed_at='2026-10-02T00:00:00Z')))
 (folder / 'index.html').write_text('<h1>Local report</h1>')
-publish(root, Path(sys.argv[2]).read_text())
+folder = root / 'previews/952/4/1/linux'
+folder.mkdir(parents=True)
+(folder / 'report.json').write_text(json.dumps(dict(tool_comparisons=preview_report(), platform='linux',
+    kind='pr-preview', pull_number=952, head='d' * 40, branch_head='e' * 40, base='b' * 40,
+    source=dict(id=4, run_attempt=1, head_branch='feature', event='pull_request',
+                pull_requests=[{'number': 952}], created_at='2026-10-03T00:00:00Z'))))
+publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
 `,
     tools,
     bundle,
@@ -692,6 +698,40 @@ publish(root, Path(sys.argv[2]).read_text())
         .textContent()
         .then((text) => text.includes("run undefined")),
       false,
+    );
+    await page.selectOption('[data-control="source"]', "pr-952");
+    await waitCommit("d");
+    assert.equal(
+      await page.locator('[data-control="platform"]').inputValue(),
+      "linux",
+    );
+    assert.equal(await slider.isDisabled(), true);
+    assert.match(
+      await page.locator("[data-version-links]").textContent(),
+      /PR #952 preview/,
+    );
+    assert.match(
+      await page.locator("[data-overview]").textContent(),
+      /WARNING/,
+    );
+    assert.match(
+      await page.locator("[data-overview]").textContent(),
+      /Largest regressions/,
+    );
+    assert.equal(await host.evaluate((element) => element.clientHeight), 850);
+    assert.equal(
+      await originalCanvas.evaluate(
+        (canvas) => canvas === document.querySelector("[data-chart] canvas"),
+      ),
+      true,
+    );
+    await page.selectOption('[data-control="source"]', "merged");
+    await page.unroute("**/runs/2/1/linux/landscape.json");
+    await page.selectOption('[data-control="platform"]', "macos");
+    await waitCommit("a");
+    assert.match(
+      await page.locator("[data-overview]").textContent(),
+      /regression status is unknown/,
     );
     assert.deepEqual(errors, []);
   } finally {

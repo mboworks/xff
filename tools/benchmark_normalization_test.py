@@ -111,6 +111,26 @@ class BenchmarkNormalizationTest(unittest.TestCase):
         self.assertEqual(current['reference_mean_seconds'], 6)
         self.assertEqual(current['window'][-1]['report'], inputs[-1][0])
 
+    def test_previews_never_change_merged_or_other_preview_windows(self):
+        merged = records(5)
+        preview = records(6)[-1]
+        preview[1]['source']['event'] = 'pull_request'
+        other = records(7)[-1]
+        other[1]['kind'] = 'pr-preview'
+        original = normalization.reference_windows(merged)
+        values = normalization.reference_windows([*merged, preview, other])
+        for identity, _ in merged:
+            self.assertEqual(values[identity], original[identity])
+        for candidate, excluded in ((preview, other), (other, preview)):
+            expected = normalization.reference_windows([*merged, candidate])
+            self.assertEqual(values[candidate[0]], expected[candidate[0]])
+            window = next(iter(values[candidate[0]].values()))['window']
+            self.assertNotIn(excluded[0], [row['report'] for row in window])
+        # Several unmerged PRs cannot fill a short merged history for each other.
+        short = normalization.reference_windows([*merged[:3], preview, other])
+        self.assertEqual(next(iter(short[preview[0]].values()))['status'], 'unavailable')
+        self.assertEqual(next(iter(short[other[0]].values()))['status'], 'unavailable')
+
     def test_local_machine_series_and_ci_remain_separate(self):
         inputs = records(5)
         local = copy.deepcopy(inputs[0][1])

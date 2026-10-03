@@ -67,7 +67,11 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn("target.files_to_run.executable.path", measure)
         self.assertIn("namespace: default", measure)
         self.assertNotIn("bazel-cache-save", measure)
-        self.assertIn("group: coverage-pages\n  queue: max\n  cancel-in-progress: false", publish)
+        waiter, publisher = publish.split("  publish:", 1)
+        self.assertNotIn("group: coverage-pages", waiter)
+        self.assertIn("group: coverage-pages\n      queue: max\n      cancel-in-progress: false", publisher)
+        self.assertIn("ref: main\n          persist-credentials: false", waiter)
+        self.assertNotIn(": write", waiter)
         self.assertIn("ref: main\n          path: source", publish)
         self.assertIn("Verify live benchmark publication", publish)
         self.assertIn("--keep=100", publish)
@@ -302,11 +306,12 @@ class BenchmarkHistoryTest(unittest.TestCase):
 
     def test_release_refresh_does_not_download_measurement_artifacts(self):
         publish = repository_file(".github/workflows/benchmark_pages.yml").read_text()
-        self.assertIn("workflows: [Benchmarks, Release, Benchmark backfill]", publish)
+        self.assertIn("workflows: [Test, Benchmarks, Release, Benchmark backfill]", publish)
         self.assertIn("workflow_dispatch: {}", publish)
         self.assertIn("fetch-depth: 0", publish)
         self.assertIn("uses: actions/download-artifact@v8\n        if: github.event.workflow_run.name == 'Benchmarks'", publish)
-        refresh = publish.split("      - name: Refresh stable benchmark references and deploy", 1)[1]
+        refresh = publish.split("      - name: Refresh stable benchmark references and deploy", 1)[1].split(
+            "      - uses: actions/upload-pages-artifact", 1)[0]
         self.assertNotIn("SOURCE_RUN", refresh)
         self.assertNotIn("download-artifact", refresh)
         self.assertIn("benchmark_history.py refresh", refresh)

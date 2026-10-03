@@ -23,6 +23,7 @@ import time
 
 import benchmark_fixture
 import benchmark_matrix
+import benchmark_overview
 import benchmark_shards
 
 DEFAULT_FILE_COUNTS = (10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000)
@@ -419,11 +420,13 @@ def render(report):
                        html.escape(label) + '</td><td colspan="6">Skipped: ' + html.escape(reason) + '</td></tr>')
             rows.append(skipped)
             overview.append(skipped.replace('colspan="6"', 'colspan="7"'))
-    return ('<h2>Tool comparisons</h2><p>Correctness-checked batch tasks; no ranking or interactive comparison. '
+    return (benchmark_overview.render_html(report) +
+            '<h2>Tool comparisons</h2><p>Correctness-checked batch tasks; no ranking or interactive comparison. '
             'Overview: selected averages in ms and MiB (legacy reports use medians); raw-sample details: seconds and bytes. Pipeline memory is a sum of process high-water marks, '
             'not simultaneous peak memory. No cross-scope ratios.</p><details><summary>Tools and contract</summary><pre>' +
             html.escape(json.dumps({"tools": report["tools"], "contract": report["contract"]}, indent=2)) +
-            '</pre></details>' + benchmark_matrix.render_html(report) + '<details><summary>Per-task metrics</summary><table><tr><th>Task</th><th>Tool</th><th>Matches</th><th>Elapsed ms</th>'
+            '</pre></details><details><summary>Detailed comparison tables</summary>' + benchmark_matrix.render_html(report) +
+            '</details><details><summary>Per-task metrics</summary><table><tr><th>Task</th><th>Tool</th><th>Matches</th><th>Elapsed ms</th>'
             '<th>Input files/s</th><th>First output ms</th><th>Peak RSS MiB</th><th>Pipeline sum RSS MiB</th><th>N</th></tr>' +
             ''.join(overview) + '</table></details><details><summary>All metrics and variability</summary><table><tr>'
             '<th>Task</th><th>Tool</th><th>Metric</th><th>Median</th><th>Min</th>'
@@ -437,6 +440,11 @@ def render_document(report):
             'td,th{border:1px solid #aaa;padding:.4rem;text-align:right}'
             'td:first-child,th:first-child{text-align:left}</style><h1>' + title + '</h1>' +
             render(report) + '</html>\n')
+
+
+def render_summary(report):
+    return (benchmark_overview.render_markdown(report) + '\n<details><summary>Detailed comparison tables</summary>\n\n' +
+            benchmark_matrix.render_markdown(report) + '\n</details>\n')
 
 
 def main():
@@ -475,7 +483,7 @@ def main():
         if args.html:
             args.html.write_text(render_document(report))
         if args.summary:
-            args.summary.write_text(benchmark_matrix.render_markdown(report))
+            args.summary.write_text(render_summary(report))
         return
 
     if args.worker:
@@ -523,7 +531,7 @@ def main():
               f"ratio worsened {alarm['normalized_change_percent']:.1f}% versus main; informational only")
     report['relative_results'] = benchmark_matrix.relative_results(report)
     if args.summary:
-        args.summary.write_text(benchmark_matrix.render_markdown(report))
+        args.summary.write_text(render_summary(report))
     if args.html:
         args.html.write_text(render_document(report))
     args.report.write_text(json.dumps(record, indent=2) + '\n')

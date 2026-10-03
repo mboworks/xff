@@ -59,9 +59,52 @@ unaffected cells, rather than silently attributing a tool upgrade to xff.
 `--alarm-percent=15` is the initial advisory policy. A comparable cell whose xff/reference ratio
 worsens by more than 15% versus main is recorded in the report and produces a CI warning. It does
 not change the command's exit status or block merging. All scales are shown, including startup-heavy
-small cases; the differing 2/3 and 7/9 policies remain explicit. New or incompatible cells cannot
+small cases; the recorded sampling policy remains explicit. New or incompatible cells cannot
 trigger an alarm without a baseline. Correctness failures still fail CI. A future blocking policy
 can use the same evidence with a confirmation run; no performance block is enabled now.
+
+## PR previews and the performance overview
+
+The benchmark page defaults to merged history. Its **Source** selector also offers the latest
+available preview for each open PR's current head; **Platform** selects Linux or macOS. Previews
+are labeled explicitly and do not become merged measurements. A new push removes an older head
+from selection on the next publication. Closing or merging a PR also removes its preview from
+selection on that refresh; the original observations remain archived at their immutable URL.
+
+The trusted publisher starts watching when PR CI starts. Once both benchmark comparison jobs pass,
+it publishes their existing JSON results without waiting for unrelated tests. It does not collect
+another set of measurements. Publication still waits for any active Pages deployment. The browser
+loads public data from the site and needs no GitHub credentials. Preview publication does not mean
+the rest of CI passed.
+
+The publisher checks the current PR head, repository, run attempt, successful comparison jobs,
+artifact creation times, and the tested merge commit's parents. Reports preserve both the PR
+branch head and tested merge commit, the base parent, and artifact identity. Only code checked out
+from `main` executes with publication permissions. Uploaded HTML is ignored; bounded JSON is
+validated and rendered again. Waiting happens outside the shared deployment lock. Preview updates
+reuse merged pages and their catalog instead of rebuilding every historical chart.
+
+The compact **Performance overview** appears before the detailed tables, in the selected chart
+view, and in one bot comment updated on the PR after successful publication. It gives:
+
+- The merged baseline commit, run, attempt, and sampling policy.
+- A typical change: the equal-weight geometric mean of compatible XFF/reference change factors.
+- Counts of faster, within-threshold, and slower cases, plus unavailable comparisons.
+- The five largest regressions and a visible advisory warning when any case exceeds 15% slower.
+
+For each matched case the factor is `(current XFF / current reference) / (main XFF / main reference)`.
+This compares both XFF measurements on the same reference-time scale: multiplying each by a shared
+window reference mean divided by its own reference time gives exactly the same factor. It does
+not average XFF measurements across revisions. Positive change means slower; negative means faster.
+All file counts participate, including startup-heavy small cases. An improved aggregate cannot
+hide a warned individual case. Missing baselines are unknown, never zero regressions. The workload
+grid contains correlated cases, so the counts and aggregate are descriptive, not a significance test.
+
+Reference-window presentation remains separate: a preview can use compatible merged references
+plus itself, but can never enter another preview's window or change a merged window. The first
+five/current-plus-four rule still applies. Raw timings are unchanged. The PR comment updates only
+for the current head and latest selected attempt; it never edits a human's comment. No performance
+failure gate is enabled by this publication work.
 
 ## Fixture inputs
 

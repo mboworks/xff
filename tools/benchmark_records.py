@@ -20,6 +20,10 @@ def is_backfill(record):
     return record.get('kind') == 'backfill' and record.get('purpose') == 'ci-replacement'
 
 
+def is_preview(record):
+    return record.get('kind') == 'pr-preview' or record.get('source', {}).get('event') == 'pull_request'
+
+
 def platform_key(record):
     if record.get('platform'):
         return record['platform']
