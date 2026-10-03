@@ -250,7 +250,7 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
       });
     assert.equal(
       await page.locator(".landscape-preview-opacity").inputValue(),
-      "0.25",
+      "0.5",
     );
     assert.deepEqual(
       await page.locator(".landscape-preview-opacity option").allTextContents(),

@@ -372,7 +372,7 @@ them, leaving gaps rather than inventing measurements. Hover cards always retain
 A black bar with a yellow outline marks the hovered measurement on the color legend. Capped
 values pin it to the appropriate endpoint. Hovering over the legend temporarily emphasizes values
 above the pointed-to performance level. **Below threshold** offers increasing transparency:
-50% transparent, 75% transparent (the default), or Hide. **Threshold plane** shows a subtle
+50% transparent (the default), 75% transparent, or Hide. **Threshold plane** shows a subtle
 horizontal plane at that level and is enabled by default. Leaving the legend restores the full
 view and removes the plane.
 The two preferences persist across version, worker-pair, and scale changes. This preview changes

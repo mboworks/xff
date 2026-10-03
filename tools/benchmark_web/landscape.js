@@ -53,7 +53,7 @@ window.XffLandscape = function createLandscape(root, figures) {
     "position:absolute;top:-4px;width:3px;height:20px;background:#111;box-shadow:0 0 0 1px #ffe600;transform:translateX(-50%);pointer-events:none";
   let legendExtent = 1;
   const minimumPerformance = { value: -1e30 };
-  const contextOpacity = { value: 0.25 };
+  const contextOpacity = { value: 0.5 };
   let showThresholdPlane = true;
   const previewShader = `uniform float minimumPerformance; uniform float contextOpacity;
     uniform bool contextPass; varying float measured;
