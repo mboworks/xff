@@ -2462,5 +2462,49 @@
     "figures": "previews/954/37134130448/1/linux/landscape.json",
     "identity": "xff benchmarks - Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
     "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
+  },
+  {
+    "platform": "macos / arm64",
+    "commit": "96770aebd83b6e3861074bce738d7a5ede8b3a89",
+    "label": "PR 955 / 96770aebd8",
+    "source": "pr-955",
+    "source_label": "PR #955 preview",
+    "links": [
+      {
+        "label": "PR #955 preview",
+        "href": "https://github.com/mboworks/xff/pull/955"
+      }
+    ],
+    "date": "2026-10-03T16:07:30Z",
+    "measurement_date": "2026-10-03T16:23:24Z",
+    "backfill": false,
+    "run": 37135695325,
+    "attempt": 1,
+    "report": "previews/955/37135695325/1/macos/",
+    "figures": "previews/955/37135695325/1/macos/landscape.json",
+    "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "platform_details": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+  },
+  {
+    "platform": "linux / x86_64",
+    "commit": "96770aebd83b6e3861074bce738d7a5ede8b3a89",
+    "label": "PR 955 / 96770aebd8",
+    "source": "pr-955",
+    "source_label": "PR #955 preview",
+    "links": [
+      {
+        "label": "PR #955 preview",
+        "href": "https://github.com/mboworks/xff/pull/955"
+      }
+    ],
+    "date": "2026-10-03T16:07:30Z",
+    "measurement_date": "2026-10-03T16:23:19Z",
+    "backfill": false,
+    "run": 37135695325,
+    "attempt": 1,
+    "report": "previews/955/37135695325/1/linux/",
+    "figures": "previews/955/37135695325/1/linux/landscape.json",
+    "identity": "xff benchmarks - Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
   }
 ]
