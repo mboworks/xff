@@ -3,10 +3,12 @@
 import "./history.js";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { reserveChart, viewOptions } from "./view.js";
+
+window.XffLandscapeView = viewOptions;
 
 window.XffLandscape = function createLandscape(root, figures) {
-  root.style.cssText =
-    "position:relative;width:100%;height:850px;min-width:320px;overflow:hidden";
+  reserveChart(root);
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -38,6 +40,13 @@ window.XffLandscape = function createLandscape(root, figures) {
   legend.style.cssText =
     "position:absolute;left:12px;top:12px;background:#fffffff0;padding:8px;font:12px system-ui;color:#172333;max-width:90%";
   root.append(legend);
+  const legendMarker = document.createElement("div");
+  legendMarker.className = "landscape-legend-marker";
+  legendMarker.hidden = true;
+  legendMarker.style.cssText =
+    "position:absolute;top:-4px;width:3px;height:20px;background:#111;box-shadow:0 0 0 1px #ffe600;transform:translateX(-50%);pointer-events:none";
+  let legendExtent = 1;
+  const minimumPerformance = { value: -1e30 };
   let contents = new THREE.Group();
   scene.add(contents);
   let labels = [],
@@ -127,6 +136,7 @@ window.XffLandscape = function createLandscape(root, figures) {
   }
   function clearHover() {
     tooltip.hidden = true;
+    legendMarker.hidden = true;
     root
       .querySelectorAll(".hover-axis-value")
       .forEach((element) => element.remove());
@@ -142,6 +152,12 @@ window.XffLandscape = function createLandscape(root, figures) {
   }
   function showHover(point) {
     clearHover();
+    legendMarker.hidden = false;
+    legendMarker.style.left = `${Math.max(0, Math.min(1, (point.value + legendExtent) / (2 * legendExtent))) * 100}%`;
+    legendMarker.setAttribute(
+      "aria-label",
+      `Selected value: ${point.value}${root.dataset.metric === "percent" ? "%" : " log10"}`,
+    );
     const { x, y, z } = point.position;
     const feet = [
       new THREE.Vector3(x, -2, 4),
@@ -196,6 +212,8 @@ window.XffLandscape = function createLandscape(root, figures) {
     draw();
   }
   function clear() {
+    minimumPerformance.value = -1e30;
+    delete root.dataset.minimum;
     clearHover();
     scene.remove(contents);
     contents.traverse((object) => {
@@ -214,17 +232,23 @@ window.XffLandscape = function createLandscape(root, figures) {
     order = "similarity",
     metric = "percent",
     nextFigures = figures,
+    view = {},
   ) {
     figures = nextFigures;
     clear();
     root.dataset.metric = metric;
+    root.dataset.range = view.limit ?? "auto";
+    root.dataset.overflow = view.overflow || "cap";
     const figure = figures[order][metric],
       axes = figure.layout.scene,
       colors = figure.layout.coloraxis;
     const flat = figure.data
       .flatMap((surface) => surface.y.flat())
       .filter((value) => value !== null);
-    const ymax = Math.max(...(axes.yaxis.range || flat).map(Math.abs), 0.01);
+    const ymax =
+      view.limit ?? Math.max(...(axes.yaxis.range || flat).map(Math.abs), 0.01);
+    legendExtent = ymax;
+    const cut = view.overflow === "cut";
     const xmax = Math.max(...axes.xaxis.tickvals.map(Math.abs), 0.01);
     const zmax = Math.max(...axes.zaxis.tickvals.map(Math.abs), 0.01);
     const position = (x, y, z) =>
@@ -232,6 +256,7 @@ window.XffLandscape = function createLandscape(root, figures) {
     for (const surface of figure.data) {
       const positions = [],
         values = [],
+        rangeValues = [],
         indices = [],
         points = [],
         valid = [];
@@ -241,14 +266,22 @@ window.XffLandscape = function createLandscape(root, figures) {
           const value = surface.y[row][column];
           const vertex = position(
             surface.x[row][column],
-            value ?? 0,
+            Math.max(-ymax, Math.min(ymax, value ?? 0)),
             surface.z[row][column],
           );
           positions.push(...vertex.toArray());
           values.push(surface.surfacecolor[row][column] ?? 0);
-          valid.push(value !== null);
+          rangeValues.push(value ?? 0);
+          valid.push(value !== null && (!cut || Math.abs(value) <= ymax));
           points.push({
-            text: surface.text[row][column],
+            text:
+              (view.normalized
+                ? surface.normalized_text?.[row][column] ||
+                  surface.text[row][column]
+                : surface.text[row][column]) +
+              (value !== null && Math.abs(value) > ymax
+                ? `<br>Capped at ${value > 0 ? "+" : "-"}${ymax}${metric === "percent" ? "%" : " (log10)"}`
+                : ""),
             position: vertex,
             value,
             row,
@@ -277,10 +310,16 @@ window.XffLandscape = function createLandscape(root, figures) {
         new THREE.Float32BufferAttribute(values, 1),
       );
       geometry.setIndex(indices);
+      geometry.setAttribute(
+        "rangeValue",
+        new THREE.Float32BufferAttribute(rangeValues, 1),
+      );
       const stops = colors.colorscale;
       const material = new THREE.ShaderMaterial({
         side: THREE.DoubleSide,
         uniforms: {
+          minimumPerformance,
+          rangeLimit: { value: ymax },
           thresholds: {
             value: stops.map(
               (stop) => stop[0] * (colors.cmax - colors.cmin) + colors.cmin,
@@ -289,12 +328,15 @@ window.XffLandscape = function createLandscape(root, figures) {
           palette: { value: stops.map((stop) => new THREE.Color(stop[1])) },
         },
         vertexShader:
-          "attribute float performanceValue; varying float value; void main(){value=performanceValue;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}",
+          "attribute float performanceValue; attribute float rangeValue; varying float value; varying float measured; void main(){value=performanceValue;measured=rangeValue;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}",
         // Interpolate the measurement first, then map through the approved color scale.
-        fragmentShader: `uniform float thresholds[${stops.length}]; uniform vec3 palette[${stops.length}]; varying float value;
-          void main(){vec3 c=palette[0];for(int i=1;i<${stops.length};i++){
+        fragmentShader: `uniform float thresholds[${stops.length}]; uniform vec3 palette[${stops.length}]; uniform float rangeLimit; uniform float minimumPerformance; varying float value; varying float measured;
+          void main(){if(measured<minimumPerformance)discard;vec3 c=palette[0];for(int i=1;i<${stops.length};i++){
           float t=clamp((value-thresholds[i-1])/(thresholds[i]-thresholds[i-1]),0.0,1.0);
-          if(value>=thresholds[i-1])c=mix(palette[i-1],palette[i],t);}gl_FragColor=vec4(c,1.0);
+          if(value>=thresholds[i-1])c=mix(palette[i-1],palette[i],t);}
+          if(measured>rangeLimit)c=vec3(0.08,1.0,0.3);
+          if(measured< -rangeLimit)c=vec3(1.0,0.05,0.12);
+          gl_FragColor=vec4(c,1.0);
           #include <colorspace_fragment>
           }`,
       });
@@ -307,11 +349,38 @@ window.XffLandscape = function createLandscape(root, figures) {
       const dotGeometry = new THREE.BufferGeometry().setFromPoints(
         dots.map((point) => point.position),
       );
-      const dotMaterial = new THREE.PointsMaterial({
-        color: "#172333",
-        size: 2,
-        sizeAttenuation: false,
+      const dotMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+          minimumPerformance,
+          pointSize: { value: 2 * renderer.getPixelRatio() },
+        },
+        vertexShader:
+          "attribute vec3 color; attribute float rangeValue; uniform float pointSize; varying vec3 tint; varying float measured; void main(){tint=color;measured=rangeValue;gl_PointSize=pointSize;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}",
+        fragmentShader:
+          "uniform float minimumPerformance; varying vec3 tint; varying float measured; void main(){if(measured<minimumPerformance)discard;gl_FragColor=vec4(tint,1.0);\n#include <colorspace_fragment>\n}",
       });
+      dotGeometry.setAttribute(
+        "rangeValue",
+        new THREE.Float32BufferAttribute(
+          dots.map((point) => point.value),
+          1,
+        ),
+      );
+      dotGeometry.setAttribute(
+        "color",
+        new THREE.Float32BufferAttribute(
+          dots.flatMap((point) =>
+            new THREE.Color(
+              point.value > ymax
+                ? "#4fff95"
+                : point.value < -ymax
+                  ? "#ff3f61"
+                  : "#172333",
+            ).toArray(),
+          ),
+          3,
+        ),
+      );
       const markers = new THREE.Points(dotGeometry, dotMaterial);
       markers.userData.points = dots;
       contents.add(markers);
@@ -337,15 +406,23 @@ window.XffLandscape = function createLandscape(root, figures) {
         new THREE.Vector3(1, 0, 0),
       );
     });
-    const ticks = axes.yaxis.tickvals || [-ymax, -ymax / 2, 0, ymax / 2, ymax];
+    const ticks = (!view.limit && axes.yaxis.tickvals) || [
+      -ymax,
+      -ymax / 2,
+      0,
+      ymax / 2,
+      ymax,
+    ];
+    const tickLabels =
+      (!view.limit && axes.yaxis.ticktext) ||
+      ticks.map(
+        (value) =>
+          `${metric === "factor" && value > 0 ? "+" : ""}${Number(value.toPrecision(6))}${metric === "percent" ? "%" : ""}`,
+      );
     ticks.forEach((value, index) => {
       const y = (value / ymax) * 2;
       line([new THREE.Vector3(-4, y, -4), new THREE.Vector3(4, y, -4)]);
-      label(
-        axes.yaxis.ticktext?.[index] ?? `${Number(value.toFixed(1))}%`,
-        new THREE.Vector3(-4.2, y, -4),
-        "right",
-      );
+      label(tickLabels[index], new THREE.Vector3(-4.2, y, -4), "right");
     });
     planeTitle(
       axes.xaxis.title.text,
@@ -363,6 +440,7 @@ window.XffLandscape = function createLandscape(root, figures) {
     const title = document.createElement("div");
     title.textContent = axes.yaxis.title.text;
     const bar = document.createElement("div");
+    bar.className = "landscape-legend-scale";
     // Sample the same percentage palette along the displayed vertical coordinate.
     // Logarithmic heights are uniformly spaced here, just as on the vertical axis.
     const gradient = Array.from({ length: 101 }, (_, index) => {
@@ -385,19 +463,50 @@ window.XffLandscape = function createLandscape(root, figures) {
       }
       return `#${color.getHexString()} ${index}%`;
     });
-    bar.style.cssText = `width:320px;max-width:100%;height:12px;margin:4px 0;background:linear-gradient(to right,${gradient.join(",")})`;
+    bar.style.cssText = `position:relative;width:320px;max-width:100%;height:12px;margin:4px 0;background:linear-gradient(to right,${gradient.join(",")})`;
+    bar.append(legendMarker);
+    const filterNote = document.createElement("div");
+    const filterHint = "Hover scale to preview a minimum; leave to restore.";
+    filterNote.textContent = filterHint;
+    bar.addEventListener("pointermove", (event) => {
+      const bounds = bar.getBoundingClientRect();
+      const fraction = Math.max(
+        0,
+        Math.min(1, (event.clientX - bounds.left) / bounds.width),
+      );
+      minimumPerformance.value = (2 * fraction - 1) * ymax;
+      root.dataset.minimum = minimumPerformance.value;
+      clearHover();
+      legendMarker.hidden = false;
+      legendMarker.style.left = `${fraction * 100}%`;
+      filterNote.textContent = `Preview minimum: ${minimumPerformance.value.toFixed(2)}${metric === "percent" ? "%" : " log10"}`;
+      draw();
+    });
+    bar.addEventListener("pointerleave", () => {
+      minimumPerformance.value = -1e30;
+      delete root.dataset.minimum;
+      clearHover();
+      filterNote.textContent = filterHint;
+      draw();
+    });
     const scale = document.createElement("div");
     scale.className = "landscape-legend-ticks";
     scale.style.cssText =
       "position:relative;height:18px;width:320px;max-width:100%";
     ticks.forEach((value, index) => {
       const tick = document.createElement("span");
-      tick.textContent =
-        axes.yaxis.ticktext?.[index] ?? `${Number(value.toFixed(1))}%`;
+      tick.textContent = tickLabels[index];
       tick.style.cssText = `position:absolute;left:${((value + ymax) / (2 * ymax)) * 100}%;transform:translateX(-50%)`;
       scale.append(tick);
     });
-    legend.append(title, bar, scale);
+    legend.append(title, bar, scale, filterNote);
+    if (view.limit) {
+      const note = document.createElement("div");
+      note.textContent = cut
+        ? "Out of range: cut off"
+        : "Out of range: capped in bright green/red";
+      legend.append(note);
+    }
     resize();
   }
   const ray = new THREE.Raycaster();
@@ -407,9 +516,6 @@ window.XffLandscape = function createLandscape(root, figures) {
       new THREE.Vector2((x / width) * 2 - 1, 1 - (y / height) * 2),
       camera,
     );
-    const hit = ray.intersectObjects(surfaces)[0];
-    if (!hit) return null;
-    if (!hit.face) return hit.object.userData.points[hit.index];
     // Compare projected corners; never transpose row and column after task reordering.
     const distance = (point) => {
       const projected = point.position.clone().project(camera);
@@ -418,11 +524,18 @@ window.XffLandscape = function createLandscape(root, figures) {
         (((1 - projected.y) * height) / 2 - y) ** 2
       );
     };
-    return [hit.face.a, hit.face.b, hit.face.c]
-      .map((index) => hit.object.userData.points[index])
-      .reduce((best, point) =>
-        distance(point) < distance(best) ? point : best,
-      );
+    for (const hit of ray.intersectObjects(surfaces)) {
+      const candidates = (
+        hit.face ? [hit.face.a, hit.face.b, hit.face.c] : [hit.index]
+      )
+        .map((index) => hit.object.userData.points[index])
+        .filter((point) => point.value >= minimumPerformance.value);
+      if (candidates.length)
+        return candidates.reduce((best, point) =>
+          distance(point) < distance(best) ? point : best,
+        );
+    }
+    return null;
   }
   canvas.addEventListener("pointermove", (event) => {
     if (event.buttons) return;

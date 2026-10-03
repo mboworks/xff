@@ -24,6 +24,28 @@ def report(cpus=(1, 4)):
 
 
 class BenchmarkLandscapeTest(unittest.TestCase):
+    def test_normalized_timings_follow_cells_without_changing_relative_values(self):
+        data = report(cpus=(1, 3, 10))
+        timings = {
+            landscape.benchmark_normalization.cell_key(task, 'rg'): {
+                'status': 'available', 'factor': task['cpus'],
+                'reference_mean_seconds': task['files'], 'xff_seconds': task['cpus'] * task['files'],
+                'window': [{'commit': 'a' * 40}],
+            } for task in data['tasks']}
+        for mode in landscape.ORDER_LABELS:
+            for metric in ('factor', 'percent'):
+                original = landscape.figure(data, mode, metric)
+                rendered = landscape.figure(data, mode, metric, normalization=timings)
+                for before, surface in zip(original['data'], rendered['data']):
+                    for field in ('x', 'y', 'z', 'text', 'surfacecolor'):
+                        self.assertEqual(surface[field], before[field])
+                    for row in surface['normalized_text']:
+                        for text in row:
+                            self.assertIn('Reference-normalized XFF:', text)
+                            self.assertIn('Reference window: aaaaaaaaaa', text)
+        text = landscape.normalized_hover('Raw: 1 ms', {'status': 'unavailable', 'reason': '<missing>'})
+        self.assertEqual(text, 'Raw: 1 ms<br>Reference normalization unavailable: &lt;missing&gt;')
+
     def test_three_worker_grid_labels_and_hover_use_actual_allocations(self):
         data = report(cpus=(1, 3))
         for order in landscape.ORDER_LABELS:

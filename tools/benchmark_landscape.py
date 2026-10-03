@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 
 import benchmark_matrix as matrix
+import benchmark_normalization
 import benchmark_records
 
 
@@ -114,7 +115,18 @@ def allocation_groups(report):
     return groups[:2] if len(groups) >= 2 and len(set(groups)) == len(groups) and groups[0] > 0 else None
 
 
-def figure(report, order='similarity', metric='percent', groups=None):
+def normalized_hover(text, value):
+    if not value or value['status'] != 'available':
+        reason = value['reason'] if value else 'No compatible reference history is available.'
+        return text + '<br>Reference normalization unavailable: ' + html.escape(reason)
+    window = ', '.join(item['commit'][:10] for item in value['window'])
+    return (text + f'<br>Reference-normalized XFF: {value["xff_seconds"] * 1000:.3f} ms'
+            f'<br>Window reference mean: {value["reference_mean_seconds"] * 1000:.3f} ms'
+            f'<br>Correction: {value["factor"]:.4f}'
+            '<br>Reference window: ' + html.escape(window))
+
+
+def figure(report, order='similarity', metric='percent', groups=None, normalization=None):
     """Keep CPU/tree quadrants disconnected; never fill missing observations."""
     if metric not in ('percent', 'factor'):
         raise ValueError('unknown comparison metric')
@@ -147,7 +159,7 @@ def figure(report, order='similarity', metric='percent', groups=None):
         ticks.extend(xs)
         labels.extend(f'{n:,}' for n in ordered)
         for dataset, direction in (('broad', -1), ('deep', 1)):
-            xgrid, ygrid, zgrid, hover = [], [], [], []
+            xgrid, ygrid, zgrid, hover, normalized = [], [], [], [], []
             for index, (task, reference) in enumerate(pairs, 1):
                 values, texts = [], []
                 for count in ordered:
@@ -165,9 +177,12 @@ def figure(report, order='similarity', metric='percent', groups=None):
                 ygrid.append(values)
                 zgrid.append([direction * index] * len(xs))
                 hover.append(texts)
+                normalized.append([normalized_hover(text, (normalization or {}).get(
+                    benchmark_normalization.cell_key({'dataset': dataset, 'name': task, 'cpus': cpu, 'files': count}, reference)))
+                    for count, text in zip(ordered, texts)])
             traces.append(dict(type='surface', x=xgrid, y=ygrid, z=zgrid,
                                surfacecolor=ygrid, coloraxis='coloraxis', connectgaps=False,
-                               text=hover, hoverinfo='text',
+                               text=hover, normalized_text=normalized, hoverinfo='text',
                                name=f'{dataset.title()} / {matrix.allocation_label(report, cpu)}',
                                lighting=dict(ambient=1, diffuse=0, specular=0),
                                showscale=False))
@@ -216,17 +231,27 @@ def figure(report, order='similarity', metric='percent', groups=None):
     return result
 
 
-def figures(report):
-    result = {mode: {metric: figure(report, mode, metric) for metric in ('percent', 'factor')}
+def figures(report, normalization=None):
+    result = {mode: {metric: figure(report, mode, metric, normalization=normalization) for metric in ('percent', 'factor')}
               for mode in ORDER_LABELS}
     if len(report['contract']['cpu_counts']) > 2:
         result['allocation_pairs'] = [
             dict(value=f'{left}/{right}',
                  label=f'{matrix.allocation_label(report, left)} / {matrix.allocation_label(report, right)}',
-                 figures={mode: {metric: figure(report, mode, metric, (left, right))
+                 figures={mode: {metric: figure(report, mode, metric, (left, right), normalization)
                                  for metric in ('percent', 'factor')} for mode in ORDER_LABELS})
             for left, right in itertools.combinations(sorted(report['contract']['cpu_counts']), 2)]
     return result
+
+
+def view_controls(attribute):
+    return ('<label>Range: <select ' + attribute + '="range"><option value="auto">Auto</option>'
+            + ''.join(f'<option value="{value}">+/- {int(value * 100)}%</option>'
+                      for value in (0.2, 0.5, 1, 2)) + '</select></label> '
+            '<label>Out of range: <select ' + attribute + '="overflow">'
+            '<option value="cap">Cap</option><option value="cut">Cut off</option></select></label> '
+            '<label>Timings: <select ' + attribute + '="normalization">'
+            '<option value="reference">Reference normalized</option><option value="raw">Raw</option></select></label> ')
 
 
 def history_panel(catalog):
@@ -247,6 +272,7 @@ def history_panel(catalog):
             '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:.75rem">'
             '<label>Scale: <select data-control="metric"><option value="percent">Percentage</option>'
             '<option value="factor">Logarithmic</option></select></label> '
+            + view_controls('data-control') +
             '<label>Order: <select data-control="order">' +
             ''.join('<option value="' + key + '">' + label + '</option>'
                     for key, label in ORDER_LABELS.items()) + '</select></label> '
@@ -255,7 +281,8 @@ def history_panel(catalog):
             '<label style="display:flex;align-items:center;gap:.4rem">Version: '
             '<input data-control="version" type="range" min="0" max="0" step="1" value="0"></label>'
             '<button type="button" data-reset style="margin-left:auto">Reset view</button></div>'
-            '<p><a data-report>Selected report</a></p><p role="status" aria-live="polite"></p>'
+            '<p style="min-height:3em"><a data-report>Selected report</a><span data-version-links></span></p>'
+            '<p role="status" aria-live="polite" style="min-height:3em"></p>'
             '<div data-chart></div></details>'
             '<script src="assets/three-landscape.js"></script><script>'
             'window.XffBenchmarkHistory(document.getElementById("benchmark-explorer"),' + data + ');'
@@ -286,8 +313,8 @@ def publish_history(root, catalog):
     page.write_text(text[:insertion] + start + history_panel(entries) + end + text[insertion:], encoding='utf-8')
 
 
-def render(report, javascript):
-    plots = figures(report)
+def render(report, javascript, normalization=None):
+    plots = figures(report, normalization)
     groups = allocation_groups(report)
     plot = json.dumps(plots, allow_nan=False, ensure_ascii=False).replace('<', '\\u003c')
     return ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
@@ -315,8 +342,13 @@ def render(report, javascript):
             'relative performance. All file counts, CPU groups and tree shapes receive equal weight.</p>'
             '<p>Performance factor = reference time / xff time: 2x is twice as fast; 0.5x is half as fast. '
             'Factor heights and tick labels use log10: 0 is parity, +1 means 10x, -1 means 0.1x. Colors and task order keep the same meaning in both views.</p>'
+            '<p>Range limits affect only the view. Cap shows outliers at the boundary in bright green/red; '
+            'Cut off hides outliers and surface cells that touch them. Hover cards retain the original values. '
+            'Reference-normalized timings scale each XFF time by its five-measurement reference window mean '
+            'divided by its own reference time. Ratios and the raw tables are unchanged; unavailable windows are labeled.</p>'
             '<label>Scale: <select id="metric"><option value="percent">Percentage</option>'
             '<option value="factor">Logarithmic</option></select></label> '
+            + view_controls('id') +
             '<label>Task order: <select id="task-order">' +
             ''.join('<option value="' + key + '">' + label + '</option>'
                     for key, label in ORDER_LABELS.items()) + '</select></label>'
@@ -330,8 +362,11 @@ def render(report, javascript):
             'for(const pair of figures.allocation_pairs||[]){allocations.add(new Option(pair.label,pair.value));}'
             'document.getElementById("allocation-label").hidden=!figures.allocation_pairs;'
             'function updateLandscape(){const selected=figures.allocation_pairs?.find(pair=>pair.value===allocations.value)?.figures||figures;'
-            'chart.update(document.getElementById("task-order").value,document.getElementById("metric").value,selected);}'
-            'for(const id of ["task-order","metric","allocations"])document.getElementById(id).addEventListener("change",updateLandscape);'
+            'const metric=document.getElementById("metric").value;'
+            'chart.update(document.getElementById("task-order").value,metric,selected,'
+            'window.XffLandscapeView(metric,document.getElementById("range"),document.getElementById("overflow"),document.getElementById("normalization")));}'
+            'for(const id of ["task-order","metric","allocations","range","overflow","normalization"])document.getElementById(id).addEventListener("change",updateLandscape);'
+            'updateLandscape();'
             'document.getElementById("reset-landscape").addEventListener("click",()=>chart.reset());</script></details>'
             '<h2>Measurements</h2>' + matrix.render_html(report) + '</body></html>')
 
@@ -345,8 +380,12 @@ def publish(root, javascript):
     end_marker = '<!-- benchmark-landscape:end -->'
     count = 0
     catalog = []
-    for path in benchmark_records.paths(root):
-        record = json.loads(path.read_text())
+    links_path = root / 'version-links.json'
+    version_links = json.loads(links_path.read_text()) if links_path.exists() else {}
+    records = [(path, json.loads(path.read_text())) for path in benchmark_records.paths(root)]
+    windows = benchmark_normalization.reference_windows([(path.relative_to(root).as_posix(), record)
+                                                        for path, record in records])
+    for path, record in records:
         report = record.get('tool_comparisons')
         if not report or allocation_groups(report) is None:
             continue
@@ -354,9 +393,11 @@ def publish(root, javascript):
             continue
         source = record.get('source')
         local = benchmark_records.is_local(record)
+        normalization = windows.get(path.relative_to(root).as_posix(), {})
+        path.with_name('normalization.json').write_text(json.dumps(normalization, allow_nan=False), encoding='utf-8')
         if source or local:
             payload = path.with_name('landscape.json')
-            payload.write_text(json.dumps(figures(report), allow_nan=False), encoding='utf-8')
+            payload.write_text(json.dumps(figures(report, normalization), allow_nan=False), encoding='utf-8')
             contract = report.get('contract', {})
             platform = benchmark_records.platform_key(record) or contract.get('platform', 'Unknown platform')
             machine = contract.get('machine', record.get('contract', {}).get('machine', ''))
@@ -371,6 +412,7 @@ def publish(root, javascript):
             if benchmark_records.is_backfill(record):
                 label = 'CI backfill / ' + commit[:10]
             catalog.append(dict(platform=platform, commit=commit, label=label,
+                                links=version_links.get(commit, []),
                                 date=benchmark_records.reference_time(record),
                                 backfill=benchmark_records.is_backfill(record),
                                 **(dict(measured=record['completed_at'], local=True) if local else
@@ -386,7 +428,7 @@ def publish(root, javascript):
                 raise ValueError('incomplete landscape section')
             text = before + after
         # Keep existing provenance, baseline tables and all detailed metrics intact.
-        document = render(report, '')
+        document = render(report, '', normalization)
         fragment = document.split('<h1>Benchmark comparison landscape</h1>', 1)[1].split('<h2>Measurements</h2>', 1)[0]
         script = html.escape(Path(os.path.relpath(asset, page.parent)).as_posix(), quote=True)
         fragment = fragment.replace('<script></script>', f'<script src="{script}"></script>')

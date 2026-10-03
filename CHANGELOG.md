@@ -3,6 +3,7 @@
 
 # 0.9.0
 
+- Add benchmark range/cap controls, reference-normalized hover timings, PR/release links, and a legend hover filter.
 - Keep benchmark hover cards in the chart's top-right corner and prevent page jumps when changing measured versions.
 
 - Run three complete-matrix benchmark shards on both platforms: one measured round each for PRs and three each for main, pooling raw samples before fastest-run selection.

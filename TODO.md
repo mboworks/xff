@@ -36,11 +36,11 @@
       machine series with selectable landscape allocation pairs and preserved raw observations.
 - [ ] Run and publish the separate local Zen 5 1/3/10 series with physical-core affinity. Keep
       M5 Pro, M2 Ultra and Zen 5 distinct; macOS requests workers without claiming CPU affinity.
-- [ ] Implement presentation-only reference normalization using exactly five compatible measurements:
-      start with current plus four following, then use current plus four prior from measurement five.
-      Settle whether measurements two through four share the first window or use forward windows.
-      Preserve raw timings and ratios, expose the selected window and correction factor, and do not
-      normalize between different worker counts, reference binaries or machine series.
+- [x] Implement presentation-only reference normalization using exactly five compatible reference times:
+      the initial measurements share the first five; from measurement five use current plus four prior.
+      Scale each individual XFF result by the reference mean divided by its own reference time.
+      Preserve raw timings and ratios, expose the window and factor, and isolate worker counts,
+      reference binaries, fixtures and machine series.
       See `docs/performance-analysis.md` and `docs/benchmark-comparisons.md`.
 
 ## macOS startup follow-up
@@ -204,6 +204,9 @@ Measured follow-ups (see the P07/P08 sections of `docs/performance-analysis.md`)
 
 - [x] Keep the hover card at the rendering area's top-right corner instead of following the pointer.
 - [x] Replace benchmark versions in place while preserving chart space and camera state during loading.
+- [x] Add percentage/logarithmic range presets and bright capped outliers or cut-off gaps.
+- [x] Expose every measured CPU pair and link selected versions to their PR/releases where available.
+- [x] Track hovered points on the legend and preview a minimum-performance filter while hovering the scale.
 
 - [x] Add a benchmark overview landscape with platform selection and a slider over retained measured commits.
 

@@ -356,6 +356,44 @@ collapsing the chart or resetting the camera. Interrupted requests cannot overwr
 selections. Failures hide the previous chart while preserving its space and leave the requested
 report link available. Generated payloads expire with their raw reports under existing retention.
 
+The version selection includes links to the matching PR and release when those references are
+known. The chart reserves its full height before loading; changing versions, worker pairs, range,
+or scale does not collapse the rendering area. Reports with three measured worker counts offer
+all three pairs (`1/3`, `1/10`, and `3/10`); no unmeasured allocation is synthesized.
+
+### View range and selection
+
+**Range** offers Auto and symmetric limits of +/-20%, 50%, 100%, or 200% in percentage mode;
+logarithmic mode uses +/-0.2, 0.5, 1, or 2. **Cap** places outliers at the boundary and marks
+them bright green or red. **Cut off** hides outlying observations and surface cells touching
+them, leaving gaps rather than inventing measurements. Hover cards always retain actual values.
+
+A black bar with a yellow outline marks the hovered measurement on the color legend. Capped
+values pin it to the appropriate endpoint. Hovering over the legend temporarily hides values
+below the pointed-to performance level; leaving restores the full view. This preview changes
+neither the selected range nor the source data.
+
+### Reference-window timing normalization
+
+**Timings** selects raw or reference-normalized hover information. For each compatible task,
+tree shape, fileset size, worker allocation, platform/machine series and reference-tool identity,
+take the arithmetic mean of five reference times. The first five measurements share the first
+five-reference window; starting at measurement five the window is the current reference plus
+the four preceding references. Fewer than five compatible measurements make normalization
+unavailable; the card explains this and retains raw timings.
+
+The correction is `window reference mean / this run's reference time`. Multiply only this
+version's XFF timing by that factor: XFF results are never averaged across versions. Within-run
+fastest-sample selection remains the recorded measurement policy. The card shows the normalized
+XFF time, reference mean, correction, and the five commit IDs. Each report's generated
+`normalization.json` contains the full window identities. Reference binaries, invocation arguments,
+fixtures, machine series and CPU allocations must match; CI and local series remain separate.
+
+This is presentation only. Raw report JSON and the measurement tables remain unchanged. The
+percentage/factor landscape also remains unchanged because its same-run XFF/reference ratio
+already applies the reference correction. Normalized absolute timings are useful for viewing
+variation shared with the reference tool, but cannot eliminate XFF-specific noise.
+
 One shared, pinned Three.js renderer bundle is published alongside the reports; no external CDN is used.
 Standalone previews embed the same bundle for offline use.
 

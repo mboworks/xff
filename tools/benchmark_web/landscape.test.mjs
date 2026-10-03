@@ -57,6 +57,7 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
     await page.goto(pathToFileURL(output).href);
     await page.waitForFunction(() => typeof chart !== "undefined");
     assert.equal(await page.locator("#landscape canvas").count(), 1);
+    await page.selectOption("#normalization", "raw");
     for (const order of ["similarity", "average", "alphabetical"]) {
       for (const metric of ["percent", "factor"]) {
         await page.selectOption("#task-order", order);
@@ -97,6 +98,29 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
         const box = await page.locator("#landscape canvas").boundingBox();
         await page.mouse.move(box.x + point.x, box.y + point.y);
         assert.equal(await page.locator(".hover-axis-value").count(), 1);
+        const indicator = page.locator(".landscape-legend-marker");
+        assert.equal(await indicator.isVisible(), true);
+        const expectedPosition = await page.evaluate(
+          ({ point, order, metric }) => {
+            const figure = figures[order][metric];
+            const extent = Math.max(
+              ...(
+                figure.layout.scene.yaxis.range ||
+                figure.data.flatMap((surface) => surface.y.flat())
+              ).map(Math.abs),
+              0.01,
+            );
+            return ((point.value + extent) / (2 * extent)) * 100;
+          },
+          { point, order, metric },
+        );
+        assert.ok(
+          Math.abs(
+            (await indicator.evaluate((element) =>
+              Number.parseFloat(element.style.left),
+            )) - expectedPosition,
+          ) < 0.001,
+        );
         assert.ok(
           await page
             .locator("#landscape span")
@@ -109,8 +133,89 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
         );
         await page.mouse.move(0, 0);
         assert.equal(await page.locator(".hover-axis-value").count(), 0);
+        assert.equal(await indicator.isVisible(), false);
       }
     }
+    const originalFigures = await page.evaluate(() => JSON.stringify(figures));
+    for (const metric of ["percent", "factor"]) {
+      await page.selectOption("#metric", metric);
+      for (const range of ["0.2", "0.5", "1", "2"]) {
+        await page.selectOption("#range", range);
+        const extent = Number(range) * (metric === "percent" ? 100 : 1);
+        assert.equal(
+          await page.locator("#landscape").getAttribute("data-range"),
+          String(extent),
+        );
+        assert.deepEqual(
+          await page.locator(".landscape-legend-ticks span").allTextContents(),
+          [-extent, -extent / 2, 0, extent / 2, extent].map(
+            (value) =>
+              `${metric === "factor" && value > 0 ? "+" : ""}${value}${metric === "percent" ? "%" : ""}`,
+          ),
+        );
+      }
+      await page.selectOption("#range", "0.2");
+      const scan = async () =>
+        page.evaluate(() => {
+          const root = document.getElementById("landscape");
+          for (let y = 40; y < root.clientHeight; y += 12)
+            for (let x = 40; x < root.clientWidth; x += 12) {
+              const point = chart.pick(x, y);
+              if (point)
+                return {
+                  value: point.value,
+                  y: point.position.y,
+                  text: point.text,
+                };
+            }
+          return null;
+        });
+      const capped = await scan();
+      assert.ok(capped);
+      assert.equal(Math.abs(capped.y), 2);
+      assert.ok(capped.text.includes("Capped at"));
+      await page.selectOption("#overflow", "cut");
+      assert.equal(await scan(), null);
+      await page.selectOption("#overflow", "cap");
+    }
+    await page.selectOption("#range", "auto");
+    await page.selectOption("#metric", "percent");
+    const legendBox = await page
+      .locator(".landscape-legend-scale")
+      .boundingBox();
+    await page.mouse.move(
+      legendBox.x + legendBox.width / 2,
+      legendBox.y + legendBox.height / 2,
+    );
+    assert.ok(
+      Math.abs(
+        Number(await page.locator("#landscape").getAttribute("data-minimum")),
+      ) < 0.001,
+    );
+    const filtered = await page.evaluate(() => {
+      const result = [];
+      for (let y = 100; y < 800; y += 20)
+        for (
+          let x = 100;
+          x < document.querySelector("#landscape").clientWidth;
+          x += 20
+        ) {
+          const point = chart.pick(x, y);
+          if (point) result.push(point.value);
+        }
+      return result;
+    });
+    assert.ok(filtered.length > 0);
+    assert.ok(filtered.every((value) => value >= 0));
+    await page.mouse.move(0, 0);
+    assert.equal(
+      await page.locator("#landscape").getAttribute("data-minimum"),
+      null,
+    );
+    assert.equal(
+      await page.evaluate(() => JSON.stringify(figures)),
+      originalFigures,
+    );
     // Small-extent color scales have fewer stops and must still compile on the GPU.
     await page.evaluate(() => {
       const figure = structuredClone(figures.similarity.percent);
@@ -176,6 +281,7 @@ from benchmark_landscape import publish
 from benchmark_landscape_test import report
 root = Path(sys.argv[3])
 (root / 'index.html').write_text('<h1>History</h1><table><tr><td>Original</td></tr></table>')
+(root / 'version-links.json').write_text(json.dumps({'a' * 40: [dict(label='PR #12', href='https://github.com/owner/project/pull/12')], 'b' * 40: [dict(label='Release v1.0.0', href='https://github.com/owner/project/releases/tag/v1.0.0')]}))
 for run, platform, commit in [(1, 'linux', 'a'), (2, 'linux', 'b'), (3, 'macos', 'a')]:
     folder = root / 'runs' / str(run) / '1' / platform
     folder.mkdir(parents=True)
@@ -219,7 +325,27 @@ publish(root, Path(sys.argv[2]).read_text())
     const page = await browser.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
+    let releaseInitial;
+    const initialResponse = new Promise((resolve) => {
+      releaseInitial = resolve;
+    });
+    await page.route("**/landscape.json", async (route) => {
+      await initialResponse;
+      await route.continue();
+    });
     await page.goto(`http://127.0.0.1:${server.address().port}/`);
+    assert.equal(
+      await page
+        .locator("[data-chart]")
+        .evaluate((element) => element.clientHeight),
+      850,
+    );
+    assert.equal(await page.locator("[data-chart] canvas").count(), 0);
+    releaseInitial();
+    await page.waitForFunction(() =>
+      document.querySelector("[data-chart] canvas"),
+    );
+    await page.unroute("**/landscape.json");
     const waitCommit = (commit) =>
       page.waitForFunction(
         (commit) =>
@@ -231,6 +357,10 @@ publish(root, Path(sys.argv[2]).read_text())
       );
     await page.selectOption('[data-control="platform"]', "linux");
     await waitCommit("b");
+    assert.equal(
+      await page.locator("[data-version-links] a").getAttribute("href"),
+      "https://github.com/owner/project/releases/tag/v1.0.0",
+    );
     const slider = page.locator('[data-control="version"]');
     const host = page.locator("[data-chart]");
     const originalBox = await host.boundingBox();
@@ -259,6 +389,10 @@ publish(root, Path(sys.argv[2]).read_text())
     );
     releaseResponse();
     await waitCommit("a");
+    assert.equal(
+      await page.locator("[data-version-links] a").getAttribute("href"),
+      "https://github.com/owner/project/pull/12",
+    );
     await page.unroute("**/runs/1/1/linux/landscape.json");
     assert.deepEqual(await host.boundingBox(), originalBox);
     assert.equal(

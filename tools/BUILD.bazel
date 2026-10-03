@@ -752,6 +752,7 @@ test_suite(
         ":benchmark_landscape_test",
         ":benchmark_local_test",
         ":benchmark_matrix_test",
+        ":benchmark_normalization_test",
         ":benchmark_regex_test",
         ":benchmark_shards_test",
         ":build_rules_test",
@@ -964,11 +965,29 @@ py_test(
 )
 
 py_library(
+    name = "benchmark_normalization_lib",
+    srcs = ["benchmark_normalization.py"],
+    imports = ["."],
+    deps = [
+        ":benchmark_matrix_lib",
+        ":benchmark_records_lib",
+    ],
+)
+
+py_test(
+    name = "benchmark_normalization_test",
+    size = "small",
+    srcs = ["benchmark_normalization_test.py"],
+    deps = [":benchmark_normalization_lib"],
+)
+
+py_library(
     name = "benchmark_landscape_lib",
     srcs = ["benchmark_landscape.py"],
     imports = ["."],
     deps = [
         ":benchmark_matrix_lib",
+        ":benchmark_normalization_lib",
         ":benchmark_records_lib",
     ],
 )
@@ -978,6 +997,7 @@ py_binary(
     srcs = ["benchmark_landscape.py"],
     deps = [
         ":benchmark_matrix_lib",
+        ":benchmark_normalization_lib",
         ":benchmark_records_lib",
     ],
 )

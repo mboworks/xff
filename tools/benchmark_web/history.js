@@ -1,12 +1,19 @@
 // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 // SPDX-License-Identifier: Apache-2.0
+import { reserveChart, viewOptions } from "./view.js";
+
 window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   const platform = root.querySelector('[data-control="platform"]');
   const version = root.querySelector('[data-control="version"]');
   const status = root.querySelector('[role="status"]');
   const reportLink = root.querySelector("[data-report]");
+  const versionLinks = root.querySelector("[data-version-links]");
   const host = root.querySelector("[data-chart]");
+  reserveChart(host);
   const metric = root.querySelector('[data-control="metric"]');
+  const range = root.querySelector('[data-control="range"]');
+  const overflow = root.querySelector('[data-control="overflow"]');
+  const normalization = root.querySelector('[data-control="normalization"]');
   const allocations = root.querySelector('[data-control="allocations"]');
   let loadedFigures;
   const order = root.querySelector('[data-control="order"]');
@@ -37,6 +44,15 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     function showReport() {
       reportLink.href = record.report;
       reportLink.textContent = reportText;
+      versionLinks.replaceChildren();
+      for (const link of record.links || []) {
+        const target = new URL(link.href, location.href);
+        if (target.protocol !== "https:") continue;
+        const anchor = document.createElement("a");
+        anchor.href = target.href;
+        anchor.textContent = link.label;
+        versionLinks.append(" | ", anchor);
+      }
     }
     if (!chart) showReport();
     version.setAttribute("aria-valuetext", reportText);
@@ -57,7 +73,12 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
         !figures.allocation_pairs;
       const selected = selectedFigures();
       if (!chart) chart = window.XffLandscape(host, selected);
-      chart.update(order.value, metric.value, selected);
+      chart.update(
+        order.value,
+        metric.value,
+        selected,
+        viewOptions(metric.value, range, overflow, normalization),
+      );
       host.style.visibility = "visible";
       showReport();
       status.textContent = `${Number(version.value) + 1} of ${records.length} measured versions. ${record.identity}`;
@@ -89,10 +110,18 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   }
   platform.addEventListener("change", selectPlatform);
   version.addEventListener("input", selectVersion);
-  for (const selector of [metric, order, allocations])
+  for (const selector of [
+    metric,
+    order,
+    allocations,
+    range,
+    overflow,
+    normalization,
+  ])
     selector.addEventListener("change", () => {
-      if (chart && !host.hidden)
-        chart.update(order.value, metric.value, selectedFigures());
+      const view = viewOptions(metric.value, range, overflow, normalization);
+      if (chart && host.style.visibility !== "hidden")
+        chart.update(order.value, metric.value, selectedFigures(), view);
     });
   root
     .querySelector("[data-reset]")
