@@ -281,28 +281,52 @@ fastest 7 of 9. Baseline comparisons use matching cells at shared sizes; extra m
 do not invalidate comparisons at the smaller sizes. Explicit repeated `--files` values override
 the default grid for local experiments.
 
-## Post-merge measurement shards
+## Measurement shards
 
-Main runs build the paired binaries once per platform, then distribute the exact head binary to
-three Linux measurement runners or one macOS measurement runner. macOS keeps its entire grid
-on one host because affinity cannot enforce a common CPU allocation across hosts with different
-capacities. This trades shard parallelism for a consistent matrix. A fixture consists of its file count, CPU allocation and broad/deep
-shape. All tools, tasks, warmups and repetitions for that fixture stay on one runner; samples for
-one cell are never pooled across runners. The post-merge estimator remains the fastest seven of
-nine observations, while PR runs retain the fastest two of three.
+PR and main runs build once per platform, then distribute the exact binary and one shared plan
+to three Linux runners and three macOS runners. Every shard measures the complete file-count,
+worker-count and broad/deep matrix. All tools for each measured round run together on one runner,
+with rotating participant order; the starting order also rotates between shards.
 
-A shared plan balances estimated fixture costs from the latest retained main report for the
-architecture. Unmeasured sizes extrapolate from the nearest measured size. Without retained data,
-file counts provide the initial weights. These estimates exclude build and fixture setup time, so
-three shards do not guarantee a threefold wall-time improvement.
+| Run  | Shards | Measured rounds per case per shard | Pooled rounds | Retained fastest rounds | Largest file count |
+| ---- | -----: | ---------------------------------: | ------------: | ----------------------: | -----------------: |
+| PR   |      3 |                                  1 |             3 |                       2 |             10,000 |
+| Main |      3 |                                  3 |             9 |                       7 |            100,000 |
 
-Aggregation requires every planned fixture and task exactly once, matching source and executable
-identities, compatible CPU affinity, and identical sampling contracts. Missing or incompatible
-shards fail the workflow rather than publishing a partial matrix. Each merged report retains
-per-shard provenance. An identity mismatch reports its shard, field and differing values, such as
-`incompatible shard 1: contract.cpu_count: expected 5, got 3`. Historical baselines belong on the complete merged report, not individual
-shards. JSON and HTML share the platform-specific basename; only final merged artifacts are
-selected by the publisher.
+Each shard performs its own discarded, correctness-checked warm-up for each case. The aggregator
+combines raw observations before selecting the fastest two or seven per participant. It never
+averages shard summaries or discards a shard's slow rounds before pooling. All metrics use the
+same selected observations as elapsed time. The raw JSON retains every measured observation,
+its shard and round number, the shard's hashed host identity, and the original invocation paths.
+
+Repeating the same matrix on all three runners gives approximately equal expected work and avoids
+assigning one tree shape or worker count to a consistently faster host. It does not make hosts
+identical: fastest-run selection may favor samples from a faster host, and the selected hosts
+can differ between tools. Linux still pins one or three logical CPUs; macOS records worker
+requests without claiming CPU affinity. Hardware, storage and background load still affect results.
+
+Warm-ups and fixture creation are repeated on every shard. Compared with a serial run, PRs execute
+six tool rounds including warm-ups instead of four; main executes twelve instead of ten.
+Ignoring setup and queueing, this permits roughly a twofold reduction of the PR measurement phase
+and a 2.5-fold reduction from the previous serial Mac main measurement. Build, artifact transfer,
+aggregation and runner availability limit the end-to-end gain. Linux main already used three
+cost-balanced fixture shards, so this change does not promise a further Linux main speedup.
+
+Aggregation requires the complete planned matrix on every sample shard, exactly the planned raw
+sample count, matching source, binary, reference tools, fixture contents, expected outputs and
+commands, compatible CPU affinity, equal host CPU counts and identical sampling contracts.
+Missing or incompatible shards fail the workflow rather than publishing a partial matrix. Each
+merged report retains per-shard provenance. An identity mismatch reports its shard, field and
+differing values, such as `incompatible shard 1: contract.cpu_count: expected 5, got 3`.
+Historical baselines and the advisory slowdown alarm are computed after pooling. JSON and HTML
+share the platform-specific basename; only final merged artifacts are selected by the publisher.
+
+`tools/benchmark_shards.py --partition=samples --count=3` creates these plans. `--repetitions`
+sets the total measured rounds and must divide evenly among shards; `--keep` selects the final
+fastest subset. The collector must retain every assigned round. The default `balanced` partition
+continues to support disjoint, cost-balanced fixture plans and existing retained reports.
+Historical CI backfill campaigns and local batches retain their documented one-host-per-revision
+contract; their scheduling is separate from these ordinary PR and main workflows.
 
 ## Comparison landscape
 
