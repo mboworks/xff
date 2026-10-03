@@ -66,7 +66,7 @@ class RgParser {
       return std::nullopt;
     }
     MBO_ASSIGN_OR_RETURN(auto command, BuildCommand());
-    return std::move(command);
+    return command;
   }
 
  private:
