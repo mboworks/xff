@@ -129,7 +129,7 @@ def normalized_hover(text, value):
         return text
     if not value or value['status'] != 'available':
         reason = value['reason'] if value else 'No compatible reference history is available.'
-        rows = [('Reference normalization', 'Unavailable: ' + reason)]
+        rows = [('Reference window', 'Unavailable: ' + reason)]
     else:
         window = value['window']
         first, last = window[0]['date'][:10], window[-1]['date'][:10]
@@ -137,7 +137,7 @@ def normalized_hover(text, value):
         rows = [('Reference-normalized XFF', f'{value["xff_seconds"] * 1000:.3f} ms'),
                 ('Window reference mean', f'{value["reference_mean_seconds"] * 1000:.3f} ms'),
                 ('Correction factor', f'{value["factor"]:.4f}'),
-                ('Reference window', f'{len(window)} measurements, {dates}')]
+                ('Reference window', f'{len(window)} measurements'), ('Window dates', dates)]
     return text.removesuffix('</tbody></table>') + hover_rows(rows) + '</tbody></table>'
 
 

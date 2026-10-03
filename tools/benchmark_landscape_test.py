@@ -50,11 +50,12 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                         for text in row:
                             cells = hover_values(text)
                             self.assertIn('Reference-normalized XFF', cells)
-                            self.assertEqual(cells['Reference window'], '5 measurements, 2026-10-01 to 2026-10-05')
+                            self.assertEqual(cells['Reference window'], '5 measurements')
+                            self.assertEqual(cells['Window dates'], '2026-10-01 to 2026-10-05')
                             self.assertNotIn('1111111111', text)
         text = landscape.normalized_hover(landscape.hover_table([('Raw', '1 ms')]),
                                           {'status': 'unavailable', 'reason': '<missing>'})
-        self.assertEqual(hover_values(text), {'Raw': '1 ms', 'Reference normalization': 'Unavailable: <missing>'})
+        self.assertEqual(hover_values(text), {'Raw': '1 ms', 'Reference window': 'Unavailable: <missing>'})
 
     def test_three_worker_grid_labels_and_hover_use_actual_allocations(self):
         data = report(cpus=(1, 3))

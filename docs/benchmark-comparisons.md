@@ -391,7 +391,8 @@ unavailable; the card explains this and retains raw timings.
 The correction is `window reference mean / this run's reference time`. Multiply only this
 version's XFF timing by that factor: XFF results are never averaged across versions. Within-run
 fastest-sample selection remains the recorded measurement policy. The card shows the normalized
-XFF time, reference mean, correction, and the window's measurement count and date range.
+XFF time, reference mean, correction, and separate rows for the window's measurement count
+(or unavailability reason) and date range. Unavailable windows omit the date row.
 The card presents these values together with task, tree, allocation and file count in an aligned table.
 Each report's generated `normalization.json` retains the full window identities and commit hashes.
 Reference binaries, invocation arguments,
