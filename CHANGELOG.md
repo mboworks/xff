@@ -6,7 +6,7 @@
 - Add benchmark range/cap controls, reference-normalized hover timings, PR/release links, and a legend hover preview with selectable transparency and threshold plane.
 - Keep benchmark version, scale and hover details in stable chart-side panels and prevent page jumps when changing measured versions.
 
-- Run three complete-matrix benchmark shards on both platforms: one measured round each for PRs and three each for main, pooling raw samples before fastest-run selection.
+- Run three complete-matrix benchmark shards on both platforms: three measured rounds each for PRs and main, pooling all nine raw samples before selecting the fastest seven.
 
 - Use the toolchains_llvm 1.11.0 release in place of the Git override.
 

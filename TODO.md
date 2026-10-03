@@ -14,9 +14,11 @@
 - [x] Reject undersized runners before measurement; use the same 1/3 grid on both hosted
       platforms, pinned on Linux and requested workers on macOS. Leave one Linux vCPU
       outside the benchmark mask for background work. Preserve strict shard identity checks.
-- [x] Use three complete-matrix sample shards on both hosted platforms: one measured round
-      per PR shard, three per main shard; pool raw samples before selecting fastest 2/3 or 7/9.
+- [x] Use three complete-matrix sample shards on both hosted platforms: three measured rounds
+      per shard for PR and main; pool raw samples before selecting the fastest seven of nine.
       Share compiled binaries, rotate participant order, and preserve per-sample shard provenance.
+- [ ] Verify nine-round PR artifacts retain every raw observation and the fastest-seven estimate;
+      compare shard durations with PR #951's 2m19s to 3m32s one-round shards.
 - [ ] Verify the first sharded PR/main runs and published results; compare measurement and
       end-to-end wall times, including the extra warm-up and fixture setup costs.
 - [x] Add a CI-only historical backfill workflow for macOS and Linux replacement campaigns,

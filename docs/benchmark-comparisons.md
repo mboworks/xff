@@ -8,24 +8,24 @@ informational. A 15% advisory alarm identifies normalized slowdowns without bloc
 ## Matrix and sampling
 
 Each tree shape has one table. Rows identify the task and tool. Columns are grouped by allocation:
-Linux uses **1 CPU** and **4 CPUs** with enforced affinity; hosted macOS uses **1 worker** and
+Linux uses **1 CPU** and **3 CPUs** with enforced affinity; hosted macOS uses **1 worker** and
 **3 workers** without affinity. Each group has a 1-2-5 progression from 10 through 10,000 files
 before merge, extended through 100,000 after merge. HTML uses spanning allocation headers;
 Markdown repeats allocation/count labels and aligns numeric cells and their source text to the right.
 
-- Normal PR CI runs three measured repetitions and averages the fastest two.
-- Main's post-merge benchmark workflow runs nine and averages the fastest seven.
+- Both PR CI and main's post-merge benchmark workflow run nine measured repetitions and average
+  the fastest seven, pooling three rounds from each of three shards.
 - One correctness-checked warm-up round runs every participant and is discarded. The starting
   participant rotates across tasks and rounds; measured samples are interleaved by round.
 - Selection is by elapsed time. Associated CPU, latency, memory, and output metrics use that same
   selected subset. All raw samples are retained, including the discarded slower observations.
-- Tables explicitly say `mean of fastest 2/3 runs` or `mean of fastest 7/9 runs`. Raw-sample
-  variability remains available separately. Historical median-based reports remain readable.
+- Tables explicitly state the sampling policy, normally `mean of fastest 7/9 runs`. Raw-sample
+  variability remains available separately. Historical reports retain their recorded policy.
 
-PR tables compare against the newest successful retained main measurement with compatible cells,
-even though main uses a different sampling policy. Cells show `current ms / main ms (change)`;
+PR tables compare against the newest successful retained main measurement with compatible cells.
+Cells show `current ms / main ms (change)`;
 change is `(current / main - 1) * 100%`, so positive means slower. The baseline commit, run, attempt,
-and policy are explicit. The larger main sample may favor its timing; this is not a significance test.
+and policy are explicit. Historical sampling policies may differ; this is not a significance test.
 
 The report stores invocation settings (file counts, CPU counts, depth, fixture mappings), tree and
 source hashes, result hashes, tool versions, executable hashes, build identity, platform, runner
@@ -275,9 +275,9 @@ have a 90-minute budget. Linux has 30 minutes before merge, then 45 minutes for 
 and 60 minutes per measurement shard after merge. These are job ceilings, not requested
 measurement durations; individual benchmark invocations retain their timeout.
 
-PR measurements use 10, 20, 50, 100, 200, 500, 1,000, 2,000, 5,000, and 10,000 files, retaining
-the fastest 2 of 3 samples. Post-merge adds 20,000, 50,000, and 100,000 files and retains the
-fastest 7 of 9. Baseline comparisons use matching cells at shared sizes; extra main-only scales
+PR measurements use 10, 20, 50, 100, 200, 500, 1,000, 2,000, 5,000, and 10,000 files.
+Post-merge adds 20,000, 50,000, and 100,000 files. Both retain the fastest 7 of 9 samples.
+Baseline comparisons use matching cells at shared sizes; extra main-only scales
 do not invalidate comparisons at the smaller sizes. Explicit repeated `--files` values override
 the default grid for local experiments.
 
@@ -290,11 +290,11 @@ with rotating participant order; the starting order also rotates between shards.
 
 | Run  | Shards | Measured rounds per case per shard | Pooled rounds | Retained fastest rounds | Largest file count |
 | ---- | -----: | ---------------------------------: | ------------: | ----------------------: | -----------------: |
-| PR   |      3 |                                  1 |             3 |                       2 |             10,000 |
+| PR   |      3 |                                  3 |             9 |                       7 |             10,000 |
 | Main |      3 |                                  3 |             9 |                       7 |            100,000 |
 
 Each shard performs its own discarded, correctness-checked warm-up for each case. The aggregator
-combines raw observations before selecting the fastest two or seven per participant. It never
+combines raw observations before selecting the fastest seven per participant. It never
 averages shard summaries or discards a shard's slow rounds before pooling. All metrics use the
 same selected observations as elapsed time. The raw JSON retains every measured observation,
 its shard and round number, the shard's hashed host identity, and the original invocation paths.
@@ -305,12 +305,11 @@ identical: fastest-run selection may favor samples from a faster host, and the s
 can differ between tools. Linux still pins one or three logical CPUs; macOS records worker
 requests without claiming CPU affinity. Hardware, storage and background load still affect results.
 
-Warm-ups and fixture creation are repeated on every shard. Compared with a serial run, PRs execute
-six tool rounds including warm-ups instead of four; main executes twelve instead of ten.
-Ignoring setup and queueing, this permits roughly a twofold reduction of the PR measurement phase
-and a 2.5-fold reduction from the previous serial Mac main measurement. Build, artifact transfer,
-aggregation and runner availability limit the end-to-end gain. Linux main already used three
-cost-balanced fixture shards, so this change does not promise a further Linux main speedup.
+Warm-ups and fixture creation are repeated on every shard. Both workflows execute twelve tool
+rounds including warm-ups per case, versus ten in a serial nine-sample run. Each shard executes
+four rounds including its warm-up, allowing an ideal 2.5-fold reduction in measurement wall time
+relative to that serial run. Build, fixture setup, artifact transfer, aggregation and runner
+availability limit the end-to-end gain.
 
 Aggregation requires the complete planned matrix on every sample shard, exactly the planned raw
 sample count, matching source, binary, reference tools, fixture contents, expected outputs and
