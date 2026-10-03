@@ -223,20 +223,27 @@ commands. v4 is not a portable default; separate generic/v3/v4 distributions rem
 
 Fixture identity is now computed once per fixture, rather than repeatedly for every task.
 PR and main comparisons use three full-matrix sample shards per platform, sharing the same
-compiled binary. PR shards each retain one measured round per case; main shards each retain three.
-The aggregator pools raw rounds and selects the fastest two of three or seven of nine per tool.
+compiled binary. Both PR and main shards retain three measured rounds per case.
+The aggregator pools all nine raw rounds and selects the fastest seven per tool.
 Each sample retains its shard/round identity, and shard provenance records the hashed host ID.
 Both shapes and worker settings therefore appear on every host. Within each round XFF and reference
 tools share a runner, while the participant starting order rotates across shards.
 
 This trades more aggregate work for shorter expected measurement latency: discarded warm-ups make
-six total tool rounds per PR case and twelve per main case, versus four and ten in a serial run.
-Fixture creation also occurs on each shard. Linux already had three fixture shards, so no Linux
-main speedup is claimed without measurement. Matching hardware contracts cannot remove background
+twelve total tool rounds per case, versus ten in a serial nine-sample run.
+Fixture creation also occurs on each shard. Matching hardware contracts cannot remove background
 load or host variation; fastest-run selection can favor a faster host differently for different
 tools. Aggregation rejects incomplete matrices, mismatched commands/fixtures/tool identities,
 wrong sample counts and incompatible CPU environments. The [measurement contract](benchmark-comparisons.md#measurement-shards)
 documents the sampling and comparability tradeoffs.
+
+PR #951's six one-round measurement shards completed in 2m19s to 3m32s in
+[run 37123621346](https://github.com/mboworks/xff/actions/runs/37123621346), leaving substantial
+headroom before the full test jobs finished. PR sampling therefore uses the same nine measured
+rounds and fastest-seven estimator as main. PRs still stop at 10,000 files; main reaches 100,000.
+This improves the sample population without adding runners or builds. Confirm the new shard
+durations in CI; three times as many measured rounds does not imply three times the job duration
+because each shard still prepares its fixtures and performs its warm-up only once.
 
 ## PCRE2 JIT/SIMD verification and RE2 comparison
 
