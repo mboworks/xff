@@ -9,6 +9,12 @@
 
 ## Benchmark runner capacity
 
+- [x] Publish PR benchmark artifacts as soon as both platform comparisons finish, using a trusted
+      publisher and explicit branch-head/tested-merge provenance. Offer PR previews alongside
+      merged history in the chart without adding previews to merged normalization windows.
+- [x] Add a compact reference-adjusted overview with compatible-case counts and largest regressions;
+      update one PR comment with the current preview and 15% advisory warnings. Keep gating deferred.
+- [ ] Verify the first trusted PR-preview deployment and bot comment after the publisher lands on main.
 - [x] Accept flat single-artifact and nested multi-artifact shard downloads; validate the
       complete shard set before deriving report filenames, and keep platform aggregation independent.
 - [x] Reject undersized runners before measurement; use the same 1/3 grid on both hosted
@@ -17,8 +23,10 @@
 - [x] Use three complete-matrix sample shards on both hosted platforms: three measured rounds
       per shard for PR and main; pool raw samples before selecting the fastest seven of nine.
       Share compiled binaries, rotate participant order, and preserve per-sample shard provenance.
-- [ ] Verify nine-round PR artifacts retain every raw observation and the fastest-seven estimate;
-      compare shard durations with PR #951's 2m19s to 3m32s one-round shards.
+- [x] Verify nine-round PR artifacts retain every raw observation and the fastest-seven estimate:
+      PR #952 has 440 tasks / 800 tool-case entries per platform, each with 9 raw / 7 selected samples.
+      Linux jobs took 4m31s-5m17s, macOS 4m33s-7m00s, versus #951's 2m19s-3m32s one-round jobs.
+      Strict host-CPU validation rejected one five-CPU macOS runner; a retry supplied three CPUs.
 - [ ] Verify the first sharded PR/main runs and published results; compare measurement and
       end-to-end wall times, including the extra warm-up and fixture setup costs.
 - [x] Add a CI-only historical backfill workflow for macOS and Linux replacement campaigns,

@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Publish current PR benchmark previews as soon as both platform comparisons finish, with a compact reference-adjusted overview and advisory regression comments.
+
 - Add benchmark range/cap controls, reference-normalized hover timings, PR/release links, and a legend hover preview with selectable transparency and threshold plane.
 - Keep benchmark version, scale and hover details in stable chart-side panels and prevent page jumps when changing measured versions.
 

@@ -31,6 +31,17 @@ def compatibility(record):
 
 def reference_windows(records):
     """Use the first five references initially, then the current and four prior."""
+    merged = [(identity, record) for identity, record in records if not benchmark_records.is_preview(record)]
+    results = _reference_windows(merged)
+    # A preview can use merged references, but must not change their windows or
+    # contribute to another PR's reference performance.
+    for identity, record in records:
+        if benchmark_records.is_preview(record):
+            results[identity] = _reference_windows([*merged, (identity, record)]).get(identity, {})
+    return results
+
+
+def _reference_windows(records):
     selected = {}
     results = {}
     for identity, record in records:

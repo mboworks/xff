@@ -15,6 +15,8 @@ from pathlib import Path
 
 import benchmark_matrix as matrix
 import benchmark_normalization
+import benchmark_overview
+import benchmark_preview
 import benchmark_records
 
 
@@ -250,6 +252,7 @@ def figure(report, order='similarity', metric='percent', groups=None, normalizat
 def figures(report, normalization=None):
     result = {mode: {metric: figure(report, mode, metric, normalization=normalization) for metric in ('percent', 'factor')}
               for mode in ORDER_LABELS}
+    result['overview'] = benchmark_overview.summarize(report)
     if len(report['contract']['cpu_counts']) > 2:
         result['allocation_pairs'] = [
             dict(value=f'{left}/{right}',
@@ -293,6 +296,7 @@ def history_panel(catalog):
             ''.join('<option value="' + key + '">' + label + '</option>'
                     for key, label in ORDER_LABELS.items()) + '</select></label> '
             '<label>Platform: <select data-control="platform"></select></label> '
+            '<label>Source: <select data-control="source"><option value="merged">Merged history</option></select></label> '
             '<label data-allocation-label hidden>Workers: <select data-control="allocations"></select></label> '
             '<button type="button" data-reset style="margin-left:auto">Reset view</button></div>'
             '<div data-chart><div data-version-panel>'
@@ -308,6 +312,8 @@ def history_panel(catalog):
             '<tr><th scope="row">Platform</th><td data-platform></td></tr>'
             '<tr><th scope="row">Details</th><td><div data-platform-details></div></td></tr>'
             '</tbody></table><div role="status" aria-live="polite" hidden></div></div></div></details>'
+            '<section data-overview aria-live="polite"><h2>Performance overview</h2>'
+            '<p>Select a measurement to compare it with its recorded merged baseline.</p></section>'
             '<script src="assets/three-landscape.js"></script><script>'
             'window.XffBenchmarkHistory(document.getElementById("benchmark-explorer"),' + data + ');'
             '</script></section>')
@@ -327,7 +333,7 @@ def publish_history(root, catalog):
         text = before + after
     selected = {}
     for item in catalog:
-        key = (item['platform'], item['commit'])
+        key = (item.get('source', 'merged'), item['platform'], item['commit'])
         rank = (item.get('backfill', False), item.get('measured', ''), item.get('run', 0), item.get('attempt', 0))
         if key not in selected or rank > selected[key][0]:
             selected[key] = (rank, item)
@@ -395,7 +401,7 @@ def render(report, javascript, normalization=None):
             '<h2>Measurements</h2>' + matrix.render_html(report) + '</body></html>')
 
 
-def publish(root, javascript):
+def publish(root, javascript, previews=(), incremental=False, repository='mboworks/xff'):
     """Decorate retained report pages, sharing one plotting bundle across all reports."""
     asset = root / 'assets' / 'three-landscape.js'
     asset.parent.mkdir(parents=True, exist_ok=True)
@@ -403,13 +409,20 @@ def publish(root, javascript):
     start_marker = '<!-- benchmark-landscape:start -->'
     end_marker = '<!-- benchmark-landscape:end -->'
     count = 0
-    catalog = []
+    catalog_path = root / 'catalog.json'
+    incremental = incremental and catalog_path.exists()
+    catalog = ([item for item in json.loads(catalog_path.read_text()) if item.get('source', 'merged') == 'merged']
+               if incremental else [])
     links_path = root / 'version-links.json'
     version_links = json.loads(links_path.read_text()) if links_path.exists() else {}
     records = [(path, json.loads(path.read_text())) for path in benchmark_records.paths(root)]
+    preview_records = [(path, json.loads(path.read_text())) for path in previews]
     windows = benchmark_normalization.reference_windows([(path.relative_to(root).as_posix(), record)
-                                                        for path, record in records])
-    for path, record in records:
+                                                        for path, record in [*records, *preview_records]])
+    for path, record in preview_records:
+        relative = '../' * len(path.parent.relative_to(root).parts)
+        path.with_name('index.html').write_text(benchmark_preview.render_report(record, repository, relative))
+    for path, record in ([*preview_records] if incremental else [*records, *preview_records]):
         report = record.get('tool_comparisons')
         if not report or allocation_groups(report) is None:
             continue
@@ -417,6 +430,7 @@ def publish(root, javascript):
             continue
         source = record.get('source')
         local = benchmark_records.is_local(record)
+        preview = benchmark_records.is_preview(record)
         normalization = windows.get(path.relative_to(root).as_posix(), {})
         path.with_name('normalization.json').write_text(json.dumps(normalization, allow_nan=False), encoding='utf-8')
         if source or local:
@@ -435,8 +449,14 @@ def publish(root, javascript):
                 label = 'PR ' + str(source['pull_requests'][0]['number']) + ' / ' + commit[:10]
             if benchmark_records.is_backfill(record):
                 label = 'CI backfill / ' + commit[:10]
+            links = version_links.get(commit, [])
+            if preview:
+                number = record.get('pull_number') or source['pull_requests'][0]['number']
+                links = [{'label': f'PR #{number} preview', 'href': f'https://github.com/{repository}/pull/{number}'}]
             catalog.append(dict(platform=platform, commit=commit, label=label,
-                                links=version_links.get(commit, []),
+                                source=f'pr-{number}' if preview else 'merged',
+                                source_label=f'PR #{number} preview' if preview else 'Merged history',
+                                links=links,
                                 date=benchmark_records.reference_time(record),
                                 measurement_date=record.get('completed_at'),
                                 backfill=benchmark_records.is_backfill(record),
@@ -462,6 +482,7 @@ def publish(root, javascript):
         section = start_marker + '<h2>Comparison landscape</h2>' + fragment + end_marker
         page.write_text(text[:insertion] + section + text[insertion:], encoding='utf-8')
         count += 1
+    catalog_path.write_text(json.dumps(catalog, indent=2, allow_nan=False) + '\n')
     publish_history(root, catalog)
     return count
 
@@ -472,11 +493,18 @@ def main():
     parser.add_argument('--site-root', type=Path)
     parser.add_argument('--renderer-js', type=Path, required=True)
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--pulls', type=Path, help='Trusted PR API metadata, for current preview selection')
+    parser.add_argument('--repository', default='mboworks/xff')
+    parser.add_argument('--incremental-previews', action='store_true')
     args = parser.parse_args()
     if args.site_root:
         if args.report or args.output:
             parser.error('--site-root cannot be combined with report or --output')
-        print(f'Decorated {publish(args.site_root, args.renderer_js.read_text())} benchmark pages')
+        pulls = json.loads(args.pulls.read_text()) if args.pulls else []
+        if pulls and isinstance(pulls[0], list):
+            pulls = [pull for page in pulls for pull in page]
+        previews = benchmark_preview.selected(args.site_root, pulls)
+        print(f'Decorated {publish(args.site_root, args.renderer_js.read_text(), previews, args.incremental_previews, args.repository)} benchmark pages')
         return
     if args.report is None or args.output is None:
         parser.error('report and --output are required without --site-root')

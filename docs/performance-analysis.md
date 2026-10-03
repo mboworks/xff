@@ -241,9 +241,13 @@ PR #951's six one-round measurement shards completed in 2m19s to 3m32s in
 [run 37123621346](https://github.com/mboworks/xff/actions/runs/37123621346), leaving substantial
 headroom before the full test jobs finished. PR sampling therefore uses the same nine measured
 rounds and fastest-seven estimator as main. PRs still stop at 10,000 files; main reaches 100,000.
-This improves the sample population without adding runners or builds. Confirm the new shard
-durations in CI; three times as many measured rounds does not imply three times the job duration
-because each shard still prepares its fixtures and performs its warm-up only once.
+This improves the sample population without adding runners or builds. PR #952's
+[run 37126531617](https://github.com/mboworks/xff/actions/runs/37126531617) confirms 440 tasks and
+800 tool/case entries per platform, each with nine raw samples and seven selected. Linux shard
+jobs took 4m31s-5m17s; the accepted macOS shards took 4m33s-7m00s. These include runner setup,
+fixture creation and warm-up. They are elapsed job observations, not isolated measurement costs.
+The initial macOS set mixed three- and five-CPU hosts; strict compatibility correctly rejected it.
+Retrying the five-CPU shard produced a compatible three-CPU set without changing the PR or validator.
 
 ## PCRE2 JIT/SIMD verification and RE2 comparison
 

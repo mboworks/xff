@@ -29,7 +29,53 @@ def hover_values(text):
             for row in element_tree.fromstring(text).findall('./tbody/tr')}
 
 
+def preview_report():
+    data = report(cpus=(1, 3))
+    data.update(schema=1, tools={}, baseline={'head': 'a' * 40, 'status': 'available', 'averages': {},
+                                            'run': 1, 'attempt': 1, 'policy': 'mean of fastest 7/9 runs'})
+    for task in data['tasks']:
+        task.update(shape=f"{task['dataset']}/{task['cpus']}/{task['files']}", input_files=task['files'], expected_count=1)
+        data['baseline']['averages'][landscape.matrix.task_key(task)] = {'xff': 0.5, 'rg': 1}
+        for name, entry in task['participants'].items():
+            entry['pipeline'] = [[name]]
+            for sample in entry['samples']:
+                elapsed = sample['elapsed_seconds']
+                sample.update(dict.fromkeys(landscape.benchmark_preview.benchmark_compare.METRICS))
+                sample.update(elapsed_seconds=elapsed, stderr='', exit_codes=[0])
+    return data
+
+
 class BenchmarkLandscapeTest(unittest.TestCase):
+    def test_incremental_preview_publication_preserves_merged_pages_and_removes_stale_selection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'index.html').write_text('<h1>History</h1>')
+            main = root / 'runs/1/1/linux'
+            main.mkdir(parents=True)
+            (main / 'report.json').write_text(json.dumps(dict(tool_comparisons=report(), platform='linux',
+                head='a' * 40, source=dict(id=1, run_attempt=1, head_branch='main', event='push',
+                                          created_at='2026-09-01T00:00:00Z'))))
+            (main / 'index.html').write_text('<h1>Main</h1>')
+            landscape.publish(root, '/* renderer */')
+            before = {path.name: path.read_bytes() for path in main.iterdir()}
+            preview = root / 'previews/952/2/1/linux'
+            preview.mkdir(parents=True)
+            (preview / 'report.json').write_text(json.dumps(dict(tool_comparisons=preview_report(), platform='linux',
+                kind='pr-preview', pull_number=952, head='c' * 40, branch_head='b' * 40, base='a' * 40,
+                source=dict(id=2, run_attempt=1, head_branch='feature', event='pull_request',
+                            pull_requests=[{'number': 952}], created_at='2026-10-03T00:00:00Z'))))
+            path = preview / 'report.json'
+            self.assertEqual(landscape.publish(root, '/* renderer */', [path], True), 1)
+            self.assertEqual({path.name: path.read_bytes() for path in main.iterdir()}, before)
+            catalog = json.loads((root / 'catalog.json').read_text())
+            self.assertEqual([item['source'] for item in catalog], ['merged', 'pr-952'])
+            self.assertIn('PR #952 preview', (root / 'index.html').read_text())
+            self.assertIn('tested merge', (preview / 'index.html').read_text())
+            self.assertEqual(json.loads((preview / 'landscape.json').read_text())['overview']['status'], 'warning')
+            landscape.publish(root, '/* renderer */', [], True)
+            self.assertNotIn('pr-952', (root / 'catalog.json').read_text())
+            self.assertTrue(path.exists())
+
     def test_normalized_timings_follow_cells_without_changing_relative_values(self):
         data = report(cpus=(1, 3, 10))
         timings = {
@@ -271,7 +317,7 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                 self.assertEqual(row['measurement_date'], '2026-10-02T12:00:00Z'
                                  if row['platform'] == 'macos' else None)
                 payload = json.loads((root / row['figures']).read_text())
-                self.assertEqual(set(payload), set(landscape.ORDER_LABELS))
+                self.assertEqual(set(payload), set(landscape.ORDER_LABELS) | {'overview'})
                 expected = '3 workers' if row['platform'] == 'macos' else '4 workers'
                 self.assertIn(expected, payload['similarity']['percent']['layout']['scene']['xaxis']['title']['text'])
                 self.assertTrue((root / row['report'] / 'index.html').is_file())

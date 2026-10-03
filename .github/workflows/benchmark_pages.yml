@@ -4,31 +4,60 @@ name: Publish benchmarks
 
 on:
   workflow_run:
-    workflows: [Benchmarks, Release, Benchmark backfill]
-    types: [completed]
+    workflows: [Test, Benchmarks, Release, Benchmark backfill]
+    types: [in_progress, completed]
   workflow_dispatch: {}
 
 permissions: {}
 
-concurrency:
-  group: coverage-pages
-  queue: max
-  cancel-in-progress: false
-
 jobs:
-  publish:
+  preview:
     if: >-
+      github.event_name == 'workflow_run' && github.event.action == 'in_progress' &&
+      github.event.workflow_run.name == 'Test' && github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 125
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      available: ${{ steps.wait.outputs.available }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      # Waiting consumes no deployment lock and executes no incoming PR code.
+      - name: Wait for benchmark comparisons, independently of the other Test jobs
+        id: wait
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ github.event.workflow_run.id }}
+          SOURCE_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: |
+          python3 tools/benchmark_preview_ci.py wait --repository="${GITHUB_REPOSITORY}" \
+            --run="${SOURCE_RUN}" --attempt="${SOURCE_ATTEMPT}" --output="${GITHUB_OUTPUT}"
+
+  publish:
+    needs: [preview]
+    if: >-
+      always() && !cancelled() && (needs.preview.outputs.available == 'true' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
       (github.event.workflow_run.name == 'Release' ||
       (github.event.workflow_run.head_branch == 'main' &&
-      (github.event.workflow_run.event == 'push' ||
-      (github.event.workflow_run.name == 'Benchmark backfill' && github.event.workflow_run.event == 'workflow_dispatch')))))
+      ((github.event.workflow_run.name == 'Benchmarks' && github.event.workflow_run.event == 'push') ||
+      (github.event.workflow_run.name == 'Benchmark backfill' && github.event.workflow_run.event == 'workflow_dispatch'))))))
+    concurrency:
+      group: coverage-pages
+      queue: max
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: write
-      pull-requests: read
+      pull-requests: write
       pages: write
       id-token: write
     environment:
@@ -45,6 +74,17 @@ jobs:
         with:
           ref: coverage-pages
           path: site
+      - name: Verify and retain current PR benchmark JSON
+        if: needs.preview.outputs.available == 'true'
+        id: preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ github.event.workflow_run.id }}
+          SOURCE_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: |
+          python3 source/tools/benchmark_preview_ci.py collect --repository="${GITHUB_REPOSITORY}" \
+            --run="${SOURCE_RUN}" --attempt="${SOURCE_ATTEMPT}" --root=site/benchmarks \
+            --output="${GITHUB_OUTPUT}"
       - uses: actions/download-artifact@v8
         if: github.event.workflow_run.name == 'Benchmarks'
         with:
@@ -98,13 +138,20 @@ jobs:
       - name: Refresh stable benchmark references and deploy
         env:
           GH_TOKEN: ${{ github.token }}
+          PREVIEW: ${{ needs.preview.outputs.available }}
         run: |
           set -euo pipefail
           gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=100" > pulls.json
-          python3 source/tools/benchmark_history.py refresh \
-            --root=site/benchmarks --pulls=pulls.json --checkout=source --repository="${GITHUB_REPOSITORY}"
+          incremental=()
+          if [ "${PREVIEW}" = 'true' ]; then
+            incremental+=(--incremental-previews)
+          else
+            python3 source/tools/benchmark_history.py refresh \
+              --root=site/benchmarks --pulls=pulls.json --checkout=source --repository="${GITHUB_REPOSITORY}"
+          fi
           python3 source/tools/benchmark_landscape.py --site-root=site/benchmarks \
-            --renderer-js=source/tools/benchmark_web/dist/landscape.js
+            --renderer-js=source/tools/benchmark_web/dist/landscape.js --pulls=pulls.json \
+            --repository="${GITHUB_REPOSITORY}" "${incremental[@]}"
           git -C site config user.name 'github-actions[bot]'
           git -C site config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git -C site add benchmarks
@@ -127,3 +174,14 @@ jobs:
         run: |
           python3 source/tools/verify_benchmark_publication.py \
             --index=public/benchmarks/index.html --url="${PAGE_URL}benchmarks/index.html"
+      - name: Update the current PR benchmark overview after publication
+        if: steps.preview.outputs.available == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          SOURCE_RUN: ${{ github.event.workflow_run.id }}
+          SOURCE_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: |
+          python3 source/tools/benchmark_preview_ci.py comment --repository="${GITHUB_REPOSITORY}" \
+            --run="${SOURCE_RUN}" --attempt="${SOURCE_ATTEMPT}" --root=site/benchmarks \
+            --site-url="${PAGE_URL}benchmarks/"

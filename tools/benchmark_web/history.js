@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 // SPDX-License-Identifier: Apache-2.0
 import { chartSidebar, panelStyle, reserveChart, viewOptions } from "./view.js";
+import { renderOverview } from "./overview.js";
 
 window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   const platform = root.querySelector('[data-control="platform"]');
+  const source = root.querySelector('[data-control="source"]');
   const version = root.querySelector('[data-control="version"]');
   const status = root.querySelector('[role="status"]');
   const reportLink = root.querySelector("[data-report]");
@@ -39,12 +41,12 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
       Number(left.startsWith("Local /")) -
         Number(right.startsWith("Local /")) || left.localeCompare(right),
   );
-  for (const name of platforms) {
-    const option = document.createElement("option");
-    option.value = name;
-    option.textContent = name;
-    platform.append(option);
-  }
+  for (const [value, label] of new Map(
+    catalog
+      .filter((row) => row.source && row.source !== "merged")
+      .map((row) => [row.source, row.source_label]),
+  ))
+    source?.add(new Option(label, value));
   async function selectVersion() {
     const index = Number(version.value);
     const record = records[index];
@@ -113,6 +115,7 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
         viewOptions(metric.value, range, overflow, normalization),
       );
       showReport();
+      renderOverview(root.querySelector("[data-overview]"), figures.overview);
       status.textContent = "";
       status.title = "";
       status.hidden = true;
@@ -134,13 +137,34 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   }
   function selectPlatform() {
     const commit = current?.commit;
-    records = catalog.filter((row) => row.platform === platform.value);
+    records = catalog.filter(
+      (row) =>
+        row.platform === platform.value &&
+        (row.source || "merged") === (source?.value || "merged"),
+    );
+    if (!records.length) return;
     version.max = String(records.length - 1);
     version.disabled = records.length < 2;
     const matching = records.findIndex((row) => row.commit === commit);
     version.value = String(matching < 0 ? records.length - 1 : matching);
     selectVersion();
   }
+  function selectSource() {
+    const previous = platform.value;
+    const available = new Set(
+      catalog
+        .filter(
+          (row) => (row.source || "merged") === (source?.value || "merged"),
+        )
+        .map((row) => row.platform),
+    );
+    platform.replaceChildren();
+    for (const name of platforms.filter((name) => available.has(name)))
+      platform.add(new Option(name, name));
+    if (available.has(previous)) platform.value = previous;
+    if (available.size) selectPlatform();
+  }
+  source?.addEventListener("change", selectSource);
   platform.addEventListener("change", selectPlatform);
   version.addEventListener("input", selectVersion);
   for (const selector of [
@@ -162,7 +186,7 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   root.querySelector("details").addEventListener("toggle", (event) => {
     if (event.target.open) requestAnimationFrame(() => chart?.resize());
   });
-  if (catalog.length) selectPlatform();
+  if (catalog.length) selectSource();
   else {
     status.hidden = false;
     status.textContent = "No retained reports have comparison landscape data.";
