@@ -1859,7 +1859,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "grep-output",
         .header = "Content-match output",
         .summary = "parse ripgrep-style search arguments and print matching lines",
-        .details = "Initial selection must precede roots; later `--rg` resumes rg options after `--xff`. "
+        .details = "May follow native roots and matchers: `xff src -name '*.cc' --rg TODO -n`. "
+                   "Native matchers select files; the rg pattern selects output lines. "
+                   "Later `--rg` resumes rg options after `--xff`. "
                    "Invocation as `rg` selects this grammar automatically. "
                    "Selects `--config=rg` and content output. `--xff` switches subsequent "
                    "arguments to an XFF filter expression without resetting output or configuration. "

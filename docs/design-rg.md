@@ -21,11 +21,37 @@ scope. The compatibility lookup and help table are constexpr projections of thos
 declarations, including their summaries and translation targets. They are not a
 second inventory. The rg frontend handles pattern/root ordering and typed effects.
 
-The initial `--rg` belongs before roots. Once rg grammar is selected, `--xff` and
+The initial `--rg` may appear before roots or after native roots and matchers. `--xff` and
 `--rg` may switch repeatedly at option boundaries. Switches only change interpretation
 of subsequent tokens: they preserve the search, roots, configuration and accumulated
-settings. Search patterns and paths belong in rg segments; native segments contribute
-file-filter expressions. Their boolean expression continues across rg segments.
+settings. Native roots remain roots: the first positional argument in rg segments supplies
+the pattern unless `-e` or `-f` supplies explicit patterns. Additional rg paths extend the
+existing roots. After `--xff`, native segments contribute file-filter expressions.
+Their boolean expression continues across rg segments, including parenthesized groups.
+
+## Select files with XFF, then select lines with rg
+
+XFF combines its native file and metadata predicates with rg's concise content search:
+
+```sh
+xff --sort=dir src tests -type f -name '*.cc' -size +1k --rg TODO -n -C2
+```
+
+This selects C++ source files larger than 1 KiB under both roots, then prints their `TODO`
+lines with line numbers and two context lines on either side. Native content matchers
+also select whole files independently of the output pattern:
+
+```sh
+xff src -name '*.cc' -rxc license --rg TODO -n
+```
+
+Only C++ source files containing `license` are searched for output; the printed lines
+match `TODO`. Flags before the roots, native predicates, and trailing rg flags all retain
+their own grammar. This combines file-selection expressions with rg output in one command,
+without a separate filename pipeline. The initial `--rg` selects the `rg` preset at that
+point in configuration order; later mode switches do not reapply it.
+
+## Mode-specific spellings
 
 | Spelling    | XFF/find interpretation                    | Rg interpretation                     |
 | ----------- | ------------------------------------------ | ------------------------------------- |

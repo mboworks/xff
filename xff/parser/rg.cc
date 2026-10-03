@@ -37,22 +37,53 @@ namespace {
 struct RootOperand {
   std::string path;
   std::string name;
+  bool pattern_candidate = true;
 };
 
 class RgParser {
  public:
   RgParser(const std::vector<std::string>& args, std::size_t start) : args_(args), index_(start) {}
 
+  RgParser(const std::vector<std::string>& args, std::size_t start, const Command& prefix)
+      : args_(args), index_(start), mode_(registry::Mode::kXff), rg_selected_(false), native_(prefix.globals) {
+    native_.insert(native_.end(), prefix.meta_flags.begin(), prefix.meta_flags.end());
+    positionals_.reserve(prefix.roots.size());
+    for (std::size_t index = 0; index < prefix.roots.size(); ++index) {
+      const auto& name = prefix.root_names.at(index);
+      positionals_.push_back({.path = prefix.roots.at(index), .name = name, .pattern_candidate = false});
+      named_roots_ += static_cast<std::size_t>(!name.empty());
+    }
+  }
+
+  absl::StatusOr<Command> Parse() {
+    MBO_RETURN_IF_ERROR(ReadArguments());
+    return BuildCommand();
+  }
+
+  absl::StatusOr<std::optional<Command>> TryParseNative() {
+    MBO_RETURN_IF_ERROR(ReadArguments());
+    if (!rg_selected_) {
+      return std::nullopt;
+    }
+    MBO_ASSIGN_OR_RETURN(auto command, BuildCommand());
+    return std::move(command);
+  }
+
+ private:
   // The option grammar deliberately keeps mode transitions, positional roots,
   // and native expression parsing in one pass so their ordering is explicit.
   // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-  absl::StatusOr<Command> Parse() {
+  absl::Status ReadArguments() {
     for (; index_ < args_.size(); ++index_) {
       const std::string_view arg = args_.at(index_);
       if (options_) {
         const auto flag = cli::LookupGlobal(arg, mode_);
         if (flag.has_value() && flag->enters_mode.has_value()) {
           mode_ = *flag->enters_mode;
+          if (!rg_selected_ && mode_ == registry::Mode::kRg) {
+            native_.insert(native_.end(), {"--config=rg", "--match-output", "--exit-match"});
+            rg_selected_ = true;
+          }
           continue;
         }
       }
@@ -70,9 +101,13 @@ class RgParser {
         positionals_.push_back({.path = std::string(arg)});
       }
     }
+    return absl::OkStatus();
+  }
+
+  absl::StatusOr<Command> BuildCommand() {
     if (!explicit_patterns_) {
-      const auto pattern =
-          std::ranges::find_if(positionals_, [](const RootOperand& root) { return root.name.empty(); });
+      const auto pattern = std::ranges::find_if(
+          positionals_, [](const RootOperand& root) { return root.pattern_candidate && root.name.empty(); });
       if (pattern == positionals_.end()) {
         if (!help_ && !search_.type_list) {
           return absl::InvalidArgumentError("--rg requires PATTERN or -e PATTERN / -f FILE");
@@ -107,7 +142,6 @@ class RgParser {
     return command;
   }
 
- private:
   // Copy each primary and its complete argument run together. Mode-looking values
   // therefore remain literal, including command arguments and attached bindings.
   void NativeToken(std::string_view arg) {
@@ -285,6 +319,7 @@ class RgParser {
   std::size_t index_;
   bool options_ = true;
   registry::Mode mode_ = registry::Mode::kRg;
+  bool rg_selected_ = true;
   bool explicit_patterns_ = false;
   bool help_ = false;
   RgSearch search_;
@@ -297,5 +332,12 @@ class RgParser {
 
 absl::StatusOr<Command> ParseRg(const std::vector<std::string>& args, std::size_t start) {
   return RgParser(args, start).Parse();
+}
+
+absl::StatusOr<std::optional<Command>> TryParseRg(
+    const std::vector<std::string>& args,
+    std::size_t start,
+    const Command& prefix) {
+  return RgParser(args, start, prefix).TryParseNative();
 }
 }  // namespace xff::parser

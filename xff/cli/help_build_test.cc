@@ -221,6 +221,15 @@ TEST_F(BuildReferenceTest, RgExampleBelongsToCommandStructureInsteadOfComparison
   EXPECT_THAT(ProseTextOf(SectionNamed(doc, "Command structure").children), HasSubstr(kRecipe));
 }
 
+TEST_F(BuildReferenceTest, RgHelpExplainsNativeFileSelectionBeforeLineSelection) {
+  const auto text = ProseTextOf(SectionNamed(doc, "Ripgrep-style searches").children);
+  EXPECT_THAT(text, HasSubstr("xff [FLAGS] PATH... [MATCHERS] --rg PATTERN [RG-OPTIONS]"));
+  EXPECT_THAT(text, HasSubstr("Roots and matchers before"));
+  EXPECT_THAT(text, HasSubstr("remain active; the first rg positional argument is the search pattern"));
+  EXPECT_THAT(text, HasSubstr("independently selects which lines to print"));
+  EXPECT_THAT(text, Not(HasSubstr("Switching back into rg grammar is not supported")));
+}
+
 TEST_F(BuildReferenceTest, SeeAlsoCarriesManPageCrossReferences) {
   const Section& see_also = SectionNamed(doc, "See also");
   ASSERT_THAT(see_also.children, SizeIs(1));

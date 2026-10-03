@@ -999,10 +999,18 @@ Section RgSection(bool in_full) {
       "`-f -` consumes stdin as patterns, making the no-path default the current directory. "
       "Using stdin as both a pattern file and a search path is an error."));
   section.children.push_back(ProseOf(
+      "Combine XFF's file selection with rg's matching-line output: "
+      "`xff [FLAGS] PATH... [MATCHERS] --rg PATTERN [RG-OPTIONS]`. "
+      "For example, `xff src -type f -name '*.cc' -size +1k --rg TODO -n -C2` searches only C++ source files "
+      "larger than 1 KiB and prints matching lines with numbers and context. "
+      "Roots and matchers before `--rg` remain active; the first rg positional argument is the search pattern, "
+      "and additional rg paths extend the existing roots. Even a native content matcher such as `-rxc` "
+      "selects files, while the rg pattern independently selects which lines to print."));
+  section.children.push_back(ProseOf(
       "`--xff` starts a native XFF file-filter expression against the collected paths. It preserves search patterns, "
       "configuration and output controls. For example, `xff --rg -n TODO src --xff -name '*.cc' -size +1k`. "
       "The filter selects files; only the rg patterns select output lines, even if the filter contains `-rxc`. "
-      "Actions are rejected in rg mode. Switching back into rg grammar is not supported. "
+      "Actions are rejected in rg mode. Switch repeatedly with `--rg` and `--xff` at option boundaries. "
       "In native XFF grammar, `--xff` is a no-op. Both mode flags are CLI-only. "
       "`--config=rg` by itself only selects configuration; it does not change argument grammar."));
   section.children.push_back(ProseOf(

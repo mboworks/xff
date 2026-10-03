@@ -583,8 +583,10 @@ predicate or action counts as a consumer after selector expansion and safety gat
 arguments never become modifier requests. A setting superseded later by configuration is no longer
 the effective CLI request.
 
-`--rg` and `--xff` are CLI-only grammar selectors. the initial `--rg` must precede the roots;
-it selects the `rg` configuration and enables content output. Invocation through a
+`--rg` and `--xff` are CLI-only grammar selectors. The initial `--rg` may precede roots or
+follow native roots and matchers; it selects the `rg` configuration at that point in source
+order and enables content output. For example, `xff src -name '*.cc' --rg TODO -n` selects
+files with native matchers and prints lines selected by the rg pattern. Invocation through a
 `rg` basename does the same automatically, including short options,
 stdin defaults, and the `--xff` filter tail. For example, `rg -n TODO src --xff -name '*.cc'`
 is the invocation-name form of `xff --rg -n TODO src --xff -name '*.cc'`. `--config=rg` alone

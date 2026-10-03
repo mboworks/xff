@@ -241,6 +241,16 @@ test::context_short_options_follow_mode_boundaries() {
   _check 0 $'1-before\n2:hit\n3-after' --rg -n hit "${root}/lines" --xff --context=1
 }
 
+test::native_filters_can_precede_rg_pattern_and_trailing_options() {
+  local root
+  root="$(_tree)"
+  printf 'TODO excluded\n' >"${root}/excluded.txt"
+  printf 'other\nTODO rejected\n' >"${root}/rejected.cc"
+  _check 0 $'1:TODO one\n2-other\n3:TODO two TODO' --sort=dir "${root}" \
+    -type f -name '*.cc' -rxc 'TODO one' --rg todo -inA1 -I
+  _check 1 '' --sort=dir "${root}" -name '*.cc' --rg absent -I
+}
+
 test::context_help_explains_rg_only_short_options() {
   local out
   out="$("$(_bin)" --help=--context --width=0)"

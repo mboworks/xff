@@ -920,14 +920,15 @@ class CommandParser {
 
   absl::StatusOr<Command> Parse() {
     MBO_RETURN_IF_ERROR(LeadingGlobals());
-    const auto selector = index_ < args_.size() ? cli::LookupGlobal(args_[index_]) : std::nullopt;
-    if (!options_ended_ && selector.has_value() && selector->enters_mode == registry::Mode::kRg) {
-      MBO_ASSIGN_OR_RETURN(auto command, ParseRg(args_, index_ + 1));
-      command.globals.insert(command.globals.begin(), command_.globals.begin(), command_.globals.end());
-      command.meta_flags.insert(command.meta_flags.begin(), command_.meta_flags.begin(), command_.meta_flags.end());
-      return command;
-    }
     MBO_RETURN_IF_ERROR(Roots());
+    // Only inspect native operand boundaries when a selector could occur. Ordinary native
+    // commands keep the direct parser path; the rg parser consumes literal arguments atomically.
+    if (!options_ended_ && std::ranges::contains(args_, "--rg")) {
+      MBO_ASSIGN_OR_RETURN(auto command, TryParseRg(args_, index_, command_));
+      if (command.has_value()) {
+        return std::move(*command);
+      }
+    }
     command_.grammar = GrammarFromGlobalsInternal(command_.globals);
     MBO_RETURN_IF_ERROR(Expression());
     return std::move(command_);
@@ -939,9 +940,6 @@ class CommandParser {
     const auto selector = cli::LookupGlobal(name);
     if (selector.has_value() && selector->enters_mode.has_value() && name.size() != argument.size()) {
       return absl::InvalidArgumentError("--rg and --xff do not take values");
-    }
-    if (selector.has_value() && selector->enters_mode == registry::Mode::kRg) {
-      return absl::InvalidArgumentError("--rg must precede roots and the expression when first selecting rg grammar");
     }
     if (IsMetaFlag(argument)) {
       command_.meta_flags.push_back(argument);
@@ -993,6 +991,12 @@ class CommandParser {
   absl::Status Roots() {
     for (; index_ < args_.size(); ++index_) {
       const std::string& argument = args_[index_];
+      if (!options_ended_) {
+        const auto selector = cli::LookupGlobal(argument);
+        if (selector.has_value() && selector->enters_mode == registry::Mode::kRg) {
+          break;
+        }
+      }
       if (!options_ended_ && (IsHoistableGlobal(argument) || IsMetaFlag(argument))) {
         MBO_RETURN_IF_ERROR(Global(argument));
         continue;

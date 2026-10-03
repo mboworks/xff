@@ -17,6 +17,7 @@
 #define XFF_PARSER_RG_H_
 
 #include <cstddef>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -28,5 +29,12 @@
 namespace xff::parser {
 // Parse the segment after --rg. --xff starts a native filter expression.
 absl::StatusOr<Command> ParseRg(const std::vector<std::string>& args, std::size_t start);
+
+// Continue a native command at a root/expression boundary if its remaining tokens select rg.
+// Primary operands and command arguments remain literal. No selector returns no command.
+absl::StatusOr<std::optional<Command>> TryParseRg(
+    const std::vector<std::string>& args,
+    std::size_t start,
+    const Command& prefix);
 }  // namespace xff::parser
 #endif  // XFF_PARSER_RG_H_
