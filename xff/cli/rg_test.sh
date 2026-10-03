@@ -249,10 +249,30 @@ test::context_help_explains_rg_only_short_options() {
   expect_output_contains '-C N' "${out}"
   expect_output_contains 'These short forms require rg mode' "${out}"
   expect_output_not_contains 'NO single-dash' "${out}"
-  out="$("$(_bin)" --help=--after-context --width=0)"
+  out="$("$(_bin)" --help=--context-after --width=0)"
   expect_output_contains '-A N' "${out}"
-  out="$("$(_bin)" --help=--before-context --width=0)"
+  out="$("$(_bin)" --help=--context-before --width=0)"
   expect_output_contains '-B N' "${out}"
+}
+
+test::context_family_names_share_rg_output_and_config_settings() {
+  local root flag out rc
+  root="$(test_tmpdir context-names)"
+  printf 'before\nhit\nafter\n' >"${root}/lines"
+  _check 0 $'before\nhit' --rg --context-before=1 hit "${root}/lines"
+  _check 0 $'before\nhit' --rg --before-context 1 hit "${root}/lines"
+  _check 0 $'hit\nafter' --rg --context-after=1 hit "${root}/lines"
+  _check 0 $'hit\nafter' --rg --after-context 1 hit "${root}/lines"
+  _check 0 $'before\nhit\nafter' --context-before=1 --context-after=1 --no-filename --no-line-number \
+    "${root}/lines" -grep hit
+  for flag in --before-context --after-context; do
+    out="$("$(_bin)" "${flag}=1" "${root}/lines" -grep hit 2>&1)" && rc=0 || rc=$?
+    expect_eq 2 "${rc}"
+    expect_output_contains "${flag}" "${out}"
+  done
+  printf '%s\n' '--context-before=1' '--context-after=1' >"${root}/user.ini"
+  out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "$(_bin)" --rg hit "${root}/lines")"
+  expect_eq $'before\nhit\nafter' "${out}"
 }
 
 test::only_matching_applies_max_columns_to_each_portion() {

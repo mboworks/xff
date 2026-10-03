@@ -783,7 +783,7 @@ bool GrepSuppressesTemplate(const std::vector<std::string>& globals) {
   return ResolveGrepOptions(globals).output != GrepOptions::Output::kLines;
 }
 
-// --context=SPEC / --before-context=N / --after-context=N (grep -C/-B/-A): the lines of context
+// --context=SPEC / --context-before=N / --context-after=N (grep -C/-B/-A): the lines of context
 // -grep prints before/after each match. Processed in order, last value per side wins; `specified`
 // distinguishes a deliberate `--context=0` from no context flag. A malformed value is a usage error.
 struct GrepContext {
@@ -794,8 +794,8 @@ struct GrepContext {
 
 absl::StatusOr<GrepContext> ResolveGrepContext(const std::vector<std::string>& globals) {
   constexpr std::string_view kContext = "--context=";
-  constexpr std::string_view kBefore = "--before-context=";
-  constexpr std::string_view kAfter = "--after-context=";
+  constexpr std::string_view kBefore = "--context-before=";
+  constexpr std::string_view kAfter = "--context-after=";
   GrepContext result;
   for (const std::string& global : globals) {
     if (global.starts_with(kContext)) {
@@ -808,13 +808,13 @@ absl::StatusOr<GrepContext> ResolveGrepContext(const std::vector<std::string>& g
       result.specified = true;
       if (const std::string_view value = std::string_view(global).substr(kBefore.size());
           !absl::SimpleAtoi(value, &result.before)) {
-        return absl::InvalidArgumentError(absl::StrCat("bad --before-context value '", value, "'"));
+        return absl::InvalidArgumentError(absl::StrCat("bad --context-before value '", value, "'"));
       }
     } else if (global.starts_with(kAfter)) {
       result.specified = true;
       if (const std::string_view value = std::string_view(global).substr(kAfter.size());
           !absl::SimpleAtoi(value, &result.after)) {
-        return absl::InvalidArgumentError(absl::StrCat("bad --after-context value '", value, "'"));
+        return absl::InvalidArgumentError(absl::StrCat("bad --context-after value '", value, "'"));
       }
     }
   }
@@ -4898,7 +4898,7 @@ RunResult RunFindCore(
     grep_options.color = colorize;
   }
   const bool grep_suppresses_template = grep_options.output != GrepOptions::Output::kLines;
-  // --context / --before-context / --after-context (grep -C/-B/-A): -grep context lines. Validated
+  // --context / --context-before / --context-after (grep -C/-B/-A): -grep context lines. Validated
   // here so a bad value is a usage error (exit 2) before the walk.
   const absl::StatusOr<GrepContext> grep_context_result = ResolveGrepContext(command.globals);
   if (!grep_context_result.ok()) {

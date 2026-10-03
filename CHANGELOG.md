@@ -3,7 +3,7 @@
 
 # 0.9.0
 
-- Clarify rg-only `-A`, `-B`, and `-C` context aliases and verify their value forms and mode boundaries.
+- Group context controls as `--context`, `--context-after`, and `--context-before`; retain rg-compatible long and short spellings in rg mode.
 
 - Simplify redundant macOS platform labels in benchmark cards and keep archived pre-merge reports out of the current PR preview selector.
 

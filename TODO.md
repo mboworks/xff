@@ -87,7 +87,8 @@ regresses 3-11% across the two sessions. Keep this tradeoff visible when compari
 ## Content-search output controls
 
 - [x] Verify conflict-free rg-only `-A` / `-B` / `-C` context aliases, separate/attached
-      counts and mode boundaries; correct help that incorrectly described them as unavailable.
+      counts and mode boundaries; use canonical `--context-after` / `--context-before` names and
+      retain rg long spellings through the same registry entries.
 
 - [x] Return a style enum for invocation dispatch; keep custom config selectors separate.
 - [x] Limit full-binary preset mapping to `xff_full`; preserve all other invocation names.

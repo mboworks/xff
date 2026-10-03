@@ -35,8 +35,8 @@ file-filter expressions. Their boolean expression continues across rg segments.
 | `+`         | OR in XFF, rejected as an operator in find | Literal pattern/path                  |
 | `-M`        | Default content-match output               | Maximum output columns; takes a value |
 | `--unicode` | Valued presentation setting                | UTF-8 search interpretation           |
-| `-A N`      | Unsupported; use `--after-context=N`       | N lines after each match              |
-| `-B N`      | Unsupported; use `--before-context=N`      | N lines before each match             |
+| `-A N`      | Unsupported; use `--context-after=N`       | N lines after each match              |
+| `-B N`      | Unsupported; use `--context-before=N`      | N lines before each match             |
 | `-C N`      | Unsupported; use `--context=N`             | N lines before and after each match   |
 
 ```sh
@@ -46,8 +46,11 @@ xff --rg TODO src --xff -type f --rg -tcpp -o --xff -name '*.h'
 Context counts can be separate (`-A 2`, `-B 2`, `-C 2`) or attached (`-A2`, `-B2`,
 `-C2`), including at the end of a short-option bundle (`-nC2`). Rg options may
 precede or follow the pattern and paths. These aliases are available only in rg
-segments; after `--xff`, use the long forms or switch back with `--rg`. INI files
-use the long forms. A zero count requests no context on the selected side.
+segments. The canonical names `--context`, `--context-after`, and `--context-before`
+group the output function before its direction and work in all modes and INI files.
+Rg mode additionally accepts `--after-context` and `--before-context`, mapped to the
+same registry entries. After `--xff`, use the canonical names or switch back with
+`--rg`. A zero count requests no context on the selected side.
 
 ```sh
 xff --rg -n -B 1 -A2 TODO src
