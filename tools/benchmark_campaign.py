@@ -185,8 +185,8 @@ def retain(root, artifacts, source, repository):
     trusted['pull_requests'] = []
     destination = root / 'backfills' / str(run) / str(attempt)
     originals = {}
-    for path in root.glob('runs/*/*/**/report.json'):
-        old = json.loads(path.read_text())
+    for path in benchmark_records.run_paths(root):
+        old = benchmark_records.read(path)
         originals.setdefault((benchmark_records.platform_key(old), old['head']), []).append(path.relative_to(root).as_posix())
     records = []
     for job in plan['jobs']:
@@ -205,7 +205,7 @@ def retain(root, artifacts, source, repository):
                 and collection['head_sha'] == source['head_sha'], 'batch source workflow mismatch')
         record.update(source=trusted, collection=collection, campaign=plan['identity'])
         saved = destination / job['platform'] / sha / 'report.json'
-        record['original_reports'] = (json.loads(saved.read_text())['original_reports'] if saved.exists()
+        record['original_reports'] = (benchmark_records.read(saved)['original_reports'] if benchmark_records.exists(saved)
                                       else sorted(originals.get((job['platform'], sha), [])))
         records.append((job, record, batch, status))
     payloads = {'campaign.json': plan, 'source.json': trusted}
@@ -215,7 +215,7 @@ def retain(root, artifacts, source, repository):
     if destination.exists():
         for name, value in payloads.items():
             path = destination / name
-            require(path.is_file() and json.loads(path.read_text()) == value, 'existing campaign cannot change')
+            require(benchmark_records.exists(path) and benchmark_records.read(path) == value, 'existing campaign cannot change')
         return destination
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.campaign-', dir=destination.parent) as temporary:

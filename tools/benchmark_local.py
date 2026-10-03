@@ -11,6 +11,7 @@ import re
 import tempfile
 
 import benchmark_campaign as campaign
+import benchmark_records
 
 
 def retain(root, directory):
@@ -59,7 +60,8 @@ def retain(root, directory):
     if destination.exists():
         for name, value in payloads.items():
             path = destination / name
-            require(path.is_file() and json.loads(path.read_text()) == value, 'existing local batch cannot change')
+            require(benchmark_records.exists(path) and benchmark_records.read(path) == value,
+                    'existing local batch cannot change')
         return destination
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.local-', dir=destination.parent) as temporary:

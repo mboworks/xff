@@ -532,3 +532,9 @@ Missing observations are never replaced with zero.
 **Alphabetical** restores the task/reference name order. Changing order preserves the camera
 and measurements. Every recorded cell has equal weight; file counts are not weighted by the
 number of files or elapsed time. The average is descriptive, not aggregate throughput.
+
+## Published data retention
+
+Release and merged-PR measurements do not expire by report count. Raw observations are retained
+losslessly as compressed JSON, and chart/report views share packed assets. The site-wide storage
+review threshold is 200 MB; see [Published site storage](site-storage.md).

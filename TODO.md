@@ -794,3 +794,10 @@ this as intentional accounting.
 - [x] Default `-diff [TARGET]` to `/dev/null` using registry-driven optional argument parsing in CLI and INI.
 - [x] Emit Git creation patches for text, binary, empty, executable and symlink entries through VFS reads.
 - [x] Validate generated patches with Git (text, empty files, modes, symlinks, quoted names and multi-block binary literals).
+
+## Published site storage review
+
+- [ ] Revisit total Pages size when `storage-report.json` reaches 200 MB. Follow the options in
+      [docs/site-storage.md](docs/site-storage.md): data-driven shared table rendering, numeric chart
+      matrices, column-oriented benchmark observations, and additional coverage/source deduplication.
+      Preserve coverage aggregate history and all release/merged-PR performance measurements.

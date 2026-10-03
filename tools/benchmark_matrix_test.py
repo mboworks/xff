@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Sampling and overlap-aware baseline comparisons."""
 
+import gzip
 import json
 from pathlib import Path
 import tempfile
@@ -59,6 +60,17 @@ class BenchmarkMatrixTest(unittest.TestCase):
         path.write_text(json.dumps({'head': str(run) * 40, 'tool_comparisons': data,
                                     'source': {'id': run, 'run_attempt': 1, 'created_at': f'2026-09-{run:02}',
                                                'event': event, 'head_branch': branch}}))
+
+    def test_compressed_main_report_remains_a_usable_baseline(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.retain(root, report())
+            path = root / 'runs/1/1/report.json'
+            path.with_suffix('.json.gz').write_bytes(gzip.compress(path.read_bytes()))
+            path.unlink()
+            current = report()
+            matrix.attach_baseline(current, root)
+            self.assertEqual(current['baseline']['status'], 'available')
 
     def test_fastest_subset_controls_all_metrics(self):
         data = report()

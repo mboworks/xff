@@ -3,6 +3,7 @@
 """Retained benchmark paths and preference, without changing raw observations."""
 
 from datetime import datetime, timezone
+import gzip
 import json
 
 
@@ -10,6 +11,22 @@ def paths(root):
     return sorted([*root.glob('runs/*/*/**/report.json'),
                    *root.glob('backfills/*/*/*/*/report.json'),
                    *root.glob('local/*/*/*/report.json')])
+
+
+def run_paths(root):
+    """Canonical report paths for either expanded or packed retained runs."""
+    return sorted({*root.glob('runs/*/*/**/report.json'),
+                   *(path.with_suffix('') for path in root.glob('runs/*/*/**/report.json.gz'))})
+
+
+def read(path):
+    if path.exists():
+        return json.loads(path.read_text())
+    return json.loads(gzip.decompress(path.with_suffix('.json.gz').read_bytes()))
+
+
+def exists(path):
+    return path.is_file() or path.with_suffix('.json.gz').is_file()
 
 
 def is_local(record):

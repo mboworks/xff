@@ -80,8 +80,8 @@ provenance, not a sorting key.
 
 ## Individual run retention and aggregation
 
-Each published report is retained under `coverage/runs/RUN_ID/ATTEMPT/`, including its LCOV
-source pages, summary JSON, and original source-run metadata. The coverage overview links a
+Each published report is retained under `coverage/runs/RUN_ID/ATTEMPT/`, including its summary JSON and original source-run metadata. Detailed LCOV source pages
+are retained for seven days in compressed shared storage; aggregate history does not expire. The coverage overview links a
 pre-merge and post-merge results index, with at most one result per phase per PR and one per release.
 Repeated runs and attempts are not listed. The per-PR/main/release URLs continue to show their latest report; replacing
 one does not replace its archived snapshot. Existing identified reports are archived before
@@ -89,7 +89,8 @@ replacement. Incoming reports are also archived when a newer run already owns th
 remain available at their existing URL but are not assigned an invented run identity.
 
 An aggregation PR does not combine or relabel the coverage measurements of its constituent PRs.
-Each retains its original tested commit, workflow run, and detailed report. Each constituent
+Each retains its original tested commit, workflow run, and aggregate report. Source detail retention
+uses the same seven-day window for every constituent. Each constituent
 PR is ordered by its own actual merge time, even when merged into an aggregation branch.
 The recorded main-integration ancestry remains available as provenance, including verified
 membership in squashed aggregations, but does not affect the overview's timestamp order.
@@ -102,7 +103,7 @@ The separate results index shows both phases when available; retries select the 
 within each phase. A late pre-merge publication never replaces an available post-merge result.
 The publisher stores the PR-to-merge-commit mapping in `coverage/pull-requests.json` and resolves
 both current reports and retained snapshots, so out-of-order main publications are attributed
-correctly. Existing snapshots are not rewritten or deleted. Aggregated constituent PRs keep
+correctly. Existing aggregate snapshots are not rewritten or deleted. Aggregated constituent PRs keep
 pre-merge results unless a main run actually tested their own exact merge commit; the aggregate's
 post-merge result belongs to the aggregation PR alone.
 
@@ -125,22 +126,9 @@ assign the recovery dispatch's identity to the measurements. Older reports are a
 replacing newer target reports. Recovery shares the normal publication queue. Omitting the input
 continues to refresh metadata only. Expired artifacts cannot be recovered by this command.
 
-## Publication size
+## Published storage
 
-All three site publishers replace duplicate stable coverage HTML pages with redirects to their
-canonical `coverage/runs/RUN_ID/ATTEMPT/` pages before adding favicons. This avoids deploying two
-copies of every source report. Only byte-identical pages with matching run, attempt and commit
-metadata qualify. Missing archives, differing pages and legacy reports remain unchanged. Summary
-and metadata JSON remain directly available; source-line fragments and query parameters survive
-the redirects. Archived reports and raw benchmark measurements are never modified or removed.
-
-Inspect the saving with `python3 tools/compact_coverage.py SITE/coverage --dry-run`.
-Normal workflow compaction affects the staged deployment, not the retained branch. The same tool
-can compact retained stable copies for a recovery publication; archived originals must remain.
-
-GitHub's [Pages artifact limits](https://github.com/actions/upload-pages-artifact#artifact-validation)
-recommend a site below 1 GB and impose an absolute 10 GB limit on the uncompressed TAR. The publishers also report the total file payload and reject more than 9 GB, leaving packaging
-headroom below the hard limit; this does not raise GitHub's supported 1 GB size. A successful
-artifact upload does not establish that the new site is live. The benchmark publisher verifies
-the served index against the staged bytes after deployment. Continued growth of immutable history
-will eventually require a separate retention or hosting decision; redirects do not solve that.
+All coverage aggregates and provenance remain available indefinitely. Detailed source reports
+expire after seven days and use a shared packed viewer while retained. See
+[Published site storage](site-storage.md) for the representation, 200 MB review threshold, and
+site-wide accounting shared with benchmarks and releases.

@@ -4,6 +4,8 @@
 
 import html
 import json
+
+import benchmark_records
 import math
 import statistics
 
@@ -95,8 +97,8 @@ def attach_baseline(report, root):
     """Retained reports come from the trusted main publisher; never execute their data."""
     candidates = []
     current_tasks = {task_key(task): task for task in report['tasks']}
-    for path in root.glob('runs/*/*/**/report.json'):
-        record = json.loads(path.read_text())
+    for path in benchmark_records.run_paths(root):
+        record = benchmark_records.read(path)
         source = record.get('source', {})
         other = record.get('tool_comparisons')
         if source.get('event') != 'push' or source.get('head_branch') != 'main' or not other:

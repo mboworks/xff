@@ -120,8 +120,8 @@ def measure_pair(args):
     args.output.write_text(json.dumps(record, indent=2) + "\n")
 
 
-def retain(root, record, source, keep):
-    """Attach trusted run provenance; keep latest attempts with bounded raw storage."""
+def retain(root, record, source):
+    """Attach trusted run provenance; retain all published measurements."""
     record = dict(record)
     record["summary"] = summarize(record)
     if "tool_comparisons" in record:
@@ -132,8 +132,8 @@ def retain(root, record, source, keep):
     if checked_sha(record["head"]) != source["head_sha"]:
         raise ValueError("report commit does not match source workflow")
     run, attempt = int(source["id"]), int(source["run_attempt"])
-    if run < 1 or attempt < 1 or keep < 1:
-        raise ValueError("invalid run identity or retention")
+    if run < 1 or attempt < 1:
+        raise ValueError("invalid run identity")
     record["source"] = {key: source[key] for key in (
         "id", "run_attempt", "created_at", "head_sha", "head_branch", "event", "pull_requests")}
     if "reference_time" in source:
@@ -146,27 +146,11 @@ def retain(root, record, source, keep):
         folder /= platform_key
     folder.mkdir(parents=True, exist_ok=True)
     destination = folder / "report.json"
-    if destination.exists():
-        if json.loads(destination.read_text()) != record:
+    if benchmark_records.exists(destination):
+        if benchmark_records.read(destination) != record:
             raise ValueError("an existing run attempt cannot change")
     else:
         destination.write_text(json.dumps(record, indent=2) + "\n")
-    paths = sorted(root.glob("runs/*/*/**/report.json"), key=lambda path: (
-        json.loads(path.read_text())["source"]["created_at"],
-        int(json.loads(path.read_text())["source"]["id"]),
-        int(json.loads(path.read_text())["source"]["run_attempt"])), reverse=True)
-    protected = {original for path in root.glob('backfills/*/*/*/*/report.json')
-                 for original in json.loads(path.read_text()).get('original_reports', [])}
-    for path in paths[keep:]:
-        if path.relative_to(root).as_posix() in protected:
-            continue
-        path.unlink()
-        (path.parent / "index.html").unlink(missing_ok=True)
-        (path.parent / "landscape.json").unlink(missing_ok=True)
-        folder = path.parent
-        while folder != root / "runs" and not any(folder.iterdir()):
-            folder.rmdir()
-            folder = folder.parent
 
 
 def page(title, body):
@@ -406,7 +390,6 @@ def main():
     for name in ("root", "report", "source", "pulls"):
         publish.add_argument("--" + name, type=Path, required=True)
     publish.add_argument("--repository", required=True)
-    publish.add_argument("--keep", type=positive, default=100)
     refresh = commands.add_parser("refresh")
     for name in ("root", "pulls", "checkout"):
         refresh.add_argument("--" + name, type=Path, required=True)
@@ -419,7 +402,7 @@ def main():
         if args.action == "publish":
             source = json.loads(args.source.read_text())
             record = json.loads(args.report.read_text())
-            retain(args.root, record, source, args.keep)
+            retain(args.root, record, source)
         pages = json.loads(args.pulls.read_text())
         pulls = [pull for group in pages for pull in group] if pages and isinstance(pages[0], list) else pages
         (args.root / "index.html").write_text(render_site(args.root, pulls, args.repository))

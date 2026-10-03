@@ -740,3 +740,96 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
     rmSync(temporary, { recursive: true, force: true });
   }
 });
+
+test("packed site: charts, observations, coverage links and expiration", async () => {
+  const temporary = mkdtempSync(join(tmpdir(), "xff-packed-site-"));
+  const browser = await chromium.launch(options);
+  let server;
+  try {
+    execFileSync(process.env.PYTHON || "python3", [
+      "-c",
+      `
+import datetime, json, sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from benchmark_landscape import render
+from benchmark_landscape_test import report
+from compact_site import compact
+root=Path(sys.argv[3]); folder=root/'benchmarks/runs/1/1/linux'; folder.mkdir(parents=True)
+data=report()
+(folder/'index.html').write_text(render(data,Path(sys.argv[2]).read_text()))
+(folder/'report.json').write_text(json.dumps(data))
+for target, age in [('runs/2/1',0),('runs/1/1',8)]:
+    directory=root/'coverage'/target; (directory/'lcov').mkdir(parents=True)
+    (directory/'coverage-meta.json').write_text(json.dumps({'source':{'completed_at':(datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(days=age)).isoformat()}}))
+    (directory/'coverage-summary.json').write_text('{"aggregate":42}')
+    (directory/'index.html').write_text('<html><head></head><body>Retained aggregate: 42</body></html>')
+    (directory/'lcov/index.html').write_text('<html><body><a href="file.cc.gcov.html#L2">Source</a></body></html>')
+    (directory/'lcov/file.cc.gcov.html').write_text('<html><body><span id="L1"><span class="lineNum">1</span>first</span>\\n<span id="L2"><span class="lineNum">2</span>return 42;</span>\\n</body></html>')
+compact(root,datetime.datetime.now(datetime.timezone.utc))
+`,
+      tools,
+      bundle,
+      temporary,
+    ]);
+    server = createServer((request, response) => {
+      const path = new URL(request.url, "http://localhost").pathname;
+      try {
+        const file = join(
+          temporary,
+          path.endsWith("/") ? path + "index.html" : path,
+        );
+        response.setHeader(
+          "Content-Type",
+          path.endsWith(".js")
+            ? "text/javascript"
+            : path.endsWith(".gz")
+              ? "application/octet-stream"
+              : "text/html",
+        );
+        response.end(readFileSync(file));
+      } catch {
+        response.writeHead(404).end();
+      }
+    });
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const page = await browser.newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(base + "/benchmarks/runs/1/1/linux/");
+    await page.waitForSelector("#landscape canvas");
+    await page.selectOption("#metric", "factor");
+    assert.equal(
+      await page.locator("#landscape").getAttribute("data-range"),
+      "1",
+    );
+    const data = await page.evaluate(async () =>
+      window.XffSiteStorage.gzip("report.json.gz"),
+    );
+    assert.equal(data.tasks.length > 0, true);
+    await page.goto(base + "/coverage/view.html?report=runs%2F2%2F1");
+    await page
+      .frameLocator("iframe")
+      .getByText("Source", { exact: true })
+      .click();
+    await page.waitForURL(/file=file.cc.gcov.html/);
+    assert.equal(
+      await page.frameLocator("iframe").locator("#L2").textContent(),
+      "       2return 42;",
+    );
+    await page.goto(base + "/coverage/view.html?report=runs%2F1%2F1");
+    await page.waitForFunction(() =>
+      document.getElementById("status").textContent.includes("seven days"),
+    );
+    await page.locator("#summary").click();
+    await page.waitForFunction(() =>
+      document.body.textContent.includes("Retained aggregate: 42"),
+    );
+    assert.deepEqual(errors, []);
+  } finally {
+    if (server) await new Promise((resolve) => server.close(resolve));
+    await browser.close();
+    rmSync(temporary, { recursive: true, force: true });
+  }
+});
