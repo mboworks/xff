@@ -37,24 +37,42 @@ campaign, the trusted publisher validates and imports the whole campaign before 
 Use the local benchmark command to discover this machine's existing measurements and fill gaps:
 
 ```sh
-python3 tools/benchmark.py help
-python3 tools/benchmark.py list
-python3 tools/benchmark.py backfill
+bazel run //tools:benchmark -- help
+bazel run //tools:benchmark -- list
+bazel run //tools:benchmark -- backfill
 ```
 
-The equivalent Bazel entry point is `bazel run //tools:benchmark -- COMMAND`.
+Bazel supplies the pinned Python runtime and declared dependencies. Direct execution with
+`./tools/benchmark.py COMMAND` or `python3 tools/benchmark.py COMMAND` is also supported
+with Python 3.13+ installed. Use one invocation form consistently within a resumable batch,
+since the Python runtime is part of its frozen environment.
+`bazel run` forwards standard input, so interactive dataset selection and confirmation work normally.
 `help backfill` and `backfill --help` explain the options. This maintenance tool uses subcommands;
 the XFF search executable continues to use flags.
 
-`list` refreshes `origin/main` and `origin/coverage-pages`, then shows each main revision since
-comparison benchmarks were introduced: its date, SHA, PR/subject, and whether this machine's
-requested measurements exist. It checks all saved batches under `~/xff-benchmarks` and published
-local observations, including packed reports. It does not build, measure, or change saved results.
-`--no-fetch` uses the already available Git refs, which can be stale. `--history-root=PATH/benchmarks`
-reads an existing Pages checkout instead of the published ref. Only local-observation JSON is
-extracted from the published Git tree; rendered site pages are not checked out.
+`list` refreshes `origin/main` and downloads the site's small `datasets.json` catalog. It shows
+the published series, workload grids, sampling settings and compatibility with this machine.
+It prefers an unambiguous compatible dataset belonging to this machine. For a selected dataset,
+it shows each main revision since comparison benchmarks were introduced: its date, SHA, PR/subject,
+and whether this machine's requested measurements exist. It checks saved batches under
+`~/xff-benchmarks` and downloads only the selected machine dataset's published observations,
+including packed reports. Downloads must match the metadata's canonical JSON identities before
+their observations are reused. It does not build, measure, or change saved results.
 
-`backfill` shows the same inventory and its proposed batches, then asks
+`backfill` offers a numbered selection when several datasets are compatible. An existing machine
+continues its series; a new machine can reuse a compatible published workload as a new independent
+series. File counts, CPU allocations, depth and sampling are taken from the selected recipe, so
+the user does not need to reconstruct its flags. `--dataset=ID` accepts a unique ID prefix for
+scripts; `--yes` requires that selection when more than one dataset fits. Explicit grid/sampling
+flags override recipe defaults and will produce a distinct workload description on publication.
+
+`--no-fetch` uses existing local Git refs and metadata, which can be stale.
+`--history-root=PATH/benchmarks` reads a Pages checkout, and `--catalog-url=HTTPS_URL` selects another
+published catalog. Before a site publishes dataset metadata, a 404 falls back to the batch discovery
+in `origin/coverage-pages`. Other network errors fail rather than treating existing data as absent.
+Only local-observation JSON is extracted in that fallback; rendered site pages are not checked out.
+
+After dataset selection, `backfill` shows the revision inventory and its proposed batches, then asks
 `Build and measure the missing revisions? [y/N]`. Only `y` or `yes` proceeds; empty input or EOF
 cancels. `-Y` / `--yes` supplies that confirmation for unattended runs. Discovery can refresh Git
 refs before confirmation; building, measuring and saving new batches happen only after confirmation.
@@ -70,8 +88,9 @@ guess a match from the processor model alone. If multiple series match, select o
 A series carrying another stable machine ID cannot be adopted. Cloned OS machine IDs likewise
 must be made unique before collecting separate machine histories.
 
-The default workload is 1/3/10 workers or cores, file counts 10 through 100,000, both tree shapes,
-and the fastest seven of nine measurements. Override it with repeated `--cpus` / `--files` and
+Without a published recipe, a recognized local series supplies its latest saved settings. For a new
+series without a recipe, the default workload is 1/3/10 workers or cores, file counts 10 through
+100,000, both tree shapes, and the fastest seven of nine measurements. Override it with repeated `--cpus` / `--files` and
 `--depth`, `--repetitions`, or `--keep`. A small host must select an allocation it can support;
 the tool never silently reduces the requested grid. On Linux, fixtures default to `/dev/shm` and
 must be memory-backed; one logical CPU per physical core is pinned. macOS requests workers.
@@ -90,6 +109,36 @@ Completed reports from any batch are reused without rerunning them. New batches 
 `~/xff-benchmarks/batches/IDENTITY/`; use `--root` to change local storage. Two invocations of this
 command cannot collect simultaneously for the same machine and storage root. An older manual
 collector does not use this lock; finish it before starting automatic collection.
+
+## Published dataset metadata
+
+The benchmark page's **Measurement datasets and methods** section explains the available series
+and links to `datasets.json`. The publisher derives this catalog from retained raw observations,
+including packed history; it does not invent missing provenance or modify measurements. PR preview
+reports are excluded from the backfill catalog. Publishing a new measurement refreshes the metadata.
+
+Schema version 1 separates:
+
+- **Dataset identity:** local or CI origin, named series, OS, architecture and a workload recipe.
+  The recipe records file counts, CPU counts and allocation policy, tree shapes/depth, fixture
+  version/source, tasks and reference participants, warm-up/order, estimator and sampling, and storage.
+  Changing the recipe creates another dataset ID within the series.
+- **Machine identity:** stable hashed IDs where available, plus explicitly recorded legacy host
+  fingerprints. Reusing another host's recipe never adopts that host's observation history.
+- **Observation provenance:** measured and revision dates, commit, raw report and batch links with
+  canonical JSON identities, and a method reference. Methods retain driver hashes, reference-tool
+  identities, build details, actual platform/CPU count, affinity, storage and shard sampling.
+
+The client interprets only the known recipe fields. It never executes downloaded commands.
+Compatibility means that the current driver can collect the workload on this OS/architecture with
+sufficient capacity. Unsupported custom fixtures, unknown fixture versions, changed task sets and
+allocation/storage policies are listed with reasons instead of being guessed. In particular,
+Linux CI's logical-CPU allocation is not interchangeable with local physical-core allocation.
+
+A runnable recipe is not a claim of identical performance conditions. New runs use the installed
+reference tools and current measurement driver, and build each XFF revision with that revision's
+release configuration. The original and new identities remain attached to their observations;
+comparison and reference-window normalization still enforce their own compatibility rules.
 
 ## Explicit local batch
 

@@ -3,6 +3,9 @@
 
 # 0.9.0
 
+- Publish benchmark dataset recipes and provenance; discover compatible workloads and derive local
+  backfill settings from the selected dataset. Document the Bazel invocation and support direct execution.
+
 - Add a local benchmark command with machine detection, missing-revision inventory, cross-batch reuse,
   and confirmed backfills (`help`, `list`, `backfill`, and `-Y` / `--yes`).
 

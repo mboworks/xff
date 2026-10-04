@@ -747,6 +747,7 @@ test_suite(
         ":benchmark_backfill_test",
         ":benchmark_campaign_test",
         ":benchmark_compare_test",
+        ":benchmark_datasets_test",
         ":benchmark_fixture_test",
         ":benchmark_history_test",
         ":benchmark_landscape_test",
@@ -867,12 +868,40 @@ py_test(
 )
 
 py_library(
+    name = "benchmark_datasets_lib",
+    srcs = ["benchmark_datasets.py"],
+    imports = ["."],
+    deps = [":benchmark_records_lib"],
+)
+
+py_library(
+    name = "benchmark_discovery_lib",
+    srcs = ["benchmark_discovery.py"],
+    imports = ["."],
+    deps = [
+        ":benchmark_backfill_lib",
+        ":benchmark_datasets_lib",
+    ],
+)
+
+py_test(
+    name = "benchmark_datasets_test",
+    size = "small",
+    srcs = ["benchmark_datasets_test.py"],
+    deps = [
+        ":benchmark_datasets_lib",
+        ":benchmark_discovery_lib",
+    ],
+)
+
+py_library(
     name = "benchmark_lib",
     srcs = ["benchmark.py"],
     imports = ["."],
     deps = [
         ":benchmark_backfill_lib",
         ":benchmark_campaign_lib",
+        ":benchmark_discovery_lib",
         ":benchmark_records_lib",
     ],
 )
@@ -883,6 +912,7 @@ py_binary(
     deps = [
         ":benchmark_backfill_lib",
         ":benchmark_campaign_lib",
+        ":benchmark_discovery_lib",
         ":benchmark_records_lib",
     ],
 )
@@ -1088,6 +1118,7 @@ py_library(
     srcs = ["benchmark_landscape.py"],
     imports = ["."],
     deps = [
+        ":benchmark_datasets_lib",
         ":benchmark_matrix_lib",
         ":benchmark_normalization_lib",
         ":benchmark_overview_lib",
@@ -1100,6 +1131,7 @@ py_binary(
     name = "benchmark_landscape",
     srcs = ["benchmark_landscape.py"],
     deps = [
+        ":benchmark_datasets_lib",
         ":benchmark_matrix_lib",
         ":benchmark_normalization_lib",
         ":benchmark_overview_lib",

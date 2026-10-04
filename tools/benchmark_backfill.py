@@ -185,6 +185,8 @@ def make_contract(args, *, campaign=None, collection=None):
         contract.update(campaign=campaign, collection=collection)
     if getattr(args, 'machine_id', None):
         contract['machine_id'] = args.machine_id
+    if getattr(args, 'source_dataset', None):
+        contract['source_dataset'] = args.source_dataset
     return contract
 
 
