@@ -75,6 +75,7 @@ struct ExecutionFs final : vfs::FileSystem {
         .type = Directory(path) ? vfs::FileType::kDirectory : vfs::FileType::kRegular,
         .size = 7,
         .mode = 0644,
+        .ino = path.ends_with("/sub") ? 2U : 1U,
     };
   }
 
@@ -140,7 +141,7 @@ struct ExpressionExecutionTest : ::testing::TestWithParam<ExpressionExecutor> {
     if (expect_error) {
       EXPECT_THAT(expected.result.errors, Gt(0));
     } else {
-      EXPECT_THAT(expected.result.errors, Eq(0));
+      EXPECT_THAT(expected.result.errors, Eq(0)) << PrintToString(expected.errors);
     }
     EXPECT_THAT(actual.result.errors, Eq(expected.result.errors));
     EXPECT_THAT(actual.result.any_match, Eq(expected.result.any_match));
