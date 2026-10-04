@@ -131,11 +131,13 @@ struct ExpressionCase {
 constexpr auto kCases = std::to_array<ExpressionCase>({
     {.name = "first-limit", .primary = "-first", .argument = "2147483647"},
     {.name = "mime", .primary = "-mime", .argument = "TEXT/*"},
-    {.name = "mime-miss",
-     .primary = "-mime",
-     .argument = "APPLICATION/OCTET-STREAM",
-     .expected_match = false,
-     .short_circuit = true},
+    {
+        .name = "mime-miss",
+        .primary = "-mime",
+        .argument = "APPLICATION/OCTET-STREAM",
+        .expected_match = false,
+        .short_circuit = true,
+    },
     {.name = "age-days", .primary = "-mtime", .argument = "0"},
     {.name = "age-suffix", .primary = "-mtime", .argument = "-1h"},
     {.name = "age-minutes", .primary = "-mmin", .argument = "0"},
@@ -328,6 +330,7 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
   const xff::engine::Visit visit{.path = "tree/file.txt", .name = "file.txt", .metadata = metadata, .fs = fs};
   // NOLINTNEXTLINE(misc-const-correctness): EvalContext and evaluator callbacks mutate this control.
   xff::engine::Control control;
+  // NOLINTNEXTLINE(misc-const-correctness): -first mutates counters through EvalContext's OptionalRef.
   xff::engine::FirstCounts first_counts;
   std::uint64_t emitted = 0;
   const auto emit = [&emitted](std::string_view value) { emitted += value.size(); };
