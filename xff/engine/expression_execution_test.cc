@@ -32,6 +32,7 @@ using ::mbo::testing::EqualsText;
 using ::mbo::testing::StatusIs;
 using ::testing::_;
 using ::testing::Eq;
+using ::testing::Gt;
 using ::testing::HasSubstr;
 using ::testing::IsTrue;
 using ::testing::PrintToString;
@@ -127,7 +128,7 @@ struct ExpressionExecutionTest : ::testing::TestWithParam<ExpressionExecutor> {
     return observed;
   }
 
-  void Check(const std::vector<std::string>& arguments, bool failure = false) {
+  void Check(const std::vector<std::string>& arguments, bool failure = false, bool expect_error = false) {
     std::vector<std::string> args{"--exact", "--color=never", "--sort=dir", "--jobs=1"};
     args.insert(args.end(), arguments.begin(), arguments.end());
     ASSERT_OK_AND_ASSIGN(auto command, parser::Parse(args));
@@ -136,6 +137,11 @@ struct ExpressionExecutionTest : ::testing::TestWithParam<ExpressionExecutor> {
         parser::ResolveCaseMode(command.globals, registry::Style::kXff));
     const auto expected = Observe(command, ExpressionExecutor::kTree, failure);
     const auto actual = Observe(command, GetParam(), failure);
+    if (expect_error) {
+      EXPECT_THAT(expected.result.errors, Gt(0));
+    } else {
+      EXPECT_THAT(expected.result.errors, Eq(0));
+    }
     EXPECT_THAT(actual.result.errors, Eq(expected.result.errors));
     EXPECT_THAT(actual.result.any_match, Eq(expected.result.any_match));
     EXPECT_THAT(actual.output, EqualsText(expected.output));
@@ -155,10 +161,10 @@ TEST_P(ExpressionExecutionTest, SelectionOutputSummariesAndComparisonPreserveThe
       {"--compare=summary", "--summary=ext", "left", "right", "-type", "f"},
       {"root", "-first", "3", "-print"},
       {"root", "-fuzzy", "file", "-top", "3", "-print"},
-      {"root", "-type", "f", "-printf", "prefix\\n", "-top", "3", "-printf", "middle\\n", "-top", "1", "-print"},
+      {"root", "-type", "f", "-fuzzy", "file", "-printf", "prefix\\n", "-top", "3", "-printf", "middle\\n", "-top", "1",
+       "-print"},
       {"root", "-name", "sub", "-prune", "-o", "-type", "f", "-print"},
       {"root", "-type", "f", "-print", "-quit"},
-      {"root", "-false", "-size", "garbage"},
   };
   for (const auto& arguments : cases) {
     SCOPED_TRACE(PrintToString(arguments));
@@ -179,11 +185,12 @@ TEST_P(ExpressionExecutionTest, SerialAndPooledRegexFilteringUseTheSameOrderedOu
 
 TEST_P(ExpressionExecutionTest, ConditionalFailuresAndBlockedEffectsRemainObservable) {
   Check({"root", "-false", "-size", "+1c"}, true);
-  Check({"root", "-type", "f", "!", "-size", "+1c", ",", "-printf", "later"}, true);
-  Check({"root", "-type", "f", "!", "-content", "needle", ",", "-printf", "later"}, true);
-  Check({"--block-file-deletion", "root", "-delete"});
+  Check({"root", "-type", "f", "!", "-size", "+1c", ",", "-printf", "later"}, true, true);
+  Check({"root", "-type", "f", "!", "-content", "needle", ",", "-printf", "later"}, true, true);
+  Check({"root", "-false", "-size", "garbage"}, false, true);
+  Check({"--block-file-deletion", "root", "-delete"}, false, true);
   Check({"--dry-run", "root", "-name", "file0.txt", "-delete"});
-  Check({"root", "-name", "file0.txt", "-delete"});
+  Check({"root", "-name", "file0.txt", "-delete"}, false, true);
 }
 
 TEST_P(ExpressionExecutionTest, MovingPlanAndWorkerPreservesBorrowedStorage) {
