@@ -1971,3 +1971,65 @@ workflow therefore downloads selected ZIPs directly through the REST API, verifi
 digests, and reads only `benchmark-shard.json`; it does not extract arbitrary archive paths.
 PR and post-merge benchmark aggregation use the same local download action so retry handling
 cannot diverge between the two workflows. Both aggregate jobs request only read access to artifacts.
+
+## Native cursor and program comparison results
+
+The revised small cursor was measured in native run `37212464515` (333 valid cases/platform).
+Run `37212554009` measured the compact programs (666 valid cases/platform), and run
+`37212730981` measured scored iterative execution (756 valid cases/platform). These measurements
+precede the test-only restoration-assertion repair; they do not certify later heads. Each value
+is the geometric mean of six same-session case ratios, using fastest-seven means from nine
+interleaved repetitions. Ratios below one favor the first executor. No local timing was run.
+
+| Run         | Comparison                                | Linux x86-64 | macOS ARM64 |
+| ----------- | ----------------------------------------- | -----------: | ----------: |
+| 37212464515 | Prepared / bound: type                    |        0.709 |       0.648 |
+| 37212464515 | Prepared / bound: size                    |        0.700 |       0.619 |
+| 37212464515 | Prepared / bound: ordinary content        |        1.032 |       1.007 |
+| 37212464515 | Prepared / bound: name                    |        1.020 |       0.934 |
+| 37212464515 | Indexed / tree-map worker: path regex     |        0.685 |       0.575 |
+| 37212464515 | Indexed / tree-map worker: content regex  |        0.706 |       0.611 |
+| 37212554009 | Program functions / bound: type           |        0.656 |       0.641 |
+| 37212554009 | Program functions / bound: size           |        0.559 |       0.667 |
+| 37212554009 | Program functions / bound: early AND miss |        0.419 |       0.554 |
+| 37212554009 | Program functions / bound: early OR hit   |        0.403 |       0.569 |
+| 37212730981 | Stateful program / bound: scored AND      |        1.163 |       1.161 |
+| 37212730981 | Stateful program / bound: scored OR       |        1.120 |       1.101 |
+
+The smaller cursor recovers the substantial Linux regression seen with the larger recursively
+copied cursor. Typed scalar preparation and indexed matchers retain useful isolated gains.
+Compact branching improves these aggregate boolean kernels, but a one-predicate case can still
+lose, and layout/session variation remains visible. The iterative scored path costs about
+10-16% more than bound recursion in both platforms. Do not adopt it unchanged solely because
+it removes recursion. Its explicit state and replay correctness remain useful for qualification.
+
+## Whole-engine executor qualification
+
+`RunFind` now has an internal executor selector for tests and benchmarks. CLI and INI cannot
+select it. The ordinary tree remains the default; changing production selection requires the
+EP07 decision. Candidate preparation follows the original command's validation, safety,
+implicit-output and traversal decisions. The coordinator, parallel predicate subtree and any
+coordinator-owned trailing output each retain immutable prepared storage. Each actual matcher
+thread creates and reuses its own worker. Small batches use a separate coordinator worker.
+Deferred entries retain the original sparse memo, not the worker's dense continuation frames.
+
+The integration oracle compares exact output, errors, truth, metadata/content read counts and
+mutation attempts against the original whole-run path. It covers implicit output, summaries,
+comparison, pruning/quit, counters, multi-frontier replay, failures, blocked deletion, dry-run,
+native match output and native filters followed by rg semantics. These are isolated VFS fixtures;
+no fixture executes commands or permits a host mutation. Existing worker eligibility and ordered
+output remain unchanged.
+
+`//xff/engine:expression_run_benchmark` measures 250 combinations: five executors, five workloads,
+0/1/10/1,000/10,000 files and 1/3 workers. Parsing and fixture construction are outside timing;
+every iteration includes preflight, preparation, worker startup, traversal, effects/rendering and
+teardown. Outputs are checked against the reference before timing. Native CI publishes raw nine
+interleaved rounds and fastest-seven summaries alongside the existing kernel artifacts. Zero and
+one-file cases expose fixed setup cost; they are not excluded from the adoption decision.
+
+The qualification selector currently links every candidate into the CLI library, and separately
+prepares serial and parallel subtrees. This makes preparation and code-size overhead visible;
+final selection must remove losing production paths and avoid redundant preparation. Process
+startup, binary/RSS accounting, archive/configuration composition coverage, remaining operand
+families and optimizer passes still require their separate acceptance evidence. No whole-command
+speedup is claimed before those results exist.

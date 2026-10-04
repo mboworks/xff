@@ -19,6 +19,7 @@
 #include "mbo/types/optional_ref.h"
 #include "xff/engine/collect.h"
 #include "xff/engine/evaluate.h"
+#include "xff/engine/expression_execution.h"
 #include "xff/parser/ast.h"
 
 namespace xff::engine {
@@ -56,7 +57,8 @@ class ParallelMatch final {
       mbo::types::OptionalRef<const parser::Expr> expression,
       std::size_t workers,
       bool scores,
-      std::optional<ParallelContentOutput> output = std::nullopt);
+      std::optional<ParallelContentOutput> output = std::nullopt,
+      mbo::types::OptionalRef<const ExpressionExecution> execution = {});
   ~ParallelMatch();
   ParallelMatch(const ParallelMatch&) = delete;
   ParallelMatch& operator=(const ParallelMatch&) = delete;
@@ -75,16 +77,20 @@ class ParallelMatch final {
   bool Finished() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void EvaluateEntries(
       mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output = {},
-      mbo::types::OptionalRef<const WorkerMatchers> matchers = {});
+      mbo::types::OptionalRef<const WorkerMatchers> matchers = {},
+      mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator = {});
   ParallelResult EvaluateEntry(
       const Visit& visit,
       mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
-      mbo::types::OptionalRef<const WorkerMatchers> matchers) const;
+      mbo::types::OptionalRef<const WorkerMatchers> matchers,
+      mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator) const;
 
   const mbo::types::OptionalRef<const parser::Expr> expression_;
   const std::size_t workers_;
   const bool scores_;
   const std::optional<ParallelContentOutput> output_;
+  const mbo::types::OptionalRef<const ExpressionExecution> execution_;
+  std::optional<ExpressionExecution::Worker> coordinator_;
   std::vector<std::thread> threads_;
   absl::Mutex mutex_;
   bool stop_ ABSL_GUARDED_BY(mutex_) = false;

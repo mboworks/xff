@@ -1,0 +1,96 @@
+// SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+// SPDX-License-Identifier: Apache-2.0
+
+#include "xff/engine/expression_execution.h"
+
+#include <optional>
+#include <utility>
+
+#include "absl/status/status.h"
+#include "mbo/status/status_macros.h"
+#include "xff/engine/expression_program.h"
+
+namespace xff::engine {
+
+struct ExpressionExecution::Data {
+  const parser::Expr& source;
+  ExpressionExecutor executor;
+  std::optional<BoundExpression> bound;
+  std::optional<PreparedExpression> prepared;
+  std::optional<ExpressionProgram> program;
+};
+
+struct ExpressionExecution::Worker::State {
+  const Data& data;
+  std::optional<PreparedExpression::Worker> prepared;
+  std::optional<ExpressionProgram::Worker> program;
+};
+
+ExpressionExecution::ExpressionExecution(std::unique_ptr<Data> data) : data_(std::move(data)) {}
+
+ExpressionExecution::ExpressionExecution(ExpressionExecution&&) noexcept = default;
+ExpressionExecution& ExpressionExecution::operator=(ExpressionExecution&&) noexcept = default;
+ExpressionExecution::~ExpressionExecution() = default;
+
+ExpressionExecution::Worker::Worker(std::unique_ptr<State> state) : state_(std::move(state)) {}
+
+ExpressionExecution::Worker::Worker(Worker&&) noexcept = default;
+ExpressionExecution::Worker& ExpressionExecution::Worker::operator=(Worker&&) noexcept = default;
+ExpressionExecution::Worker::~Worker() = default;
+
+absl::StatusOr<ExpressionExecution> ExpressionExecution::Prepare(
+    const parser::Expr& expression,
+    ExpressionExecutor executor) {
+  auto data = std::make_unique<Data>(Data{.source = expression, .executor = executor});
+  switch (executor) {
+    case ExpressionExecutor::kTree: break;
+    case ExpressionExecutor::kBound: {
+      MBO_ASSIGN_OR_RETURN(auto bound, BoundExpression::Prepare(expression));
+      data->bound.emplace(std::move(bound));
+      break;
+    }
+    case ExpressionExecutor::kPrepared: {
+      MBO_ASSIGN_OR_RETURN(auto prepared, PreparedExpression::Prepare(expression));
+      data->prepared.emplace(std::move(prepared));
+      break;
+    }
+    case ExpressionExecutor::kProgramSwitch:
+    case ExpressionExecutor::kProgramFunctions: {
+      MBO_ASSIGN_OR_RETURN(auto program, ExpressionProgram::Prepare(expression));
+      data->program.emplace(std::move(program));
+      break;
+    }
+    default: return absl::InvalidArgumentError("unknown expression executor");
+  }
+  return ExpressionExecution(std::move(data));
+}
+
+ExpressionExecution::Worker ExpressionExecution::MakeWorker() const {
+  auto state = std::make_unique<Worker::State>(Worker::State{.data = *data_});
+  if (data_->prepared) {
+    state->prepared.emplace(data_->prepared->MakeWorker());
+  }
+  if (data_->program) {
+    state->program.emplace(data_->program->MakeWorker(
+        data_->executor == ExpressionExecutor::kProgramSwitch ? ProgramDispatch::kSwitch
+                                                              : ProgramDispatch::kFunctions));
+  }
+  return Worker(std::move(state));
+}
+
+bool ExpressionExecution::UsesIndexedMatchers() const {
+  return data_->prepared.has_value() || data_->program.has_value();
+}
+
+EvaluationResult ExpressionExecution::Worker::Evaluate(EvalContext& context) const {
+  switch (state_->data.executor) {
+    case ExpressionExecutor::kBound: return state_->data.bound.value().Evaluate(context);
+    case ExpressionExecutor::kPrepared: return state_->prepared.value().Evaluate(context);
+    case ExpressionExecutor::kProgramSwitch:
+    case ExpressionExecutor::kProgramFunctions: return state_->program.value().Evaluate(context).result;
+    case ExpressionExecutor::kTree: return EvaluateDeferred(state_->data.source, context);
+  }
+  std::unreachable();  // Prepare rejects invalid executor values.
+}
+
+}  // namespace xff::engine

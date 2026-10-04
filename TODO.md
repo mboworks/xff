@@ -28,7 +28,9 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       VFS safety, coordinator ownership and bounded suspended-entry memory.
       Iterative scored/deferred candidate uses reusable worker frames and sparse source-keyed
       replay memoization; complete oracle and evaluator variants plus scored kernels await CI.
-      Production driver integration and whole-engine qualification remain pending.
+      Internal whole-engine selection now routes serial, pooled and deferred evaluation through
+      the candidates, with isolated output/read/effect comparisons and a 250-case native matrix.
+      CI qualification, production selection and complete integration coverage remain pending.
 - [ ] EP06: Measure deterministic constant folding, jump simplification, selected fusion and proven
       value reuse independently; keep reordering behind a stronger equivalence proof.
 - [ ] EP07: Qualify the winning executor on native macOS ARM64 and Linux x86-64; update --explain,

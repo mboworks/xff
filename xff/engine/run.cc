@@ -4175,6 +4175,7 @@ RunResult RunFindCore(
     std::optional<registry::Style> style,
     mbo::types::OptionalRef<const MatchedEntryFn> matched_entry,
     bool compare_listing,
+    ExpressionExecutor executor,
     mbo::types::OptionalRef<SummaryAccumulator> comparison_summaries = std::nullopt,
     std::size_t root_offset = 0);
 
@@ -4356,7 +4357,8 @@ RunResult RunTreeCompare(
     EmitFn emit,
     WalkErrorFn on_error,
     std::optional<registry::Style> style,
-    std::size_t table_width) {
+    std::size_t table_width,
+    ExpressionExecutor executor) {
   if (command.roots.size() != 2) {
     on_error("--compare", absl::InvalidArgumentError("requires exactly two roots"));
     return RunResult{.errors = 2};
@@ -4444,7 +4446,7 @@ RunResult RunTreeCompare(
     const WalkErrorFn synchronized_error = error_callback;
     return RunFindCore(
         command, histograms, absl::MakeConstSpan(command.roots).subspan(side, 1), fs, synchronized_emit,
-        synchronized_error, style, collect, /*compare_listing=*/true, side_summaries.at(side), side);
+        synchronized_error, style, collect, /*compare_listing=*/true, executor, side_summaries.at(side), side);
   };
   std::future<RunResult> left_result = std::async(std::launch::async, run_side, 0);
   const RunResult right_result = run_side(1);
@@ -4608,6 +4610,35 @@ absl::StatusOr<TypeOptions> ResolveTypeOptions(absl::Span<const std::string> glo
   return result;
 }
 
+struct RunExecutions {
+  std::optional<ExpressionExecution> serial;
+  std::optional<ExpressionExecution> parallel;
+  std::optional<ExpressionExecution> output;
+};
+
+absl::StatusOr<RunExecutions> PrepareRunExecutions(
+    mbo::types::OptionalRef<const parser::Expr> serial,
+    mbo::types::OptionalRef<const parser::Expr> parallel,
+    mbo::types::OptionalRef<const parser::Expr> output,
+    ExpressionExecutor executor) {
+  const auto prepare = [executor](mbo::types::OptionalRef<const parser::Expr> expression)
+      -> absl::StatusOr<std::optional<ExpressionExecution>> {
+    if (!expression || executor == ExpressionExecutor::kTree) {
+      return std::nullopt;
+    }
+    MBO_ASSIGN_OR_RETURN(auto execution, ExpressionExecution::Prepare(*expression, executor));
+    return std::optional(std::move(execution));
+  };
+  MBO_ASSIGN_OR_RETURN(auto serial_execution, prepare(serial));
+  MBO_ASSIGN_OR_RETURN(auto parallel_execution, prepare(parallel));
+  MBO_ASSIGN_OR_RETURN(auto output_execution, prepare(output));
+  return RunExecutions{
+      .serial = std::move(serial_execution),
+      .parallel = std::move(parallel_execution),
+      .output = std::move(output_execution),
+  };
+}
+
 // Cohesive run dispatch; the visitor and post-walk sinks intentionally share this state.
 // NOLINTNEXTLINE(readability-function-cognitive-complexity,readability-function-size,hicpp-function-size,google-readability-function-size)
 RunResult RunFindCore(
@@ -4620,6 +4651,7 @@ RunResult RunFindCore(
     std::optional<registry::Style> style,
     mbo::types::OptionalRef<const MatchedEntryFn> matched_entry,
     bool compare_listing,
+    ExpressionExecutor executor,
     mbo::types::OptionalRef<SummaryAccumulator> comparison_summaries,
     std::size_t root_offset) {
   bool any_match = false;
@@ -5829,6 +5861,14 @@ RunResult RunFindCore(
   // Rg supplies its own content search. A native expression, when present, must still be audited.
   const bool parallel_rg = parallel_allowed && rg_output && (!expression || parallel_expression);
   const bool parallel_native = parallel_expression && HasContentMatch(*parallel_expression);
+  const auto executions = PrepareRunExecutions(expression, parallel_expression, parallel_output, executor);
+  if (!executions.ok()) {
+    on_error("expression preparation", executions.status());
+    return RunResult{.errors = 2};
+  }
+  const auto& [serial_execution, parallel_execution, output_execution] = *executions;
+  const auto serial_evaluator = serial_execution ? std::optional(serial_execution->MakeWorker()) : std::nullopt;
+  const auto output_evaluator = output_execution ? std::optional(output_execution->MakeWorker()) : std::nullopt;
   std::optional<ParallelMatch> parallel_match;
   if (parallel_rg || parallel_native) {
     std::optional<ParallelContentOutput> content_output;
@@ -5851,7 +5891,9 @@ RunResult RunFindCore(
       }
     }
     parallel_match.emplace(
-        parallel_expression, options.workers, full_metadata || rank_by_score, std::move(content_output));
+        parallel_expression, options.workers, full_metadata || rank_by_score, std::move(content_output),
+        parallel_execution ? mbo::types::OptionalRef<const ExpressionExecution>{*parallel_execution}
+                           : mbo::types::OptionalRef<const ExpressionExecution>{});
   }
   std::vector<CollectedEntry> pending_matches;
   // Decision-only batches retain no file bytes or rendered line records. Give them more work
@@ -5878,7 +5920,11 @@ RunResult RunFindCore(
             .tz = tz,
             .control = control,
         };
-        Evaluate(*parallel_output, context);
+        if (output_evaluator) {
+          output_evaluator->Evaluate(context);
+        } else {
+          Evaluate(*parallel_output, context);
+        }
       }
       std::map<std::string, std::string> outputs;
       finish_entry(
@@ -6029,8 +6075,9 @@ RunResult RunFindCore(
             .archive_deletions = archive_delete ? mbo::types::OptionalRef{archive_deletions}
                                                 : mbo::types::OptionalRef<std::vector<std::string>>{},
         };
-        const EvaluationResult evaluated =
-            !expression.has_value() ? EvaluationResult{.matched = true} : EvaluateDeferred(*expression, eval_context);
+        const EvaluationResult evaluated = serial_evaluator ? serial_evaluator->Evaluate(eval_context)
+                                           : expression     ? EvaluateDeferred(*expression, eval_context)
+                                                            : EvaluationResult{.matched = true};
         if (!control.metadata_error.ok()) {
           if (!(options.ignore_readdir_race && absl::IsNotFound(control.metadata_error))) {
             ++errors;
@@ -6174,7 +6221,8 @@ RunResult RunFindCore(
           .archive_deletions = archive_delete ? mbo::types::OptionalRef{archive_deletions}
                                               : mbo::types::OptionalRef<std::vector<std::string>>{},
       };
-      const EvaluationResult evaluated = EvaluateDeferred(*expression, eval_context);
+      const EvaluationResult evaluated =
+          serial_evaluator ? serial_evaluator->Evaluate(eval_context) : EvaluateDeferred(*expression, eval_context);
       if (evaluated.deferred) {
         candidate.waiting_at = evaluated.waiting_at.value();
         candidate.score = evaluated.fuzzy.value_or(0);
@@ -7129,7 +7177,8 @@ RunResult RunFind(
     EmitFn emit,
     WalkErrorFn on_error,
     std::optional<registry::Style> style,
-    std::size_t table_width) {
+    std::size_t table_width,
+    ExpressionExecutor executor) {
   if (!command.root_names.empty() && command.root_names.size() != command.roots.size()) {
     on_error("--root", absl::InvalidArgumentError("root names must match the root operands"));
     return RunResult{.errors = 2};
@@ -7174,11 +7223,11 @@ RunResult RunFind(
     return RunResult{.errors = 2};
   }
   if (compare) {
-    return RunTreeCompare(command, histograms, fs, emit, on_error, style, table_width);
+    return RunTreeCompare(command, histograms, fs, emit, on_error, style, table_width, executor);
   }
   return RunFindCore(
       command, histograms, command.roots, fs, emit, on_error, style, mbo::types::OptionalRef<const MatchedEntryFn>{},
-      /*compare_listing=*/false);
+      /*compare_listing=*/false, executor);
 }
 
 namespace {

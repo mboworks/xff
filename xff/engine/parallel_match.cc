@@ -35,11 +35,13 @@ ParallelMatch::ParallelMatch(
     mbo::types::OptionalRef<const parser::Expr> expression,
     std::size_t workers,
     bool scores,
-    std::optional<ParallelContentOutput> output)
+    std::optional<ParallelContentOutput> output,
+    mbo::types::OptionalRef<const ExpressionExecution> execution)
     : expression_(expression),
       workers_(std::max(workers, std::size_t{1})),
       scores_(scores),
-      output_(std::move(output)) {}
+      output_(std::move(output)),
+      execution_(execution) {}
 
 ParallelMatch::~ParallelMatch() {
   {
@@ -67,7 +69,13 @@ const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEnt
   next_.store(0, std::memory_order_relaxed);
   // Very small batches cannot amortize waking the pool.
   if (workers_ == 1 || entries_.size() < 16 || (threads_.empty() && entries_.size() < 64)) {
-    EvaluateEntries();
+    if (execution_ && !coordinator_) {
+      coordinator_.emplace(execution_->MakeWorker());
+    }
+    EvaluateEntries(
+        {}, {},
+        coordinator_ ? mbo::types::OptionalRef<const ExpressionExecution::Worker>{*coordinator_}
+                     : mbo::types::OptionalRef<const ExpressionExecution::Worker>{});
     return results_;
   }
   const std::size_t count = std::min(workers_, (entries_.size() + 15) / 16);
@@ -87,9 +95,10 @@ const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEnt
 void ParallelMatch::Run() {
   const auto local = output_ ? std::optional(ForkMatchOutput(output_->output)) : std::nullopt;
   WorkerMatchers matchers;
-  if (expression_) {
+  if (expression_ && (!execution_ || !execution_->UsesIndexedMatchers())) {
     matchers.Bind(*expression_);
   }
+  const auto evaluator = execution_ ? std::optional(execution_->MakeWorker()) : std::nullopt;
   std::size_t generation = 0;
   for (;;) {
     {
@@ -103,7 +112,9 @@ void ParallelMatch::Run() {
     EvaluateEntries(
         local ? mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{*local}
               : mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{},
-        matchers);
+        matchers,
+        evaluator ? mbo::types::OptionalRef<const ExpressionExecution::Worker>{*evaluator}
+                  : mbo::types::OptionalRef<const ExpressionExecution::Worker>{});
     {
       const absl::MutexLock lock(mutex_);
       --remaining_;
@@ -113,7 +124,8 @@ void ParallelMatch::Run() {
 
 void ParallelMatch::EvaluateEntries(
     mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
-    mbo::types::OptionalRef<const WorkerMatchers> matchers) {
+    mbo::types::OptionalRef<const WorkerMatchers> matchers,
+    mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator) {
   // Small chunks spread clustered expensive entries while amortizing atomic scheduling.
   constexpr std::size_t kChunk = 4;
   for (;;) {
@@ -123,7 +135,7 @@ void ParallelMatch::EvaluateEntries(
     }
     const std::size_t end = std::min(first + kChunk, entries_.size());
     for (std::size_t index = first; index < end; ++index) {
-      results_.at(index) = EvaluateEntry(entries_.at(index).AsVisit(), output, matchers);
+      results_.at(index) = EvaluateEntry(entries_.at(index).AsVisit(), output, matchers, evaluator);
     }
   }
 }
@@ -131,7 +143,8 @@ void ParallelMatch::EvaluateEntries(
 ParallelResult ParallelMatch::EvaluateEntry(
     const Visit& visit,
     mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
-    mbo::types::OptionalRef<const WorkerMatchers> matchers) const {
+    mbo::types::OptionalRef<const WorkerMatchers> matchers,
+    mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator) const {
   ParallelResult result;
   Control control;
   std::optional<int> fuzzy;
@@ -146,7 +159,9 @@ ParallelResult ParallelMatch::EvaluateEntry(
       .worker_matchers = matchers,
       .control = control,
   };
-  result.evaluation = expression_ ? EvaluateDeferred(*expression_, context) : EvaluationResult{.matched = true};
+  result.evaluation = evaluator     ? evaluator->Evaluate(context)
+                      : expression_ ? EvaluateDeferred(*expression_, context)
+                                    : EvaluationResult{.matched = true};
   if (result.evaluation.matched && output_) {
     auto& content = result.content.emplace();
     // Forking is an optimization: retain the already validated shared matcher if it fails.

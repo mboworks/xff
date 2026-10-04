@@ -25,6 +25,7 @@
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "xff/engine/evaluate.h"
+#include "xff/engine/expression_execution.h"
 #include "xff/engine/walk.h"
 #include "xff/parser/ast.h"
 #include "xff/registry/descriptor.h"
@@ -79,13 +80,15 @@ struct RunResult {
 // suppresses the implicit -print (e.g. `-exec`) still counts as a match. It stays false on usage
 // errors that stop before traversal, where match status is moot.
 // table_width bounds plain comparison-summary layout; zero keeps a wide table.
+// executor is an internal test/benchmark selector; CLI/configuration do not expose it.
 RunResult RunFind(
     const parser::Command& command,
     const vfs::FileSystem& fs,
     EmitFn emit,
     WalkErrorFn on_error,
     std::optional<registry::Style> style = std::nullopt,
-    std::size_t table_width = 0);
+    std::size_t table_width = 0,
+    ExpressionExecutor executor = ExpressionExecutor::kTree);
 
 // Validate all active field consumers without reading paths or evaluating expressions.
 // Shared by execution preflight and --explain after configuration composition.
