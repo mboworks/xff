@@ -107,6 +107,14 @@ struct ExpressionContractTest : ::testing::Test {
     return EvaluateDeferred(expression, context);
   }
 
+  void Decide(const std::optional<ExprIdentity>& source) {
+    ASSERT_THAT(source, Optional(_));
+    // Keep presence visible to static analysis as well as the assertion matcher.
+    if (source.has_value()) {
+      decisions.emplace(*source, true);
+    }
+  }
+
   RecordingExpressionFs fs;
   vfs::Metadata metadata{.type = vfs::FileType::kRegular, .size = 7, .mode = 0644};
   Visit visit{.path = "tree/file.txt", .name = "file.txt", .metadata = metadata, .fs = fs};
@@ -281,7 +289,7 @@ TEST_F(ExpressionContractTest, DeferredReplayDoesNotRepeatPrefixOutput) {
   ASSERT_THAT(pending.waiting_at, Optional(_));
   EXPECT_THAT(pending.deferred, IsTrue());
   EXPECT_THAT(fs.events, ElementsAre("output prefix"));
-  decisions.emplace(pending.waiting_at.value(), true);
+  Decide(pending.waiting_at);
   const auto resumed = Observe(*command.expression);
   EXPECT_THAT(resumed.matched, IsTrue());
   EXPECT_THAT(resumed.deferred, IsFalse());
@@ -336,12 +344,12 @@ TEST_F(ExpressionContractTest, TwoDeferredFrontiersPreserveExactlyOnceEffects) {
       Parse({".", "-printf", "prefix", "-top", "1", "-printf", "middle", "-top", "1", "-printf", "suffix"}));
   const auto first = Observe(*command.expression);
   ASSERT_THAT(first.waiting_at, Optional(_));
-  decisions.emplace(first.waiting_at.value(), true);
+  Decide(first.waiting_at);
   const auto second = Observe(*command.expression);
   ASSERT_THAT(second.waiting_at, Optional(_));
   EXPECT_THAT(second.waiting_at, Not(Eq(first.waiting_at)));
   EXPECT_THAT(fs.events, ElementsAre("output prefix", "output middle"));
-  decisions.emplace(second.waiting_at.value(), true);
+  Decide(second.waiting_at);
   EXPECT_THAT(Observe(*command.expression).matched, IsTrue());
   EXPECT_THAT(fs.events, ElementsAre("output prefix", "output middle", "output suffix"));
 }
