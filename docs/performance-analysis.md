@@ -1966,3 +1966,6 @@ same name; wildcard downloading could still select the old report. PR aggregatio
 the newest creation timestamp for each exact shard name before downloading by artifact ID.
 All raw attempts remain stored and CPU/tool/revision compatibility checks remain mandatory.
 Artifact IDs alone are not chronological: the replacement had a lower ID than its predecessor.
+The download action also deduplicates by highest ID before applying explicit ID selection. The
+workflow therefore downloads selected ZIPs directly through the REST API, verifies their SHA-256
+digests, and reads only `benchmark-shard.json`; it does not extract arbitrary archive paths.

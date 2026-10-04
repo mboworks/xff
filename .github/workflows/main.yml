@@ -866,22 +866,25 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      # Retried jobs can retain multiple artifacts with the same name. Select by creation
-      # time rather than artifact ID or download completion order, preserving all raw attempts.
-      - name: Select the latest artifact for each measurement shard
-        id: shard-artifacts
+      # The download action deduplicates by highest ID even with artifact-ids. IDs are not
+      # chronological across retries, so select by creation time and download exact REST IDs.
+      - name: Download the latest artifact for each measurement shard
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          ids="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" \
-            --paginate | jq -sr '[.[].artifacts[] | select(.expired == false) | select(.name | test("^benchmark-shard-${{ matrix.platform }}-[0-9]+$"))] | group_by(.name) | map(max_by(.created_at, .id).id | tostring) | join(",")')"
-          test -n "${ids}"
-          echo "ids=${ids}" >>"${GITHUB_OUTPUT}"
-      - uses: actions/download-artifact@v8
-        with:
-          artifact-ids: ${{ steps.shard-artifacts.outputs.ids }}
-          path: shards
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" \
+            --paginate | jq -sr '[.[].artifacts[] | select(.expired == false) | select(.name | test("^benchmark-shard-${{ matrix.platform }}-[0-9]+$"))] | group_by(.name) | map(max_by(.created_at, .id)) | .[] | [.name, .id, .digest] | @tsv' > benchmark-shard-artifacts.tsv
+          test -s benchmark-shard-artifacts.tsv
+          while IFS=$'\t' read -r name id digest; do
+            echo "Downloading ${name}, artifact ${id}"
+            archive="${RUNNER_TEMP}/${name}.zip"
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}/zip" >"${archive}"
+            test "${digest#sha256:}" != "${digest}"
+            printf '%s  %s\n' "${digest#sha256:}" "${archive}" | shasum -a 256 --check --status
+            mkdir -p "shards/${name}"
+            unzip -p "${archive}" benchmark-shard.json >"shards/${name}/benchmark-shard.json"
+          done < benchmark-shard-artifacts.tsv
       - name: Merge raw rounds and compare with compatible main measurements
         run: |
           set -euo pipefail
