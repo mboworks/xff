@@ -123,7 +123,7 @@ struct ExpressionContractTest : ::testing::TestWithParam<Executor> {
         return {.unknown = true};
       }
       if (GetParam() == Executor::kPreparedWorker) {
-        auto worker = prepared->MakeWorker();
+        const auto worker = prepared->MakeWorker();
         return worker.Evaluate(context);
       }
       return prepared->Evaluate(context);

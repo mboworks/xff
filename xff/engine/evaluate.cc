@@ -2929,20 +2929,20 @@ MatcherRef PreparedMatcherFor(const parser::Expr& expression, const PreparedOper
   return AsRef(expression.matcher);
 }
 
-// NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
 bool EvalPreparedRegex(
     const parser::Expr& expression,
     const PreparedOperand& operand,
     MatcherSlots slots,
+    // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
     EvalContext& context) {
   return MatchesRegex(PreparedMatcherFor(expression, operand, slots), context.visit.path, context.captures);
 }
 
-// NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
 bool EvalPreparedRxc(
     const parser::Expr& expression,
     const PreparedOperand& operand,
     MatcherSlots slots,
+    // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
     EvalContext& context) {
   return MatchesContentRegex(PreparedMatcherFor(expression, operand, slots), context);
 }

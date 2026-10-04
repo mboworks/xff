@@ -226,9 +226,16 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
       .tz = absl::UTCTimeZone(),
       .control = control,
   };
-  xff::engine::WorkerMatchers worker;
+  const auto worker = [&] {
+    if constexpr (Mode == Executor::kTreeWorker) {
+      xff::engine::WorkerMatchers bindings;
+      bindings.Bind(*command->expression);
+      return bindings;
+    } else {
+      return xff::engine::WorkerMatchers{};
+    }
+  }();
   if constexpr (Mode == Executor::kTreeWorker) {
-    worker.Bind(*command->expression);
     context.worker_matchers.set_ref(worker);
   }
   // Check the result before timing; all core cases must reach their complete AND chain.
