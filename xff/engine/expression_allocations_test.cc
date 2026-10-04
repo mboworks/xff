@@ -311,9 +311,10 @@ TEST_P(ExpressionAllocationTest, RecordsPreparationWorkerFirstEvaluationSteadySt
   // NOLINTNEXTLINE(misc-const-correctness): Evaluator callbacks mutate the referenced control.
   Control control;
   FirstCounts first_counts;
+  const auto emit = [](std::string_view) {};
   EvalContext context{
       .visit = visit,
-      .emit = [](std::string_view) {},
+      .emit = emit,
       .fs = fs,
       .now = absl::UnixEpoch(),
       .tz = absl::UTCTimeZone(),
