@@ -1940,3 +1940,19 @@ matcher state, and moving the worker preserves its backing storage. CI must meas
 layout before attributing the regression to argument passing or claiming a recovery. Existing
 move, persistent-worker and complete evaluator oracle tests cover the lifetime change. No local
 build or benchmark campaign was run.
+
+## Iterative score and replay qualification (EP05)
+
+The next candidate removes recursive fallback from score-consuming and deferred program contexts.
+It executes dense prepared nodes with reusable continuation frames while retaining sparse memo
+identities for exactly-once replay. Ordinary boolean programs keep their compact jump executor.
+Stateful scratch allocates once per worker on first use, stays bounded by node count, and is
+included in reported worker storage after warmup; no frame vector belongs to a suspended entry.
+
+Full evaluator fixtures and the isolated oracle run through both paths. Dedicated tests cover
+all operator score combinations, nested scratch reuse, error cleanup, two replay frontiers and
+restoration of caller-owned score/incoming state. The benchmark adds scored fuzzy AND and OR to
+all five core variants (756 total cases), checks scores against the tree before timing, and
+reports stateful selection and zero recursive fallback. Measurements and full CI are pending;
+this work makes no production selection or performance claim. The first-use scratch allocation
+is excluded from warm execution and must be included in the later setup/whole-run decision.

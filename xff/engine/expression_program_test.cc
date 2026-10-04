@@ -74,11 +74,11 @@ struct ExpressionProgramTest : ::testing::TestWithParam<ProgramDispatch> {
     return command;
   }
 
-  void Check(const std::vector<std::string>& arguments) {
+  void Check(const std::vector<std::string>& arguments, bool scored = false) {
     ASSERT_OK_AND_ASSIGN(const auto command, Parse(arguments));
     ASSERT_OK_AND_ASSIGN(const auto program, ExpressionProgram::Prepare(*command.expression));
     const auto worker = program.MakeWorker(GetParam());
-    const auto bytes = worker.StorageBytes();
+    auto bytes = worker.StorageBytes();
     EXPECT_THAT(program.NodeCount(), Ge(1));
     EXPECT_THAT(program.InstructionCount(), Ge(1));
     EXPECT_THAT(program.StorageBytes(), Ge(sizeof(ExpressionProgram)));
@@ -91,19 +91,29 @@ struct ExpressionProgramTest : ::testing::TestWithParam<ProgramDispatch> {
         .fs = fs,
         .now = absl::UnixEpoch(),
         .tz = absl::UTCTimeZone(),
+        .fuzzy_score = scored ? mbo::types::OptionalRef{score} : mbo::types::OptionalRef<std::optional<int>>{},
         .control = control,
     };
+    // Warm the reusable state stack before checking stable storage. This call uses only the
+    // isolated test sinks; clear every effect before the actual differential observations.
+    if (scored) {
+      worker.Evaluate(context);
+      bytes = worker.StorageBytes();
+    }
     for (const std::uint64_t size : {0, 7, 1'024}) {
       metadata.size = size;
       output.clear();
       control = {};
       context.content.Invalidate();
+      score.reset();
       const auto expected = EvaluateDeferred(*command.expression, context);
       const auto expected_output = std::exchange(output, {});
       const auto expected_control = std::exchange(control, {});
       context.content.Invalidate();
+      score.reset();
       const auto actual = worker.Evaluate(context);
       EXPECT_THAT(actual.used_fallback, IsFalse());
+      EXPECT_THAT(actual.used_stateful, Eq(scored));
       EXPECT_THAT(actual.result.matched, Eq(expected.matched));
       EXPECT_THAT(actual.result.unknown, Eq(expected.unknown));
       EXPECT_THAT(actual.result.deferred, Eq(expected.deferred));
@@ -127,6 +137,7 @@ struct ExpressionProgramTest : ::testing::TestWithParam<ProgramDispatch> {
   Control control;
   std::string output;
   bool dry_run = false;
+  std::optional<int> score;
 };
 
 TEST_P(ExpressionProgramTest, EveryOperatorPreservesTruthAndOutputOrderWithoutFallback) {
@@ -135,22 +146,26 @@ TEST_P(ExpressionProgramTest, EveryOperatorPreservesTruthAndOutputOrderWithoutFa
     for (const bool left : {false, true}) {
       for (const bool right : {false, true}) {
         SCOPED_TRACE(operation);
-        Check({
-            ".",
-            "(",
-            "-printf",
-            "left",
-            ",",
-            left ? "-true" : "-false",
-            ")",
-            std::string(operation),
-            "(",
-            "-printf",
-            "right",
-            ",",
-            right ? "-true" : "-false",
-            ")",
-        });
+        for (const bool scored : {false, true}) {
+          Check(
+              {
+                  ".",
+                  "(",
+                  "-printf",
+                  "left",
+                  ",",
+                  left ? "-true" : "-false",
+                  ")",
+                  std::string(operation),
+                  "(",
+                  "-printf",
+                  "right",
+                  ",",
+                  right ? "-true" : "-false",
+                  ")",
+              },
+              scored);
+        }
       }
     }
   }
@@ -184,6 +199,7 @@ TEST_P(ExpressionProgramTest, LongChainsAndNestedSavedValuesKeepStableStorage) {
   nested.emplace_back("-false");
   nested.insert(nested.end(), kDepth, ")");
   Check(nested);
+  Check(nested, true);
 }
 
 TEST_P(ExpressionProgramTest, UnknownStopsBeforeNegationAndLaterActions) {
@@ -203,12 +219,11 @@ TEST_P(ExpressionProgramTest, DryRunAndMutationFailureRetainTheReferenceBehavior
   EXPECT_THAT(control.mutation_error, StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("mutation denied")));
 }
 
-TEST_P(ExpressionProgramTest, FuzzyAndDeferredContextsReportWholeExpressionFallback) {
+TEST_P(ExpressionProgramTest, FuzzyAndDeferredContextsUseIterativeStateWithoutFallback) {
   ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-fuzzy", "file", "-top", "1"}));
   ASSERT_OK_AND_ASSIGN(const auto program, ExpressionProgram::Prepare(*command.expression));
   const auto worker = program.MakeWorker(GetParam());
   const auto emit = [](std::string_view) {};
-  std::optional<int> score;
   DeferredDecisions decisions;
   EvaluationMemo memo;
   DeferredEvaluation deferred{.decisions = decisions, .memo = memo};
@@ -221,16 +236,86 @@ TEST_P(ExpressionProgramTest, FuzzyAndDeferredContextsReportWholeExpressionFallb
       .fuzzy_score = score,
       .control = control,
   };
-  EXPECT_THAT(worker.Evaluate(context).used_fallback, IsTrue());
+  const auto scored = worker.Evaluate(context);
+  EXPECT_THAT(scored.used_fallback, IsFalse());
+  EXPECT_THAT(scored.used_stateful, IsTrue());
   context.fuzzy_score.reset();
   context.deferred.set_ref(deferred);
   const auto waiting = worker.Evaluate(context);
-  EXPECT_THAT(waiting.used_fallback, IsTrue());
+  EXPECT_THAT(waiting.used_fallback, IsFalse());
+  EXPECT_THAT(waiting.used_stateful, IsTrue());
   ASSERT_THAT(waiting.result.waiting_at, Optional(_));
   if (waiting.result.waiting_at.has_value()) {
     decisions.emplace(*waiting.result.waiting_at, true);
   }
   EXPECT_THAT(worker.Evaluate(context).result.matched, IsTrue());
+}
+
+TEST_P(ExpressionProgramTest, StatefulOperatorsComposeScoresAndReuseScratch) {
+  constexpr auto kOperators = std::to_array<std::string_view>({"-a", "-o", "-nand", "-nor", "-xor", "-xnor", ","});
+  for (const auto operation : kOperators) {
+    Check({".", "-fuzzy", "fil", std::string(operation), "-fuzzy", "file"}, true);
+    Check({".", "(", "-fuzzy", "fil", std::string(operation), "-false", ")", "-a", "-fuzzy", "file"}, true);
+    Check({".", "!", "(", "-fuzzy", "fil", std::string(operation), "-fuzzy", "file", ")"}, true);
+  }
+  const auto fail = [this] { return fs.Stat(visit.path, false).status(); };
+  visit.load_metadata.emplace(fail);
+  Check({".", "-fuzzy", "file", "-a", "(", "-true", "-xor", "-size", "1c", ")"}, true);
+}
+
+TEST_P(ExpressionProgramTest, PersistentStateRestoresContextAcrossTwoReplayFrontiers) {
+  ASSERT_OK_AND_ASSIGN(
+      const auto command, Parse(
+                              {".", "-fuzzy", "file", "-printf", "first", "-top", "1", "-printf", "second", "-top", "1",
+                               "-printf", "third"}));
+  ASSERT_OK_AND_ASSIGN(const auto program, ExpressionProgram::Prepare(*command.expression));
+  const auto worker = program.MakeWorker(GetParam());
+  DeferredDecisions decisions;
+  EvaluationMemo memo;
+  DeferredEvaluation deferred{.decisions = decisions, .memo = memo};
+  const auto emit = [this](std::string_view text) { output.append(text); };
+  EvalContext context{
+      .visit = visit,
+      .emit = emit,
+      .fs = fs,
+      .now = absl::UnixEpoch(),
+      .tz = absl::UTCTimeZone(),
+      .fuzzy_score = score,
+      .deferred = deferred,
+      .incoming_fuzzy_score = 61,
+      .control = control,
+  };
+  const auto first = worker.Evaluate(context);
+  EXPECT_THAT(first.used_stateful, IsTrue());
+  EXPECT_THAT(first.result.deferred, IsTrue());
+  EXPECT_THAT(first.result.fuzzy, Optional(61));
+  EXPECT_THAT(output, EqualsText("first"));
+  EXPECT_THAT(context.incoming_fuzzy_score, Optional(61));
+  ASSERT_THAT(first.result.waiting_at, Optional(_));
+  if (first.result.waiting_at.has_value()) {
+    decisions.emplace(*first.result.waiting_at, true);
+  }
+  const auto bytes = worker.StorageBytes();
+  const auto second = worker.Evaluate(context);
+  EXPECT_THAT(second.result.deferred, IsTrue());
+  EXPECT_THAT(output, EqualsText("firstsecond"));
+  ASSERT_THAT(second.result.waiting_at, Optional(_));
+  if (second.result.waiting_at.has_value()) {
+    decisions.emplace(*second.result.waiting_at, true);
+  }
+  EXPECT_THAT(worker.Evaluate(context).result.matched, IsTrue());
+  EXPECT_THAT(output, EqualsText("firstsecondthird"));
+  EXPECT_THAT(context.incoming_fuzzy_score, Optional(61));
+  EXPECT_THAT(worker.StorageBytes(), Eq(bytes));
+  ASSERT_THAT(context.fuzzy_score, Optional(_));
+  if (context.fuzzy_score.has_value()) {
+    context.fuzzy_score->emplace(17);
+  }
+  EXPECT_THAT(score, Optional(17));
+  context.deferred.reset();
+  context.fuzzy_score.reset();
+  EXPECT_THAT(worker.Evaluate(context).used_stateful, IsFalse());
+  EXPECT_THAT(worker.StorageBytes(), Eq(bytes));
 }
 
 TEST_P(ExpressionProgramTest, MovesRetainSourceAndProgramStorage) {

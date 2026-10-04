@@ -23,6 +23,7 @@
 #include "mbo/status/status_macros.h"
 #include "mbo/testing/status.h"
 #include "xff/engine/evaluate.h"
+#include "xff/engine/expression_program.h"
 #include "xff/engine/walk.h"
 #include "xff/parser/parser.h"
 #include "xff/registry/registry.h"
@@ -88,7 +89,7 @@ class RecordingExpressionFs final : public vfs::FileSystem {
   }
 };
 
-enum class Executor { kTree, kBound, kPrepared, kPreparedWorker };
+enum class Executor { kTree, kBound, kPrepared, kPreparedWorker, kIterative, kProgramSwitch, kProgramFunctions };
 
 struct ExpressionContractTest : ::testing::TestWithParam<Executor> {
   static absl::StatusOr<parser::Command> Parse(const std::vector<std::string>& arguments) {
@@ -116,15 +117,30 @@ struct ExpressionContractTest : ::testing::TestWithParam<Executor> {
     if (GetParam() == Executor::kTree) {
       return EvaluateDeferred(expression, context);
     }
-    if (GetParam() == Executor::kPrepared || GetParam() == Executor::kPreparedWorker) {
+    if (GetParam() == Executor::kProgramSwitch || GetParam() == Executor::kProgramFunctions) {
+      auto program = ExpressionProgram::Prepare(expression);
+      EXPECT_THAT(program, IsOk());
+      if (!program.ok()) {
+        return {.unknown = true};
+      }
+      const auto dispatch =
+          GetParam() == Executor::kProgramSwitch ? ProgramDispatch::kSwitch : ProgramDispatch::kFunctions;
+      const auto worker = program->MakeWorker(dispatch);
+      const auto result = worker.Evaluate(context);
+      EXPECT_THAT(result.used_fallback, IsFalse());
+      EXPECT_THAT(result.used_stateful, IsTrue());
+      return result.result;
+    }
+    if (GetParam() == Executor::kPrepared || GetParam() == Executor::kPreparedWorker
+        || GetParam() == Executor::kIterative) {
       auto prepared = PreparedExpression::Prepare(expression);
       EXPECT_THAT(prepared, IsOk());
       if (!prepared.ok()) {
         return {.unknown = true};
       }
-      if (GetParam() == Executor::kPreparedWorker) {
+      if (GetParam() != Executor::kPrepared) {
         const auto worker = prepared->MakeWorker();
-        return worker.Evaluate(context);
+        return GetParam() == Executor::kIterative ? worker.EvaluateIterative(context) : worker.Evaluate(context);
       }
       return prepared->Evaluate(context);
     }
@@ -727,13 +743,23 @@ TEST_F(PreparedOperandTest, MissingOperandsStayFalseWithoutObservations) {
 INSTANTIATE_TEST_SUITE_P(
     Executors,
     ExpressionContractTest,
-    ::testing::Values(Executor::kTree, Executor::kBound, Executor::kPrepared, Executor::kPreparedWorker),
+    ::testing::Values(
+        Executor::kTree,
+        Executor::kBound,
+        Executor::kPrepared,
+        Executor::kPreparedWorker,
+        Executor::kIterative,
+        Executor::kProgramSwitch,
+        Executor::kProgramFunctions),
     [](const ::testing::TestParamInfo<Executor>& info) {
       switch (info.param) {
         case Executor::kTree: return "Tree";
         case Executor::kBound: return "Bound";
         case Executor::kPrepared: return "Prepared";
         case Executor::kPreparedWorker: return "PreparedWorker";
+        case Executor::kIterative: return "Iterative";
+        case Executor::kProgramSwitch: return "ProgramSwitch";
+        case Executor::kProgramFunctions: return "ProgramFunctions";
       }
       return "Invalid";
     });

@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <optional>
 #include <ranges>
 #include <string>
 #include <string_view>
@@ -99,6 +100,7 @@ struct ExpressionCase {
   bool use_or = false;
   bool expected_match = true;
   bool short_circuit = false;
+  bool collect_score = false;
 };
 
 // The named core matrix is shared by preparation and execution. Long cheap chains expose dispatch
@@ -174,6 +176,19 @@ constexpr auto kCases = std::to_array<ExpressionCase>({
         .name = "fuzzy",
         .primary = "-fuzzy",
         .argument = "file",
+    },
+    {
+        .name = "fuzzy-score-and",
+        .primary = "-fuzzy",
+        .argument = "file",
+        .collect_score = true,
+    },
+    {
+        .name = "fuzzy-score-or",
+        .primary = "-fuzzy",
+        .argument = "file",
+        .use_or = true,
+        .collect_score = true,
     },
     {
         .name = "output",
@@ -276,6 +291,10 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
       .tz = absl::UTCTimeZone(),
       .control = control,
   };
+  std::optional<int> score;
+  if (example.collect_score) {
+    context.fuzzy_score.set_ref(score);
+  }
   const auto worker = [&] {
     if constexpr (Mode == Executor::kTreeWorker) {
       xff::engine::WorkerMatchers bindings;
@@ -289,12 +308,14 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
     context.worker_matchers.set_ref(worker);
   }
   if constexpr (Mode == Executor::kProgramSwitch || Mode == Executor::kProgramFunctions) {
-    if (program.worker.Evaluate(context).used_fallback) {
-      state.SkipWithError("linear program unexpectedly used whole-expression fallback");
+    const auto selected = program.worker.Evaluate(context);
+    if (selected.used_fallback || selected.used_stateful != example.collect_score) {
+      state.SkipWithError("expression program selected an unexpected execution path");
       return;
     }
     state.counters["instructions"] = static_cast<double>(program.program.InstructionCount());
     state.counters["fallback"] = 0;
+    state.counters["stateful"] = static_cast<double>(selected.used_stateful);
   }
   // Untimed result check includes deliberate no-match and short-circuit cases.
   const auto evaluate = [&] {
@@ -309,6 +330,13 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
       || !control.unsupported.empty()) {
     state.SkipWithError("expression baseline failed its untimed oracle check");
     return;
+  }
+  if (example.collect_score) {
+    const auto expected = xff::engine::EvaluateDeferred(*command->expression, context);
+    if (check.fuzzy != expected.fuzzy) {
+      state.SkipWithError("prepared score differs from the tree oracle");
+      return;
+    }
   }
   for (auto iteration : state) {
     benchmark::DoNotOptimize(iteration);

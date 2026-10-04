@@ -26,6 +26,9 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       CI measurements and layout selection remain open.
 - [ ] EP05: Complete fuzzy/unknown/error/action/deferred semantics; preserve exactly-once effects,
       VFS safety, coordinator ownership and bounded suspended-entry memory.
+      Iterative scored/deferred candidate uses reusable worker frames and sparse source-keyed
+      replay memoization; complete oracle and evaluator variants plus scored kernels await CI.
+      Production driver integration and whole-engine qualification remain pending.
 - [ ] EP06: Measure deterministic constant folding, jump simplification, selected fusion and proven
       value reuse independently; keep reordering behind a stronger equivalence proof.
 - [ ] EP07: Qualify the winning executor on native macOS ARM64 and Linux x86-64; update --explain,
