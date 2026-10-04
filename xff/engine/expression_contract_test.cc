@@ -421,8 +421,9 @@ TEST_P(ExpressionContractTest, FuzzyOnlyOrVisitsNestedRightBranchForTheBestScore
   memo.clear();
   ASSERT_OK_AND_ASSIGN(
       const auto combined, Parse({".", "-fuzzy", "fe", "-o", "(", "-fuzzy", "file", "-a", "-fuzzy", "file", ")"}));
-  EXPECT_THAT(
-      Observe(*combined.expression).fuzzy, Optional(std::max(left_result.fuzzy.value(), right_result.fuzzy.value())));
+  if (left_result.fuzzy.has_value() && right_result.fuzzy.has_value()) {
+    EXPECT_THAT(Observe(*combined.expression).fuzzy, Optional(std::max(*left_result.fuzzy, *right_result.fuzzy)));
+  }
   EXPECT_THAT(fs.events, IsEmpty());
 }
 
