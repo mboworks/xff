@@ -2932,7 +2932,7 @@ bool EvalOriginalOperand(const parser::Expr& expression, const PreparedOperand&,
 }
 
 template<EvalFn Function>
-constexpr EvalEntry MakeEvalEntry(PrepareOperandFn prepare = nullptr, PreparedEvalFn prepared_eval = nullptr) {
+consteval EvalEntry MakeEvalEntry(PrepareOperandFn prepare = nullptr, PreparedEvalFn prepared_eval = nullptr) {
   return {
       .eval = Function,
       .prepare = prepare,

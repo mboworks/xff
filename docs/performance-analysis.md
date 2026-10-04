@@ -92,6 +92,19 @@ and numeric fields. `extra_bytes`, `nodes`, and `operands` counters report owned
 allocator headers and the shared AST are excluded. Allocation counts and final binary-size impact
 remain to be measured, including any code retained by the enlarged dispatch table.
 
+CI coverage exposed two gaps: the binding factory was declared `constexpr` even though every
+invocation is compile-time, and most ordinary-handler adapters had not run through the small
+oracle. The factory is now `consteval`; the existing full evaluator suite runs as named tree,
+bound and prepared cases with independent fixtures. This exercises the established conditional
+read, output, controlled action and failure tests through each implementation rather than
+inventing no-op calls just to mark adapter functions covered. Coverage thresholds are unchanged.
+
+The first Linux scalar session (run 37207735076) produced 270 valid cases. Prepared/bound kernel
+family ratios were 0.786 for type, 0.740 for size, 0.909 for octal permission and 0.595 for symbolic
+permission. Numeric tests were 1.034; unprepared families ranged from 1.007 to 1.033. These early
+results justify continuing the size/type/permission experiment, but do not justify accepting the
+numeric specialization or the overhead on other families without repeated cross-platform data.
+
 The candidate is not selected by production. CI measurements are pending; indexed worker matchers
 and the other invariant families in the operand audit still remain to implement or reject with
 evidence. No additional speedup is claimed for scalar preparation yet.
