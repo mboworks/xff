@@ -1969,3 +1969,5 @@ Artifact IDs alone are not chronological: the replacement had a lower ID than it
 The download action also deduplicates by highest ID before applying explicit ID selection. The
 workflow therefore downloads selected ZIPs directly through the REST API, verifies their SHA-256
 digests, and reads only `benchmark-shard.json`; it does not extract arbitrary archive paths.
+PR and post-merge benchmark aggregation use the same local download action so retry handling
+cannot diverge between the two workflows. Both aggregate jobs request only read access to artifacts.
