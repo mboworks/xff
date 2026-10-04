@@ -26,6 +26,9 @@ optional-reference lookup fit the planned exact per-mode startup experiment. App
 lookup, parsing, compiler-budget and storage measurements remain necessary before adoption; MBO's
 synthetic container timings are not evidence of an XFF speedup. The detailed adoption checklist is
 in the [data-structure audit](design-expression-program.md#frozenmapset-adoption-check-after-mbo-550).
+The user subsequently reported substantial lookup regressions against standard unordered
+containers. Raw results are not yet part of this record. API availability does not qualify the
+containers for adoption; retain the current index and require a measured XFF workload win.
 
 ### EP01 baseline and EP02 dispatch experiment
 

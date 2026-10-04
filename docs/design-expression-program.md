@@ -117,6 +117,14 @@ by a runtime fallback. The experimental API and container measurements alone do 
 XFF startup speedup. Pin the inspected MBO commit in the experiment and retain the current production
 index until those application measurements justify replacement.
 
+The user reports that the merged Frozen containers are substantially slower than
+`std::unordered_map` / `std::unordered_set` in their measurements. No raw measurements from that
+comparison have been imported into this XFF analysis. Treat performance as an unresolved adoption
+gate, not as a benefit of constexpr construction. Include the standard unordered container and
+the existing bounded-probing prototype in the application comparison. A dependency update or
+production replacement is not justified by API availability alone. The prepared executor removes
+per-entry name lookup regardless of which container eventually serves startup lookup.
+
 ## Program architecture
 
 ### Preparation boundary and ownership

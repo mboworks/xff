@@ -40,6 +40,8 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       XFF's current pin. Compare actual per-mode registries, exact misses, sparse/minimal placement,
       compile-time/storage cost and complete parser commands before adoption. This does not block
       EP01-EP07; the prepared per-entry executor must avoid name lookup altogether.
+      The user reports substantial regressions against standard unordered containers; include
+      those baselines and require an XFF workload win before changing the dependency or index.
 - [ ] EP-S02: Revisit experimental MBO interning for dynamic names only when a concrete consumer and
       measurements justify a dependency update; prefer existing strong IDs and indexed execution slots.
 
