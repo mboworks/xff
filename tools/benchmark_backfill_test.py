@@ -30,6 +30,16 @@ class BenchmarkBackfillTest(unittest.TestCase):
         self.assertEqual(output.getvalue().splitlines(), [
             '20261002 205713 10/17 Scale 8/39', '20261002 205714 10/17 Complete'])
 
+    def test_nested_run_progress_keeps_workers_and_files_before_run_details(self):
+        output = io.StringIO()
+        with mock.patch.object(backfill, 'datetime') as clock, contextlib.redirect_stderr(output):
+            clock.now.return_value = datetime(2026, 10, 4, 13, 1, 36)
+            progress = backfill.compare.MeasurementProgress(
+                write=lambda message: backfill.log_progress(message, 5, 9))
+            progress('Workers: 1 Files: 100,000 Run: 5/10; broad/fuzzy-list-hdn; fzf; sample: 4/9', force=True)
+        self.assertEqual(output.getvalue().splitlines(), [
+            '20261004 130136 5/9 Workers: 1 Files: 100,000 Run: 5/10; broad/fuzzy-list-hdn; fzf; sample: 4/9'])
+
     def args(self, root):
         return argparse.Namespace(repo=root, output=root / 'results', series='test-mac',
                                   purpose='local-addition', history_platform=None,

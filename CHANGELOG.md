@@ -3,6 +3,9 @@
 
 # 0.9.0
 
+- Restore merged-main benchmark baseline comparisons and keep reruns within earlier main revisions;
+  put worker and file counts before benchmark/backfill progress details.
+
 - Publish benchmark dataset recipes and provenance; discover compatible workloads and derive local
   backfill settings from the selected dataset. Document the Bazel invocation and support direct execution.
 

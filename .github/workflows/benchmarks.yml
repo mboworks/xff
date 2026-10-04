@@ -193,6 +193,13 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: coverage-pages
+          path: benchmark-baseline
+          sparse-checkout: benchmarks/runs
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
@@ -204,7 +211,9 @@ jobs:
       - name: Validate, merge and render platform results
         run: |
           set -euo pipefail
-          python3 tools/benchmark_shards.py --merge-directory=shards --output=benchmark-main.json
+          git rev-list --first-parent HEAD^1 > benchmark-baseline-revisions.txt
+          python3 tools/benchmark_shards.py --merge-directory=shards --output=benchmark-main.json \
+            --baseline-root=benchmark-baseline/benchmarks --baseline-revisions=benchmark-baseline-revisions.txt
           arch="$(python3 -c 'import json; print(json.load(open("benchmark-main.json"))["tool_comparisons"]["contract"]["machine"])')"
           report="benchmark-report-${{ matrix.platform }}-${arch}"
           mv benchmark-main.json "${report}.json"

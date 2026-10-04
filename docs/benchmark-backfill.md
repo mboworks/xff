@@ -183,7 +183,7 @@ shapes and all current comparison tasks, retaining the fastest seven of nine sam
 Progress lines begin with the local time and the revision's one-based position in the batch:
 
 ```text
-20261002 205713 10/17 Scale 8/39: 2,000 files, 1 requested workers
+20261004 130136 5/9 Workers: 1 Files: 100,000 Run: 5/10; broad/fuzzy-list-hdn; fzf; sample: 4/9
 ```
 
 The timestamp uses `YYYYMMDD HHMMSS`; `10/17` means the tenth of seventeen selected revisions.

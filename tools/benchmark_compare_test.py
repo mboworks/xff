@@ -130,8 +130,8 @@ class BenchmarkCompareTest(unittest.TestCase):
         self.assertEqual([task['shape'] for task in result['tasks']], ['1cpu/10/broad', '4cpu/10/broad'])
         self.assertEqual(result['contract']['affinity_by_cpu_count'], {'1': [0], '4': [0, 1, 2, 3]})
         self.assertEqual(messages, [
-            'Scale 1/2: 10 files, 1 requested workers', 'Fixture ready', 'Completed scale 1/2',
-            'Scale 2/2: 10 files, 4 requested workers', 'Fixture ready', 'Completed scale 2/2'])
+            'Workers: 1 Files: 10 Scale: 1/2', 'Fixture ready', 'Workers: 1 Files: 10 Completed scale: 1/2',
+            'Workers: 4 Files: 10 Scale: 2/2', 'Fixture ready', 'Workers: 4 Files: 10 Completed scale: 2/2'])
 
     def test_unpinned_runner_capacity_is_enforced_before_any_measurement(self):
         with mock.patch.object(compare.os, 'sched_getaffinity', None, create=True), \
@@ -299,9 +299,10 @@ class BenchmarkCompareTest(unittest.TestCase):
                                      'rg', 'xff', 'find', 'xff', 'find', 'rg'])
         self.assertEqual(calls[12:15], ['find', 'rg', 'xff'])
         self.assertEqual(validate.call_count, 24)
-        self.assertIn('Run 1/12: broad/files; 1 files; 1 requested workers; xff; warm-up', progress.getvalue())
-        self.assertIn('Run 12/12:', progress.getvalue())
-        self.assertIn('Completed 12/12: deep/files', progress.getvalue())
+        self.assertIn('Workers: 1 Files: 1 Run: 1/12; broad/files; xff; warm-up', progress.getvalue())
+        self.assertIn('Workers: 1 Files: 1 Run: 12/12;', progress.getvalue())
+        self.assertIn('Workers: 1 Files: 1 Completed: 12/12; deep/files', progress.getvalue())
+        self.assertIn('Workers: 1 Files: 1 Run: 4/12; broad/files; find; sample: 1/3', progress.getvalue())
         self.assertEqual(result['contract']['warmup_rounds'], 1)
         first = result['tasks'][0]['participants']
         self.assertEqual([s['sequence'] for s in first['xff']['samples']], [6, 8, 10])

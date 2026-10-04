@@ -832,6 +832,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/checkout@v7
         with:
@@ -849,8 +850,9 @@ jobs:
       - name: Merge raw rounds and compare with compatible main measurements
         run: |
           set -euo pipefail
+          git rev-list --first-parent HEAD^1 > benchmark-baseline-revisions.txt
           python3 tools/benchmark_shards.py --merge-directory=shards --output=benchmark-merged.json \
-            --baseline-root=benchmark-baseline/benchmarks
+            --baseline-root=benchmark-baseline/benchmarks --baseline-revisions=benchmark-baseline-revisions.txt
           arch="$(python3 -c 'import json; print(json.load(open("benchmark-merged.json"))["tool_comparisons"]["contract"]["machine"])')"
           report="benchmark-pr-${{ matrix.platform }}-${arch}"
           mv benchmark-merged.json "${report}.json"

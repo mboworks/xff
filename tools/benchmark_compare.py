@@ -263,10 +263,10 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
                                 for shape, levels in (("broad", 0), ("deep", depth)) if shape in shapes}
         for shape, (entries, source_hash) in datasets.items():
             root = base / shape
-            progress(f'Preparing {shape}: {files:,} files, {cpus} requested workers')
+            progress(f'Workers: {cpus} Files: {files:,} Preparing: {shape}')
             rows = benchmark_fixture.materialize(root, entries)
             fixture_identity = benchmark_fixture.identity(entries)
-            progress(f'Fixture ready: {shape}, {len(rows):,} files')
+            progress(f'Workers: {cpus} Files: {len(rows):,} Fixture ready: {shape}')
             candidates = base / (shape + ".paths")
             candidates.write_bytes(b"".join(os.fsencode("./" + path.relative_to(root).as_posix()) + b"\0" for path, _ in rows))
             for name, expected, commands in scenarios(root, rows, tools, cpus):
@@ -295,15 +295,15 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
                     order = labels[offset:] + labels[:offset]
                     for label in order:
                         entry = task["participants"][label]
-                        phase = 'warm-up' if repetition == 0 else f'sample {repetition}/{repetitions}'
-                        progress(f'Run {completed + 1}/{total}: {shape}/{name}; {files:,} files; '
-                              f'{cpus} requested workers; {label}; {phase}')
+                        phase = 'warm-up' if repetition == 0 else f'sample: {repetition}/{repetitions}'
+                        progress(f'Workers: {cpus} Files: {files:,} Run: {completed + 1}/{total}; '
+                                 f'{shape}/{name}; {label}; {phase}')
                         sample = invoke({"pipeline": entry["pipeline"], "stdin": entry["stdin"], "cwd": entry["cwd"], "environment": environment, "cpu_affinity": affinity}, worker)
                         validate_output(sample, expected, entry["pipeline"])
                         completed += 1
                         if repetition:
                             entry["samples"].append(sample)
-                progress(f'Completed {completed}/{total}: {shape}/{name}')
+                progress(f'Workers: {cpus} Files: {files:,} Completed: {completed}/{total}; {shape}/{name}')
     for tool in tools.values():
         if tool["status"] == "available" and digest(tool["path"]) != tool["sha256"]:
             raise ValueError("tool binary changed during measurement")
@@ -338,7 +338,7 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
             shapes = [shape for shape in ('broad', 'deep') if selected is None or (files, cpus, shape) in selected]
             if not shapes:
                 continue
-            progress(f'Scale {completed_scales + 1}/{total_scales}: {files:,} files, {cpus} requested workers', force=True)
+            progress(f'Workers: {cpus} Files: {files:,} Scale: {completed_scales + 1}/{total_scales}', force=True)
             report = collect(binary, files, min(files, depth), repetitions, require_tools=require_tools,
                              fixture_parent=fixture_parent, require_memory=require_memory, cpus=cpus,
                              require_cpu_affinity=require_cpu_affinity, keep=keep, progress=progress, shapes=shapes,
@@ -346,7 +346,7 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
                              fixtures={shape: value for (shape, count), value in fixtures.items() if count == files}
                              if fixtures is not None else None)
             completed_scales += 1
-            progress(f'Completed scale {completed_scales}/{total_scales}', force=True)
+            progress(f'Workers: {cpus} Files: {files:,} Completed scale: {completed_scales}/{total_scales}', force=True)
             for task in report["tasks"]:
                 task["shape"] = f"{cpus}cpu/{files}/{task['shape']}"
             if combined is None:
