@@ -1,5 +1,30 @@
 # TODO
 
+## Prepared expression execution and optimizer
+
+Detailed scope, data-structure audit, benchmark matrix and decision gates:
+[`docs/design-expression-program.md`](docs/design-expression-program.md).
+
+- [ ] EP01: Inventory evaluator operands/effects; add source-node identities, conservative
+      optimization properties, an isolated equivalence oracle and preparation/execution baselines.
+- [ ] EP02: Bind predicate handlers once through registry-derived semantic IDs; measure a bound-tree
+      executor against current name-dispatched evaluation before changing control flow.
+- [ ] EP03: Prepare invariant operands and indexed worker matcher state; preserve validation timing,
+      conditional metadata, dynamic values and errors; report remaining per-entry parsing.
+- [ ] EP04: Compare contiguous opcode and bound-function programs; lower audited boolean control flow,
+      reuse scratch and preserve source mapping, with explicit whole-expression fallback coverage.
+- [ ] EP05: Complete fuzzy/unknown/error/action/deferred semantics; preserve exactly-once effects,
+      VFS safety, coordinator ownership and bounded suspended-entry memory.
+- [ ] EP06: Measure deterministic constant folding, jump simplification, selected fusion and proven
+      value reuse independently; keep reordering behind a stronger equivalence proof.
+- [ ] EP07: Qualify the winning executor on native macOS ARM64 and Linux x86-64; update --explain,
+      self-documentation and performance evidence; enable only measured, semantically complete paths.
+- [ ] EP-S01: Evaluate a reusable constexpr frozen/perfect-hash string map/set in MBO for startup
+      lookup. Existing LimitedMap/Set and constexpr hashes already exist; preserve exact miss checks,
+      per-mode aliases and bounded construction. This does not block EP01-EP07.
+- [ ] EP-S02: Revisit experimental MBO interning for dynamic names only when a concrete consumer and
+      measurements justify a dependency update; prefer existing strong IDs and indexed execution slots.
+
 ## Pages deployment size
 
 - [x] Redirect byte-identical stable coverage HTML to preserved run archives in all publishers;
