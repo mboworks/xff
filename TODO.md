@@ -20,6 +20,9 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       The typed scalar candidate and three-way oracle/270-case benchmark are implemented;
       The follow-up adds indexed worker matchers and a 333-case matrix. CI qualification,
       production-driver integration and the remaining audited families stay open.
+      On-demand worker slots now address the measured eager regex-fork startup cost; the eager
+      comparison remains in both kernel and whole-engine benchmarks. Adoption awaits native
+      setup/hot-loop/storage measurements; the production executor is unchanged.
 - [ ] EP04: Compare contiguous opcode and bound-function programs; lower audited boolean control flow,
       reuse scratch and preserve source mapping, with explicit whole-expression fallback coverage.
       The switch/function pilot, branch-selectivity cases and storage-reuse tests are implemented;

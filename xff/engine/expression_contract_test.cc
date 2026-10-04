@@ -582,6 +582,7 @@ TEST_F(PreparedOperandTest, IndexedWorkersReuseIndependentRegexSlotsAndCaptures)
   auto moved = std::move(first);
   second = std::move(moved);
   EXPECT_THAT(second.MatcherCount(), Eq(2));
+  EXPECT_THAT(second.InitializedMatcherCount(), Eq(0));
   EXPECT_THAT(second.StorageBytes(), Ge(sizeof(PreparedExpression::Worker)));
   std::vector<std::string> captures;
   EvalContext context{
@@ -596,10 +597,13 @@ TEST_F(PreparedOperandTest, IndexedWorkersReuseIndependentRegexSlotsAndCaptures)
   const auto third = prepared.MakeWorker();
   const auto moved_program = std::move(prepared);
   EXPECT_THAT(second.Evaluate(context).matched, IsTrue());
+  EXPECT_THAT(second.InitializedMatcherCount(), Eq(2));
+  EXPECT_THAT(third.InitializedMatcherCount(), Eq(0));
   EXPECT_THAT(captures, ElementsAre("file", "fi", "le"));
   captures.clear();
   context.content.Invalidate();
   EXPECT_THAT(third.Evaluate(context).matched, IsTrue());
+  EXPECT_THAT(third.InitializedMatcherCount(), Eq(2));
   EXPECT_THAT(captures, ElementsAre("file", "fi", "le"));
   context.content.Invalidate();
   EXPECT_THAT(moved_program.Evaluate(context).matched, IsTrue());
@@ -610,6 +614,7 @@ TEST_F(PreparedOperandTest, WorkerWithoutACompiledMatcherKeepsNoMatchSemantics) 
   ASSERT_OK_AND_ASSIGN(const auto prepared, PreparedExpression::Prepare(*command.expression));
   const auto worker = prepared.MakeWorker();
   EXPECT_THAT(worker.MatcherCount(), Eq(1));
+  EXPECT_THAT(worker.InitializedMatcherCount(), Eq(0));
   EvalContext context{
       .visit = visit,
       .emit = IgnoreOutput,
@@ -619,7 +624,63 @@ TEST_F(PreparedOperandTest, WorkerWithoutACompiledMatcherKeepsNoMatchSemantics) 
       .control = control,
   };
   EXPECT_THAT(worker.Evaluate(context).matched, IsFalse());
+  EXPECT_THAT(worker.InitializedMatcherCount(), Eq(1));
+  EXPECT_THAT(worker.Evaluate(context).matched, IsFalse());
+  EXPECT_THAT(worker.InitializedMatcherCount(), Eq(1));
   EXPECT_THAT(prepared.Evaluate(context).matched, IsFalse());
+  EXPECT_THAT(fs.events, IsEmpty());
+}
+
+TEST_F(PreparedOperandTest, WorkerInitializesOnlyReachedSlotsAndRetainsThemAcrossEntries) {
+  ASSERT_OK_AND_ASSIGN(auto command, parser::Parse({".", "-name", "file", "-regex", "file", "-o", "-rxc", "needle"}));
+  parser::BindMatchers(command, regex::Grammar::kRe2, parser::CaseMode::kSensitive);
+  ASSERT_OK_AND_ASSIGN(const auto prepared, PreparedExpression::Prepare(*command.expression));
+  const auto worker = prepared.MakeWorker();
+  const auto eager = prepared.MakeWorker(PreparedExpression::MatcherInitialization::kEager);
+  EXPECT_THAT(worker.MatcherCount(), Eq(2));
+  EXPECT_THAT(worker.InitializedMatcherCount(), Eq(0));
+  EXPECT_THAT(eager.InitializedMatcherCount(), Eq(2));
+  const auto storage = worker.StorageBytes();
+  EvalContext context{
+      .visit = visit,
+      .emit = IgnoreOutput,
+      .fs = fs,
+      .now = absl::UnixEpoch(),
+      .tz = absl::UTCTimeZone(),
+      .control = control,
+  };
+  EXPECT_THAT(worker.Evaluate(context).matched, IsTrue());
+  EXPECT_THAT(worker.InitializedMatcherCount(), Eq(1));
+  EXPECT_THAT(worker.Evaluate(context).matched, Eq(eager.Evaluate(context).matched));
+  EXPECT_THAT(worker.InitializedMatcherCount(), Eq(1));
+  EXPECT_THAT(fs.events, IsEmpty());
+  visit.path = "other";
+  visit.name = "other";
+  context.content.Invalidate();
+  EXPECT_THAT(worker.Evaluate(context).matched, IsTrue());
+  EXPECT_THAT(worker.InitializedMatcherCount(), Eq(2));
+  EXPECT_THAT(worker.StorageBytes(), Eq(storage));
+  EXPECT_THAT(fs.events, ElementsAre("read other"));
+  EXPECT_THAT(prepared.MakeWorker().InitializedMatcherCount(), Eq(0));
+}
+
+TEST_F(PreparedOperandTest, UnreachableRegexNeverCreatesBackendState) {
+  ASSERT_OK_AND_ASSIGN(auto command, parser::Parse({".", "-false", "-rxc", "needle"}));
+  parser::BindMatchers(command, regex::Grammar::kRe2, parser::CaseMode::kSensitive);
+  ASSERT_OK_AND_ASSIGN(const auto prepared, PreparedExpression::Prepare(*command.expression));
+  const auto worker = prepared.MakeWorker();
+  EvalContext context{
+      .visit = visit,
+      .emit = IgnoreOutput,
+      .fs = fs,
+      .now = absl::UnixEpoch(),
+      .tz = absl::UTCTimeZone(),
+      .control = control,
+  };
+  EXPECT_THAT(worker.Evaluate(context).matched, IsFalse());
+  EXPECT_THAT(worker.EvaluateIterative(context).matched, IsFalse());
+  EXPECT_THAT(worker.MatcherCount(), Eq(1));
+  EXPECT_THAT(worker.InitializedMatcherCount(), Eq(0));
   EXPECT_THAT(fs.events, IsEmpty());
 }
 

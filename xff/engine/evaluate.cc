@@ -2828,7 +2828,26 @@ struct TypeSpec {
 struct MatcherSlotTag {};
 
 using MatcherSlotId = mbo::types::ConstStrongId<MatcherSlotTag, std::size_t>;
-using MatcherSlots = absl::Span<const std::optional<regex::Matcher>>;
+
+struct MatcherSlot {
+  std::optional<regex::Matcher> matcher;
+  bool initialized = false;
+
+  void Initialize(const parser::Expr& expression) {
+    if (initialized) {
+      return;
+    }
+    initialized = true;
+    if (expression.matcher) {
+      if (auto fork = expression.matcher->ForkForWorker(); fork.ok()) {
+        matcher.emplace(std::move(*fork));
+      }
+    }
+  }
+};
+
+// Mutable execution state belongs exclusively to one worker. Shared plans contain no slots.
+using MatcherSlots = absl::Span<MatcherSlot>;
 using PreparedOperand = std::variant<std::monostate, TypeSpec, SizeSpec, NumericSpec, PermissionSpec, MatcherSlotId>;
 using PreparedEvalFn = bool (*)(const parser::Expr&, const PreparedOperand&, MatcherSlots, EvalContext&);
 using PrepareOperandFn = PreparedOperand (*)(std::string_view);
@@ -2921,9 +2940,10 @@ bool EvalPreparedPermission(const parser::Expr&, const PreparedOperand& operand,
 
 MatcherRef PreparedMatcherFor(const parser::Expr& expression, const PreparedOperand& operand, MatcherSlots slots) {
   if (!slots.empty()) {
-    const auto& local = slots.at(std::get<MatcherSlotId>(operand).value());
-    if (local.has_value()) {
-      return std::cref(*local);
+    auto& local = slots.at(std::get<MatcherSlotId>(operand).value());
+    local.Initialize(expression);
+    if (local.matcher.has_value()) {
+      return std::cref(*local.matcher);
     }
   }
   return AsRef(expression.matcher);
@@ -3637,7 +3657,7 @@ struct PreparedExpression::Worker::State {
   };
 
   Cursor::Environment environment;
-  std::vector<std::optional<regex::Matcher>> matchers;
+  std::vector<MatcherSlot> matchers;
   // Only contexts requiring score/replay state reserve this scratch, once per worker. A
   // suspended entry retains the existing sparse memo, never a copy of these worker frames.
   std::vector<Frame> frames;
@@ -3794,21 +3814,18 @@ PreparedExpression::Worker::Worker(Worker&&) noexcept = default;
 PreparedExpression::Worker& PreparedExpression::Worker::operator=(Worker&&) noexcept = default;
 PreparedExpression::Worker::~Worker() = default;
 
-PreparedExpression::Worker PreparedExpression::MakeWorker() const {
-  auto state = std::make_unique<Worker::State>(Worker::State{.environment = {.data = *data_}});
-  state->matchers.reserve(data_->matcher_sources.size());
-  for (const auto& source : data_->matcher_sources) {
-    const auto& expression = source.get();
-    // Null means no compiled matcher or a failed fork. The original immutable matcher remains
-    // the fallback, exactly as for WorkerMatchers; only successfully forked state is worker-owned.
-    std::optional<regex::Matcher> local;
-    if (expression.matcher) {
-      if (auto fork = expression.matcher->ForkForWorker(); fork.ok()) {
-        local.emplace(std::move(*fork));
-      }
+PreparedExpression::Worker PreparedExpression::MakeWorker(MatcherInitialization initialization) const {
+  auto state = std::make_unique<Worker::State>(Worker::State{
+      .environment = {.data = *data_},
+      .matchers = std::vector<MatcherSlot>(data_->matcher_sources.size()),
+  });
+  if (initialization == MatcherInitialization::kEager) {
+    for (std::size_t index = 0; index < state->matchers.size(); ++index) {
+      state->matchers.at(index).Initialize(data_->matcher_sources.at(index).get());
     }
-    state->matchers.push_back(std::move(local));
   }
+  // Unused slots allocate no backend. Reached slots remember even a failed or absent fork,
+  // falling back to the original immutable matcher without retrying on subsequent entries.
   state->environment.matchers = state->matchers;
   return Worker(std::move(state));
 }
@@ -3841,8 +3858,12 @@ std::size_t PreparedExpression::Worker::MatcherCount() const {
   return state_->matchers.size();
 }
 
+std::size_t PreparedExpression::Worker::InitializedMatcherCount() const {
+  return static_cast<std::size_t>(std::ranges::count(state_->matchers, true, &MatcherSlot::initialized));
+}
+
 std::size_t PreparedExpression::Worker::StorageBytes() const {
-  return sizeof(*this) + sizeof(State) + (state_->matchers.capacity() * sizeof(std::optional<regex::Matcher>))
+  return sizeof(*this) + sizeof(State) + (state_->matchers.capacity() * sizeof(MatcherSlot))
          + (state_->frames.capacity() * sizeof(State::Frame));
 }
 

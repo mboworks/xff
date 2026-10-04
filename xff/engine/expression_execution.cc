@@ -49,7 +49,8 @@ absl::StatusOr<ExpressionExecution> ExpressionExecution::Prepare(
       data->bound.emplace(std::move(bound));
       break;
     }
-    case ExpressionExecutor::kPrepared: {
+    case ExpressionExecutor::kPrepared:
+    case ExpressionExecutor::kPreparedEager: {
       MBO_ASSIGN_OR_RETURN(auto prepared, PreparedExpression::Prepare(expression));
       data->prepared.emplace(std::move(prepared));
       break;
@@ -72,7 +73,9 @@ absl::StatusOr<ExpressionExecution> ExpressionExecution::Prepare(
 ExpressionExecution::Worker ExpressionExecution::MakeWorker() const {
   auto state = std::make_unique<Worker::State>(Worker::State{.data = *data_});
   if (data_->prepared) {
-    state->prepared.emplace(data_->prepared->MakeWorker());
+    state->prepared.emplace(data_->prepared->MakeWorker(
+        data_->executor == ExpressionExecutor::kPreparedEager ? PreparedExpression::MatcherInitialization::kEager
+                                                              : PreparedExpression::MatcherInitialization::kOnDemand));
   }
   if (data_->program) {
     state->program.emplace(data_->program->MakeWorker(
