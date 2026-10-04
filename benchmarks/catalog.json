@@ -2509,8 +2509,8 @@
   },
   {
     "platform": "macos / arm64",
-    "commit": "19050ec12aa4de8a9dab9b9cc6a4dc2296427ee7",
-    "label": "PR 957 / 19050ec12a",
+    "commit": "43823c88f81264720725974641a2f41ec8a86652",
+    "label": "PR 957 / 43823c88f8",
     "source": "pr-957",
     "source_label": "PR #957 preview",
     "links": [
@@ -2519,20 +2519,20 @@
         "href": "https://github.com/mboworks/xff/pull/957"
       }
     ],
-    "date": "2026-10-04T08:40:24Z",
-    "measurement_date": "2026-10-04T08:54:44Z",
+    "date": "2026-10-04T09:16:40Z",
+    "measurement_date": "2026-10-04T09:30:40Z",
     "backfill": false,
-    "run": 37189681072,
+    "run": 37191635706,
     "attempt": 1,
-    "report": "previews/957/37189681072/1/macos/",
-    "figures": "previews/957/37189681072/1/macos/landscape.json",
+    "report": "previews/957/37191635706/1/macos/",
+    "figures": "previews/957/37191635706/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
     "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
-    "commit": "19050ec12aa4de8a9dab9b9cc6a4dc2296427ee7",
-    "label": "PR 957 / 19050ec12a",
+    "commit": "43823c88f81264720725974641a2f41ec8a86652",
+    "label": "PR 957 / 43823c88f8",
     "source": "pr-957",
     "source_label": "PR #957 preview",
     "links": [
@@ -2541,13 +2541,13 @@
         "href": "https://github.com/mboworks/xff/pull/957"
       }
     ],
-    "date": "2026-10-04T08:40:24Z",
-    "measurement_date": "2026-10-04T08:54:24Z",
+    "date": "2026-10-04T09:16:40Z",
+    "measurement_date": "2026-10-04T09:30:39Z",
     "backfill": false,
-    "run": 37189681072,
+    "run": 37191635706,
     "attempt": 1,
-    "report": "previews/957/37189681072/1/linux/",
-    "figures": "previews/957/37189681072/1/linux/landscape.json",
+    "report": "previews/957/37191635706/1/linux/",
+    "figures": "previews/957/37191635706/1/linux/landscape.json",
     "identity": "xff benchmarks - Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
     "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
   }
