@@ -3059,45 +3059,45 @@
   },
   {
     "platform": "macos / arm64",
-    "commit": "671bf929700c075d74b7ed832cc70e81c2571cdc",
-    "label": "PR 966 / 671bf92970",
-    "source": "pr-966",
-    "source_label": "PR #966 preview",
+    "commit": "d6f100321d96c682e464856ee274169fefcf6f63",
+    "label": "PR 968 / d6f100321d",
+    "source": "pr-968",
+    "source_label": "PR #968 preview",
     "links": [
       {
-        "label": "PR #966 preview",
-        "href": "https://github.com/mboworks/xff/pull/966"
+        "label": "PR #968 preview",
+        "href": "https://github.com/mboworks/xff/pull/968"
       }
     ],
-    "date": "2026-10-04T17:14:05Z",
-    "measurement_date": "2026-10-04T18:28:50Z",
+    "date": "2026-10-04T18:20:33Z",
+    "measurement_date": "2026-10-04T19:15:22Z",
     "backfill": false,
-    "run": 37219730788,
+    "run": 37224067597,
     "attempt": 1,
-    "report": "previews/966/37219730788/1/macos/",
-    "figures": "previews/966/37219730788/1/macos/landscape.json",
+    "report": "previews/968/37224067597/1/macos/",
+    "figures": "previews/968/37224067597/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
     "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
-    "commit": "671bf929700c075d74b7ed832cc70e81c2571cdc",
-    "label": "PR 966 / 671bf92970",
-    "source": "pr-966",
-    "source_label": "PR #966 preview",
+    "commit": "d6f100321d96c682e464856ee274169fefcf6f63",
+    "label": "PR 968 / d6f100321d",
+    "source": "pr-968",
+    "source_label": "PR #968 preview",
     "links": [
       {
-        "label": "PR #966 preview",
-        "href": "https://github.com/mboworks/xff/pull/966"
+        "label": "PR #968 preview",
+        "href": "https://github.com/mboworks/xff/pull/968"
       }
     ],
-    "date": "2026-10-04T17:14:05Z",
-    "measurement_date": "2026-10-04T18:28:39Z",
+    "date": "2026-10-04T18:20:33Z",
+    "measurement_date": "2026-10-04T19:15:16Z",
     "backfill": false,
-    "run": 37219730788,
+    "run": 37224067597,
     "attempt": 1,
-    "report": "previews/966/37219730788/1/linux/",
-    "figures": "previews/966/37219730788/1/linux/landscape.json",
+    "report": "previews/968/37224067597/1/linux/",
+    "figures": "previews/968/37224067597/1/linux/landscape.json",
     "identity": "xff benchmarks - Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
     "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
   }
