@@ -2371,6 +2371,36 @@ reuses its records without per-entry cloning; content, output and deferred memoi
 allocation behavior. Phase allocation counts, final ordinary-command RSS and native macOS release
 sizes remain acceptance work, not conclusions established by this table.
 
+### Production-candidate native macOS session
+
+Run `37232116551` also retained all 560 whole-engine cases on macOS ARM64, with nine raw rounds
+each and no correctness errors. It tests the same merge revision as the repeated Linux session.
+The table reports production/tree fastest-seven mean ratios within that macOS session. Worker
+counts are requests; predicates that are not pool-eligible keep the normal serial path.
+
+| Workload        | One entry, one worker | 10,000 entries, one worker | 10,000 entries, three workers | Tree CV, 10,000 entries / one worker |
+| :-------------- | --------------------: | -------------------------: | ----------------------------: | -----------------------------------: |
+| name            |                 0.968 |                      0.905 |                         0.890 |                                 7.3% |
+| scalar          |                 0.978 |                      0.736 |                         0.693 |                                 3.9% |
+| age             |                 1.041 |                      0.667 |                         0.660 |                                 5.7% |
+| regex-output    |                 1.066 |                      0.783 |                         0.985 |                                13.5% |
+| regex-unreached |                 1.004 |                      0.860 |                         0.935 |                                 8.3% |
+| summary         |                 1.075 |                      0.826 |                         0.881 |                                11.4% |
+| scored-replay   |                 1.023 |                      0.946 |                         0.924 |                                18.3% |
+
+The strongest scalar and age improvements agree with Linux and preceding native prepared-executor
+sessions. Three-worker reached regex is effectively unchanged, and the smaller scored differences
+are within the noisy sample spread. Do not interpret the apparently faster one-entry name/scalar
+cases as proof that preparation is free. The slower one-entry age/regex/summary cases add roughly
+0.6/1.0/1.2 microseconds, respectively. A second current production session and ordinary CLI/RSS
+results remain required for final acceptance.
+
+The downloaded macOS benchmark CLI strips to 3,135,888 bytes, 49,872 bytes (1.62%) above the earlier
+main artifact. This exceeds the initial 1% review budget while remaining below 64 KiB. The proposed
+tradeoff is the repeatable larger-search benefit with a small absolute footprint; it must remain
+visible in the production decision. Experimental program factories stay out of the binary. The
+separately staged macOS lean/full release artifacts are still pending.
+
 ### Configuration and archive integration qualification
 
 The whole-engine executor oracle now composes validated system, user and explicit INI profiles
