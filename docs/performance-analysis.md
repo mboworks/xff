@@ -2170,3 +2170,32 @@ also check total hot-loop overhead. The initialization flag can increase aligned
 This is a response to measured setup cost, not a measured improvement yet. Native Linux/macOS
 CI must establish empty, first-match and large-search costs before production adoption. No
 local C++ compilation or timing campaign is required, and the production executor remains the tree.
+
+### Numeric age preparation candidate and remaining operand audit
+
+Numeric ages still decoded the comparison, decimal count and optional BSD suffix on every reached
+entry. The candidate binds those operations through the existing dispatch factory for `-used` and
+the modification/access/change/birth age families. Signed counts and the seconds-per-unit record
+fit within the existing operand size/alignment; they add no text allocation or shared mutable state.
+The clock and timestamps remain dynamic, and unsupported birth-time observations retain their order.
+
+The audit also found unchecked signed decimal accumulation in both `MatchesSignedNumeric` and
+`MatchesTime`. The shared checked decoder rejects out-of-range counts rather than invoking signed
+overflow. This is a reference-path correctness change as well as prepared-path work, so native
+comparisons must show any baseline-cost change rather than attributing it to the executor.
+The four new kernel families are `age-days`, `age-suffix`, `age-minutes` and `used-days`; the full
+engine adds an age/scalar/name chain at 0/1/10/1,000/10,000 files and requested workers 1/3.
+No local compilation or timing campaign is used; native CI must establish whether to retain it.
+
+Remaining invariant work has distinct boundaries. MIME pattern lowercasing is a possible separate
+text-pool candidate; embedding an owning string in every operand could enlarge unrelated scalar
+slots. Word/calendar durations depend on the final evaluation clock/timezone and currently keep
+that interpretation dynamic. Reference-file metadata and account databases remain observable and
+conditional; this work does not silently cache them. Existing regex and output templates are
+already compiled by their owners and should be reused, not compiled again in the executor.
+
+Downloaded binary symbols from run `37220141643` confirm that `ExpressionProgram::Prepare`, its
+worker evaluator, `BoundExpression` and `PreparedExpression` remain linked into the benchmark CLI
+on both platforms despite the tree default; the main artifacts have none of these symbols. This
+supports separating qualification-only alternatives from the production dependency path before
+final size review. It is binary inspection, not a new local build or timing result.

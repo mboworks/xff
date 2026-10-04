@@ -533,29 +533,46 @@ bool MatchesNumeric(std::string_view arg, std::uint64_t value) {
 // Like MatchesNumeric, but over a signed count: find's -used day delta is
 // negative when a file's access time predates its status-change time. The
 // argument N is still non-negative (a leading +/- is the comparison operator).
-bool MatchesSignedNumeric(std::string_view arg, std::int64_t value) {
+struct SignedNumericSpec {
   char compare = '=';
+  std::int64_t want = 0;
+};
+
+std::optional<SignedNumericSpec> ParseSignedNumericSpec(std::string_view arg) {
+  SignedNumericSpec spec;
   if (!arg.empty() && (arg.front() == '+' || arg.front() == '-')) {
-    compare = arg.front();
+    spec.compare = arg.front();
     arg.remove_prefix(1);
   }
   if (arg.empty()) {
-    return false;
+    return std::nullopt;
   }
-  std::int64_t want = 0;
   for (const char digit : arg) {
     if (digit < '0' || digit > '9') {
-      return false;
+      return std::nullopt;
     }
-    want = (want * 10) + static_cast<std::int64_t>(digit - '0');
+    const auto value = static_cast<std::int64_t>(digit - '0');
+    if (spec.want > (std::numeric_limits<std::int64_t>::max() - value) / 10) {
+      return std::nullopt;
+    }
+    spec.want = (spec.want * 10) + value;
   }
-  if (compare == '+') {
-    return value > want;
+  return spec;
+}
+
+bool MatchesSignedNumericSpec(const SignedNumericSpec& spec, std::int64_t value) {
+  if (spec.compare == '+') {
+    return value > spec.want;
   }
-  if (compare == '-') {
-    return value < want;
+  if (spec.compare == '-') {
+    return value < spec.want;
   }
-  return value == want;
+  return value == spec.want;
+}
+
+bool MatchesSignedNumeric(std::string_view arg, std::int64_t value) {
+  const auto spec = ParseSignedNumericSpec(arg);
+  return spec.has_value() && MatchesSignedNumericSpec(*spec, value);
 }
 
 // Matches find's `-perm` over the permission bits (incl. setuid/setgid/sticky):
@@ -783,44 +800,42 @@ constexpr auto kTimeUnits = mbo::container::MakeLimitedMap(
 // find's -mtime/-mmin: the entry was modified N units ago -- 24h for -mtime, one
 // minute for -mmin -- with any fractional unit discarded (floor), so a 2.9-day
 // file is "2 days". +N means strictly more than N units ago, -N strictly fewer.
-bool MatchesTime(std::string_view arg, absl::Time mtime, absl::Time now, absl::Duration unit, bool allow_unit_suffix) {
-  char compare = '=';
-  if (!arg.empty() && (arg.front() == '+' || arg.front() == '-')) {
-    compare = arg.front();
-    arg.remove_prefix(1);
-  }
+struct TimeSpec {
+  SignedNumericSpec numeric;
+  std::int64_t unit_seconds;
+};
+
+static_assert(sizeof(TimeSpec) <= sizeof(SizeSpec));
+static_assert(alignof(TimeSpec) <= alignof(SizeSpec));
+
+std::optional<TimeSpec> ParseTimeSpec(std::string_view arg, std::int64_t unit_seconds, bool allow_unit_suffix) {
   if (arg.empty()) {
-    return false;
+    return std::nullopt;
   }
-  // BSD unit suffix: -mtime/-atime/-ctime accept a trailing s/m/h/d/w that
-  // overrides the predicate's default unit (e.g. "-mtime -1h"). find-compatible
-  // (BSD); the GNU -mmin/-amin/-cmin family keeps integer minutes (no suffix).
+  // BSD day predicates permit s/m/h/d/w. Minute predicates keep integer minutes.
   if (allow_unit_suffix && (arg.back() < '0' || arg.back() > '9')) {
-    const auto it = kTimeUnits.find(arg.back());
-    if (it == kTimeUnits.end()) {
-      return false;  // unrecognised suffix
+    const auto unit = kTimeUnits.find(arg.back());
+    if (unit == kTimeUnits.end()) {
+      return std::nullopt;
     }
-    unit = it->second;
+    unit_seconds = absl::ToInt64Seconds(unit->second);
     arg.remove_suffix(1);
-    if (arg.empty()) {
-      return false;
-    }
   }
-  std::int64_t want = 0;
-  for (const char digit : arg) {
-    if (digit < '0' || digit > '9') {
-      return false;
-    }
-    want = (want * 10) + (digit - '0');
+  const auto numeric = ParseSignedNumericSpec(arg);
+  if (!numeric.has_value()) {
+    return std::nullopt;
   }
-  const auto units = static_cast<std::int64_t>((now - mtime) / unit);
-  if (compare == '+') {
-    return units > want;
-  }
-  if (compare == '-') {
-    return units < want;
-  }
-  return units == want;
+  return TimeSpec{.numeric = *numeric, .unit_seconds = unit_seconds};
+}
+
+bool MatchesTimeSpec(const TimeSpec& spec, absl::Time time, absl::Time now) {
+  const auto units = static_cast<std::int64_t>((now - time) / absl::Seconds(spec.unit_seconds));
+  return MatchesSignedNumericSpec(spec.numeric, units);
+}
+
+bool MatchesTime(std::string_view arg, absl::Time time, absl::Time now, absl::Duration unit, bool allow_unit_suffix) {
+  const auto spec = ParseTimeSpec(arg, absl::ToInt64Seconds(unit), allow_unit_suffix);
+  return spec.has_value() && MatchesTimeSpec(*spec, time, now);
 }
 
 // xff word/compound duration on -mtime/-atime/-ctime (e.g. "-3 weeks 3 hours",
@@ -2848,7 +2863,20 @@ struct MatcherSlot {
 
 // Mutable execution state belongs exclusively to one worker. Shared plans contain no slots.
 using MatcherSlots = absl::Span<MatcherSlot>;
-using PreparedOperand = std::variant<std::monostate, TypeSpec, SizeSpec, NumericSpec, PermissionSpec, MatcherSlotId>;
+
+// Calendar/word ages need the current evaluation clock/timezone, not preparation-time observations.
+struct CalendarAge {};
+
+using PreparedOperand = std::variant<
+    std::monostate,
+    TypeSpec,
+    SizeSpec,
+    NumericSpec,
+    PermissionSpec,
+    MatcherSlotId,
+    SignedNumericSpec,
+    TimeSpec,
+    CalendarAge>;
 using PreparedEvalFn = bool (*)(const parser::Expr&, const PreparedOperand&, MatcherSlots, EvalContext&);
 using PrepareOperandFn = PreparedOperand (*)(std::string_view);
 
@@ -2884,6 +2912,48 @@ PreparedOperand PrepareNumericOperand(std::string_view argument) {
 PreparedOperand PreparePermissionOperand(std::string_view argument) {
   const auto spec = ParsePermissionSpec(argument);
   return spec.has_value() ? PreparedOperand{*spec} : PreparedOperand{};
+}
+
+PreparedOperand PrepareSignedNumericOperand(std::string_view argument) {
+  const auto spec = ParseSignedNumericSpec(argument);
+  return spec.has_value() ? PreparedOperand{*spec} : PreparedOperand{};
+}
+
+template<std::int64_t UnitSeconds, bool AllowUnitSuffix>
+PreparedOperand PrepareTimeOperand(std::string_view argument) {
+  if (AllowUnitSuffix && absl::StrContains(argument, ' ')) {
+    return CalendarAge{};
+  }
+  const auto spec = ParseTimeSpec(argument, UnitSeconds, AllowUnitSuffix);
+  return spec.has_value() ? PreparedOperand{*spec} : PreparedOperand{};
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+bool EvalPreparedUsed(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+  if (!std::holds_alternative<SignedNumericSpec>(operand)) {
+    return false;
+  }
+  const auto seconds = absl::ToInt64Seconds(context.visit.metadata.atime - context.visit.metadata.ctime);
+  return MatchesSignedNumericSpec(std::get<SignedNumericSpec>(operand), seconds / 86'400);
+}
+
+template<char Field>
+bool EvalPreparedTime(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    MatcherSlots,
+    EvalContext& context) {
+  if (expression.args.empty()) {
+    return false;
+  }
+  const auto time = TimeField(context.visit.metadata, Field);
+  if (!time.has_value()) {
+    return ReportNoBtime(context);
+  }
+  if (std::holds_alternative<CalendarAge>(operand)) {
+    return MatchesAge(expression.args.front(), *time, context.now, context.tz);
+  }
+  return std::holds_alternative<TimeSpec>(operand) && MatchesTimeSpec(std::get<TimeSpec>(operand), *time, context.now);
 }
 
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
@@ -3003,21 +3073,27 @@ consteval EvalEntry MakeEvalEntry(
 
 using DispatchPair = std::pair<std::string_view, EvalEntry>;
 constexpr auto kDispatch = mbo::container::MakeLimitedMap(
-    DispatchPair{"-Bmin", MakeEvalEntry<&EvalBmin>()},    // capital 'B' sorts before the lowercase entries
-    DispatchPair{"-Btime", MakeEvalEntry<&EvalBtime>()},  // (ASCII), so the birth-time pair leads the table
-    DispatchPair{"-amin", MakeEvalEntry<&EvalAmin>()},
+    DispatchPair{
+        "-Bmin",
+        MakeEvalEntry<&EvalBmin>(&PrepareTimeOperand<60, false>, &EvalPreparedTime<'B'>),
+    },
+    DispatchPair{
+        "-Btime",
+        MakeEvalEntry<&EvalBtime>(&PrepareTimeOperand<86'400, true>, &EvalPreparedTime<'B'>),
+    },
+    DispatchPair{"-amin", MakeEvalEntry<&EvalAmin>(&PrepareTimeOperand<60, false>, &EvalPreparedTime<'a'>)},
     DispatchPair{"-anewer", MakeEvalEntry<&EvalAnewer>()},
-    DispatchPair{"-atime", MakeEvalEntry<&EvalAtime>()},
+    DispatchPair{"-atime", MakeEvalEntry<&EvalAtime>(&PrepareTimeOperand<86'400, true>, &EvalPreparedTime<'a'>)},
     DispatchPair{"-binary", MakeEvalEntry<&EvalBinary>()},
     DispatchPair{"-blocks", MakeEvalEntry<&EvalBlocks>(&PrepareSizeOperand, &EvalPreparedBlocks)},
     DispatchPair{"-capture", MakeEvalEntry<&EvalCapture>()},
     DispatchPair{"-capturedir", MakeEvalEntry<&EvalCapturedir>()},
-    DispatchPair{"-cmin", MakeEvalEntry<&EvalCmin>()},
+    DispatchPair{"-cmin", MakeEvalEntry<&EvalCmin>(&PrepareTimeOperand<60, false>, &EvalPreparedTime<'c'>)},
     DispatchPair{"-cmp", MakeEvalEntry<&EvalCmp>()},
     DispatchPair{"-cnewer", MakeEvalEntry<&EvalCnewer>()},
     DispatchPair{"-collect", MakeEvalEntry<&EvalCollect>()},
     DispatchPair{"-content", MakeEvalEntry<&EvalContent>()},
-    DispatchPair{"-ctime", MakeEvalEntry<&EvalCtime>()},
+    DispatchPair{"-ctime", MakeEvalEntry<&EvalCtime>(&PrepareTimeOperand<86'400, true>, &EvalPreparedTime<'c'>)},
     DispatchPair{"-delete", MakeEvalEntry<&EvalDelete>()},
     DispatchPair{"-diff", MakeEvalEntry<&EvalDiff>()},
     DispatchPair{"-empty", MakeEvalEntry<&EvalEmpty>()},
@@ -3054,8 +3130,8 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-lname", MakeEvalEntry<&EvalLname>()},
     DispatchPair{"-ls", MakeEvalEntry<&EvalLs>()},
     DispatchPair{"-mime", MakeEvalEntry<&EvalMime>()},
-    DispatchPair{"-mmin", MakeEvalEntry<&EvalMmin>()},
-    DispatchPair{"-mtime", MakeEvalEntry<&EvalMtime>()},
+    DispatchPair{"-mmin", MakeEvalEntry<&EvalMmin>(&PrepareTimeOperand<60, false>, &EvalPreparedTime<'m'>)},
+    DispatchPair{"-mtime", MakeEvalEntry<&EvalMtime>(&PrepareTimeOperand<86'400, true>, &EvalPreparedTime<'m'>)},
     DispatchPair{"-first", MakeEvalEntry<&EvalFirst>()},
     DispatchPair{"-fuzzy", MakeEvalEntry<&EvalFuzzy>()},
     DispatchPair{"-fuzzypath", MakeEvalEntry<&EvalFuzzyPath>()},
@@ -3107,7 +3183,7 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-true", MakeEvalEntry<&EvalTrue>()},
     DispatchPair{"-type", MakeEvalEntry<&EvalType>(&PrepareTypeOperand, &EvalPreparedType)},
     DispatchPair{"-uid", MakeEvalEntry<&EvalUid>(&PrepareNumericOperand, &EvalPreparedNumeric<&vfs::Metadata::uid>)},
-    DispatchPair{"-used", MakeEvalEntry<&EvalUsed>()},
+    DispatchPair{"-used", MakeEvalEntry<&EvalUsed>(&PrepareSignedNumericOperand, &EvalPreparedUsed)},
     DispatchPair{"-user", MakeEvalEntry<&EvalUser>()},
     DispatchPair{"-wholename", MakeEvalEntry<&EvalPath>()},
     DispatchPair{"-writable", MakeEvalEntry<&EvalWritable>()},

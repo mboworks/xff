@@ -129,6 +129,10 @@ struct ExpressionCase {
 // The named core matrix is shared by preparation and execution. Long cheap chains expose dispatch
 // and operand costs; costly content/scoring cases use shorter chains. Effects are controlled output.
 constexpr auto kCases = std::to_array<ExpressionCase>({
+    {.name = "age-days", .primary = "-mtime", .argument = "0"},
+    {.name = "age-suffix", .primary = "-mtime", .argument = "-1h"},
+    {.name = "age-minutes", .primary = "-mmin", .argument = "0"},
+    {.name = "used-days", .primary = "-used", .argument = "0"},
     {.name = "constant-true", .primary = "-true"},
     {.name = "constant-false", .primary = "-false", .expected_match = false, .short_circuit = true},
     {

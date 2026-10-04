@@ -692,3 +692,29 @@ output. Every optimizer/dispatch combination runs both scored and unscored over 
 sizes. Failures include the exact token sequence and sample index for reproduction. These
 generated cases complement explicit failure, replay and effect-order tests; they do not replace
 the remaining full-run configuration/archive qualification.
+
+### EP03 continuation: numeric age operands
+
+The prepared path now decodes `-used`, `-mtime`/`-atime`/`-ctime`/`-Btime` and their
+minute counterparts through callbacks on the existing engine dispatch entry. A numeric age
+stores its comparison, signed count and duration in seconds. Compile-time size/alignment checks
+keep this record within the existing size operand's storage budget. No new lookup vocabulary,
+clock snapshot, timezone load or filesystem read occurs during preparation.
+
+Evaluation still reads the current metadata and `EvalContext::now`. Word/calendar ages carry a
+separate tag and retain their existing context-dependent parser; reference-file and account
+lookups remain conditional in their original callbacks. Missing birth time still records the
+unsupported operation before comparing an operand. Minute predicates do not acquire BSD suffix
+support; day predicates retain `s`/`m`/`h`/`d`/`w` suffixes and the existing fractional-unit truncation.
+
+The shared signed-count decoder now checks accumulation before multiplication. Values above
+`INT64_MAX` produce no match instead of signed overflow in both the reference and prepared paths.
+Boundary tests assert this result explicitly, beyond differential comparisons. Reuse tests vary
+clock, timestamps, timezone, birth-time availability and malformed/word/suffix input against the
+same prepared worker, with no VFS observations and stable owned storage.
+
+Four targeted preparation/kernel families and one complete-engine age workload join the native
+CI matrix. Existing families remain as regression controls. Compare the common valid-input tree
+and prepared paths within each session, and compare the reference itself to the preceding session:
+the checked decoder changes reference cost too. Do not credit all of that difference to preparation.
+No production executor is selected by this candidate; performance qualification is still pending.
