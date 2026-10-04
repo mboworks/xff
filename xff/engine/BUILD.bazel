@@ -264,6 +264,7 @@ cc_test(
     srcs = ["parallel_match_test.cc"],
     deps = [
         ":evaluate_cc",
+        ":expression_execution_cc",
         ":parallel_match_cc",
         "//xff/matching/regex:regex_cc",
         "//xff/parser:parser_cc",
@@ -757,6 +758,7 @@ cc_library(
         ":evaluate_cc",
         "//xff/parser:parser_cc",
         "@abseil-cpp//absl/status:statusor",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
     ],
 )
 

@@ -32,6 +32,7 @@ namespace {
 using ::mbo::testing::EqualsText;
 using ::mbo::testing::StatusIs;
 using ::testing::_;
+using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Gt;
 using ::testing::HasSubstr;
@@ -155,6 +156,40 @@ struct ExpressionExecutionTest : ::testing::TestWithParam<ExpressionExecutor> {
   }
 };
 
+struct ProductionExpressionTest : ::testing::Test {};
+
+TEST_F(ProductionExpressionTest, CoordinatorAndWorkerKeepCapturesIndependentAfterMovingOwners) {
+  ASSERT_OK_AND_ASSIGN(auto command, parser::Parse({"root", "-regex", "root/([^.]+)[.]txt"}));
+  parser::BindMatchers(command, parser::GrammarFromGlobals(command.globals), parser::CaseMode::kSensitive);
+  ASSERT_OK_AND_ASSIGN(auto execution, PrepareExpressionExecution(*command.expression));
+  auto coordinator = execution.MakeWorker(ExpressionWorkerRole::kCoordinator);
+  auto concurrent = execution.MakeWorker(ExpressionWorkerRole::kConcurrent);
+  const auto moved_execution = std::move(execution);
+  const std::array workers{std::move(coordinator), std::move(concurrent)};
+  EXPECT_THAT(moved_execution.Preparation().matcher_slots, Eq(1));
+  EXPECT_THAT(moved_execution.Preparation().owned_bytes, Gt(0));
+  const ExecutionFs fs;
+  for (const std::string_view stem : {"first", "second", "first"}) {
+    const std::string path = absl::StrCat("root/", stem, ".txt");
+    const Visit visit{.path = path, .metadata = {.type = vfs::FileType::kRegular}, .fs = fs};
+    for (const auto& worker : workers) {
+      Control control;
+      std::vector<std::string> captures;
+      EvalContext context{
+          .visit = visit,
+          .emit = [](std::string_view) {},
+          .fs = fs,
+          .now = absl::UnixEpoch(),
+          .tz = absl::UTCTimeZone(),
+          .control = control,
+          .captures = captures,
+      };
+      EXPECT_THAT(worker.Evaluate(context).matched, IsTrue());
+      EXPECT_THAT(captures, ElementsAre(path, stem));
+    }
+  }
+}
+
 TEST_P(ExpressionExecutionTest, SelectionOutputSummariesAndComparisonPreserveTheWholeRun) {
   const std::vector<std::vector<std::string>> cases{
       {"root"},
@@ -259,6 +294,7 @@ INSTANTIATE_TEST_SUITE_P(
     ExpressionExecutionTest,
     ::testing::Values(
         ExpressionExecutor::kTree,
+        ExpressionExecutor::kProduction,
         ExpressionExecutor::kBound,
         ExpressionExecutor::kPrepared,
         ExpressionExecutor::kPreparedEager,
@@ -268,6 +304,7 @@ INSTANTIATE_TEST_SUITE_P(
     [](const ::testing::TestParamInfo<ExpressionExecutor>& info) {
       switch (info.param) {
         case ExpressionExecutor::kTree: return "Tree";
+        case ExpressionExecutor::kProduction: return "Production";
         case ExpressionExecutor::kBound: return "Bound";
         case ExpressionExecutor::kPrepared: return "Prepared";
         case ExpressionExecutor::kPreparedEager: return "PreparedEager";

@@ -36,6 +36,32 @@ TEST_F(ResourceInspectionTest, InspectsAbsentRootsWithoutTraversal) {
   EXPECT_THAT(output, HasSubstr("static inspection, not measured usage"));
 }
 
+TEST_F(ResourceInspectionTest, ReportsPreparedExpressionRecordsWithoutReadingMissingRoots) {
+  ASSERT_OK_AND_ASSIGN(
+      const auto output, Inspect({"/absent-resource-fixture", "-type", "f", "-size", "+2c", "-regex", ".*"}));
+  EXPECT_THAT(output, HasSubstr("expression-executor\tprepared-recursive\n"));
+  EXPECT_THAT(output, HasSubstr("expression-source-nodes\t5\n"));
+  EXPECT_THAT(output, HasSubstr("expression-prepared-operands\t3\n"));
+  EXPECT_THAT(output, HasSubstr("expression-matcher-slots\t1\n"));
+  EXPECT_THAT(output, HasSubstr("expression-owned-bytes\t"));
+  EXPECT_THAT(output, Not(HasSubstr("expression-owned-bytes\t0")));
+  EXPECT_THAT(output, HasSubstr("expression-optimizer\tdisabled; source order preserved"));
+  EXPECT_THAT(output, HasSubstr("expression-worker-matchers\tprivate, initialized on first use"));
+  EXPECT_THAT(output, HasSubstr("before worker/output splitting"));
+}
+
+TEST_F(ResourceInspectionTest, AbsentNativeExpressionHasNoPreparedRecords) {
+  ASSERT_OK_AND_ASSIGN(const auto output, Inspect({"/absent-resource-fixture"}));
+  EXPECT_THAT(output, HasSubstr("expression-executor\tnone (no native expression)"));
+  EXPECT_THAT(output, Not(HasSubstr("expression-owned-bytes\t")));
+}
+
+TEST_F(ResourceInspectionTest, MalformedExpressionCannotProducePreparationDetails) {
+  ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"/absent-resource-fixture", "-true"}));
+  command.expression->kind = parser::Expr::Kind::kAnd;
+  EXPECT_THAT(ExplainResources(command), StatusIs(absl::StatusCode::kInvalidArgument));
+}
+
 TEST_F(ResourceInspectionTest, ComparisonInventoriesAreIndependentOfColumnBufferLimits) {
   ASSERT_OK_AND_ASSIGN(
       const auto output,

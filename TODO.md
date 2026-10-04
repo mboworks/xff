@@ -22,7 +22,8 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       production-driver integration and the remaining audited families stay open.
       On-demand worker slots now address the measured eager regex-fork startup cost; the eager
       comparison remains in both kernel and whole-engine benchmarks. Adoption awaits native
-      setup/hot-loop/storage measurements; the production executor is unchanged.
+      setup/hot-loop/storage measurements. Prepared recursion is now selected for production CI
+      qualification, with coordinator matcher reuse and private lazy concurrent-worker state.
 - [ ] EP04: Compare contiguous opcode and bound-function programs; lower audited boolean control flow,
       reuse scratch and preserve source mapping, with explicit whole-expression fallback coverage.
       The switch/function pilot, branch-selectivity cases and storage-reuse tests are implemented;
@@ -887,8 +888,10 @@ this as intentional accounting.
 - [ ] Qualify the constant-folding, forward-jump-threading and predicate/branch-fusion candidates
       independently on native Linux and macOS; retain measured winners only. The implementation uses
       registry constant metadata and preserves original validation/safety/traversal decisions.
-- [ ] Complete production selection and expose actual preparation/optimization records through
-      `--explain`; keep the slower scored/replay candidate out of the default path unless improved.
+- [ ] Finish native qualification of the selected prepared-recursive production path and its
+      actual `--explain` preparation records; keep the slower scored/replay program out of the default
+      path unless improved. Coordinator matcher reuse, pool transitions and capture isolation have
+      dedicated tests; binary size, startup and the full configuration/archive matrix remain open.
 - [ ] Recheck tiny-search preparation, eager regex-worker fork cost, retained capacities and full
       CLI binary size after selecting the winning implementation. The first whole-engine macOS session
       is noisy; a single session is insufficient to resolve small differences.
@@ -901,5 +904,5 @@ this as intentional accounting.
       retain the direct tree oracle and all candidate whole-engine tests/measurements.
 - [ ] Verify the isolated CLI link size and choose the production executor from native whole-engine
       evidence; keep rejected benchmark alternatives out of shipping dependencies.
-- [ ] Evaluate serial reuse of original validated regex state after the on-demand-slot measurements;
-      preserve separate mutable backend state for concurrently evaluating workers.
+- [ ] Qualify the implemented serial reuse of original validated regex state against the
+      on-demand-slot measurements; separate mutable backend state remains private to concurrent workers.

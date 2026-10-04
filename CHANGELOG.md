@@ -3,6 +3,9 @@
 
 # 0.9.0
 
+- Prepare expression callbacks and invariant operands once per run; reuse compiled coordinator
+  matchers and initialize private worker matchers on demand. Report native preparation in `--explain`.
+
 - Keep experimental expression-program executors in test-only targets instead of linking all
   benchmark alternatives into the shipping CLI.
 

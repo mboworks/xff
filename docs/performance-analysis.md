@@ -2215,3 +2215,50 @@ or instruction dispatch inside the candidate. CI must quantify that cost and ver
 link-size reduction; neither a size saving nor a performance result is claimed from source inspection.
 This is dependency isolation, not a decision to enable or abandon any candidate. Native stripped
 artifacts and symbol inspection remain the evidence for the final production-size decision.
+
+### Native evidence for coordinator matcher reuse
+
+Lazy-slot run `37224067597` retained 420 valid cases per platform and numeric-age run
+`37224426616` retained 490, each with nine raw rounds and no correctness errors. Values
+below are fastest-seven whole-engine means for one worker and 10,000 entries. Ratios
+compare candidates with their own same-session tree; smaller is faster. Cross-run absolute
+times are not attributed to source changes because runner frequency and load changed.
+
+| Workload        | Lazy Linux prepared/tree | Lazy macOS prepared/tree | Age Linux prepared/tree | Age macOS prepared/tree |
+| :-------------- | -----------------------: | -----------------------: | ----------------------: | ----------------------: |
+| name            |                    0.881 |                    0.894 |                   0.893 |                   0.843 |
+| scalar          |                    0.688 |                    0.632 |                   0.693 |                   0.718 |
+| regex-output    |                    0.764 |                    0.769 |                   0.800 |                   0.740 |
+| regex-unreached |                    0.809 |                    0.851 |                   0.822 |                   0.830 |
+| summary         |                    0.820 |                    0.837 |                   0.806 |                   0.814 |
+| scored-replay   |                    0.919 |                    0.995 |                   0.927 |                   0.903 |
+| age             |             not measured |             not measured |                   0.713 |                   0.672 |
+
+Linux reference all-round CV stayed around 0.6-1.8%; several macOS cases had 10-25% CV.
+Do not use tiny macOS differences to select a backend. The Linux iterative scored/replay
+candidates remained 15-23% slower than the tree; recursive preparation remains the broader
+candidate. Age preparation adds less than 1% over binding alone for the Linux whole-run age
+case and roughly 6% on macOS, so checked overflow is retained as correctness work independently
+of the preparation-speed decision.
+
+For Linux zero-entry regex output, lazy slots reduced prepared/tree from the same-session eager
+1.178 to 1.048. For one reached regex, the ratio remained 1.314 (7.9 microseconds extra); the
+next session measured 1.270 (4.8 microseconds extra). MacOS likewise shows a first-reached
+fork cost. Unreached/empty cases avoid the backend construction as intended. The existing
+`PreparedExpression::Evaluate` already reads the immutable compiled matcher directly, whereas
+`MakeWorker` forks backend state. The next candidate should distinguish coordinator evaluation
+from concurrent worker evaluation rather than duplicating regex compilation on the coordinator.
+
+Required implementation checks: coordinator may reuse original const matchers just as the tree
+currently does; pool workers keep private on-demand matcher slots; small batches use the coordinator
+and later larger batches may activate the pool; archive fallback/deferred replay can return to
+coordinator evaluation without invalidating any private state. Compare one/ten-entry regex latency
+and large one/three-worker throughput, captures, errors, move lifetime, and TSan behavior. Keep
+original reference evaluation explicitly selected in benchmark correctness comparisons.
+
+The production follow-up implements that coordinator/worker distinction and adds `production`
+to the same whole-engine matrix, retaining all earlier candidates and the explicit tree reference.
+It also avoids duplicate preparation for an identical serial/pool expression and unused parallel
+paths. No new local timing is claimed: native CI must establish whether this removes the tiny-search
+regression while retaining large-search gains. Iterative programs and their optimizers remain
+test-only because the whole-engine evidence does not justify enabling them broadly.

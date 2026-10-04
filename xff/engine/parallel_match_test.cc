@@ -13,6 +13,7 @@
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
 #include "xff/engine/evaluate.h"
+#include "xff/engine/expression_execution.h"
 #include "xff/matching/regex/regex.h"
 #include "xff/parser/parser.h"
 #include "xff/vfs/local_fs.h"
@@ -89,6 +90,23 @@ TEST_F(ParallelMatchTest, UnboundRegexIsANonMatchInWorkers) {
   ParallelMatch matcher(*command.expression, 4, false);
   for (const auto& result : matcher.Match(Entries(100))) {
     EXPECT_THAT(result.evaluation.matched, IsFalse());
+  }
+}
+
+TEST_F(ParallelMatchTest, PreparedCoordinatorAndWorkersRetainRegexStateAcrossPoolTransitions) {
+  ASSERT_OK_AND_ASSIGN(auto command, parser::Parse({"root", "-regex", "[02468]+"}));
+  parser::BindMatchers(command, regex::Grammar::kRe2, parser::CaseMode::kSensitive);
+  ASSERT_OK_AND_ASSIGN(const auto execution, PrepareExpressionExecution(*command.expression));
+  ParallelMatch matcher(*command.expression, 4, false, std::nullopt, execution);
+  // Small batches run on the coordinator, large batches activate private worker state;
+  // returning to the coordinator must not reuse a worker's previous match or scratch.
+  for (const std::size_t count : {1, 128, 7, 512, 0, 10}) {
+    const auto& results = matcher.Match(Entries(count));
+    ASSERT_THAT(results, SizeIs(count));
+    for (std::size_t index = 0; index < count; ++index) {
+      const auto path = std::to_string(index);
+      EXPECT_THAT(results.at(index).evaluation.matched, Eq(path.find_first_of("13579") == std::string::npos));
+    }
   }
 }
 
