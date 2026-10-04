@@ -1,5 +1,17 @@
 [
   {
+    "number": 976,
+    "state": "open",
+    "merged_at": null,
+    "merge_commit_sha": "055f6f7bbb3dd78f7edfdd47ab32d63a571d2dfe"
+  },
+  {
+    "number": 975,
+    "state": "open",
+    "merged_at": null,
+    "merge_commit_sha": "4cf8e9420739cd7f4b5d1d1ab5341de4fb4b9bb7"
+  },
+  {
     "number": 974,
     "state": "open",
     "merged_at": null,
@@ -9,7 +21,7 @@
     "number": 973,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": "c7d7c6071a62e206626c0f8e6bd182944dde4664"
+    "merge_commit_sha": "b911c5650a9606a8935edcc411abe1ff2138a878"
   },
   {
     "number": 972,
