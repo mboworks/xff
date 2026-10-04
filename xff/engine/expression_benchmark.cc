@@ -146,7 +146,7 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
     state.SkipWithError(command.status().ToString());
     return;
   }
-  const auto prepared = [&]() {
+  const auto prepared = [&] {
     if constexpr (Bound) {
       return xff::engine::BoundExpression::Prepare(*command->expression);
     } else {
@@ -174,7 +174,7 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
       .control = control,
   };
   // Check the result before timing; all core cases must reach their complete AND chain.
-  const auto evaluate = [&]() {
+  const auto evaluate = [&] {
     if constexpr (Bound) {
       return program.Evaluate(context);
     } else {

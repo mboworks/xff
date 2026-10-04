@@ -405,29 +405,30 @@ TEST_P(ExpressionContractTest, BoundPreparationRejectsMalformedInputBeforeObserv
 }
 
 TEST_P(ExpressionContractTest, ConfigurationOnlyPredicatesRemainTrue) {
-  ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-regextype", "re2", "-daystart", "-maxdepth", "2"}));
+  ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-regextype", "re2", "-daystart", "-maxdepth", "2"}));
   EXPECT_THAT(Observe(*command.expression).matched, IsTrue());
   EXPECT_THAT(fs.events, IsEmpty());
 }
 
 TEST_P(ExpressionContractTest, FuzzyOnlyOrVisitsNestedRightBranchForTheBestScore) {
-  ASSERT_OK_AND_ASSIGN(auto left, Parse({".", "-fuzzy", "fe"}));
+  ASSERT_OK_AND_ASSIGN(const auto left, Parse({".", "-fuzzy", "fe"}));
   const auto left_result = Observe(*left.expression);
   ASSERT_THAT(left_result.fuzzy, Optional(_));
   memo.clear();
-  ASSERT_OK_AND_ASSIGN(auto right, Parse({".", "-fuzzy", "file"}));
+  ASSERT_OK_AND_ASSIGN(const auto right, Parse({".", "-fuzzy", "file"}));
   const auto right_result = Observe(*right.expression);
   ASSERT_THAT(right_result.fuzzy, Optional(_));
   memo.clear();
   ASSERT_OK_AND_ASSIGN(
-      auto combined, Parse({".", "-fuzzy", "fe", "-o", "(", "-fuzzy", "file", "-a", "-fuzzy", "file", ")"}));
-  EXPECT_THAT(Observe(*combined.expression).fuzzy, Optional(std::max(*left_result.fuzzy, *right_result.fuzzy)));
+      const auto combined, Parse({".", "-fuzzy", "fe", "-o", "(", "-fuzzy", "file", "-a", "-fuzzy", "file", ")"}));
+  EXPECT_THAT(
+      Observe(*combined.expression).fuzzy, Optional(std::max(left_result.fuzzy.value(), right_result.fuzzy.value())));
   EXPECT_THAT(fs.events, IsEmpty());
 }
 
 TEST_P(ExpressionContractTest, FuzzyOrDoesNotVisitAnEffectfulRightBranch) {
   ASSERT_OK_AND_ASSIGN(
-      auto command, Parse({".", "-fuzzy", "file", "-o", "(", "-printf", "must-not-run", "-fuzzy", "file", ")"}));
+      const auto command, Parse({".", "-fuzzy", "file", "-o", "(", "-printf", "must-not-run", "-fuzzy", "file", ")"}));
   const auto result = Observe(*command.expression);
   EXPECT_THAT(result.matched, IsTrue());
   EXPECT_THAT(result.fuzzy, Optional(_));

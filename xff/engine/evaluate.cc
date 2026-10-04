@@ -3232,9 +3232,9 @@ struct BoundExpression::Cursor {
 
   const parser::Expr& Get() const { return node.expression.get(); }
 
-  Cursor Left() const { return {nodes, nodes.at(node.lhs.value())}; }
+  Cursor Left() const { return {.nodes = nodes, .node = nodes.at(node.lhs.value())}; }
 
-  Cursor Right() const { return {nodes, nodes.at(node.rhs.value())}; }
+  Cursor Right() const { return {.nodes = nodes, .node = nodes.at(node.rhs.value())}; }
 
   bool Predicate(EvalContext& context) const { return node.evaluate(Get(), context); }
 
@@ -3291,7 +3291,7 @@ absl::StatusOr<BoundExpression> BoundExpression::Prepare(const parser::Expr& exp
 }
 
 EvaluationResult BoundExpression::Evaluate(EvalContext& context) const {
-  const auto result = EvaluateResult(Cursor{nodes_, nodes_.front()}, context);
+  const auto result = EvaluateResult(Cursor{.nodes = nodes_, .node = nodes_.front()}, context);
   if (context.fuzzy_score.has_value()) {
     *context.fuzzy_score = result.fuzzy;
   }
