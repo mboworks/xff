@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <random>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -41,7 +42,81 @@ using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::Lt;
 using ::testing::Optional;
+using ::testing::PrintToString;
 using ::testing::ValuesIn;
+
+using Arguments = std::vector<std::string>;
+
+constexpr auto kBooleanOperators = std::to_array<std::string_view>({"-a", "-o", "-nand", "-nor", "-xor", "-xnor", ","});
+
+Arguments JoinExpression(const Arguments& left, std::string_view operation, const Arguments& right) {
+  Arguments result;
+  result.reserve(left.size() + right.size() + 3);
+  result.emplace_back("(");
+  result.append_range(left);
+  result.emplace_back(operation);
+  result.append_range(right);
+  result.emplace_back(")");
+  return result;
+}
+
+// Exhaust syntax trees with zero, one or two logical operators, including unary NOT.
+std::vector<Arguments> SmallBooleanTrees() {
+  std::array<std::vector<Arguments>, 3> levels;
+  levels.front() = {{"-false"}, {"-true"}};
+  for (std::size_t count = 1; count < levels.size(); ++count) {
+    auto& output = levels.at(count);
+    for (const auto& child : levels.at(count - 1)) {
+      Arguments negation{"!", "("};
+      negation.append_range(child);
+      negation.emplace_back(")");
+      output.push_back(std::move(negation));
+    }
+    for (std::size_t left_count = 0; left_count < count; ++left_count) {
+      for (const auto& left : levels.at(left_count)) {
+        for (const auto& right : levels.at(count - left_count - 1)) {
+          for (const auto operation : kBooleanOperators) {
+            output.push_back(JoinExpression(left, operation, right));
+          }
+        }
+      }
+    }
+  }
+  std::vector<Arguments> result;
+  for (const auto& level : levels) {
+    result.append_range(level);
+  }
+  return result;
+}
+
+// Fixed engine and modulo selection make the generated token sequences portable and reproducible.
+// Effects are limited to the fixture's recording output sink; no generated host mutation/execution.
+Arguments SeededExpression(std::mt19937_64& random, std::size_t depth) {
+  static const auto kLeaves = std::to_array<Arguments>({
+      {"-true"},
+      {"-false"},
+      {"-type", "f"},
+      {"-size", "+0c"},
+      {"-size", "-100c"},
+      {"-name", "f*"},
+      {"-regex", "f.*"},
+      {"-fuzzy", "fil"},
+      {"-printf", "visited"},
+      {"-perm", "0644"},
+  });
+  if (depth == 0 || random() % 4 == 0) {
+    return kLeaves.at(random() % kLeaves.size());
+  }
+  auto left = SeededExpression(random, depth - 1);
+  if (random() % 5 == 0) {
+    Arguments result{"!", "("};
+    result.append_range(left);
+    result.emplace_back(")");
+    return result;
+  }
+  const auto operation = kBooleanOperators.at(random() % kBooleanOperators.size());
+  return JoinExpression(left, operation, SeededExpression(random, depth - 1));
+}
 
 class ProgramFs final : public vfs::FileSystem {
  public:
@@ -101,6 +176,8 @@ struct ExpressionProgramTest : ::testing::TestWithParam<ProgramVariant> {
   }
 
   void Check(const std::vector<std::string>& arguments, bool scored = false) {
+    SCOPED_TRACE(PrintToString(arguments));
+    SCOPED_TRACE(scored);
     ASSERT_OK_AND_ASSIGN(const auto command, Parse(arguments));
     ASSERT_OK_AND_ASSIGN(const auto program, ExpressionProgram::Prepare(*command.expression, GetParam().optimizations));
     const auto worker = program.MakeWorker(GetParam().dispatch);
@@ -382,6 +459,29 @@ TEST_P(ExpressionProgramTest, EveryConstantOperatorAndKnownShortCircuitKeepsTrut
       }
       Check({".", std::string(left), std::string(operation), "-size", "+0c"});
     }
+  }
+}
+
+TEST_P(ExpressionProgramTest, ExhaustiveSmallBooleanTreesPreserveTheReferenceResult) {
+  const auto trees = SmallBooleanTrees();
+  ASSERT_THAT(trees.size(), Eq(902));
+  for (const auto& expression : trees) {
+    Arguments arguments{"."};
+    arguments.append_range(expression);
+    Check(arguments);
+    Check(arguments, true);
+  }
+}
+
+TEST_P(ExpressionProgramTest, SeededLargerTreesPreserveValuesScoresAndOutputOrder) {
+  constexpr std::uint64_t kSeed = 0x58464645585052;
+  std::mt19937_64 random(kSeed);
+  for (std::size_t index = 0; index < 32; ++index) {
+    SCOPED_TRACE(index);
+    Arguments arguments{"."};
+    arguments.append_range(SeededExpression(random, 6));
+    Check(arguments);
+    Check(arguments, true);
   }
 }
 

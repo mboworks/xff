@@ -130,6 +130,7 @@ struct ExpressionExecutionTest : ::testing::TestWithParam<ExpressionExecutor> {
   }
 
   static void Check(const std::vector<std::string>& arguments, bool failure = false, bool expect_error = false) {
+    SCOPED_TRACE(PrintToString(arguments));
     std::vector<std::string> args{"--exact", "--color=never", "--sort=dir", "--jobs=1"};
     args.insert(args.end(), arguments.begin(), arguments.end());
     ASSERT_OK_AND_ASSIGN(auto command, parser::Parse(args));
@@ -207,7 +208,9 @@ TEST_P(ExpressionExecutionTest, ConditionalFailuresAndBlockedEffectsRemainObserv
   Check({"root", "-type", "f", "!", "-content", "needle", ",", "-printf", "later"}, true, true);
   Check({"root", "-false", "-size", "garbage"}, false, true);
   Check({"--block-file-deletion", "root", "-delete"}, false, true);
-  Check({"--block-file-deletion", "root", "-false", "-a", "-delete"}, false, true);
+  // File-only blocks remain entry-dependent: a skipped delete observes no blocked file.
+  Check({"--block-file-deletion", "root", "-false", "-a", "-delete"});
+  Check({"--safe", "root", "-false", "-a", "-delete"}, false, true);
   Check({"--dry-run", "root", "-name", "file0.txt", "-delete"});
   Check({"root", "-name", "file0.txt", "-delete"}, false, true);
 }

@@ -660,3 +660,11 @@ The native kernel matrix includes each pass and the full combination beside ever
 The whole-engine matrix adds the combined candidate. Keep passes individually only after current
 Linux/macOS measurements and differential tests establish their cost and semantic equivalence.
 No predicate reordering, speculative metadata reads or common-subexpression elimination is enabled.
+
+The program oracle also exhausts the 902 syntax trees containing up to two logical operators
+(all seven binary operators and unary NOT) over literal truth values. A fixed `mt19937_64` seed
+generates 32 larger mixed trees with constants, scalar/name/regex/fuzzy predicates and recording
+output. Every optimizer/dispatch combination runs both scored and unscored over three entry
+sizes. Failures include the exact token sequence and sample index for reproduction. These
+generated cases complement explicit failure, replay and effect-order tests; they do not replace
+the remaining full-run configuration/archive qualification.

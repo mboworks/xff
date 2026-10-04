@@ -878,6 +878,9 @@ this as intentional accounting.
 
 ### Expression-program optimizer qualification (EP06/EP07)
 
+- [x] Add exhaustive small boolean-tree and seeded larger-tree differential tests, including
+      scored/unscored execution, output order and reuse across changing entry sizes. CI qualifies
+      each optimizer pass and dispatch form; full-run configuration/archive coverage remains open.
 - [ ] Qualify the constant-folding, forward-jump-threading and predicate/branch-fusion candidates
       independently on native Linux and macOS; retain measured winners only. The implementation uses
       registry constant metadata and preserves original validation/safety/traversal decisions.

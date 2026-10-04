@@ -2076,3 +2076,77 @@ that perform strictly more preparation. Its pooled content/summary measurements 
 Linux. Repeat native sessions and inspect spread before attributing these differences to a specific
 executor or making a platform-specific selection. The next EP06 matrix measures each boolean
 rewrite independently and their combined whole-engine candidate; it does not enable production use.
+
+### EP06 native session and repeated whole-engine evidence
+
+Run `37220141643`, PR head `cc1589eec0`, retained 1,494 valid kernel/preparation cases and 300
+valid whole-engine cases on each native platform in `expression-baseline-{linux,macos}`. The JSON
+records GitHub's tested merge revision `52c2614124b75331eb8e7b90d091328cdef4da1e`. Nine interleaved
+rounds and fastest-seven means use the same protocol as the earlier session. Untimed benchmark correctness checks passed;
+the separate coverage suite found an incorrect expected error in the new unreachable-deletion
+test, including for the original tree, so these measurements do not establish merge readiness.
+Remaining checks were still running when this evidence was recorded.
+
+At 10,000 files with one requested worker, elapsed-time ratios to the same-session tree were:
+
+| Workload      | Bound | Prepared | Program switch | Program functions | Optimized program |
+| ------------- | ----: | -------: | -------------: | ----------------: | ----------------: |
+| Name          | 0.854 |    0.864 |          0.901 |             0.961 |             0.965 |
+| Scalar chain  | 0.759 |    0.645 |          0.650 |             0.657 |             0.650 |
+| Regex output  | 0.779 |    0.799 |          0.813 |             0.818 |             0.821 |
+| Summary       | 0.831 |    0.848 |          1.059 |             1.063 |             1.062 |
+| Scored replay | 0.933 |    0.944 |          1.195 |             1.196 |             1.190 |
+
+This repeats the earlier Linux evidence favoring bound/prepared execution, particularly prepared
+scalars, and rejecting an unconditional iterative-program default for scored/replay contexts.
+Small-run setup remains material: empty regex searches were 23.6/23.8 microseconds for tree
+at requested workers 1/3, and prepared ratios were 1.179/1.376. On-demand worker initialization
+is being evaluated separately rather than assuming a large-file win excuses this setup cost.
+
+Against the unoptimized function-dispatch program, geometric means of six corresponding kernel
+case ratios show jump threading at 0.502 for early AND misses and 0.488 for early OR hits.
+Constant folding measures 0.108 for literal-true chains and 0.358 for literal-false chains.
+These are targeted control-flow wins, not general file-search speedups. Branch fusion alone is
+between 0.962 and 1.010 for the listed type, size, short-circuit and constant families; it has
+not established a repeatable general benefit. Neither the combined passes nor the program
+representation has displaced recursive prepared execution as the whole-engine candidate to beat.
+Keep per-pass selection and the simpler executors; the macOS observations below provide the
+same-run cross-platform check.
+
+The macOS one-worker ratios at 10,000 files were:
+
+| Workload      | Bound | Prepared | Program switch | Program functions | Optimized program |
+| ------------- | ----: | -------: | -------------: | ----------------: | ----------------: |
+| Name          | 0.825 |    0.889 |          0.759 |             0.825 |             0.868 |
+| Scalar chain  | 0.717 |    0.709 |          0.711 |             0.716 |             0.618 |
+| Regex output  | 0.773 |    0.758 |          0.748 |             0.738 |             0.727 |
+| Summary       | 0.919 |    0.848 |          0.901 |             0.950 |             0.913 |
+| Scored replay | 1.002 |    0.889 |          1.029 |             1.058 |             1.110 |
+
+Mac timing spread remains a constraint on small differences: the nine tree/name/10,000-file
+rounds have sample coefficient of variation 9.1% with one worker and 13.4% with three, versus
+0.5% and 1.2% on Linux. The combined optimizer improves macOS type/size kernels to 0.702/0.671
+of the unoptimized function program, while jump threading improves early AND/OR to 0.225/0.236.
+These larger targeted gains merit retaining the candidate. The variable whole-engine results
+do not justify a universal program default; scalar preparation and bound dispatch remain the
+more consistently useful choices across the two sessions/platforms.
+
+### CI binary-size accounting for the expression stack
+
+Compare the saved `benchmark-head` executables from main run `37205106353` (main `0ac0e62aa0`)
+and PR run `37220141643` (tested merge `52c2614124`). Both build `//xff/cli:xff` using
+`--config=clang_release`, which retains symbols. Strip copies of both downloaded artifacts with
+the same cached `llvm-strip --strip-all`; this requires no local compilation or execution of the
+benchmarked binaries. Byte counts are file sizes, not Mach-O virtual segment totals.
+
+| Platform     | Main artifact | Candidate artifact | Main stripped | Candidate stripped | Stripped increase | Increase |
+| ------------ | ------------: | -----------------: | ------------: | -----------------: | ----------------: | -------: |
+| Linux x86-64 |    11,705,976 |         11,975,456 |     3,437,480 |          3,483,208 |            45,728 |    1.33% |
+| macOS ARM64  |     3,849,200 |          3,964,208 |     3,086,016 |          3,152,688 |            66,672 |    2.16% |
+
+The qualification stack exceeds the plan's 1% size-review budget on both platforms; macOS also
+exceeds 64 KiB. It still includes multiple candidate executors and registry preparation callbacks
+while production uses the original tree. Remove losing production paths or explicitly justify
+their retained diagnostic cost before final adoption. These are the benchmark CLI target's sizes,
+not a measurement of every separately packaged lean/full release variant. Raw artifacts remain
+associated with the named CI runs; final shipping-size accounting remains part of EP07.
