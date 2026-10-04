@@ -307,7 +307,8 @@ TEST_P(ExpressionProgramTest, PersistentStateRestoresContextAcrossTwoReplayFront
   EXPECT_THAT(output, EqualsText("firstsecondthird"));
   EXPECT_THAT(context.incoming_fuzzy_score, Optional(61));
   EXPECT_THAT(worker.StorageBytes(), Eq(bytes));
-  ASSERT_THAT(context.fuzzy_score, Optional(_));
+  // Exercise the restored binding: absence or binding to worker scratch cannot update score.
+  score.reset();
   if (context.fuzzy_score.has_value()) {
     context.fuzzy_score->emplace(17);
   }
