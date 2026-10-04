@@ -3666,12 +3666,11 @@ EvaluationResult PreparedExpression::Worker::Evaluate(EvalContext& context) cons
 }
 
 EvaluationResult PreparedExpression::Worker::EvaluatePredicate(ExpressionSourceId source, EvalContext& context) const {
-  const auto& expression = state_->expression.get();
+  const auto& environment = state_->environment;
   return EvaluatePredicateResult(
       Cursor{
-          .data = expression,
-          .node = expression.nodes.at(source.value()),
-          .matchers = state_->matchers,
+          .environment = environment,
+          .node = environment.data.nodes.at(source.value()),
       },
       context);
 }

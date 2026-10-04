@@ -58,6 +58,10 @@ class ProgramFs final : public vfs::FileSystem {
     return absl::PermissionDeniedError("isolated program test");
   }
 
+  absl::StatusOr<std::string> ReadContent(std::string_view) const override {
+    return absl::PermissionDeniedError("isolated program test");
+  }
+
   absl::StatusOr<std::string> FsType(std::string_view) const override { return std::string("memory"); }
 
   absl::StatusOr<bool> IsCaseSensitive(std::string_view) const override { return true; }
