@@ -4,10 +4,11 @@
 
 EP01 established a preparation contract, an isolated behavioral oracle and separate preparation/
 execution microbenchmarks. The production candidate now selects prepared recursion; the original
-tree remains an explicit qualification reference. Native acceptance is still pending. The CI build
-jobs retain nine-round JSON artifacts for Linux/macOS, including fastest-seven statistics; no local
-benchmark campaign is needed. The sections below distinguish initial kernel evidence from later
-whole-engine qualification and list the remaining acceptance work.
+tree remains an explicit qualification reference. Repeated native sessions support the production
+choice; remaining acceptance work is tracked in [the qualification audit](expression-qualification-audit.md).
+The CI build jobs retain nine-round JSON artifacts for Linux/macOS, including fastest-seven
+statistics; no local benchmark campaign is needed. The sections below distinguish initial kernel
+evidence from later whole-engine qualification and list the remaining acceptance work.
 
 The [implementation, benchmark and decision plan](design-expression-program.md) specifies bound
 operations, prepared operands, an immutable execution program and a conservative optimizer.
@@ -17,8 +18,9 @@ data-structure audit against XFF's pinned MBO revision and a newer local MBO che
 Existing constexpr ordered maps/sets, strong IDs, vectors and arenas are sufficient to start.
 A frozen/perfect-hash map/set is a separate optional startup-lookup improvement; the prepared
 execution path should avoid name lookup altogether. EP01-EP07 in TODO track the implementation.
-No production speedup is claimed yet. Append each stage's measured results and retain/revise/reject
-decision here, including preparation, memory, portability and unsuccessful experiments.
+The results below distinguish production evidence from experimental candidates and unresolved
+requirements. Append each stage's measured results and retain/revise/reject decision here, including
+preparation, memory, portability and unsuccessful experiments.
 
 MBO [PR #550](https://github.com/mboworks/mbo/pull/550) merged experimental `FrozenMap` / `FrozenSet`
 at `bf65c21c495fc789feab79f4516d1ae7215cb292`. The previous missing-container finding is resolved
@@ -2493,3 +2495,97 @@ ASan replaces the allocator and may change allocation behavior and build paths. 
 counts must not be used as production allocation counts, allocator-cost measurements or evidence
 for the performance selection. Native allocation profiling remains open; the exported JSON marks
 this distinction explicitly.
+
+## Repeated production qualification and remaining acceptance
+
+The [qualification audit](expression-qualification-audit.md) separates verified behavior, measured
+tradeoffs and missing evidence. Successful CI does not by itself finish every planned experiment.
+
+### Independent macOS production repeat
+
+Run `37235761322`, tested merge `fef9fd61ba272e96dee08b9bf4eeac84ebad0010`, repeats all
+560 whole-engine cases with nine raw rounds and no correctness errors. At 10,000 entries and
+one worker, production/tree fastest-seven ratios are 0.915 name, 0.721 scalar, 0.679 age,
+0.720 regex output, 0.854 unreachable regex, 0.841 summary and 0.970 scored replay.
+Several large cases have 7-18% sample variation; small gains remain inconclusive. Scalar and
+age gains repeat across sessions. All required checks for #971's current head completed successfully.
+
+Actual stripped, smoke-tested macOS release candidates are available from the ordinary test job.
+These differ from benchmark CLI artifacts. Against #960's matching staged baseline:
+
+| Binary | Baseline bytes | Candidate bytes | Increase bytes | Increase |
+| :----- | -------------: | --------------: | -------------: | -------: |
+| Lean   |      3,149,280 |       3,199,248 |         49,968 |   1.587% |
+| Full   |      8,670,528 |       8,687,664 |         17,136 |   0.198% |
+
+The lean increase exceeds the initial 1% review budget, although it is below 64 KiB. Retaining
+prepared recursion trades that increase for the repeated native gains; it is not a size-neutral
+change. Experimental iterative executors remain outside shipping dependencies.
+
+### Repeated first-limit and MIME workloads
+
+Runs `37235929438` and `37239061733` test merges
+`7a74752fd92fc2a25e01b827fe3c3fbee054af82` and
+`2674def4480133af809ea6947e58f6737d00d976`, respectively. Each platform/session contains
+720 whole-engine cases with nine raw rounds and no correctness errors. These ratios compare
+production with the original evaluator within the same session; they include the common
+prepared-dispatch improvement and do not isolate the incremental effect of just these operands.
+
+| Platform | Family      | First session: 10k / 1 worker | Repeat: 1 / 1 | Repeat: 10 / 1 | Repeat: 10k / 1 | Repeat: 10k / 3 |
+| :------- | :---------- | ----------------------------: | ------------: | -------------: | --------------: | --------------: |
+| Linux    | first-limit |                         0.725 |         1.035 |          0.985 |           0.736 |           0.742 |
+| Linux    | mime        |                         0.768 |         0.990 |          1.015 |           0.792 |           0.793 |
+| macOS    | first-limit |                         0.751 |         1.026 |          0.979 |           0.718 |           0.735 |
+| macOS    | mime        |                         0.748 |         1.054 |          1.104 |           0.771 |           0.772 |
+
+Large first-limit/MIME gains repeat. Zero/one-entry first-limit setup still adds roughly
+0.4-0.9 microseconds in the repeat. Small MIME results vary substantially: macOS ten-entry
+production/tree is 1.104, with approximately 23% variation in candidate samples, while the first
+session was 0.859. This is unresolved noise or overhead, not evidence of a universal small-search
+improvement. Separate preparation/kernel measurements and fixed workloads remain necessary for
+an operand-specific decision.
+
+### Allocation diagnostic result
+
+The ASan job in run `37240327400`, tested merge
+`b911c5650a9606a8935edcc411abe1ff2138a878`, passed the allocation calibration and all
+162 phase cases. Its JSON explicitly reports `runtime=ASan`, `timing=false` and
+`production_representative=false`. It verifies the instrumented cheap-predicate steady-state
+assertions. It does not close native allocation, peak-RSS or suspended-memory requirements.
+
+## Adaptive worker activation: pending work, not a lifetime file counter
+
+Requesting multiple workers should permit concurrency without requiring thread startup on every
+small search. Some of this already exists:
+
+- `ParallelMatch::Match` creates no threads below 64 buffered entries. Once started, batches below
+  16 entries still run on the coordinator. Eligible content matching uses batches of 256 entries
+  for rendered matches or 1,024 for decision-only results; pure name/type tests do not enter this pool.
+- `Walker::ReadNow` starts eager metadata workers only for at least 512 entries when metadata is
+  always required and the source supports that path.
+- Directory read-ahead starts when there are at least two descendable siblings. Two empty
+  directories can therefore start threads even though little total work remains.
+- `ParallelCompare::UseWorkers` counts substantial equal-sized regular-file reads and estimated
+  bytes before starting its pool. Unmatched entries and trivial metadata differences stay serial.
+
+These are fixed heuristics, not a measured cost model. A lifetime count of previously processed
+files is insufficient: it can trigger startup at the end of a scan, while delaying useful concurrency
+for a few large files. Use existing pending batches and directory frontiers as evidence of remaining
+independent work, plus already available descriptor cost/content information. Do not force metadata
+reads, a second traversal or content reads merely to decide whether to parallelize.
+
+Candidate policy: begin on the coordinator, take occasional batch-level timing samples, and grow
+workers only when pending work is likely to amortize thread startup and scheduling. Distinguish
+cold startup from waking an existing pool. Retain started threads through the run, allow small tail
+batches to run inline, and use hysteresis to avoid repeated decisions at a noisy boundary. Preserve
+order, cancellation, exactly-once effects, source restrictions and audited worker eligibility.
+The coordinator should still do useful work while startup occurs; avoid timing every predicate or file.
+
+Measure the current policy, serial execution, backlog-only activation and sampled-cost activation
+on both platforms. Include 0/1/10 files, 15/16/17 and 63/64/65-entry batches, 511/512/513-entry
+metadata lists, two empty siblings, many tiny directories, a few large content files, mixed-size
+content, early quit/prune and broad/deep trees. Report cold/warm startup, total time, actual threads
+created, queued work, first-result latency and buffering. Test these counters through an injected
+scheduler/observer rather than wall-clock assertions. Keep the simpler fixed policy unless native
+measurements show a repeatable benefit. This is a follow-up experiment, not an unmeasured change
+to the already green expression stack.

@@ -41,15 +41,26 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       CI qualification, production selection and complete integration coverage remain pending.
       The engine oracle now includes layered system/user/explicit INI composition, final CLI
       case/grammar/block-size overrides, rg transitions, mandatory deletion blocks, and mounted
-      archive-member output, prune/quit and scored replay. The new cases await native CI.
+      archive-member output, prune/quit and scored replay. These cases passed #971's native CI;
+      this does not prove every combination listed in the full plan.
 - [ ] EP06: Measure deterministic constant folding, jump simplification, selected fusion and proven
       value reuse independently; keep reordering behind a stronger equivalence proof.
 - [ ] EP07: Qualify the winning executor on native macOS ARM64 and Linux x86-64; update --explain,
       self-documentation and performance evidence; enable only measured, semantically complete paths.
       Phase allocation diagnostics now cover parsing through teardown using isolated ASan hooks;
-      cheap-predicate steady-state allocation assertions and XML/JSON artifacts await CI validation.
+      all 162 phase cases and calibration passed the ASan job in run 37240327400; XML/JSON artifacts
+      preserve the tested revision and explicitly identify their diagnostic-only scope.
       ASan counts qualify only the instrumented regression test; native allocation profiling remains
       open. Requested bytes are separate from retained storage, peak RSS and release timing.
+- [ ] Close the evidence gaps in [the expression qualification audit](docs/expression-qualification-audit.md):
+      native allocation/suspended-memory accounting, extended cheap-expression/selectivity cases,
+      durable raw-data/decision publication, and the remaining invariant operand audit. Do not count
+      ASan diagnostics as production measurements or artifact upload as permanent publication.
+- [ ] Evaluate adaptive worker activation using pending work and occasional batch-level costs;
+      distinguish cold startup from waking an existing pool. Record actual created threads and test
+      early termination, small tails, empty siblings and heterogeneous content. See the adaptive-worker
+      section in `docs/performance-analysis.md`; keep current thresholds until native measurements
+      justify a change. This follow-up does not delay the verified expression stack.
 - [ ] EP-S01: Evaluate experimental constexpr FrozenMap/Set using MBO PR #553 at
       `9d11197da77646e4fa98aa69f5340a636cde2e6f`, outside XFF's current pin. Fambo replaces the
       former FNV string hash and brings the measured 64-key sparse mixed lookup to about 6 ns;
