@@ -479,6 +479,8 @@ TEST_P(ExpressionProgramTest, ExhaustiveSmallBooleanTreesPreserveTheReferenceRes
 
 TEST_P(ExpressionProgramTest, SeededLargerTreesPreserveValuesScoresAndOutputOrder) {
   constexpr std::uint64_t kSeed = 0x58464645585052;
+  // Deterministic corpus generation is intentional: every CI failure must be reproducible.
+  // NOLINTNEXTLINE(bugprone-random-generator-seed,cert-msc32-c,cert-msc51-cpp)
   std::mt19937_64 random(kSeed);
   for (std::size_t index = 0; index < 32; ++index) {
     SCOPED_TRACE(index);
