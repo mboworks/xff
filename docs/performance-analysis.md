@@ -1,5 +1,24 @@
 # Traversal performance analysis
 
+## Planned prepared expression execution
+
+EP01 now has a preparation contract, an isolated initial behavioral oracle and separate preparation/
+execution microbenchmarks. Production still uses the existing evaluator. The CI build jobs retain
+nine-round JSON artifacts for Linux/macOS, including fastest-seven statistics; no local benchmark
+campaign is needed. Results and the dispatch decision will be recorded after those jobs finish.
+The initial all-match matrix does not yet replace mixed-selectivity or end-to-end qualification.
+
+The [implementation, benchmark and decision plan](design-expression-program.md) specifies bound
+operations, prepared operands, an immutable execution program and a conservative optimizer.
+It separates once-per-command parsing/preparation from per-entry execution and records the
+data-structure audit against XFF's pinned MBO revision and a newer local MBO checkout.
+
+Existing constexpr ordered maps/sets, strong IDs, vectors and arenas are sufficient to start.
+A frozen/perfect-hash map/set is a separate optional startup-lookup improvement; the prepared
+execution path should avoid name lookup altogether. EP01-EP07 in TODO track the implementation.
+No executor speedup is claimed yet. Append each stage's measured results and retain/revise/reject
+decision here, including preparation, memory, portability and unsuccessful experiments.
+
 ## Hosted capacity and benchmark backfill
 
 Benchmark run 36831896372 failed macOS aggregation because one shard recorded five host CPUs

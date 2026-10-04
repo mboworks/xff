@@ -120,7 +120,7 @@ struct Descriptor {
   bool writes_file = false;      // named file output; runtime writing/overwrite policy applies
   Modes modes = Modes::kNative;  // expression spellings accepted in find and xff by default
   Cost cost = Cost::kCheap;
-  bool pure = true;  // side-effect-free (reorderable within a conjunction)
+  bool pure = true;  // no explicit mutation; does NOT prove totality, stable reads, or safe reordering
   // The help topic (--help=TOPIC) this primary belongs to, or empty for none. The counterpart of
   // cli::GlobalFlag::topic: a topic page pulls its family from this tag, so the list cannot drift.
   std::string_view topic;
