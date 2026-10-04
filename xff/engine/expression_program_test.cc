@@ -160,12 +160,16 @@ constexpr auto kProgramVariants = std::to_array<ProgramVariant>({
     {.name = "JumpsFunctions", .dispatch = ProgramDispatch::kFunctions, .optimizations = {.jumps = true}},
     {.name = "FusionSwitch", .dispatch = ProgramDispatch::kSwitch, .optimizations = {.fusion = true}},
     {.name = "FusionFunctions", .dispatch = ProgramDispatch::kFunctions, .optimizations = {.fusion = true}},
-    {.name = "AllSwitch",
-     .dispatch = ProgramDispatch::kSwitch,
-     .optimizations = {.constants = true, .jumps = true, .fusion = true}},
-    {.name = "AllFunctions",
-     .dispatch = ProgramDispatch::kFunctions,
-     .optimizations = {.constants = true, .jumps = true, .fusion = true}},
+    {
+        .name = "AllSwitch",
+        .dispatch = ProgramDispatch::kSwitch,
+        .optimizations = {.constants = true, .jumps = true, .fusion = true},
+    },
+    {
+        .name = "AllFunctions",
+        .dispatch = ProgramDispatch::kFunctions,
+        .optimizations = {.constants = true, .jumps = true, .fusion = true},
+    },
 });
 
 struct ExpressionProgramTest : ::testing::TestWithParam<ProgramVariant> {

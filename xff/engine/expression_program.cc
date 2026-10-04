@@ -35,7 +35,7 @@ enum class Operation {
   kTrue,
   kFalse,
   kEvaluateJumpIfFalse,
-  kEvaluateJumpIfTrue
+  kEvaluateJumpIfTrue,
 };
 
 struct Execution {
@@ -223,7 +223,7 @@ struct InstructionOptimizer {
     std::size_t next = 0;
     for (const bool remove : removed) {
       positions.emplace_back(next);
-      next += !remove;
+      next += static_cast<std::size_t>(!remove);
     }
     positions.emplace_back(next);
     next = 0;
@@ -235,7 +235,7 @@ struct InstructionOptimizer {
       if (HasTarget(instruction.operation)) {
         instruction.target = InstructionId{positions.at(instruction.target.value())};
       }
-      instructions.at(next++) = std::move(instruction);
+      instructions.at(next++) = Instruction{instruction};
     }
     instructions.resize(next);
   }

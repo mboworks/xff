@@ -60,13 +60,13 @@ enum class Executor {
   kProgramConstants,
   kProgramJumps,
   kProgramFusion,
-  kProgramOptimized
+  kProgramOptimized,
 };
 
-template<Executor Mode>
-constexpr bool kProgram =
-    Mode == Executor::kProgramSwitch || Mode == Executor::kProgramFunctions || Mode == Executor::kProgramConstants
-    || Mode == Executor::kProgramJumps || Mode == Executor::kProgramFusion || Mode == Executor::kProgramOptimized;
+constexpr bool IsProgram(Executor mode) {
+  return mode == Executor::kProgramSwitch || mode == Executor::kProgramFunctions || mode == Executor::kProgramConstants
+         || mode == Executor::kProgramJumps || mode == Executor::kProgramFusion || mode == Executor::kProgramOptimized;
+}
 
 struct PreparedWorkerBenchmark {
   xff::engine::PreparedExpression expression;
@@ -247,7 +247,7 @@ auto PrepareExecutor(const xff::parser::Expr& expression) {
     return xff::engine::PreparedExpression::Prepare(expression);
   } else if constexpr (Mode == Executor::kPreparedWorker) {
     return PreparedWorkerBenchmark::Prepare(expression);
-  } else if constexpr (kProgram<Mode>) {
+  } else if constexpr (IsProgram(Mode)) {
     constexpr auto kDispatch = Mode == Executor::kProgramSwitch ? xff::engine::ProgramDispatch::kSwitch
                                                                 : xff::engine::ProgramDispatch::kFunctions;
     return ProgramBenchmark::Prepare(
@@ -335,7 +335,7 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
   if constexpr (Mode == Executor::kTreeWorker) {
     context.worker_matchers.set_ref(worker);
   }
-  if constexpr (kProgram<Mode>) {
+  if constexpr (IsProgram(Mode)) {
     const auto selected = program.worker.Evaluate(context);
     if (selected.used_fallback || selected.used_stateful != example.collect_score) {
       state.SkipWithError("expression program selected an unexpected execution path");
@@ -385,7 +385,7 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
     state.counters["extra_bytes"] = static_cast<double>(program.StorageBytes());
     state.counters["nodes"] = static_cast<double>(program.NodeCount());
   }
-  if constexpr (Mode == Executor::kPrepared || Mode == Executor::kPreparedWorker || kProgram<Mode>) {
+  if constexpr (Mode == Executor::kPrepared || Mode == Executor::kPreparedWorker || IsProgram(Mode)) {
     state.counters["operands"] = static_cast<double>(program.OperandCount());
   }
 }
