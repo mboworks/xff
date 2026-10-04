@@ -12,27 +12,20 @@
 
 namespace xff::engine {
 
-// Internal qualification selector, deliberately absent from CLI/configuration vocabulary.
-// The default remains the production tree until whole-run measurements justify changing it.
-enum class ExpressionExecutor {
-  kTree,
-  kBound,
-  kPrepared,
-  kPreparedEager,
-  kProgramSwitch,
-  kProgramFunctions,
-  kProgramOptimized
-};
-
 // Immutable preparation shared across the coordinator and matcher workers. The original AST
 // must outlive this object; workers must die before it. Moving owners preserves their storage.
+// The engine owns this interface only. Qualification factories live in a test-only target, so
+// selecting a benchmark alternative cannot pull every candidate into the shipping executable.
 class ExpressionExecution final {
- private:
-  struct Data;
-
  public:
   class Worker final {
    public:
+    struct State {
+      virtual ~State() = default;
+      virtual EvaluationResult Evaluate(EvalContext& context) const = 0;
+    };
+
+    explicit Worker(std::unique_ptr<State> state);
     Worker(Worker&&) noexcept;
     Worker& operator=(Worker&&) noexcept;
     Worker(const Worker&) = delete;
@@ -43,13 +36,16 @@ class ExpressionExecution final {
     EvaluationResult Evaluate(EvalContext& context) const;
 
    private:
-    friend class ExpressionExecution;
-    struct State;
-    explicit Worker(std::unique_ptr<State> state);
     std::unique_ptr<State> state_;
   };
 
-  static absl::StatusOr<ExpressionExecution> Prepare(const parser::Expr& expression, ExpressionExecutor executor);
+  struct Plan {
+    virtual ~Plan() = default;
+    [[nodiscard]] virtual Worker MakeWorker() const = 0;
+    [[nodiscard]] virtual bool UsesIndexedMatchers() const = 0;
+  };
+
+  explicit ExpressionExecution(std::unique_ptr<Plan> plan);
   ExpressionExecution(ExpressionExecution&&) noexcept;
   ExpressionExecution& operator=(ExpressionExecution&&) noexcept;
   ExpressionExecution(const ExpressionExecution&) = delete;
@@ -60,9 +56,12 @@ class ExpressionExecution final {
   [[nodiscard]] bool UsesIndexedMatchers() const;
 
  private:
-  explicit ExpressionExecution(std::unique_ptr<Data> data);
-  std::unique_ptr<Data> data_;
+  std::unique_ptr<Plan> plan_;
 };
+
+// Called once per distinct run expression, after command validation. A null factory selects
+// the original tree directly. This is a function pointer, not a borrowed object pointer.
+using ExpressionFactory = absl::StatusOr<ExpressionExecution> (*)(const parser::Expr&);
 
 }  // namespace xff::engine
 

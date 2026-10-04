@@ -80,7 +80,8 @@ struct RunResult {
 // suppresses the implicit -print (e.g. `-exec`) still counts as a match. It stays false on usage
 // errors that stop before traversal, where match status is moot.
 // table_width bounds plain comparison-summary layout; zero keeps a wide table.
-// executor is an internal test/benchmark selector; CLI/configuration do not expose it.
+// executor supplies run preparation; a null factory preserves the original tree directly.
+// Qualification factories are test-only and cannot be linked into the CLI.
 RunResult RunFind(
     const parser::Command& command,
     const vfs::FileSystem& fs,
@@ -88,7 +89,7 @@ RunResult RunFind(
     WalkErrorFn on_error,
     std::optional<registry::Style> style = std::nullopt,
     std::size_t table_width = 0,
-    ExpressionExecutor executor = ExpressionExecutor::kTree);
+    ExpressionFactory executor = nullptr);
 
 // Validate all active field consumers without reading paths or evaluating expressions.
 // Shared by execution preflight and --explain after configuration composition.

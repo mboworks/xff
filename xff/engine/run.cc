@@ -4175,7 +4175,7 @@ RunResult RunFindCore(
     std::optional<registry::Style> style,
     mbo::types::OptionalRef<const MatchedEntryFn> matched_entry,
     bool compare_listing,
-    ExpressionExecutor executor,
+    ExpressionFactory executor,
     mbo::types::OptionalRef<SummaryAccumulator> comparison_summaries = std::nullopt,
     std::size_t root_offset = 0);
 
@@ -4358,7 +4358,7 @@ RunResult RunTreeCompare(
     WalkErrorFn on_error,
     std::optional<registry::Style> style,
     std::size_t table_width,
-    ExpressionExecutor executor) {
+    ExpressionFactory executor) {
   if (command.roots.size() != 2) {
     on_error("--compare", absl::InvalidArgumentError("requires exactly two roots"));
     return RunResult{.errors = 2};
@@ -4620,13 +4620,13 @@ absl::StatusOr<RunExecutions> PrepareRunExecutions(
     mbo::types::OptionalRef<const parser::Expr> serial,
     mbo::types::OptionalRef<const parser::Expr> parallel,
     mbo::types::OptionalRef<const parser::Expr> output,
-    ExpressionExecutor executor) {
+    ExpressionFactory executor) {
   const auto prepare = [executor](mbo::types::OptionalRef<const parser::Expr> expression)
       -> absl::StatusOr<std::optional<ExpressionExecution>> {
-    if (!expression || executor == ExpressionExecutor::kTree) {
+    if (!expression || executor == nullptr) {
       return std::nullopt;
     }
-    MBO_ASSIGN_OR_RETURN(auto execution, ExpressionExecution::Prepare(*expression, executor));
+    MBO_ASSIGN_OR_RETURN(auto execution, executor(*expression));
     return std::optional(std::move(execution));
   };
   MBO_ASSIGN_OR_RETURN(auto serial_execution, prepare(serial));
@@ -4651,7 +4651,7 @@ RunResult RunFindCore(
     std::optional<registry::Style> style,
     mbo::types::OptionalRef<const MatchedEntryFn> matched_entry,
     bool compare_listing,
-    ExpressionExecutor executor,
+    ExpressionFactory executor,
     mbo::types::OptionalRef<SummaryAccumulator> comparison_summaries,
     std::size_t root_offset) {
   bool any_match = false;
@@ -7178,7 +7178,7 @@ RunResult RunFind(
     WalkErrorFn on_error,
     std::optional<registry::Style> style,
     std::size_t table_width,
-    ExpressionExecutor executor) {
+    ExpressionFactory executor) {
   if (!command.root_names.empty() && command.root_names.size() != command.roots.size()) {
     on_error("--root", absl::InvalidArgumentError("root names must match the root operands"));
     return RunResult{.errors = 2};
