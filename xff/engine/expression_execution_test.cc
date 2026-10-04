@@ -240,6 +240,7 @@ TEST_P(ExpressionExecutionTest, SelectionOutputSummariesAndComparisonPreserveThe
       {"--summary=ext", "root", "-type", "f"},
       {"--compare=summary", "--summary=ext", "left", "right", "-type", "f"},
       {"root", "-first", "3", "-print"},
+      {"root", "-type", "f", "-mime", "TEXT/*", "-first", "3", "-print"},
       {"root", "-fuzzy", "file", "-top", "3", "-print"},
       {
           "root",

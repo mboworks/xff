@@ -1026,20 +1026,27 @@ bool EvalCollect(const parser::Expr& expr, EvalContext& ctx) {
   return true;
 }
 
-bool EvalFirst(const parser::Expr& expr, EvalContext& ctx) {
-  if (expr.args.empty() || !ctx.first_counts.has_value()) {
-    return false;
-  }
+int ParseFirstLimit(std::string_view argument) {
   int limit = 0;
-  if (!absl::SimpleAtoi(expr.args.front(), &limit) || limit <= 0) {
+  return absl::SimpleAtoi(argument, &limit) && limit > 0 ? limit : 0;
+}
+
+bool AdmitFirst(const parser::Expr& expr, int limit, FirstCounts& counts) {
+  if (limit == 0) {
     return false;
   }
-  int& seen = (*ctx.first_counts)[ExprIdentity{expr}];
+  int& seen = counts[ExprIdentity{expr}];
   if (seen >= limit) {
     return false;
   }
   ++seen;
   return true;
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
+bool EvalFirst(const parser::Expr& expr, EvalContext& ctx) {
+  return !expr.args.empty() && ctx.first_counts.has_value()
+         && AdmitFirst(expr, ParseFirstLimit(expr.args.front()), *ctx.first_counts);
 }
 
 // -fuzzy / -ifuzzy: the BASENAME, the fzf-ish default.
@@ -2867,6 +2874,16 @@ using MatcherSlots = absl::Span<MatcherSlot>;
 // Calendar/word ages need the current evaluation clock/timezone, not preparation-time observations.
 struct CalendarAge {};
 
+struct FirstLimit {
+  int value = 0;
+};
+
+struct MimePattern {
+  // Includes the terminator required by fnmatch. Unlike std::string, capacity has no
+  // inline storage, so owned byte accounting remains exact without allocator inspection.
+  std::vector<char> bytes;
+};
+
 using PreparedOperand = std::variant<
     std::monostate,
     TypeSpec,
@@ -2876,7 +2893,9 @@ using PreparedOperand = std::variant<
     MatcherSlotId,
     SignedNumericSpec,
     TimeSpec,
-    CalendarAge>;
+    CalendarAge,
+    FirstLimit,
+    MimePattern>;
 using PreparedEvalFn = bool (*)(const parser::Expr&, const PreparedOperand&, MatcherSlots, EvalContext&);
 using PrepareOperandFn = PreparedOperand (*)(std::string_view);
 
@@ -2917,6 +2936,40 @@ PreparedOperand PreparePermissionOperand(std::string_view argument) {
 PreparedOperand PrepareSignedNumericOperand(std::string_view argument) {
   const auto spec = ParseSignedNumericSpec(argument);
   return spec.has_value() ? PreparedOperand{*spec} : PreparedOperand{};
+}
+
+PreparedOperand PrepareFirstOperand(std::string_view argument) {
+  return FirstLimit{.value = ParseFirstLimit(argument)};
+}
+
+PreparedOperand PrepareMimeOperand(std::string_view argument) {
+  MimePattern pattern;
+  pattern.bytes.reserve(argument.size() + 1);
+  for (const char byte : argument) {
+    pattern.bytes.push_back(absl::ascii_tolower(byte));
+  }
+  pattern.bytes.push_back('\0');
+  return pattern;
+}
+
+bool EvalPreparedFirst(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    MatcherSlots,
+    // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+    EvalContext& context) {
+  return std::holds_alternative<FirstLimit>(operand) && context.first_counts.has_value()
+         && AdmitFirst(expression, std::get<FirstLimit>(operand).value, *context.first_counts);
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+bool EvalPreparedMime(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+  if (!std::holds_alternative<MimePattern>(operand)) {
+    return false;
+  }
+  const auto& pattern = std::get<MimePattern>(operand).bytes;
+  const auto type = absl::AsciiStrToLower(mime::TypeForName(context.visit.name));
+  return ::fnmatch(pattern.data(), type.c_str(), 0) == 0;
 }
 
 template<std::int64_t UnitSeconds, bool AllowUnitSuffix>
@@ -3129,10 +3182,10 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
         "-links", MakeEvalEntry<&EvalLinks>(&PrepareNumericOperand, &EvalPreparedNumeric<&vfs::Metadata::nlink>)},
     DispatchPair{"-lname", MakeEvalEntry<&EvalLname>()},
     DispatchPair{"-ls", MakeEvalEntry<&EvalLs>()},
-    DispatchPair{"-mime", MakeEvalEntry<&EvalMime>()},
+    DispatchPair{"-mime", MakeEvalEntry<&EvalMime>(&PrepareMimeOperand, &EvalPreparedMime)},
     DispatchPair{"-mmin", MakeEvalEntry<&EvalMmin>(&PrepareTimeOperand<60, false>, &EvalPreparedTime<'m'>)},
     DispatchPair{"-mtime", MakeEvalEntry<&EvalMtime>(&PrepareTimeOperand<86'400, true>, &EvalPreparedTime<'m'>)},
-    DispatchPair{"-first", MakeEvalEntry<&EvalFirst>()},
+    DispatchPair{"-first", MakeEvalEntry<&EvalFirst>(&PrepareFirstOperand, &EvalPreparedFirst)},
     DispatchPair{"-fuzzy", MakeEvalEntry<&EvalFuzzy>()},
     DispatchPair{"-fuzzypath", MakeEvalEntry<&EvalFuzzyPath>()},
     DispatchPair{"-ifuzzy", MakeEvalEntry<&EvalFuzzy>()},
@@ -3720,9 +3773,15 @@ std::size_t PreparedExpression::MatcherCount() const {
 }
 
 std::size_t PreparedExpression::StorageBytes() const {
+  std::size_t text_bytes = 0;
+  for (const auto& operand : data_->operands) {
+    if (std::holds_alternative<MimePattern>(operand)) {
+      text_bytes += std::get<MimePattern>(operand).bytes.capacity();
+    }
+  }
   return sizeof(*this) + sizeof(Data) + (data_->nodes.capacity() * sizeof(Data::Node))
          + (data_->operands.capacity() * sizeof(PreparedOperand))
-         + (data_->matcher_sources.capacity() * sizeof(std::reference_wrapper<const parser::Expr>));
+         + (data_->matcher_sources.capacity() * sizeof(std::reference_wrapper<const parser::Expr>)) + text_bytes;
 }
 
 struct PreparedExpression::Worker::State {

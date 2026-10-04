@@ -2417,3 +2417,26 @@ pruning and early termination. Output assertions ensure the test reaches actual 
 rather than accepting an empty traversal. These tests qualify executor integration; existing
 extension tests remain responsible for decoding real archive formats. Native CI results are
 required before treating the added cases as verified.
+
+### Limit and MIME operand preparation candidate
+
+The next independent candidate removes repeated `-first` integer decoding and `-mime` pattern
+lowercasing. `-first` keeps a checked positive `int`, matching its existing counter and validation
+range. Zero represents the existing no-match result for invalid input; no counter is created or
+changed in that case. Counters remain run-owned and keyed by the original expression node. The
+reference callback uses the same decoder and admission helper but still decodes on every entry.
+
+MIME preparation owns a lowercase, null-terminated character vector once per predicate. The prepared
+callback passes that buffer to the existing POSIX glob semantics, avoiding a further pattern copy.
+Filename-to-MIME resolution and folding of the resulting type remain per-entry operations. The
+character vector fits the compact operand pool without requiring every scalar to own a string;
+its capacity is included in storage reporting. Missing arguments still take the existing false
+path. No filesystem or account-database observation moves to preparation.
+
+Boundary tests compare reference, prepared and reused worker results through exhausted counters,
+signed-int overflow, malformed and absent operands. MIME fixtures exercise case independence,
+wildcards, malformed patterns, unknown extensions and owner moves. The full-run oracle combines
+MIME filtering with an independent first-N budget. Three preparation/kernel families and two
+whole-engine workloads extend the native CI matrix; all preceding workloads remain regression
+controls. This candidate is not an accepted improvement until those measurements and checks pass,
+and it does not change or delay the existing green PR sequence.

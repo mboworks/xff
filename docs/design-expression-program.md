@@ -780,3 +780,21 @@ including nodes, operands, matcher slots and owned record bytes. Regex backend, 
 allocator, adapter and worker storage are excluded, so this is not a process-memory estimate.
 It explicitly reports preserved order and disabled optimization; it does not claim the test-only
 optimizer ran. Separate rg search preparation remains described by the existing rg resource row.
+
+## Limit and MIME preparation continuation
+
+The follow-up candidate stores the checked positive `int` limit for `-first`; the source identity
+and counter map remain unchanged. An invalid or absent limit and an unavailable counter sink keep
+the original no-match behavior. The reference shares decoding/admission helpers but still decodes
+per invocation, permitting comparisons of dispatch and operand preparation separately.
+
+For `-mime`, an owned lowercase character vector includes the POSIX terminator. It is created once
+and remains immutable across entries and workers. Its capacity joins the owned-byte accounting;
+there is no larger string payload in unrelated scalar records. The entry's derived MIME value is
+still resolved and normalized when reached, and glob behavior remains independent of name-case
+options. No observation, action or metadata demand moves across a short-circuit boundary.
+
+Tests and native measurement cases cover both families separately. Existing cases remain controls
+for preparation/record overhead. Qualification must include tiny inputs, retained storage and
+whole-run results, not just the saved decoder or case-folding calls. This work is separate from
+acceptance of the preceding production candidate.
