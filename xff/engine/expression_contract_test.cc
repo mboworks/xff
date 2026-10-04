@@ -158,6 +158,45 @@ TEST_F(ExpressionContractTest, EveryRegisteredPrimaryRetainsAnOptimizationBarrie
   }
 }
 
+TEST_F(ExpressionContractTest, RejectsExtraAndMissingChildren) {
+  struct Shape {
+    parser::Expr::Kind kind;
+    bool left;
+    bool right;
+  };
+
+  constexpr auto kMalformed = std::to_array<Shape>({
+      {
+          .kind = parser::Expr::Kind::kPredicate,
+          .left = true,
+      },
+      {
+          .kind = parser::Expr::Kind::kPredicate,
+          .right = true,
+      },
+      {
+          .kind = parser::Expr::Kind::kNot,
+          .left = true,
+          .right = true,
+      },
+      {
+          .kind = parser::Expr::Kind::kAnd,
+          .left = true,
+      },
+  });
+  ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-true"}));
+  for (const auto& shape : kMalformed) {
+    parser::Expr expression{
+        .kind = shape.kind,
+        .descriptor = command.expression->descriptor,
+        .lhs = shape.left ? std::make_unique<parser::Expr>() : nullptr,
+        .rhs = shape.right ? std::make_unique<parser::Expr>() : nullptr,
+    };
+    EXPECT_THAT(DescribeExpression(expression), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("shape")));
+  }
+  EXPECT_THAT(fs.events, IsEmpty());
+}
+
 TEST_F(ExpressionContractTest, AllBooleanOperatorsPreserveTruthAndObservableOrder) {
   struct Operation {
     std::string_view token;
@@ -209,6 +248,7 @@ TEST_F(ExpressionContractTest, AllBooleanOperatorsPreserveTruthAndObservableOrde
             Parse(
                 {".", "(", "-printf", "left", ",", left ? "-true" : "-false", ")", std::string(operation.token), "(",
                  "-printf", "right", ",", right ? "-true" : "-false", ")"}));
+        ASSERT_THAT(DescribeExpression(*command.expression), IsOk());
         fs.events.clear();
         memo.clear();
         const auto result = Observe(*command.expression);
