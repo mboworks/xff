@@ -22,6 +22,8 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       production-driver integration and the remaining audited families stay open.
 - [ ] EP04: Compare contiguous opcode and bound-function programs; lower audited boolean control flow,
       reuse scratch and preserve source mapping, with explicit whole-expression fallback coverage.
+      The switch/function pilot, branch-selectivity cases and storage-reuse tests are implemented;
+      CI measurements and layout selection remain open.
 - [ ] EP05: Complete fuzzy/unknown/error/action/deferred semantics; preserve exactly-once effects,
       VFS safety, coordinator ownership and bounded suspended-entry memory.
 - [ ] EP06: Measure deterministic constant folding, jump simplification, selected fusion and proven

@@ -122,6 +122,19 @@ kernels reuse the same worker. Stored capacities exclude regex-backend allocatio
 be measured separately. CI timing and complete driver integration remain pending. Keep this as an
 experiment until the oracle, sanitizer checks and repeated native measurements support adoption.
 
+### EP04 linear control-flow pilot
+
+The candidate compiles boolean control into explicit jumps and a small saved-value stack. Workers
+reserve scratch once, and predicate instructions reuse the existing prepared callbacks and
+metadata/safety boundary. The experiment compares switch and function-pointer dispatch over an
+identical instruction layout, including preparation, instructions and owned capacities.
+
+The 666-case core matrix adds early AND failure, early OR success and all-false OR chains to the
+existing families. It reports reached predicates rather than counting skipped ones. Program
+benchmarks reject accidental fallback before timing. Score-collecting and deferred contexts are
+currently reported whole-expression fallbacks, covered separately by tests; they are not evidence
+of linear execution. Cross-platform timing and production integration remain pending.
+
 ## Hosted capacity and benchmark backfill
 
 Benchmark run 36831896372 failed macOS aggregation because one shard recorded five host CPUs

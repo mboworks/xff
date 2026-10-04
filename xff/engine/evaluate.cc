@@ -3375,37 +3375,41 @@ void PreviewExecution(const parser::Expr& expr, const EvalContext& context) {
 }
 
 template<typename Cursor>
+EvaluationResult EvaluatePredicateResult(Cursor cursor, EvalContext& context) {
+  const auto& expr = cursor.Get();
+  const bool invalidate = !expr.descriptor->pure || expr.descriptor->kind == registry::Kind::kAction;
+  if (invalidate) {
+    context.content.Invalidate();
+  }
+  if (expr.descriptor->needs_metadata || (expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
+    context.control.metadata_error = context.visit.EnsureMetadata();
+    if (!context.control.metadata_error.ok()) {
+      return {.unknown = true};
+    }
+  }
+  if (context.dry_run && expr.descriptor->safety == registry::Safety::kSecurity) {
+    PreviewExecution(expr, context);
+    return {.unknown = true};
+  }
+  if (expr.descriptor->control == registry::Control::kTop) {
+    return EvaluateTop(expr, context);
+  }
+  if (expr.descriptor->control == registry::Control::kShardStatus) {
+    return EvaluateShardStatus(expr, context);
+  }
+  const bool matched = cursor.Predicate(context);
+  if (invalidate) {
+    // An action may read fields before mutating this same file through its sink.
+    context.content.Invalidate();
+  }
+  return {.fuzzy = context.fuzzy_score.has_value() ? *context.fuzzy_score : std::nullopt, .matched = matched};
+}
+
+template<typename Cursor>
 EvaluationResult EvaluateResult(Cursor cursor, EvalContext& context) {
   const auto& expr = cursor.Get();
   switch (expr.kind) {
-    case parser::Expr::Kind::kPredicate: {
-      const bool invalidate = !expr.descriptor->pure || expr.descriptor->kind == registry::Kind::kAction;
-      if (invalidate) {
-        context.content.Invalidate();
-      }
-      if (expr.descriptor->needs_metadata || (expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
-        context.control.metadata_error = context.visit.EnsureMetadata();
-        if (!context.control.metadata_error.ok()) {
-          return {.unknown = true};
-        }
-      }
-      if (context.dry_run && expr.descriptor->safety == registry::Safety::kSecurity) {
-        PreviewExecution(expr, context);
-        return {.unknown = true};
-      }
-      if (expr.descriptor->control == registry::Control::kTop) {
-        return EvaluateTop(expr, context);
-      }
-      if (expr.descriptor->control == registry::Control::kShardStatus) {
-        return EvaluateShardStatus(expr, context);
-      }
-      const bool matched = cursor.Predicate(context);
-      if (invalidate) {
-        // An action may read fields before mutating this same file through its sink.
-        context.content.Invalidate();
-      }
-      return {.fuzzy = context.fuzzy_score.has_value() ? *context.fuzzy_score : std::nullopt, .matched = matched};
-    }
+    case parser::Expr::Kind::kPredicate: return EvaluatePredicateResult(cursor, context);
     case parser::Expr::Kind::kNot: {
       const EvaluationResult value = EvaluateChild(cursor.Left(), context);
       return (value.deferred || value.unknown) ? value : EvaluationResult{.matched = !value.matched};
@@ -3659,6 +3663,17 @@ EvaluationResult PreparedExpression::Worker::Evaluate(EvalContext& context) cons
     *context.fuzzy_score = result.fuzzy;
   }
   return result;
+}
+
+EvaluationResult PreparedExpression::Worker::EvaluatePredicate(ExpressionSourceId source, EvalContext& context) const {
+  const auto& expression = state_->expression.get();
+  return EvaluatePredicateResult(
+      Cursor{
+          .data = expression,
+          .node = expression.nodes.at(source.value()),
+          .matchers = state_->matchers,
+      },
+      context);
 }
 
 std::size_t PreparedExpression::Worker::MatcherCount() const {

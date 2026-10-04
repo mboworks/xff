@@ -535,3 +535,30 @@ from backend allocations, which are not estimated. Named oracle cases include th
 plus persistent independent workers, captures, source/worker moves, and unbound matcher cases.
 No production parallel driver has switched yet. Match-output/grep's separate worker program and
 remaining dynamic operand families retain their current handling pending their own audit.
+
+## EP04 contiguous program pilot
+
+`ExpressionProgram` lowers every boolean operator into a contiguous stream of predicate calls,
+conditional jumps, negation, and saved-value XOR operations. Each instruction retains its original
+preorder source ID. Lowering uses an explicit stack, and each worker reserves its maximum boolean
+scratch once; repeated entries do not grow that storage. Predicate instructions call the prepared
+worker directly and share the reference evaluator's metadata, safety, invalidation, and control
+handling. No per-instruction flag-name lookup is introduced.
+
+The pilot compares an opcode switch with bound instruction-function dispatch using the same
+instruction layout. Holding layout constant isolates dispatch cost; the table currently stores both
+opcodes and function pointers, so it is not yet a minimal representation for either final choice.
+Worker regex state remains independent. Source/program/worker storage ownership is explicit and
+move-safe under the documented lifetime order.
+
+An evaluation context with fuzzy-score collection or deferred replay uses the prepared recursive
+executor for the whole expression and reports `used_fallback`. Tests assert that ordinary boolean,
+metadata-failure, dry-run, mutation-denial, regex, long-chain and nested-XOR cases actually use the
+program. Separate tests verify the reported fallback. This is the planned EP04 transitional
+boundary; EP05 must implement or justify the remaining contexts and integrate the driver.
+
+Native CI benchmarks retain every prior variant, add both program dispatch choices, and include
+AND early misses plus OR early hits and complete misses. The expanded core matrix has 666 cases.
+Reached-predicate counts account for short-circuit cases, and program timing rejects unexpected
+fallback during its untimed check. Instruction/storage counters and preparation timings remain
+separate from execution time. No production selection or speedup claim is made before measurement.
