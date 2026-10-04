@@ -233,9 +233,9 @@ struct InstructionOptimizer {
       }
       auto instruction = instructions.at(index);
       if (HasTarget(instruction.operation)) {
-        instruction.target = positions.at(instruction.target.value());
+        instruction.target = InstructionId{positions.at(instruction.target.value())};
       }
-      instructions.at(next++) = instruction;
+      instructions.at(next++) = std::move(instruction);
     }
     instructions.resize(next);
   }
@@ -251,7 +251,7 @@ struct InstructionOptimizer {
       }
       const auto target = instruction.target.value();
       if (target < instructions.size() && instructions.at(target).operation == instruction.operation) {
-        instruction.target = instructions.at(target).target;
+        instruction.target = InstructionId{instructions.at(target).target};
         ++stats.rewrites;
       }
     }
@@ -279,7 +279,7 @@ struct InstructionOptimizer {
       instruction = MakeInstruction(
           next.operation == Operation::kJumpIfTrue ? Operation::kEvaluateJumpIfTrue : Operation::kEvaluateJumpIfFalse,
           instruction.source);
-      instruction.target = next.target;
+      instruction.target = InstructionId{next.target};
       removed.at(index + 1) = true;
       ++stats.rewrites;
     }
