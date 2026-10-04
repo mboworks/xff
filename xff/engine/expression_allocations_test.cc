@@ -8,6 +8,7 @@
 #include <ranges>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -121,9 +122,12 @@ struct AllocationMeasurement {
 template<typename Action>
 auto MeasureAllocations(Action&& action) {
   const AllocationScope scope;
-  auto value = std::invoke(std::forward<Action>(action));
-  const auto allocation_counts = scope.Finish();
-  return AllocationMeasurement<decltype(value)>{.value = std::move(value), .counts = allocation_counts};
+  AllocationMeasurement<std::invoke_result_t<Action>> result{
+      .value = std::invoke(std::forward<Action>(action)),
+      .counts = {},
+  };
+  result.counts = scope.Finish();
+  return result;
 }
 
 class AllocationFs final : public vfs::FileSystem {
@@ -284,7 +288,7 @@ struct ExpressionAllocationTest
 TEST_P(ExpressionAllocationTest, RecordsPreparationWorkerFirstEvaluationSteadyStateAndTeardown) {
   const auto& scenario = GetParam();
   std::vector<std::string> arguments{"."};
-  arguments.reserve(1 + scenario.arguments.size() * static_cast<std::size_t>(scenario.predicates));
+  arguments.reserve(1 + (scenario.arguments.size() * static_cast<std::size_t>(scenario.predicates)));
   for ([[maybe_unused]] const int index : std::views::iota(0, scenario.predicates)) {
     arguments.insert(arguments.end(), scenario.arguments.begin(), scenario.arguments.end());
   }
