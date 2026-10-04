@@ -127,7 +127,7 @@ def append_samples(target, incoming, index, report):
                                       for number, sample in enumerate(entry['samples'], 1))
 
 
-def merge_reports(records, baseline_root=None):
+def merge_reports(records, baseline_root=None, baseline_revisions=None):
     if not records:
         raise ValueError('no shard reports')
     records = sorted(records, key=lambda record: record['tool_comparisons']['contract']['shard']['index'])
@@ -212,7 +212,7 @@ def merge_reports(records, baseline_root=None):
                 benchmark_matrix.selected_samples(combined, entry)
     combined['tasks'].sort(key=lambda task: (task['cpus'], task['files'], task['dataset'], task['name']))
     if baseline_root is not None:
-        benchmark_matrix.attach_baseline(combined, baseline_root)
+        benchmark_matrix.attach_baseline(combined, baseline_root, baseline_revisions)
     combined['relative_results'] = benchmark_matrix.relative_results(combined)
     threshold = combined.get('alarm', {}).get('threshold_percent', 15)
     combined['alarm'] = {'threshold_percent': threshold, 'blocking': False,
@@ -249,10 +249,14 @@ def main():
     parser.add_argument('--repetitions', type=int, default=9, help='Total measured rounds across sample shards')
     parser.add_argument('--keep', type=int, default=7, help='Fastest pooled rounds retained per participant')
     parser.add_argument('--baseline-root', type=Path, help='Attach a compatible main baseline after merging')
+    parser.add_argument('--baseline-revisions', type=Path,
+                        help='Eligible baseline commit IDs, one per line, newest first (git rev-list --first-parent)')
     reference_group = parser.add_mutually_exclusive_group()
     reference_group.add_argument('--reference', type=Path)
     reference_group.add_argument('--reference-root', type=Path)
     args = parser.parse_args()
+    if args.baseline_revisions and (args.plan or not args.baseline_root):
+        parser.error('--baseline-revisions requires merge mode and --baseline-root')
     if args.plan:
         reference = json.loads(args.reference.read_text())['tool_comparisons'] if args.reference else None
         if args.reference_root:
@@ -265,7 +269,8 @@ def main():
     else:
         paths = (sorted(args.merge_directory.rglob('benchmark-shard.json'))
                  if args.merge_directory is not None else args.merge)
-        result = merge_reports([json.loads(path.read_text()) for path in paths], args.baseline_root)
+        revisions = args.baseline_revisions.read_text().splitlines() if args.baseline_revisions else None
+        result = merge_reports([json.loads(path.read_text()) for path in paths], args.baseline_root, revisions)
     args.output.write_text(json.dumps(result, indent=2) + '\n')
 
 

@@ -308,7 +308,8 @@ Markdown. CI artifacts are retained for 30 days; published post-merge history re
 alongside each platform's page for later rendering.
 
 Measurement progress is flushed to stderr at most once every five seconds, with immediate
-start/completion lines per scale. Updates identify scale X/Y, fixture preparation, or run X/Y
+start/completion lines per scale. Updates put `Workers: N Files: N` first, followed by
+scale X/Y, fixture preparation, or `Run: X/Y`
 within the current task, including the tool and warm-up/sample index. Small scales therefore
 produce little output. Progress output and correctness checks happen outside the timed child
 commands; scale completion confirms all its output validation finished.
@@ -360,6 +361,12 @@ commands, compatible CPU affinity, equal host CPU counts and identical sampling 
 Missing or incompatible shards fail the workflow rather than publishing a partial matrix. Each
 merged report retains per-shard provenance. An identity mismatch reports its shard, field and
 differing values, such as `incompatible shard 1: contract.cpu_count: expected 5, got 3`.
+Both PR and merged-main aggregation load retained main reports before rendering the overview.
+Only first-parent main revisions preceding the measured commit are eligible (for a PR merge
+preview, this includes its main parent). The nearest compatible revision wins; later reruns of
+older revisions cannot replace it, and a rerun never selects its own commit or a future merge.
+The selected revision, run, attempt and sampling policy remain in the report.
+
 Historical baselines and the advisory slowdown alarm are computed after pooling. JSON and HTML
 share the platform-specific basename; only final merged artifacts are selected by the publisher.
 

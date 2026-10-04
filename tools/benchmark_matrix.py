@@ -93,14 +93,17 @@ def participant_contract(report, label, entry):
     return identities, arguments
 
 
-def attach_baseline(report, root):
+def attach_baseline(report, root, revisions=None):
     """Retained reports come from the trusted main publisher; never execute their data."""
     candidates = []
+    ranks = {head: -index for index, head in enumerate(revisions)} if revisions is not None else None
     current_tasks = {task_key(task): task for task in report['tasks']}
     for path in benchmark_records.run_paths(root):
         record = benchmark_records.read(path)
         source = record.get('source', {})
         other = record.get('tool_comparisons')
+        if ranks is not None and record.get('head') not in ranks:
+            continue
         if source.get('event') != 'push' or source.get('head_branch') != 'main' or not other:
             continue
         if other['contract'].get('estimator') != 'mean-fastest':
@@ -118,12 +121,12 @@ def attach_baseline(report, root):
             if shared:
                 averages[task_key(task)] = shared
         if averages:
-            candidates.append((source['created_at'], int(source['id']), int(source['run_attempt']), record, averages))
+            candidates.append(((ranks[record['head']] if ranks is not None else 0,
+                                source['created_at'], int(source['id']), int(source['run_attempt'])), record, averages))
     if not candidates:
         report['baseline'] = {'status': 'unavailable', 'reason': 'No compatible successful main benchmark is retained.'}
         return
-    selected = max(candidates, key=lambda row: row[:3])
-    record, averages = selected[3:]
+    _, record, averages = max(candidates, key=lambda row: row[0])
     other = record['tool_comparisons']
     report['baseline'] = {'status': 'available', 'head': record['head'], 'run': record['source']['id'],
                           'attempt': record['source']['run_attempt'], 'policy': policy(other), 'averages': averages}

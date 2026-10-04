@@ -72,6 +72,21 @@ class BenchmarkMatrixTest(unittest.TestCase):
             matrix.attach_baseline(current, root)
             self.assertEqual(current['baseline']['status'], 'available')
 
+    def test_baseline_revision_order_excludes_current_and_future_runs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            # The nearer merge ran earlier; an old revision was measured more recently.
+            self.retain(root, report(), 1)
+            self.retain(root, report(), 2)
+            self.retain(root, report(), 3)
+            for revisions, expected in ((['1' * 40, '2' * 40], '1' * 40),
+                                        (['2' * 40], '2' * 40), ([], None)):
+                with self.subTest(revisions=revisions):
+                    current = report()
+                    matrix.attach_baseline(current, root, revisions)
+                    self.assertEqual(current['baseline'].get('head'), expected)
+                    self.assertEqual(current['baseline']['status'], 'available' if expected else 'unavailable')
+
     def test_fastest_subset_controls_all_metrics(self):
         data = report()
         entry = data['tasks'][0]['participants']['xff']

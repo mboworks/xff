@@ -113,6 +113,33 @@ class BenchmarkShardsTest(unittest.TestCase):
         self.assertEqual(baseline['averages']['broad/files/1/10']['xff'], 4)
         self.assertEqual(shards.benchmark_matrix.policy(current['tool_comparisons']), 'mean of fastest 2/3 runs')
 
+    def test_main_aggregation_cli_uses_eligible_merged_baseline(self):
+        inputs = records(cpus=(1, 3), partition='samples')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            incoming = root / 'shards'
+            for index, record in enumerate(inputs):
+                folder = incoming / str(index)
+                folder.mkdir(parents=True)
+                (folder / 'benchmark-shard.json').write_text(json.dumps(record))
+            previous = shards.merge_reports(inputs)
+            previous.update(head='older-merge', source={'id': 42, 'created_at': '2026-10-03',
+                            'run_attempt': 1, 'event': 'push', 'head_branch': 'main'})
+            path = root / 'runs/42/1/linux/report.json'
+            path.parent.mkdir(parents=True)
+            path.write_text(json.dumps(previous))
+            revisions = root / 'eligible.txt'
+            revisions.write_text('older-merge\n')
+            output = root / 'merged.json'
+            with mock.patch('sys.argv', ['benchmark_shards.py', '--merge-directory', str(incoming),
+                                         '--output', str(output), '--baseline-root', str(root),
+                                         '--baseline-revisions', str(revisions)]):
+                shards.main()
+            result = json.loads(output.read_text())['tool_comparisons']
+            self.assertEqual(result['baseline']['head'], 'older-merge')
+            self.assertEqual(result['baseline']['policy'], 'mean of fastest 7/9 runs')
+            self.assertEqual(result['baseline']['averages']['broad/files/1/10']['xff'], 4)
+
     def test_sample_plan_rejects_incomplete_grids_and_unequal_rounds(self):
         for repetitions, keep in ((8, 7), (0, 0), (3, 4), (9, 0)):
             with self.subTest(repetitions=repetitions, keep=keep), self.assertRaisesRegex(ValueError, 'sample shards'):

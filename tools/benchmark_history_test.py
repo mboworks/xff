@@ -98,6 +98,19 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn("platform: linux\n            os: ubuntu-latest", main)
         self.assertIn("platform: macos\n            os: macos-latest", main)
 
+    def test_pr_and_main_aggregation_attach_only_earlier_main_baselines(self):
+        for workflow, job in (('.github/workflows/benchmarks.yml', 'aggregate'),
+                              ('.github/workflows/main.yml', 'benchmark-compare')):
+            with self.subTest(workflow=workflow):
+                source = repository_file(workflow).read_text().split('\n  ' + job + ':', 1)[1]
+                source = re.split(r'\n  [a-z][a-z-]*:', source, maxsplit=1)[0]
+                self.assertIn('fetch-depth: 0', source)
+                self.assertIn('ref: coverage-pages', source)
+                self.assertIn('sparse-checkout: benchmarks/runs', source)
+                self.assertIn('git rev-list --first-parent HEAD^1 > benchmark-baseline-revisions.txt', source)
+                self.assertIn('--baseline-root=benchmark-baseline/benchmarks', source)
+                self.assertIn('--baseline-revisions=benchmark-baseline-revisions.txt', source)
+
     def test_tag_on_a_merge_commit_remains_a_release_and_uses_commit_time(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

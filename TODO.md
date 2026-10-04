@@ -822,3 +822,11 @@ this as intentional accounting.
       [docs/site-storage.md](docs/site-storage.md): data-driven shared table rendering, numeric chart
       matrices, column-oriented benchmark observations, and additional coverage/source deduplication.
       Preserve coverage aggregate history and all release/merged-PR performance measurements.
+
+## Benchmark baseline and progress repairs
+
+- [x] Put worker and file counts first in measurement/backfill progress, preserving throttling.
+- [x] Load compatible earlier main measurements in both aggregate workflows; select by main
+      ancestry before run time so reruns cannot compare with themselves or future merges.
+- [x] Reproduce the missing-baseline report using run 37196735470 artifacts without new measurements:
+      the repaired selection finds all 468 reference comparisons on each platform against #957.
