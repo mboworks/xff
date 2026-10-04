@@ -1956,3 +1956,13 @@ all five core variants (756 total cases), checks scores against the tree before 
 reports stateful selection and zero recursive fallback. Measurements and full CI are pending;
 this work makes no production selection or performance claim. The first-use scratch allocation
 is excluded from warm execution and must be included in the later setup/whole-run decision.
+
+### Retried benchmark shard identity
+
+Run 37219669899 first measured macOS shards on hosts reporting 3, 3 and 5 CPUs. Strict
+contract validation correctly refused to combine them. A focused retry produced a replacement
+three-CPU shard with the same source and tool identities, but both artifacts remained under the
+same name; wildcard downloading could still select the old report. PR aggregation now selects
+the newest creation timestamp for each exact shard name before downloading by artifact ID.
+All raw attempts remain stored and CPU/tool/revision compatibility checks remain mandatory.
+Artifact IDs alone are not chronological: the replacement had a lower ID than its predecessor.
