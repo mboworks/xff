@@ -22,6 +22,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/status/status_macros.h"
+#include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/expression_program.h"
@@ -33,6 +34,7 @@
 namespace xff::engine {
 namespace {
 
+using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
 using ::testing::_;
@@ -560,11 +562,13 @@ struct PreparedOperandTest : ::testing::Test {
           };
           control = {};
           const auto expected = EvaluateDeferred(expression, context);
-          const auto expected_control = std::exchange(control, {});
+          // Control exposes a borrowed diagnostic; retain its text before resetting the owner.
+          const std::string expected_unsupported(control.unsupported);
+          control = {};
           const auto actual = worker.Evaluate(context);
           EXPECT_THAT(actual.matched, Eq(expected.matched));
           EXPECT_THAT(actual.unknown, Eq(expected.unknown));
-          EXPECT_THAT(control.unsupported, Eq(expected_control.unsupported));
+          EXPECT_THAT(control.unsupported, EqualsText(expected_unsupported));
           if (fixed_result.has_value()) {
             EXPECT_THAT(actual.matched, Eq(*fixed_result));
           }
