@@ -922,6 +922,12 @@ this as intentional accounting.
 
 ### Remaining operand qualification (EP03/EP07)
 
+- [ ] Qualify compiled peer and expected-hash templates for `-cmp`, `-similar`, `-diff` and `-hasheq`.
+      The candidate registers preparation in the existing dispatch table and retains dynamic field
+      rendering/conditional observations. New direct/full-run differential cases and native
+      preparation/kernel/whole-engine measurements must establish retention. Hash spec and diff
+      options/ignore-regex preparation remain separate work.
+
 - [ ] Qualify prepared `-first` limits and `-mime` patterns independently. Preserve per-node
       counters, integer validation, MIME case/glob behavior and missing-operand semantics. Compare
       preparation, kernel and whole-run results against the reference and the preceding session;

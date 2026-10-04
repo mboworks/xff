@@ -2589,3 +2589,23 @@ created, queued work, first-result latency and buffering. Test these counters th
 scheduler/observer rather than wall-clock assertions. Keep the simpler fixed policy unless native
 measurements show a repeatable benefit. This is a follow-up experiment, not an unmeasured change
 to the already green expression stack.
+
+## Prepared peer and expected-hash field templates
+
+The next operand candidate removes repeated `fields::Template::Compile` from reached `-cmp`,
+`-similar`, `-diff` and `-hasheq` evaluations. The existing engine table binds each preparation
+callback; the original evaluator and prepared path share dynamic rendering and observation code.
+The plan uniquely owns compiled templates outside the hot variant. No scheduler change, dependency
+upgrade or new public flag is included.
+
+The correctness comparison preserves missing/empty arguments, current definitions, symlink target
+reads, content reads/failures, creation patches, hash-verification state, whole-command validation
+and skipped branches. The compiled template and worker may move with their owners without borrowing
+temporary source text. The original tree remains the compile-per-entry timing reference.
+
+Five new kernel/preparation families cover literal/transformed peer paths, similarity, diff and
+expected-hash templates at 1/16/64 predicates. Three new whole-engine families cover comparison,
+diff and hash verification at 0/1/10/1,000/10,000 entries and requested 1/3 workers. CI must establish
+both native performance and the extra preparation/storage cost before the retention decision.
+The capacity metric conservatively budgets inline strings and shared template transforms; it excludes
+backend, status and allocator bookkeeping. It must not be substituted for native allocation profiling.

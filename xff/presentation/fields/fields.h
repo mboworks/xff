@@ -143,6 +143,11 @@ class Template {
   // This describes template structure, not observed reads or bytes.
   std::size_t ContentFieldCount() const;
 
+  // Conservative object/record/text capacity budget. String capacity is counted even
+  // when inline; copied templates each count shared transforms. Excludes regex backend,
+  // diagnostic status payload, allocator and shared-ownership bookkeeping allocations.
+  std::size_t StorageBytes() const;
+
  private:
   struct Transform;
 

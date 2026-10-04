@@ -1271,34 +1271,39 @@ bool EvalRxc(const parser::Expr& expr, EvalContext& ctx) {
 // `xff A ! -cmp '{def.B}/{relpath}'` lists files that differ from their counterpart
 // under tree B. Byte-exact and binary-safe (reads raw content, not ContentToSearch);
 // text normalization (--diff-ignore) is -diff's concern. Cost::kExpensive (two reads).
-std::string RenderTarget(const parser::Expr& expr, EvalContext& ctx) {
+std::string RenderTarget(
+    const parser::Expr& expr,
+    EvalContext& ctx,
+    mbo::types::OptionalRef<const fields::Template> prepared) {
   if (expr.args.empty()) {
     return {};
   }
   const std::string link = LinkTarget(ctx);  // owns the {target} text for the render below
-  return fields::Template::Compile(expr.args.front())
-      .Render(
-          fields::RenderContext{
-              .path = ctx.visit.path,
-              .root = ctx.visit.root,
-              .link_target = link,
-              .metadata = ctx.visit.metadata,
-              .depth = ctx.visit.depth,
-              .fs = ctx.fs,
-              .content = ctx.content,
-              .tz = ctx.tz,
-              .time_format = ctx.time_format,
-              .zone_suffix = ctx.zone_suffix,
-              .hash_algorithm = ctx.hash_algorithm,
-              .hash_encoding = ctx.hash_encoding,
-              .captures = AsConstOptionalRef(ctx.captures),
-              .defines = ctx.defines,
-              .outputs = AsConstOptionalRef(ctx.outputs),
-          });
+  const fields::RenderContext context{
+      .path = ctx.visit.path,
+      .root = ctx.visit.root,
+      .link_target = link,
+      .metadata = ctx.visit.metadata,
+      .depth = ctx.visit.depth,
+      .fs = ctx.fs,
+      .content = ctx.content,
+      .tz = ctx.tz,
+      .time_format = ctx.time_format,
+      .zone_suffix = ctx.zone_suffix,
+      .hash_algorithm = ctx.hash_algorithm,
+      .hash_encoding = ctx.hash_encoding,
+      .captures = AsConstOptionalRef(ctx.captures),
+      .defines = ctx.defines,
+      .outputs = AsConstOptionalRef(ctx.outputs),
+  };
+  return prepared ? prepared->Render(context) : fields::Template::Compile(expr.args.front()).Render(context);
 }
 
-bool EvalCmp(const parser::Expr& expr, EvalContext& ctx) {
-  const std::string target = RenderTarget(expr, ctx);
+bool EvalCmpWithTemplate(
+    const parser::Expr& expr,
+    EvalContext& ctx,
+    mbo::types::OptionalRef<const fields::Template> prepared) {
+  const std::string target = RenderTarget(expr, ctx, prepared);
   if (target.empty()) {
     return false;  // no target resolved (e.g. an empty template) -> treat as differing
   }
@@ -1307,12 +1312,19 @@ bool EvalCmp(const parser::Expr& expr, EvalContext& ctx) {
   return lhs.ok() && rhs.ok() && *lhs == *rhs;  // byte-exact; TRUE = identical content
 }
 
+bool EvalCmp(const parser::Expr& expr, EvalContext& ctx) {
+  return EvalCmpWithTemplate(expr, ctx, {});
+}
+
 // xff -similar[:WIDTH[:PCT%]] TARGET: compare text as unique contiguous word shingles. This is an
 // exact Jaccard calculation for one reference, not the MinHash approximation needed by a future
 // all-pairs clustering reduction.
-bool EvalSimilar(const parser::Expr& expr, EvalContext& ctx) {
+bool EvalSimilarWithTemplate(
+    const parser::Expr& expr,
+    EvalContext& ctx,
+    mbo::types::OptionalRef<const fields::Template> prepared) {
   const auto lhs = ContentToSearch(ctx);
-  const std::string target = RenderTarget(expr, ctx);
+  const std::string target = RenderTarget(expr, ctx, prepared);
   if (!lhs.has_value() || target.empty()) {
     return false;
   }
@@ -1321,6 +1333,10 @@ bool EvalSimilar(const parser::Expr& expr, EvalContext& ctx) {
     return false;
   }
   return similarity::WordShinglePercent(*lhs, *rhs, expr.similarity_width) >= expr.similarity_threshold;
+}
+
+bool EvalSimilar(const parser::Expr& expr, EvalContext& ctx) {
+  return EvalSimilarWithTemplate(expr, ctx, {});
 }
 
 namespace {
@@ -1469,30 +1485,14 @@ bool EmitCreationPatch(const parser::Expr& expr, EvalContext& ctx) {
 // false on a difference). STYLE picks the output (u3 default / c / n / y / none = silent). A
 // binary side is byte-compared with a `Binary files A and B differ` note on stderr, never a
 // text diff. Missing/unreadable target -> differs (false). Cost::kExpensive (two reads).
-bool EvalDiff(const parser::Expr& expr, EvalContext& ctx) {
+bool EvalDiffWithTemplate(
+    const parser::Expr& expr,
+    EvalContext& ctx,
+    mbo::types::OptionalRef<const fields::Template> prepared) {
   if (expr.args.empty() || expr.args.front() == "/dev/null") {
     return EmitCreationPatch(expr, ctx);
   }
-  const std::string link = LinkTarget(ctx);  // owns the {target} text for the render below
-  const std::string target = fields::Template::Compile(expr.args.front())
-                                 .Render(
-                                     fields::RenderContext{
-                                         .path = ctx.visit.path,
-                                         .root = ctx.visit.root,
-                                         .link_target = link,
-                                         .metadata = ctx.visit.metadata,
-                                         .depth = ctx.visit.depth,
-                                         .fs = ctx.fs,
-                                         .content = ctx.content,
-                                         .tz = ctx.tz,
-                                         .time_format = ctx.time_format,
-                                         .zone_suffix = ctx.zone_suffix,
-                                         .hash_algorithm = ctx.hash_algorithm,
-                                         .hash_encoding = ctx.hash_encoding,
-                                         .captures = AsConstOptionalRef(ctx.captures),
-                                         .defines = ctx.defines,
-                                         .outputs = AsConstOptionalRef(ctx.outputs),
-                                     });
+  const std::string target = RenderTarget(expr, ctx, prepared);
   if (target.empty()) {
     return false;  // no target resolved -> treat as differing
   }
@@ -1542,6 +1542,10 @@ bool EvalDiff(const parser::Expr& expr, EvalContext& ctx) {
   return false;  // differ
 }
 
+bool EvalDiff(const parser::Expr& expr, EvalContext& ctx) {
+  return EvalDiffWithTemplate(expr, ctx, {});
+}
+
 // The entry's digest, read through the filesystem the entry came FROM. That indirection is what
 // lets -hash / -hasheq work on an archive member: hashing by path would look for `a.tar!x` on the
 // real filesystem and find nothing. Both routes read the whole entry anyway.
@@ -1578,7 +1582,10 @@ bool EvalHash(const parser::Expr& expr, EvalContext& ctx) {
 // EXPECTED, an unreadable file, or a bad spec is FALSE (no match), so drift-selection is safe.
 // Cost::kExpensive (reads the whole file).
 // NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
-bool EvalHasheq(const parser::Expr& expr, EvalContext& ctx) {
+bool EvalHasheqWithTemplate(
+    const parser::Expr& expr,
+    EvalContext& ctx,
+    mbo::types::OptionalRef<const fields::Template> prepared) {
   const auto verdict = [&](bool matched) {
     if (ctx.hash_verification.has_value()) {
       *ctx.hash_verification = matched;
@@ -1588,26 +1595,7 @@ bool EvalHasheq(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty()) {
     return verdict(false);
   }
-  const std::string link = LinkTarget(ctx);  // owns the {target} text for the render below
-  const std::string expected = fields::Template::Compile(expr.args.front())
-                                   .Render(
-                                       fields::RenderContext{
-                                           .path = ctx.visit.path,
-                                           .root = ctx.visit.root,
-                                           .link_target = link,
-                                           .metadata = ctx.visit.metadata,
-                                           .depth = ctx.visit.depth,
-                                           .fs = ctx.fs,
-                                           .content = ctx.content,
-                                           .tz = ctx.tz,
-                                           .time_format = ctx.time_format,
-                                           .zone_suffix = ctx.zone_suffix,
-                                           .hash_algorithm = ctx.hash_algorithm,
-                                           .hash_encoding = ctx.hash_encoding,
-                                           .captures = AsConstOptionalRef(ctx.captures),
-                                           .defines = ctx.defines,
-                                           .outputs = AsConstOptionalRef(ctx.outputs),
-                                       });
+  const std::string expected = RenderTarget(expr, ctx, prepared);
   if (expected.empty()) {
     return verdict(false);  // no expected hash resolved (e.g. an unset {def.X}) -> mismatch
   }
@@ -1625,6 +1613,10 @@ bool EvalHasheq(const parser::Expr& expr, EvalContext& ctx) {
   // case-sensitive by definition (A-Z and a-z are distinct symbols), so only hex compares loosely.
   return verdict(
       spec->encoding == hash::Encoding::kHex ? absl::EqualsIgnoreCase(*digest, expected) : *digest == expected);
+}
+
+bool EvalHasheq(const parser::Expr& expr, EvalContext& ctx) {
+  return EvalHasheqWithTemplate(expr, ctx, {});
 }
 
 // A view over one explicit grep pattern or the union used by default match output.
@@ -2884,6 +2876,12 @@ struct MimePattern {
   std::vector<char> bytes;
 };
 
+struct FieldTemplate {
+  // Keep the compiled program out of the hot operand variant. No shared ownership or
+  // reference counting: workers borrow this immutable program through the owning plan.
+  std::unique_ptr<const fields::Template> value;
+};
+
 using PreparedOperand = std::variant<
     std::monostate,
     TypeSpec,
@@ -2895,7 +2893,8 @@ using PreparedOperand = std::variant<
     TimeSpec,
     CalendarAge,
     FirstLimit,
-    MimePattern>;
+    MimePattern,
+    FieldTemplate>;
 using PreparedEvalFn = bool (*)(const parser::Expr&, const PreparedOperand&, MatcherSlots, EvalContext&);
 using PrepareOperandFn = PreparedOperand (*)(std::string_view);
 
@@ -2940,6 +2939,24 @@ PreparedOperand PrepareSignedNumericOperand(std::string_view argument) {
 
 PreparedOperand PrepareFirstOperand(std::string_view argument) {
   return FirstLimit{.value = ParseFirstLimit(argument)};
+}
+
+PreparedOperand PrepareTemplateOperand(std::string_view argument) {
+  return FieldTemplate{.value = std::make_unique<const fields::Template>(fields::Template::Compile(argument))};
+}
+
+using TemplateEvalFn = bool (*)(const parser::Expr&, EvalContext&, mbo::types::OptionalRef<const fields::Template>);
+
+template<TemplateEvalFn Function>
+bool EvalPreparedTemplate(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    MatcherSlots,
+    EvalContext& context) {
+  if (std::holds_alternative<FieldTemplate>(operand)) {
+    return Function(expression, context, *std::get<FieldTemplate>(operand).value);
+  }
+  return Function(expression, context, {});
 }
 
 PreparedOperand PrepareMimeOperand(std::string_view argument) {
@@ -3142,13 +3159,19 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-capture", MakeEvalEntry<&EvalCapture>()},
     DispatchPair{"-capturedir", MakeEvalEntry<&EvalCapturedir>()},
     DispatchPair{"-cmin", MakeEvalEntry<&EvalCmin>(&PrepareTimeOperand<60, false>, &EvalPreparedTime<'c'>)},
-    DispatchPair{"-cmp", MakeEvalEntry<&EvalCmp>()},
+    DispatchPair{
+        "-cmp",
+        MakeEvalEntry<&EvalCmp>(&PrepareTemplateOperand, &EvalPreparedTemplate<&EvalCmpWithTemplate>),
+    },
     DispatchPair{"-cnewer", MakeEvalEntry<&EvalCnewer>()},
     DispatchPair{"-collect", MakeEvalEntry<&EvalCollect>()},
     DispatchPair{"-content", MakeEvalEntry<&EvalContent>()},
     DispatchPair{"-ctime", MakeEvalEntry<&EvalCtime>(&PrepareTimeOperand<86'400, true>, &EvalPreparedTime<'c'>)},
     DispatchPair{"-delete", MakeEvalEntry<&EvalDelete>()},
-    DispatchPair{"-diff", MakeEvalEntry<&EvalDiff>()},
+    DispatchPair{
+        "-diff",
+        MakeEvalEntry<&EvalDiff>(&PrepareTemplateOperand, &EvalPreparedTemplate<&EvalDiffWithTemplate>),
+    },
     DispatchPair{"-empty", MakeEvalEntry<&EvalEmpty>()},
     DispatchPair{"-eofcr", MakeEvalEntry<&EvalEofcr>()},
     DispatchPair{"-eofcrlf", MakeEvalEntry<&EvalEofcrlf>()},
@@ -3168,7 +3191,10 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-grep", MakeEvalEntry<&EvalGrep>()},
     DispatchPair{"-group", MakeEvalEntry<&EvalGroup>()},
     DispatchPair{"-hash", MakeEvalEntry<&EvalHash>()},
-    DispatchPair{"-hasheq", MakeEvalEntry<&EvalHasheq>()},
+    DispatchPair{
+        "-hasheq",
+        MakeEvalEntry<&EvalHasheq>(&PrepareTemplateOperand, &EvalPreparedTemplate<&EvalHasheqWithTemplate>),
+    },
     DispatchPair{"-icontent", MakeEvalEntry<&EvalContent>()},
     DispatchPair{"-ilname", MakeEvalEntry<&EvalLname>()},
     DispatchPair{"-iname", MakeEvalEntry<&EvalName>()},
@@ -3229,7 +3255,10 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-regex", MakeEvalEntry<&EvalRegex>(nullptr, &EvalPreparedRegex, true)},
     DispatchPair{"-rxc", MakeEvalEntry<&EvalRxc>(nullptr, &EvalPreparedRxc, true)},
     DispatchPair{"-samefile", MakeEvalEntry<&EvalSamefile>()},
-    DispatchPair{"-similar", MakeEvalEntry<&EvalSimilar>()},
+    DispatchPair{
+        "-similar",
+        MakeEvalEntry<&EvalSimilar>(&PrepareTemplateOperand, &EvalPreparedTemplate<&EvalSimilarWithTemplate>),
+    },
     DispatchPair{"-size", MakeEvalEntry<&EvalSize>(&PrepareSizeOperand, &EvalPreparedSize)},
     DispatchPair{"-sparse", MakeEvalEntry<&EvalSparse>()},
     DispatchPair{"-text", MakeEvalEntry<&EvalText>()},
@@ -3658,7 +3687,7 @@ struct PreparedExpression::Data {
 
   std::vector<Node> nodes;
   // Slot zero is shared by ordinary callbacks and carries no prepared operand.
-  std::vector<PreparedOperand> operands{std::monostate{}};
+  std::vector<PreparedOperand> operands = std::vector<PreparedOperand>(1);
   std::vector<std::reference_wrapper<const parser::Expr>> matcher_sources;
 };
 
@@ -3777,6 +3806,8 @@ std::size_t PreparedExpression::StorageBytes() const {
   for (const auto& operand : data_->operands) {
     if (std::holds_alternative<MimePattern>(operand)) {
       text_bytes += std::get<MimePattern>(operand).bytes.capacity();
+    } else if (std::holds_alternative<FieldTemplate>(operand)) {
+      text_bytes += std::get<FieldTemplate>(operand).value->StorageBytes();
     }
   }
   return sizeof(*this) + sizeof(Data) + (data_->nodes.capacity() * sizeof(Data::Node))

@@ -146,6 +146,9 @@ void Measure(benchmark::State& state, const Scenario& scenario, ExpressionExecut
 int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
   const auto scenarios = std::to_array<Scenario>({
+      {.name = "compare-template", .arguments = {"-type", "f", "-cmp", "peer/{relpath:s/file/copy/}"}},
+      {.name = "diff-template", .arguments = {"-type", "f", "-diff", "peer/{relpath}"}},
+      {.name = "hash-template", .arguments = {"-type", "f", "-hasheq", "{hash}"}},
       {.name = "first-limit", .arguments = {"-type", "f", "-first", "3", "-print"}},
       {.name = "mime", .arguments = {"-type", "f", "-mime", "TEXT/*"}},
       {.name = "name", .arguments = {"-name", "*.txt"}},

@@ -129,6 +129,11 @@ struct ExpressionCase {
 // The named core matrix is shared by preparation and execution. Long cheap chains expose dispatch
 // and operand costs; costly content/scoring cases use shorter chains. Effects are controlled output.
 constexpr auto kCases = std::to_array<ExpressionCase>({
+    {.name = "compare-literal", .primary = "-cmp", .argument = "peer"},
+    {.name = "compare-template", .primary = "-cmp", .argument = "peer/{name:s/file/copy/}"},
+    {.name = "similar-template", .primary = "-similar", .argument = "peer/{name}"},
+    {.name = "diff-template", .primary = "-diff", .argument = "peer/{name}"},
+    {.name = "hash-template", .primary = "-hasheq", .argument = "{hash}"},
     {.name = "first-limit", .primary = "-first", .argument = "2147483647"},
     {.name = "mime", .primary = "-mime", .argument = "TEXT/*"},
     {

@@ -1095,6 +1095,28 @@ struct Template::Transform {
   std::vector<Operation> scalar;
 };
 
+std::size_t Template::StorageBytes() const {
+  const auto operations_bytes = [](const std::vector<Transform::Operation>& operations) {
+    std::size_t bytes = operations.capacity() * sizeof(Transform::Operation);
+    for (const auto& operation : operations) {
+      bytes += operation.replacement.capacity() + 1;
+    }
+    return bytes;
+  };
+  std::size_t bytes = sizeof(*this) + segments_.capacity() * sizeof(Segment);
+  for (const auto& segment : segments_) {
+    bytes += segment.literal.capacity() + segment.key.capacity() + segment.qualifier.capacity() + 3;
+    if (segment.transform) {
+      const auto& transform = *segment.transform;
+      bytes += sizeof(Transform) + operations_bytes(transform.stream) + operations_bytes(transform.scalar);
+      if (transform.separator) {
+        bytes += transform.separator->capacity() + 1;
+      }
+    }
+  }
+  return bytes;
+}
+
 std::optional<std::size_t> PlaceholderSize(std::string_view text) {
   if (text.empty() || text.front() != '{') {
     return std::nullopt;

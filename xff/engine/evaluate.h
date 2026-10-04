@@ -391,6 +391,8 @@ class PreparedExpression final {
   [[nodiscard]] std::size_t OperandCount() const;
   [[nodiscard]] std::size_t MatcherCount() const;
   // Object and owned buffer capacities, excluding allocator headers and the shared source AST.
+  // Field-template capacity budgets are conservative; their regex backend/status payloads
+  // and shared-ownership bookkeeping are excluded, like ordinary matcher backends.
   [[nodiscard]] std::size_t StorageBytes() const;
 
  private:

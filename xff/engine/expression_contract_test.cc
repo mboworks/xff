@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -53,6 +54,7 @@ class RecordingExpressionFs final : public vfs::FileSystem {
  public:
   mutable std::vector<std::string> events;
   std::optional<vfs::Metadata> target_metadata;
+  std::optional<std::string> failed_content;
 
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override {
     events.push_back("readdir " + std::string(path));
@@ -88,6 +90,9 @@ class RecordingExpressionFs final : public vfs::FileSystem {
 
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override {
     events.push_back("read " + std::string(path));
+    if (failed_content == path) {
+      return absl::PermissionDeniedError("recorded content failure");
+    }
     return std::string("needle\n");
   }
 };
@@ -579,6 +584,74 @@ struct PreparedOperandTest : ::testing::Test {
     }
   }
 
+  void CheckTemplate(std::string_view primary, std::optional<std::string_view> text) {
+    std::map<std::string, std::string> defines;
+    SCOPED_TRACE(primary);
+    SCOPED_TRACE(text.value_or("<missing operand>"));
+    const auto descriptor = registry::Lookup(primary);
+    ASSERT_THAT(descriptor, Optional(_));
+    auto expression = std::make_unique<parser::Expr>(parser::Expr{
+        .kind = parser::Expr::Kind::kPredicate,
+        .descriptor = descriptor,
+    });
+    if (text) {
+      expression->args.emplace_back(*text);
+    }
+    fs.events.clear();
+    ASSERT_OK_AND_ASSIGN(auto original, PreparedExpression::Prepare(*expression));
+    const auto prepared = std::move(original);
+    const auto owner = std::move(expression);
+    const auto worker = prepared.MakeWorker();
+    EXPECT_THAT(prepared.OperandCount(), Eq(text ? 1 : 0));
+    EXPECT_THAT(fs.events, IsEmpty());
+    const auto bytes = prepared.StorageBytes();
+    std::string output;
+    std::optional<bool> verified;
+    const auto emit = [&](std::string_view value) { output.append(value); };
+    EvalContext context{
+        .visit = visit,
+        .emit = emit,
+        .fs = fs,
+        .now = absl::UnixEpoch(),
+        .tz = absl::UTCTimeZone(),
+        .hash_verification = verified,
+        .control = control,
+        .defines = defines,
+    };
+    for (const std::string_view peer : {"", "first", "second"}) {
+      for (const bool fail : {false, true}) {
+        defines["PEER"] = peer;
+        metadata.type = fail ? vfs::FileType::kSymlink : vfs::FileType::kRegular;
+        fs.failed_content = fail ? std::optional<std::string>("file") : std::nullopt;
+        context.content.Invalidate();
+        control = {};
+        verified.reset();
+        fs.events.clear();
+        output.clear();
+        const auto expected = EvaluateDeferred(*owner, context);
+        const auto expected_events = std::exchange(fs.events, {});
+        const auto expected_output = std::exchange(output, {});
+        const auto expected_verified = verified;
+        const std::string expected_unsupported(control.unsupported);
+        const auto expected_metadata_error = control.metadata_error;
+        context.content.Invalidate();
+        control = {};
+        verified.reset();
+        const auto actual = worker.Evaluate(context);
+        EXPECT_THAT(actual.matched, Eq(expected.matched));
+        EXPECT_THAT(actual.unknown, Eq(expected.unknown));
+        EXPECT_THAT(actual.deferred, Eq(expected.deferred));
+        EXPECT_THAT(fs.events, Eq(expected_events));
+        EXPECT_THAT(output, EqualsText(expected_output));
+        EXPECT_THAT(verified, Eq(expected_verified));
+        EXPECT_THAT(control.unsupported, EqualsText(expected_unsupported));
+        EXPECT_THAT(
+            control.metadata_error, StatusIs(expected_metadata_error.code(), Eq(expected_metadata_error.message())));
+        EXPECT_THAT(prepared.StorageBytes(), Eq(bytes));
+      }
+    }
+  }
+
   static constexpr auto kValues = std::to_array<std::uint64_t>({
       0,
       1,
@@ -977,6 +1050,36 @@ TEST_F(PreparedOperandTest, MimePatternSurvivesMovesAndKeepsCaseAndGlobSemantics
     EXPECT_THAT(moved.StorageBytes(), Eq(storage));
   }
   EXPECT_THAT(fs.events, IsEmpty());
+}
+
+TEST_F(PreparedOperandTest, FieldTemplatesKeepDynamicValuesObservationsAndMovedOwnership) {
+  constexpr auto kPrimaries = std::to_array<std::string_view>({"-cmp", "-similar", "-diff", "-hasheq"});
+  constexpr auto kTemplates = std::to_array<std::string_view>({
+      "{def.PEER}/{name:s/file/other/}",
+      "{def.PEER}",
+      "{target}",
+      "{hash}",
+      "{unknown}",
+      "/dev/null",
+      "",
+  });
+  for (const auto primary : kPrimaries) {
+    CheckTemplate(primary, std::nullopt);
+    for (const auto text : kTemplates) {
+      CheckTemplate(primary, text);
+    }
+  }
+}
+
+TEST_P(ExpressionContractTest, SkippedTemplatesDoNotObserveLinksContentOrDynamicFields) {
+  constexpr auto kPrimaries = std::to_array<std::string_view>({"-cmp", "-similar", "-diff", "-hasheq"});
+  for (const auto primary : kPrimaries) {
+    SCOPED_TRACE(primary);
+    ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-false", "-a", std::string(primary), "{hash}"}));
+    fs.events.clear();
+    EXPECT_THAT(Observe(*command.expression).matched, IsFalse());
+    EXPECT_THAT(fs.events, IsEmpty());
+  }
 }
 
 TEST_F(PreparedOperandTest, MissingOperandsStayFalseWithoutObservations) {
