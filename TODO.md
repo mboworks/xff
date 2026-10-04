@@ -35,9 +35,11 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       value reuse independently; keep reordering behind a stronger equivalence proof.
 - [ ] EP07: Qualify the winning executor on native macOS ARM64 and Linux x86-64; update --explain,
       self-documentation and performance evidence; enable only measured, semantically complete paths.
-- [ ] EP-S01: Evaluate a reusable constexpr frozen/perfect-hash string map/set in MBO for startup
-      lookup. Existing LimitedMap/Set and constexpr hashes already exist; preserve exact miss checks,
-      per-mode aliases and bounded construction. This does not block EP01-EP07.
+- [ ] EP-S01: Evaluate the experimental constexpr FrozenMap/Set merged in MBO PR #550 for startup
+      lookup. They are available upstream at `bf65c21c495fc789feab79f4516d1ae7215cb292`, outside
+      XFF's current pin. Compare actual per-mode registries, exact misses, sparse/minimal placement,
+      compile-time/storage cost and complete parser commands before adoption. This does not block
+      EP01-EP07; the prepared per-entry executor must avoid name lookup altogether.
 - [ ] EP-S02: Revisit experimental MBO interning for dynamic names only when a concrete consumer and
       measurements justify a dependency update; prefer existing strong IDs and indexed execution slots.
 
@@ -136,7 +138,7 @@ regresses 3-11% across the two sessions. Keep this tradeoff visible when compari
 - [x] Replace speculative mode scanning with one registry-driven global pass and one expression
       pass; retain resolved primary descriptors, borrow token text, and dispatch operators and
       context controls through typed effects. Generate separate constexpr indexes per mode.
-- [ ] Compare the forthcoming constexpr perfect-hash map with compact trie/automaton lookup for
+- [ ] Compare MBO's experimental FrozenMap from PR #550 with compact trie/automaton lookup for
       registered flag spellings. Preserve exact unknown-input rejection, explicit aliases and
       per-mode tables; benchmark whole-command parsing as well as lookup and table size.
 

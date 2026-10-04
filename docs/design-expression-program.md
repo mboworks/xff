@@ -38,23 +38,25 @@ mode parser experiments, worker-state work and metadata-demand sections.
 
 XFF pins MBO commit `c854476fb9bf22b6dc372a756d80831f7655d60e` through a git override, despite
 the dependency's declared release version. The audit also inspected the newer local MBO checkout
-at `df11721e7b`. Findings about that checkout are not a claim that its APIs are released or present
-in XFF's pin. No MBO files or dependency versions were changed for this plan.
+at `df11721e7b`. MBO [PR #550](https://github.com/mboworks/mbo/pull/550) subsequently merged
+experimental `FrozenMap` / `FrozenSet` at `bf65c21c495fc789feab79f4516d1ae7215cb292`.
+The API and implementation audit below includes that commit. These newer APIs are not present in
+XFF's pin; no MBO files or dependency versions were changed for this plan.
 
-| Need                                     | Available now                                                                              | Decision / missing work                                                                            |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Compile-time maps and sets               | MBO `LimitedMap` / `LimitedSet` are constexpr-capable ordered, fixed-capacity containers   | Already available; they are not hash tables. Keep as the small-table baseline.                     |
-| Exact mode-dependent flag lookup         | XFF `SpellingIndex` constructs sorted per-mode arrays at compile time                      | Already available; preserves aliases and exact unknown-token rejection.                            |
-| Compile-time string hashing              | MBO hash algorithms expose constexpr hashing, including tested FNV-1a and other algorithms | Already available; choose using short-key measurements, not a new ad hoc hash.                     |
-| Frozen/perfect-hash string map and set   | Not found in either audited MBO snapshot; XFF has a benchmark-only flat-hash prototype     | Optional MBO addition for startup lookup; not a prerequisite for the executor.                     |
-| Typed node, instruction and slot IDs     | MBO `ConstStrongId` / `ConstStrongOrdinal` are in the pinned revision                      | Reuse distinct tags; XFF still needs the ID assignment and slot-layout design.                     |
-| Contiguous immutable instruction storage | `std::vector` with reserve and standard arrays/spans                                       | Sufficient initially. Count nodes, reserve once, then freeze; do not add a container.              |
-| Stable growing records and owned text    | Pinned MBO `SegmentedVector`, `SegmentedDeque` and `Arena`                                 | Available when lifetime/address stability requires them; benchmark against reserved vectors.       |
-| Runtime associative lookup               | Abseil flat hash maps/sets and existing ordered maps                                       | Available for preparation. Do not replace ordered observable output with hash iteration.           |
-| Dynamic string-to-ID/value mapping       | Newer MBO has experimental `StringInterner` / `StringInternerMap`; absent from the XFF pin | Candidate for captures, definitions and dynamic catalogs after a separate dependency decision.     |
-| Persistent/shared maps                   | Newer MBO has experimental HAMT map/set variants; absent from the XFF pin                  | No demonstrated need for persistent snapshots in the immutable execution program.                  |
-| Per-worker and suspended-entry state     | Existing maps, but no prepared dense execution-slot layout                                 | XFF-specific work: indexed slots, validity tracking and compact suspended-state records.           |
-| Optimization effects and dependencies    | Existing descriptor fields cover only part of the contract                                 | XFF-specific work: totality, observations, state reads/writes, invalidation and explicit barriers. |
+| Need                                     | Available now                                                                              | Decision / missing work                                                                                       |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Compile-time maps and sets               | MBO `LimitedMap` / `LimitedSet` are constexpr-capable ordered, fixed-capacity containers   | Already available; they are not hash tables. Keep as the small-table baseline.                                |
+| Exact mode-dependent flag lookup         | XFF `SpellingIndex` constructs sorted per-mode arrays at compile time                      | Already available; preserves aliases and exact unknown-token rejection.                                       |
+| Compile-time string hashing              | MBO hash algorithms expose constexpr hashing, including tested FNV-1a and other algorithms | Already available; choose using short-key measurements, not a new ad hoc hash.                                |
+| Frozen/perfect-hash string map and set   | Upstream MBO experimental `FrozenMap` / `FrozenSet` from PR #550; absent from XFF's pin    | Available for a measured dependency-update experiment in startup lookup; not a prerequisite for the executor. |
+| Typed node, instruction and slot IDs     | MBO `ConstStrongId` / `ConstStrongOrdinal` are in the pinned revision                      | Reuse distinct tags; XFF still needs the ID assignment and slot-layout design.                                |
+| Contiguous immutable instruction storage | `std::vector` with reserve and standard arrays/spans                                       | Sufficient initially. Count nodes, reserve once, then freeze; do not add a container.                         |
+| Stable growing records and owned text    | Pinned MBO `SegmentedVector`, `SegmentedDeque` and `Arena`                                 | Available when lifetime/address stability requires them; benchmark against reserved vectors.                  |
+| Runtime associative lookup               | Abseil flat hash maps/sets and existing ordered maps                                       | Available for preparation. Do not replace ordered observable output with hash iteration.                      |
+| Dynamic string-to-ID/value mapping       | Newer MBO has experimental `StringInterner` / `StringInternerMap`; absent from the XFF pin | Candidate for captures, definitions and dynamic catalogs after a separate dependency decision.                |
+| Persistent/shared maps                   | Newer MBO has experimental HAMT map/set variants; absent from the XFF pin                  | No demonstrated need for persistent snapshots in the immutable execution program.                             |
+| Per-worker and suspended-entry state     | Existing maps, but no prepared dense execution-slot layout                                 | XFF-specific work: indexed slots, validity tracking and compact suspended-state records.                      |
+| Optimization effects and dependencies    | Existing descriptor fields cover only part of the contract                                 | XFF-specific work: totality, observations, state reads/writes, invalidation and explicit barriers.            |
 
 The core executor requires no new general-purpose container or dependency upgrade. The missing
 pieces are its representation and semantic contracts. A constexpr hash table improves name-to-ID
@@ -65,8 +67,8 @@ runtime once its CLI and configuration are known. The two preparation times must
 
 ### Optional frozen hash map/set contract
 
-Develop a reusable MBO facility separately if the parser measurements justify it. Proposed
-requirements, not settled public type names:
+MBO's experimental containers now provide the planned facility. The requirements for adopting
+them in XFF remain:
 
 1. Build immutable, statically stored tables from constexpr entries; set and map share key-index
    construction. Use length-aware borrowed keys with static lifetime and typed mapped values.
@@ -90,6 +92,30 @@ Compare the existing sorted index and `LimitedMap`, the bounded-probing prototyp
 table, and the compact/direct trie experiments behind the same exact-lookup interface. A trie may
 help token scanning as well as spelling lookup, but would need an explicit operand-boundary design.
 Do not turn failure to find a fast frozen table into a blocker for expression execution work.
+
+### FrozenMap/Set adoption check after MBO #550
+
+The merged [API documentation](https://github.com/mboworks/mbo/blob/bf65c21c495fc789feab79f4516d1ae7215cb292/mbo/container/experimental/FROZEN.md)
+and headers satisfy the structural requirements: constexpr inline immutable storage, shared map/set
+index construction, bounded displacement search, occupied-slot verification and exact candidate
+equality on lookup. `FrozenMap::lookup` returns `OptionalRef<const Value>`, so XFF does not need a
+raw-pointer adapter. Distinct aliases can share a mapped ID; build each mode separately to preserve
+different meanings for the same spelling. Conflicting duplicate mappings fail construction.
+
+Use registry-generated `std::string_view` to entry-ID pairs with static backing storage. Preserve
+the existing exact miss result and mode switching. `FrozenSet` is useful only for membership-only
+tables; flag dispatch needs the map's associated entry. Do not introduce a second spelling catalog
+or hash flag names inside the prepared per-entry executor.
+
+The first experiment should compare default sparse placement (twice capacity) and minimal placement
+against the current sorted index on the actual XFF/find/rg vocabularies. Include hits, misses,
+aliases, full parser commands, compile time and binary/read-only storage cost. Verify Clang and GCC
+constant evaluation within their normal budgets. The default limits are 4,096 entries, 65,536 total
+key bytes and 65,536 construction work units; actual registry construction must fit, or justify an
+explicit bounded option change. A distinct-key full-hash collision is rejected, not silently handled
+by a runtime fallback. The experimental API and container measurements alone do not establish an
+XFF startup speedup. Pin the inspected MBO commit in the experiment and retain the current production
+index until those application measurements justify replacement.
 
 ## Program architecture
 

@@ -390,12 +390,39 @@ TEST_P(ExpressionProgramTest, RewritesKeepIncomingEdgesNegationAndSourceIdentity
   for (const auto outer : kOperators) {
     for (const auto inner : kOperators) {
       for (const std::string_view truth : {"-true", "-false"}) {
-        Check(
-            {".", "(", "-size", "+0c", std::string(inner), "-type", "f", ")", std::string(outer), "(",
-             std::string(truth), ",", "-printf", "reached", ")"});
-        Check(
-            {".", std::string(truth), std::string(outer), "(", "-size", "+0c", std::string(inner), "!", "-type", "d",
-             ")", ",", "-printf", "tail"});
+        Check({
+            ".",
+            "(",
+            "-size",
+            "+0c",
+            std::string(inner),
+            "-type",
+            "f",
+            ")",
+            std::string(outer),
+            "(",
+            std::string(truth),
+            ",",
+            "-printf",
+            "reached",
+            ")",
+        });
+        Check({
+            ".",
+            std::string(truth),
+            std::string(outer),
+            "(",
+            "-size",
+            "+0c",
+            std::string(inner),
+            "!",
+            "-type",
+            "d",
+            ")",
+            ",",
+            "-printf",
+            "tail",
+        });
       }
     }
   }

@@ -19,6 +19,14 @@ execution path should avoid name lookup altogether. EP01-EP07 in TODO track the 
 No production speedup is claimed yet. Append each stage's measured results and retain/revise/reject
 decision here, including preparation, memory, portability and unsuccessful experiments.
 
+MBO [PR #550](https://github.com/mboworks/mbo/pull/550) merged experimental `FrozenMap` / `FrozenSet`
+at `bf65c21c495fc789feab79f4516d1ae7215cb292`. The previous missing-container finding is resolved
+upstream; XFF still pins the earlier dependency. Their immutable constexpr index and checked
+optional-reference lookup fit the planned exact per-mode startup experiment. Application-level
+lookup, parsing, compiler-budget and storage measurements remain necessary before adoption; MBO's
+synthetic container timings are not evidence of an XFF speedup. The detailed adoption checklist is
+in the [data-structure audit](design-expression-program.md#frozenmapset-adoption-check-after-mbo-550).
+
 ### EP01 baseline and EP02 dispatch experiment
 
 [CI run 37203099430](https://github.com/mboworks/xff/actions/runs/37203099430) retained nine raw rounds
