@@ -169,6 +169,7 @@ TEST_F(ProductionExpressionTest, CoordinatorAndWorkerKeepCapturesIndependentAfte
   EXPECT_THAT(moved_execution.Preparation().matcher_slots, Eq(1));
   EXPECT_THAT(moved_execution.Preparation().owned_bytes, Gt(0));
   const ExecutionFs fs;
+  const auto discard = [](std::string_view) {};
   for (const std::string_view stem : {"first", "second", "first"}) {
     const std::string path = absl::StrCat("root/", stem, ".txt");
     const Visit visit{.path = path, .metadata = {.type = vfs::FileType::kRegular}, .fs = fs};
@@ -177,7 +178,7 @@ TEST_F(ProductionExpressionTest, CoordinatorAndWorkerKeepCapturesIndependentAfte
       std::vector<std::string> captures;
       EvalContext context{
           .visit = visit,
-          .emit = [](std::string_view) {},
+          .emit = discard,
           .fs = fs,
           .now = absl::UnixEpoch(),
           .tz = absl::UTCTimeZone(),
