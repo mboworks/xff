@@ -32,7 +32,66 @@ must never replace a CI series, and different CPU allocations must not be pooled
 into equivalence. The collection command records this intent. After a complete successful CI
 campaign, the trusted publisher validates and imports the whole campaign before selecting any replacements.
 
-## Local batch
+## Automatic local backfill
+
+Use the local benchmark command to discover this machine's existing measurements and fill gaps:
+
+```sh
+python3 tools/benchmark.py help
+python3 tools/benchmark.py list
+python3 tools/benchmark.py backfill
+```
+
+The equivalent Bazel entry point is `bazel run //tools:benchmark -- COMMAND`.
+`help backfill` and `backfill --help` explain the options. This maintenance tool uses subcommands;
+the XFF search executable continues to use flags.
+
+`list` refreshes `origin/main` and `origin/coverage-pages`, then shows each main revision since
+comparison benchmarks were introduced: its date, SHA, PR/subject, and whether this machine's
+requested measurements exist. It checks all saved batches under `~/xff-benchmarks` and published
+local observations, including packed reports. It does not build, measure, or change saved results.
+`--no-fetch` uses the already available Git refs, which can be stale. `--history-root=PATH/benchmarks`
+reads an existing Pages checkout instead of the published ref. Only local-observation JSON is
+extracted from the published Git tree; rendered site pages are not checked out.
+
+`backfill` shows the same inventory and its proposed batches, then asks
+`Build and measure the missing revisions? [y/N]`. Only `y` or `yes` proceeds; empty input or EOF
+cancels. `-Y` / `--yes` supplies that confirmation for unattended runs. Discovery can refresh Git
+refs before confirmation; building, measuring and saving new batches happen only after confirmation.
+Nothing uploads automatically. See [Publishing a completed local series](#publishing-a-completed-local-series).
+
+Machine identification hashes the macOS platform UUID or Linux installation machine ID; raw IDs
+are never stored. New machines receive distinct series names automatically. Existing batches
+with the stable ID remain recognizable after a hostname change. For older batches, a matching
+hostname hash, architecture and CPU count identifies the existing series; its historical batches
+then remain available even if older records have a different hostname. This legacy identification
+cannot distinguish machines cloned with the same hostname and hardware configuration. It does not
+guess a match from the processor model alone. If multiple series match, select one with `--series`.
+A series carrying another stable machine ID cannot be adopted. Cloned OS machine IDs likewise
+must be made unique before collecting separate machine histories.
+
+The default workload is 1/3/10 workers or cores, file counts 10 through 100,000, both tree shapes,
+and the fastest seven of nine measurements. Override it with repeated `--cpus` / `--files` and
+`--depth`, `--repetitions`, or `--keep`. A small host must select an allocation it can support;
+the tool never silently reduces the requested grid. On Linux, fixtures default to `/dev/shm` and
+must be memory-backed; one logical CPU per physical core is pinned. macOS requests workers.
+
+A saved observation counts only after validation of its complete task/participant/sample matrix,
+revision, batch and binary identity. Its file/CPU grid must cover the requested grid, and its depth
+and sampling settings must match. CI measurements and other machines never satisfy local coverage.
+Missing files, incomplete samples, failed runs and incompatible settings remain missing, with the
+reason shown per revision. Driver or reference-tool updates do not erase valid historical
+observations; their recorded identities remain available for comparison eligibility and normalization.
+
+Every main revision is considered, including older gaps rather than only commits after the newest
+measurement. Existing batches remain immutable. An interrupted batch with the exact current
+environment and driver resumes; otherwise a new batch contains only still-missing revisions.
+Completed reports from any batch are reused without rerunning them. New batches live under
+`~/xff-benchmarks/batches/IDENTITY/`; use `--root` to change local storage. Two invocations of this
+command cannot collect simultaneously for the same machine and storage root. An older manual
+collector does not use this lock; finish it before starting automatic collection.
+
+## Explicit local batch
 
 Install Bazel, Python 3.13+, ripgrep and fzf. `find` must also be on PATH. Use a checkout containing
 all selected commits; the driver never changes that checkout or includes its uncommitted edits.
