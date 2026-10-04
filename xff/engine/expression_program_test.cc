@@ -135,17 +135,32 @@ TEST_P(ExpressionProgramTest, EveryOperatorPreservesTruthAndOutputOrderWithoutFa
     for (const bool left : {false, true}) {
       for (const bool right : {false, true}) {
         SCOPED_TRACE(operation);
-        Check(
-            {".", "(", "-printf", "left", ",", left ? "-true" : "-false", ")", std::string(operation), "(", "-printf",
-             "right", ",", right ? "-true" : "-false", ")"});
+        Check({
+            ".",
+            "(",
+            "-printf",
+            "left",
+            ",",
+            left ? "-true" : "-false",
+            ")",
+            std::string(operation),
+            "(",
+            "-printf",
+            "right",
+            ",",
+            right ? "-true" : "-false",
+            ")",
+        });
       }
     }
   }
 }
 
 TEST_P(ExpressionProgramTest, NestedControlFlowAndScratchAreReusedAcrossEntries) {
-  Check({".", "(", "-size", "0", "-xor", "(",     "-type", "f",  "-xnor",  "-false",
-         ")", ")", "-nand", "!", "(",    "-size", "+100c", "-o", "-false", ")"});
+  Check({
+      ".", "(", "-size", "0", "-xor", "(",     "-type", "f",  "-xnor",  "-false",
+      ")", ")", "-nand", "!", "(",    "-size", "+100c", "-o", "-false", ")",
+  });
   Check({".", "!", "!", "-type", "f", ",", "-prune", ",", "-quit", ",", "-false"});
   Check({".", "-regex", "f.*", "-a", "!", "-regex", "d.*"});
 }
