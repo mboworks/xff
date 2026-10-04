@@ -78,7 +78,7 @@ class BenchmarkTest(unittest.TestCase):
     def options(self, root):
         parser, _ = cli.parser_for_cli()
         args = parser.parse_args(['backfill', '--root=' + str(root), '--no-fetch', '--cpus=1', '--files=10',
-                                  '--repetitions=1', '--keep=1'])
+                                  '--repetitions=1', '--keep=1', '--depth=40'])
         args.require_memory = args.require_cpu_affinity = False
         return args
 
@@ -268,6 +268,30 @@ class BenchmarkTest(unittest.TestCase):
             run.assert_not_called()
             prompt.assert_not_called()
 
+    def test_published_recipe_drives_list_defaults_and_reuses_observations(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            value, record = fixture()
+            record['tool_comparisons']['contract'].update(
+                fixture_version=2, warmup_rounds=1, order='rotate starting participant by task and round')
+            history = root / 'site'
+            save(history / 'local/macos-test/batch', value, record, published=True)
+            cli.discovery.datasets.publish(history)
+            with mock.patch.object(cli, 'available_revisions', return_value=value['contract']['revisions']), \
+                    mock.patch.object(cli, 'machine_identity', return_value='machine'), \
+                    mock.patch.object(batch, 'host_platform', return_value='macos'), \
+                    mock.patch.object(cli.platform, 'machine', return_value='arm64'), \
+                    mock.patch.object(cli.os, 'cpu_count', return_value=18), \
+                    mock.patch.object(batch, 'run') as run, mock.patch('builtins.input') as prompt, \
+                    contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(cli.main(['list', '--no-fetch', '--root=' + str(root / 'new'),
+                                           '--history-root=' + str(history)]), 0)
+            self.assertIn('1 revisions; 0 missing', output.getvalue())
+            self.assertIn('complete  Merge (#1)', output.getvalue())
+            self.assertIn('macos-test', output.getvalue())
+            run.assert_not_called()
+            prompt.assert_not_called()
+
     def test_confirmation_cancel_eof_yes_and_automatic_yes(self):
         cases = [('list', [], 'yes', False), ('backfill', [], '', False), ('backfill', [], EOFError, False),
                  ('backfill', [], 'yes', True), ('backfill', ['-Y'], None, True),
@@ -280,7 +304,8 @@ class BenchmarkTest(unittest.TestCase):
                 plan.expected_contract = value['contract']
                 plan.output = root / 'batch'
                 plan.revision = ['a' * 40]
-                with mock.patch.object(cli, 'available_revisions', return_value=value['contract']['revisions']), \
+                with mock.patch.object(cli.discovery, 'catalog', return_value=None), \
+                        mock.patch.object(cli, 'available_revisions', return_value=value['contract']['revisions']), \
                         mock.patch.object(cli, 'machine_identity', return_value='machine'), \
                         mock.patch.object(cli, 'published_history', return_value=contextlib.nullcontext(None)), \
                         mock.patch.object(cli, 'execution_plan', return_value=[plan]), \

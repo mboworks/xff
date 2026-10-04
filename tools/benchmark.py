@@ -21,6 +21,7 @@ import tempfile
 
 import benchmark_backfill as batch
 import benchmark_campaign as campaign
+import benchmark_discovery as discovery
 import benchmark_records as records
 
 
@@ -41,6 +42,12 @@ def published_history(args):
     """Read only local observation JSON from the Pages ref, never its site files."""
     if args.history_root:
         yield args.history_root
+        return
+    if getattr(args, 'dataset_catalog', None) is not None and not args.no_fetch:
+        with tempfile.TemporaryDirectory(prefix='xff-benchmark-observations-') as directory:
+            root = Path(directory)
+            discovery.download_observations(args, root)
+            yield root
         return
     probe = subprocess.run(['git', '-C', str(args.repo), 'rev-parse', '--verify', args.history_ref],
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
@@ -174,6 +181,8 @@ def batch_options(args, series, machine_id, revisions):
     result = copy.copy(args)
     result.series, result.machine_id = series, machine_id
     result.purpose = 'local-addition'
+    if getattr(args, 'dataset_selection', None):
+        result.source_dataset = args.dataset_selection['dataset']['id']
     result.revision = [revision['sha'] for revision in revisions]
     result.revisions_file = result.history_root = result.history_platform = None
     result.output = args.root / 'batches'
@@ -230,8 +239,8 @@ def parser_for_cli():
                                                 else 'confirm and measure missing revisions'),
                                   description=('List main revisions since comparison benchmarks began. Check all local '
                                                'batches and published local reports for this machine and requested grid.'),
-                                  epilog=('Examples: tools/benchmark.py list; tools/benchmark.py backfill; '
-                                          'tools/benchmark.py backfill -Y. Backfill shows the plan and asks [y/N] '
+                                  epilog=('Examples: bazel run //tools:benchmark -- list; bazel run //tools:benchmark -- backfill; '
+                                          'bazel run //tools:benchmark -- backfill -Y. Backfill shows the plan and asks [y/N] '
                                           'before building or measuring; EOF cancels. Linux pins physical cores; '
                                           'macOS requests workers. Completed reports are validated before reuse.'))
         sub.add_argument('--repo', type=Path, default=Path(os.environ.get('BUILD_WORKSPACE_DIRECTORY', Path.cwd())),
@@ -241,12 +250,14 @@ def parser_for_cli():
         sub.add_argument('--history-ref', default='origin/coverage-pages', help='published local observations')
         sub.add_argument('--history-root', type=Path, help='use benchmarks directory from a Pages checkout instead')
         sub.add_argument('--no-fetch', action='store_true', help='use current local Git refs without refreshing origin')
+        sub.add_argument('--catalog-url', default=discovery.CATALOG_URL, help='published dataset metadata URL')
+        sub.add_argument('--dataset', help='published dataset ID or unique prefix (default: discover compatible recipes)')
         sub.add_argument('--series', help='select an existing machine series or name a new one (default: detect)')
-        sub.add_argument('--cpus', type=int, action='append', help='worker/core counts (repeatable; default: 1, 3, 10)')
-        sub.add_argument('--files', type=int, action='append', help='file counts (repeatable; default: 10 through 100,000)')
-        sub.add_argument('--depth', type=int, default=40, help='deep fixture depth (default: 40)')
-        sub.add_argument('--repetitions', type=int, default=9, help='samples per case (default: 9)')
-        sub.add_argument('--keep', type=int, default=7, help='fastest samples retained (default: 7)')
+        sub.add_argument('--cpus', type=int, action='append', help='worker/core counts (repeatable; default: selected dataset, otherwise 1, 3, 10)')
+        sub.add_argument('--files', type=int, action='append', help='file counts (repeatable; default: selected dataset, otherwise 10 through 100,000)')
+        sub.add_argument('--depth', type=int, help='deep fixture depth (default: selected dataset, otherwise 40)')
+        sub.add_argument('--repetitions', type=int, help='samples per case (default: selected dataset, otherwise 9)')
+        sub.add_argument('--keep', type=int, help='fastest samples retained (default: selected dataset, otherwise 7)')
         sub.add_argument('--fixture-parent', type=Path, help='fixture storage (Linux default: /dev/shm)')
         sub.add_argument('--disk-cache', type=Path, default=Path.home() / '.cache/bazel-disk', help='Bazel action cache')
         if command == 'backfill':
@@ -262,8 +273,34 @@ def main(argv=None):
         (commands.choices[topic] if topic else parser).print_help()
         return 0
     try:
+        if not args.no_fetch:
+            subprocess.run(['git', '-C', str(args.repo), 'fetch', 'origin', 'main'], check=True)
+        revisions = available_revisions(args.repo, args.main_ref)
+        identity = machine_identity()
+        args.dataset_catalog = discovery.catalog(args)
+        args.dataset_selection = None
+        local_batches = load_batches(args.root, None)
+        if args.dataset_catalog is not None:
+            options = discovery.choices(args.dataset_catalog, identity)
+            discovery.show_choices(options, revisions)
+            args.dataset_selection = discovery.choose(options, args)
+            if args.command == 'list' and args.dataset_selection is None and any(
+                    not option['reasons'] and (not args.series or option['dataset']['series'] == args.series)
+                    for option in options):
+                print('Select --dataset=ID to inspect a specific revision inventory.')
+                return 0
+        elif args.dataset:
+            raise ValueError('dataset metadata is unavailable')
+        if args.series is None and args.dataset_selection is None:
+            detected_series, known_machine = select_series(local_batches, identity)
+            if known_machine:
+                args.series = detected_series
+        discovery.apply_recipe(args, args.dataset_selection, local_batches)
         args.cpus = args.cpus or [1, 3, 10]
         args.files = args.files or campaign.FILE_COUNTS
+        args.depth = 40 if args.depth is None else args.depth
+        args.repetitions = 9 if args.repetitions is None else args.repetitions
+        args.keep = 7 if args.keep is None else args.keep
         for values in (args.cpus, args.files):
             if min(values) < 1 or len(set(values)) != len(values):
                 raise ValueError('CPU and file counts must be unique and positive')
@@ -272,10 +309,8 @@ def main(argv=None):
         args.require_memory = args.require_cpu_affinity = batch.host_platform() == 'linux'
         if args.require_memory and args.fixture_parent is None:
             args.fixture_parent = Path('/dev/shm')
-        if not args.no_fetch:
-            subprocess.run(['git', '-C', str(args.repo), 'fetch', 'origin', 'main', 'coverage-pages'], check=True)
-        revisions = available_revisions(args.repo, args.main_ref)
-        identity = machine_identity()
+        if not args.no_fetch and args.dataset_catalog is None and not args.history_root:
+            subprocess.run(['git', '-C', str(args.repo), 'fetch', 'origin', 'coverage-pages'], check=True)
         with published_history(args) as history:
             batches = load_batches(args.root, history)
             series, known = select_series(batches, identity, args.series)

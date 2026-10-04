@@ -9,6 +9,9 @@
 
 ## Benchmark runner capacity
 
+- [x] Publish a versioned measurement-dataset catalog and human-readable methods overview; let local
+      backfill discover compatible recipes, select among them, and inherit their settings while keeping
+      machine identities and exact observation provenance separate.
 - [x] Add automatic local machine-series detection and `help` / `list` / `backfill` commands;
       validate saved and published observations across batches, fill historical gaps and new merges,
       and require execution confirmation unless `-Y` / `--yes` is supplied.

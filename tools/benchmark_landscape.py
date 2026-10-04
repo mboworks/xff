@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import re
 
+import benchmark_datasets
 import benchmark_matrix as matrix
 import benchmark_normalization
 import benchmark_overview
@@ -493,6 +494,7 @@ def publish(root, javascript, previews=(), incremental=False, repository='mbowor
         count += 1
     catalog_path.write_text(json.dumps(catalog, indent=2, allow_nan=False) + '\n')
     publish_history(root, catalog)
+    benchmark_datasets.publish(root)
     return count
 
 
