@@ -438,6 +438,44 @@ The discarded correctness check and kernel preparation are untimed. All raw roun
 median and spread remain available; the CI report includes revision and sampling provenance.
 This implementation is a candidate awaiting measurements, not an accepted performance improvement.
 
+## EP03 operand preparation boundaries
+
+The first operand candidate should cover type lists, size specifications, unsigned numeric tests
+and permission modes. Preparation must retain the existing raw spelling for diagnostics and bind
+its decoder from the same engine dispatch entry as the evaluator. Do not introduce another
+spelling switch or map. Preserve the EP02 bound-only variant in the same benchmark binary to
+separate operand savings from dispatch savings.
+
+| Family                                   | Prepare once                                                                                                | Preserve at execution / validation boundary                                                                                                       |
+| :--------------------------------------- | :---------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `-type`, `-xtype`                        | Decode the complete type list into a small set; invalid trailing items must invalidate the complete operand | Entry type; `-xtype`'s conditional target stat and broken-link fallback                                                                           |
+| `-size`, `-blocks`                       | Parse comparison, count and explicit byte unit                                                              | Whole-command `ValidateSizeArgs` still runs; bare and `b` units use the resolved block size; apparent versus allocated byte source stays distinct |
+| `-links`, `-inum`, `-uid`, `-gid`        | Decode comparison and unsigned count                                                                        | Conditional metadata; preserve malformed-value behavior and explicitly test integer boundaries before replacing the existing decoder              |
+| `-perm`                                  | Resolve exact/all/any mode and octal or symbolic mask from a zero base                                      | Mask the entry mode to `07777`; preserve zero-mask any-of, BSD `+octal`, and symbolic `+r` semantics                                              |
+| `-used` and numeric age tests            | Comparison/count and fixed unit after signed boundary tests                                                 | Signed differences, truncation toward zero, birth-time availability and error policy                                                              |
+| Word/calendar ages                       | Parse relative time only after the run's time and timezone are final                                        | Do not change day-start/calendar semantics or initialize timezones for unrelated predicates                                                       |
+| `-newer*`, `-samefile`                   | Spelling/selector decoding only initially                                                                   | Reference-file reads remain conditional; preparation must not observe a skipped reference or hide changes made by earlier actions                 |
+| `-user`, `-group`, `-nouser`, `-nogroup` | No account-database snapshot in the first candidate                                                         | Existing name-service lookup/failure behavior remains dynamic until its semantics are separately decided                                          |
+
+Current numeric helpers have different overflow handling: `ParseSizeSpec` uses checked
+`SimpleAtoi`, while the plain numeric, signed numeric and permission helpers accumulate digits
+directly. This is an audit finding, not evidence that all boundary forms reach those helpers from
+every command-line path. Add boundary cases before extracting the decoders; do not introduce new
+signed-overflow behavior in the prepared path or silently treat an arbitrary input as zero.
+
+For matcher state, the current `WorkerMatchers` owns a map keyed by `ExprIdentity`; `MatcherFor`
+looks into that map per reached regex predicate. The prepared program can assign dense matcher
+slots during preparation and let each worker populate its own vector once. Preserve
+`ForkForWorker` failure's current fallback to the validated immutable matcher, and keep mutable
+backend state worker-owned. Original expression identities must still remain available for
+captures, counters and deferred replay. Slot indices belong to one program and cannot be reused
+against a different expression's worker vector.
+
+Evaluate compact operand pools before inflating every boolean node with a maximum-sized payload.
+Record node bytes, pool bytes and preparation allocations alongside per-entry cost; unsupported
+families should retain their existing callback rather than reparsing an already prepared family.
+This section records the next candidate's boundaries; it does not claim EP03 is implemented.
+
 ### Evaluator operand/effect inventory
 
 The registry remains authoritative for spelling, aliases, traversal, metadata, safety and worker
