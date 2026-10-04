@@ -319,7 +319,7 @@ class BoundExpression final {
 
   [[nodiscard]] std::size_t NodeCount() const { return nodes_.size(); }
 
-  [[nodiscard]] std::size_t StorageBytes() const { return sizeof(*this) + nodes_.capacity() * sizeof(Node); }
+  [[nodiscard]] std::size_t StorageBytes() const { return sizeof(*this) + (nodes_.capacity() * sizeof(Node)); }
 
  private:
   using Evaluator = bool (*)(const parser::Expr&, EvalContext&);

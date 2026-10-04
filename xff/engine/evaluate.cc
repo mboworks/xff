@@ -3473,9 +3473,9 @@ struct PreparedExpression::Cursor {
 
   const parser::Expr& Get() const { return node.expression.get(); }
 
-  Cursor Left() const { return {data, data.nodes.at(node.lhs.value())}; }
+  Cursor Left() const { return {.data = data, .node = data.nodes.at(node.lhs.value())}; }
 
-  Cursor Right() const { return {data, data.nodes.at(node.rhs.value())}; }
+  Cursor Right() const { return {.data = data, .node = data.nodes.at(node.rhs.value())}; }
 
   bool Predicate(EvalContext& context) const {
     return node.evaluate(Get(), data.operands.at(node.operand.value()), context);
@@ -3542,7 +3542,7 @@ absl::StatusOr<PreparedExpression> PreparedExpression::Prepare(const parser::Exp
 }
 
 EvaluationResult PreparedExpression::Evaluate(EvalContext& context) const {
-  const auto result = EvaluateResult(Cursor{*data_, data_->nodes.front()}, context);
+  const auto result = EvaluateResult(Cursor{.data = *data_, .node = data_->nodes.front()}, context);
   if (context.fuzzy_score.has_value()) {
     *context.fuzzy_score = result.fuzzy;
   }
@@ -3558,8 +3558,8 @@ std::size_t PreparedExpression::OperandCount() const {
 }
 
 std::size_t PreparedExpression::StorageBytes() const {
-  return sizeof(*this) + sizeof(Data) + data_->nodes.capacity() * sizeof(Data::Node)
-         + data_->operands.capacity() * sizeof(PreparedOperand);
+  return sizeof(*this) + sizeof(Data) + (data_->nodes.capacity() * sizeof(Data::Node))
+         + (data_->operands.capacity() * sizeof(PreparedOperand));
 }
 
 absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression) {

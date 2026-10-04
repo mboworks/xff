@@ -465,7 +465,7 @@ struct PreparedOperandTest : ::testing::Test {
     if (supply_argument) {
       expression.args.emplace_back(argument);
     }
-    ASSERT_OK_AND_ASSIGN(auto prepared, PreparedExpression::Prepare(expression));
+    ASSERT_OK_AND_ASSIGN(const auto prepared, PreparedExpression::Prepare(expression));
     EXPECT_THAT(prepared.NodeCount(), Eq(1));
     EXPECT_THAT(prepared.OperandCount(), Eq(supply_argument ? 1 : 0));
     EXPECT_THAT(prepared.StorageBytes(), Ge(sizeof(PreparedExpression)));
@@ -533,7 +533,7 @@ TEST_F(PreparedOperandTest, MovingPreparedStorageKeepsSourceIdentityAndTypedOper
   EXPECT_THAT(replacement.OperandCount(), Eq(2));
   EXPECT_THAT(replacement.StorageBytes(), Eq(bytes));
   EXPECT_THAT(bound.StorageBytes(), Ge(sizeof(BoundExpression)));
-  auto source_owner = std::move(command.expression);
+  const auto source_owner = std::move(command.expression);
   metadata.size = 7;
   EvalContext context{
       .visit = visit,
