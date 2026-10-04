@@ -229,7 +229,7 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
   xff::engine::WorkerMatchers worker;
   if constexpr (Mode == Executor::kTreeWorker) {
     worker.Bind(*command->expression);
-    context.worker_matchers = worker;
+    context.worker_matchers.set_ref(worker);
   }
   // Check the result before timing; all core cases must reach their complete AND chain.
   const auto evaluate = [&] {
