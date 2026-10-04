@@ -2306,3 +2306,20 @@ distinct from dynamic file observations and template rendering. Do not claim the
 eliminates all per-entry interpretation: add separate output/hash/diff preparation cases before
 deciding which records belong in a run-owned pool. Account/database lookups and reference-file
 metadata must retain their conditional observation boundaries.
+
+### Configuration and archive integration qualification
+
+The whole-engine executor oracle now composes validated system, user and explicit INI profiles
+through the CLI's actual application function. A transitive profile contributes a type predicate;
+later files refine the same profile with size and permission predicates. Final CLI case, regex
+grammar and block-size overrides determine the results, including a native-filter/rg transition.
+An unconditional system deletion block still prevents mutation after `--no-safe`.
+
+A synthetic archive reader exercises the real mount interface without opening a host archive.
+The outer and mounted filesystems share atomic observation counters while retaining independent
+ownership. Tests compare output, diagnostics, metadata/content calls and mutations across the
+tree oracle and every candidate, with one/three requested workers, regex matching, scored replay,
+pruning and early termination. Output assertions ensure the test reaches actual archive members
+rather than accepting an empty traversal. These tests qualify executor integration; existing
+extension tests remain responsible for decoding real archive formats. Native CI results are
+required before treating the added cases as verified.

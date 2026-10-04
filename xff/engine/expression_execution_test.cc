@@ -6,12 +6,14 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -20,6 +22,11 @@
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
+#include "xff/archive/archive_backend.h"
+#include "xff/cli/config_validation.h"
+#include "xff/config/config.h"
+#include "xff/config/ini.h"
+#include "xff/config/policy.h"
 #include "xff/engine/expression_qualification.h"
 #include "xff/engine/run.h"
 #include "xff/engine/walk.h"
@@ -30,25 +37,33 @@ namespace xff::engine {
 namespace {
 
 using ::mbo::testing::EqualsText;
+using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
 using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Gt;
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
 using ::testing::IsTrue;
 using ::testing::PrintToString;
 
+struct ExecutionCounts {
+  std::atomic<std::size_t> stats = 0;
+  std::atomic<std::size_t> reads = 0;
+  std::atomic<std::size_t> removes = 0;
+};
+
 // All input and failures are synthetic. Even deletion tests cannot reach host mutation APIs.
 struct ExecutionFs final : vfs::FileSystem {
-  mutable std::atomic<std::size_t> stats = 0;
-  mutable std::atomic<std::size_t> reads = 0;
-  mutable std::atomic<std::size_t> removes = 0;
+  std::shared_ptr<ExecutionCounts> counts = std::make_shared<ExecutionCounts>();
+  std::optional<std::string> archive_separator;
   bool fail_metadata = false;
   bool fail_content = false;
 
-  static bool Directory(std::string_view path) {
-    return path == "root" || path == "left" || path == "right" || path.ends_with("/sub");
+  bool Directory(std::string_view path) const {
+    return path == "root" || path == "left" || path == "right" || path.ends_with("/sub")
+           || (archive_separator.has_value() && path == "fixture.tar");
   }
 
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override {
@@ -58,18 +73,20 @@ struct ExecutionFs final : vfs::FileSystem {
     std::vector<vfs::Entry> entries;
     const std::size_t count = path.ends_with("/sub") ? 4 : 128;
     entries.reserve(count + 1);
+    const std::string prefix =
+        absl::StrCat(path, archive_separator.has_value() && path == "fixture.tar" ? *archive_separator : "/");
     for (std::size_t index = 0; index < count; ++index) {
       const std::string name = absl::StrCat("file", index, index % 2 == 0 ? ".txt" : ".cc");
-      entries.push_back({.path = absl::StrCat(path, "/", name), .name = name, .type = vfs::FileType::kRegular});
+      entries.push_back({.path = absl::StrCat(prefix, name), .name = name, .type = vfs::FileType::kRegular});
     }
     if (!path.ends_with("/sub")) {
-      entries.push_back({.path = absl::StrCat(path, "/sub"), .name = "sub", .type = vfs::FileType::kDirectory});
+      entries.push_back({.path = absl::StrCat(prefix, "sub"), .name = "sub", .type = vfs::FileType::kDirectory});
     }
     return entries;
   }
 
   absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool) const override {
-    ++stats;
+    ++counts->stats;
     if (!Directory(path) && fail_metadata) {
       return absl::PermissionDeniedError("fixture stat failure");
     }
@@ -82,7 +99,7 @@ struct ExecutionFs final : vfs::FileSystem {
   }
 
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override {
-    ++reads;
+    ++counts->reads;
     if (fail_content) {
       return absl::PermissionDeniedError("fixture content failure");
     }
@@ -90,7 +107,7 @@ struct ExecutionFs final : vfs::FileSystem {
   }
 
   absl::Status Remove(std::string_view) const override {
-    ++removes;
+    ++counts->removes;
     return absl::PermissionDeniedError("fixture mutation denied");
   }
 
@@ -113,10 +130,30 @@ struct Observation {
 };
 
 struct ExpressionExecutionTest : ::testing::TestWithParam<ExpressionExecutor> {
-  static Observation Observe(const parser::Command& command, ExpressionExecutor executor, bool failure = false) {
+  static Observation Observe(
+      const parser::Command& command,
+      ExpressionExecutor executor,
+      bool failure = false,
+      bool archive_members = false) {
     ExecutionFs fs;
     fs.fail_metadata = failure;
     fs.fail_content = failure;
+    const absl::Cleanup reset_archive = [] { archive::RegisterContainerOpener({}); };
+    if (archive_members) {
+      // Mounted entries share counters but own their filesystem. No host archive is opened.
+      archive::RegisterContainerOpener(
+          [counts = fs.counts](
+              std::string_view container, std::optional<std::string_view>,
+              archive::MemberPathOptions options) -> absl::StatusOr<std::unique_ptr<vfs::FileSystem>> {
+            if (container != "fixture.tar") {
+              return absl::InvalidArgumentError("not a fixture archive");
+            }
+            auto members = std::make_unique<ExecutionFs>();
+            members->counts = counts;
+            members->archive_separator = options.separator;
+            return members;
+          });
+    }
     Observation observed;
     observed.result = RunFind(
         command, fs, [&](std::string_view text) { observed.output.append(text); },
@@ -125,10 +162,20 @@ struct ExpressionExecutionTest : ::testing::TestWithParam<ExpressionExecutor> {
         },
         std::nullopt, 0, QualifiedExpressionFactory(executor));
     std::ranges::sort(observed.errors);
-    observed.stats = fs.stats.load();
-    observed.reads = fs.reads.load();
-    observed.removes = fs.removes.load();
+    observed.stats = fs.counts->stats.load();
+    observed.reads = fs.counts->reads.load();
+    observed.removes = fs.counts->removes.load();
     return observed;
+  }
+
+  static void ExpectEquivalent(const Observation& actual, const Observation& expected) {
+    EXPECT_THAT(actual.result.errors, Eq(expected.result.errors));
+    EXPECT_THAT(actual.result.any_match, Eq(expected.result.any_match));
+    EXPECT_THAT(actual.output, EqualsText(expected.output));
+    EXPECT_THAT(actual.errors, Eq(expected.errors));
+    EXPECT_THAT(actual.stats, Eq(expected.stats));
+    EXPECT_THAT(actual.reads, Eq(expected.reads));
+    EXPECT_THAT(actual.removes, Eq(expected.removes));
   }
 
   static void Check(const std::vector<std::string>& arguments, bool failure = false, bool expect_error = false) {
@@ -146,13 +193,7 @@ struct ExpressionExecutionTest : ::testing::TestWithParam<ExpressionExecutor> {
     } else {
       EXPECT_THAT(expected.result.errors, Eq(0)) << PrintToString(expected.errors);
     }
-    EXPECT_THAT(actual.result.errors, Eq(expected.result.errors));
-    EXPECT_THAT(actual.result.any_match, Eq(expected.result.any_match));
-    EXPECT_THAT(actual.output, EqualsText(expected.output));
-    EXPECT_THAT(actual.errors, Eq(expected.errors));
-    EXPECT_THAT(actual.stats, Eq(expected.stats));
-    EXPECT_THAT(actual.reads, Eq(expected.reads));
-    EXPECT_THAT(actual.removes, Eq(expected.removes));
+    ExpectEquivalent(actual, expected);
   }
 };
 
@@ -250,6 +291,90 @@ TEST_P(ExpressionExecutionTest, ConditionalFailuresAndBlockedEffectsRemainObserv
   Check({"--safe", "root", "-false", "-a", "-delete"}, false, true);
   Check({"--dry-run", "root", "-name", "file0.txt", "-delete"});
   Check({"root", "-name", "file0.txt", "-delete"}, false, true);
+}
+
+TEST_P(ExpressionExecutionTest, LayeredIniCompositionUsesFinalOptionsAndPreservesMandatoryBlocks) {
+  const auto system = cli::ValidateConfigFile(
+      config::ParseIni(R"ini(
+--block-file-deletion --case=sensitive --block-size=4 --regextype=EXACT --timezone=UTC
+[filters]
+--config=kind
+-name '*.TXT'
+[kind]
+-type f
+)ini"),
+      {"filters"}, "system.ini", config::Source::kSystem);
+  const auto user =
+      cli::ValidateConfigFile(config::ParseIni("[filters]\n-size 1\n"), {"filters"}, "user.ini", config::Source::kUser);
+  const auto explicit_file = cli::ValidateConfigFile(
+      config::ParseIni("[filters]\n-perm 0644\n"), {"filters"}, "task.rc", config::Source::kXffrc);
+  ASSERT_THAT(system.status, IsOk());
+  ASSERT_THAT(user.status, IsOk());
+  ASSERT_THAT(explicit_file.status, IsOk());
+  const config::ConfigInputs inputs{
+      .system = system.config,
+      .user = user.config,
+      .xffrc = {{.path = "task.rc", .config = explicit_file.config}},
+  };
+  const std::vector<std::vector<std::string>> expressions{
+      {"-regex", "root/(sub/)?file[0-9]+[.]txt"},
+      {"--rg", "NEEDLE", "--xff"},
+      {"--no-safe", "-delete"},
+  };
+  for (const auto& expression : expressions) {
+    SCOPED_TRACE(PrintToString(expression));
+    std::vector<std::string> arguments{
+        "--exact",          "--color=never",      "--sort=dir",     "--jobs=1",        "--xffrc=task.rc",
+        "--config=filters", "--case=insensitive", "--block-size=8", "--regextype=RE2", "root",
+    };
+    arguments.insert(arguments.end(), expression.begin(), expression.end());
+    ASSERT_OK_AND_ASSIGN(auto original, parser::Parse(arguments));
+    const auto gated = config::GateConfig(inputs, false, original.globals, "xff");
+    EXPECT_THAT(gated.drops, IsEmpty());
+    const auto resolved = config::ResolveConfigInOrder(gated.config, original.globals, "xff");
+    ASSERT_OK_AND_ASSIGN(auto command, cli::ApplyResolvedConfig(std::move(original), resolved));
+    parser::BindMatchers(
+        command, parser::GrammarFromGlobals(command.globals),
+        parser::ResolveCaseMode(command.globals, registry::Style::kXff));
+    const auto expected = Observe(command, ExpressionExecutor::kTree);
+    const auto actual = Observe(command, GetParam());
+    ExpectEquivalent(actual, expected);
+    if (expression.back() == "-delete") {
+      EXPECT_THAT(expected.result.errors, Gt(0));
+      EXPECT_THAT(expected.removes, Eq(0));
+    } else {
+      EXPECT_THAT(expected.result.errors, Eq(0)) << PrintToString(expected.errors);
+      EXPECT_THAT(expected.output, HasSubstr("root/file0.txt"));
+    }
+  }
+}
+
+TEST_P(ExpressionExecutionTest, MountedArchiveMembersPreserveOutputReadsAndDeferredReplay) {
+  const std::vector<std::vector<std::string>> expressions{
+      {"-type", "f", "-name", "*.txt", "-rxc", "needle", "-print"},
+      {"-type", "f", "-name", "*.txt", "-fuzzy", "file", "-top", "3", "-print"},
+      {"-name", "sub", "-prune", "-o", "-type", "f", "-name", "*.txt", "-print"},
+      {"-type", "f", "-name", "*.txt", "-print", "-quit"},
+  };
+  for (const std::string_view jobs : {"--jobs=1", "--jobs=3"}) {
+    for (const auto& expression : expressions) {
+      SCOPED_TRACE(PrintToString(expression));
+      SCOPED_TRACE(jobs);
+      std::vector<std::string> arguments{
+          "--exact",         "--color=never",          "--sort=dir",  std::string(jobs),
+          "--archive=roots", "--archive-separator=!/", "fixture.tar",
+      };
+      arguments.insert(arguments.end(), expression.begin(), expression.end());
+      ASSERT_OK_AND_ASSIGN(auto command, parser::Parse(arguments));
+      parser::BindMatchers(command, parser::GrammarFromGlobals(command.globals), parser::CaseMode::kSensitive);
+      const auto expected = Observe(command, ExpressionExecutor::kTree, false, true);
+      const auto actual = Observe(command, GetParam(), false, true);
+      EXPECT_THAT(expected.result.errors, Eq(0)) << PrintToString(expected.errors);
+      EXPECT_THAT(expected.output, HasSubstr("fixture.tar!/file"));
+      EXPECT_THAT(expected.reads, Gt(0));
+      ExpectEquivalent(actual, expected);
+    }
+  }
 }
 
 TEST_P(ExpressionExecutionTest, MovingPlanAndWorkerPreservesBorrowedStorage) {

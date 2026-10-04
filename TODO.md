@@ -39,6 +39,9 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       Internal whole-engine selection now routes serial, pooled and deferred evaluation through
       the candidates, with isolated output/read/effect comparisons and a 250-case native matrix.
       CI qualification, production selection and complete integration coverage remain pending.
+      The engine oracle now includes layered system/user/explicit INI composition, final CLI
+      case/grammar/block-size overrides, rg transitions, mandatory deletion blocks, and mounted
+      archive-member output, prune/quit and scored replay. The new cases await native CI.
 - [ ] EP06: Measure deterministic constant folding, jump simplification, selected fusion and proven
       value reuse independently; keep reordering behind a stronger equivalence proof.
 - [ ] EP07: Qualify the winning executor on native macOS ARM64 and Linux x86-64; update --explain,
