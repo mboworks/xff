@@ -123,7 +123,7 @@ void Measure(benchmark::State& state, const Scenario& scenario, ExpressionExecut
   // Parsing and fixture construction are excluded. Every iteration includes run preflight,
   // expression preparation, worker startup, traversal, metadata/content, sinks and teardown.
   for (auto _ : state) {
-    const auto result = xff::engine::RunFind(*command, fs, emit, on_error, std::nullopt, 0, executor);
+    auto result = xff::engine::RunFind(*command, fs, emit, on_error, std::nullopt, 0, executor);
     benchmark::DoNotOptimize(result);
   }
   if (error) {
