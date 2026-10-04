@@ -512,7 +512,7 @@ struct PreparedOperandTest : ::testing::Test {
       1'000,
       1'024,
       1'025,
-      1ULL << 32,
+      1ULL << 32U,
       std::numeric_limits<std::uint64_t>::max(),
   });
   RecordingExpressionFs fs;
@@ -612,7 +612,7 @@ TEST_F(PreparedOperandTest, SizeUnitsRoundingAndDynamicBlocksMatchTheReference) 
       "1Z",
       "+",
   });
-  for (const auto flag : {"-size", "-blocks"}) {
+  for (const std::string_view flag : {"-size", "-blocks"}) {
     for (const auto argument : kArguments) {
       Check(flag, argument);
     }
@@ -632,7 +632,7 @@ TEST_F(PreparedOperandTest, NumericComparisonsRetainMalformedAndUnsignedBoundary
       "+",
       "1x",
   });
-  for (const auto flag : {"-links", "-inum", "-uid", "-gid"}) {
+  for (const std::string_view flag : {"-links", "-inum", "-uid", "-gid"}) {
     for (const auto argument : kArguments) {
       Check(flag, argument);
     }

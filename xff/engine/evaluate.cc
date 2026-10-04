@@ -2832,7 +2832,7 @@ PreparedOperand PrepareTypeOperand(std::string_view argument) {
   for (const auto& entry : kTypeChars) {
     const auto type = entry.second;
     if (MatchesType(argument, type)) {
-      result.mask |= std::uint32_t{1} << std::to_underlying(type);
+      result.mask |= std::uint32_t{1} << static_cast<unsigned>(type);
     }
   }
   return result;
@@ -2884,7 +2884,7 @@ bool MatchesPreparedSize(const PreparedOperand& operand, std::uint64_t bytes, st
   }
   const auto& spec = std::get<SizeSpec>(operand);
   const auto unit = spec.unit == 0 ? block_size : spec.unit;
-  const auto units = bytes / unit + static_cast<std::uint64_t>(bytes % unit != 0);
+  const auto units = (bytes / unit) + static_cast<std::uint64_t>(bytes % unit != 0);
   return MatchesNumericSpec({.compare = spec.compare, .want = spec.want}, units);
 }
 
@@ -3511,7 +3511,7 @@ absl::StatusOr<PreparedExpression> PreparedExpression::Prepare(const parser::Exp
       node.operand = Data::OperandId{data->operands.size()};
       data->operands.push_back(binding.prepare(expr.args.front()));
     }
-    data->nodes.push_back(std::move(node));
+    data->nodes.push_back(node);
   }
   std::vector<std::size_t> sizes(data->nodes.size(), 1);
   for (std::size_t offset = data->nodes.size(); offset > 0; --offset) {
