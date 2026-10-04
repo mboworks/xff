@@ -3,6 +3,9 @@
 
 # 0.9.0
 
+- Add a local benchmark command with machine detection, missing-revision inventory, cross-batch reuse,
+  and confirmed backfills (`help`, `list`, `backfill`, and `-Y` / `--yes`).
+
 - Parse mode switches and registered aliases in one global pass, reusing resolved descriptors in expression construction.
 
 - Allow `--rg` after native roots and matchers, combining XFF file selection with rg-style patterns, matching-line output, and trailing short options.

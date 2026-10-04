@@ -758,6 +758,7 @@ test_suite(
         ":benchmark_preview_test",
         ":benchmark_regex_test",
         ":benchmark_shards_test",
+        ":benchmark_test",
         ":build_rules_test",
         ":cache_report_test",
         ":cache_size_test",
@@ -862,6 +863,39 @@ py_test(
         ":benchmark_history_lib",
         ":benchmark_landscape_lib",
         ":benchmark_local_lib",
+    ],
+)
+
+py_library(
+    name = "benchmark_lib",
+    srcs = ["benchmark.py"],
+    imports = ["."],
+    deps = [
+        ":benchmark_backfill_lib",
+        ":benchmark_campaign_lib",
+        ":benchmark_records_lib",
+    ],
+)
+
+py_binary(
+    name = "benchmark",
+    srcs = ["benchmark.py"],
+    deps = [
+        ":benchmark_backfill_lib",
+        ":benchmark_campaign_lib",
+        ":benchmark_records_lib",
+    ],
+)
+
+py_test(
+    name = "benchmark_test",
+    size = "small",
+    srcs = ["benchmark_test.py"],
+    tags = ["requires-host-tools"],
+    deps = [
+        ":benchmark_backfill_lib",
+        ":benchmark_campaign_lib",
+        ":benchmark_lib",
     ],
 )
 

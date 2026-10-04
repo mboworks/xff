@@ -9,6 +9,9 @@
 
 ## Benchmark runner capacity
 
+- [x] Add automatic local machine-series detection and `help` / `list` / `backfill` commands;
+      validate saved and published observations across batches, fill historical gaps and new merges,
+      and require execution confirmation unless `-Y` / `--yes` is supplied.
 - [x] Publish PR benchmark artifacts as soon as both platform comparisons finish, using a trusted
       publisher and explicit branch-head/tested-merge provenance. Offer PR previews alongside
       merged history in the chart without adding previews to merged normalization windows.
