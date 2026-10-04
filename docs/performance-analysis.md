@@ -2,11 +2,12 @@
 
 ## Planned prepared expression execution
 
-EP01 now has a preparation contract, an isolated initial behavioral oracle and separate preparation/
-execution microbenchmarks. Production still uses the existing evaluator. The CI build jobs retain
-nine-round JSON artifacts for Linux/macOS, including fastest-seven statistics; no local benchmark
-campaign is needed. CI run 37203099430 produced valid release-mode artifacts on both platforms.
-The initial all-match matrix does not yet replace mixed-selectivity or end-to-end qualification.
+EP01 established a preparation contract, an isolated behavioral oracle and separate preparation/
+execution microbenchmarks. The production candidate now selects prepared recursion; the original
+tree remains an explicit qualification reference. Native acceptance is still pending. The CI build
+jobs retain nine-round JSON artifacts for Linux/macOS, including fastest-seven statistics; no local
+benchmark campaign is needed. The sections below distinguish initial kernel evidence from later
+whole-engine qualification and list the remaining acceptance work.
 
 The [implementation, benchmark and decision plan](design-expression-program.md) specifies bound
 operations, prepared operands, an immutable execution program and a conservative optimizer.
@@ -25,10 +26,13 @@ upstream; XFF still pins the earlier dependency. Their immutable constexpr index
 optional-reference lookup fit the planned exact per-mode startup experiment. Application-level
 lookup, parsing, compiler-budget and storage measurements remain necessary before adoption; MBO's
 synthetic container timings are not evidence of an XFF speedup. The detailed adoption checklist is
-in the [data-structure audit](design-expression-program.md#frozenmapset-adoption-check-after-mbo-550).
-The user subsequently reported substantial lookup regressions against standard unordered
-containers. Raw results are not yet part of this record. API availability does not qualify the
-containers for adoption; retain the current index and require a measured XFF workload win.
+in the [data-structure audit](design-expression-program.md#frozenmapset-adoption-check-after-mbo-550-and-553).
+MBO [PR #553](https://github.com/mboworks/mbo/pull/553) changes the string default from FNV-1a
+to fambo and supplies evidence that hash cost caused much of the earlier slowdown: mixed lookup
+for 64 fixed ten-byte keys drops from 11.16 to 5.97 ns on its Apple M5 Pro test. The containers
+are viable candidates again. XFF's known per-mode vocabularies also permit testing simpler hashes
+with compile-time verified placement. Keep exact equality for unknown tokens, bounds-safe handling
+of short inputs, and the current index until full-parser measurements justify adoption.
 
 ### EP01 baseline and EP02 dispatch experiment
 
@@ -2306,6 +2310,66 @@ distinct from dynamic file observations and template rendering. Do not claim the
 eliminates all per-entry interpretation: add separate output/hash/diff preparation cases before
 deciding which records belong in a run-owned pool. Account/database lookups and reference-file
 metadata must retain their conditional observation boundaries.
+
+### Repeated production-candidate Linux session
+
+Run `37232116551`, tested merge `d8193178d8040d468cc2cf96e3d4fa6c99d8d622`, repeats all 560
+whole-engine cases with nine rounds each and no correctness errors. The table again uses
+fastest-seven means and one requested worker. Each ratio compares production to the original tree
+within its own session; it does not divide elapsed times from different machines.
+
+| Workload        | First session, 10,000 entries | Repeat, one entry | Repeat, ten entries | Repeat, 10,000 entries | Repeat tree CV at 10,000 |
+| :-------------- | ----------------------------: | ----------------: | ------------------: | ---------------------: | -----------------------: |
+| name            |                         0.891 |             1.019 |               0.990 |                  0.865 |                     1.2% |
+| scalar          |                         0.697 |             1.033 |               0.960 |                  0.632 |                     1.7% |
+| age             |                         0.700 |             1.041 |               0.960 |                  0.664 |                     0.9% |
+| regex-output    |                         0.800 |             1.034 |               0.986 |                  0.745 |                     0.4% |
+| regex-unreached |                         0.803 |             1.037 |               0.998 |                  0.784 |                     1.2% |
+| summary         |                         0.813 |             1.039 |               1.003 |                  0.777 |                     0.6% |
+| scored-replay   |                         0.939 |             1.047 |               1.022 |                  0.925 |                     2.2% |
+
+The larger-search improvements repeat beyond observed noise. Preparation remains visible at one
+entry: approximately 0.45-1.25 microseconds in this session. Most families reach parity or improve
+by ten entries; summary and scored replay need more entries. Those are observed matrix points,
+not a precise break-even estimate. The repeated tiny-search overhead must be weighed explicitly
+against the larger-search benefit, and macOS qualification remains outstanding.
+
+Despite an identical generic runner hostname, the two reports have different CPU frequencies and
+L2 cache descriptors. Absolute times are not a controlled before/after comparison. Raw rounds,
+medians and spreads remain in the two `expression-baseline-linux` artifacts. Linux correctness
+checks passing on the repeated session's head do not validate later configuration/archive tests.
+
+### Production release sizes and expression record storage
+
+The stripped release artifacts from the ordinary Linux test jobs also cover both shipped variants.
+The baseline is PR #960 run `37209738848`, before production expression changes; the candidate is
+PR #971 run `37232116551`. These are the actual staged, smoke-tested binaries, not sizes inferred
+from compressed archives or a local rebuild.
+
+| Linux binary | Baseline bytes | Candidate bytes | Increase bytes | Increase |
+| :----------- | -------------: | --------------: | -------------: | -------: |
+| Lean         |      3,437,848 |       3,471,688 |         33,840 |    0.98% |
+| Full         |      7,420,776 |       7,454,536 |         33,760 |    0.46% |
+
+The repeat session's kernel artifact records owned expression storage after warm-up. Below, each
+cell is bytes for 1 / 16 / 64 repeated predicates; binary operators bring the corresponding node
+counts to 1 / 31 / 127. These are capacity-based record sizes, excluding the original syntax tree,
+backend allocations, allocator bookkeeping and production adapter objects. They are not allocation
+counts or process RSS. Worker columns include one worker; additional workers retain their own slots.
+
+| Expression       |    Bound recursion |  Prepared recursion | Prepared plus private worker | Optimized program plus worker |
+| :--------------- | -----------------: | ------------------: | ---------------------------: | ----------------------------: |
+| Name             | 64 / 1,264 / 5,104 | 160 / 1,600 / 6,208 |           Not in this matrix |          512 / 3,872 / 14,624 |
+| Type             | 64 / 1,264 / 5,104 | 192 / 2,112 / 8,256 |           Not in this matrix |          544 / 4,384 / 16,672 |
+| Regex            | 64 / 1,264 / 5,104 | 200 / 2,240 / 8,768 |         352 / 3,472 / 13,456 |          624 / 5,664 / 21,792 |
+| Scored fuzzy AND | 64 / 1,264 / 5,104 | 160 / 1,600 / 6,208 |           Not in this matrix |          584 / 6,104 / 23,768 |
+
+This accounting reinforces the choice of prepared recursion: the iterative candidate's additional
+instructions and score frames cost materially more and did not provide a universal whole-run win.
+The tree oracle owns none of these extra prepared records. Ordinary prepared dispatch/control flow
+reuses its records without per-entry cloning; content, output and deferred memoization have separate
+allocation behavior. Phase allocation counts, final ordinary-command RSS and native macOS release
+sizes remain acceptance work, not conclusions established by this table.
 
 ### Configuration and archive integration qualification
 
