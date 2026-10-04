@@ -3826,7 +3826,7 @@ PreparedExpression::Worker PreparedExpression::MakeWorker(MatcherInitialization 
   }
   // Unused slots allocate no backend. Reached slots remember even a failed or absent fork,
   // falling back to the original immutable matcher without retrying on subsequent entries.
-  state->environment.matchers = state->matchers;
+  state->environment.matchers = MatcherSlots(state->matchers);
   return Worker(std::move(state));
 }
 
