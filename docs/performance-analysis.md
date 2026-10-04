@@ -2033,3 +2033,35 @@ final selection must remove losing production paths and avoid redundant preparat
 startup, binary/RSS accounting, archive/configuration composition coverage, remaining operand
 families and optimizer passes still require their separate acceptance evidence. No whole-command
 speedup is claimed before those results exist.
+
+### Whole-engine expression qualification, first native session
+
+CI run `37216302909`, PR #966 head `43fe90d250`, produced 250 valid in-memory engine cases
+on both Linux x86-64 and macOS ARM64. Each case retains all nine randomized/interleaved raw rounds
+and reports the fastest-seven mean. There were no correctness-check failures. The fixture covers
+0/1/10/1,000/10,000 files and requested workers 1/3; it times complete `RunFind` preparation,
+traversal, evaluation, output and teardown, excluding command parsing and process startup.
+Artifacts `expression-baseline-{linux,macos}` contain `expression-engine-{linux,macos}.json`.
+These are initial session results, not a production decision or a whole-process speedup claim.
+
+The table gives candidate/tree elapsed-time ratios at 10,000 files (smaller is better):
+
+| Workload      | Linux bound, 1 worker | Linux prepared, 1 worker | Linux prepared, 3 workers | macOS prepared, 1 worker | macOS prepared, 3 workers |
+| ------------- | --------------------: | -----------------------: | ------------------------: | -----------------------: | ------------------------: |
+| Name          |                 0.868 |                    0.875 |                     0.860 |                    0.912 |                     0.935 |
+| Scalar chain  |                 0.758 |                    0.652 |                     0.660 |                    0.768 |                     0.692 |
+| Regex output  |                 0.792 |                    0.771 |                     0.889 |                    0.751 |                     1.192 |
+| Summary       |                 0.827 |                    0.793 |                     0.837 |                    0.714 |                     1.087 |
+| Scored replay |                 0.928 |                    0.907 |                     0.921 |                    0.892 |                     0.932 |
+
+Linux small-run results expose preparation overhead: eager indexed regex forks add roughly
+4-13 microseconds to empty/single-file cases. Do not turn this into an unconditional default
+without reducing or amortizing preparation. The iterative program's scored-replay path is
+12-18 percent slower than the tree at 1,000/10,000 files on Linux; recursive bound/prepared
+execution remains a measured alternative for this semantic family.
+
+macOS exhibits much wider sample variation, including apparently faster empty runs for candidates
+that perform strictly more preparation. Its pooled content/summary measurements also disagree with
+Linux. Repeat native sessions and inspect spread before attributing these differences to a specific
+executor or making a platform-specific selection. The next EP06 matrix measures each boolean
+rewrite independently and their combined whole-engine candidate; it does not enable production use.

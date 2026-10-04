@@ -45,6 +45,13 @@ using ::testing::SizeIs;
 
 struct RegistryTest : ::testing::Test {};
 
+TEST_F(RegistryTest, LiteralTruthIsDeclaredOnlyForAuditedConstants) {
+  EXPECT_THAT(Lookup("-true"), Optional(Field("constant_truth", &Descriptor::constant_truth, Optional(true))));
+  EXPECT_THAT(Lookup("-false"), Optional(Field("constant_truth", &Descriptor::constant_truth, Optional(false))));
+  EXPECT_THAT(Lookup("-name"), Optional(Field("constant_truth", &Descriptor::constant_truth, Eq(std::nullopt))));
+  EXPECT_THAT(Lookup("-print"), Optional(Field("constant_truth", &Descriptor::constant_truth, Eq(std::nullopt))));
+}
+
 TEST_F(RegistryTest, SpellingIndexesValidateModeLocalIdentityAtCompileTime) {
   static constexpr auto kIndex = [] consteval {
     SpellingIndex<4> result;

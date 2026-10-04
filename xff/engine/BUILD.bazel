@@ -694,6 +694,7 @@ cc_library(
         ":evaluate_cc",
         ":expression_contract_cc",
         "//xff/parser:parser_cc",
+        "//xff/registry:registry_cc",
         "@abseil-cpp//absl/status:statusor",
         "@mboworks_mbo//mbo/status:status_macros_cc",
         "@mboworks_mbo//mbo/types:strong_id_cc",

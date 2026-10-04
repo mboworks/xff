@@ -14,7 +14,7 @@ namespace xff::engine {
 
 // Internal qualification selector, deliberately absent from CLI/configuration vocabulary.
 // The default remains the production tree until whole-run measurements justify changing it.
-enum class ExpressionExecutor { kTree, kBound, kPrepared, kProgramSwitch, kProgramFunctions };
+enum class ExpressionExecutor { kTree, kBound, kPrepared, kProgramSwitch, kProgramFunctions, kProgramOptimized };
 
 // Immutable preparation shared across the coordinator and matcher workers. The original AST
 // must outlive this object; workers must die before it. Moving owners preserves their storage.

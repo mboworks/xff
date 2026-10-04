@@ -49,7 +49,24 @@ class ExpressionFs final : public xff::vfs::FileSystem {
   absl::StatusOr<std::string> ReadContent(std::string_view) const override { return std::string("needle\n"); }
 };
 
-enum class Executor { kTree, kBound, kPrepared, kTreeWorker, kPreparedWorker, kProgramSwitch, kProgramFunctions };
+enum class Executor {
+  kTree,
+  kBound,
+  kPrepared,
+  kTreeWorker,
+  kPreparedWorker,
+  kProgramSwitch,
+  kProgramFunctions,
+  kProgramConstants,
+  kProgramJumps,
+  kProgramFusion,
+  kProgramOptimized
+};
+
+template<Executor Mode>
+constexpr bool kProgram =
+    Mode == Executor::kProgramSwitch || Mode == Executor::kProgramFunctions || Mode == Executor::kProgramConstants
+    || Mode == Executor::kProgramJumps || Mode == Executor::kProgramFusion || Mode == Executor::kProgramOptimized;
 
 struct PreparedWorkerBenchmark {
   xff::engine::PreparedExpression expression;
@@ -76,8 +93,9 @@ struct ProgramBenchmark {
 
   static absl::StatusOr<ProgramBenchmark> Prepare(
       const xff::parser::Expr& source,
-      xff::engine::ProgramDispatch dispatch) {
-    MBO_ASSIGN_OR_RETURN(auto program, xff::engine::ExpressionProgram::Prepare(source));
+      xff::engine::ProgramDispatch dispatch,
+      xff::engine::ProgramOptimizations optimizations) {
+    MBO_ASSIGN_OR_RETURN(auto program, xff::engine::ExpressionProgram::Prepare(source, optimizations));
     auto worker = program.MakeWorker(dispatch);
     return ProgramBenchmark{.program = std::move(program), .worker = std::move(worker)};
   }
@@ -106,6 +124,8 @@ struct ExpressionCase {
 // The named core matrix is shared by preparation and execution. Long cheap chains expose dispatch
 // and operand costs; costly content/scoring cases use shorter chains. Effects are controlled output.
 constexpr auto kCases = std::to_array<ExpressionCase>({
+    {.name = "constant-true", .primary = "-true"},
+    {.name = "constant-false", .primary = "-false", .expected_match = false, .short_circuit = true},
     {
         .name = "type-miss",
         .primary = "-type",
@@ -206,7 +226,9 @@ std::vector<std::string> Arguments(const ExpressionCase& example, std::int64_t l
       arguments.emplace_back("-o");
     }
     arguments.emplace_back(example.primary);
-    arguments.emplace_back(example.argument);
+    if (!example.argument.empty()) {
+      arguments.emplace_back(example.argument);
+    }
   }
   return arguments;
 }
@@ -225,10 +247,16 @@ auto PrepareExecutor(const xff::parser::Expr& expression) {
     return xff::engine::PreparedExpression::Prepare(expression);
   } else if constexpr (Mode == Executor::kPreparedWorker) {
     return PreparedWorkerBenchmark::Prepare(expression);
-  } else if constexpr (Mode == Executor::kProgramSwitch || Mode == Executor::kProgramFunctions) {
+  } else if constexpr (kProgram<Mode>) {
     constexpr auto kDispatch = Mode == Executor::kProgramSwitch ? xff::engine::ProgramDispatch::kSwitch
                                                                 : xff::engine::ProgramDispatch::kFunctions;
-    return ProgramBenchmark::Prepare(expression, kDispatch);
+    return ProgramBenchmark::Prepare(
+        expression, kDispatch,
+        {
+            .constants = Mode == Executor::kProgramConstants || Mode == Executor::kProgramOptimized,
+            .jumps = Mode == Executor::kProgramJumps || Mode == Executor::kProgramOptimized,
+            .fusion = Mode == Executor::kProgramFusion || Mode == Executor::kProgramOptimized,
+        });
   } else {
     return absl::StatusOr<std::reference_wrapper<const xff::parser::Expr>>(std::cref(expression));
   }
@@ -307,13 +335,17 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
   if constexpr (Mode == Executor::kTreeWorker) {
     context.worker_matchers.set_ref(worker);
   }
-  if constexpr (Mode == Executor::kProgramSwitch || Mode == Executor::kProgramFunctions) {
+  if constexpr (kProgram<Mode>) {
     const auto selected = program.worker.Evaluate(context);
     if (selected.used_fallback || selected.used_stateful != example.collect_score) {
       state.SkipWithError("expression program selected an unexpected execution path");
       return;
     }
     state.counters["instructions"] = static_cast<double>(program.program.InstructionCount());
+    const auto& stats = program.program.OptimizationStats();
+    state.counters["constant_subtrees"] = static_cast<double>(stats.constants.rewrites);
+    state.counters["jump_rewrites"] = static_cast<double>(stats.jumps.rewrites);
+    state.counters["fused_branches"] = static_cast<double>(stats.fusion.rewrites);
     state.counters["fallback"] = 0;
     state.counters["stateful"] = static_cast<double>(selected.used_stateful);
   }
@@ -353,9 +385,7 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
     state.counters["extra_bytes"] = static_cast<double>(program.StorageBytes());
     state.counters["nodes"] = static_cast<double>(program.NodeCount());
   }
-  if constexpr (
-      Mode == Executor::kPrepared || Mode == Executor::kPreparedWorker || Mode == Executor::kProgramSwitch
-      || Mode == Executor::kProgramFunctions) {
+  if constexpr (Mode == Executor::kPrepared || Mode == Executor::kPreparedWorker || kProgram<Mode>) {
     state.counters["operands"] = static_cast<double>(program.OperandCount());
   }
 }
@@ -405,6 +435,10 @@ int main(int argc, char** argv) {
     Register<Executor::kPrepared>("prepared", example);
     Register<Executor::kProgramSwitch>("program-switch", example);
     Register<Executor::kProgramFunctions>("program-functions", example);
+    Register<Executor::kProgramConstants>("program-constants", example);
+    Register<Executor::kProgramJumps>("program-jumps", example);
+    Register<Executor::kProgramFusion>("program-fusion", example);
+    Register<Executor::kProgramOptimized>("program-optimized", example);
     if (example.name == "regex" || example.name == "path-regex") {
       Register<Executor::kTreeWorker>("tree-worker", example);
       Register<Executor::kPreparedWorker>("prepared-worker", example);

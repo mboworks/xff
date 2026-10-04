@@ -34,11 +34,14 @@ using ::mbo::testing::StatusIs;
 using ::testing::_;
 using ::testing::Eq;
 using ::testing::Ge;
+using ::testing::Gt;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
+using ::testing::Lt;
 using ::testing::Optional;
+using ::testing::ValuesIn;
 
 class ProgramFs final : public vfs::FileSystem {
  public:
@@ -67,7 +70,30 @@ class ProgramFs final : public vfs::FileSystem {
   absl::StatusOr<bool> IsCaseSensitive(std::string_view) const override { return true; }
 };
 
-struct ExpressionProgramTest : ::testing::TestWithParam<ProgramDispatch> {
+struct ProgramVariant {
+  std::string_view name;
+  ProgramDispatch dispatch;
+  ProgramOptimizations optimizations;
+};
+
+constexpr auto kProgramVariants = std::to_array<ProgramVariant>({
+    {.name = "Switch", .dispatch = ProgramDispatch::kSwitch},
+    {.name = "Functions", .dispatch = ProgramDispatch::kFunctions},
+    {.name = "ConstantsSwitch", .dispatch = ProgramDispatch::kSwitch, .optimizations = {.constants = true}},
+    {.name = "ConstantsFunctions", .dispatch = ProgramDispatch::kFunctions, .optimizations = {.constants = true}},
+    {.name = "JumpsSwitch", .dispatch = ProgramDispatch::kSwitch, .optimizations = {.jumps = true}},
+    {.name = "JumpsFunctions", .dispatch = ProgramDispatch::kFunctions, .optimizations = {.jumps = true}},
+    {.name = "FusionSwitch", .dispatch = ProgramDispatch::kSwitch, .optimizations = {.fusion = true}},
+    {.name = "FusionFunctions", .dispatch = ProgramDispatch::kFunctions, .optimizations = {.fusion = true}},
+    {.name = "AllSwitch",
+     .dispatch = ProgramDispatch::kSwitch,
+     .optimizations = {.constants = true, .jumps = true, .fusion = true}},
+    {.name = "AllFunctions",
+     .dispatch = ProgramDispatch::kFunctions,
+     .optimizations = {.constants = true, .jumps = true, .fusion = true}},
+});
+
+struct ExpressionProgramTest : ::testing::TestWithParam<ProgramVariant> {
   static absl::StatusOr<parser::Command> Parse(const std::vector<std::string>& arguments) {
     MBO_ASSIGN_OR_RETURN(auto command, parser::Parse(arguments));
     parser::BindMatchers(command, regex::Grammar::kRe2, parser::CaseMode::kSensitive);
@@ -76,8 +102,8 @@ struct ExpressionProgramTest : ::testing::TestWithParam<ProgramDispatch> {
 
   void Check(const std::vector<std::string>& arguments, bool scored = false) {
     ASSERT_OK_AND_ASSIGN(const auto command, Parse(arguments));
-    ASSERT_OK_AND_ASSIGN(const auto program, ExpressionProgram::Prepare(*command.expression));
-    const auto worker = program.MakeWorker(GetParam());
+    ASSERT_OK_AND_ASSIGN(const auto program, ExpressionProgram::Prepare(*command.expression, GetParam().optimizations));
+    const auto worker = program.MakeWorker(GetParam().dispatch);
     auto bytes = worker.StorageBytes();
     EXPECT_THAT(program.NodeCount(), Ge(1));
     EXPECT_THAT(program.InstructionCount(), Ge(1));
@@ -221,8 +247,8 @@ TEST_P(ExpressionProgramTest, DryRunAndMutationFailureRetainTheReferenceBehavior
 
 TEST_P(ExpressionProgramTest, FuzzyAndDeferredContextsUseIterativeStateWithoutFallback) {
   ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-fuzzy", "file", "-top", "1"}));
-  ASSERT_OK_AND_ASSIGN(const auto program, ExpressionProgram::Prepare(*command.expression));
-  const auto worker = program.MakeWorker(GetParam());
+  ASSERT_OK_AND_ASSIGN(const auto program, ExpressionProgram::Prepare(*command.expression, GetParam().optimizations));
+  const auto worker = program.MakeWorker(GetParam().dispatch);
   const auto emit = [](std::string_view) {};
   DeferredDecisions decisions;
   EvaluationMemo memo;
@@ -268,8 +294,8 @@ TEST_P(ExpressionProgramTest, PersistentStateRestoresContextAcrossTwoReplayFront
       const auto command, Parse(
                               {".", "-fuzzy", "file", "-printf", "first", "-top", "1", "-printf", "second", "-top", "1",
                                "-printf", "third"}));
-  ASSERT_OK_AND_ASSIGN(const auto program, ExpressionProgram::Prepare(*command.expression));
-  const auto worker = program.MakeWorker(GetParam());
+  ASSERT_OK_AND_ASSIGN(const auto program, ExpressionProgram::Prepare(*command.expression, GetParam().optimizations));
+  const auto worker = program.MakeWorker(GetParam().dispatch);
   DeferredDecisions decisions;
   EvaluationMemo memo;
   DeferredEvaluation deferred{.decisions = decisions, .memo = memo};
@@ -322,13 +348,14 @@ TEST_P(ExpressionProgramTest, PersistentStateRestoresContextAcrossTwoReplayFront
 TEST_P(ExpressionProgramTest, MovesRetainSourceAndProgramStorage) {
   std::unique_ptr<parser::Expr> source;
   ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-type", "f"}));
-  ASSERT_OK_AND_ASSIGN(auto program, ExpressionProgram::Prepare(*command.expression));
-  auto worker = program.MakeWorker(GetParam());
+  ASSERT_OK_AND_ASSIGN(auto program, ExpressionProgram::Prepare(*command.expression, GetParam().optimizations));
+  auto worker = program.MakeWorker(GetParam().dispatch);
   auto moved_worker = std::move(worker);
-  auto replacement_worker = program.MakeWorker(GetParam());
+  auto replacement_worker = program.MakeWorker(GetParam().dispatch);
   replacement_worker = std::move(moved_worker);
   auto moved_program = std::move(program);
-  ASSERT_OK_AND_ASSIGN(auto replacement_program, ExpressionProgram::Prepare(*command.expression));
+  ASSERT_OK_AND_ASSIGN(
+      auto replacement_program, ExpressionProgram::Prepare(*command.expression, GetParam().optimizations));
   replacement_program = std::move(moved_program);
   source = std::move(command.expression);
   EXPECT_THAT(replacement_program.OperandCount(), Eq(1));
@@ -345,6 +372,81 @@ TEST_P(ExpressionProgramTest, MovesRetainSourceAndProgramStorage) {
   EXPECT_THAT(EvaluateDeferred(*source, context).matched, IsTrue());
 }
 
+TEST_P(ExpressionProgramTest, EveryConstantOperatorAndKnownShortCircuitKeepsTruth) {
+  constexpr auto kOperators = std::to_array<std::string_view>({"-a", "-o", "-nand", "-nor", "-xor", "-xnor", ","});
+  for (const auto operation : kOperators) {
+    for (const std::string_view left : {"-true", "-false"}) {
+      for (const std::string_view right : {"-true", "-false"}) {
+        Check({".", std::string(left), std::string(operation), std::string(right)});
+        Check({".", "!", "(", std::string(left), std::string(operation), std::string(right), ")"});
+      }
+      Check({".", std::string(left), std::string(operation), "-size", "+0c"});
+    }
+  }
+}
+
+TEST_P(ExpressionProgramTest, RewritesKeepIncomingEdgesNegationAndSourceIdentity) {
+  constexpr auto kOperators = std::to_array<std::string_view>({"-a", "-o", "-nand", "-nor", "-xor", "-xnor", ","});
+  for (const auto outer : kOperators) {
+    for (const auto inner : kOperators) {
+      for (const std::string_view truth : {"-true", "-false"}) {
+        Check(
+            {".", "(", "-size", "+0c", std::string(inner), "-type", "f", ")", std::string(outer), "(",
+             std::string(truth), ",", "-printf", "reached", ")"});
+        Check(
+            {".", std::string(truth), std::string(outer), "(", "-size", "+0c", std::string(inner), "!", "-type", "d",
+             ")", ",", "-printf", "tail"});
+      }
+    }
+  }
+}
+
+TEST_P(ExpressionProgramTest, ConstantFoldingDoesNotDiscardTheEffectsOfAnUnknownLeftSide) {
+  Check({".", "-printf", "keep", ",", "-false", "-a", "-printf", "skip"});
+  Check({".", "-printf", "keep", "-a", "-false"});
+  Check({".", "-printf", "keep", "-o", "-true"});
+  Check({".", "-false", "-a", "(", "-delete", ",", "-prune", ",", "-quit", ")"});
+  Check({".", "-true", "-o", "(", "-size", "garbage", ",", "-printf", "skip", ")"});
+}
+
+TEST_P(ExpressionProgramTest, ReportsEachPassAndOptionalPreparationTiming) {
+  ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-type", "f", "-size", "+0c", "-perm", "0644"}));
+  const auto options = GetParam().optimizations;
+  ASSERT_OK_AND_ASSIGN(const auto program, ExpressionProgram::Prepare(*command.expression, options));
+  const auto& stats = program.OptimizationStats();
+  EXPECT_THAT(stats.constants.enabled, Eq(options.constants));
+  EXPECT_THAT(stats.jumps.enabled, Eq(options.jumps));
+  EXPECT_THAT(stats.fusion.enabled, Eq(options.fusion));
+  EXPECT_THAT(stats.constants.input_instructions, Eq(5));
+  EXPECT_THAT(stats.constants.elapsed_ns, Eq(0));
+  EXPECT_THAT(stats.jumps.elapsed_ns, Eq(0));
+  EXPECT_THAT(stats.fusion.elapsed_ns, Eq(0));
+  if (options.jumps) {
+    EXPECT_THAT(stats.jumps.rewrites, Gt(0));
+  }
+  if (options.fusion) {
+    EXPECT_THAT(stats.fusion.rewrites, Gt(0));
+    EXPECT_THAT(stats.fusion.output_instructions, Lt(stats.fusion.input_instructions));
+  }
+  ASSERT_OK_AND_ASSIGN(
+      const auto literal, Parse({".", "-false", "-a", "(", "-printf", "unreachable", "-size", "1c", ")"}));
+  ASSERT_OK_AND_ASSIGN(const auto folded, ExpressionProgram::Prepare(*literal.expression, options));
+  if (options.constants) {
+    EXPECT_THAT(folded.InstructionCount(), Eq(1));
+    EXPECT_THAT(folded.OptimizationStats().constants.rewrites, Eq(1));
+    EXPECT_THAT(
+        folded.OptimizationStats().constants.output_instructions,
+        Lt(folded.OptimizationStats().constants.input_instructions));
+  }
+  ASSERT_OK_AND_ASSIGN(
+      const auto measured,
+      ExpressionProgram::Prepare(
+          *command.expression, {.constants = true, .jumps = true, .fusion = true, .measure_time = true}));
+  EXPECT_THAT(measured.OptimizationStats().constants.elapsed_ns, Ge(0));
+  EXPECT_THAT(measured.OptimizationStats().jumps.elapsed_ns, Ge(0));
+  EXPECT_THAT(measured.OptimizationStats().fusion.elapsed_ns, Ge(0));
+}
+
 TEST_P(ExpressionProgramTest, MalformedInputIsRejectedBeforeLowering) {
   const parser::Expr invalid{.kind = parser::Expr::Kind::kAnd};
   EXPECT_THAT(ExpressionProgram::Prepare(invalid), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("shape")));
@@ -353,10 +455,8 @@ TEST_P(ExpressionProgramTest, MalformedInputIsRejectedBeforeLowering) {
 INSTANTIATE_TEST_SUITE_P(
     Dispatch,
     ExpressionProgramTest,
-    ::testing::Values(ProgramDispatch::kSwitch, ProgramDispatch::kFunctions),
-    [](const ::testing::TestParamInfo<ProgramDispatch>& info) {
-      return info.param == ProgramDispatch::kSwitch ? "Switch" : "Functions";
-    });
+    ValuesIn(kProgramVariants),
+    [](const ::testing::TestParamInfo<ProgramVariant>& info) { return std::string(info.param.name); });
 
 }  // namespace
 }  // namespace xff::engine

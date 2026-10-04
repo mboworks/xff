@@ -871,3 +871,14 @@ this as intentional accounting.
       ancestry before run time so reruns cannot compare with themselves or future merges.
 - [x] Reproduce the missing-baseline report using run 37196735470 artifacts without new measurements:
       the repaired selection finds all 468 reference comparisons on each platform against #957.
+
+### Expression-program optimizer qualification (EP06/EP07)
+
+- [ ] Qualify the constant-folding, forward-jump-threading and predicate/branch-fusion candidates
+      independently on native Linux and macOS; retain measured winners only. The implementation uses
+      registry constant metadata and preserves original validation/safety/traversal decisions.
+- [ ] Complete production selection and expose actual preparation/optimization records through
+      `--explain`; keep the slower scored/replay candidate out of the default path unless improved.
+- [ ] Recheck tiny-search preparation, eager regex-worker fork cost, retained capacities and full
+      CLI binary size after selecting the winning implementation. The first whole-engine macOS session
+      is noisy; a single session is insufficient to resolve small differences.

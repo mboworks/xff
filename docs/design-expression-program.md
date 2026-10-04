@@ -598,3 +598,31 @@ per-entry memoization. `//xff/engine:expression_execution_test` checks the integ
 the reference, and `//xff/engine:expression_run_benchmark` includes preparation and teardown for
 0 through 10,000 files. The default remains the reference until qualification selects a winner;
 this integration does not complete EP06 or the production decision.
+
+### EP06 candidate: independently measurable instruction rewrites
+
+`ExpressionProgram::Prepare` now accepts internal `ProgramOptimizations` for constants, jump
+threading and branch fusion. None is enabled by default. The test suite runs both dispatch forms
+with each pass independently and their combination. The whole-engine qualification selector adds
+`kProgramOptimized`; it is not a CLI/config flag or the production default.
+
+- Registry `constant_truth` describes audited total, effect-free literal truth. A compile-time
+  guard rejects contradictory effect/metadata/control declarations. Only `-true` and `-false`
+  declare it. Bottom-up facts retain original preorder source IDs. A constant left side may remove
+  an unreachable right side; an unknown left side is never discarded because the right is constant.
+- Jump threading follows an existing jump directly to another jump testing the same truth value.
+  Compiler-generated edges go forward, so a reverse pass is bounded and needs no iterative search.
+- Fusion combines a predicate with its immediately following conditional jump only when no other
+  edge enters that jump. Unknown/error/suspension exits still precede the conditional. Compaction
+  remaps every destination, including the terminal position, and preserves predicate source IDs.
+- The original AST remains available to whole-command validation, safety preflight, implicit output,
+  traversal policy, scoring and deferred replay. The latter two still use the separately qualified
+  stateful executor; these boolean rewrites do not claim to improve that path.
+- `OptimizationStats` records each pass's input/output instruction counts and rewrite count;
+  optional timing is off for ordinary preparation. Connecting these records to the selected
+  production executor's `--explain` output remains part of EP06/EP07, not a completed deliverable.
+
+The native kernel matrix includes each pass and the full combination beside every earlier executor.
+The whole-engine matrix adds the combined candidate. Keep passes individually only after current
+Linux/macOS measurements and differential tests establish their cost and semantic equivalence.
+No predicate reordering, speculative metadata reads or common-subexpression elimination is enabled.

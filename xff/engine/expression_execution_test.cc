@@ -180,6 +180,9 @@ TEST_P(ExpressionExecutionTest, SelectionOutputSummariesAndComparisonPreserveThe
       },
       {"root", "-name", "sub", "-prune", "-o", "-type", "f", "-print"},
       {"root", "-type", "f", "-print", "-quit"},
+      {"root", "-false", "-a", "-printf", "unreachable"},
+      {"root", "-false", "-a", "-prune"},
+      {"root", "-true", "-o", "-delete"},
   };
   for (const auto& arguments : cases) {
     SCOPED_TRACE(PrintToString(arguments));
@@ -204,6 +207,7 @@ TEST_P(ExpressionExecutionTest, ConditionalFailuresAndBlockedEffectsRemainObserv
   Check({"root", "-type", "f", "!", "-content", "needle", ",", "-printf", "later"}, true, true);
   Check({"root", "-false", "-size", "garbage"}, false, true);
   Check({"--block-file-deletion", "root", "-delete"}, false, true);
+  Check({"--block-file-deletion", "root", "-false", "-a", "-delete"}, false, true);
   Check({"--dry-run", "root", "-name", "file0.txt", "-delete"});
   Check({"root", "-name", "file0.txt", "-delete"}, false, true);
 }
@@ -254,7 +258,8 @@ INSTANTIATE_TEST_SUITE_P(
         ExpressionExecutor::kBound,
         ExpressionExecutor::kPrepared,
         ExpressionExecutor::kProgramSwitch,
-        ExpressionExecutor::kProgramFunctions),
+        ExpressionExecutor::kProgramFunctions,
+        ExpressionExecutor::kProgramOptimized),
     [](const ::testing::TestParamInfo<ExpressionExecutor>& info) {
       switch (info.param) {
         case ExpressionExecutor::kTree: return "Tree";
@@ -262,6 +267,7 @@ INSTANTIATE_TEST_SUITE_P(
         case ExpressionExecutor::kPrepared: return "Prepared";
         case ExpressionExecutor::kProgramSwitch: return "ProgramSwitch";
         case ExpressionExecutor::kProgramFunctions: return "ProgramFunctions";
+        case ExpressionExecutor::kProgramOptimized: return "ProgramOptimized";
       }
       return "Invalid";
     });
