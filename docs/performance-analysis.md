@@ -2191,8 +2191,11 @@ Remaining invariant work has distinct boundaries. MIME pattern lowercasing is a 
 text-pool candidate; embedding an owning string in every operand could enlarge unrelated scalar
 slots. Word/calendar durations depend on the final evaluation clock/timezone and currently keep
 that interpretation dynamic. Reference-file metadata and account databases remain observable and
-conditional; this work does not silently cache them. Existing regex and output templates are
-already compiled by their owners and should be reused, not compiled again in the executor.
+conditional; this work does not silently cache them. Existing regex and prepared output templates
+should be reused. This does not cover every template consumer: the peer-path helper for `-cmp`,
+`-diff`, and the expected-value template for `-hasheq` still call `fields::Template::Compile` during
+evaluation. Compiling those immutable templates once must preserve entry-dependent rendering,
+captures, definitions, conditional reads, and errors.
 
 Downloaded binary symbols from run `37220141643` confirm that `ExpressionProgram::Prepare`, its
 worker evaluator, `BoundExpression` and `PreparedExpression` remain linked into the benchmark CLI
@@ -2262,3 +2265,44 @@ It also avoids duplicate preparation for an identical serial/pool expression and
 paths. No new local timing is claimed: native CI must establish whether this removes the tiny-search
 regression while retaining large-search gains. Iterative programs and their optimizers remain
 test-only because the whole-engine evidence does not justify enabling them broadly.
+
+### First production-candidate Linux session
+
+Run `37230954320`, tested merge `c348a522e79d2a8a75d884b1015c9318113d25b4`, retained 560
+whole-engine cases with nine raw rounds each and no benchmark correctness errors. These are
+in-process run times: parsing and fixture construction are excluded, while expression preparation,
+worker creation, traversal, output and teardown are included. They are not whole-process startup
+measurements. The table uses fastest-seven means, one requested worker, and the same-session tree
+oracle. Ratios below one favor the production candidate.
+
+| Workload        | One-entry tree us | One-entry production us | One-entry ratio | 10,000-entry ratio |
+| :-------------- | ----------------: | ----------------------: | --------------: | -----------------: |
+| name            |             17.56 |                   17.61 |           1.003 |              0.891 |
+| scalar          |             18.09 |                   18.59 |           1.028 |              0.697 |
+| age             |             18.56 |                   19.27 |           1.038 |              0.700 |
+| regex-output    |             18.13 |                   18.31 |           1.010 |              0.800 |
+| regex-unreached |             17.65 |                   18.31 |           1.037 |              0.803 |
+| summary         |             19.85 |                   20.26 |           1.020 |              0.813 |
+| scored-replay   |             18.86 |                   19.85 |           1.052 |              0.939 |
+
+Coordinator reuse removes the previous first-reached regex penalty: in this same session the
+ordinary private-worker candidate takes 1.252 times the tree's one-entry time, versus 1.010 for
+production. Ten-entry regex is 0.994 versus 1.220. Preparation still adds roughly 0.4-1.0
+microseconds for several tiny scalar/scored workloads; the 2-5% relative differences must stay
+visible rather than being hidden by large-search wins. At 10,000 entries reference CV is below
+1% for name/scalar/age/regex/summary, but 5.3% for scored replay. A repeat session and native macOS
+results are still required before acceptance.
+
+The downloaded Linux benchmark CLI is 3,471,320 bytes after LLVM stripping: 33,840 bytes (0.98%)
+above the earlier main artifact and 13,792 bytes above the production-boundary artifact. Symbol
+inspection finds the prepared production factory but no iterative-program or qualification
+factory implementation. This is the benchmark CLI configuration, not a measurement of every
+lean/full release package, and stripping downloaded artifacts did not require a local build.
+
+The remaining operand audit also identifies `-first` limit decoding, MIME pattern lowercasing,
+hash algorithm/encoding resolution, and diff style/ignore-option decoding. The diff ignore regex
+is still compiled per reached diff operation. These are invariant syntax/configuration work,
+distinct from dynamic file observations and template rendering. Do not claim the prepared path
+eliminates all per-entry interpretation: add separate output/hash/diff preparation cases before
+deciding which records belong in a run-owned pool. Account/database lookups and reference-file
+metadata must retain their conditional observation boundaries.

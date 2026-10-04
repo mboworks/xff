@@ -24,6 +24,10 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       comparison remains in both kernel and whole-engine benchmarks. Adoption awaits native
       setup/hot-loop/storage measurements. Prepared recursion is now selected for production CI
       qualification, with coordinator matcher reuse and private lazy concurrent-worker state.
+      Remaining audit candidates include first-limit decoding, MIME case normalization,
+      peer-path/expected-hash template compilation, hash spec resolution and diff option/regex
+      preparation. Keep entry-dependent rendering and conditional observations dynamic; measure
+      these families separately before deciding on additional run-owned records.
 - [ ] EP04: Compare contiguous opcode and bound-function programs; lower audited boolean control flow,
       reuse scratch and preserve source mapping, with explicit whole-expression fallback coverage.
       The switch/function pilot, branch-selectivity cases and storage-reuse tests are implemented;
