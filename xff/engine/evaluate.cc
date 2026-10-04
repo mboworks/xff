@@ -1230,13 +1230,17 @@ bool EvalContent(const parser::Expr& expr, EvalContext& ctx) {
 // FullMatch). The matcher is pre-compiled by the parser, with case folding baked in
 // for -irxc. Non-regular, unreadable, and binary files do not match.
 // NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
-bool EvalRxc(const parser::Expr& expr, EvalContext& ctx) {
-  const MatcherRef matcher = MatcherFor(expr, ctx);
+bool MatchesContentRegex(MatcherRef matcher, const EvalContext& ctx) {
   if (!matcher.has_value()) {
     return false;
   }
   const auto content = ContentToSearch(ctx);
   return content.has_value() && matcher->get().PartialMatch(*content);
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
+bool EvalRxc(const parser::Expr& expr, EvalContext& ctx) {
+  return MatchesContentRegex(MatcherFor(expr, ctx), ctx);
 }
 
 // xff -cmp TARGET: true when the entry's content is byte-for-byte identical to
@@ -2821,8 +2825,12 @@ struct TypeSpec {
   std::uint32_t mask = 0;
 };
 
-using PreparedOperand = std::variant<std::monostate, TypeSpec, SizeSpec, NumericSpec, PermissionSpec>;
-using PreparedEvalFn = bool (*)(const parser::Expr&, const PreparedOperand&, EvalContext&);
+struct MatcherSlotTag {};
+
+using MatcherSlotId = mbo::types::ConstStrongId<MatcherSlotTag, std::size_t>;
+using MatcherSlots = absl::Span<const std::optional<regex::Matcher>>;
+using PreparedOperand = std::variant<std::monostate, TypeSpec, SizeSpec, NumericSpec, PermissionSpec, MatcherSlotId>;
+using PreparedEvalFn = bool (*)(const parser::Expr&, const PreparedOperand&, MatcherSlots, EvalContext&);
 using PrepareOperandFn = PreparedOperand (*)(std::string_view);
 
 PreparedOperand PrepareTypeOperand(std::string_view argument) {
@@ -2860,13 +2868,13 @@ PreparedOperand PreparePermissionOperand(std::string_view argument) {
 }
 
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
-bool EvalPreparedType(const parser::Expr&, const PreparedOperand& operand, EvalContext& context) {
+bool EvalPreparedType(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
   return std::holds_alternative<TypeSpec>(operand)
          && MatchesTypeSpec(std::get<TypeSpec>(operand), context.visit.metadata.type);
 }
 
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
-bool EvalPreparedXtype(const parser::Expr&, const PreparedOperand& operand, EvalContext& context) {
+bool EvalPreparedXtype(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
   if (!std::holds_alternative<TypeSpec>(operand)) {
     return false;
   }
@@ -2889,26 +2897,54 @@ bool MatchesPreparedSize(const PreparedOperand& operand, std::uint64_t bytes, st
 }
 
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
-bool EvalPreparedSize(const parser::Expr&, const PreparedOperand& operand, EvalContext& context) {
+bool EvalPreparedSize(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
   return MatchesPreparedSize(operand, context.visit.metadata.size, context.block_size);
 }
 
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
-bool EvalPreparedBlocks(const parser::Expr&, const PreparedOperand& operand, EvalContext& context) {
+bool EvalPreparedBlocks(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
   return MatchesPreparedSize(operand, context.visit.metadata.blocks * 512U, context.block_size);
 }
 
 template<auto Field>
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
-bool EvalPreparedNumeric(const parser::Expr&, const PreparedOperand& operand, EvalContext& context) {
+bool EvalPreparedNumeric(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
   return std::holds_alternative<NumericSpec>(operand)
          && MatchesNumericSpec(std::get<NumericSpec>(operand), context.visit.metadata.*Field);
 }
 
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
-bool EvalPreparedPermission(const parser::Expr&, const PreparedOperand& operand, EvalContext& context) {
+bool EvalPreparedPermission(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
   return std::holds_alternative<PermissionSpec>(operand)
          && MatchesPermissionSpec(std::get<PermissionSpec>(operand), context.visit.metadata.mode);
+}
+
+MatcherRef PreparedMatcherFor(const parser::Expr& expression, const PreparedOperand& operand, MatcherSlots slots) {
+  if (!slots.empty()) {
+    const auto& local = slots.at(std::get<MatcherSlotId>(operand).value());
+    if (local.has_value()) {
+      return std::cref(*local);
+    }
+  }
+  return AsRef(expression.matcher);
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+bool EvalPreparedRegex(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    MatcherSlots slots,
+    EvalContext& context) {
+  return MatchesRegex(PreparedMatcherFor(expression, operand, slots), context.visit.path, context.captures);
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+bool EvalPreparedRxc(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    MatcherSlots slots,
+    EvalContext& context) {
+  return MatchesContentRegex(PreparedMatcherFor(expression, operand, slots), context);
 }
 
 // Engine-side dispatch entry for one primary. A struct (not a bare function
@@ -2924,19 +2960,24 @@ struct EvalEntry {
   EvalFn eval = nullptr;
   PrepareOperandFn prepare = nullptr;
   PreparedEvalFn prepared_eval = nullptr;
+  bool indexed_matcher = false;
 };
 
 template<EvalFn Function>
-bool EvalOriginalOperand(const parser::Expr& expression, const PreparedOperand&, EvalContext& context) {
+bool EvalOriginalOperand(const parser::Expr& expression, const PreparedOperand&, MatcherSlots, EvalContext& context) {
   return Function(expression, context);
 }
 
 template<EvalFn Function>
-consteval EvalEntry MakeEvalEntry(PrepareOperandFn prepare = nullptr, PreparedEvalFn prepared_eval = nullptr) {
+consteval EvalEntry MakeEvalEntry(
+    PrepareOperandFn prepare = nullptr,
+    PreparedEvalFn prepared_eval = nullptr,
+    bool indexed_matcher = false) {
   return {
       .eval = Function,
       .prepare = prepare,
       .prepared_eval = prepared_eval == nullptr ? &EvalOriginalOperand<Function> : prepared_eval,
+      .indexed_matcher = indexed_matcher,
   };
 }
 
@@ -2984,8 +3025,8 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-iname", MakeEvalEntry<&EvalName>()},
     DispatchPair{"-inum", MakeEvalEntry<&EvalInum>(&PrepareNumericOperand, &EvalPreparedNumeric<&vfs::Metadata::ino>)},
     DispatchPair{"-ipath", MakeEvalEntry<&EvalPath>()},
-    DispatchPair{"-iregex", MakeEvalEntry<&EvalRegex>()},
-    DispatchPair{"-irxc", MakeEvalEntry<&EvalRxc>()},
+    DispatchPair{"-iregex", MakeEvalEntry<&EvalRegex>(nullptr, &EvalPreparedRegex, true)},
+    DispatchPair{"-irxc", MakeEvalEntry<&EvalRxc>(nullptr, &EvalPreparedRxc, true)},
     DispatchPair{"-iwholename", MakeEvalEntry<&EvalPath>()},
     DispatchPair{"-lang", MakeEvalEntry<&EvalLang>()},
     DispatchPair{
@@ -3036,8 +3077,8 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-prune", MakeEvalEntry<&EvalPrune>()},
     DispatchPair{"-quit", MakeEvalEntry<&EvalQuit>()},
     DispatchPair{"-readable", MakeEvalEntry<&EvalReadable>()},
-    DispatchPair{"-regex", MakeEvalEntry<&EvalRegex>()},
-    DispatchPair{"-rxc", MakeEvalEntry<&EvalRxc>()},
+    DispatchPair{"-regex", MakeEvalEntry<&EvalRegex>(nullptr, &EvalPreparedRegex, true)},
+    DispatchPair{"-rxc", MakeEvalEntry<&EvalRxc>(nullptr, &EvalPreparedRxc, true)},
     DispatchPair{"-samefile", MakeEvalEntry<&EvalSamefile>()},
     DispatchPair{"-similar", MakeEvalEntry<&EvalSimilar>()},
     DispatchPair{"-size", MakeEvalEntry<&EvalSize>(&PrepareSizeOperand, &EvalPreparedSize)},
@@ -3465,20 +3506,22 @@ struct PreparedExpression::Data {
   std::vector<Node> nodes;
   // Slot zero is shared by ordinary callbacks and carries no prepared operand.
   std::vector<PreparedOperand> operands{std::monostate{}};
+  std::vector<std::reference_wrapper<const parser::Expr>> matcher_sources;
 };
 
 struct PreparedExpression::Cursor {
   const Data& data;
   const Data::Node& node;
+  MatcherSlots matchers;
 
   const parser::Expr& Get() const { return node.expression.get(); }
 
-  Cursor Left() const { return {.data = data, .node = data.nodes.at(node.lhs.value())}; }
+  Cursor Left() const { return {.data = data, .node = data.nodes.at(node.lhs.value()), .matchers = matchers}; }
 
-  Cursor Right() const { return {.data = data, .node = data.nodes.at(node.rhs.value())}; }
+  Cursor Right() const { return {.data = data, .node = data.nodes.at(node.rhs.value()), .matchers = matchers}; }
 
   bool Predicate(EvalContext& context) const {
-    return node.evaluate(Get(), data.operands.at(node.operand.value()), context);
+    return node.evaluate(Get(), data.operands.at(node.operand.value()), matchers, context);
   }
 
   bool FuzzyOnly() const { return node.fuzzy_only; }
@@ -3497,6 +3540,9 @@ absl::StatusOr<PreparedExpression> PreparedExpression::Prepare(const parser::Exp
   const auto predicates = std::ranges::count_if(sources, [](const ExpressionSource& source) {
     return source.expression.get().kind == parser::Expr::Kind::kPredicate;
   });
+  const auto matcher_count = std::ranges::count_if(
+      sources, [](const ExpressionSource& source) { return source.expression.get().matcher != nullptr; });
+  data->matcher_sources.reserve(static_cast<std::size_t>(matcher_count));
   for (const auto& source : sources) {
     const auto& expr = source.expression.get();
     MBO_ASSIGN_OR_RETURN(const auto binding, ResolveEvaluation(expr));
@@ -3504,12 +3550,17 @@ absl::StatusOr<PreparedExpression> PreparedExpression::Prepare(const parser::Exp
         .expression = source.expression,
         .evaluate = binding.prepared_eval,
     };
-    if (binding.prepare != nullptr && !expr.args.empty()) {
+    if (binding.indexed_matcher || (binding.prepare != nullptr && !expr.args.empty())) {
       if (data->operands.size() == 1) {
         data->operands.reserve(1 + static_cast<std::size_t>(predicates));
       }
       node.operand = Data::OperandId{data->operands.size()};
-      data->operands.push_back(binding.prepare(expr.args.front()));
+      if (binding.indexed_matcher) {
+        data->operands.emplace_back(MatcherSlotId{data->matcher_sources.size()});
+        data->matcher_sources.push_back(source.expression);
+      } else {
+        data->operands.push_back(binding.prepare(expr.args.front()));
+      }
     }
     data->nodes.push_back(node);
   }
@@ -3559,7 +3610,55 @@ std::size_t PreparedExpression::OperandCount() const {
 
 std::size_t PreparedExpression::StorageBytes() const {
   return sizeof(*this) + sizeof(Data) + (data_->nodes.capacity() * sizeof(Data::Node))
-         + (data_->operands.capacity() * sizeof(PreparedOperand));
+         + (data_->operands.capacity() * sizeof(PreparedOperand))
+         + (data_->matcher_sources.capacity() * sizeof(std::reference_wrapper<const parser::Expr>));
+}
+
+struct PreparedExpression::Worker::State {
+  std::reference_wrapper<const Data> expression;
+  std::vector<std::optional<regex::Matcher>> matchers;
+};
+
+PreparedExpression::Worker::Worker(std::unique_ptr<State> state) : state_(std::move(state)) {}
+
+PreparedExpression::Worker::Worker(Worker&&) noexcept = default;
+PreparedExpression::Worker& PreparedExpression::Worker::operator=(Worker&&) noexcept = default;
+PreparedExpression::Worker::~Worker() = default;
+
+PreparedExpression::Worker PreparedExpression::MakeWorker() const {
+  auto state = std::make_unique<Worker::State>(Worker::State{.expression = std::cref(*data_)});
+  state->matchers.reserve(data_->matcher_sources.size());
+  for (const auto& source : data_->matcher_sources) {
+    const auto& expression = source.get();
+    // Null means no compiled matcher or a failed fork. The original immutable matcher remains
+    // the fallback, exactly as for WorkerMatchers; only successfully forked state is worker-owned.
+    std::optional<regex::Matcher> local;
+    if (expression.matcher) {
+      if (auto fork = expression.matcher->ForkForWorker(); fork.ok()) {
+        local.emplace(std::move(*fork));
+      }
+    }
+    state->matchers.push_back(std::move(local));
+  }
+  return Worker(std::move(state));
+}
+
+EvaluationResult PreparedExpression::Worker::Evaluate(EvalContext& context) const {
+  const auto& expression = state_->expression.get();
+  const auto result = EvaluateResult(
+      Cursor{.data = expression, .node = expression.nodes.front(), .matchers = state_->matchers}, context);
+  if (context.fuzzy_score.has_value()) {
+    *context.fuzzy_score = result.fuzzy;
+  }
+  return result;
+}
+
+std::size_t PreparedExpression::Worker::MatcherCount() const {
+  return state_->matchers.size();
+}
+
+std::size_t PreparedExpression::Worker::StorageBytes() const {
+  return sizeof(*this) + sizeof(State) + (state_->matchers.capacity() * sizeof(std::optional<regex::Matcher>));
 }
 
 absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression) {

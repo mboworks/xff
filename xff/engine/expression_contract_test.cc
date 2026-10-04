@@ -88,7 +88,7 @@ class RecordingExpressionFs final : public vfs::FileSystem {
   }
 };
 
-enum class Executor { kTree, kBound, kPrepared };
+enum class Executor { kTree, kBound, kPrepared, kPreparedWorker };
 
 struct ExpressionContractTest : ::testing::TestWithParam<Executor> {
   static absl::StatusOr<parser::Command> Parse(const std::vector<std::string>& arguments) {
@@ -116,10 +116,17 @@ struct ExpressionContractTest : ::testing::TestWithParam<Executor> {
     if (GetParam() == Executor::kTree) {
       return EvaluateDeferred(expression, context);
     }
-    if (GetParam() == Executor::kPrepared) {
+    if (GetParam() == Executor::kPrepared || GetParam() == Executor::kPreparedWorker) {
       auto prepared = PreparedExpression::Prepare(expression);
       EXPECT_THAT(prepared, IsOk());
-      return prepared.ok() ? prepared->Evaluate(context) : EvaluationResult{.unknown = true};
+      if (!prepared.ok()) {
+        return {.unknown = true};
+      }
+      if (GetParam() == Executor::kPreparedWorker) {
+        auto worker = prepared->MakeWorker();
+        return worker.Evaluate(context);
+      }
+      return prepared->Evaluate(context);
     }
     auto bound = BoundExpression::Prepare(expression);
     EXPECT_THAT(bound, IsOk());
@@ -550,6 +557,56 @@ TEST_F(PreparedOperandTest, MovingPreparedStorageKeepsSourceIdentityAndTypedOper
   EXPECT_THAT(fs.events, IsEmpty());
 }
 
+TEST_F(PreparedOperandTest, IndexedWorkersReuseIndependentRegexSlotsAndCaptures) {
+  ASSERT_OK_AND_ASSIGN(auto command, parser::Parse({".", "-regex", "(fi)(le)", "-rxc", "need(le)"}));
+  parser::BindMatchers(command, regex::Grammar::kRe2, parser::CaseMode::kSensitive);
+  ASSERT_OK_AND_ASSIGN(auto prepared, PreparedExpression::Prepare(*command.expression));
+  auto first = prepared.MakeWorker();
+  auto second = prepared.MakeWorker();
+  auto moved = std::move(first);
+  second = std::move(moved);
+  EXPECT_THAT(second.MatcherCount(), Eq(2));
+  EXPECT_THAT(second.StorageBytes(), Ge(sizeof(PreparedExpression::Worker)));
+  std::vector<std::string> captures;
+  EvalContext context{
+      .visit = visit,
+      .emit = IgnoreOutput,
+      .fs = fs,
+      .now = absl::UnixEpoch(),
+      .tz = absl::UTCTimeZone(),
+      .control = control,
+      .captures = captures,
+  };
+  const auto third = prepared.MakeWorker();
+  const auto moved_program = std::move(prepared);
+  EXPECT_THAT(second.Evaluate(context).matched, IsTrue());
+  EXPECT_THAT(captures, ElementsAre("file", "fi", "le"));
+  captures.clear();
+  context.content.Invalidate();
+  EXPECT_THAT(third.Evaluate(context).matched, IsTrue());
+  EXPECT_THAT(captures, ElementsAre("file", "fi", "le"));
+  context.content.Invalidate();
+  EXPECT_THAT(moved_program.Evaluate(context).matched, IsTrue());
+}
+
+TEST_F(PreparedOperandTest, WorkerWithoutACompiledMatcherKeepsNoMatchSemantics) {
+  ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({".", "-rxc", "needle"}));
+  ASSERT_OK_AND_ASSIGN(const auto prepared, PreparedExpression::Prepare(*command.expression));
+  const auto worker = prepared.MakeWorker();
+  EXPECT_THAT(worker.MatcherCount(), Eq(1));
+  EvalContext context{
+      .visit = visit,
+      .emit = IgnoreOutput,
+      .fs = fs,
+      .now = absl::UnixEpoch(),
+      .tz = absl::UTCTimeZone(),
+      .control = control,
+  };
+  EXPECT_THAT(worker.Evaluate(context).matched, IsFalse());
+  EXPECT_THAT(prepared.Evaluate(context).matched, IsFalse());
+  EXPECT_THAT(fs.events, IsEmpty());
+}
+
 TEST_F(PreparedOperandTest, TypeListsMatchEveryEntryTypeAndRejectMalformedSuffixes) {
   constexpr auto kTypes = std::to_array({
       vfs::FileType::kUnknown,
@@ -670,12 +727,13 @@ TEST_F(PreparedOperandTest, MissingOperandsStayFalseWithoutObservations) {
 INSTANTIATE_TEST_SUITE_P(
     Executors,
     ExpressionContractTest,
-    ::testing::Values(Executor::kTree, Executor::kBound, Executor::kPrepared),
+    ::testing::Values(Executor::kTree, Executor::kBound, Executor::kPrepared, Executor::kPreparedWorker),
     [](const ::testing::TestParamInfo<Executor>& info) {
       switch (info.param) {
         case Executor::kTree: return "Tree";
         case Executor::kBound: return "Bound";
         case Executor::kPrepared: return "Prepared";
+        case Executor::kPreparedWorker: return "PreparedWorker";
       }
       return "Invalid";
     });

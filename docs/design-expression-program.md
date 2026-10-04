@@ -517,3 +517,21 @@ ordinary dispatcher; parser/traversal-only primaries preserve their existing tru
 
 Further preparation must preserve when failed observations occur. In particular, username lookup,
 reference-file stat, field expansion and conditional content reads cannot silently move to startup.
+
+### Indexed worker matcher candidate
+
+`PreparedExpression::MakeWorker` assigns one dense slot per path/content regex node. A worker
+owns its forked mutable regex state and borrows its prepared expression; the prepared expression
+and source AST must outlive it. Moving either owner preserves allocated storage identities.
+The API binds each worker to its expression, so callers cannot accidentally evaluate a slot vector
+against another program. Worker evaluation calls indexed regex callbacks directly, without
+`WorkerMatchers`' per-predicate map search. Serial prepared evaluation retains the immutable
+compiled matcher; absent matchers remain false, and a failed fork retains the original fallback.
+
+The existing tree/map path stays available. Regex kernel benchmarks compare it with the indexed
+worker path, including worker construction in preparation timings. Content and path regexes are
+measured separately; the full matrix has 333 cases. Owned-slot capacity is reported separately
+from backend allocations, which are not estimated. Named oracle cases include the worker path,
+plus persistent independent workers, captures, source/worker moves, and unbound matcher cases.
+No production parallel driver has switched yet. Match-output/grep's separate worker program and
+remaining dynamic operand families retain their current handling pending their own audit.

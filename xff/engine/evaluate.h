@@ -341,7 +341,32 @@ class BoundExpression final {
 // Experimental bound tree with typed immutable operand pools. Source ownership follows
 // BoundExpression. Preparation performs no filesystem or account-database observations.
 class PreparedExpression final {
+ private:
+  struct Data;
+
  public:
+  // Owns one worker's mutable matcher state. The prepared expression (including across a move)
+  // and its source AST must outlive this worker. Do not evaluate one worker concurrently.
+  class Worker final {
+   public:
+    Worker(Worker&&) noexcept;
+    Worker& operator=(Worker&&) noexcept;
+    Worker(const Worker&) = delete;
+    Worker& operator=(const Worker&) = delete;
+    ~Worker();
+
+    EvaluationResult Evaluate(EvalContext& context) const;
+    [[nodiscard]] std::size_t MatcherCount() const;
+    // Slot capacity only; regex backend allocations and the shared expression are excluded.
+    [[nodiscard]] std::size_t StorageBytes() const;
+
+   private:
+    friend class PreparedExpression;
+    struct State;
+    explicit Worker(std::unique_ptr<State> state);
+    std::unique_ptr<State> state_;
+  };
+
   static absl::StatusOr<PreparedExpression> Prepare(const parser::Expr& expression);
   PreparedExpression(PreparedExpression&&) noexcept;
   PreparedExpression& operator=(PreparedExpression&&) noexcept;
@@ -350,13 +375,13 @@ class PreparedExpression final {
   ~PreparedExpression();
 
   EvaluationResult Evaluate(EvalContext& context) const;
+  [[nodiscard]] Worker MakeWorker() const;
   [[nodiscard]] std::size_t NodeCount() const;
   [[nodiscard]] std::size_t OperandCount() const;
   // Object and owned buffer capacities, excluding allocator headers and the shared source AST.
   [[nodiscard]] std::size_t StorageBytes() const;
 
  private:
-  struct Data;
   struct Cursor;
   explicit PreparedExpression(std::unique_ptr<Data> data);
   std::unique_ptr<Data> data_;

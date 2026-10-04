@@ -109,6 +109,19 @@ The candidate is not selected by production. CI measurements are pending; indexe
 and the other invariant families in the operand audit still remain to implement or reject with
 evidence. No additional speedup is claimed for scalar preparation yet.
 
+### EP03 indexed worker matcher candidate
+
+The follow-up assigns dense matcher slots while preparing path/content regex operations, then
+forks execution state once per worker. Its callbacks index worker-owned storage directly; other
+predicates do not gain a matcher lookup. The API binds workers to the prepared expression to avoid
+cross-program slot mismatches. Missing matchers and failed forks retain existing behavior.
+
+The 333-case matrix retains tree/bound/prepared scalar measurements and adds `tree-worker` and
+`prepared-worker` comparisons for path and content regexes. Preparation includes worker setup;
+kernels reuse the same worker. Stored capacities exclude regex-backend allocations, which must
+be measured separately. CI timing and complete driver integration remain pending. Keep this as an
+experiment until the oracle, sanitizer checks and repeated native measurements support adoption.
+
 ## Hosted capacity and benchmark backfill
 
 Benchmark run 36831896372 failed macOS aggregation because one shard recorded five host CPUs

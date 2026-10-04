@@ -47,7 +47,26 @@ class ExpressionFs final : public xff::vfs::FileSystem {
   absl::StatusOr<std::string> ReadContent(std::string_view) const override { return std::string("needle\n"); }
 };
 
-enum class Executor { kTree, kBound, kPrepared };
+enum class Executor { kTree, kBound, kPrepared, kTreeWorker, kPreparedWorker };
+
+struct PreparedWorkerBenchmark {
+  xff::engine::PreparedExpression expression;
+  xff::engine::PreparedExpression::Worker worker;
+
+  static absl::StatusOr<PreparedWorkerBenchmark> Prepare(const xff::parser::Expr& source) {
+    MBO_ASSIGN_OR_RETURN(auto expression, xff::engine::PreparedExpression::Prepare(source));
+    auto worker = expression.MakeWorker();
+    return PreparedWorkerBenchmark{.expression = std::move(expression), .worker = std::move(worker)};
+  }
+
+  xff::engine::EvaluationResult Evaluate(xff::engine::EvalContext& context) const { return worker.Evaluate(context); }
+
+  std::size_t NodeCount() const { return expression.NodeCount(); }
+
+  std::size_t OperandCount() const { return expression.OperandCount(); }
+
+  std::size_t StorageBytes() const { return expression.StorageBytes() + worker.StorageBytes(); }
+};
 
 struct ExpressionCase {
   std::string_view name;
@@ -99,6 +118,11 @@ constexpr auto kCases = std::to_array<ExpressionCase>({
         .argument = "n[a-z]+le",
     },
     {
+        .name = "path-regex",
+        .primary = "-regex",
+        .argument = "tree/file[.]txt",
+    },
+    {
         .name = "fuzzy",
         .primary = "-fuzzy",
         .argument = "file",
@@ -137,10 +161,12 @@ void Prepare(benchmark::State& state, const ExpressionCase& example) {
       state.SkipWithError(command.status().ToString());
       break;
     }
-    if constexpr (Mode != Executor::kTree) {
+    if constexpr (Mode != Executor::kTree && Mode != Executor::kTreeWorker) {
       const auto program = [&] {
         if constexpr (Mode == Executor::kBound) {
           return xff::engine::BoundExpression::Prepare(*command->expression);
+        } else if constexpr (Mode == Executor::kPreparedWorker) {
+          return PreparedWorkerBenchmark::Prepare(*command->expression);
         } else {
           return xff::engine::PreparedExpression::Prepare(*command->expression);
         }
@@ -153,6 +179,11 @@ void Prepare(benchmark::State& state, const ExpressionCase& example) {
     } else {
       // The shipping tree executor has no additional preparation table.
       benchmark::DoNotOptimize(command->expression.get());
+      if constexpr (Mode == Executor::kTreeWorker) {
+        xff::engine::WorkerMatchers worker;
+        worker.Bind(*command->expression);
+        benchmark::DoNotOptimize(worker);
+      }
     }
   }
 }
@@ -169,6 +200,8 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
       return xff::engine::BoundExpression::Prepare(*command->expression);
     } else if constexpr (Mode == Executor::kPrepared) {
       return xff::engine::PreparedExpression::Prepare(*command->expression);
+    } else if constexpr (Mode == Executor::kPreparedWorker) {
+      return PreparedWorkerBenchmark::Prepare(*command->expression);
     } else {
       return absl::StatusOr<std::reference_wrapper<const xff::parser::Expr>>(std::cref(*command->expression));
     }
@@ -193,9 +226,14 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
       .tz = absl::UTCTimeZone(),
       .control = control,
   };
+  xff::engine::WorkerMatchers worker;
+  if constexpr (Mode == Executor::kTreeWorker) {
+    worker.Bind(*command->expression);
+    context.worker_matchers = worker;
+  }
   // Check the result before timing; all core cases must reach their complete AND chain.
   const auto evaluate = [&] {
-    if constexpr (Mode != Executor::kTree) {
+    if constexpr (Mode != Executor::kTree && Mode != Executor::kTreeWorker) {
       return program.Evaluate(context);
     } else {
       return xff::engine::EvaluateDeferred(program.get(), context);
@@ -218,11 +256,11 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
   benchmark::DoNotOptimize(emitted);
   state.SetItemsProcessed(state.iterations() * state.range(1));
   state.counters["predicates_per_entry"] = static_cast<double>(state.range(0));
-  if constexpr (Mode != Executor::kTree) {
+  if constexpr (Mode != Executor::kTree && Mode != Executor::kTreeWorker) {
     state.counters["extra_bytes"] = static_cast<double>(program.StorageBytes());
     state.counters["nodes"] = static_cast<double>(program.NodeCount());
   }
-  if constexpr (Mode == Executor::kPrepared) {
+  if constexpr (Mode == Executor::kPrepared || Mode == Executor::kPreparedWorker) {
     state.counters["operands"] = static_cast<double>(program.OperandCount());
   }
 }
@@ -270,6 +308,10 @@ int main(int argc, char** argv) {
     Register<Executor::kTree>("tree", example);
     Register<Executor::kBound>("bound", example);
     Register<Executor::kPrepared>("prepared", example);
+    if (example.name == "regex" || example.name == "path-regex") {
+      Register<Executor::kTreeWorker>("tree-worker", example);
+      Register<Executor::kPreparedWorker>("prepared-worker", example);
+    }
   }
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();
