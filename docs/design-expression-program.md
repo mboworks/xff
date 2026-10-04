@@ -94,7 +94,7 @@ table, and the compact/direct trie experiments behind the same exact-lookup inte
 help token scanning as well as spelling lookup, but would need an explicit operand-boundary design.
 Do not turn failure to find a fast frozen table into a blocker for expression execution work.
 
-### FrozenMap/Set adoption check after MBO #550
+### FrozenMap/Set adoption check after MBO #550 and #553
 
 The merged [API documentation](https://github.com/mboworks/mbo/blob/bf65c21c495fc789feab79f4516d1ae7215cb292/mbo/container/experimental/FROZEN.md)
 and headers satisfy the structural requirements: constexpr inline immutable storage, shared map/set
@@ -118,13 +118,26 @@ by a runtime fallback. The experimental API and container measurements alone do 
 XFF startup speedup. Pin the inspected MBO commit in the experiment and retain the current production
 index until those application measurements justify replacement.
 
-The user reports that the merged Frozen containers are substantially slower than
-`std::unordered_map` / `std::unordered_set` in their measurements. No raw measurements from that
-comparison have been imported into this XFF analysis. Treat performance as an unresolved adoption
-gate, not as a benefit of constexpr construction. Include the standard unordered container and
-the existing bounded-probing prototype in the application comparison. A dependency update or
-production replacement is not justified by API availability alone. The prepared executor removes
-per-entry name lookup regardless of which container eventually serves startup lookup.
+MBO [PR #553](https://github.com/mboworks/mbo/pull/553), merged at
+`9d11197da77646e4fa98aa69f5340a636cde2e6f`, changes the string default from FNV-1a to fambo.
+Its retained Apple M5 Pro measurements revise the earlier negative assessment: the 64-key sparse
+map's mixed lookup falls from 11.16 to 5.97 ns in the hash comparison; the follow-up default check
+measures 5.98 ns. These are fixed ten-byte keys in a warm cyclic workload, not XFF flag measurements.
+Hash cost was material; Frozen containers are viable candidates again, with fambo as the baseline.
+
+Known registries permit a simpler corpus-specific hash if it wins. Generate candidates from the
+registry rather than duplicating spellings: for example length and selected byte positions with
+small mixing constants. Prove construction for each mode at compile time. Distinct full hashes
+alone are insufficient: verify occupied-slot placement, preserve alias-to-ID mappings, and keep
+exact key equality for unknown inputs. Every selected-byte read must also be valid for empty or
+short unknown tokens. Test similar prefixes/suffixes, edited spellings and unsupported-mode flags.
+Reject an unsuitable candidate at construction instead of adding a runtime collision fallback.
+
+Compare total lookup cost and table footprint, not hash speed alone. The existing sorted index,
+bounded-probing prototype, standard unordered containers, default fambo Frozen and any simpler
+perfect-placement candidate belong in the same application experiment. Include sparse/minimal
+layouts, full commands, normal constexpr budgets and both native platforms. The prepared executor
+continues to avoid per-entry name lookup regardless of which index serves startup parsing.
 
 ## Program architecture
 

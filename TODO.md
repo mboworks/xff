@@ -43,13 +43,15 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       value reuse independently; keep reordering behind a stronger equivalence proof.
 - [ ] EP07: Qualify the winning executor on native macOS ARM64 and Linux x86-64; update --explain,
       self-documentation and performance evidence; enable only measured, semantically complete paths.
-- [ ] EP-S01: Evaluate the experimental constexpr FrozenMap/Set merged in MBO PR #550 for startup
-      lookup. They are available upstream at `bf65c21c495fc789feab79f4516d1ae7215cb292`, outside
-      XFF's current pin. Compare actual per-mode registries, exact misses, sparse/minimal placement,
-      compile-time/storage cost and complete parser commands before adoption. This does not block
-      EP01-EP07; the prepared per-entry executor must avoid name lookup altogether.
-      The user reports substantial regressions against standard unordered containers; include
-      those baselines and require an XFF workload win before changing the dependency or index.
+- [ ] EP-S01: Evaluate experimental constexpr FrozenMap/Set using MBO PR #553 at
+      `9d11197da77646e4fa98aa69f5340a636cde2e6f`, outside XFF's current pin. Fambo replaces the
+      former FNV string hash and brings the measured 64-key sparse mixed lookup to about 6 ns;
+      the earlier blanket negative assessment no longer applies. Compare default fambo and simple
+      registry-specific hash candidates against the sorted/probing/unordered baselines. Prove
+      collision-free placement for each mode's known keys; retain exact equality for unknown input.
+      Measure actual aliases/misses, sparse/minimal placement, compile-time/storage cost and whole
+      parser commands on both platforms. This does not block EP01-EP07; the prepared per-entry
+      executor must avoid name lookup altogether. Adopt only after an XFF workload win.
 - [ ] EP-S02: Revisit experimental MBO interning for dynamic names only when a concrete consumer and
       measurements justify a dependency update; prefer existing strong IDs and indexed execution slots.
 
