@@ -17,6 +17,7 @@ import subprocess
 import tempfile
 
 import benchmark_compare
+import benchmark_matrix
 import benchmark_records
 
 SCHEMA = 1
@@ -160,7 +161,33 @@ def page(title, body):
             '</style><h1>' + html.escape(title) + '</h1>' + body + '</html>\n')
 
 
-def render_report(record, history_href="../../../"):
+def presentation_baselines(root, checkout):
+    """Reconstruct missing main-run baselines without changing any retained observation."""
+    records = {path: benchmark_records.read(path) for path in benchmark_records.run_paths(root)}
+    main = {path: record for path, record in records.items()
+            if record.get('source', {}).get('event') == 'push'
+            and record['source'].get('head_branch') == 'main'
+            and record.get('tool_comparisons', {}).get('contract', {}).get('estimator') == 'mean-fastest'}
+    missing = {path: record for path, record in main.items()
+               if record['tool_comparisons'].get('baseline', {}).get('status') != 'available'}
+    if not missing:
+        return {}
+    revisions = subprocess.check_output(
+        ['git', '-C', str(checkout), 'rev-list', '--first-parent', 'HEAD'], text=True).splitlines()
+    positions = {revision: index for index, revision in enumerate(revisions)}
+    baselines = {}
+    for path, record in missing.items():
+        position = positions.get(record['head'])
+        if position is None:
+            continue  # An unrelated or unavailable history must not become a claimed baseline.
+        comparison = dict(record['tool_comparisons'])
+        benchmark_matrix.attach_baseline_records(comparison, main.values(), revisions[position + 1:])
+        if comparison['baseline']['status'] == 'available':
+            baselines[path] = comparison['baseline']
+    return baselines
+
+
+def render_report(record, history_href="../../../", baseline=None):
     if benchmark_records.is_local(record):
         body = (f'<p><a href="{html.escape(history_href)}">Benchmark history</a> | '
                 '<a href="report.json">Raw observations and provenance</a> | '
@@ -212,7 +239,12 @@ def render_report(record, history_href="../../../"):
             '<details><summary>Measurement contract</summary><pre>' + html.escape(json.dumps(record["contract"], indent=2)) + '</pre></details>'
             '<table><tr><th>Scenario</th><th>Metric</th><th>Base</th><th>Head</th><th>Ratio</th></tr>' + ''.join(rows) + '</table>')
     if "tool_comparisons" in record:
-        body += benchmark_compare.render(record["tool_comparisons"])
+        comparison = record["tool_comparisons"]
+        if baseline is not None:
+            comparison = dict(comparison, baseline=baseline)
+            body += ('<p>The comparison baseline was reconstructed from compatible retained earlier main '
+                     'measurements during publication. Raw observations remain unchanged.</p>')
+        body += benchmark_compare.render(comparison)
     return page(benchmark_compare.benchmark_matrix.platform_title(record), body)
 
 
@@ -220,7 +252,7 @@ def recorded_platform(record):
     return benchmark_records.platform_key(record)
 
 
-def render_site(root, pulls, repository):
+def render_site(root, pulls, repository, baselines=None):
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
         raise ValueError("invalid repository")
     by_sha = {pull["merge_commit_sha"]: pull for pull in pulls if pull.get("merged_at")}
@@ -270,7 +302,8 @@ def render_site(root, pulls, repository):
             item[1][1], item[0][0], item[0][1] == "post-merge"), reverse=True):
         source = record["source"]
         relative = path.parent.relative_to(root).as_posix()
-        (path.parent / "index.html").write_text(render_report(record, "../" * len(path.parent.relative_to(root).parts)))
+        (path.parent / "index.html").write_text(render_report(
+            record, "../" * len(path.parent.relative_to(root).parts), (baselines or {}).get(path)))
         commit = record["head"]
         base = record.get("base")
         baseline = (f'<a href="https://github.com/{repository}/commit/{base}">{base[:7]}</a>'
@@ -291,7 +324,7 @@ def render_site(root, pulls, repository):
                  ''.join(row for _, row in sorted(local_rows, reverse=True)) + '</table>' if local_rows else ''))
 
 
-def reference_pages(root, pulls, repository_path, repository="mboworks/xff"):
+def reference_pages(root, pulls, repository_path, repository="mboworks/xff", baselines=None):
     """Resolve stable PR/tag URLs without inventing measurements or rerunning them."""
     records = []
     for path in benchmark_records.paths(root):
@@ -300,7 +333,8 @@ def reference_pages(root, pulls, repository_path, repository="mboworks/xff"):
             continue
         source = record["source"]
         records.append((record, path.parent.relative_to(root).as_posix()))
-        (path.parent / "index.html").write_text(render_report(record, "../" * len(path.parent.relative_to(root).parts)))
+        (path.parent / "index.html").write_text(render_report(
+            record, "../" * len(path.parent.relative_to(root).parts), (baselines or {}).get(path)))
     tags = subprocess.check_output(
         ["git", "-C", str(repository_path), "tag", "--list", "v*"], text=True).splitlines()
     references = {}
@@ -405,9 +439,10 @@ def main():
             retain(args.root, record, source)
         pages = json.loads(args.pulls.read_text())
         pulls = [pull for group in pages for pull in group] if pages and isinstance(pages[0], list) else pages
-        (args.root / "index.html").write_text(render_site(args.root, pulls, args.repository))
+        baselines = presentation_baselines(args.root, args.checkout) if args.action == "refresh" else {}
+        (args.root / "index.html").write_text(render_site(args.root, pulls, args.repository, baselines))
         if args.action == "refresh":
-            reference_pages(args.root, pulls, args.checkout, args.repository)
+            reference_pages(args.root, pulls, args.checkout, args.repository, baselines)
     return 0
 
 

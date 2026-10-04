@@ -36,6 +36,135 @@ def source(run=1, attempt=1, event="pull_request", sha=HEAD):
             "head_sha": sha, "head_branch": "feature", "event": event, "pull_requests": [{"number": 9}]}
 
 
+def comparison(elapsed=2):
+    observed = {metric: elapsed for metric in history.benchmark_compare.METRICS}
+    observed.update(stderr='', exit_codes=[0])
+    return {'schema': 1, 'contract': {
+                'repetitions': 1, 'retained': 1, 'estimator': 'mean-fastest',
+                'file_counts': [10], 'cpu_counts': [1], 'build_identity': 'build',
+                'storage': {'filesystem': 'tmpfs', 'memory_required': True},
+                'affinity_by_cpu_count': {'1': [0]}},
+            'tools': {'xff': {'sha256': 'binary'}, 'find': {'sha256': 'find', 'status': 'available'}},
+            'tasks': [{'dataset': 'broad', 'shape': 'broad-10', 'name': 'files', 'cpus': 1, 'files': 10,
+                       'fixture_identity': 'fixture', 'expected_sha256': 'output', 'input_files': 10,
+                       'expected_count': 10, 'skips': {},
+                       'participants': {tool: {'samples': [observed], 'pipeline': [[tool, '.']]}
+                                        for tool in ('xff', 'find')}}]}
+
+
+class BenchmarkPresentationBaselineTest(unittest.TestCase):
+    def retain(self, root, run, head, elapsed=2, event='push', branch='main', baseline=None):
+        value = record()
+        value.update(head=head, tool_comparisons=comparison(elapsed))
+        if baseline is not None:
+            value['tool_comparisons']['baseline'] = baseline
+        provenance = source(run, event=event, sha=head)
+        provenance['head_branch'] = branch
+        history.retain(root, value, provenance)
+        return root / 'runs' / str(run) / '1' / 'report.json'
+
+    def reconstruct(self, root, revisions):
+        with mock.patch.object(history.subprocess, 'check_output', return_value='\n'.join(revisions)) as git:
+            result = history.presentation_baselines(root, root)
+        git.assert_called_once_with(['git', '-C', str(root), 'rev-list', '--first-parent', 'HEAD'], text=True)
+        return result
+
+    def test_uses_nearest_ancestor_even_if_older_revision_was_measured_later(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            current = self.retain(root, 2, HEAD)
+            self.retain(root, 1, BASE, 3)
+            self.retain(root, 4, 'c' * 40, 4)  # Older revision, newer measurement date.
+            self.retain(root, 5, 'd' * 40, 5)  # Future revision.
+            self.retain(root, 6, 'e' * 40, 6, event='pull_request')
+            before = {path: path.read_bytes() for path in root.rglob('report.json')}
+            result = self.reconstruct(root, ['d' * 40, HEAD, 'e' * 40, BASE, 'c' * 40])
+            self.assertEqual(result[current]['head'], BASE)
+            self.assertEqual(result[current]['run'], 1)
+            self.assertEqual(result[current]['averages']['broad/files/1/10']['xff'], 3)
+            self.assertEqual(before, {path: path.read_bytes() for path in root.rglob('report.json')})
+
+    def test_existing_baseline_and_unrelated_revision_are_not_rewritten(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            recorded = self.retain(root, 1, HEAD, baseline={
+                'status': 'available', 'head': BASE, 'run': 7, 'attempt': 1,
+                'policy': 'mean of fastest 1/1 runs', 'averages': {}})
+            unrelated = self.retain(root, 2, 'c' * 40)
+            self.retain(root, 3, BASE)
+            result = self.reconstruct(root, [HEAD, BASE])
+            self.assertNotIn(recorded, result)
+            self.assertNotIn(unrelated, result)
+            self.assertEqual(result, {})  # The oldest known commit cannot compare with itself.
+
+    def test_incompatible_nearest_ancestor_falls_back_to_compatible_older_one(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            current = self.retain(root, 3, HEAD)
+            changed = self.retain(root, 2, BASE)
+            value = json.loads(changed.read_text())
+            value['tool_comparisons']['contract']['build_identity'] = 'different-build'
+            changed.write_text(json.dumps(value))
+            self.retain(root, 1, 'c' * 40)
+            result = self.reconstruct(root, [HEAD, BASE, 'c' * 40])
+            self.assertEqual(result[current]['head'], 'c' * 40)
+
+    def test_packed_reports_are_read_without_modifying_the_archive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            current = self.retain(root, 2, HEAD)
+            previous = self.retain(root, 1, BASE)
+            packed = previous.with_suffix('.json.gz')
+            original = gzip.compress(previous.read_bytes())
+            packed.write_bytes(original)
+            previous.unlink()
+            self.assertEqual(self.reconstruct(root, [HEAD, BASE])[current]['head'], BASE)
+            self.assertEqual(packed.read_bytes(), original)
+            self.assertFalse(previous.exists())
+
+    def test_refreshed_pages_render_reconstructed_baseline_but_raw_json_stays_unchanged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            current = self.retain(root, 2, HEAD)
+            self.retain(root, 1, BASE)
+            original = current.read_bytes()
+            baselines = self.reconstruct(root, [HEAD, BASE])
+            for render in (lambda: history.render_site(root, [], 'owner/repo', baselines),
+                           lambda: history.reference_pages(root, [], root, 'owner/repo', baselines)):
+                with self.subTest(render=render), mock.patch.object(history.subprocess, 'check_output', return_value=''):
+                    render()
+                    document = current.with_name('index.html').read_text()
+                    self.assertIn('baseline was reconstructed', document)
+                    self.assertNotIn('No compatible merged baseline', document)
+                    self.assertIn(BASE[:10], document)
+                    self.assertEqual(current.read_bytes(), original)
+
+    def test_no_main_results_needs_no_git_history(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.retain(root, 1, HEAD, event='pull_request')
+            with mock.patch.object(history.subprocess, 'check_output') as git:
+                self.assertEqual(history.presentation_baselines(root, root), {})
+            git.assert_not_called()
+
+    def test_refresh_command_connects_reconstruction_to_published_pages(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            current = self.retain(root, 2, HEAD)
+            self.retain(root, 1, BASE)
+            pulls = root / 'pulls.json'
+            pulls.write_text('[]')
+            arguments = ['benchmark_history.py', 'refresh', '--root', str(root), '--pulls', str(pulls),
+                         '--checkout', str(root), '--repository', 'owner/repo']
+            def git(command, text):
+                self.assertTrue(text)
+                return HEAD + '\n' + BASE if 'rev-list' in command else ''
+            with mock.patch('sys.argv', arguments), mock.patch.object(history.subprocess, 'check_output', side_effect=git):
+                self.assertEqual(history.main(), 0)
+            self.assertIn('baseline was reconstructed', current.with_name('index.html').read_text())
+            self.assertNotIn('baseline', json.loads(current.read_text())['tool_comparisons'])
+
+
 class BenchmarkHistoryTest(unittest.TestCase):
     def test_comparisons_are_rendered_and_bound_to_head_binary(self):
         value = record()

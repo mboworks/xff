@@ -52,6 +52,14 @@ It checks the measured head against the source workflow SHA and derives run iden
 It shares the `coverage-pages` deployment queue and retained branch with coverage and release
 publication, preserving their pages.
 
+A full publication refresh reconstructs missing comparison baselines for retained main runs from
+compatible earlier commits on main's first-parent history. Commit order determines the nearest
+eligible baseline; measurement dates only select attempts of that commit. The current commit,
+future commits, PR results, incompatible contracts and unrelated history cannot become baselines.
+Rendered pages label reconstructed comparisons. Original JSON observations and existing recorded
+baselines remain unchanged. Completed Actions job summaries are historical output and are not
+rewritten; refreshed comparisons are available on the corresponding published run pages.
+
 The index groups the newest retained result for each PR phase and release. PRs use actual merge
 time, newest first, with post-merge before pre-merge within a group. Release rows use the tagged
 commit time. Open PRs use measurement creation time. Unassociated main runs are collapsed into

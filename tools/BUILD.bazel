@@ -695,6 +695,7 @@ py_library(
     imports = ["."],
     deps = [
         ":benchmark_compare_lib",
+        ":benchmark_matrix_lib",
         ":benchmark_records_lib",
     ],
 )
@@ -704,6 +705,7 @@ py_binary(
     srcs = ["benchmark_history.py"],
     deps = [
         ":benchmark_compare_lib",
+        ":benchmark_matrix_lib",
         ":benchmark_records_lib",
     ],
 )
