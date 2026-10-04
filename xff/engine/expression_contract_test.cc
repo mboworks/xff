@@ -31,12 +31,14 @@ namespace {
 
 using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
+using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
+using ::testing::Not;
 using ::testing::Optional;
 using ::testing::SizeIs;
 
@@ -236,7 +238,7 @@ TEST_F(ExpressionContractTest, ShortCircuitSkipsReadsAndNotDiscardsFuzzyScore) {
 TEST_F(ExpressionContractTest, DeferredReplayDoesNotRepeatPrefixOutput) {
   ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-printf", "prefix", "-top", "1", "-printf", "suffix"}));
   const auto pending = Observe(*command.expression);
-  ASSERT_THAT(pending.waiting_at, Optional(::testing::_));
+  ASSERT_THAT(pending.waiting_at, Optional(_));
   EXPECT_THAT(pending.deferred, IsTrue());
   EXPECT_THAT(fs.events, ElementsAre("output prefix"));
   decisions.emplace(*pending.waiting_at, true);
@@ -253,6 +255,64 @@ TEST_F(ExpressionContractTest, DryRunExecutionRemainsUnknownAndStopsLaterEffects
   ASSERT_THAT(fs.events, SizeIs(1));
   EXPECT_THAT(fs.events.front(), HasSubstr("ignored-command"));
   EXPECT_THAT(control.mutation_error, IsOk());
+}
+
+TEST_F(ExpressionContractTest, MetadataFailureIsUnknownAndCannotBeNegatedOrHidden) {
+  const auto fail = [this]() { return fs.Stat(visit.path, false).status(); };
+  visit.load_metadata.emplace(fail);
+  ASSERT_OK_AND_ASSIGN(auto skipped, Parse({".", "-false", "-size", "+1c"}));
+  EXPECT_THAT(Observe(*skipped.expression).matched, IsFalse());
+  EXPECT_THAT(fs.events, IsEmpty());
+  ASSERT_OK_AND_ASSIGN(auto reached, Parse({".", "!", "-size", "+1c", ",", "-printf", "later"}));
+  const auto result = Observe(*reached.expression);
+  EXPECT_THAT(result.unknown, IsTrue());
+  EXPECT_THAT(control.metadata_error, StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("stat failure")));
+  EXPECT_THAT(fs.events, ElementsAre("stat tree/file.txt"));
+}
+
+TEST_F(ExpressionContractTest, UnreachableSizeOperandStillParticipatesInWholeCommandValidation) {
+  ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-false", "-size", "garbage"}));
+  EXPECT_THAT(ValidateSizeArgs(*command.expression), StatusIs(absl::StatusCode::kInvalidArgument, _));
+  EXPECT_THAT(fs.events, IsEmpty());
+}
+
+TEST_F(ExpressionContractTest, IndependentFirstBudgetsPersistAcrossEntries) {
+  ASSERT_OK_AND_ASSIGN(
+      auto command,
+      Parse({".", "(", "-first", "1", "-printf", "first", ")", "-o", "(", "-first", "1", "-printf", "second", ")"}));
+  EXPECT_THAT(Observe(*command.expression).matched, IsTrue());
+  memo.clear();  // New entry; per-entry replay memo expires, per-run counters remain.
+  EXPECT_THAT(Observe(*command.expression).matched, IsTrue());
+  memo.clear();
+  EXPECT_THAT(Observe(*command.expression).matched, IsFalse());
+  EXPECT_THAT(fs.events, ElementsAre("output first", "output second"));
+  EXPECT_THAT(counts, SizeIs(2));
+}
+
+TEST_F(ExpressionContractTest, TwoDeferredFrontiersPreserveExactlyOnceEffects) {
+  ASSERT_OK_AND_ASSIGN(
+      auto command,
+      Parse({".", "-printf", "prefix", "-top", "1", "-printf", "middle", "-top", "1", "-printf", "suffix"}));
+  const auto first = Observe(*command.expression);
+  ASSERT_THAT(first.waiting_at, Optional(_));
+  decisions.emplace(*first.waiting_at, true);
+  const auto second = Observe(*command.expression);
+  ASSERT_THAT(second.waiting_at, Optional(_));
+  EXPECT_THAT(second.waiting_at, Not(Eq(first.waiting_at)));
+  EXPECT_THAT(fs.events, ElementsAre("output prefix", "output middle"));
+  decisions.emplace(*second.waiting_at, true);
+  EXPECT_THAT(Observe(*command.expression).matched, IsTrue());
+  EXPECT_THAT(fs.events, ElementsAre("output prefix", "output middle", "output suffix"));
+}
+
+TEST_F(ExpressionContractTest, FailedDeletionUsesTheIsolatedSinkAndPreservesMutationError) {
+  ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-delete", "-printf", "later"}));
+  const auto result = Observe(*command.expression);
+  EXPECT_THAT(result.matched, IsFalse());
+  EXPECT_THAT(
+      control.mutation_error,
+      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("isolated filesystem denies mutation")));
+  EXPECT_THAT(fs.events, ElementsAre("remove tree/file.txt"));
 }
 
 TEST_F(ExpressionContractTest, TraversalEffectsStayObservableEvenWithFalseResult) {

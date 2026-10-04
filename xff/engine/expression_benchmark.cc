@@ -164,7 +164,7 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
     benchmark::DoNotOptimize(iteration);
     for (std::int64_t entry = 0; entry < state.range(1); ++entry) {
       context.content.Invalidate();
-      const auto result = xff::engine::EvaluateDeferred(*command->expression, context);
+      auto result = xff::engine::EvaluateDeferred(*command->expression, context);
       benchmark::DoNotOptimize(result.matched);
     }
   }
