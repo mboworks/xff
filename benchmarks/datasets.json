@@ -1750,6 +1750,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "cf4a1d961fbfc782c4d9343a3dd1a5ffcc28ab3cfad226744b800e2448e8f14b"
+        },
+        {
+          "commit": "9cb9a1ae42351d32be48dd3b15ab2014c3d96327",
+          "date": "2026-10-04T10:51:31Z",
+          "measured": "2026-10-04T10:51:34Z",
+          "report": "runs/37196735470/1/linux/report.json",
+          "report_identity": "562f8163340c173b7c35abd5c038c1d6981ef86f19d35a802ed4f13f31d457b0",
+          "batch": null,
+          "batch_identity": null,
+          "method": "cf4a1d961fbfc782c4d9343a3dd1a5ffcc28ab3cfad226744b800e2448e8f14b"
         }
       ]
     },
@@ -3910,6 +3920,16 @@
           "measured": "2026-10-04T09:57:45Z",
           "report": "runs/37193812363/1/macos/report.json",
           "report_identity": "fc475d1063a149bb085603cac2611b17d480d39e9ffc12680e32eefc89f8846a",
+          "batch": null,
+          "batch_identity": null,
+          "method": "070d44feacbb962783282661c80aaf90c21de03be23f3716ccf5cd1ee4ebfc30"
+        },
+        {
+          "commit": "9cb9a1ae42351d32be48dd3b15ab2014c3d96327",
+          "date": "2026-10-04T10:51:31Z",
+          "measured": "2026-10-04T10:51:34Z",
+          "report": "runs/37196735470/1/macos/report.json",
+          "report_identity": "e147bbc3950f3a48452efac359eb7df9e25442418b45db86213de6da52cc259a",
           "batch": null,
           "batch_identity": null,
           "method": "070d44feacbb962783282661c80aaf90c21de03be23f3716ccf5cd1ee4ebfc30"
