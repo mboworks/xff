@@ -1897,3 +1897,33 @@ HAMT persistence and structural sharing are not needed for an immutable flag voc
 string interning adds little when names already have static storage, unless it performs the
 name-to-descriptor mapping directly. Unknown inputs must still be rejected by an exact spelling
 check, even if hashes of all registered keys are collision-free.
+
+## Indexed-worker cursor layout qualification (EP03)
+
+Run `37209991588` completed 333 correctness-checked cases on each native platform. Each family
+below summarizes six kernel cases using the geometric mean of per-case fastest-seven means
+from nine interleaved repetitions. A ratio below one favors the numerator. These are isolated
+kernels, not whole-command gains.
+
+| Comparison                               | Linux x86-64 | macOS ARM64 |
+| :--------------------------------------- | -----------: | ----------: |
+| Indexed / tree-map worker: path regex    |        0.856 |       0.582 |
+| Indexed / tree-map worker: content regex |        0.881 |       0.659 |
+| Prepared / bound: type                   |        1.146 |       0.722 |
+| Prepared / bound: size                   |        1.074 |       0.683 |
+| Prepared / bound: ordinary content       |        1.505 |       1.095 |
+| Prepared / bound: name                   |        1.289 |       1.041 |
+
+The same-session prepared/bound regression on Linux prevents adopting this layout. The preceding
+scalar-only run `37209923516` instead measured type/size ratios of 0.791/0.744 on Linux and
+0.661/0.629 on macOS, with ordinary content 1.061/1.009. This is a diagnostic comparison between
+runs; the within-run paired controls above are the decision evidence.
+
+Adding a matcher span enlarged the recursively copied cursor from two references to two references
+plus a two-word span. The revised candidate stores that span in a shared evaluation environment,
+restoring the small cursor. Worker environments are bound once after matcher storage is finalized;
+serial evaluation creates one stack environment per expression. Workers still own independent
+matcher state, and moving the worker preserves its backing storage. CI must measure the revised
+layout before attributing the regression to argument passing or claiming a recovery. Existing
+move, persistent-worker and complete evaluator oracle tests cover the lifetime change. No local
+build or benchmark campaign was run.

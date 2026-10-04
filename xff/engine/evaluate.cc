@@ -3510,18 +3510,24 @@ struct PreparedExpression::Data {
 };
 
 struct PreparedExpression::Cursor {
-  const Data& data;
+  struct Environment {
+    const Data& data;
+    MatcherSlots matchers;
+  };
+
+  // Keep the recursively copied cursor at two references. The matcher span belongs to the
+  // evaluation environment, so adding worker state does not enlarge every recursive argument.
+  const Environment& environment;
   const Data::Node& node;
-  MatcherSlots matchers;
 
   const parser::Expr& Get() const { return node.expression.get(); }
 
-  Cursor Left() const { return {.data = data, .node = data.nodes.at(node.lhs.value()), .matchers = matchers}; }
+  Cursor Left() const { return {.environment = environment, .node = environment.data.nodes.at(node.lhs.value())}; }
 
-  Cursor Right() const { return {.data = data, .node = data.nodes.at(node.rhs.value()), .matchers = matchers}; }
+  Cursor Right() const { return {.environment = environment, .node = environment.data.nodes.at(node.rhs.value())}; }
 
   bool Predicate(EvalContext& context) const {
-    return node.evaluate(Get(), data.operands.at(node.operand.value()), matchers, context);
+    return node.evaluate(Get(), environment.data.operands.at(node.operand.value()), environment.matchers, context);
   }
 
   bool FuzzyOnly() const { return node.fuzzy_only; }
@@ -3593,7 +3599,8 @@ absl::StatusOr<PreparedExpression> PreparedExpression::Prepare(const parser::Exp
 }
 
 EvaluationResult PreparedExpression::Evaluate(EvalContext& context) const {
-  const auto result = EvaluateResult(Cursor{.data = *data_, .node = data_->nodes.front()}, context);
+  const Cursor::Environment environment{.data = *data_};
+  const auto result = EvaluateResult(Cursor{.environment = environment, .node = data_->nodes.front()}, context);
   if (context.fuzzy_score.has_value()) {
     *context.fuzzy_score = result.fuzzy;
   }
@@ -3615,7 +3622,7 @@ std::size_t PreparedExpression::StorageBytes() const {
 }
 
 struct PreparedExpression::Worker::State {
-  std::reference_wrapper<const Data> expression;
+  Cursor::Environment environment;
   std::vector<std::optional<regex::Matcher>> matchers;
 };
 
@@ -3626,7 +3633,7 @@ PreparedExpression::Worker& PreparedExpression::Worker::operator=(Worker&&) noex
 PreparedExpression::Worker::~Worker() = default;
 
 PreparedExpression::Worker PreparedExpression::MakeWorker() const {
-  auto state = std::make_unique<Worker::State>(Worker::State{.expression = std::cref(*data_)});
+  auto state = std::make_unique<Worker::State>(Worker::State{.environment = {.data = *data_}});
   state->matchers.reserve(data_->matcher_sources.size());
   for (const auto& source : data_->matcher_sources) {
     const auto& expression = source.get();
@@ -3640,13 +3647,14 @@ PreparedExpression::Worker PreparedExpression::MakeWorker() const {
     }
     state->matchers.push_back(std::move(local));
   }
+  state->environment.matchers = state->matchers;
   return Worker(std::move(state));
 }
 
 EvaluationResult PreparedExpression::Worker::Evaluate(EvalContext& context) const {
-  const auto& expression = state_->expression.get();
-  const auto result = EvaluateResult(
-      Cursor{.data = expression, .node = expression.nodes.front(), .matchers = state_->matchers}, context);
+  const auto& environment = state_->environment;
+  const auto result =
+      EvaluateResult(Cursor{.environment = environment, .node = environment.data.nodes.front()}, context);
   if (context.fuzzy_score.has_value()) {
     *context.fuzzy_score = result.fuzzy;
   }
