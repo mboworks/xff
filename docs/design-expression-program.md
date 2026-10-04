@@ -47,7 +47,7 @@ in XFF's pin. No MBO files or dependency versions were changed for this plan.
 | Exact mode-dependent flag lookup         | XFF `SpellingIndex` constructs sorted per-mode arrays at compile time                      | Already available; preserves aliases and exact unknown-token rejection.                            |
 | Compile-time string hashing              | MBO hash algorithms expose constexpr hashing, including tested FNV-1a and other algorithms | Already available; choose using short-key measurements, not a new ad hoc hash.                     |
 | Frozen/perfect-hash string map and set   | Not found in either audited MBO snapshot; XFF has a benchmark-only flat-hash prototype     | Optional MBO addition for startup lookup; not a prerequisite for the executor.                     |
-| Typed node, instruction and slot IDs     | MBO `StrongId` / `StrongOrdinal` are in the pinned revision                                | Reuse distinct tags; XFF still needs the ID assignment and slot-layout design.                     |
+| Typed node, instruction and slot IDs     | MBO `ConstStrongId` / `ConstStrongOrdinal` are in the pinned revision                      | Reuse distinct tags; XFF still needs the ID assignment and slot-layout design.                     |
 | Contiguous immutable instruction storage | `std::vector` with reserve and standard arrays/spans                                       | Sufficient initially. Count nodes, reserve once, then freeze; do not add a container.              |
 | Stable growing records and owned text    | Pinned MBO `SegmentedVector`, `SegmentedDeque` and `Arena`                                 | Available when lifetime/address stability requires them; benchmark against reserved vectors.       |
 | Runtime associative lookup               | Abseil flat hash maps/sets and existing ordered maps                                       | Available for preparation. Do not replace ordered observable output with hash iteration.           |
@@ -315,7 +315,8 @@ Keep nine raw measured rounds and report the fastest-seven mean, matching the ex
 policy. For microbenchmarks, batch enough entries for reliable clock resolution and report time per
 entry and per reached predicate; do not count a never-reached 256-node chain as 256 evaluations.
 Also retain medians, all-round spread and paired comparisons so fastest-sample selection cannot hide
-tail regressions. Repeat candidate decisions in two independent local sessions.
+tail regressions. Repeat candidate decisions in two independent CI sessions. Use small focused local checks only;
+local timing campaigns require a specific need because this work prioritizes low local resource use.
 
 For CI publication use the existing three shards with three rounds each and pool before selecting
 seven of nine. Keep local machine series separate; Linux uses recorded core affinity, macOS worker
@@ -381,3 +382,66 @@ is sufficient. Reject an unhelpful optimization even when its infrastructure alr
 - Experimental MBO interning/HAMT: no dependency upgrade in the core executor work without a concrete
   consumer, API/lifetime audit and measurements. Existing strong IDs, arrays and arenas are enough
   to start.
+
+## EP01 implementation record
+
+The first implementation provides `DescribeExpression`, dense preorder source IDs from MBO
+`ConstStrongId`, and conservative registry-derived requirements. The original tree owns the nodes;
+the table borrows them and survives moving the owning `unique_ptr`, but not replacement of nodes.
+All operations remain optimization barriers. `Descriptor::pure` is explicitly insufficient to
+establish reorderability. Neither table construction nor lookup is on the production per-entry path.
+
+The isolated contract suite records output and VFS observations and checks every binary operator's
+truth table and short-circuit order, NOT's score behavior, deferred prefix replay, dry-run unknown
+results, and prune/quit effects. This is the initial oracle corpus; EP02-EP05 extend it to compare
+candidate executors and cover the full integration matrix above.
+
+`//xff/engine:expression_benchmark` separates parse/bind/contract preparation from tree execution
+on immutable in-memory entries. Its named core cases are `type`, `name`, `size`, `permission`,
+`content`, `regex`, `fuzzy` and `output`, each at 1/16/64 predicates; kernels process batches of
+10/1,000 entries. All cases match and therefore reach every predicate. Preparation includes
+teardown; kernel construction and its correctness check are untimed. Cached content is invalidated
+between entries. This initial matrix establishes dispatch/operand costs; it is not the extended
+selectivity/parallel/integration qualification matrix.
+
+The existing CI benchmark build jobs collect nine raw rounds after warmup and report fastest-seven,
+median and spread statistics in `expression-baseline-linux` and `expression-baseline-macos` JSON
+artifacts. These kernel timings have no external reference and are not reference-normalized. They
+are baseline evidence, not a claimed speedup, and are separate from the unchanged competitor grid.
+No new benchmark job or blocking performance threshold is introduced. CI compilation, sanitizers,
+coverage and linting validate the C++ additions; local checks stay limited to formatting and policy.
+
+### Evaluator operand/effect inventory
+
+The registry remains authoritative for spelling, aliases, traversal, metadata, safety and worker
+eligibility. The following groups partition the current dispatcher by the work they perform; they
+are an implementation audit, not a second runtime vocabulary. `-top` and `-shard-status` bypass the
+ordinary dispatcher; parser/traversal-only primaries preserve their existing true/no-op behavior.
+
+| Family                                                         | Current invariant work                          | Dynamic work and barriers                                                      |
+| :------------------------------------------------------------- | :---------------------------------------------- | :----------------------------------------------------------------------------- |
+| `-true`, `-false`                                              | None                                            | Whole-command effects of surrounding syntax still apply                        |
+| `-type`, `-xtype`                                              | Type-list decoding                              | Entry type; `-xtype` may observe the link target and fail                      |
+| `-name`, `-iname`, path/wholename variants                     | Pattern bytes; case selection                   | Entry name/path and filesystem case policy                                     |
+| `-lname`, `-ilname`                                            | Link glob and case policy                       | VFS link read and failure                                                      |
+| `-regex`, `-iregex`, `-rxc`, `-irxc`                           | Matcher already compiled                        | Entry bytes, optional captures, backend worker scratch                         |
+| `-content`, `-icontent`, `-text`, `-binary`, `-eof*`           | Literal/flavor interpretation                   | Content reads, cache invalidation, unsupported/error outcomes                  |
+| `-size`, `-blocks`, `-links`, `-inum`, `-uid`, `-gid`, `-used` | Numeric comparison, units, block size           | Conditional metadata fetch; signed age arithmetic                              |
+| `-perm`                                                        | Numeric/symbolic permission parsing             | Conditional mode fetch; preserve invalid-input behavior                        |
+| `-*time`, `-*min`, `-newer*`, `-anewer`, `-cnewer`             | Duration/time-string decoding                   | Clock/timezone, birth-time support and reference-file observations             |
+| `-user`, `-group`, `-nouser`, `-nogroup`                       | Numeric-ID parsing                              | User/group database lookup is observable; no eager caching yet                 |
+| `-empty`, `-sparse`, `-fstype`, `-samefile`                    | Reference pathname only                         | Metadata, directory reads, filesystem/reference observations                   |
+| `-readable`, `-writable`, `-executable`                        | Access mode                                     | VFS access checks remain dynamic                                               |
+| `-lang`, `-mime`                                               | Catalog selection / MIME pattern normalization  | Filename classification; final configured catalog                              |
+| Fuzzy variants, `-similar`                                     | Fzf query already compiled; score configuration | Content/path scoring, incoming score, result-set state                         |
+| `-first`, `-top`, `-shard-status`                              | Limit/selection decoding                        | Counters, suspension, replay decisions and fuzzy score                         |
+| `-print*`, `-printf*`, `-fprint*`, `-ls`, `-fls`               | Output format/cells                             | Output order, files, fields and conditional reads/errors                       |
+| `-grep`, `-diff`, `-cmp`                                       | Matcher/template/style/diff options             | Content, context output, comparison/reference reads                            |
+| `-hash`, `-hasheq`                                             | Algorithm/encoding interpretation               | Content reads, output and verification bookkeeping                             |
+| `-collect`                                                     | Collection name                                 | Coordinator-owned retained entries and limits                                  |
+| `-exec*`, `-ok*`, `-capture`, `-capturedir`                    | Static argv/template portions                   | Dynamic fields, confirmation, execution, capture, batching and dry-run unknown |
+| `-delete`                                                      | None                                            | Controlled mutation, failure reporting, archive-member deferral                |
+| `-prune`, `-quit`                                              | None                                            | Traversal control even if a later predicate is false                           |
+
+Further preparation must preserve when failed observations occur. In particular, username lookup,
+reference-file stat, field expansion and conditional content reads cannot silently move to startup.

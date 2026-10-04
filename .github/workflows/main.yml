@@ -733,9 +733,29 @@ jobs:
           namespace: default
       - name: Build one optimized binary for all three measurement shards
         run: |
-          bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
+          bazel build //xff/cli:xff //xff/engine:expression_benchmark --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
           cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-head"
           tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" benchmark-head
+      - name: Measure expression preparation and execution baseline
+        run: |
+          bazel run //xff/engine:expression_benchmark --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk" -- \
+            --benchmark_out="${GITHUB_WORKSPACE}/expression-baseline-${{ matrix.platform }}.json" \
+            --benchmark_out_format=json --benchmark_display_aggregates_only=true
+          python3 - <<'PY_CHECK'
+          import json
+          import os
+          from pathlib import Path
+          report = Path(os.environ["GITHUB_WORKSPACE"]) / "expression-baseline-${{ matrix.platform }}.json"
+          rows = json.loads(report.read_text())["benchmarks"]
+          if not rows or any(row.get("error_occurred") for row in rows):
+              raise SystemExit("expression baseline failed correctness validation")
+          PY_CHECK
+      - uses: actions/upload-artifact@v7
+        with:
+          name: expression-baseline-${{ matrix.platform }}
+          path: expression-baseline-${{ matrix.platform }}.json
+          retention-days: 30
+          if-no-files-found: error
       - name: Plan three measured rounds per shard
         run: |
           scales=()

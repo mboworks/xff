@@ -2,6 +2,12 @@
 
 ## Planned prepared expression execution
 
+EP01 now has a preparation contract, an isolated initial behavioral oracle and separate preparation/
+execution microbenchmarks. Production still uses the existing evaluator. The CI build jobs retain
+nine-round JSON artifacts for Linux/macOS, including fastest-seven statistics; no local benchmark
+campaign is needed. Results and the dispatch decision will be recorded after those jobs finish.
+The initial all-match matrix does not yet replace mixed-selectivity or end-to-end qualification.
+
 The [implementation, benchmark and decision plan](design-expression-program.md) specifies bound
 operations, prepared operands, an immutable execution program and a conservative optimizer.
 It separates once-per-command parsing/preparation from per-entry execution and records the

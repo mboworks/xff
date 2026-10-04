@@ -7,6 +7,8 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
 
 - [ ] EP01: Inventory evaluator operands/effects; add source-node identities, conservative
       optimization properties, an isolated equivalence oracle and preparation/execution baselines.
+      Initial contract/oracle and 72-case in-memory baseline are implemented; CI evidence and
+      expanded selectivity/error/state coverage remain before the stage is complete.
 - [ ] EP02: Bind predicate handlers once through registry-derived semantic IDs; measure a bound-tree
       executor against current name-dispatched evaluation before changing control flow.
 - [ ] EP03: Prepare invariant operands and indexed worker matcher state; preserve validation timing,
