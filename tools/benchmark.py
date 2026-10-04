@@ -105,7 +105,8 @@ def select_series(batches, machine_id, series=None):
             known.add(contract['series'])
     if series is None and len(known) > 1:
         raise ValueError('multiple series belong to this machine; select --series: ' + ', '.join(sorted(known)))
-    selected = series or next(iter(known), f'{batch.host_platform()}-{platform.machine().lower()}-{machine_id[:12]}')
+    architecture = re.sub('[^a-z0-9]+', '-', platform.machine().lower()).strip('-')
+    selected = series or next(iter(known), f'{batch.host_platform()}-{architecture}-{machine_id[:12]}')
     if not re.fullmatch('[a-z0-9][a-z0-9-]*', selected) or selected.startswith('github-ci-'):
         raise ValueError('invalid local series name')
     for _, value in batches:

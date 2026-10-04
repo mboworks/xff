@@ -112,6 +112,15 @@ class BenchmarkTest(unittest.TestCase):
         with mock.patch.object(cli.platform, 'node', return_value='renamed-host'):
             self.assertEqual(cli.select_series(saved, 'machine'), ('macos-test', True))
 
+    def test_new_series_names_accept_supported_architectures(self):
+        for system, architecture, expected in (('linux', 'x86_64', 'linux-x86-64-machine'),
+                                               ('macos', 'arm64', 'macos-arm64-machine')):
+            with self.subTest(system=system, architecture=architecture), \
+                    mock.patch.object(batch, 'host_platform', return_value=system), \
+                    mock.patch.object(cli.platform, 'machine', return_value=architecture):
+                self.assertEqual(cli.select_series([], 'machine'), (expected, False))
+                self.assertEqual(cli.select_series([], 'machine', 'custom-series'), ('custom-series', False))
+
     def test_legacy_series_adoption_requires_matching_host_and_capacity(self):
         value, _ = fixture()
         del value['contract']['machine_id']
