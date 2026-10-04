@@ -740,7 +740,9 @@ jobs:
         run: |
           bazel run //xff/engine:expression_benchmark --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk" -- \
             --benchmark_out="${GITHUB_WORKSPACE}/expression-baseline-${{ matrix.platform }}.json" \
-            --benchmark_out_format=json --benchmark_display_aggregates_only=true
+            --benchmark_out_format=json --benchmark_display_aggregates_only=true \
+            --benchmark_enable_random_interleaving=true \
+            --benchmark_context="revision=$(git rev-parse HEAD),sampling=random-interleaved-9-fastest-7"
           python3 - <<'PY_CHECK'
           import json
           import os

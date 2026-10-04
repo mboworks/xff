@@ -411,6 +411,33 @@ are baseline evidence, not a claimed speedup, and are separate from the unchange
 No new benchmark job or blocking performance threshold is introduced. CI compilation, sanitizers,
 coverage and linting validate the C++ additions; local checks stay limited to formatting and policy.
 
+## EP02 implementation record
+
+`BoundExpression` is an experimental bound tree in the engine library. Preparation validates shape,
+resolves the existing engine dispatch table once and stores direct handlers beside preorder source
+references and typed child indices. Fuzzy-only subtree classification is prepared in a reverse pass.
+There are no per-entry dispatch lookups or preparation allocations. Payload matchers may still
+allocate, and invariant operand parsing is unchanged until EP03.
+
+The tree must outlive the bound expression. Moving its owning `unique_ptr` preserves references;
+replacement or mutation of the AST is not permitted after binding. Evaluation uses the existing
+boolean/error/score/deferred implementation specialized on tree or bound cursors, with original
+source identities for per-run counters and replay memoization. Conditional metadata acquisition and
+content invalidation stay in their original order. This experiment introduces no CLI selector and
+does not change which executor production uses.
+
+Every registered non-operator descriptor must have an engine handler or an explicit preparation/
+traversal/control disposition. `evaluation_noop` marks grammar-only predicates whose effects were
+consumed by parsing. Missing handlers without such a disposition fail preparation. The contract
+tests run as named `Tree` and `Bound` parameterizations with the same expected observations.
+
+The benchmark doubles the original kernel case matrix to compare both executors, randomly
+interleaving nine repetitions in one binary. `prepare/tree` measures the actual parse/bind/teardown
+path without EP01's diagnostic contract table; `prepare/bound` also includes binding and teardown.
+The discarded correctness check and kernel preparation are untimed. All raw rounds, fastest-seven,
+median and spread remain available; the CI report includes revision and sampling provenance.
+This implementation is a candidate awaiting measurements, not an accepted performance improvement.
+
 ### Evaluator operand/effect inventory
 
 The registry remains authoritative for spelling, aliases, traversal, metadata, safety and worker

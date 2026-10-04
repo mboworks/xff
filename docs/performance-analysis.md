@@ -5,7 +5,7 @@
 EP01 now has a preparation contract, an isolated initial behavioral oracle and separate preparation/
 execution microbenchmarks. Production still uses the existing evaluator. The CI build jobs retain
 nine-round JSON artifacts for Linux/macOS, including fastest-seven statistics; no local benchmark
-campaign is needed. Results and the dispatch decision will be recorded after those jobs finish.
+campaign is needed. CI run 37203099430 produced valid release-mode artifacts on both platforms.
 The initial all-match matrix does not yet replace mixed-selectivity or end-to-end qualification.
 
 The [implementation, benchmark and decision plan](design-expression-program.md) specifies bound
@@ -18,6 +18,40 @@ A frozen/perfect-hash map/set is a separate optional startup-lookup improvement;
 execution path should avoid name lookup altogether. EP01-EP07 in TODO track the implementation.
 No executor speedup is claimed yet. Append each stage's measured results and retain/revise/reject
 decision here, including preparation, memory, portability and unsuccessful experiments.
+
+### EP01 baseline and EP02 dispatch experiment
+
+[CI run 37203099430](https://github.com/mboworks/xff/actions/runs/37203099430) retained nine raw rounds
+for each of 72 cases, plus aggregates, in `expression-baseline-linux` and
+`expression-baseline-macos`. No case reported a correctness error. The following fastest-seven
+means describe the original tree evaluator; kernel values are divided by their 1,000-entry batch.
+
+| Platform     | Prepare one type predicate, ns | Execute one type predicate, ns/entry | Execute 64 type predicates, ns/entry |
+| :----------- | -----------------------------: | -----------------------------------: | -----------------------------------: |
+| Linux x86-64 |                         526.23 |                                49.51 |                             4,332.50 |
+| macOS ARM64  |                         449.58 |                                49.81 |                             4,093.23 |
+
+Preparation in that initial baseline includes the diagnostic contract table as well as parse/bind
+and teardown. EP02's `prepare/tree` removes that diagnostic-only work so the comparison reflects
+the shipping tree path. Do not compare the two preparation series as a product speedup.
+
+The EP02 experiment resolves the existing dispatch table during `BoundExpression::Prepare` and
+uses direct function pointers thereafter. A reserved node vector holds source references, typed
+child indices and cached fuzzy-only properties. The AST and bound matcher data remain owned by
+the command; no per-entry clone is made. Recursive boolean control and every effect/error path are
+shared with the reference executor through compile-time cursor types. Original node identities
+continue to key counters and deferred replay, preserving exactly-once prefix effects.
+
+Production still selects the tree. Both executors run the same trace assertions, including
+truth/short-circuit order, metadata failures, dry-run unknowns, fuzzy scoring, independent counters,
+deferred replay and denied mutation. Registry coverage rejects an unclassified missing handler;
+configuration/traversal-only behavior is explicit metadata rather than a silent new fallback.
+
+CI compares preparation and kernel results in the same release binary with randomized interleaving
+of nine repetitions and a fastest-seven statistic. This avoids measuring every baseline repetition
+before every candidate repetition; it is not a claim that arbitrary repetition indices are exact
+temporal pairs. The report records the revision and sampling policy. Candidate results, repeated
+CI-session evidence, setup crossover, whole-engine effects and an adoption decision are pending.
 
 ## Hosted capacity and benchmark backfill
 

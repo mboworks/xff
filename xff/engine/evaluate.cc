@@ -2971,6 +2971,20 @@ bool IsFuzzyOnlyExpression(const parser::Expr& expr) {
   return false;
 }
 
+struct TreeCursor {
+  std::reference_wrapper<const parser::Expr> expression;
+
+  const parser::Expr& Get() const { return expression.get(); }
+
+  TreeCursor Left() const { return {std::cref(*Get().lhs)}; }
+
+  TreeCursor Right() const { return {std::cref(*Get().rhs)}; }
+
+  bool Predicate(EvalContext& context) const { return EvaluatePredicate(Get(), context); }
+
+  bool FuzzyOnly() const { return IsFuzzyOnlyExpression(Get()); }
+};
+
 std::optional<int> MinScore(std::optional<int> lhs, std::optional<int> rhs) {
   if (!lhs.has_value()) {
     return rhs;
@@ -2991,9 +3005,12 @@ std::optional<int> MaxScore(std::optional<int> lhs, std::optional<int> rhs) {
   return std::max(*lhs, *rhs);
 }
 
-EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context);
+template<typename Cursor>
+EvaluationResult EvaluateResult(Cursor cursor, EvalContext& context);
 
-EvaluationResult EvaluateChild(const parser::Expr& node, EvalContext& context) {
+template<typename Cursor>
+EvaluationResult EvaluateChild(Cursor cursor, EvalContext& context) {
+  const auto& node = cursor.Get();
   if (context.deferred.has_value()) {
     if (const auto found = context.deferred->memo.find(ExprIdentity{node}); found != context.deferred->memo.end()) {
       return found->second;
@@ -3006,7 +3023,7 @@ EvaluationResult EvaluateChild(const parser::Expr& node, EvalContext& context) {
   } else {
     context.fuzzy_score.reset();
   }
-  EvaluationResult result = EvaluateResult(node, context);
+  EvaluationResult result = EvaluateResult(cursor, context);
   if (outer.has_value()) {
     context.fuzzy_score.set_ref(*outer);
   } else {
@@ -3047,14 +3064,15 @@ EvaluationResult EvaluateShardStatus(const parser::Expr& expr, EvalContext& cont
   return {};
 }
 
-EvaluationResult EvaluateAnd(const parser::Expr& expr, EvalContext& context) {
-  EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
+template<typename Cursor>
+EvaluationResult EvaluateAnd(Cursor cursor, EvalContext& context) {
+  EvaluationResult lhs = EvaluateChild(cursor.Left(), context);
   if ((lhs.deferred || lhs.unknown) || !lhs.matched) {
     return lhs;
   }
   const std::optional<int> outer_incoming = context.incoming_fuzzy_score;
   context.incoming_fuzzy_score = MinScore(outer_incoming, lhs.fuzzy);
-  const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
+  const EvaluationResult rhs = EvaluateChild(cursor.Right(), context);
   context.incoming_fuzzy_score = outer_incoming;
   if ((rhs.deferred || rhs.unknown)) {
     return rhs;
@@ -3062,16 +3080,17 @@ EvaluationResult EvaluateAnd(const parser::Expr& expr, EvalContext& context) {
   return {.fuzzy = rhs.matched ? MinScore(lhs.fuzzy, rhs.fuzzy) : std::nullopt, .matched = rhs.matched};
 }
 
-EvaluationResult EvaluateOr(const parser::Expr& expr, EvalContext& context) {
-  EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
+template<typename Cursor>
+EvaluationResult EvaluateOr(Cursor cursor, EvalContext& context) {
+  EvaluationResult lhs = EvaluateChild(cursor.Left(), context);
   if ((lhs.deferred || lhs.unknown)) {
     return lhs;
   }
   if (!lhs.matched) {
-    return EvaluateChild(*expr.rhs, context);
+    return EvaluateChild(cursor.Right(), context);
   }
-  if (context.fuzzy_score.has_value() && IsFuzzyOnlyExpression(*expr.rhs)) {
-    const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
+  if (context.fuzzy_score.has_value() && cursor.Right().FuzzyOnly()) {
+    const EvaluationResult rhs = EvaluateChild(cursor.Right(), context);
     if ((rhs.deferred || rhs.unknown)) {
       return rhs;
     }
@@ -3080,30 +3099,33 @@ EvaluationResult EvaluateOr(const parser::Expr& expr, EvalContext& context) {
   return lhs;
 }
 
-EvaluationResult EvaluateNand(const parser::Expr& expr, EvalContext& context) {
-  const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
+template<typename Cursor>
+EvaluationResult EvaluateNand(Cursor cursor, EvalContext& context) {
+  const EvaluationResult lhs = EvaluateChild(cursor.Left(), context);
   if ((lhs.deferred || lhs.unknown) || !lhs.matched) {
     return (lhs.deferred || lhs.unknown) ? lhs : EvaluationResult{.matched = true};
   }
-  const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
+  const EvaluationResult rhs = EvaluateChild(cursor.Right(), context);
   return (rhs.deferred || rhs.unknown) ? rhs : EvaluationResult{.matched = !rhs.matched};
 }
 
-EvaluationResult EvaluateNor(const parser::Expr& expr, EvalContext& context) {
-  const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
+template<typename Cursor>
+EvaluationResult EvaluateNor(Cursor cursor, EvalContext& context) {
+  const EvaluationResult lhs = EvaluateChild(cursor.Left(), context);
   if ((lhs.deferred || lhs.unknown) || lhs.matched) {
     return (lhs.deferred || lhs.unknown) ? lhs : EvaluationResult{.matched = false};
   }
-  const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
+  const EvaluationResult rhs = EvaluateChild(cursor.Right(), context);
   return (rhs.deferred || rhs.unknown) ? rhs : EvaluationResult{.matched = !rhs.matched};
 }
 
-EvaluationResult EvaluateXor(const parser::Expr& expr, EvalContext& context) {
-  const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
+template<typename Cursor>
+EvaluationResult EvaluateXor(Cursor cursor, EvalContext& context) {
+  const EvaluationResult lhs = EvaluateChild(cursor.Left(), context);
   if ((lhs.deferred || lhs.unknown)) {
     return lhs;
   }
-  const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
+  const EvaluationResult rhs = EvaluateChild(cursor.Right(), context);
   if ((rhs.deferred || rhs.unknown)) {
     return rhs;
   }
@@ -3113,12 +3135,13 @@ EvaluationResult EvaluateXor(const parser::Expr& expr, EvalContext& context) {
   };
 }
 
-EvaluationResult EvaluateXnor(const parser::Expr& expr, EvalContext& context) {
-  const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
+template<typename Cursor>
+EvaluationResult EvaluateXnor(Cursor cursor, EvalContext& context) {
+  const EvaluationResult lhs = EvaluateChild(cursor.Left(), context);
   if ((lhs.deferred || lhs.unknown)) {
     return lhs;
   }
-  const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
+  const EvaluationResult rhs = EvaluateChild(cursor.Right(), context);
   return (rhs.deferred || rhs.unknown) ? rhs : EvaluationResult{.matched = lhs.matched == rhs.matched};
 }
 
@@ -3151,7 +3174,9 @@ void PreviewExecution(const parser::Expr& expr, const EvalContext& context) {
   context.emit(preview);
 }
 
-EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) {
+template<typename Cursor>
+EvaluationResult EvaluateResult(Cursor cursor, EvalContext& context) {
+  const auto& expr = cursor.Get();
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate: {
       const bool invalidate = !expr.descriptor->pure || expr.descriptor->kind == registry::Kind::kAction;
@@ -3174,7 +3199,7 @@ EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) 
       if (expr.descriptor->control == registry::Control::kShardStatus) {
         return EvaluateShardStatus(expr, context);
       }
-      const bool matched = EvaluatePredicate(expr, context);
+      const bool matched = cursor.Predicate(context);
       if (invalidate) {
         // An action may read fields before mutating this same file through its sink.
         context.content.Invalidate();
@@ -3182,24 +3207,96 @@ EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) 
       return {.fuzzy = context.fuzzy_score.has_value() ? *context.fuzzy_score : std::nullopt, .matched = matched};
     }
     case parser::Expr::Kind::kNot: {
-      const EvaluationResult value = EvaluateChild(*expr.lhs, context);
+      const EvaluationResult value = EvaluateChild(cursor.Left(), context);
       return (value.deferred || value.unknown) ? value : EvaluationResult{.matched = !value.matched};
     }
-    case parser::Expr::Kind::kAnd: return EvaluateAnd(expr, context);
-    case parser::Expr::Kind::kOr: return EvaluateOr(expr, context);
-    case parser::Expr::Kind::kNand: return EvaluateNand(expr, context);
-    case parser::Expr::Kind::kNor: return EvaluateNor(expr, context);
-    case parser::Expr::Kind::kXor: return EvaluateXor(expr, context);
-    case parser::Expr::Kind::kXnor: return EvaluateXnor(expr, context);
+    case parser::Expr::Kind::kAnd: return EvaluateAnd(cursor, context);
+    case parser::Expr::Kind::kOr: return EvaluateOr(cursor, context);
+    case parser::Expr::Kind::kNand: return EvaluateNand(cursor, context);
+    case parser::Expr::Kind::kNor: return EvaluateNor(cursor, context);
+    case parser::Expr::Kind::kXor: return EvaluateXor(cursor, context);
+    case parser::Expr::Kind::kXnor: return EvaluateXnor(cursor, context);
     case parser::Expr::Kind::kComma: {
-      const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
-      return (lhs.deferred || lhs.unknown) ? lhs : EvaluateChild(*expr.rhs, context);
+      const EvaluationResult lhs = EvaluateChild(cursor.Left(), context);
+      return (lhs.deferred || lhs.unknown) ? lhs : EvaluateChild(cursor.Right(), context);
     }
   }
   return {.matched = true};
 }
 
 }  // namespace
+
+struct BoundExpression::Cursor {
+  const std::vector<Node>& nodes;
+  const Node& node;
+
+  const parser::Expr& Get() const { return node.expression.get(); }
+
+  Cursor Left() const { return {nodes, nodes.at(node.lhs.value())}; }
+
+  Cursor Right() const { return {nodes, nodes.at(node.rhs.value())}; }
+
+  bool Predicate(EvalContext& context) const { return node.evaluate(Get(), context); }
+
+  bool FuzzyOnly() const { return node.fuzzy_only; }
+};
+
+absl::StatusOr<BoundExpression> BoundExpression::Prepare(const parser::Expr& expression) {
+  MBO_ASSIGN_OR_RETURN(const auto sources, DescribeExpression(expression));
+  std::vector<Node> nodes;
+  nodes.reserve(sources.size());
+  for (const auto& source : sources) {
+    const auto& expr = source.expression.get();
+    const auto handler =
+        expr.kind == parser::Expr::Kind::kPredicate ? kDispatch.find(expr.descriptor->name) : kDispatch.end();
+    if (expr.kind == parser::Expr::Kind::kPredicate && handler == kDispatch.end() && !expr.descriptor->evaluation_noop
+        && expr.descriptor->traversal_effect == registry::TraversalEffect::kNone
+        && expr.descriptor->control != registry::Control::kDayStart
+        && expr.descriptor->control != registry::Control::kTop
+        && expr.descriptor->control != registry::Control::kShardStatus) {
+      return absl::InvalidArgumentError(absl::StrCat("missing engine evaluation binding: ", expr.descriptor->name));
+    }
+    // Existing traversal/configuration-only primaries evaluate true; preserve that contract.
+    nodes.push_back({
+        .expression = source.expression,
+        .evaluate = handler == kDispatch.end() ? &EvalTrue : handler->second.eval,
+    });
+  }
+  std::vector<std::size_t> sizes(nodes.size(), 1);
+  for (std::size_t offset = nodes.size(); offset > 0; --offset) {
+    const std::size_t index = offset - 1;
+    auto& node = nodes.at(index);
+    const auto& expr = node.expression.get();
+    if (expr.lhs) {
+      node.lhs = ExpressionSourceId{index + 1};
+      sizes.at(index) += sizes.at(node.lhs.value());
+    }
+    if (expr.rhs) {
+      node.rhs = ExpressionSourceId{index + sizes.at(index)};
+      sizes.at(index) += sizes.at(node.rhs.value());
+    }
+    switch (expr.kind) {
+      case parser::Expr::Kind::kPredicate:
+        node.fuzzy_only = expr.descriptor->binding == registry::Binding::kFuzzy;
+        break;
+      case parser::Expr::Kind::kAnd:
+      case parser::Expr::Kind::kOr:
+      case parser::Expr::Kind::kXor:
+        node.fuzzy_only = nodes.at(node.lhs.value()).fuzzy_only && nodes.at(node.rhs.value()).fuzzy_only;
+        break;
+      default: break;
+    }
+  }
+  return BoundExpression(std::move(nodes));
+}
+
+EvaluationResult BoundExpression::Evaluate(EvalContext& context) const {
+  const auto result = EvaluateResult(Cursor{nodes_, nodes_.front()}, context);
+  if (context.fuzzy_score.has_value()) {
+    *context.fuzzy_score = result.fuzzy;
+  }
+  return result;
+}
 
 absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression) {
   const auto source = std::make_shared<parser::Expr>(parser::Expr{.kind = parser::Expr::Kind::kPredicate});
@@ -3475,7 +3572,7 @@ bool Evaluate(const parser::Expr& expr, EvalContext& context) {
 }
 
 EvaluationResult EvaluateDeferred(const parser::Expr& expr, EvalContext& context) {
-  const EvaluationResult result = EvaluateResult(expr, context);
+  const EvaluationResult result = EvaluateResult(TreeCursor{std::cref(expr)}, context);
   if (context.fuzzy_score.has_value()) {
     *context.fuzzy_score = result.fuzzy;
   }

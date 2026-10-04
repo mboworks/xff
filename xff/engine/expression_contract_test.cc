@@ -3,6 +3,7 @@
 
 #include "xff/engine/expression_contract.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <functional>
@@ -81,7 +82,9 @@ class RecordingExpressionFs final : public vfs::FileSystem {
   }
 };
 
-struct ExpressionContractTest : ::testing::Test {
+enum class Executor { kTree, kBound };
+
+struct ExpressionContractTest : ::testing::TestWithParam<Executor> {
   static absl::StatusOr<parser::Command> Parse(const std::vector<std::string>& arguments) {
     MBO_ASSIGN_OR_RETURN(auto command, parser::Parse(arguments));
     parser::BindMatchers(command, regex::Grammar::kRe2, parser::CaseMode::kSensitive);
@@ -104,7 +107,12 @@ struct ExpressionContractTest : ::testing::Test {
         .control = control,
         .first_counts = counts,
     };
-    return EvaluateDeferred(expression, context);
+    if (GetParam() == Executor::kTree) {
+      return EvaluateDeferred(expression, context);
+    }
+    auto bound = BoundExpression::Prepare(expression);
+    EXPECT_THAT(bound, IsOk());
+    return bound.ok() ? bound->Evaluate(context) : EvaluationResult{.unknown = true};
   }
 
   void Decide(const std::optional<ExprIdentity>& source) {
@@ -125,7 +133,7 @@ struct ExpressionContractTest : ::testing::Test {
   EvaluationMemo memo;
 };
 
-TEST_F(ExpressionContractTest, SourceIdsRetainPreorderAndSurviveOwnerMove) {
+TEST_P(ExpressionContractTest, SourceIdsRetainPreorderAndSurviveOwnerMove) {
   ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-true", ",", "!", "-false"}));
   ASSERT_OK_AND_ASSIGN(const auto sources, DescribeExpression(*command.expression));
   EXPECT_THAT(sources, SizeIs(4));
@@ -140,7 +148,7 @@ TEST_F(ExpressionContractTest, SourceIdsRetainPreorderAndSurviveOwnerMove) {
   EXPECT_THAT(sources.at(3).expression.get().descriptor->name, Eq("-false"));
 }
 
-TEST_F(ExpressionContractTest, RejectsIncompleteTreesBeforeObservation) {
+TEST_P(ExpressionContractTest, RejectsIncompleteTreesBeforeObservation) {
   for (const auto kind : {parser::Expr::Kind::kPredicate, parser::Expr::Kind::kNot, parser::Expr::Kind::kAnd}) {
     const parser::Expr invalid{.kind = kind};
     EXPECT_THAT(DescribeExpression(invalid), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("shape")));
@@ -150,7 +158,7 @@ TEST_F(ExpressionContractTest, RejectsIncompleteTreesBeforeObservation) {
   EXPECT_THAT(fs.events, IsEmpty());
 }
 
-TEST_F(ExpressionContractTest, EveryRegisteredPrimaryRetainsAnOptimizationBarrier) {
+TEST_P(ExpressionContractTest, EveryRegisteredPrimaryRetainsAnOptimizationBarrier) {
   for (const auto& descriptor : registry::All()) {
     if (descriptor.kind == registry::Kind::kOperator) {
       continue;
@@ -166,7 +174,7 @@ TEST_F(ExpressionContractTest, EveryRegisteredPrimaryRetainsAnOptimizationBarrie
   }
 }
 
-TEST_F(ExpressionContractTest, RejectsExtraAndMissingChildren) {
+TEST_P(ExpressionContractTest, RejectsExtraAndMissingChildren) {
   struct Shape {
     parser::Expr::Kind kind;
     bool left;
@@ -205,7 +213,7 @@ TEST_F(ExpressionContractTest, RejectsExtraAndMissingChildren) {
   EXPECT_THAT(fs.events, IsEmpty());
 }
 
-TEST_F(ExpressionContractTest, AllBooleanOperatorsPreserveTruthAndObservableOrder) {
+TEST_P(ExpressionContractTest, AllBooleanOperatorsPreserveTruthAndObservableOrder) {
   struct Operation {
     std::string_view token;
     bool short_false;
@@ -273,7 +281,7 @@ TEST_F(ExpressionContractTest, AllBooleanOperatorsPreserveTruthAndObservableOrde
   }
 }
 
-TEST_F(ExpressionContractTest, ShortCircuitSkipsReadsAndNotDiscardsFuzzyScore) {
+TEST_P(ExpressionContractTest, ShortCircuitSkipsReadsAndNotDiscardsFuzzyScore) {
   ASSERT_OK_AND_ASSIGN(const auto skipped, Parse({".", "-false", "-content", "needle"}));
   EXPECT_THAT(Observe(*skipped.expression).matched, IsFalse());
   EXPECT_THAT(fs.events, IsEmpty());
@@ -283,7 +291,7 @@ TEST_F(ExpressionContractTest, ShortCircuitSkipsReadsAndNotDiscardsFuzzyScore) {
   EXPECT_THAT(result.fuzzy, Eq(std::nullopt));
 }
 
-TEST_F(ExpressionContractTest, DeferredReplayDoesNotRepeatPrefixOutput) {
+TEST_P(ExpressionContractTest, DeferredReplayDoesNotRepeatPrefixOutput) {
   ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-printf", "prefix", "-top", "1", "-printf", "suffix"}));
   const auto pending = Observe(*command.expression);
   ASSERT_THAT(pending.waiting_at, Optional(_));
@@ -296,7 +304,7 @@ TEST_F(ExpressionContractTest, DeferredReplayDoesNotRepeatPrefixOutput) {
   EXPECT_THAT(fs.events, ElementsAre("output prefix", "output suffix"));
 }
 
-TEST_F(ExpressionContractTest, DryRunExecutionRemainsUnknownAndStopsLaterEffects) {
+TEST_P(ExpressionContractTest, DryRunExecutionRemainsUnknownAndStopsLaterEffects) {
   ASSERT_OK_AND_ASSIGN(
       const auto command, Parse({".", "-exec", "ignored-command", "{}", ";", ",", "-printf", "later"}));
   const auto result = Observe(*command.expression, true);
@@ -306,7 +314,7 @@ TEST_F(ExpressionContractTest, DryRunExecutionRemainsUnknownAndStopsLaterEffects
   EXPECT_THAT(control.mutation_error, IsOk());
 }
 
-TEST_F(ExpressionContractTest, MetadataFailureIsUnknownAndCannotBeNegatedOrHidden) {
+TEST_P(ExpressionContractTest, MetadataFailureIsUnknownAndCannotBeNegatedOrHidden) {
   const auto fail = [this] { return fs.Stat(visit.path, false).status(); };
   visit.load_metadata.emplace(fail);
   ASSERT_OK_AND_ASSIGN(const auto skipped, Parse({".", "-false", "-size", "+1c"}));
@@ -319,13 +327,13 @@ TEST_F(ExpressionContractTest, MetadataFailureIsUnknownAndCannotBeNegatedOrHidde
   EXPECT_THAT(fs.events, ElementsAre("stat tree/file.txt"));
 }
 
-TEST_F(ExpressionContractTest, UnreachableSizeOperandStillParticipatesInWholeCommandValidation) {
+TEST_P(ExpressionContractTest, UnreachableSizeOperandStillParticipatesInWholeCommandValidation) {
   ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-false", "-size", "garbage"}));
   EXPECT_THAT(ValidateSizeArgs(*command.expression), StatusIs(absl::StatusCode::kInvalidArgument, _));
   EXPECT_THAT(fs.events, IsEmpty());
 }
 
-TEST_F(ExpressionContractTest, IndependentFirstBudgetsPersistAcrossEntries) {
+TEST_P(ExpressionContractTest, IndependentFirstBudgetsPersistAcrossEntries) {
   ASSERT_OK_AND_ASSIGN(
       const auto command,
       Parse({".", "(", "-first", "1", "-printf", "first", ")", "-o", "(", "-first", "1", "-printf", "second", ")"}));
@@ -338,7 +346,7 @@ TEST_F(ExpressionContractTest, IndependentFirstBudgetsPersistAcrossEntries) {
   EXPECT_THAT(counts, SizeIs(2));
 }
 
-TEST_F(ExpressionContractTest, TwoDeferredFrontiersPreserveExactlyOnceEffects) {
+TEST_P(ExpressionContractTest, TwoDeferredFrontiersPreserveExactlyOnceEffects) {
   ASSERT_OK_AND_ASSIGN(
       const auto command,
       Parse({".", "-printf", "prefix", "-top", "1", "-printf", "middle", "-top", "1", "-printf", "suffix"}));
@@ -354,7 +362,7 @@ TEST_F(ExpressionContractTest, TwoDeferredFrontiersPreserveExactlyOnceEffects) {
   EXPECT_THAT(fs.events, ElementsAre("output prefix", "output middle", "output suffix"));
 }
 
-TEST_F(ExpressionContractTest, FailedDeletionUsesTheIsolatedSinkAndPreservesMutationError) {
+TEST_P(ExpressionContractTest, FailedDeletionUsesTheIsolatedSinkAndPreservesMutationError) {
   ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-delete", "-printf", "later"}));
   const auto result = Observe(*command.expression);
   EXPECT_THAT(result.matched, IsFalse());
@@ -364,12 +372,73 @@ TEST_F(ExpressionContractTest, FailedDeletionUsesTheIsolatedSinkAndPreservesMuta
   EXPECT_THAT(fs.events, ElementsAre("remove tree/file.txt"));
 }
 
-TEST_F(ExpressionContractTest, TraversalEffectsStayObservableEvenWithFalseResult) {
+TEST_P(ExpressionContractTest, TraversalEffectsStayObservableEvenWithFalseResult) {
   ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-prune", ",", "-quit", ",", "-false"}));
   EXPECT_THAT(Observe(*command.expression).matched, IsFalse());
   EXPECT_THAT(control.prune, IsTrue());
   EXPECT_THAT(control.quit, IsTrue());
 }
+
+TEST_P(ExpressionContractTest, EveryRegisteredPrimaryHasAnExplicitBindingDisposition) {
+  for (const auto& descriptor : registry::All()) {
+    if (descriptor.kind == registry::Kind::kOperator) {
+      continue;
+    }
+    SCOPED_TRACE(descriptor.name);
+    const parser::Expr expression{.kind = parser::Expr::Kind::kPredicate, .descriptor = descriptor};
+    EXPECT_THAT(BoundExpression::Prepare(expression), IsOk());
+  }
+}
+
+TEST_P(ExpressionContractTest, AnUnregisteredHandlerIsRejectedRatherThanSilentlyAcceptingIt) {
+  const registry::Descriptor descriptor{.name = "unregistered", .needs_metadata = false};
+  const parser::Expr expression{.kind = parser::Expr::Kind::kPredicate, .descriptor = descriptor};
+  EXPECT_THAT(
+      BoundExpression::Prepare(expression),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("missing engine evaluation binding")));
+}
+
+TEST_P(ExpressionContractTest, BoundPreparationRejectsMalformedInputBeforeObservations) {
+  const parser::Expr incomplete{.kind = parser::Expr::Kind::kAnd};
+  EXPECT_THAT(BoundExpression::Prepare(incomplete), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("shape")));
+  EXPECT_THAT(fs.events, IsEmpty());
+}
+
+TEST_P(ExpressionContractTest, ConfigurationOnlyPredicatesRemainTrue) {
+  ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-regextype", "re2", "-daystart", "-maxdepth", "2"}));
+  EXPECT_THAT(Observe(*command.expression).matched, IsTrue());
+  EXPECT_THAT(fs.events, IsEmpty());
+}
+
+TEST_P(ExpressionContractTest, FuzzyOnlyOrVisitsNestedRightBranchForTheBestScore) {
+  ASSERT_OK_AND_ASSIGN(auto left, Parse({".", "-fuzzy", "fe"}));
+  const auto left_result = Observe(*left.expression);
+  ASSERT_THAT(left_result.fuzzy, Optional(_));
+  memo.clear();
+  ASSERT_OK_AND_ASSIGN(auto right, Parse({".", "-fuzzy", "file"}));
+  const auto right_result = Observe(*right.expression);
+  ASSERT_THAT(right_result.fuzzy, Optional(_));
+  memo.clear();
+  ASSERT_OK_AND_ASSIGN(
+      auto combined, Parse({".", "-fuzzy", "fe", "-o", "(", "-fuzzy", "file", "-a", "-fuzzy", "file", ")"}));
+  EXPECT_THAT(Observe(*combined.expression).fuzzy, Optional(std::max(*left_result.fuzzy, *right_result.fuzzy)));
+  EXPECT_THAT(fs.events, IsEmpty());
+}
+
+TEST_P(ExpressionContractTest, FuzzyOrDoesNotVisitAnEffectfulRightBranch) {
+  ASSERT_OK_AND_ASSIGN(
+      auto command, Parse({".", "-fuzzy", "file", "-o", "(", "-printf", "must-not-run", "-fuzzy", "file", ")"}));
+  const auto result = Observe(*command.expression);
+  EXPECT_THAT(result.matched, IsTrue());
+  EXPECT_THAT(result.fuzzy, Optional(_));
+  EXPECT_THAT(fs.events, IsEmpty());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Executors,
+    ExpressionContractTest,
+    ::testing::Values(Executor::kTree, Executor::kBound),
+    [](const ::testing::TestParamInfo<Executor>& info) { return info.param == Executor::kTree ? "Tree" : "Bound"; });
 
 }  // namespace
 }  // namespace xff::engine
