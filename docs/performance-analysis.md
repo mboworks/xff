@@ -2473,7 +2473,7 @@ only tens of kilobytes between these runs. That does not prove an allocation red
 precise retained-memory cost: process-launch and allocator behavior remain part of that metric.
 Do not subtract an assumed baseline or turn this observation into an allocation-count claim.
 
-### Isolated phase allocation diagnostics
+### Instrumented phase allocation regression diagnostics
 
 `expression_allocations_test` adds ASan allocator hooks only to a diagnostic test executable,
 leaving release and benchmark binaries unchanged. The nine families, three predicate lengths,
@@ -2485,6 +2485,11 @@ Cheap steady predicates assert zero allocations; MIME and reached regex retain p
 CI retains the test XML and a revision-bearing JSON conversion. Failed/skipped diagnostics,
 missing counters and negative values cannot be represented as measured zeros. The Python
 conversion tests pass locally; C++/ASan and compiler-lint validation remain assigned to CI.
-This closes the instrumentation gap once CI verifies it, not the separate peak-memory,
-suspended-entry or cross-platform acceptance requirements. Sanitizer wall times are not release
+Once CI verifies it, this supplies an instrumented allocation regression check. Native allocation,
+peak-memory, suspended-entry and cross-platform acceptance requirements remain open. Sanitizer wall times are not release
 performance evidence, and requested bytes exclude sanitizer and allocator overhead.
+
+ASan replaces the allocator and may change allocation behavior and build paths. These diagnostic
+counts must not be used as production allocation counts, allocator-cost measurements or evidence
+for the performance selection. Native allocation profiling remains open; the exported JSON marks
+this distinction explicitly.

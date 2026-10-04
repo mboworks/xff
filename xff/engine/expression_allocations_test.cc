@@ -146,6 +146,10 @@ class AllocationFs final : public vfs::FileSystem {
     return absl::FailedPreconditionError("allocation fixture has no links");
   }
 
+  absl::StatusOr<std::string> ReadContent(std::string_view) const override {
+    return absl::FailedPreconditionError("allocation fixture has no content");
+  }
+
   absl::StatusOr<std::string> FsType(std::string_view) const override { return std::string("memory"); }
 
   absl::StatusOr<bool> IsCaseSensitive(std::string_view) const override { return true; }
@@ -304,6 +308,8 @@ TEST_P(ExpressionAllocationTest, RecordsPreparationWorkerFirstEvaluationSteadySt
   const AllocationFs fs;
   const vfs::Metadata metadata{.type = vfs::FileType::kRegular, .size = 7, .mode = 0644};
   const Visit visit{.path = "tree/file123.txt", .name = "file123.txt", .metadata = metadata, .fs = fs};
+  // NOLINTNEXTLINE(misc-const-correctness): Evaluator callbacks mutate the referenced control.
+  Control control;
   FirstCounts first_counts;
   EvalContext context{
       .visit = visit,
@@ -311,6 +317,7 @@ TEST_P(ExpressionAllocationTest, RecordsPreparationWorkerFirstEvaluationSteadySt
       .fs = fs,
       .now = absl::UnixEpoch(),
       .tz = absl::UTCTimeZone(),
+      .control = control,
       .first_counts = first_counts,
   };
   const auto first = MeasureAllocations([&worker, &context] { return worker.value().Evaluate(context); });

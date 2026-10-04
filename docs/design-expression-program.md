@@ -799,12 +799,12 @@ for preparation/record overhead. Qualification must include tiny inputs, retaine
 whole-run results, not just the saved decoder or case-folding calls. This work is separate from
 acceptance of the preceding production candidate.
 
-## Allocation qualification
+## Instrumented allocation regression diagnostics
 
 `//xff/engine:expression_allocations_test` measures allocation calls, requested bytes and free calls
 in the calling thread through LLVM's documented sanitizer allocator hooks. The hooks are installed
-only in that test executable under ASan. They neither replace the allocator nor enter production or
-timing binaries. Other configurations compile the fixture and explicitly skip these diagnostics.
+only in that test executable under ASan. ASan replaces the allocator; the hooks observe that
+instrumented runtime. They do not enter production or timing binaries. Other configurations compile the fixture and explicitly skip these diagnostics.
 The ordinary ASan suite runs them; no additional compilation configuration is introduced.
 
 The 162 named cases cover nine families, 1/16/64 predicate repetitions, coordinator/concurrent roles,
@@ -834,4 +834,7 @@ python3 tools/expression_allocations.py \
 Requested bytes exclude allocator bookkeeping and sanitizer redzones. These measurements are
 allocation counts and traffic, not retained/peak RSS, release timings, all-thread counts or a
 proof about effectful/deferred payloads. Existing owned-storage and whole-process measurements
-remain separate. Native CI must validate the diagnostic before using its counts for acceptance.
+remain separate. ASan can also change allocation behavior and build paths, so these counts qualify
+only the instrumented regression test. They cannot establish production allocation counts or costs,
+and must not select the performance implementation. Native allocation profiling remains an open
+acceptance requirement. JSON explicitly marks these results as not production-representative.

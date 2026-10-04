@@ -32,6 +32,8 @@ class ExpressionAllocationsTest(unittest.TestCase):
         self.assertEqual(report['revision'], 'revision')
         self.assertEqual(report['runtime'], 'ASan')
         self.assertFalse(report['timing'])
+        self.assertFalse(report['production_representative'])
+        self.assertIn('ASan replaces the allocator', report['limitations'])
         self.assertEqual(report['cases'][0]['phases']['prepare'],
                          dict(allocations=5, requested_bytes=2112, frees=0))
         self.assertEqual(report['cases'][0]['phases']['steady']['allocations'], 0)

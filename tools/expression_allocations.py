@@ -46,7 +46,9 @@ def report_from_xml(source, revision):
         raise ValueError('no measured allocation cases; use --config=clang --config=asan')
     return dict(schema=1, revision=revision, runtime='ASan', scope='calling thread',
                 bytes='requested allocation bytes, excluding sanitizer redzones and allocator bookkeeping',
-                timing=False, cases=rows)
+                timing=False, production_representative=False,
+                limitations='ASan replaces the allocator and can change allocation behavior; diagnostic counts only',
+                cases=rows)
 
 
 def main(argv=None):
