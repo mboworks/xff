@@ -139,6 +139,23 @@ jobs:
             --disk_cache=$HOME/.cache/bazel-disk --repository_cache=$HOME/.cache/bazel-repo \
             "${fuse_test_config[@]}" \
             ${{ matrix.config.flags }}
+      - name: Export expression allocation diagnostics
+        if: ${{ !cancelled() && matrix.config.name == 'asan' }}
+        run: |
+          python3 tools/expression_allocations.py \
+            bazel-testlogs/xff/engine/expression_allocations_test/test.xml \
+            --revision "${GITHUB_SHA}" --output "${RUNNER_TEMP}/expression-allocations.json"
+      - name: Retain expression allocation diagnostics
+        if: ${{ !cancelled() && matrix.config.name == 'asan' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: expression-allocation-diagnostics-linux
+          path: |
+            ${{ runner.temp }}/expression-allocations.json
+            bazel-testlogs/xff/engine/expression_allocations_test/test.xml
+            bazel-testlogs/xff/engine/expression_allocations_test/test.log
+          retention-days: 7
+          if-no-files-found: error
       # The complete suite above builds both shipped binaries with the production ThinLTO config.
       # Stage those already-built outputs and execute the stripped copies to cover the final release
       # transformation without a second Bazel invocation or compilation configuration.

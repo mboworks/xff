@@ -827,3 +827,26 @@ cc_binary(
         "@com_github_google_benchmark//:benchmark",
     ],
 )
+
+# Allocator hooks are installed only in this diagnostic test, never in timing/shipping binaries.
+# Normal configurations compile the same fixture but skip the ASan-specific measurements.
+cc_test(
+    name = "expression_allocations_test",
+    size = "small",
+    srcs = ["expression_allocations_test.cc"],
+    deps = [
+        ":evaluate_cc",
+        ":expression_execution_cc",
+        ":expression_qualification_cc",
+        ":walk_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/base:config",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
