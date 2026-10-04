@@ -13,9 +13,12 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       executor against current name-dispatched evaluation before changing control flow.
       Experimental BoundExpression resolves registered handlers once, caches fuzzy-only subtree
       properties and shares control semantics with the reference tree. Both run the trace oracle;
-      randomly interleaved CI measurements and the production adoption decision remain pending.
+      two native CI sessions show consistent kernel gains. Whole-engine qualification and
+      the production adoption decision remain pending.
 - [ ] EP03: Prepare invariant operands and indexed worker matcher state; preserve validation timing,
       conditional metadata, dynamic values and errors; report remaining per-entry parsing.
+      The typed scalar candidate and three-way oracle/270-case benchmark are implemented;
+      CI qualification, indexed worker matchers and the remaining audited families stay open.
 - [ ] EP04: Compare contiguous opcode and bound-function programs; lower audited boolean control flow,
       reuse scratch and preserve source mapping, with explicit whole-expression fallback coverage.
 - [ ] EP05: Complete fuzzy/unknown/error/action/deferred semantics; preserve exactly-once effects,

@@ -7,6 +7,7 @@
 #include <array>
 #include <cstddef>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -35,6 +36,7 @@ using ::mbo::testing::StatusIs;
 using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::Eq;
+using ::testing::Ge;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
@@ -46,6 +48,7 @@ using ::testing::SizeIs;
 class RecordingExpressionFs final : public vfs::FileSystem {
  public:
   mutable std::vector<std::string> events;
+  std::optional<vfs::Metadata> target_metadata;
 
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override {
     events.push_back("readdir " + std::string(path));
@@ -54,6 +57,9 @@ class RecordingExpressionFs final : public vfs::FileSystem {
 
   absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool) const override {
     events.push_back("stat " + std::string(path));
+    if (target_metadata.has_value()) {
+      return *target_metadata;
+    }
     return absl::PermissionDeniedError("recorded stat failure");
   }
 
@@ -82,7 +88,7 @@ class RecordingExpressionFs final : public vfs::FileSystem {
   }
 };
 
-enum class Executor { kTree, kBound };
+enum class Executor { kTree, kBound, kPrepared };
 
 struct ExpressionContractTest : ::testing::TestWithParam<Executor> {
   static absl::StatusOr<parser::Command> Parse(const std::vector<std::string>& arguments) {
@@ -109,6 +115,11 @@ struct ExpressionContractTest : ::testing::TestWithParam<Executor> {
     };
     if (GetParam() == Executor::kTree) {
       return EvaluateDeferred(expression, context);
+    }
+    if (GetParam() == Executor::kPrepared) {
+      auto prepared = PreparedExpression::Prepare(expression);
+      EXPECT_THAT(prepared, IsOk());
+      return prepared.ok() ? prepared->Evaluate(context) : EvaluationResult{.unknown = true};
     }
     auto bound = BoundExpression::Prepare(expression);
     EXPECT_THAT(bound, IsOk());
@@ -387,6 +398,7 @@ TEST_P(ExpressionContractTest, EveryRegisteredPrimaryHasAnExplicitBindingDisposi
     SCOPED_TRACE(descriptor.name);
     const parser::Expr expression{.kind = parser::Expr::Kind::kPredicate, .descriptor = descriptor};
     EXPECT_THAT(BoundExpression::Prepare(expression), IsOk());
+    EXPECT_THAT(PreparedExpression::Prepare(expression), IsOk());
   }
 }
 
@@ -396,11 +408,16 @@ TEST_P(ExpressionContractTest, AnUnregisteredHandlerIsRejectedRatherThanSilently
   EXPECT_THAT(
       BoundExpression::Prepare(expression),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("missing engine evaluation binding")));
+  EXPECT_THAT(
+      PreparedExpression::Prepare(expression),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("missing engine evaluation binding")));
 }
 
 TEST_P(ExpressionContractTest, BoundPreparationRejectsMalformedInputBeforeObservations) {
   const parser::Expr incomplete{.kind = parser::Expr::Kind::kAnd};
   EXPECT_THAT(BoundExpression::Prepare(incomplete), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("shape")));
+  EXPECT_THAT(
+      PreparedExpression::Prepare(incomplete), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("shape")));
   EXPECT_THAT(fs.events, IsEmpty());
 }
 
@@ -436,11 +453,232 @@ TEST_P(ExpressionContractTest, FuzzyOrDoesNotVisitAnEffectfulRightBranch) {
   EXPECT_THAT(fs.events, IsEmpty());
 }
 
+struct PreparedOperandTest : ::testing::Test {
+  static void IgnoreOutput(std::string_view) {}
+
+  void Check(std::string_view flag, std::string_view argument, bool supply_argument = true) {
+    SCOPED_TRACE(flag);
+    SCOPED_TRACE(argument);
+    const auto descriptor = registry::Lookup(flag);
+    ASSERT_THAT(descriptor, Optional(_));
+    parser::Expr expression{.kind = parser::Expr::Kind::kPredicate, .descriptor = descriptor};
+    if (supply_argument) {
+      expression.args.emplace_back(argument);
+    }
+    ASSERT_OK_AND_ASSIGN(auto prepared, PreparedExpression::Prepare(expression));
+    EXPECT_THAT(prepared.NodeCount(), Eq(1));
+    EXPECT_THAT(prepared.OperandCount(), Eq(supply_argument ? 1 : 0));
+    EXPECT_THAT(prepared.StorageBytes(), Ge(sizeof(PreparedExpression)));
+    // Reuse the same prepared object with multiple entries and resolved block sizes.
+    for (const std::uint64_t block_size : {512, 1'024}) {
+      for (const std::uint64_t value : kValues) {
+        metadata.size = value;
+        metadata.blocks = value / 512;
+        metadata.mode = static_cast<std::uint32_t>(value);
+        metadata.nlink = value;
+        metadata.ino = value;
+        metadata.uid = static_cast<std::uint32_t>(value);
+        metadata.gid = static_cast<std::uint32_t>(value);
+        EvalContext context{
+            .visit = visit,
+            .emit = IgnoreOutput,
+            .fs = fs,
+            .now = absl::UnixEpoch(),
+            .tz = absl::UTCTimeZone(),
+            .block_size = block_size,
+            .control = control,
+        };
+        fs.events.clear();
+        const auto expected = EvaluateDeferred(expression, context);
+        const auto events = std::exchange(fs.events, {});
+        const auto actual = prepared.Evaluate(context);
+        EXPECT_THAT(actual.matched, Eq(expected.matched));
+        EXPECT_THAT(actual.unknown, Eq(expected.unknown));
+        EXPECT_THAT(actual.deferred, Eq(expected.deferred));
+        EXPECT_THAT(fs.events, Eq(events));
+      }
+    }
+  }
+
+  static constexpr auto kValues = std::to_array<std::uint64_t>({
+      0,
+      1,
+      7,
+      8,
+      0644,
+      07777,
+      512,
+      513,
+      1'000,
+      1'024,
+      1'025,
+      1ULL << 32,
+      std::numeric_limits<std::uint64_t>::max(),
+  });
+  RecordingExpressionFs fs;
+  vfs::Metadata metadata{.type = vfs::FileType::kRegular};
+  Visit visit{.path = "file", .name = "file", .metadata = metadata, .fs = fs};
+  Control control;
+};
+
+TEST_F(PreparedOperandTest, MovingPreparedStorageKeepsSourceIdentityAndTypedOperands) {
+  ASSERT_OK_AND_ASSIGN(auto command, parser::Parse({".", "-type", "f", "-size", "+1c"}));
+  ASSERT_OK_AND_ASSIGN(auto prepared, PreparedExpression::Prepare(*command.expression));
+  ASSERT_OK_AND_ASSIGN(const auto bound, BoundExpression::Prepare(*command.expression));
+  const auto bytes = prepared.StorageBytes();
+  auto moved = std::move(prepared);
+  ASSERT_OK_AND_ASSIGN(auto replacement, PreparedExpression::Prepare(*command.expression));
+  replacement = std::move(moved);
+  EXPECT_THAT(replacement.NodeCount(), Eq(3));
+  EXPECT_THAT(replacement.OperandCount(), Eq(2));
+  EXPECT_THAT(replacement.StorageBytes(), Eq(bytes));
+  EXPECT_THAT(bound.StorageBytes(), Ge(sizeof(BoundExpression)));
+  auto source_owner = std::move(command.expression);
+  metadata.size = 7;
+  EvalContext context{
+      .visit = visit,
+      .emit = IgnoreOutput,
+      .fs = fs,
+      .now = absl::UnixEpoch(),
+      .tz = absl::UTCTimeZone(),
+      .control = control,
+  };
+  EXPECT_THAT(replacement.Evaluate(context).matched, IsTrue());
+  metadata.size = 0;
+  EXPECT_THAT(replacement.Evaluate(context).matched, IsFalse());
+  EXPECT_THAT(EvaluateDeferred(*source_owner, context).matched, IsFalse());
+  EXPECT_THAT(fs.events, IsEmpty());
+}
+
+TEST_F(PreparedOperandTest, TypeListsMatchEveryEntryTypeAndRejectMalformedSuffixes) {
+  constexpr auto kTypes = std::to_array({
+      vfs::FileType::kUnknown,
+      vfs::FileType::kRegular,
+      vfs::FileType::kDirectory,
+      vfs::FileType::kSymlink,
+      vfs::FileType::kBlockDevice,
+      vfs::FileType::kCharDevice,
+      vfs::FileType::kFifo,
+      vfs::FileType::kSocket,
+      static_cast<vfs::FileType>(32),
+  });
+  constexpr auto kArguments = std::to_array<std::string_view>({
+      "f",
+      "d",
+      "l",
+      "b",
+      "c",
+      "p",
+      "s",
+      "f,d",
+      "f,f",
+      "",
+      "f,garbage",
+      "f,",
+      ",f",
+      "fd",
+  });
+  for (const auto type : kTypes) {
+    metadata.type = type;
+    for (const auto argument : kArguments) {
+      Check("-type", argument);
+      Check("-xtype", argument);
+    }
+  }
+  metadata.type = vfs::FileType::kSymlink;
+  fs.target_metadata.emplace(vfs::Metadata{.type = vfs::FileType::kDirectory});
+  Check("-xtype", "d");
+  Check("-xtype", "f");
+  Check("-xtype", "d,garbage");
+}
+
+TEST_F(PreparedOperandTest, SizeUnitsRoundingAndDynamicBlocksMatchTheReference) {
+  constexpr auto kArguments = std::to_array<std::string_view>({
+      "0",
+      "1",
+      "+1",
+      "-1",
+      "1b",
+      "+1c",
+      "-513c",
+      "1k",
+      "1KiB",
+      "1kB",
+      "1E",
+      "18446744073709551615c",
+      "18446744073709551616c",
+      "",
+      "garbage",
+      "1Z",
+      "+",
+  });
+  for (const auto flag : {"-size", "-blocks"}) {
+    for (const auto argument : kArguments) {
+      Check(flag, argument);
+    }
+  }
+}
+
+TEST_F(PreparedOperandTest, NumericComparisonsRetainMalformedAndUnsignedBoundaryBehavior) {
+  constexpr auto kArguments = std::to_array<std::string_view>({
+      "0",
+      "1",
+      "+1",
+      "-1",
+      "18446744073709551615",
+      "18446744073709551616",
+      "",
+      "garbage",
+      "+",
+      "1x",
+  });
+  for (const auto flag : {"-links", "-inum", "-uid", "-gid"}) {
+    for (const auto argument : kArguments) {
+      Check(flag, argument);
+    }
+  }
+}
+
+TEST_F(PreparedOperandTest, SymbolicOctalAndZeroPermissionMasksMatchTheReference) {
+  constexpr auto kArguments = std::to_array<std::string_view>({
+      "0644",        "-0644", "/0444",    "+0444", "0",       "-0",  "/0", "+0",   "u+rw,go=r", "+r",
+      "u+s,g+s,o+t", "a=X",   "u=rw,u-w", "",      "garbage", "u+z", "u",  "u+r,", "888",
+  });
+  for (const auto argument : kArguments) {
+    Check("-perm", argument);
+  }
+}
+
+TEST_F(PreparedOperandTest, MissingOperandsStayFalseWithoutObservations) {
+  constexpr auto kFlags = std::to_array<std::string_view>({
+      "-type",
+      "-xtype",
+      "-size",
+      "-blocks",
+      "-links",
+      "-inum",
+      "-uid",
+      "-gid",
+      "-perm",
+  });
+  for (const auto flag : kFlags) {
+    Check(flag, "", false);
+  }
+  EXPECT_THAT(fs.events, IsEmpty());
+}
+
 INSTANTIATE_TEST_SUITE_P(
     Executors,
     ExpressionContractTest,
-    ::testing::Values(Executor::kTree, Executor::kBound),
-    [](const ::testing::TestParamInfo<Executor>& info) { return info.param == Executor::kTree ? "Tree" : "Bound"; });
+    ::testing::Values(Executor::kTree, Executor::kBound, Executor::kPrepared),
+    [](const ::testing::TestParamInfo<Executor>& info) {
+      switch (info.param) {
+        case Executor::kTree: return "Tree";
+        case Executor::kBound: return "Bound";
+        case Executor::kPrepared: return "Prepared";
+      }
+      return "Invalid";
+    });
 
 }  // namespace
 }  // namespace xff::engine

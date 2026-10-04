@@ -16,7 +16,7 @@ data-structure audit against XFF's pinned MBO revision and a newer local MBO che
 Existing constexpr ordered maps/sets, strong IDs, vectors and arenas are sufficient to start.
 A frozen/perfect-hash map/set is a separate optional startup-lookup improvement; the prepared
 execution path should avoid name lookup altogether. EP01-EP07 in TODO track the implementation.
-No executor speedup is claimed yet. Append each stage's measured results and retain/revise/reject
+No production speedup is claimed yet. Append each stage's measured results and retain/revise/reject
 decision here, including preparation, memory, portability and unsuccessful experiments.
 
 ### EP01 baseline and EP02 dispatch experiment
@@ -50,8 +50,51 @@ configuration/traversal-only behavior is explicit metadata rather than a silent 
 CI compares preparation and kernel results in the same release binary with randomized interleaving
 of nine repetitions and a fastest-seven statistic. This avoids measuring every baseline repetition
 before every candidate repetition; it is not a claim that arbitrary repetition indices are exact
-temporal pairs. The report records the revision and sampling policy. Candidate results, repeated
-CI-session evidence, setup crossover, whole-engine effects and an adoption decision are pending.
+temporal pairs. The report records the revision and sampling policy.
+
+Two independent CI sessions retained 144 valid cases on each platform, with no untimed correctness
+failures: [37204470952](https://github.com/mboworks/xff/actions/runs/37204470952) and
+[37205289267](https://github.com/mboworks/xff/actions/runs/37205289267). Each value below is the
+geometric mean of bound/tree elapsed-time ratios across six kernel cases (1/16/64 predicates,
+10/1,000 entries). Smaller means faster; these are in-process evaluator results, not CLI speedups.
+
+| Family     | Linux, first | Linux, second | macOS, first | macOS, second |
+| :--------- | -----------: | ------------: | -----------: | ------------: |
+| Type       |        0.503 |         0.520 |        0.448 |         0.444 |
+| Name       |        0.636 |         0.629 |        0.759 |         0.786 |
+| Size       |        0.519 |         0.519 |        0.473 |         0.467 |
+| Permission |        0.460 |         0.456 |        0.400 |         0.422 |
+| Content    |        0.582 |         0.572 |        0.505 |         0.539 |
+| Regex      |        0.745 |         0.726 |        0.692 |         0.659 |
+| Fuzzy      |        0.500 |         0.510 |        0.415 |         0.401 |
+| Output     |        0.592 |         0.595 |        0.462 |         0.470 |
+
+The first session added 124-176 ns of preparation for the one-predicate cases; its measured
+1,000-entry kernels recovered that cost after roughly 4-6 entries. This crossover excludes the
+rest of CLI startup and traversal. Decision: retain bound dispatch as an experimental baseline for
+operand/control-flow work. Whole-engine measurements, mixed selectivity, memory/size accounting,
+and final production adoption remain open. Rebased CI still has to finish all required checks.
+
+### EP03 typed scalar operand candidate
+
+`PreparedExpression` prepares type lists, size/block specifications, unsigned numeric comparisons,
+and permission masks once. Its operand factories live alongside their handlers in the existing
+engine dispatch table; both evaluators share numeric and permission decoders. A separate typed
+operand pool keeps the largest payload out of boolean nodes. Missing or malformed operands keep
+existing no-match behavior; normal whole-command validation still applies. Symlink target reads
+remain conditional, and default size units still use the evaluation context's block size.
+
+The differential corpus reuses one prepared object across metadata values and block sizes, with
+unsigned boundaries, malformed suffixes, octal/symbolic modes, every file type, and broken or valid
+symlink targets. All existing trace cases also run through the candidate. The release benchmark
+now compares tree, bound-only and prepared variants in 270 cases, including symbolic permissions
+and numeric fields. `extra_bytes`, `nodes`, and `operands` counters report owned buffer capacities;
+allocator headers and the shared AST are excluded. Allocation counts and final binary-size impact
+remain to be measured, including any code retained by the enlarged dispatch table.
+
+The candidate is not selected by production. CI measurements are pending; indexed worker matchers
+and the other invariant families in the operand audit still remain to implement or reject with
+evidence. No additional speedup is claimed for scalar preparation yet.
 
 ## Hosted capacity and benchmark backfill
 

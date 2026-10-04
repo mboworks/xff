@@ -440,7 +440,7 @@ This implementation is a candidate awaiting measurements, not an accepted perfor
 
 ## EP03 operand preparation boundaries
 
-The first operand candidate should cover type lists, size specifications, unsigned numeric tests
+The first operand candidate covers type lists, size specifications, unsigned numeric tests
 and permission modes. Preparation must retain the existing raw spelling for diagnostics and bind
 its decoder from the same engine dispatch entry as the evaluator. Do not introduce another
 spelling switch or map. Preserve the EP02 bound-only variant in the same benchmark binary to
@@ -474,7 +474,14 @@ against a different expression's worker vector.
 Evaluate compact operand pools before inflating every boolean node with a maximum-sized payload.
 Record node bytes, pool bytes and preparation allocations alongside per-entry cost; unsupported
 families should retain their existing callback rather than reparsing an already prepared family.
-This section records the next candidate's boundaries; it does not claim EP03 is implemented.
+`PreparedExpression` implements the scalar candidate with a typed pool, source-node references
+and the same recursive control semantics as EP02. Factories are registered with the existing
+engine handler table, and numeric/permission parsing is shared with the reference evaluator.
+No production switch is made. The trace oracle runs all three executors; boundary tests additionally
+reuse prepared scalars across changed entry metadata and block sizes. Nine-round interleaved CI
+benchmarks compare tree, bound-only and prepared execution in 270 cases and record owned storage
+capacity. Indexed worker matchers and the remaining families above are still open; this is a
+partial EP03 implementation, not the stage's completion.
 
 ### Evaluator operand/effect inventory
 

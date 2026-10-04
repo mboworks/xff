@@ -319,6 +319,8 @@ class BoundExpression final {
 
   [[nodiscard]] std::size_t NodeCount() const { return nodes_.size(); }
 
+  [[nodiscard]] std::size_t StorageBytes() const { return sizeof(*this) + nodes_.capacity() * sizeof(Node); }
+
  private:
   using Evaluator = bool (*)(const parser::Expr&, EvalContext&);
 
@@ -334,6 +336,30 @@ class BoundExpression final {
   explicit BoundExpression(std::vector<Node> nodes) : nodes_(std::move(nodes)) {}
 
   std::vector<Node> nodes_;
+};
+
+// Experimental bound tree with typed immutable operand pools. Source ownership follows
+// BoundExpression. Preparation performs no filesystem or account-database observations.
+class PreparedExpression final {
+ public:
+  static absl::StatusOr<PreparedExpression> Prepare(const parser::Expr& expression);
+  PreparedExpression(PreparedExpression&&) noexcept;
+  PreparedExpression& operator=(PreparedExpression&&) noexcept;
+  PreparedExpression(const PreparedExpression&) = delete;
+  PreparedExpression& operator=(const PreparedExpression&) = delete;
+  ~PreparedExpression();
+
+  EvaluationResult Evaluate(EvalContext& context) const;
+  [[nodiscard]] std::size_t NodeCount() const;
+  [[nodiscard]] std::size_t OperandCount() const;
+  // Object and owned buffer capacities, excluding allocator headers and the shared source AST.
+  [[nodiscard]] std::size_t StorageBytes() const;
+
+ private:
+  struct Data;
+  struct Cursor;
+  explicit PreparedExpression(std::unique_ptr<Data> data);
+  std::unique_ptr<Data> data_;
 };
 
 // True if `expr` contains any action node (-print, ...). The driver uses this
