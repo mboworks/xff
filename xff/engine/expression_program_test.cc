@@ -208,7 +208,9 @@ TEST_P(ExpressionProgramTest, FuzzyAndDeferredContextsReportWholeExpressionFallb
   const auto waiting = worker.Evaluate(context);
   EXPECT_THAT(waiting.used_fallback, IsTrue());
   ASSERT_THAT(waiting.result.waiting_at, Optional(_));
-  decisions.emplace(waiting.result.waiting_at.value(), true);
+  if (waiting.result.waiting_at.has_value()) {
+    decisions.emplace(*waiting.result.waiting_at, true);
+  }
   EXPECT_THAT(worker.Evaluate(context).result.matched, IsTrue());
 }
 
