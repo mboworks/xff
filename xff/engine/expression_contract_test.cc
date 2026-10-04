@@ -121,7 +121,7 @@ TEST_F(ExpressionContractTest, SourceIdsRetainPreorderAndSurviveOwnerMove) {
   ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-true", ",", "!", "-false"}));
   ASSERT_OK_AND_ASSIGN(const auto sources, DescribeExpression(*command.expression));
   EXPECT_THAT(sources, SizeIs(4));
-  auto owner = std::move(command.expression);
+  const auto owner = std::move(command.expression);
   EXPECT_THAT(ExprIdentity{sources.at(0).expression.get()}, Eq(ExprIdentity{*owner}));
   for (std::size_t index = 0; index < sources.size(); ++index) {
     EXPECT_THAT(sources.at(index).id.value(), Eq(index));
@@ -184,9 +184,9 @@ TEST_F(ExpressionContractTest, RejectsExtraAndMissingChildren) {
           .left = true,
       },
   });
-  ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-true"}));
+  ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-true"}));
   for (const auto& shape : kMalformed) {
-    parser::Expr expression{
+    const parser::Expr expression{
         .kind = shape.kind,
         .descriptor = command.expression->descriptor,
         .lhs = shape.left ? std::make_unique<parser::Expr>() : nullptr,
@@ -244,7 +244,7 @@ TEST_F(ExpressionContractTest, AllBooleanOperatorsPreserveTruthAndObservableOrde
       for (const bool right : {false, true}) {
         SCOPED_TRACE(operation.token);
         ASSERT_OK_AND_ASSIGN(
-            auto command,
+            const auto command,
             Parse(
                 {".", "(", "-printf", "left", ",", left ? "-true" : "-false", ")", std::string(operation.token), "(",
                  "-printf", "right", ",", right ? "-true" : "-false", ")"}));
@@ -252,7 +252,7 @@ TEST_F(ExpressionContractTest, AllBooleanOperatorsPreserveTruthAndObservableOrde
         fs.events.clear();
         memo.clear();
         const auto result = Observe(*command.expression);
-        EXPECT_THAT(result.matched, Eq(operation.truth.at(2UZ * left + right)));
+        EXPECT_THAT(result.matched, Eq(operation.truth.at((2UZ * left) + right)));
         EXPECT_THAT(result.unknown, IsFalse());
         EXPECT_THAT(result.deferred, IsFalse());
         if ((left && operation.short_true) || (!left && operation.short_false)) {
@@ -266,22 +266,22 @@ TEST_F(ExpressionContractTest, AllBooleanOperatorsPreserveTruthAndObservableOrde
 }
 
 TEST_F(ExpressionContractTest, ShortCircuitSkipsReadsAndNotDiscardsFuzzyScore) {
-  ASSERT_OK_AND_ASSIGN(auto skipped, Parse({".", "-false", "-content", "needle"}));
+  ASSERT_OK_AND_ASSIGN(const auto skipped, Parse({".", "-false", "-content", "needle"}));
   EXPECT_THAT(Observe(*skipped.expression).matched, IsFalse());
   EXPECT_THAT(fs.events, IsEmpty());
-  ASSERT_OK_AND_ASSIGN(auto negated, Parse({".", "!", "-fuzzy", "file"}));
+  ASSERT_OK_AND_ASSIGN(const auto negated, Parse({".", "!", "-fuzzy", "file"}));
   const auto result = Observe(*negated.expression);
   EXPECT_THAT(result.matched, IsFalse());
   EXPECT_THAT(result.fuzzy, Eq(std::nullopt));
 }
 
 TEST_F(ExpressionContractTest, DeferredReplayDoesNotRepeatPrefixOutput) {
-  ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-printf", "prefix", "-top", "1", "-printf", "suffix"}));
+  ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-printf", "prefix", "-top", "1", "-printf", "suffix"}));
   const auto pending = Observe(*command.expression);
   ASSERT_THAT(pending.waiting_at, Optional(_));
   EXPECT_THAT(pending.deferred, IsTrue());
   EXPECT_THAT(fs.events, ElementsAre("output prefix"));
-  decisions.emplace(*pending.waiting_at, true);
+  decisions.emplace(pending.waiting_at.value(), true);
   const auto resumed = Observe(*command.expression);
   EXPECT_THAT(resumed.matched, IsTrue());
   EXPECT_THAT(resumed.deferred, IsFalse());
@@ -289,7 +289,8 @@ TEST_F(ExpressionContractTest, DeferredReplayDoesNotRepeatPrefixOutput) {
 }
 
 TEST_F(ExpressionContractTest, DryRunExecutionRemainsUnknownAndStopsLaterEffects) {
-  ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-exec", "ignored-command", "{}", ";", ",", "-printf", "later"}));
+  ASSERT_OK_AND_ASSIGN(
+      const auto command, Parse({".", "-exec", "ignored-command", "{}", ";", ",", "-printf", "later"}));
   const auto result = Observe(*command.expression, true);
   EXPECT_THAT(result.unknown, IsTrue());
   ASSERT_THAT(fs.events, SizeIs(1));
@@ -298,12 +299,12 @@ TEST_F(ExpressionContractTest, DryRunExecutionRemainsUnknownAndStopsLaterEffects
 }
 
 TEST_F(ExpressionContractTest, MetadataFailureIsUnknownAndCannotBeNegatedOrHidden) {
-  const auto fail = [this]() { return fs.Stat(visit.path, false).status(); };
+  const auto fail = [this] { return fs.Stat(visit.path, false).status(); };
   visit.load_metadata.emplace(fail);
-  ASSERT_OK_AND_ASSIGN(auto skipped, Parse({".", "-false", "-size", "+1c"}));
+  ASSERT_OK_AND_ASSIGN(const auto skipped, Parse({".", "-false", "-size", "+1c"}));
   EXPECT_THAT(Observe(*skipped.expression).matched, IsFalse());
   EXPECT_THAT(fs.events, IsEmpty());
-  ASSERT_OK_AND_ASSIGN(auto reached, Parse({".", "!", "-size", "+1c", ",", "-printf", "later"}));
+  ASSERT_OK_AND_ASSIGN(const auto reached, Parse({".", "!", "-size", "+1c", ",", "-printf", "later"}));
   const auto result = Observe(*reached.expression);
   EXPECT_THAT(result.unknown, IsTrue());
   EXPECT_THAT(control.metadata_error, StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("stat failure")));
@@ -311,14 +312,14 @@ TEST_F(ExpressionContractTest, MetadataFailureIsUnknownAndCannotBeNegatedOrHidde
 }
 
 TEST_F(ExpressionContractTest, UnreachableSizeOperandStillParticipatesInWholeCommandValidation) {
-  ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-false", "-size", "garbage"}));
+  ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-false", "-size", "garbage"}));
   EXPECT_THAT(ValidateSizeArgs(*command.expression), StatusIs(absl::StatusCode::kInvalidArgument, _));
   EXPECT_THAT(fs.events, IsEmpty());
 }
 
 TEST_F(ExpressionContractTest, IndependentFirstBudgetsPersistAcrossEntries) {
   ASSERT_OK_AND_ASSIGN(
-      auto command,
+      const auto command,
       Parse({".", "(", "-first", "1", "-printf", "first", ")", "-o", "(", "-first", "1", "-printf", "second", ")"}));
   EXPECT_THAT(Observe(*command.expression).matched, IsTrue());
   memo.clear();  // New entry; per-entry replay memo expires, per-run counters remain.
@@ -331,22 +332,22 @@ TEST_F(ExpressionContractTest, IndependentFirstBudgetsPersistAcrossEntries) {
 
 TEST_F(ExpressionContractTest, TwoDeferredFrontiersPreserveExactlyOnceEffects) {
   ASSERT_OK_AND_ASSIGN(
-      auto command,
+      const auto command,
       Parse({".", "-printf", "prefix", "-top", "1", "-printf", "middle", "-top", "1", "-printf", "suffix"}));
   const auto first = Observe(*command.expression);
   ASSERT_THAT(first.waiting_at, Optional(_));
-  decisions.emplace(*first.waiting_at, true);
+  decisions.emplace(first.waiting_at.value(), true);
   const auto second = Observe(*command.expression);
   ASSERT_THAT(second.waiting_at, Optional(_));
   EXPECT_THAT(second.waiting_at, Not(Eq(first.waiting_at)));
   EXPECT_THAT(fs.events, ElementsAre("output prefix", "output middle"));
-  decisions.emplace(*second.waiting_at, true);
+  decisions.emplace(second.waiting_at.value(), true);
   EXPECT_THAT(Observe(*command.expression).matched, IsTrue());
   EXPECT_THAT(fs.events, ElementsAre("output prefix", "output middle", "output suffix"));
 }
 
 TEST_F(ExpressionContractTest, FailedDeletionUsesTheIsolatedSinkAndPreservesMutationError) {
-  ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-delete", "-printf", "later"}));
+  ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-delete", "-printf", "later"}));
   const auto result = Observe(*command.expression);
   EXPECT_THAT(result.matched, IsFalse());
   EXPECT_THAT(
@@ -356,7 +357,7 @@ TEST_F(ExpressionContractTest, FailedDeletionUsesTheIsolatedSinkAndPreservesMuta
 }
 
 TEST_F(ExpressionContractTest, TraversalEffectsStayObservableEvenWithFalseResult) {
-  ASSERT_OK_AND_ASSIGN(auto command, Parse({".", "-prune", ",", "-quit", ",", "-false"}));
+  ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-prune", ",", "-quit", ",", "-false"}));
   EXPECT_THAT(Observe(*command.expression).matched, IsFalse());
   EXPECT_THAT(control.prune, IsTrue());
   EXPECT_THAT(control.quit, IsTrue());

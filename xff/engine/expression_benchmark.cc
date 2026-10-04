@@ -100,7 +100,7 @@ constexpr auto kCases = std::to_array<ExpressionCase>({
 
 std::vector<std::string> Arguments(const ExpressionCase& example, std::int64_t length) {
   std::vector<std::string> arguments;
-  arguments.reserve(1 + 2 * static_cast<std::size_t>(length));
+  arguments.reserve(1 + (2 * static_cast<std::size_t>(length)));
   arguments.emplace_back(".");
   for (std::int64_t index = 0; index < length; ++index) {
     arguments.emplace_back(example.primary);
@@ -142,6 +142,7 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
   const ExpressionFs fs;
   const xff::vfs::Metadata metadata{.type = xff::vfs::FileType::kRegular, .size = 7, .mode = 0644};
   const xff::engine::Visit visit{.path = "tree/file.txt", .name = "file.txt", .metadata = metadata, .fs = fs};
+  // NOLINTNEXTLINE(misc-const-correctness): EvalContext and evaluator callbacks mutate this control.
   xff::engine::Control control;
   std::uint64_t emitted = 0;
   const auto emit = [&emitted](std::string_view value) { emitted += value.size(); };
