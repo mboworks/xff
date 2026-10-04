@@ -716,7 +716,7 @@ TEST_F(HelpTest, DetailedHelpShowsInfluenceCrossReferences) {
       AllOf(
           HasSubstr("Affected by:"), HasSubstr("--diff-format"), HasSubstr("--diff-context"), HasSubstr("--context")));
   EXPECT_THAT(
-      RenderEntry("-grep"), AllOf(HasSubstr("Affected by:"), HasSubstr("--count"), HasSubstr("--after-context")));
+      RenderEntry("-grep"), AllOf(HasSubstr("Affected by:"), HasSubstr("--count"), HasSubstr("--context-after")));
   // A flag <-> flag edge points from the feeder to the fed: --context supplies the -diff context
   // when --diff-context is absent, so --context lists --diff-context under "Affects:" and
   // --diff-context shows the reverse "Affected by:" (never the other way around).

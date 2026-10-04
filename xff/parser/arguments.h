@@ -13,22 +13,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef XFF_PARSER_RG_H_
-#define XFF_PARSER_RG_H_
+#ifndef XFF_PARSER_ARGUMENTS_H_
+#define XFF_PARSER_ARGUMENTS_H_
 
 #include <cstddef>
-#include <optional>
-#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include "absl/status/statusor.h"
+#include "mbo/types/optional_ref.h"
 #include "xff/parser/ast.h"
+#include "xff/registry/descriptor.h"
+#include "xff/registry/mode.h"
 
 namespace xff::parser {
-// Parse the segment after --rg. --xff starts a native filter expression.
-absl::StatusOr<Command> ParseRg(const std::vector<std::string>& args, std::size_t start);
+// The first pass extracts globals under the current mode and leaves primary
+// operands intact. Parse builds the expression from this sequence exactly once.
+// Views borrow argv storage until the expression pass copies each consumed value.
+struct ExpressionToken {
+  std::string_view text;
+  mbo::types::OptionalRef<const registry::Descriptor> descriptor;
+};
+
+struct ParsedArguments {
+  Command command;
+  std::vector<ExpressionToken> expression;
+  bool options_ended = false;
+};
+
+absl::StatusOr<ParsedArguments> ParseArguments(
+    const std::vector<std::string>& args,
+    std::size_t start,
+    registry::Mode mode);
 
 }  // namespace xff::parser
-#endif  // XFF_PARSER_RG_H_
+#endif  // XFF_PARSER_ARGUMENTS_H_

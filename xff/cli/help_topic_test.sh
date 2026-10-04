@@ -537,7 +537,7 @@ test::focused_vocabulary_help_appends_the_shared_reference() {
   expect_output_contains 'PRINTF DIRECTIVES' "${out}"
   out="$("$(_xff_bin)" --help=-println --width=0)"
   expect_output_not_contains 'PRINTF DIRECTIVES' "${out}"
-  out="$("$(_xff_bin)" --help=--after-context --width=0)"
+  out="$("$(_xff_bin)" --help=--context-after --width=0)"
   expect_output_not_contains 'FIELDS' "${out}"
   out="$("$(_xff_bin)" --help=--time-format --width=0)"
   expect_output_contains 'TIME FORMATS' "${out}"

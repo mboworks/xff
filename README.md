@@ -55,6 +55,7 @@ For building from source, see [Building & Dependencies](#building--dependencies)
 
 - **`find`-Compatible Core:** The standard primaries (`-name`, `-type`, `-size`, `-mtime`, `-regex`, `-exec`, `-prune`, ...), operators, and exit-status conventions provide a portable union of GNU, BSD, and POSIX `find` behavior. Invoking the binary as `find` selects the find expression vocabulary and compatibility-oriented defaults while retaining explicit xff global controls.
 - **Content & Metadata Matching:** `-grep` / `-content` search inside files, `-lang 'C*'` and `-mime 'image/*'` match by inferred language or media type, `-text` / `-binary` / `-eofnl` classify content, and native `-hash` primitives emit optimized checksum manifests.
+- **Native File Filters with Rg Output:** `xff src -type f -name '*.cc' -size +1k --rg TODO -n -C2` combines XFF's file-selection expressions with rg-style patterns, matching lines, and context in one command. Native content predicates can select whole files independently of the lines printed. See [rg compatibility](docs/design-rg.md).
 - **Overrideable MIME Vocabulary:** The lean binary carries common media types; the removable
   `mime-db` extra expands that to thousands of registered types. Repeatable
   `--mime-vocabulary=FILE` JSON overlays can replace extension mappings and attach descriptions,

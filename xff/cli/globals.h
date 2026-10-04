@@ -155,6 +155,9 @@ struct GlobalFlag {
     kNoFilename,
   };
   GrepEffect grep_effect = GrepEffect::kNone;
+  enum class ContextEffect : std::uint8_t { kNone, kBoth, kBefore, kAfter };
+  ContextEffect context_effect = ContextEffect::kNone;
+  bool adds_root = false;
   // Shared filename-type filters and catalog edits, including rg compatibility options.
   enum class TypeEffect : std::uint8_t { kNone, kInclude, kExclude, kAdd, kClear, kList };
   TypeEffect type_effect = TypeEffect::kNone;
@@ -165,6 +168,7 @@ struct GlobalFlag {
   // A required value on a short alias: accepts -x VALUE, -x=VALUE and -xVALUE.
   // Normalization retains the alias spelling so mode restrictions survive config resolution.
   std::string_view alias_argument;
+  bool canonicalize_alias = false;
   std::optional<registry::Mode> enters_mode;
   std::optional<registry::CompatibilitySpelling> rg;
 };

@@ -630,7 +630,7 @@ jobs:
             SCOPE="all translation units (toolchain or lint policy changed)"
           else
             SCOPE="affected translation units"
-            git diff --name-only "${BASE_REF}"...HEAD -- \
+            git diff --name-only --diff-filter=d "${BASE_REF}"...HEAD -- \
               '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp' '*.hxx' '*.inc' '*.ipp' '*.h.in' \
               >.clang-tidy-inputs
           fi

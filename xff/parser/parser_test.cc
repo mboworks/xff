@@ -142,6 +142,11 @@ TEST_F(ParserTest, GlobalsRootsExpression) {
   EXPECT_THAT(cmd.expression->args, ElementsAre("f"));
 }
 
+TEST_F(ParserTest, RejectsAnUnmatchedClosingParenthesisAfterAPredicate) {
+  EXPECT_THAT(
+      Parse({".", "-true", ")"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("unexpected token: ')'")));
+}
+
 TEST_F(ParserTest, JobsShortFormsCanonicalizeToTheLongGlobal) {
   ASSERT_OK_AND_ASSIGN(const Command spaced, Parse({"-j", "4", "."}));
   EXPECT_THAT(spaced.globals, ElementsAre("--jobs=4"));
@@ -151,8 +156,7 @@ TEST_F(ParserTest, JobsShortFormsCanonicalizeToTheLongGlobal) {
   EXPECT_THAT(attached.globals, ElementsAre("--jobs=4"));
   ASSERT_OK_AND_ASSIGN(const Command attached_all, Parse({"-jall", "."}));
   EXPECT_THAT(attached_all.globals, ElementsAre("--jobs=all"));
-  ASSERT_OK_AND_ASSIGN(const Command missing, Parse({"-j"}));
-  EXPECT_THAT(missing.globals, ElementsAre("--jobs="));
+  EXPECT_THAT(Parse({"-j"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("requires N")));
 }
 
 TEST_F(ParserTest, DoubleDashGlobalsHoistFromAfterRootsAndTheExpression) {

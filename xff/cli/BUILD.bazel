@@ -1302,3 +1302,20 @@ bashtest(
     srcs = ["timezone_test.sh"],
     data = ["//xff/cli/testing:xff"],
 )
+
+# Lookup alternatives use identical mode-specific registered spellings and an
+# equal mix of hits and near misses. Table construction is outside timing.
+cc_binary(
+    name = "globals_benchmark",
+    testonly = True,
+    srcs = ["globals_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        ":globals_cc",
+        "//xff/registry:registry_cc",
+        "@com_github_google_benchmark//:benchmark",
+    ],
+)

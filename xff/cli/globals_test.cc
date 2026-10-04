@@ -61,6 +61,51 @@ TEST_F(GlobalsTest, GrepAliasesShareTypedEffects) {
       LookupGlobalArgument("--summary"), Optional(Field(&GlobalFlag::grep_effect, Eq(GlobalFlag::GrepEffect::kNone))));
 }
 
+TEST_F(GlobalsTest, ContextSpellingsHaveExplicitEffectsAndModeMembership) {
+  for (const auto mode : registry::kModes) {
+    for (const std::string_view name : {"--context-before", "--before-context"}) {
+      EXPECT_THAT(
+          LookupGlobal(name, mode), Optional(Field(&GlobalFlag::context_effect, GlobalFlag::ContextEffect::kBefore)));
+    }
+    for (const std::string_view name : {"--context-after", "--after-context"}) {
+      EXPECT_THAT(
+          LookupGlobal(name, mode), Optional(Field(&GlobalFlag::context_effect, GlobalFlag::ContextEffect::kAfter)));
+    }
+    EXPECT_THAT(
+        LookupGlobal("--context", mode),
+        Optional(Field(&GlobalFlag::context_effect, GlobalFlag::ContextEffect::kBoth)));
+    for (const std::string_view name : {"-A", "-B", "-C"}) {
+      if (mode == registry::Mode::kRg) {
+        EXPECT_THAT(LookupCompatibilityOption(name, mode), Optional(_));
+      } else {
+        EXPECT_THAT(LookupCompatibilityOption(name, mode), Eq(std::nullopt));
+      }
+    }
+    for (const std::string_view name : {"--context-befor", "--context-afterwards", "--rgg", "--xffx"}) {
+      EXPECT_THAT(LookupGlobalArgument(name, mode), Eq(std::nullopt));
+    }
+  }
+}
+
+TEST_F(GlobalsTest, ModeIndexesMatchEveryExplicitDeclaration) {
+  for (const auto mode : registry::kModes) {
+    for (const auto& flag : AllGlobals()) {
+      if (!registry::Supports(flag.modes, mode)) {
+        continue;
+      }
+      EXPECT_THAT(LookupGlobal(flag.name, mode), Optional(Ref(flag))) << flag.name;
+      if (registry::Supports(flag.alias_modes, mode)) {
+        if (!flag.alias.empty()) {
+          EXPECT_THAT(LookupGlobal(flag.alias, mode), Optional(Ref(flag))) << flag.alias;
+        }
+        for (const auto spelling : flag.sign_forms) {
+          EXPECT_THAT(LookupGlobalArgument(spelling, mode), Optional(Ref(flag))) << spelling;
+        }
+      }
+    }
+  }
+}
+
 TEST_F(GlobalsTest, NativeAliasesDoNotStealRgCompatibilitySpellings) {
   EXPECT_THAT(
       LookupGlobal("-M", registry::Mode::kXff),

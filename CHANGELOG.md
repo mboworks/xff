@@ -3,6 +3,12 @@
 
 # 0.9.0
 
+- Parse mode switches and registered aliases in one global pass, reusing resolved descriptors in expression construction.
+
+- Allow `--rg` after native roots and matchers, combining XFF file selection with rg-style patterns, matching-line output, and trailing short options.
+
+- Group context controls as `--context`, `--context-after`, and `--context-before`; accept `--after-context` and `--before-context` as aliases in every mode and INI files, with `-A` / `-B` / `-C` in rg mode.
+
 - Simplify redundant macOS platform labels in benchmark cards and keep archived pre-merge reports out of the current PR preview selector.
 
 - Publish current PR benchmark previews as soon as both platform comparisons finish, with a compact reference-adjusted overview and advisory regression comments.

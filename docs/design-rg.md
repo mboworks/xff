@@ -21,11 +21,45 @@ scope. The compatibility lookup and help table are constexpr projections of thos
 declarations, including their summaries and translation targets. They are not a
 second inventory. The rg frontend handles pattern/root ordering and typed effects.
 
-The initial `--rg` belongs before roots. Once rg grammar is selected, `--xff` and
+The initial `--rg` may appear before roots or after native roots and matchers. `--xff` and
 `--rg` may switch repeatedly at option boundaries. Switches only change interpretation
 of subsequent tokens: they preserve the search, roots, configuration and accumulated
-settings. Search patterns and paths belong in rg segments; native segments contribute
-file-filter expressions. Their boolean expression continues across rg segments.
+settings. Native roots remain roots: the first positional argument in rg segments supplies
+the pattern unless `-e` or `-f` supplies explicit patterns. Additional rg paths extend the
+existing roots. After `--xff`, native segments contribute file-filter expressions.
+Their boolean expression continues across rg segments, including parenthesized groups.
+
+The global-argument pass processes argv once. A registered mode selector changes the
+active mode immediately; each mode uses its own index of explicitly declared spellings.
+Required values and native primary operands are consumed before the next option boundary,
+so values such as `--rg` remain literal. The pass retains the resolved primary descriptors
+and borrowed token views; a second pass builds the native expression once. Neither pass
+searches ahead for a mode selector, speculatively tries another grammar, or reconstructs
+and reparses a command line. Per-file evaluation uses the resulting expression.
+
+## Select files with XFF, then select lines with rg
+
+XFF combines its native file and metadata predicates with rg's concise content search:
+
+```sh
+xff --sort=dir src tests -type f -name '*.cc' -size +1k --rg TODO -n -C2
+```
+
+This selects C++ source files larger than 1 KiB under both roots, then prints their `TODO`
+lines with line numbers and two context lines on either side. Native content matchers
+also select whole files independently of the output pattern:
+
+```sh
+xff src -name '*.cc' -rxc license --rg TODO -n
+```
+
+Only C++ source files containing `license` are searched for output; the printed lines
+match `TODO`. Flags before the roots, native predicates, and trailing rg flags all retain
+their own grammar. This combines file-selection expressions with rg output in one command,
+without a separate filename pipeline. The initial `--rg` selects the `rg` preset at that
+point in configuration order; later mode switches do not reapply it.
+
+## Mode-specific spellings
 
 | Spelling    | XFF/find interpretation                    | Rg interpretation                     |
 | ----------- | ------------------------------------------ | ------------------------------------- |
@@ -35,9 +69,25 @@ file-filter expressions. Their boolean expression continues across rg segments.
 | `+`         | OR in XFF, rejected as an operator in find | Literal pattern/path                  |
 | `-M`        | Default content-match output               | Maximum output columns; takes a value |
 | `--unicode` | Valued presentation setting                | UTF-8 search interpretation           |
+| `-A N`      | Unsupported; use `--context-after=N`       | N lines after each match              |
+| `-B N`      | Unsupported; use `--context-before=N`      | N lines before each match             |
+| `-C N`      | Unsupported; use `--context=N`             | N lines before and after each match   |
 
 ```sh
 xff --rg TODO src --xff -type f --rg -tcpp -o --xff -name '*.h'
+```
+
+Context counts can be separate (`-A 2`, `-B 2`, `-C 2`) or attached (`-A2`, `-B2`,
+`-C2`), including at the end of a short-option bundle (`-nC2`). Rg options may
+precede or follow the pattern and paths. These aliases are available only in rg
+segments. The canonical names `--context`, `--context-after`, and `--context-before`
+group the output function before its direction and work in all modes and INI files.
+The familiar `--after-context` and `--before-context` spellings are aliases in every
+mode and in INI files, mapped to the same registry entries. After `--xff`, use either
+long spelling or switch back with `--rg` for the short forms. A zero count requests no context on the selected side.
+
+```sh
+xff --rg -n -B 1 -A2 TODO src
 ```
 
 A required option value, native primary operand, or command argument is consumed

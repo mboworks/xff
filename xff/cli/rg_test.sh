@@ -209,6 +209,90 @@ test::binary_empty_matches_context_and_max_columns() {
   expect_matches 'xff:' "${out}"
 }
 
+test::context_short_options_select_each_side_with_separate_and_attached_counts() {
+  local root
+  root="$(test_tmpdir context)"
+  printf 'before far\nbefore near\nhit\nafter near\nafter far\n' >"${root}/lines"
+  _check 0 $'3:hit\n4-after near\n5-after far' --rg -nA2 hit "${root}/lines"
+  _check 0 $'3:hit\n4-after near\n5-after far' --rg hit "${root}/lines" -n -A 2
+  _check 0 $'1-before far\n2-before near\n3:hit' --rg -nB2 hit "${root}/lines"
+  _check 0 $'1-before far\n2-before near\n3:hit' --rg hit "${root}/lines" -n -B 2
+  _check 0 $'2-before near\n3:hit\n4-after near' --rg -nC1 hit "${root}/lines"
+  _check 0 $'2-before near\n3:hit\n4-after near' --rg hit "${root}/lines" -n -C 1
+  _check 0 '3:hit' --rg -nC0 hit "${root}/lines"
+  _check 0 $'2-before near\n3:hit\n4-after near\n5-after far' --rg -n -B1 -A2 hit "${root}/lines"
+  _check 0 $'2-before near\n3:hit' --rg -nC2 --after-context=0 --before-context=1 hit "${root}/lines"
+}
+
+test::context_short_options_follow_mode_boundaries() {
+  local root flag out rc
+  root="$(test_tmpdir context-modes)"
+  printf 'before\nhit\nafter\n' >"${root}/lines"
+  for flag in -A -B -C; do
+    out="$("$(_bin)" --rg hit "${root}/lines" --xff "${flag}1" 2>&1)" && rc=0 || rc=$?
+    expect_eq 2 "${rc}"
+    expect_output_contains "${flag}1" "${out}"
+    out="$("$(_bin)" --rg "${flag}" invalid hit "${root}/lines" 2>&1)" && rc=0 || rc=$?
+    expect_eq 2 "${rc}"
+  done
+  _check 0 $'2:hit\n3-after' --rg hit "${root}/lines" --xff -type f --rg -nA1
+  _check 0 $'1-before\n2:hit' --rg hit "${root}/lines" --xff -type f --rg -nB1
+  _check 0 $'1-before\n2:hit\n3-after' --rg hit "${root}/lines" --xff -type f --rg -nC1
+  _check 0 $'1-before\n2:hit\n3-after' --rg -n hit "${root}/lines" --xff --context=1
+}
+
+test::native_filters_can_precede_rg_pattern_and_trailing_options() {
+  local root
+  root="$(_tree)"
+  printf 'TODO excluded\n' >"${root}/excluded.txt"
+  printf 'other\nTODO rejected\n' >"${root}/rejected.cc"
+  _check 0 $'1:TODO one\n2-other\n3:TODO two TODO' --sort=dir "${root}" \
+    -type f -name '*.cc' -rxc 'TODO one' --rg todo -inA1 -I
+  _check 1 '' --sort=dir "${root}" -name '*.cc' --rg absent -I
+}
+
+test::context_help_explains_rg_only_short_options() {
+  local out
+  out="$("$(_bin)" --help=--context --width=0)"
+  expect_output_contains '-A N' "${out}"
+  expect_output_contains '-B N' "${out}"
+  expect_output_contains '-C N' "${out}"
+  expect_output_contains 'These short forms require rg mode' "${out}"
+  expect_output_not_contains 'NO single-dash' "${out}"
+  out="$("$(_bin)" --help=--context-after --width=0)"
+  expect_output_contains '-A N' "${out}"
+  out="$("$(_bin)" --help=--context-before --width=0)"
+  expect_output_contains '-B N' "${out}"
+}
+
+test::context_family_names_share_rg_output_and_config_settings() {
+  local root flag out
+  root="$(test_tmpdir context-names)"
+  printf 'before\nhit\nafter\n' >"${root}/lines"
+  for flag in --context-before --before-context; do
+    _check 0 $'before\nhit' --rg "${flag}=1" hit "${root}/lines"
+    _check 0 $'before\nhit' "${flag}=1" --no-filename --no-line-number "${root}/lines" -grep hit
+    printf '%s\n' "${flag}=1" >"${root}/user.ini"
+    out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "$(_bin)" --no-filename --no-line-number "${root}/lines" -grep hit)"
+    expect_eq $'before\nhit' "${out}"
+  done
+  for flag in --context-after --after-context; do
+    _check 0 $'hit\nafter' --rg "${flag}=1" hit "${root}/lines"
+    _check 0 $'hit\nafter' "${flag}=1" --no-filename --no-line-number "${root}/lines" -grep hit
+    printf '%s\n' "${flag}=1" >"${root}/user.ini"
+    out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "$(_bin)" --no-filename --no-line-number "${root}/lines" -grep hit)"
+    expect_eq $'hit\nafter' "${out}"
+  done
+  _check 0 $'before\nhit' --rg --before-context 1 hit "${root}/lines"
+  _check 0 $'hit\nafter' --rg --after-context 1 hit "${root}/lines"
+  _check 0 $'hit\nafter' --context=1 --before-context=0 --after-context=2 --context-after=1 \
+    --no-filename --no-line-number "${root}/lines" -grep hit
+  out="$("$(_bin)" --help=--after-context --width=0)"
+  expect_output_contains '--context-after=N' "${out}"
+  out="$("$(_bin)" --help=--before-context --width=0)"
+  expect_output_contains '--context-before=N' "${out}"
+}
+
 test::only_matching_applies_max_columns_to_each_portion() {
   local root
   root="$(_tree)"

@@ -233,6 +233,23 @@ struct RgEngineTest : ::testing::Test {
   }
 };
 
+TEST_F(RgEngineTest, NativeContextIgnoresUnregisteredEngineGlobals) {
+  // CLI validation rejects unknown options before RunFind. Direct engine callers can pass
+  // unrelated globals; resolving context must ignore them without losing recognized aliases.
+  fs.files["tree/a"] = "before\nhit\nafter\n";
+  EXPECT_THAT(
+      Run({"--unregistered-context=2", "--before-context=1", "--no-filename", "--no-line-number", "tree/a", "-grep",
+           "hit"},
+          false)
+          .errors,
+      Eq(0));
+  EXPECT_THAT(errors, IsEmpty());
+  EXPECT_THAT(output, WithDropIndent(EqualsText(R"out(
+    before
+    hit
+    )out")));
+}
+
 TEST_F(RgEngineTest, NativeMatchOutputReusesContentWithinEachEntry) {
   for (const std::string_view jobs : {"1", "4"}) {
     fs.reads = 0;

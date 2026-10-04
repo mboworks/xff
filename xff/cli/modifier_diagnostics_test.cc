@@ -215,8 +215,8 @@ TEST_F(ModifierDiagnosticsTest, CountRequiresGrepIncludingItsAttachedFormAndAlia
   EXPECT_THAT(Notes({"-c", ".", "-grep", "x"}), IsOkAndHolds(Eq("")));
   EXPECT_THAT(Notes({".", "--count", "-grep:{text}", "x"}), IsOkAndHolds(Eq("")));
   EXPECT_THAT(
-      Notes({".", "--before-context=2", "--count", "-grep", "x"}), IsOkAndHolds(HasSubstr("--count suppresses")));
-  EXPECT_THAT(Notes({".", "--after-context=2", "-grep", "x"}), IsOkAndHolds(Eq("")));
+      Notes({".", "--context-before=2", "--count", "-grep", "x"}), IsOkAndHolds(HasSubstr("--count suppresses")));
+  EXPECT_THAT(Notes({".", "--context-after=2", "-grep", "x"}), IsOkAndHolds(Eq("")));
 }
 
 TEST_F(ModifierDiagnosticsTest, DiffDefaultsDistinguishActionsOverridesAndTreeOutput) {
@@ -234,7 +234,7 @@ TEST_F(ModifierDiagnosticsTest, DiffDefaultsDistinguishActionsOverridesAndTreeOu
 }
 
 TEST_F(ModifierDiagnosticsTest, SharedContextUsesTheActualDiffStyleAndSymmetry) {
-  EXPECT_THAT(Notes({".", "--before-context=2", "--after-context=2", "-diff", "other"}), IsOkAndHolds(Eq("")));
+  EXPECT_THAT(Notes({".", "--context-before=2", "--context-after=2", "-diff", "other"}), IsOkAndHolds(Eq("")));
   EXPECT_THAT(
       Notes({".", "--context=2", "-diff:u4", "other"}), IsOkAndHolds(HasSubstr("symmetric default -diff context")));
   EXPECT_THAT(

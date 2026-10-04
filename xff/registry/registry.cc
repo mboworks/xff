@@ -23,6 +23,7 @@
 #include "absl/types/span.h"
 #include "xff/registry/consumers.h"
 #include "xff/registry/descriptor.h"
+#include "xff/registry/spelling_index.h"
 
 namespace xff::registry {
 namespace {
@@ -1359,7 +1360,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .details = "The line-output companion of `-rxc`: `-grep PATTERN` prints every content line matching the RE2 "
                    "PATTERN as `path:lineno:text` (grep's piped form; a literal substring under "
                    "`--regextype=EXACT`). `-grep:FORMAT PATTERN` renders a {line}/{text}/{match}/{column} template "
-                   "instead. Honors `-c` / `--count` (one `path:count` per file) and -A / -B / `--context` "
+                   "instead. Honors `-c` / `--count` (one `path:count` per file) and `--context-after` / "
+                   "`--context-before` / `--context` "
                    "(surrounding lines, grep-style). `--only-matching` emits each nonempty matching portion; "
                    "`--invert-match` selects nonmatching lines. Filename/count output modes supersede templates; "
                    "the last mode wins. `--no-filename` and `--no-line-number` control plain-text prefixes. "
@@ -1610,6 +1612,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "tightest to loosest: `-not`, then `-a`, then (xff) `-xor`, then `-o`, then the `,` comma "
                    "operator; parentheses `( ... )` override it. Evaluation short-circuits.",
         .kind = Kind::kOperator,
+        .operation = Operator::kAnd,
         .arity = 0,
         .see_also = "expressions,cookbook",
     },
@@ -1617,6 +1620,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .name = "-and",
         .summary = "logical AND (implicit between predicates)",
         .kind = Kind::kOperator,
+        .operation = Operator::kAnd,
         .arity = 0,
         .see_also = "expressions,cookbook",
     },
@@ -1627,6 +1631,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "C` is `A -o (B -a C)`. Short-circuits: the right side is skipped when the left already matched. "
                    "See `-a` for the full precedence order.",
         .kind = Kind::kOperator,
+        .operation = Operator::kOr,
         .arity = 0,
         .see_also = "expressions,cookbook",
     },
@@ -1637,6 +1642,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "In rg arguments it is pattern or path data. It remains literal data "
                    "when consumed as a primary argument, and retains its batch terminator meaning for `-exec`.",
         .kind = Kind::kOperator,
+        .operation = Operator::kOr,
         .arity = 0,
         .modes = Modes::kXff,
         .see_also = "expressions,rg",
@@ -1645,6 +1651,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .name = "-or",
         .summary = "logical OR",
         .kind = Kind::kOperator,
+        .operation = Operator::kOr,
         .arity = 0,
         .see_also = "expressions,cookbook",
     },
@@ -1655,6 +1662,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "`-not -type d -o -name x` is `(-not -type d) -o -name x`. See `-a` for the full precedence "
                    "order.",
         .kind = Kind::kOperator,
+        .operation = Operator::kNot,
         .arity = 0,
         .see_also = "expressions,cookbook",
     },
@@ -1662,6 +1670,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .name = "!",
         .summary = "logical negation",
         .kind = Kind::kOperator,
+        .operation = Operator::kNot,
         .arity = 0,
         .see_also = "expressions,cookbook",
     },
@@ -1674,6 +1683,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "between `-a` and `-o` in precedence (`-not` > `-a` / `-nand` > `-xor` / `-xnor` > `-o` / `-nor`) "
                    "and, like all xff-only operators, are rejected by `--config=find`.",
         .kind = Kind::kOperator,
+        .operation = Operator::kXor,
         .arity = 0,
         .modes = Modes::kXff,
         .see_also = "expressions,cookbook",
@@ -1682,6 +1692,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .name = "-nand",
         .summary = "logical NAND; ! (lhs -a rhs) (xff)",
         .kind = Kind::kOperator,
+        .operation = Operator::kNand,
         .arity = 0,
         .modes = Modes::kXff,
         .see_also = "expressions,cookbook",
@@ -1690,6 +1701,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .name = "-nor",
         .summary = "logical NOR; ! (lhs -o rhs) (xff)",
         .kind = Kind::kOperator,
+        .operation = Operator::kNor,
         .arity = 0,
         .modes = Modes::kXff,
         .see_also = "expressions,cookbook",
@@ -1698,6 +1710,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .name = "-xnor",
         .summary = "logical XNOR; matches when both sides agree (xff)",
         .kind = Kind::kOperator,
+        .operation = Operator::kXnor,
         .arity = 0,
         .modes = Modes::kXff,
         .see_also = "expressions,cookbook",
@@ -1715,16 +1728,27 @@ static_assert(
         }),
     "primary_expansion_topic must be an element of see_also");
 
+constexpr auto kSpellingIndex = [] consteval {
+  SpellingIndex<kDescriptors.size() * 2> result;
+  for (std::size_t i = 0; i < kDescriptors.size(); ++i) {
+    const auto& descriptor = kDescriptors.at(i);
+    for (const auto mode : kModes) {
+      if (Supports(descriptor.modes, mode)) {
+        result.Add(mode, descriptor.name, i);
+        result.Add(mode, descriptor.alias, i);
+      }
+    }
+  }
+  result.Sort();
+  return result;
+}();
+static_assert(kSpellingIndex.valid, "expression spellings must be unique within each mode");
+
 }  // namespace
 
 mbo::types::OptionalRef<const Descriptor> Lookup(std::string_view name, Mode mode) {
-  for (const Descriptor& descriptor : kDescriptors) {
-    if (Supports(descriptor.modes, mode)
-        && (descriptor.name == name || (!descriptor.alias.empty() && descriptor.alias == name))) {
-      return descriptor;
-    }
-  }
-  return std::nullopt;
+  const auto index = kSpellingIndex.Find(name, mode);
+  return index.has_value() ? mbo::types::OptionalRef<const Descriptor>(kDescriptors.at(*index)) : std::nullopt;
 }
 
 absl::Span<const Descriptor> All() {

@@ -783,7 +783,7 @@ bool GrepSuppressesTemplate(const std::vector<std::string>& globals) {
   return ResolveGrepOptions(globals).output != GrepOptions::Output::kLines;
 }
 
-// --context=SPEC / --before-context=N / --after-context=N (grep -C/-B/-A): the lines of context
+// --context=SPEC / --context-before=N / --context-after=N (grep -C/-B/-A): the lines of context
 // -grep prints before/after each match. Processed in order, last value per side wins; `specified`
 // distinguishes a deliberate `--context=0` from no context flag. A malformed value is a usage error.
 struct GrepContext {
@@ -793,28 +793,31 @@ struct GrepContext {
 };
 
 absl::StatusOr<GrepContext> ResolveGrepContext(const std::vector<std::string>& globals) {
-  constexpr std::string_view kContext = "--context=";
-  constexpr std::string_view kBefore = "--before-context=";
-  constexpr std::string_view kAfter = "--after-context=";
   GrepContext result;
-  for (const std::string& global : globals) {
-    if (global.starts_with(kContext)) {
+  for (const std::string_view global : globals) {
+    const std::size_t equals = global.find('=');
+    if (equals == std::string_view::npos) {
+      continue;
+    }
+    const auto flag = cli::LookupGlobal(global.substr(0, equals));
+    if (!flag.has_value()) {
+      continue;
+    }
+    const std::string_view value = global.substr(equals + 1);
+    if (flag->context_effect == cli::GlobalFlag::ContextEffect::kBoth) {
       result.specified = true;
-      MBO_ASSIGN_OR_RETURN(
-          const ContextSides sides, ParseContextSpec(std::string_view(global).substr(kContext.size())));
+      MBO_ASSIGN_OR_RETURN(const ContextSides sides, ParseContextSpec(value));
       result.before = sides.before.value_or(result.before);
       result.after = sides.after.value_or(result.after);
-    } else if (global.starts_with(kBefore)) {
+    } else if (flag->context_effect == cli::GlobalFlag::ContextEffect::kBefore) {
       result.specified = true;
-      if (const std::string_view value = std::string_view(global).substr(kBefore.size());
-          !absl::SimpleAtoi(value, &result.before)) {
-        return absl::InvalidArgumentError(absl::StrCat("bad --before-context value '", value, "'"));
+      if (!absl::SimpleAtoi(value, &result.before)) {
+        return absl::InvalidArgumentError(absl::StrCat("bad ", flag->name, " value '", value, "'"));
       }
-    } else if (global.starts_with(kAfter)) {
+    } else if (flag->context_effect == cli::GlobalFlag::ContextEffect::kAfter) {
       result.specified = true;
-      if (const std::string_view value = std::string_view(global).substr(kAfter.size());
-          !absl::SimpleAtoi(value, &result.after)) {
-        return absl::InvalidArgumentError(absl::StrCat("bad --after-context value '", value, "'"));
+      if (!absl::SimpleAtoi(value, &result.after)) {
+        return absl::InvalidArgumentError(absl::StrCat("bad ", flag->name, " value '", value, "'"));
       }
     }
   }
@@ -4898,7 +4901,7 @@ RunResult RunFindCore(
     grep_options.color = colorize;
   }
   const bool grep_suppresses_template = grep_options.output != GrepOptions::Output::kLines;
-  // --context / --before-context / --after-context (grep -C/-B/-A): -grep context lines. Validated
+  // --context / --context-before / --context-after (grep -C/-B/-A): -grep context lines. Validated
   // here so a bad value is a usage error (exit 2) before the walk.
   const absl::StatusOr<GrepContext> grep_context_result = ResolveGrepContext(command.globals);
   if (!grep_context_result.ok()) {

@@ -3555,9 +3555,9 @@ TEST_F(RunTest, GrepContextPrintsSurroundingLinesWithGroupSeparator) {
 
 TEST_F(RunTest, GrepAfterContextIsAsymmetric) {
   { std::ofstream(root_ / "a.txt") << "x\nHIT\ny\nz\n"; }
-  // --after-context=1 (grep -A1): the match and one trailing line, no leading context.
+  // --context-after=1 (grep -A1): the match and one trailing line, no leading context.
   EXPECT_THAT(
-      RunArgvRecords({"--after-context=1", root_.string(), "-name", "a.txt", "-grep", "HIT"}),
+      RunArgvRecords({"--context-after=1", root_.string(), "-name", "a.txt", "-grep", "HIT"}),
       ElementsAre(Path("a.txt") + ":2:HIT", Path("a.txt") + "-3-y"));
 }
 
@@ -3573,8 +3573,8 @@ TEST_F(RunTest, GrepContextRejectsEveryMalformedValueClass) {
       "--context=missing-colon",
       "--context=A:not-a-number",
       "--context=D:1",
-      "--before-context=bad",
-      "--after-context=bad",
+      "--context-before=bad",
+      "--context-after=bad",
   });
   for (const std::string_view flag : kCases) {
     SCOPED_TRACE(flag);

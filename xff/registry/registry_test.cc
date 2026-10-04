@@ -24,6 +24,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "xff/registry/descriptor.h"
+#include "xff/registry/spelling_index.h"
 
 namespace xff::registry {
 namespace {
@@ -43,6 +44,36 @@ using ::testing::Ref;
 using ::testing::SizeIs;
 
 struct RegistryTest : ::testing::Test {};
+
+TEST_F(RegistryTest, SpellingIndexesValidateModeLocalIdentityAtCompileTime) {
+  static constexpr auto kIndex = [] consteval {
+    SpellingIndex<4> result;
+    result.Add(Mode::kXff, "-z", 2);
+    result.Add(Mode::kXff, "-a", 1);
+    result.Add(Mode::kXff, "-a", 1);
+    result.Add(Mode::kXff, "", 3);
+    result.Add(Mode::kRg, "-a", 4);
+    result.Sort();
+    return result;
+  }();
+  static_assert(kIndex.valid);
+  EXPECT_THAT(kIndex.Find("-a", Mode::kXff), Optional(1));
+  EXPECT_THAT(kIndex.Find("-z", Mode::kXff), Optional(2));
+  EXPECT_THAT(kIndex.Find("-a", Mode::kRg), Optional(4));
+  EXPECT_THAT(kIndex.Find("-a", Mode::kFind), Eq(std::nullopt));
+  EXPECT_THAT(kIndex.Find("", Mode::kXff), Eq(std::nullopt));
+  EXPECT_THAT(kIndex.Find("-", Mode::kXff), Eq(std::nullopt));
+  EXPECT_THAT(kIndex.Find("-a-extra", Mode::kXff), Eq(std::nullopt));
+
+  static constexpr auto kConflict = [] consteval {
+    SpellingIndex<2> result;
+    result.Add(Mode::kXff, "-a", 1);
+    result.Add(Mode::kXff, "-a", 2);
+    result.Sort();
+    return result;
+  }();
+  static_assert(!kConflict.valid);
+}
 
 TEST_F(RegistryTest, CompatibilitySpellingsAreDisjointFromNativePrimaries) {
   EXPECT_THAT(Lookup("-o", Mode::kXff), Optional(Field(&Descriptor::kind, Kind::kOperator)));
@@ -220,6 +251,34 @@ TEST_F(RegistryTest, EveryDescriptorCarriesAWellFormedSummary) {
     EXPECT_THAT(descriptor.summary, SizeIs(Le(90U))) << descriptor.name;
     EXPECT_THAT(descriptor.summary.back(), Ne('.')) << descriptor.name;
     EXPECT_THAT(descriptor.summary, Not(HasSubstr("\n"))) << descriptor.name;
+  }
+}
+
+TEST_F(RegistryTest, ModeIndexesResolveOnlyTheirRegisteredSpellings) {
+  for (const auto mode : kModes) {
+    for (const auto& descriptor : All()) {
+      for (const auto spelling : {descriptor.name, descriptor.alias}) {
+        if (spelling.empty()) {
+          continue;
+        }
+        if (Supports(descriptor.modes, mode)) {
+          EXPECT_THAT(Lookup(spelling, mode), Optional(Ref(descriptor))) << spelling;
+        } else {
+          EXPECT_THAT(Lookup(spelling, mode), Eq(std::nullopt)) << spelling;
+        }
+      }
+    }
+    EXPECT_THAT(Lookup("-name-unknown", mode), Eq(std::nullopt));
+    EXPECT_THAT(Lookup("", mode), Eq(std::nullopt));
+  }
+}
+
+TEST_F(RegistryTest, EveryOperatorDeclaresItsSemantics) {
+  for (const auto& descriptor : All()) {
+    EXPECT_THAT(descriptor.operation != Operator::kNone, Eq(descriptor.kind == Kind::kOperator)) << descriptor.name;
+  }
+  for (const std::string_view spelling : {"-o", "-or", "+"}) {
+    EXPECT_THAT(Lookup(spelling), Optional(Field(&Descriptor::operation, Operator::kOr)));
   }
 }
 

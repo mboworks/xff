@@ -16,7 +16,6 @@
 #include "xff/parser/parser.h"
 
 #include <cstddef>
-#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <string>
@@ -33,11 +32,11 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
-#include "mbo/container/limited_set.h"
 #include "mbo/status/status_macros.h"
 #include "xff/cli/globals.h"
 #include "xff/fuzzy/fuzzy.h"
 #include "xff/matching/regex/regex.h"
+#include "xff/parser/arguments.h"
 #include "xff/parser/ast.h"
 #include "xff/parser/diagnostics.h"
 #include "xff/parser/rg.h"
@@ -49,74 +48,12 @@ namespace xff::parser {
 
 namespace {
 
-// A token begins the find expression if it is a single-dash word, or one of
-// the operator/grouping tokens.
-bool StartsExpression(std::string_view arg) {
-  if (arg.empty()) {
-    return false;
-  }
-  if (arg[0] == '-') {
-    return true;
-  }
-  return arg == "(" || arg == ")" || arg == "!" || arg == "," || arg == "+";
+bool IsOrTier(registry::Operator operation) {
+  return operation == registry::Operator::kOr || operation == registry::Operator::kNor;
 }
 
-// A whole-run global written with a double dash (`--summary=ext`, `--sort`, `--top=10`). Every
-// expression primary and operator is single-dash, so a `--`-prefixed token is unambiguously a global
-// wherever it appears (after the roots, in the expression, at the tail) -- never a primary. That lets
-// the parser hoist it out of any primary/operator position (but NOT out of a primary's argument run,
-// e.g. an -exec command or a -printf format, which the ExprParser consumes token-by-token). Bare `--`
-// (exactly two dashes) is the end-of-options delimiter, not a global.
-bool IsHoistableGlobal(std::string_view arg) {
-  return arg.size() > 2 && arg[0] == '-' && arg[1] == '-';
-}
-
-// Meta flags are position-independent like double-dash globals, plus the GNU
-// find-compatible single-dash spellings. Keeping this vocabulary in the parser
-// is what prevents a lookalike inside `-exec`'s raw argument run from being
-// mistaken for an xff request.
-constexpr bool IsMetaFlag(std::string_view arg) {
-  constexpr auto kMetaFlags = mbo::container::MakeLimitedSet<9>(std::initializer_list<std::string_view>{
-      "--help",
-      "-h",
-      "-help",
-      "--help-all",
-      "--help-full",
-      "--help-long",
-      "--version",
-      "-version",
-      "--man",
-  });
-  return kMetaFlags.contains(arg) || absl::StartsWith(arg, "--help=");
-}
-
-bool IsOr(std::string_view token) {
-  return token == "-o" || token == "-or" || token == "+";
-}
-
-bool IsAnd(std::string_view token) {
-  return token == "-a" || token == "-and";
-}
-
-bool IsNot(std::string_view token) {
-  return token == "!" || token == "-not";
-}
-
-// xff extensions: -nand binds at the AND tier, -nor at the OR tier, and -xor /
-// -xnor form a new tier between them (NOT > AND > XOR > OR), matching the
-// conventional boolean / C bitwise (& ^ |) precedence.
-bool IsNand(std::string_view token) {
-  return token == "-nand";
-}
-
-// Operators at the OR tier (the lowest binary tier): -o / -or / -nor.
-bool IsOrTier(std::string_view token) {
-  return IsOr(token) || token == "-nor";
-}
-
-// Operators at the XOR tier (between AND and OR): -xor / -xnor.
-bool IsXorTier(std::string_view token) {
-  return token == "-xor" || token == "-xnor";
+bool IsXorTier(registry::Operator operation) {
+  return operation == registry::Operator::kXor || operation == registry::Operator::kXnor;
 }
 
 // A binding primary's NAME must be an identifier: `[A-Za-z_][A-Za-z0-9_]*`. It is not cosmetic -
@@ -207,13 +144,10 @@ ExprPtr MakeBinary(Expr::Kind kind, ExprPtr lhs, ExprPtr rhs) {
 //   prim := '(' list ')' | PREDICATE arg{arity}
 class ExprParser {
  public:
-  // `hoist_globals` = pull double-dash globals out of primary/operator positions into
-  // HoistedGlobals() (off after an explicit `--` end-of-options delimiter).
-  explicit ExprParser(const std::vector<std::string>& tokens, bool hoist_globals = true)
-      : tokens_(tokens), hoist_globals_(hoist_globals) {}
+  explicit ExprParser(const std::vector<ExpressionToken>& tokens, bool diagnose_options = true)
+      : tokens_(tokens), diagnose_options_(diagnose_options) {}
 
   absl::StatusOr<ExprPtr> Parse() {
-    SkipGlobals();
     if (AtEnd()) {
       return ExprPtr{};
     }
@@ -222,35 +156,19 @@ class ExprParser {
       return status_;
     }
     if (pos_ != tokens_.size()) {
-      return absl::InvalidArgumentError(absl::StrCat("unexpected token: '", tokens_[pos_], "'"));
+      return absl::InvalidArgumentError(absl::StrCat("unexpected token: '", tokens_[pos_].text, "'"));
     }
     return expr;
   }
 
-  // Double-dash globals lifted out of the expression (see IsHoistableGlobal), in appearance order,
-  // for the caller to append to the command's global list.
-  const std::vector<std::string>& HoistedGlobals() const { return hoisted_globals_; }
-
-  const std::vector<std::string>& HoistedMetaFlags() const { return hoisted_meta_flags_; }
-
  private:
   bool AtEnd() const { return pos_ >= tokens_.size(); }
 
-  const std::string& Peek() const { return tokens_[pos_]; }
+  std::string_view Peek() const { return tokens_[pos_].text; }
 
-  // At a primary/operator boundary, lift any run of double-dash globals into hoisted_globals_ so the
-  // syntactic checks that follow see the next real primary/operator. Called only from those
-  // boundaries, never while a primary is consuming its raw arguments (an -exec command, a -printf
-  // format), so a `--flag` meant for a child command is left untouched.
-  void SkipGlobals() {
-    while (hoist_globals_ && !AtEnd() && (IsHoistableGlobal(tokens_[pos_]) || IsMetaFlag(tokens_[pos_]))) {
-      if (IsMetaFlag(tokens_[pos_])) {
-        hoisted_meta_flags_.push_back(tokens_[pos_]);
-      } else {
-        hoisted_globals_.push_back(tokens_[pos_]);
-      }
-      ++pos_;
-    }
+  registry::Operator PeekOperator() const {
+    const auto descriptor = tokens_[pos_].descriptor;
+    return descriptor.has_value() ? descriptor->operation : registry::Operator::kNone;
   }
 
   void Fail(std::string_view message) {
@@ -273,9 +191,9 @@ class ExprParser {
 
   ExprPtr ParseOr() {
     ExprPtr lhs = ParseXor();
-    while (status_.ok() && !AtEnd() && IsOrTier(Peek())) {
-      const Expr::Kind kind = Peek() == "-nor" ? Expr::Kind::kNor : Expr::Kind::kOr;
-      const auto& descriptor = registry::Lookup(Peek()).value();
+    while (status_.ok() && !AtEnd() && IsOrTier(PeekOperator())) {
+      const Expr::Kind kind = PeekOperator() == registry::Operator::kNor ? Expr::Kind::kNor : Expr::Kind::kOr;
+      const auto& descriptor = tokens_[pos_].descriptor.value();
       ++pos_;
       ExprPtr rhs = ParseXor();
       lhs = MakeBinary(kind, std::move(lhs), std::move(rhs));
@@ -288,8 +206,8 @@ class ExprParser {
   // (xff) bind here; both operands always evaluate (the result needs both).
   ExprPtr ParseXor() {
     ExprPtr lhs = ParseAnd();
-    while (status_.ok() && !AtEnd() && IsXorTier(Peek())) {
-      const Expr::Kind kind = Peek() == "-xnor" ? Expr::Kind::kXnor : Expr::Kind::kXor;
+    while (status_.ok() && !AtEnd() && IsXorTier(PeekOperator())) {
+      const Expr::Kind kind = PeekOperator() == registry::Operator::kXnor ? Expr::Kind::kXnor : Expr::Kind::kXor;
       ++pos_;
       ExprPtr rhs = ParseAnd();
       lhs = MakeBinary(kind, std::move(lhs), std::move(rhs));
@@ -299,27 +217,23 @@ class ExprParser {
 
   ExprPtr ParseAnd() {
     ExprPtr lhs = ParseUnary();
-    // ParseAnd is the tier directly over the operands, so skipping globals right after each operand
-    // (before the operator check) leaves every higher tier looking at a real operator/terminator.
-    SkipGlobals();
-    while (status_.ok() && !AtEnd() && !IsOrTier(Peek()) && !IsXorTier(Peek()) && Peek() != ")" && Peek() != ",") {
+    while (status_.ok() && !AtEnd() && !IsOrTier(PeekOperator()) && !IsXorTier(PeekOperator()) && Peek() != ")"
+           && Peek() != ",") {
       Expr::Kind kind = Expr::Kind::kAnd;
-      if (IsNand(Peek())) {
+      if (PeekOperator() == registry::Operator::kNand) {
         ++pos_;  // explicit -nand (xff)
         kind = Expr::Kind::kNand;
-      } else if (IsAnd(Peek())) {
+      } else if (PeekOperator() == registry::Operator::kAnd) {
         ++pos_;  // optional explicit -a
       }
       ExprPtr rhs = ParseUnary();
-      SkipGlobals();
       lhs = MakeBinary(kind, std::move(lhs), std::move(rhs));
     }
     return lhs;
   }
 
   ExprPtr ParseUnary() {
-    SkipGlobals();  // a global leading this operand (start of expression, or after an operator)
-    if (!AtEnd() && IsNot(Peek())) {
+    if (!AtEnd() && PeekOperator() == registry::Operator::kNot) {
       ++pos_;
       return MakeNot(ParseUnary());
     }
@@ -332,7 +246,7 @@ class ExprParser {
       Fail("expected a predicate or '('");
       return nullptr;
     }
-    const std::string& token = Peek();
+    const std::string_view token = Peek();
     if (token == "(") {
       ++pos_;
       ExprPtr inner = ParseComma();
@@ -366,7 +280,7 @@ class ExprParser {
     // only has to reject `-collect:` with nothing after the ':'.
     if (const std::string::size_type colon = token.find(':'); colon != std::string::npos) {
       const std::string_view base = std::string_view(token).substr(0, colon);
-      if (const auto descriptor = registry::Lookup(base);
+      if (const auto descriptor = tokens_[pos_].descriptor;
           descriptor.has_value() && descriptor->binding == registry::Binding::kLabel) {
         const LabelSpec spec = SplitLabelModifier(std::string_view(token).substr(colon + 1));
         if (spec.rest.empty()) {
@@ -391,7 +305,7 @@ class ExprParser {
     // registry, not a hardcoded name list.
     if (const std::string::size_type colon = token.find(':'); colon != std::string::npos) {
       const std::string_view base = std::string_view(token).substr(0, colon);
-      if (const auto descriptor = registry::Lookup(base);
+      if (const auto descriptor = tokens_[pos_].descriptor;
           descriptor.has_value() && descriptor->binding == registry::Binding::kLabelRegex) {
         // [!]NAME[=REGEX]: `!` allows this node to re-bind a NAME an earlier -capture already bound,
         // per instance rather than through a whole-run flag that would loosen every -capture at once.
@@ -411,7 +325,7 @@ class ExprParser {
         ++pos_;
         std::vector<std::string> command;
         while (!AtEnd() && Peek() != ";") {
-          command.push_back(tokens_[pos_++]);
+          command.emplace_back(tokens_[pos_++].text);
         }
         if (AtEnd()) {
           Fail(absl::StrCat("'", base, "' is missing a ';' terminator"));
@@ -439,9 +353,9 @@ class ExprParser {
       // template on its own token; the whole payload after the first ':' is the
       // template (it may itself contain '='), then the arity operand (the pattern)
       // follows. The template is compiled once here and stored on the node.
-      if (const auto descriptor = registry::Lookup(base);
+      if (const auto descriptor = tokens_[pos_].descriptor;
           descriptor.has_value() && descriptor->binding == registry::Binding::kFormat) {
-        const std::string format = token.substr(colon + 1);
+        const std::string format(token.substr(colon + 1));
         ++pos_;  // consume the `<name>:FORMAT` token
         std::vector<std::string> args;
         for (int i = 0, count = descriptor->ArgumentCount(AtEnd() ? std::string_view{} : Peek()); i < count; ++i) {
@@ -449,7 +363,7 @@ class ExprParser {
             Fail(absl::StrCat("predicate '", base, "' is missing an argument"));
             return nullptr;
           }
-          args.push_back(tokens_[pos_++]);
+          args.emplace_back(tokens_[pos_++].text);
         }
         ExprPtr node = MakePredicate(*descriptor, std::move(args));
         if (node != nullptr) {
@@ -460,9 +374,9 @@ class ExprParser {
       // A Binding::kStyle primary (-diff) carries an attached :STYLE token (u3/c/n/y/none),
       // then the arity operand (the TARGET template). The style is stored raw on the node and
       // validated in the evaluator; a bare -diff (no ':') falls through to the default (u3).
-      if (const auto descriptor = registry::Lookup(base);
+      if (const auto descriptor = tokens_[pos_].descriptor;
           descriptor.has_value() && descriptor->binding == registry::Binding::kStyle) {
-        const std::string style = token.substr(colon + 1);
+        const std::string style(token.substr(colon + 1));
         // Syntactic check: empty (default u3), "none", or a format letter u/c/n/y with an
         // optional context count (u3, c5, n, y). The evaluator maps it to the mbo output.
         bool valid_style = style.empty() || style == "none";
@@ -486,7 +400,7 @@ class ExprParser {
             Fail(absl::StrCat("predicate '", base, "' is missing an argument"));
             return nullptr;
           }
-          args.push_back(tokens_[pos_++]);
+          args.emplace_back(tokens_[pos_++].text);
         }
         ExprPtr node = MakePredicate(*descriptor, std::move(args));
         if (node != nullptr) {
@@ -498,9 +412,9 @@ class ExprParser {
       // (none for -hash, the EXPECTED template for -hasheq). The spec is stored raw and validated
       // before the walk (engine::ValidateHashArgs); a bare `<name>` (no ':') falls through to the
       // default (--hash-algorithm / --hash-encoding).
-      if (const auto descriptor = registry::Lookup(base);
+      if (const auto descriptor = tokens_[pos_].descriptor;
           descriptor.has_value() && descriptor->binding == registry::Binding::kHash) {
-        const std::string spec = token.substr(colon + 1);
+        const std::string spec(token.substr(colon + 1));
         ++pos_;  // consume the `<name>:SPEC` token
         std::vector<std::string> args;
         for (int i = 0, count = descriptor->ArgumentCount(AtEnd() ? std::string_view{} : Peek()); i < count; ++i) {
@@ -508,7 +422,7 @@ class ExprParser {
             Fail(absl::StrCat("predicate '", base, "' is missing an argument"));
             return nullptr;
           }
-          args.push_back(tokens_[pos_++]);
+          args.emplace_back(tokens_[pos_++].text);
         }
         ExprPtr node = MakePredicate(*descriptor, std::move(args));
         if (node != nullptr) {
@@ -519,9 +433,9 @@ class ExprParser {
       // A Binding::kText primary (-text) carries an attached :FLAVOR token (git/posix/windows/apple)
       // and takes no operand. The flavor is validated here and stored raw on the node; a bare -text
       // (no ':') is not this branch -- it falls through to the default (the git heuristic).
-      if (const auto descriptor = registry::Lookup(base);
+      if (const auto descriptor = tokens_[pos_].descriptor;
           descriptor.has_value() && descriptor->binding == registry::Binding::kText) {
-        const std::string flavor = token.substr(colon + 1);
+        const std::string flavor(token.substr(colon + 1));
         if (flavor != "git" && flavor != "posix" && flavor != "windows" && flavor != "apple") {
           Fail(absl::StrCat("'", base, ":", flavor, "': unknown text flavor (use git / posix / windows / apple)"));
           return nullptr;
@@ -535,7 +449,7 @@ class ExprParser {
       }
       // A fuzzy primary carries an optional model, optionally followed by a normalized quality
       // threshold: `:MODEL`, `:MODEL:PCT%`, or the default-model shorthand `:PCT%`.
-      if (const auto descriptor = registry::Lookup(base);
+      if (const auto descriptor = tokens_[pos_].descriptor;
           descriptor.has_value() && descriptor->binding == registry::Binding::kFuzzy) {
         std::string_view value = std::string_view(token).substr(colon + 1);
         FuzzyModel model = FuzzyModel::kFzf;
@@ -602,7 +516,7 @@ class ExprParser {
           Fail(absl::StrCat("predicate '", base, "' is missing an argument"));
           return nullptr;
         }
-        ExprPtr node = MakePredicate(*descriptor, {tokens_[pos_++]});
+        ExprPtr node = MakePredicate(*descriptor, {std::string(tokens_[pos_++].text)});
         if (node != nullptr) {
           node->fuzzy_threshold = threshold;
           node->fuzzy_model = model;
@@ -611,7 +525,7 @@ class ExprParser {
       }
       // Content similarity carries a word-shingle width and/or a Jaccard threshold:
       // `:WIDTH`, `:PCT%`, or `:WIDTH:PCT%`. The bare defaults are width 5 and 80%.
-      if (const auto descriptor = registry::Lookup(base);
+      if (const auto descriptor = tokens_[pos_].descriptor;
           descriptor.has_value() && descriptor->binding == registry::Binding::kSimilarity) {
         const std::string_view value = std::string_view(token).substr(colon + 1);
         std::size_t width = kDefaultSimilarityShingleWidth;
@@ -648,7 +562,7 @@ class ExprParser {
           Fail(absl::StrCat("predicate '", base, "' is missing an argument"));
           return nullptr;
         }
-        ExprPtr node = MakePredicate(*descriptor, {tokens_[pos_++]});
+        ExprPtr node = MakePredicate(*descriptor, {std::string(tokens_[pos_++].text)});
         if (node != nullptr) {
           node->similarity_width = width;
           node->similarity_threshold = threshold;
@@ -656,10 +570,10 @@ class ExprParser {
         return node;
       }
     }
-    const auto descriptor = registry::Lookup(token);
+    const auto descriptor = tokens_[pos_].descriptor;
     if (!descriptor.has_value()) {
       Fail(absl::StrCat("unknown predicate: '", token, "'"));
-      if (hoist_globals_) {
+      if (diagnose_options_) {
         status_.SetPayload(kUnknownPredicatePayload, absl::Cord(token));
       }
       return nullptr;
@@ -679,7 +593,7 @@ class ExprParser {
     if (descriptor->arity < 0) {
       std::vector<std::string> command;
       while (!AtEnd() && Peek() != ";" && Peek() != "+") {
-        command.push_back(tokens_[pos_++]);
+        command.emplace_back(tokens_[pos_++].text);
       }
       if (AtEnd()) {
         Fail(absl::StrCat("'", token, "' is missing a ';' or '+' terminator"));
@@ -712,7 +626,7 @@ class ExprParser {
         Fail(absl::StrCat("predicate '", token, "' is missing an argument"));
         return nullptr;
       }
-      args.push_back(tokens_[pos_++]);
+      args.emplace_back(tokens_[pos_++].text);
     }
     if (!descriptor->argument_choices.empty()) {
       const std::vector<std::string_view> choices = absl::StrSplit(descriptor->argument_choices, ',');
@@ -734,10 +648,8 @@ class ExprParser {
     return MakePredicate(*descriptor, std::move(args));
   }
 
-  const std::vector<std::string>& tokens_;
-  bool hoist_globals_ = true;
-  std::vector<std::string> hoisted_globals_;
-  std::vector<std::string> hoisted_meta_flags_;
+  const std::vector<ExpressionToken>& tokens_;
+  bool diagnose_options_ = true;
   std::size_t pos_ = 0;
   absl::Status status_ = absl::OkStatus();
 };
@@ -868,175 +780,22 @@ regex::Grammar GrammarFromGlobalsInternal(const std::vector<std::string>& global
   return grammar;
 }
 
-absl::Status AppendNamedRoot(Command& command, std::string_view token) {
-  constexpr std::string_view kPrefix = "--root=";
-  const auto value = token.starts_with(kPrefix) ? token.substr(kPrefix.size()) : std::string_view();
-  const auto equals = value.find('=');
-  if (equals == std::string_view::npos || equals == 0 || equals + 1 == value.size()) {
-    return absl::InvalidArgumentError("--root requires NAME=PATH with a non-empty name and path");
-  }
-  const auto name = value.substr(0, equals);
-  if (name == "." || name == ".." || name.find_first_of("/\\") != std::string_view::npos
-      || absl::c_any_of(name, [](unsigned char ch) { return ch < 0x20 || ch == 0x7f; })) {
-    return absl::InvalidArgumentError("--root name must be a single directory component without control characters");
-  }
-  if (absl::c_linear_search(command.root_names, name)) {
-    return absl::InvalidArgumentError(absl::StrCat("duplicate root name '", name, "'"));
-  }
-  command.roots.emplace_back(value.substr(equals + 1));
-  command.root_names.emplace_back(name);
-  return absl::OkStatus();
-}
-
-bool ConsumeLeadingJobsGlobal(
-    const std::vector<std::string>& args,
-    std::size_t& idx,
-    std::vector<std::string>& globals) {
-  const std::string& arg = args[idx];
-  if (arg == "-j") {
-    if (++idx >= args.size()) {
-      globals.emplace_back("--jobs=");
-      --idx;
-    } else {
-      globals.push_back(absl::StrCat("--jobs=", args[idx]));
-    }
-    return true;
-  }
-  if (arg.starts_with("-j=")) {
-    globals.push_back(absl::StrCat("--jobs=", std::string_view(arg).substr(3)));
-    return true;
-  }
-  if (arg.starts_with("-j") && arg.size() > 2) {
-    globals.push_back(absl::StrCat("--jobs=", std::string_view(arg).substr(2)));
-    return true;
-  }
-  return false;
-}
-
-// Owns the command under construction while parsing its three distinct phases.
-class CommandParser {
- public:
-  explicit CommandParser(const std::vector<std::string>& args) : args_(args) {}
-
-  absl::StatusOr<Command> Parse() {
-    MBO_RETURN_IF_ERROR(LeadingGlobals());
-    const auto selector = index_ < args_.size() ? cli::LookupGlobal(args_[index_]) : std::nullopt;
-    if (!options_ended_ && selector.has_value() && selector->enters_mode == registry::Mode::kRg) {
-      MBO_ASSIGN_OR_RETURN(auto command, ParseRg(args_, index_ + 1));
-      command.globals.insert(command.globals.begin(), command_.globals.begin(), command_.globals.end());
-      command.meta_flags.insert(command.meta_flags.begin(), command_.meta_flags.begin(), command_.meta_flags.end());
-      return command;
-    }
-    MBO_RETURN_IF_ERROR(Roots());
-    command_.grammar = GrammarFromGlobalsInternal(command_.globals);
-    MBO_RETURN_IF_ERROR(Expression());
-    return std::move(command_);
-  }
-
- private:
-  absl::Status Global(const std::string& argument) {
-    const std::string_view name = std::string_view(argument).substr(0, argument.find('='));
-    const auto selector = cli::LookupGlobal(name);
-    if (selector.has_value() && selector->enters_mode.has_value() && name.size() != argument.size()) {
-      return absl::InvalidArgumentError("--rg and --xff do not take values");
-    }
-    if (selector.has_value() && selector->enters_mode == registry::Mode::kRg) {
-      return absl::InvalidArgumentError("--rg must precede roots and the expression when first selecting rg grammar");
-    }
-    if (IsMetaFlag(argument)) {
-      command_.meta_flags.push_back(argument);
-      return absl::OkStatus();
-    }
-    if (argument == "--root" || argument.starts_with("--root=")) {
-      MBO_RETURN_IF_ERROR(AppendNamedRoot(command_, argument));
-    }
-    command_.globals.push_back(argument);
-    return absl::OkStatus();
-  }
-
-  absl::Status LeadingGlobals() {
-    for (; index_ < args_.size(); ++index_) {
-      const std::string& argument = args_[index_];
-      if (const auto selector = cli::LookupGlobal(argument);
-          selector.has_value() && selector->enters_mode == registry::Mode::kRg) {
-        break;
-      }
-      if (argument == "--") {
-        ++index_;
-        options_ended_ = true;
-        break;
-      }
-      if (const auto flag = cli::LookupGlobalArgument(argument);
-          flag.has_value() && !flag->alias_argument.empty() && argument.starts_with(flag->alias)) {
-        const auto next = index_ + 1 < args_.size() ? std::optional<std::string_view>(args_[index_ + 1]) : std::nullopt;
-        MBO_ASSIGN_OR_RETURN(auto alias, cli::ParseGlobalAliasArgument(*flag, argument, next));
-        command_.globals.push_back(std::move(alias.token));
-        index_ += static_cast<std::size_t>(alias.consumes_next);
-        continue;
-      }
-      if (ConsumeLeadingJobsGlobal(args_, index_, command_.globals)) {
-        continue;
-      }
-      if (argument.empty() || (argument.front() != '-' && argument.front() != '+')) {
-        break;
-      }
-      MBO_RETURN_IF_ERROR(Global(argument));
-      if (argument.starts_with("--root=")) {
-        ++index_;
-        break;
-      }
-    }
-    return absl::OkStatus();
-  }
-
-  // Double-dash globals among roots remain position-independent. Bare -- prevents hoisting.
-  absl::Status Roots() {
-    for (; index_ < args_.size(); ++index_) {
-      const std::string& argument = args_[index_];
-      if (!options_ended_ && (IsHoistableGlobal(argument) || IsMetaFlag(argument))) {
-        MBO_RETURN_IF_ERROR(Global(argument));
-        continue;
-      }
-      if (StartsExpression(argument)) {
-        break;
-      }
-      command_.roots.push_back(argument);
-      command_.root_names.emplace_back();
-    }
-    return absl::OkStatus();
-  }
-
-  absl::Status Expression() {
-    const std::vector<std::string> tokens(args_.begin() + static_cast<std::ptrdiff_t>(index_), args_.end());
-    if (tokens.empty()) {
-      return absl::OkStatus();
-    }
-    ExprParser parser(tokens, /*hoist_globals=*/!options_ended_);
-    MBO_ASSIGN_OR_RETURN(command_.expression, parser.Parse());
-    for (const auto& global : parser.HoistedGlobals()) {
-      MBO_RETURN_IF_ERROR(Global(global));
-    }
-    command_.meta_flags.insert(
-        command_.meta_flags.end(), parser.HoistedMetaFlags().begin(), parser.HoistedMetaFlags().end());
-    // Hoisted grammar flags do not retroactively recompile matchers parsed above.
-    command_.grammar = GrammarFromGlobalsInternal(command_.globals);
-    return absl::OkStatus();
-  }
-
-  const std::vector<std::string>& args_;
-  Command command_;
-  std::size_t index_ = 0;
-  bool options_ended_ = false;
-};
-
 }  // namespace
 
 regex::Grammar GrammarFromGlobals(const std::vector<std::string>& globals) {
   return GrammarFromGlobalsInternal(globals);
 }
 
-absl::StatusOr<Command> Parse(const std::vector<std::string>& args) {
-  return CommandParser(args).Parse();
+absl::StatusOr<Command> Parse(const std::vector<std::string>& args, registry::Mode mode, std::size_t start) {
+  MBO_ASSIGN_OR_RETURN(auto parsed, ParseArguments(args, start, mode));
+  ExprParser parser(parsed.expression, !parsed.options_ended);
+  MBO_ASSIGN_OR_RETURN(parsed.command.expression, parser.Parse());
+  parsed.command.grammar = GrammarFromGlobalsInternal(parsed.command.globals);
+  return std::move(parsed.command);
+}
+
+absl::StatusOr<Command> ParseRg(const std::vector<std::string>& args, std::size_t start) {
+  return Parse(args, registry::Mode::kRg, start);
 }
 
 absl::Status EnforceStyle(const Command& command, registry::Style style) {

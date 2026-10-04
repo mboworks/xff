@@ -30,6 +30,9 @@ enum class Region { kGlobal, kExpression };
 // What an expression token is.
 enum class Kind { kTest, kAction, kOperator };
 
+// Typed expression semantics, shared by every registered operator spelling.
+enum class Operator { kNone, kAnd, kOr, kNot, kNand, kNor, kXor, kXnor };
+
 // Safety classification, surfaced in --help / --explain (design.md "Security & safety").
 enum class Safety { kNone, kSafety, kSecurity };
 
@@ -88,6 +91,7 @@ struct Descriptor {
   // summary already says everything (e.g. -true, -a) may leave this empty.
   std::string_view details;
   Kind kind = Kind::kTest;
+  Operator operation = Operator::kNone;
   bool stdout_output = false;  // may emit ordinary action output or inherit stdout in a child
   Region region = Region::kExpression;
   int arity = 0;  // trailing tokens consumed as arguments (-1 = variadic until ';')

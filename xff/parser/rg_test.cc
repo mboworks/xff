@@ -25,6 +25,7 @@
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
 #include "xff/cli/globals.h"
+#include "xff/parser/arguments.h"
 #include "xff/parser/parser.h"
 #include "xff/registry/compatibility.h"
 
@@ -232,7 +233,6 @@ TEST_F(RgTest, RejectsModeValuesAndRootsAfterTheNativeBoundary) {
 }
 
 TEST_F(RgTest, ModeReentryPreservesSearchAndNativeVocabulary) {
-  EXPECT_THAT(Parse({"root", "--rg", "x"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("must precede")));
   EXPECT_THAT(Parse({"--rg", "x", "--rg"}), IsOk());
   ASSERT_OK_AND_ASSIGN(
       const auto command,
@@ -243,6 +243,116 @@ TEST_F(RgTest, ModeReentryPreservesSearchAndNativeVocabulary) {
   ASSERT_THAT(command.expression, NotNull());
   EXPECT_THAT(command.expression->kind, Expr::Kind::kAnd);
   EXPECT_THAT(Parse({"--rg", "--help"}), IsOk());
+}
+
+TEST_F(RgTest, NativeRootsAndMatchersCanPrecedeRgSearch) {
+  ASSERT_OK_AND_ASSIGN(
+      const auto command, Parse({"--sort=dir", "src", "tests", "-name", "*.cc", "--rg", "TODO", "-nA1"}));
+  EXPECT_THAT(command.roots, ElementsAre("src", "tests"));
+  EXPECT_THAT(command.rg, Optional(Field(&RgSearch::patterns, ElementsAre(Field(&RgPattern::value, "TODO")))));
+  ASSERT_THAT(command.expression, NotNull());
+  EXPECT_THAT(command.expression->descriptor->name, Eq("-name"));
+  EXPECT_THAT(command.expression->args, ElementsAre("*.cc"));
+  EXPECT_THAT(
+      command.globals,
+      ElementsAre("--sort=dir", "--config=rg", "--match-output", "--exit-match", "--line-number", "--context-after=1"));
+}
+
+TEST_F(RgTest, LateRgDistinguishesExistingRootsFromPatternsAndAdditionalRoots) {
+  ASSERT_OK_AND_ASSIGN(const auto positional, Parse({"src", "--rg", "hit", "extra", "-n"}));
+  EXPECT_THAT(positional.roots, ElementsAre("src", "extra"));
+  EXPECT_THAT(positional.rg, Optional(Field(&RgSearch::patterns, ElementsAre(Field(&RgPattern::value, "hit")))));
+  ASSERT_OK_AND_ASSIGN(
+      const auto named, Parse({"--root=source=src", "tests", "-type", "f", "--rg", "-e", "hit", "--root=extra=more"}));
+  EXPECT_THAT(named.roots, ElementsAre("src", "tests", "more"));
+  EXPECT_THAT(named.root_names, ElementsAre("source", "", "extra"));
+  EXPECT_THAT(named.rg, Optional(Field(&RgSearch::patterns, ElementsAre(Field(&RgPattern::value, "hit")))));
+  EXPECT_THAT(
+      Parse({"--root=source=src", "--rg", "hit", "--root=source=more"}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("duplicate root name")));
+  EXPECT_THAT(
+      Parse({"src", "--rg", "-n"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("requires PATTERN")));
+}
+
+TEST_F(RgTest, LateRgPreservesExpressionGroupingAndConfigurationOrder) {
+  ASSERT_OK_AND_ASSIGN(
+      const auto command,
+      Parse(
+          {"--help=rg", "--config=first", "src", "(", "-name", "*.cc", "--config=second", "--rg", "hit", "-n", "--xff",
+           "+",         "-name",          "*.h", ")", "-type", "f",    "--config=last",   "--rg", "-o"}));
+  EXPECT_THAT(command.roots, ElementsAre("src"));
+  EXPECT_THAT(command.meta_flags, ElementsAre("--help=rg"));
+  EXPECT_THAT(
+      command.globals, ElementsAre(
+                           "--config=first", "--config=second", "--config=rg", "--match-output", "--exit-match",
+                           "--line-number", "--config=last", "--only-matching"));
+  ASSERT_THAT(command.expression, NotNull());
+  EXPECT_THAT(command.expression->kind, Eq(Expr::Kind::kAnd));
+  ASSERT_THAT(command.expression->lhs, NotNull());
+  EXPECT_THAT(command.expression->lhs->kind, Eq(Expr::Kind::kOr));
+}
+
+TEST_F(RgTest, LateRgIgnoresLiteralSelectorsAndRespectsEndOfOptions) {
+  ASSERT_OK_AND_ASSIGN(const auto literal, Parse({"src", "-name", "--rg"}));
+  EXPECT_THAT(literal.rg, Eq(std::nullopt));
+  ASSERT_THAT(literal.expression, NotNull());
+  EXPECT_THAT(literal.expression->args, ElementsAre("--rg"));
+  ASSERT_OK_AND_ASSIGN(const auto delimited, Parse({"--", "src", "-name", "--rg"}));
+  EXPECT_THAT(delimited.rg, Eq(std::nullopt));
+  EXPECT_THAT(delimited.roots, ElementsAre("src"));
+  ASSERT_THAT(delimited.expression, NotNull());
+  EXPECT_THAT(delimited.expression->args, ElementsAre("--rg"));
+  ASSERT_OK_AND_ASSIGN(const auto rg_delimited, Parse({"src", "-type", "f", "--rg", "--", "--xff", "--rg"}));
+  EXPECT_THAT(rg_delimited.roots, ElementsAre("src", "--rg"));
+  EXPECT_THAT(rg_delimited.rg, Optional(Field(&RgSearch::patterns, ElementsAre(Field(&RgPattern::value, "--xff")))));
+  EXPECT_THAT(
+      Parse({"src", "-true", "--rg", "hit", "-Z"}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("unsupported rg option")));
+  EXPECT_THAT(
+      Parse({"src", "-name", "--rg", "--xff=yes", "--rg", "hit"}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("do not take values")));
+}
+
+TEST_F(RgTest, ExplicitArgumentOffsetIsValidated) {
+  EXPECT_THAT(ParseRg({}, 1), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("argument offset")));
+  ASSERT_OK_AND_ASSIGN(const auto command, ParseRg({"ignored", "hit", "src"}, 1));
+  EXPECT_THAT(command.roots, ElementsAre("src"));
+  EXPECT_THAT(command.rg, Optional(Field(&RgSearch::patterns, ElementsAre(Field(&RgPattern::value, "hit")))));
+}
+
+TEST_F(RgTest, GlobalPassPreservesOperandTokensAndSwitchesOnlyAtBoundaries) {
+  const std::vector<std::string> args{"src", "-name", "--rg", "--rg", "-e", "--xff", "-C2", "--xff", "-rxc", "--rg"};
+  ASSERT_OK_AND_ASSIGN(const auto parsed, ParseArguments(args, 0, registry::Mode::kXff));
+  EXPECT_THAT(
+      parsed.expression, ElementsAre(
+                             Field(&ExpressionToken::text, "-name"), Field(&ExpressionToken::text, "--rg"),
+                             Field(&ExpressionToken::text, "-rxc"), Field(&ExpressionToken::text, "--rg")));
+  EXPECT_THAT(parsed.command.roots, ElementsAre("src"));
+  EXPECT_THAT(parsed.command.globals, ElementsAre("--config=rg", "--match-output", "--exit-match", "--context=2"));
+  EXPECT_THAT(parsed.command.rg, Optional(Field(&RgSearch::patterns, ElementsAre(Field(&RgPattern::value, "--xff")))));
+}
+
+TEST_F(RgTest, NativeHelpAfterRgDoesNotRequireASearchPattern) {
+  ASSERT_OK_AND_ASSIGN(const auto command, Parse({"--rg", "--xff", "--help=regex"}));
+  EXPECT_THAT(command.meta_flags, ElementsAre("--help=regex"));
+  EXPECT_THAT(command.rg, Optional(Field(&RgSearch::patterns, IsEmpty())));
+}
+
+TEST_F(RgTest, EmptyTokenAfterReturningToNativeFiltersIsNotAPrimary) {
+  EXPECT_THAT(
+      Parse({"--rg", "hit", "--xff", ""}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("--xff starts a filter expression")));
+}
+
+TEST_F(RgTest, LateRgConsumesNativeCommandAndCaptureArgumentsAtomically) {
+  for (const std::string_view primary : {"-exec", "-capture:result"}) {
+    ASSERT_OK_AND_ASSIGN(
+        const auto command, Parse({"src", std::string(primary), "echo", "--rg", "--xff", ";", "--rg", "hit", "-n"}));
+    EXPECT_THAT(command.rg, Optional(Field(&RgSearch::patterns, ElementsAre(Field(&RgPattern::value, "hit")))));
+    ASSERT_THAT(command.expression, NotNull());
+    EXPECT_THAT(command.expression->args, Contains("--rg"));
+    EXPECT_THAT(command.expression->args, Contains("--xff"));
+  }
 }
 
 TEST_F(RgTest, ReentryPreservesLiteralPrimaryArgumentsAndSettingsOrder) {
