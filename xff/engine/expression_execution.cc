@@ -83,14 +83,16 @@ bool ExpressionExecution::UsesIndexedMatchers() const {
 }
 
 EvaluationResult ExpressionExecution::Worker::Evaluate(EvalContext& context) const {
-  switch (state_->data.executor) {
-    case ExpressionExecutor::kBound: return state_->data.bound.value().Evaluate(context);
-    case ExpressionExecutor::kPrepared: return state_->prepared.value().Evaluate(context);
-    case ExpressionExecutor::kProgramSwitch:
-    case ExpressionExecutor::kProgramFunctions: return state_->program.value().Evaluate(context).result;
-    case ExpressionExecutor::kTree: return EvaluateDeferred(state_->data.source, context);
+  if (state_->data.bound.has_value()) {
+    return state_->data.bound->Evaluate(context);
   }
-  std::unreachable();  // Prepare rejects invalid executor values.
+  if (state_->prepared.has_value()) {
+    return state_->prepared->Evaluate(context);
+  }
+  if (state_->program.has_value()) {
+    return state_->program->Evaluate(context).result;
+  }
+  return EvaluateDeferred(state_->data.source, context);
 }
 
 }  // namespace xff::engine

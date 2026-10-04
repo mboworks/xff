@@ -95,7 +95,8 @@ double FastestSeven(const std::vector<double>& times) {
 void Measure(benchmark::State& state, const Scenario& scenario, ExpressionExecutor executor) {
   const RunFs fs(static_cast<std::size_t>(state.range(0)));
   std::vector<std::string> arguments{
-      "--exact", "--color=never", "--sort=dir", "--jobs=" + std::to_string(state.range(1)), "root"};
+      "--exact", "--color=never", "--sort=dir", "--jobs=" + std::to_string(state.range(1)), "root",
+  };
   arguments.insert(arguments.end(), scenario.arguments.begin(), scenario.arguments.end());
   auto command = xff::parser::Parse(arguments);
   if (!command.ok()) {
@@ -122,7 +123,8 @@ void Measure(benchmark::State& state, const Scenario& scenario, ExpressionExecut
   const auto emit = [&](std::string_view text) { bytes += text.size(); };
   // Parsing and fixture construction are excluded. Every iteration includes run preflight,
   // expression preparation, worker startup, traversal, metadata/content, sinks and teardown.
-  for (auto _ : state) {
+  for (auto iteration : state) {
+    benchmark::DoNotOptimize(iteration);
     auto result = xff::engine::RunFind(*command, fs, emit, on_error, std::nullopt, 0, executor);
     benchmark::DoNotOptimize(result);
   }

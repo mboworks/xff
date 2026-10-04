@@ -129,7 +129,7 @@ struct ExpressionExecutionTest : ::testing::TestWithParam<ExpressionExecutor> {
     return observed;
   }
 
-  void Check(const std::vector<std::string>& arguments, bool failure = false, bool expect_error = false) {
+  static void Check(const std::vector<std::string>& arguments, bool failure = false, bool expect_error = false) {
     std::vector<std::string> args{"--exact", "--color=never", "--sort=dir", "--jobs=1"};
     args.insert(args.end(), arguments.begin(), arguments.end());
     ASSERT_OK_AND_ASSIGN(auto command, parser::Parse(args));
@@ -162,8 +162,22 @@ TEST_P(ExpressionExecutionTest, SelectionOutputSummariesAndComparisonPreserveThe
       {"--compare=summary", "--summary=ext", "left", "right", "-type", "f"},
       {"root", "-first", "3", "-print"},
       {"root", "-fuzzy", "file", "-top", "3", "-print"},
-      {"root", "-type", "f", "-fuzzy", "file", "-printf", "prefix\\n", "-top", "3", "-printf", "middle\\n", "-top", "1",
-       "-print"},
+      {
+          "root",
+          "-type",
+          "f",
+          "-fuzzy",
+          "file",
+          "-printf",
+          "prefix\\n",
+          "-top",
+          "3",
+          "-printf",
+          "middle\\n",
+          "-top",
+          "1",
+          "-print",
+      },
       {"root", "-name", "sub", "-prune", "-o", "-type", "f", "-print"},
       {"root", "-type", "f", "-print", "-quit"},
   };
@@ -219,7 +233,7 @@ TEST_P(ExpressionExecutionTest, MovingPlanAndWorkerPreservesBorrowedStorage) {
 }
 
 TEST_P(ExpressionExecutionTest, InvalidPreparationFailsBeforeAnyTraversal) {
-  ASSERT_OK_AND_ASSIGN(auto command, parser::Parse({"root", "-true"}));
+  ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-true"}));
   EXPECT_THAT(
       ExpressionExecution::Prepare(*command.expression, static_cast<ExpressionExecutor>(-1)),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("executor")));
