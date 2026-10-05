@@ -67,9 +67,9 @@
   },
   {
     "number": 966,
-    "state": "open",
-    "merged_at": null,
-    "merge_commit_sha": "b16c20f5859cb224343691984250b2f5252f56aa"
+    "state": "closed",
+    "merged_at": "2026-10-05T13:24:09Z",
+    "merge_commit_sha": "ffdaf1107a9f39cfdc44b485f1504f5534b52bcd"
   },
   {
     "number": 965,
