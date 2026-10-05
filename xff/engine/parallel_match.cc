@@ -70,7 +70,7 @@ const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEnt
   // Very small batches cannot amortize waking the pool.
   if (workers_ == 1 || entries_.size() < 16 || (threads_.empty() && entries_.size() < 64)) {
     if (execution_ && !coordinator_) {
-      coordinator_.emplace(execution_->MakeWorker());
+      coordinator_.emplace(execution_->MakeWorker(ExpressionWorkerRole::kCoordinator));
     }
     EvaluateEntries(
         {}, {},

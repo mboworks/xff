@@ -4614,6 +4614,13 @@ struct RunExecutions {
   std::optional<ExpressionExecution> serial;
   std::optional<ExpressionExecution> parallel;
   std::optional<ExpressionExecution> output;
+  bool parallel_reuses_serial = false;
+
+  mbo::types::OptionalRef<const ExpressionExecution> Parallel() const {
+    const auto& execution = parallel_reuses_serial ? serial : parallel;
+    return execution ? mbo::types::OptionalRef<const ExpressionExecution>{*execution}
+                     : mbo::types::OptionalRef<const ExpressionExecution>{};
+  }
 };
 
 absl::StatusOr<RunExecutions> PrepareRunExecutions(
@@ -4629,13 +4636,16 @@ absl::StatusOr<RunExecutions> PrepareRunExecutions(
     MBO_ASSIGN_OR_RETURN(auto execution, executor(*expression));
     return std::optional(std::move(execution));
   };
+  const bool reuse = serial && parallel && ExprIdentity{*serial} == ExprIdentity{*parallel};
   MBO_ASSIGN_OR_RETURN(auto serial_execution, prepare(serial));
-  MBO_ASSIGN_OR_RETURN(auto parallel_execution, prepare(parallel));
+  MBO_ASSIGN_OR_RETURN(
+      auto parallel_execution, prepare(reuse ? mbo::types::OptionalRef<const parser::Expr>{} : parallel));
   MBO_ASSIGN_OR_RETURN(auto output_execution, prepare(output));
   return RunExecutions{
       .serial = std::move(serial_execution),
       .parallel = std::move(parallel_execution),
       .output = std::move(output_execution),
+      .parallel_reuses_serial = reuse,
   };
 }
 
@@ -5861,16 +5871,22 @@ RunResult RunFindCore(
   // Rg supplies its own content search. A native expression, when present, must still be audited.
   const bool parallel_rg = parallel_allowed && rg_output && (!expression || parallel_expression);
   const bool parallel_native = parallel_expression && HasContentMatch(*parallel_expression);
-  const auto executions = PrepareRunExecutions(expression, parallel_expression, parallel_output, executor);
+  const bool use_match_pool = parallel_rg || parallel_native;
+  const auto executions = PrepareRunExecutions(
+      expression, use_match_pool ? parallel_expression : mbo::types::OptionalRef<const parser::Expr>{},
+      use_match_pool ? parallel_output : mbo::types::OptionalRef<const parser::Expr>{}, executor);
   if (!executions.ok()) {
     on_error("expression preparation", executions.status());
     return RunResult{.errors = 2};
   }
-  const auto& [serial_execution, parallel_execution, output_execution] = *executions;
-  const auto serial_evaluator = serial_execution ? std::optional(serial_execution->MakeWorker()) : std::nullopt;
-  const auto output_evaluator = output_execution ? std::optional(output_execution->MakeWorker()) : std::nullopt;
+  const auto& serial_execution = executions->serial;
+  const auto& output_execution = executions->output;
+  const auto serial_evaluator =
+      serial_execution ? std::optional(serial_execution->MakeWorker(ExpressionWorkerRole::kCoordinator)) : std::nullopt;
+  const auto output_evaluator =
+      output_execution ? std::optional(output_execution->MakeWorker(ExpressionWorkerRole::kCoordinator)) : std::nullopt;
   std::optional<ParallelMatch> parallel_match;
-  if (parallel_rg || parallel_native) {
+  if (use_match_pool) {
     std::optional<ParallelContentOutput> content_output;
     if (rg_output || match_output) {
       content_output.emplace(
@@ -5892,8 +5908,7 @@ RunResult RunFindCore(
     }
     parallel_match.emplace(
         parallel_expression, options.workers, full_metadata || rank_by_score, std::move(content_output),
-        parallel_execution ? mbo::types::OptionalRef<const ExpressionExecution>{*parallel_execution}
-                           : mbo::types::OptionalRef<const ExpressionExecution>{});
+        executions->Parallel());
   }
   std::vector<CollectedEntry> pending_matches;
   // Decision-only batches retain no file bytes or rendered line records. Give them more work
@@ -7101,6 +7116,27 @@ absl::StatusOr<std::set<registry::ModifierConsumer>> ActiveModifierConsumers(
   return consumers;
 }
 
+namespace {
+
+absl::StatusOr<std::string> ExplainExpressionPreparation(mbo::types::OptionalRef<const parser::Expr> expression) {
+  if (!expression) {
+    return "expression-executor\tnone (no native expression)\n";
+  }
+  MBO_ASSIGN_OR_RETURN(const auto execution, PrepareExpressionExecution(*expression));
+  const auto& details = execution.Preparation();
+  return absl::StrCat(
+      "expression-executor\tprepared-recursive\n",
+      "expression-preparation-scope\tresolved native expression; before worker/output splitting\n",
+      "expression-source-nodes\t", details.nodes, "\n", "expression-prepared-operands\t", details.operands, "\n",
+      "expression-matcher-slots\t", details.matcher_slots, "\n", "expression-owned-bytes\t", details.owned_bytes,
+      " (prepared records; excludes source AST, regex backends, adapters, allocator headers and workers)\n",
+      "expression-optimizer\tdisabled; source order preserved\n",
+      "expression-coordinator-matchers\toriginal compiled matchers\n",
+      "expression-worker-matchers\tprivate, initialized on first use\n");
+}
+
+}  // namespace
+
 absl::StatusOr<std::string> ExplainResources(const parser::Command& command, std::optional<registry::Style> style) {
   const auto& globals = command.globals;
   const bool compare = absl::c_any_of(
@@ -7114,6 +7150,7 @@ absl::StatusOr<std::string> ExplainResources(const parser::Command& command, std
   auto summaries = ResolveSummaries(globals, compare);
   std::erase_if(summaries, [](const SummarySpec& summary) { return summary.mode == SummaryMode::kCompare; });
   const auto expression = parser::AsConstOptionalExpr(command.expression);
+  MBO_ASSIGN_OR_RETURN(const auto preparation, ExplainExpressionPreparation(expression));
   const bool has_action = expression.has_value() && ContainsAction(*expression);
   const bool pack = ReadPackTarget(globals).has_value();
   const bool reduction = !summaries.empty() || !histograms.empty() || shards.enabled || pack;
@@ -7141,6 +7178,7 @@ absl::StatusOr<std::string> ExplainResources(const parser::Command& command, std
       line_histograms, "\n", "expensive-primaries\t",
       resources.expensive.empty() ? "none" : absl::StrJoin(resources.expensive, ","),
       " (registry cost tier, not a content-read classification)\n");
+  absl::StrAppend(&output, preparation);
   if (command.rg) {
     const auto grep = ResolveGrepOptions(globals, true);
     const bool streaming = grep.quiet || !grep.match_output || !listing || grep.output != GrepOptions::Output::kLines;

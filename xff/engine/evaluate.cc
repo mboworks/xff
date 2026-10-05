@@ -3715,6 +3715,10 @@ std::size_t PreparedExpression::OperandCount() const {
   return data_->operands.size() - 1;
 }
 
+std::size_t PreparedExpression::MatcherCount() const {
+  return data_->matcher_sources.size();
+}
+
 std::size_t PreparedExpression::StorageBytes() const {
   return sizeof(*this) + sizeof(Data) + (data_->nodes.capacity() * sizeof(Data::Node))
          + (data_->operands.capacity() * sizeof(PreparedOperand))

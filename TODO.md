@@ -22,7 +22,12 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       production-driver integration and the remaining audited families stay open.
       On-demand worker slots now address the measured eager regex-fork startup cost; the eager
       comparison remains in both kernel and whole-engine benchmarks. Adoption awaits native
-      setup/hot-loop/storage measurements; the production executor is unchanged.
+      setup/hot-loop/storage measurements. Prepared recursion is now selected for production CI
+      qualification, with coordinator matcher reuse and private lazy concurrent-worker state.
+      Remaining audit candidates include first-limit decoding, MIME case normalization,
+      peer-path/expected-hash template compilation, hash spec resolution and diff option/regex
+      preparation. Keep entry-dependent rendering and conditional observations dynamic; measure
+      these families separately before deciding on additional run-owned records.
 - [ ] EP04: Compare contiguous opcode and bound-function programs; lower audited boolean control flow,
       reuse scratch and preserve source mapping, with explicit whole-expression fallback coverage.
       The switch/function pilot, branch-selectivity cases and storage-reuse tests are implemented;
@@ -34,17 +39,22 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       Internal whole-engine selection now routes serial, pooled and deferred evaluation through
       the candidates, with isolated output/read/effect comparisons and a 250-case native matrix.
       CI qualification, production selection and complete integration coverage remain pending.
+      The engine oracle now includes layered system/user/explicit INI composition, final CLI
+      case/grammar/block-size overrides, rg transitions, mandatory deletion blocks, and mounted
+      archive-member output, prune/quit and scored replay. The new cases await native CI.
 - [ ] EP06: Measure deterministic constant folding, jump simplification, selected fusion and proven
       value reuse independently; keep reordering behind a stronger equivalence proof.
 - [ ] EP07: Qualify the winning executor on native macOS ARM64 and Linux x86-64; update --explain,
       self-documentation and performance evidence; enable only measured, semantically complete paths.
-- [ ] EP-S01: Evaluate the experimental constexpr FrozenMap/Set merged in MBO PR #550 for startup
-      lookup. They are available upstream at `bf65c21c495fc789feab79f4516d1ae7215cb292`, outside
-      XFF's current pin. Compare actual per-mode registries, exact misses, sparse/minimal placement,
-      compile-time/storage cost and complete parser commands before adoption. This does not block
-      EP01-EP07; the prepared per-entry executor must avoid name lookup altogether.
-      The user reports substantial regressions against standard unordered containers; include
-      those baselines and require an XFF workload win before changing the dependency or index.
+- [ ] EP-S01: Evaluate experimental constexpr FrozenMap/Set using MBO PR #553 at
+      `9d11197da77646e4fa98aa69f5340a636cde2e6f`, outside XFF's current pin. Fambo replaces the
+      former FNV string hash and brings the measured 64-key sparse mixed lookup to about 6 ns;
+      the earlier blanket negative assessment no longer applies. Compare default fambo and simple
+      registry-specific hash candidates against the sorted/probing/unordered baselines. Prove
+      collision-free placement for each mode's known keys; retain exact equality for unknown input.
+      Measure actual aliases/misses, sparse/minimal placement, compile-time/storage cost and whole
+      parser commands on both platforms. This does not block EP01-EP07; the prepared per-entry
+      executor must avoid name lookup altogether. Adopt only after an XFF workload win.
 - [ ] EP-S02: Revisit experimental MBO interning for dynamic names only when a concrete consumer and
       measurements justify a dependency update; prefer existing strong IDs and indexed execution slots.
 
@@ -887,8 +897,10 @@ this as intentional accounting.
 - [ ] Qualify the constant-folding, forward-jump-threading and predicate/branch-fusion candidates
       independently on native Linux and macOS; retain measured winners only. The implementation uses
       registry constant metadata and preserves original validation/safety/traversal decisions.
-- [ ] Complete production selection and expose actual preparation/optimization records through
-      `--explain`; keep the slower scored/replay candidate out of the default path unless improved.
+- [ ] Finish native qualification of the selected prepared-recursive production path and its
+      actual `--explain` preparation records; keep the slower scored/replay program out of the default
+      path unless improved. Coordinator matcher reuse, pool transitions and capture isolation have
+      dedicated tests; binary size, startup and the full configuration/archive matrix remain open.
 - [ ] Recheck tiny-search preparation, eager regex-worker fork cost, retained capacities and full
       CLI binary size after selecting the winning implementation. The first whole-engine macOS session
       is noisy; a single session is insufficient to resolve small differences.
@@ -901,5 +913,5 @@ this as intentional accounting.
       retain the direct tree oracle and all candidate whole-engine tests/measurements.
 - [ ] Verify the isolated CLI link size and choose the production executor from native whole-engine
       evidence; keep rejected benchmark alternatives out of shipping dependencies.
-- [ ] Evaluate serial reuse of original validated regex state after the on-demand-slot measurements;
-      preserve separate mutable backend state for concurrently evaluating workers.
+- [ ] Qualify the implemented serial reuse of original validated regex state against the
+      on-demand-slot measurements; separate mutable backend state remains private to concurrent workers.

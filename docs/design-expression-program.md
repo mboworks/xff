@@ -1,8 +1,9 @@
 # Prepared expression programs and optimization plan
 
-Status: implementation and measurement plan, not a claim that the proposed executor exists or
-has measured speedups. The implementation sequence below is intended for separately reviewable
-changes. Benchmark publication and parser-lookup experiments remain independent workstreams.
+Status: implementation and qualification are in progress. The production candidate uses prepared
+recursion; alternative programs and optimizers remain test-only. Acceptance is pending native CI,
+integration coverage and final resource evidence. Earlier stage measurements below record decisions,
+not current-head validation. Benchmark publication and parser-lookup experiments remain independent.
 
 ## Objective and inspected baseline
 
@@ -93,7 +94,7 @@ table, and the compact/direct trie experiments behind the same exact-lookup inte
 help token scanning as well as spelling lookup, but would need an explicit operand-boundary design.
 Do not turn failure to find a fast frozen table into a blocker for expression execution work.
 
-### FrozenMap/Set adoption check after MBO #550
+### FrozenMap/Set adoption check after MBO #550 and #553
 
 The merged [API documentation](https://github.com/mboworks/mbo/blob/bf65c21c495fc789feab79f4516d1ae7215cb292/mbo/container/experimental/FROZEN.md)
 and headers satisfy the structural requirements: constexpr inline immutable storage, shared map/set
@@ -117,13 +118,26 @@ by a runtime fallback. The experimental API and container measurements alone do 
 XFF startup speedup. Pin the inspected MBO commit in the experiment and retain the current production
 index until those application measurements justify replacement.
 
-The user reports that the merged Frozen containers are substantially slower than
-`std::unordered_map` / `std::unordered_set` in their measurements. No raw measurements from that
-comparison have been imported into this XFF analysis. Treat performance as an unresolved adoption
-gate, not as a benefit of constexpr construction. Include the standard unordered container and
-the existing bounded-probing prototype in the application comparison. A dependency update or
-production replacement is not justified by API availability alone. The prepared executor removes
-per-entry name lookup regardless of which container eventually serves startup lookup.
+MBO [PR #553](https://github.com/mboworks/mbo/pull/553), merged at
+`9d11197da77646e4fa98aa69f5340a636cde2e6f`, changes the string default from FNV-1a to fambo.
+Its retained Apple M5 Pro measurements revise the earlier negative assessment: the 64-key sparse
+map's mixed lookup falls from 11.16 to 5.97 ns in the hash comparison; the follow-up default check
+measures 5.98 ns. These are fixed ten-byte keys in a warm cyclic workload, not XFF flag measurements.
+Hash cost was material; Frozen containers are viable candidates again, with fambo as the baseline.
+
+Known registries permit a simpler corpus-specific hash if it wins. Generate candidates from the
+registry rather than duplicating spellings: for example length and selected byte positions with
+small mixing constants. Prove construction for each mode at compile time. Distinct full hashes
+alone are insufficient: verify occupied-slot placement, preserve alias-to-ID mappings, and keep
+exact key equality for unknown inputs. Every selected-byte read must also be valid for empty or
+short unknown tokens. Test similar prefixes/suffixes, edited spellings and unsupported-mode flags.
+Reject an unsuitable candidate at construction instead of adding a runtime collision fallback.
+
+Compare total lookup cost and table footprint, not hash speed alone. The existing sorted index,
+bounded-probing prototype, standard unordered containers, default fambo Frozen and any simpler
+perfect-placement candidate belong in the same application experiment. Include sparse/minimal
+layouts, full commands, normal constexpr budgets and both native platforms. The prepared executor
+continues to avoid per-entry name lookup regardless of which index serves startup parsing.
 
 ## Program architecture
 
@@ -511,7 +525,8 @@ families should retain their existing callback rather than reparsing an already 
 `PreparedExpression` implements the scalar candidate with a typed pool, source-node references
 and the same recursive control semantics as EP02. Factories are registered with the existing
 engine handler table, and numeric/permission parsing is shared with the reference evaluator.
-No production switch is made. The trace oracle runs all three executors; boundary tests additionally
+At the scalar-candidate stage, production stayed on the tree. The trace oracle runs all three
+executors; boundary tests additionally
 reuse prepared scalars across changed entry metadata and block sizes. Nine-round interleaved CI
 benchmarks compare tree, bound-only and prepared execution in 270 cases and record owned storage
 capacity. Indexed worker matchers and the remaining families above are still open; this is a
@@ -539,7 +554,8 @@ includes the first match, so it excludes initialization; complete-engine timings
 The eager comparator uses the same new slot bookkeeping and isolates initialization timing.
 Compare both against the unchanged tree and the previous candidate results to assess total
 hot-loop/storage overhead. Moving cost into the first match is not by itself a speedup for a
-reached predicate. Production remains the tree until this tradeoff is measured.
+reached predicate. The original tree remains the qualification baseline; the coordinator strategy
+selected after these measurements is described in the production section below.
 
 ### Evaluator operand/effect inventory
 
@@ -732,5 +748,35 @@ Plans and workers keep stable, unique-owned storage across moves. Workers borrow
 source expression and must finish first. Qualification enters a worker through one virtual call
 per entry, then uses the original candidate implementation. The ordinary tree has no such call.
 This extra boundary is included in whole-engine measurements, not hidden in kernel timings.
-No executor is enabled by this separation; the final production implementation still needs an
-explicit measured selection and matching `--explain` records.
+The separation itself does not select an executor. The production candidate below adds that
+selection and its `--explain` records, subject to native acceptance.
+
+## Production prepared recursion and coordinator ownership
+
+The production factory now selects `PreparedExpression`, retaining the reference evaluator's
+recursive operator semantics and source order while binding callbacks and decoding invariant
+operands once. Experimental program interpreters and optimizers remain test-only. The complete
+CLI suite therefore exercises the production candidate; the whole-engine oracle passes a null
+factory explicitly to retain the original tree reference. Native acceptance remains open until
+current-head correctness, startup, throughput, memory and binary-size evidence is complete.
+
+A coordinator worker evaluates directly through the immutable prepared expression and its original
+compiled matchers. A concurrent worker owns lazy private matcher slots; its first reached use forks
+the backend, while skipped branches allocate no backend. The distinction preserves the existing
+thread-safe original-matcher contract without imposing private-fork startup on serial searches.
+Small matcher batches can use the coordinator, larger batches activate the pool, and later small
+batches can return to the coordinator. Capture state stays in each evaluation context. Neither
+worker object may be evaluated concurrently with itself. Plans and source expressions outlive
+workers; moving a plan preserves its backing storage.
+
+The driver avoids preparation for unused parallel paths and shares preparation when the serial
+and pooled expressions are the same source node. A split filter/output expression retains its own
+preparation because each side has a different root. Deferred replay continues through the serial
+worker and preserves original source identities and exactly-once effects.
+
+`--explain` calls the same production preparation factory without traversing roots or evaluating
+actions. Its records describe the resolved native expression before filter/output splitting,
+including nodes, operands, matcher slots and owned record bytes. Regex backend, source-tree,
+allocator, adapter and worker storage are excluded, so this is not a process-memory estimate.
+It explicitly reports preserved order and disabled optimization; it does not claim the test-only
+optimizer ran. Separate rg search preparation remains described by the existing rg resource row.

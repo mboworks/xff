@@ -78,6 +78,7 @@ struct Executor {
 
 constexpr auto kExecutors = std::to_array<Executor>({
     {.name = "tree", .executor = ExpressionExecutor::kTree},
+    {.name = "production", .executor = ExpressionExecutor::kProduction},
     {.name = "bound", .executor = ExpressionExecutor::kBound},
     {.name = "prepared", .executor = ExpressionExecutor::kPrepared},
     {.name = "prepared-eager", .executor = ExpressionExecutor::kPreparedEager},

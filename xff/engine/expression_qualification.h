@@ -13,6 +13,7 @@ namespace xff::engine {
 // Test/benchmark vocabulary only. No production target may depend on this header.
 enum class ExpressionExecutor {
   kTree,
+  kProduction,
   kBound,
   kPrepared,
   kPreparedEager,

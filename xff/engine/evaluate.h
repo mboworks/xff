@@ -338,7 +338,7 @@ class BoundExpression final {
   std::vector<Node> nodes_;
 };
 
-// Experimental bound tree with typed immutable operand pools. Source ownership follows
+// Bound tree with typed immutable operand pools. Source ownership follows
 // BoundExpression. Preparation performs no filesystem or account-database observations.
 class PreparedExpression final {
  private:
@@ -389,6 +389,7 @@ class PreparedExpression final {
   [[nodiscard]] Worker MakeWorker(MatcherInitialization initialization = MatcherInitialization::kOnDemand) const;
   [[nodiscard]] std::size_t NodeCount() const;
   [[nodiscard]] std::size_t OperandCount() const;
+  [[nodiscard]] std::size_t MatcherCount() const;
   // Object and owned buffer capacities, excluding allocator headers and the shared source AST.
   [[nodiscard]] std::size_t StorageBytes() const;
 

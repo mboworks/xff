@@ -19,7 +19,7 @@ struct QualificationPlan final : ExpressionExecution::Plan {
   QualificationPlan(const parser::Expr& expression, ExpressionExecutor selected)
       : source(expression), executor(selected) {}
 
-  ExpressionExecution::Worker MakeWorker() const override;
+  ExpressionExecution::Worker MakeWorker(ExpressionWorkerRole) const override;
 
   bool UsesIndexedMatchers() const override { return prepared.has_value() || program.has_value(); }
 
@@ -62,7 +62,7 @@ struct QualificationState final : ExpressionExecution::Worker::State {
   std::optional<ExpressionProgram::Worker> program;
 };
 
-ExpressionExecution::Worker QualificationPlan::MakeWorker() const {
+ExpressionExecution::Worker QualificationPlan::MakeWorker(ExpressionWorkerRole) const {
   return ExpressionExecution::Worker(std::make_unique<QualificationState>(*this));
 }
 
@@ -80,6 +80,7 @@ absl::StatusOr<ExpressionExecution> Reject(const parser::Expr&) {
 ExpressionFactory QualifiedExpressionFactory(ExpressionExecutor executor) {
   switch (executor) {
     case ExpressionExecutor::kTree: return nullptr;
+    case ExpressionExecutor::kProduction: return PrepareExpressionExecution;
     case ExpressionExecutor::kBound: return Prepare<ExpressionExecutor::kBound>;
     case ExpressionExecutor::kPrepared: return Prepare<ExpressionExecutor::kPrepared>;
     case ExpressionExecutor::kPreparedEager: return Prepare<ExpressionExecutor::kPreparedEager>;
@@ -93,6 +94,9 @@ ExpressionFactory QualifiedExpressionFactory(ExpressionExecutor executor) {
 absl::StatusOr<ExpressionExecution> PrepareQualifiedExpression(
     const parser::Expr& expression,
     ExpressionExecutor executor) {
+  if (executor == ExpressionExecutor::kProduction) {
+    return PrepareExpressionExecution(expression);
+  }
   auto data = std::make_unique<QualificationPlan>(expression, executor);
   switch (executor) {
     case ExpressionExecutor::kTree: break;

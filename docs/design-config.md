@@ -560,6 +560,9 @@ set of option semantics.
   provenance;
 - every dropped config line and its reason;
 - the style-default table and the effective value for the run;
+- native expression preparation: executor, source-node/operand/matcher counts, owned record bytes,
+  source-order preservation, and coordinator/worker matcher ownership; see the scope and exclusions
+  in [Inspecting configuration](config-inspection.md);
 - the effective safety policy: active safe/dry-run modes, capability decisions and their
   causes, physical source paths/lines and named sections, per-file category interpretation,
   and expanded temp/output roots.

@@ -264,6 +264,7 @@ cc_test(
     srcs = ["parallel_match_test.cc"],
     deps = [
         ":evaluate_cc",
+        ":expression_execution_cc",
         ":parallel_match_cc",
         "//xff/matching/regex:regex_cc",
         "//xff/parser:parser_cc",
@@ -757,6 +758,7 @@ cc_library(
         ":evaluate_cc",
         "//xff/parser:parser_cc",
         "@abseil-cpp//absl/status:statusor",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
     ],
 )
 
@@ -780,6 +782,8 @@ cc_library(
 cc_test(
     name = "expression_execution_test",
     size = "small",
+    # The full executor/configuration/archive matrix exceeds 60 seconds under MSan.
+    timeout = "moderate",
     srcs = ["expression_execution_test.cc"],
     deps = [
         ":evaluate_cc",
@@ -787,8 +791,13 @@ cc_test(
         ":expression_qualification_cc",
         ":run_cc",
         ":walk_cc",
+        "//xff/cli:config_validation_cc",
+        "//xff/config:config_cc",
+        "//xff/config:ini_cc",
+        "//xff/config:policy_cc",
         "//xff/parser:parser_cc",
         "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
@@ -796,6 +805,7 @@ cc_test(
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
+        "@xff_extras_api//:archive_backend_cc",
     ],
 )
 
