@@ -3670,10 +3670,11 @@ struct PreparedExpression::Worker::State {
       case Kind::kXor:
       case Kind::kXnor:
       case Kind::kComma: return {.result = result, .visit_right = true};
-      case Kind::kPredicate: std::unreachable();
+      // Enter completes predicates before the left phase; all valid operator kinds return above.
+      case Kind::kPredicate: std::unreachable();  // LCOV_EXCL_LINE
     }
-    std::unreachable();
-  }
+    std::unreachable();  // LCOV_EXCL_LINE: all valid operator kinds are handled above.
+  }  // LCOV_EXCL_LINE: no valid frame reaches the fallthrough exit.
 
   static EvaluationResult Combine(const Frame& frame, EvaluationResult right, EvalContext& context) {
     using Kind = parser::Expr::Kind;
@@ -3698,11 +3699,12 @@ struct PreparedExpression::Worker::State {
         };
       case Kind::kXnor: return {.matched = left.matched == right.matched};
       case Kind::kComma: return right;
-      case Kind::kNot:
-      case Kind::kPredicate: std::unreachable();
+      // Enter completes predicates and AfterLeft completes NOT without entering the right phase.
+      case Kind::kNot:                            // LCOV_EXCL_LINE
+      case Kind::kPredicate: std::unreachable();  // LCOV_EXCL_LINE
     }
-    std::unreachable();
-  }
+    std::unreachable();  // LCOV_EXCL_LINE: all valid binary operator kinds are handled above.
+  }  // LCOV_EXCL_LINE: no valid frame reaches the fallthrough exit.
 
   EvaluationResult Enter(EvaluationResult result, EvalContext& context) {
     auto& frame = frames.back();
