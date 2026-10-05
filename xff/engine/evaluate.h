@@ -356,6 +356,9 @@ class PreparedExpression final {
     ~Worker();
 
     EvaluationResult Evaluate(EvalContext& context) const;
+    // Program instruction adapter: source must name a predicate in this prepared expression.
+    // Preserves metadata, safety, invalidation and deferred-control handling around its callback.
+    EvaluationResult EvaluatePredicate(ExpressionSourceId source, EvalContext& context) const;
     [[nodiscard]] std::size_t MatcherCount() const;
     // Slot capacity only; regex backend allocations and the shared expression are excluded.
     [[nodiscard]] std::size_t StorageBytes() const;
