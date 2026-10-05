@@ -517,6 +517,30 @@ benchmarks compare tree, bound-only and prepared execution in 270 cases and reco
 capacity. Indexed worker matchers and the remaining families above are still open; this is a
 partial EP03 implementation, not the stage's completion.
 
+### On-demand indexed worker matcher candidate
+
+The first whole-engine session exposed eager regex-fork work even for empty searches and
+unreached predicates. Each prepared worker now allocates its slot vector once, then resolves
+each slot on its first reached regex predicate. An initialized bit distinguishes a never-used
+slot from an absent or failed fork; subsequent files never retry it. Successful mutable backend
+state belongs to that worker, while the immutable original matcher remains the failure fallback.
+No shared lazy state or locking is introduced. The original validated matcher still exists before
+the walk, so malformed-pattern validation does not become conditional.
+
+`MatcherInitialization::kEager` remains an internal comparison option. Tests check partial
+short-circuit initialization, independent workers, reuse across files, moves, captures and
+unbound matchers. Ordinary, iterative and instruction callbacks share slot resolution. Report
+initialized slot counts separately from allocated slot capacity. The bit may increase each slot's
+size through alignment, which is included in the existing storage-byte accounting.
+
+Compare both initialization policies in the native kernel and complete-engine harnesses, including
+zero/one files and a name filter that prevents every regex from being reached. Kernel warmup
+includes the first match, so it excludes initialization; complete-engine timings include it.
+The eager comparator uses the same new slot bookkeeping and isolates initialization timing.
+Compare both against the unchanged tree and the previous candidate results to assess total
+hot-loop/storage overhead. Moving cost into the first match is not by itself a speedup for a
+reached predicate. Production remains the tree until this tradeoff is measured.
+
 ### Evaluator operand/effect inventory
 
 The registry remains authoritative for spelling, aliases, traversal, metadata, safety and worker

@@ -260,6 +260,7 @@ INSTANTIATE_TEST_SUITE_P(
         ExpressionExecutor::kTree,
         ExpressionExecutor::kBound,
         ExpressionExecutor::kPrepared,
+        ExpressionExecutor::kPreparedEager,
         ExpressionExecutor::kProgramSwitch,
         ExpressionExecutor::kProgramFunctions,
         ExpressionExecutor::kProgramOptimized),
@@ -268,6 +269,7 @@ INSTANTIATE_TEST_SUITE_P(
         case ExpressionExecutor::kTree: return "Tree";
         case ExpressionExecutor::kBound: return "Bound";
         case ExpressionExecutor::kPrepared: return "Prepared";
+        case ExpressionExecutor::kPreparedEager: return "PreparedEager";
         case ExpressionExecutor::kProgramSwitch: return "ProgramSwitch";
         case ExpressionExecutor::kProgramFunctions: return "ProgramFunctions";
         case ExpressionExecutor::kProgramOptimized: return "ProgramOptimized";

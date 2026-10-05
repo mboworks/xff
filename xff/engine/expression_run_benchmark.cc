@@ -80,6 +80,7 @@ constexpr auto kExecutors = std::to_array<Executor>({
     {.name = "tree", .executor = ExpressionExecutor::kTree},
     {.name = "bound", .executor = ExpressionExecutor::kBound},
     {.name = "prepared", .executor = ExpressionExecutor::kPrepared},
+    {.name = "prepared-eager", .executor = ExpressionExecutor::kPreparedEager},
     {.name = "program-switch", .executor = ExpressionExecutor::kProgramSwitch},
     {.name = "program-functions", .executor = ExpressionExecutor::kProgramFunctions},
     {.name = "program-optimized", .executor = ExpressionExecutor::kProgramOptimized},
@@ -146,6 +147,7 @@ int main(int argc, char** argv) {
       {.name = "name", .arguments = {"-name", "*.txt"}},
       {.name = "scalar", .arguments = {"-type", "f", "-size", "+2c", "-perm", "0644", "-name", "*.txt"}},
       {.name = "regex-output", .arguments = {"-type", "f", "-rxc", "needle", "-print"}},
+      {.name = "regex-unreached", .arguments = {"-type", "f", "-name", "*.missing", "-rxc", "needle"}},
       {.name = "summary", .arguments = {"-type", "f", "-name", "*.txt", "--summary=ext"}},
       {.name = "scored-replay", .arguments = {"-type", "f", "-fuzzy", "file", "-top", "3", "-print"}},
   });

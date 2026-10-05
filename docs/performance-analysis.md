@@ -2150,3 +2150,23 @@ while production uses the original tree. Remove losing production paths or expli
 their retained diagnostic cost before final adoption. These are the benchmark CLI target's sizes,
 not a measurement of every separately packaged lean/full release variant. Raw artifacts remain
 associated with the named CI runs; final shipping-size accounting remains part of EP07.
+
+### Candidate response: initialize only reached worker matchers
+
+The initial whole-engine session measured roughly 4-13 microseconds of eager regex-fork setup
+in empty/single-file searches. The next candidate allocates the indexed slots once, but forks
+each backend only when its regex predicate is first reached. Initialization is private to a
+non-concurrently used worker, with no locks. Absent and failed forks are remembered rather than
+retried; the validated immutable matcher remains the fallback. Pattern compilation/validation
+and all conditional content/metadata reads retain their earlier boundaries.
+
+Retain an eager policy for same-session comparison. The complete-engine matrix grows to 420
+cases: seven executors, six workloads (including an entirely skipped regex), five file counts
+and two requested worker counts. Kernel comparisons include eager/on-demand worker preparation
+and warm matching, initialized slot counts and owned storage bytes. Both policies share the new
+slot bookkeeping; comparisons against the unchanged tree and previous candidate sessions must
+also check total hot-loop overhead. The initialization flag can increase aligned slot size.
+
+This is a response to measured setup cost, not a measured improvement yet. Native Linux/macOS
+CI must establish empty, first-match and large-search costs before production adoption. No
+local C++ compilation or timing campaign is required, and the production executor remains the tree.

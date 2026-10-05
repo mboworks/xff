@@ -55,6 +55,7 @@ enum class Executor {
   kPrepared,
   kTreeWorker,
   kPreparedWorker,
+  kPreparedWorkerEager,
   kProgramSwitch,
   kProgramFunctions,
   kProgramConstants,
@@ -72,9 +73,11 @@ struct PreparedWorkerBenchmark {
   xff::engine::PreparedExpression expression;
   xff::engine::PreparedExpression::Worker worker;
 
-  static absl::StatusOr<PreparedWorkerBenchmark> Prepare(const xff::parser::Expr& source) {
+  static absl::StatusOr<PreparedWorkerBenchmark> Prepare(
+      const xff::parser::Expr& source,
+      xff::engine::PreparedExpression::MatcherInitialization initialization) {
     MBO_ASSIGN_OR_RETURN(auto expression, xff::engine::PreparedExpression::Prepare(source));
-    auto worker = expression.MakeWorker();
+    auto worker = expression.MakeWorker(initialization);
     return PreparedWorkerBenchmark{.expression = std::move(expression), .worker = std::move(worker)};
   }
 
@@ -85,6 +88,8 @@ struct PreparedWorkerBenchmark {
   std::size_t OperandCount() const { return expression.OperandCount(); }
 
   std::size_t StorageBytes() const { return expression.StorageBytes() + worker.StorageBytes(); }
+
+  std::size_t InitializedMatcherCount() const { return worker.InitializedMatcherCount(); }
 };
 
 struct ProgramBenchmark {
@@ -245,8 +250,11 @@ auto PrepareExecutor(const xff::parser::Expr& expression) {
     return xff::engine::BoundExpression::Prepare(expression);
   } else if constexpr (Mode == Executor::kPrepared) {
     return xff::engine::PreparedExpression::Prepare(expression);
-  } else if constexpr (Mode == Executor::kPreparedWorker) {
-    return PreparedWorkerBenchmark::Prepare(expression);
+  } else if constexpr (Mode == Executor::kPreparedWorker || Mode == Executor::kPreparedWorkerEager) {
+    return PreparedWorkerBenchmark::Prepare(
+        expression, Mode == Executor::kPreparedWorkerEager
+                        ? xff::engine::PreparedExpression::MatcherInitialization::kEager
+                        : xff::engine::PreparedExpression::MatcherInitialization::kOnDemand);
   } else if constexpr (IsProgram(Mode)) {
     constexpr auto kDispatch = Mode == Executor::kProgramSwitch ? xff::engine::ProgramDispatch::kSwitch
                                                                 : xff::engine::ProgramDispatch::kFunctions;
@@ -385,8 +393,13 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
     state.counters["extra_bytes"] = static_cast<double>(program.StorageBytes());
     state.counters["nodes"] = static_cast<double>(program.NodeCount());
   }
-  if constexpr (Mode == Executor::kPrepared || Mode == Executor::kPreparedWorker || IsProgram(Mode)) {
+  if constexpr (
+      Mode == Executor::kPrepared || Mode == Executor::kPreparedWorker || Mode == Executor::kPreparedWorkerEager
+      || IsProgram(Mode)) {
     state.counters["operands"] = static_cast<double>(program.OperandCount());
+  }
+  if constexpr (Mode == Executor::kPreparedWorker || Mode == Executor::kPreparedWorkerEager) {
+    state.counters["initialized_matchers"] = static_cast<double>(program.InitializedMatcherCount());
   }
 }
 
@@ -442,6 +455,7 @@ int main(int argc, char** argv) {
     if (example.name == "regex" || example.name == "path-regex") {
       Register<Executor::kTreeWorker>("tree-worker", example);
       Register<Executor::kPreparedWorker>("prepared-worker", example);
+      Register<Executor::kPreparedWorkerEager>("prepared-worker-eager", example);
     }
   }
   benchmark::RunSpecifiedBenchmarks();

@@ -345,6 +345,9 @@ class PreparedExpression final {
   struct Data;
 
  public:
+  // Eager construction remains available for qualification against on-demand worker slots.
+  enum class MatcherInitialization { kOnDemand, kEager };
+
   // Owns one worker's mutable matcher state. The prepared expression (including across a move)
   // and its source AST must outlive this worker. Do not evaluate one worker concurrently.
   class Worker final {
@@ -363,6 +366,8 @@ class PreparedExpression final {
     // Preserves metadata, safety, invalidation and deferred-control handling around its callback.
     EvaluationResult EvaluatePredicate(ExpressionSourceId source, EvalContext& context) const;
     [[nodiscard]] std::size_t MatcherCount() const;
+    // Includes absent/failed forks: each slot is resolved at most once per worker.
+    [[nodiscard]] std::size_t InitializedMatcherCount() const;
     // Slot capacity only; regex backend allocations and the shared expression are excluded.
     [[nodiscard]] std::size_t StorageBytes() const;
 
@@ -381,7 +386,7 @@ class PreparedExpression final {
   ~PreparedExpression();
 
   EvaluationResult Evaluate(EvalContext& context) const;
-  [[nodiscard]] Worker MakeWorker() const;
+  [[nodiscard]] Worker MakeWorker(MatcherInitialization initialization = MatcherInitialization::kOnDemand) const;
   [[nodiscard]] std::size_t NodeCount() const;
   [[nodiscard]] std::size_t OperandCount() const;
   // Object and owned buffer capacities, excluding allocator headers and the shared source AST.
