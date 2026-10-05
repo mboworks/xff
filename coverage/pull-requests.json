@@ -57,13 +57,13 @@
     "number": 968,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": "6ca251260cfb66c78ab04a92ffccc8cf815fdcca"
+    "merge_commit_sha": null
   },
   {
     "number": 967,
-    "state": "open",
-    "merged_at": null,
-    "merge_commit_sha": null
+    "state": "closed",
+    "merged_at": "2026-10-05T14:26:20Z",
+    "merge_commit_sha": "2df43ac95a5825d25ab782d550f247d57b5f2636"
   },
   {
     "number": 966,
