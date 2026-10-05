@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <ranges>
 #include <string>
@@ -16,7 +17,6 @@
 #include "benchmark/benchmark.h"
 #include "mbo/status/status_macros.h"
 #include "xff/engine/evaluate.h"
-#include "xff/engine/expression_contract.h"
 #include "xff/engine/walk.h"
 #include "xff/parser/parser.h"
 #include "xff/vfs/filesystem.h"
@@ -115,6 +115,7 @@ absl::StatusOr<xff::parser::Command> Parse(const std::vector<std::string>& argum
   return command;
 }
 
+template<bool Bound>
 void Prepare(benchmark::State& state, const ExpressionCase& example) {
   const auto arguments = Arguments(example, state.range(0));
   for (auto iteration : state) {
@@ -124,21 +125,39 @@ void Prepare(benchmark::State& state, const ExpressionCase& example) {
       state.SkipWithError(command.status().ToString());
       break;
     }
-    const auto contract = xff::engine::DescribeExpression(*command->expression);
-    if (!contract.ok()) {
-      state.SkipWithError(contract.status().ToString());
-      break;
+    if constexpr (Bound) {
+      const auto program = xff::engine::BoundExpression::Prepare(*command->expression);
+      if (!program.ok()) {
+        state.SkipWithError(program.status().ToString());
+        break;
+      }
+      benchmark::DoNotOptimize(program->NodeCount());
+    } else {
+      // The shipping tree executor has no additional preparation table.
+      benchmark::DoNotOptimize(command->expression.get());
     }
-    benchmark::DoNotOptimize(contract->size());
   }
 }
 
+template<bool Bound>
 void Kernel(benchmark::State& state, const ExpressionCase& example) {
   const auto command = Parse(Arguments(example, state.range(0)));
   if (!command.ok()) {
     state.SkipWithError(command.status().ToString());
     return;
   }
+  const auto prepared = [&] {
+    if constexpr (Bound) {
+      return xff::engine::BoundExpression::Prepare(*command->expression);
+    } else {
+      return absl::StatusOr<std::reference_wrapper<const xff::parser::Expr>>(std::cref(*command->expression));
+    }
+  }();
+  if (!prepared.ok()) {
+    state.SkipWithError(prepared.status().ToString());
+    return;
+  }
+  const auto& program = *prepared;
   const ExpressionFs fs;
   const xff::vfs::Metadata metadata{.type = xff::vfs::FileType::kRegular, .size = 7, .mode = 0644};
   const xff::engine::Visit visit{.path = "tree/file.txt", .name = "file.txt", .metadata = metadata, .fs = fs};
@@ -155,7 +174,14 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
       .control = control,
   };
   // Check the result before timing; all core cases must reach their complete AND chain.
-  const auto check = xff::engine::EvaluateDeferred(*command->expression, context);
+  const auto evaluate = [&] {
+    if constexpr (Bound) {
+      return program.Evaluate(context);
+    } else {
+      return xff::engine::EvaluateDeferred(program.get(), context);
+    }
+  };
+  const auto check = evaluate();
   if (!check.matched || check.deferred || check.unknown || !control.metadata_error.ok()
       || !control.unsupported.empty()) {
     state.SkipWithError("expression baseline failed its untimed oracle check");
@@ -165,7 +191,7 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
     benchmark::DoNotOptimize(iteration);
     for (std::int64_t entry = 0; entry < state.range(1); ++entry) {
       context.content.Invalidate();
-      auto result = xff::engine::EvaluateDeferred(*command->expression, context);
+      auto result = evaluate();
       benchmark::DoNotOptimize(result.matched);
     }
   }
@@ -192,7 +218,7 @@ double FastestSeven(const std::vector<double>& values) {
 int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
   for (const auto& example : kCases) {
-    benchmark::RegisterBenchmark("prepare/" + std::string(example.name), Prepare, example)
+    benchmark::RegisterBenchmark("prepare/tree/" + std::string(example.name), Prepare<false>, example)
         ->Arg(1)
         ->Arg(16)
         ->Arg(64)
@@ -202,7 +228,25 @@ int main(int argc, char** argv) {
         ->MinTime(0.01)
         ->MinWarmUpTime(0.01)
         ->ComputeStatistics("fastest7of9", FastestSeven);
-    benchmark::RegisterBenchmark("kernel/" + std::string(example.name), Kernel, example)
+    benchmark::RegisterBenchmark("kernel/tree/" + std::string(example.name), Kernel<false>, example)
+        ->ArgsProduct({{1, 16, 64}, {10, 1'000}})
+        ->UseRealTime()
+        ->Unit(benchmark::kNanosecond)
+        ->Repetitions(9)
+        ->MinTime(0.01)
+        ->MinWarmUpTime(0.01)
+        ->ComputeStatistics("fastest7of9", FastestSeven);
+    benchmark::RegisterBenchmark("prepare/bound/" + std::string(example.name), Prepare<true>, example)
+        ->Arg(1)
+        ->Arg(16)
+        ->Arg(64)
+        ->UseRealTime()
+        ->Unit(benchmark::kNanosecond)
+        ->Repetitions(9)
+        ->MinTime(0.01)
+        ->MinWarmUpTime(0.01)
+        ->ComputeStatistics("fastest7of9", FastestSeven);
+    benchmark::RegisterBenchmark("kernel/bound/" + std::string(example.name), Kernel<true>, example)
         ->ArgsProduct({{1, 16, 64}, {10, 1'000}})
         ->UseRealTime()
         ->Unit(benchmark::kNanosecond)

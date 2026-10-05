@@ -11,6 +11,9 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       expanded selectivity/error/state coverage remain before the stage is complete.
 - [ ] EP02: Bind predicate handlers once through registry-derived semantic IDs; measure a bound-tree
       executor against current name-dispatched evaluation before changing control flow.
+      Experimental BoundExpression resolves registered handlers once, caches fuzzy-only subtree
+      properties and shares control semantics with the reference tree. Both run the trace oracle;
+      randomly interleaved CI measurements and the production adoption decision remain pending.
 - [ ] EP03: Prepare invariant operands and indexed worker matcher state; preserve validation timing,
       conditional metadata, dynamic values and errors; report remaining per-entry parsing.
 - [ ] EP04: Compare contiguous opcode and bound-function programs; lower audited boolean control flow,

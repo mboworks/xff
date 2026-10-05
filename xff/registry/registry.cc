@@ -160,6 +160,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "regex,grammars",
+        .evaluation_noop = true,
     },
     // xff content-search predicates: match the file's CONTENT, not its path. The
     // literal pair (-content/-icontent) sidesteps grep's regex-flavor ambiguity; the

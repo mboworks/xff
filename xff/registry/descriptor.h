@@ -155,6 +155,7 @@ struct Descriptor {
   bool native_case = false;       // name matching consumes filesystem-native case sensitivity
   bool parallel_match = false;    // audited independent matcher with no per-run mutable state
   bool path_output = false;       // unconditional path-only stdout action, safe to emit after matching
+  bool evaluation_noop = false;   // consumed during preparation; no per-entry handler (for example grammar)
   bool size_argument = false;     // first operand uses the shared size specification grammar
 };
 

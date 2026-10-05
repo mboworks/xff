@@ -36,6 +36,7 @@
 #include "xff/content/snapshot.h"
 #include "xff/datetime/datetime.h"
 #include "xff/engine/collect.h"
+#include "xff/engine/expression_contract.h"
 #include "xff/engine/extract.h"
 #include "xff/engine/mount.h"
 #include "xff/engine/walk.h"
@@ -302,6 +303,38 @@ bool Evaluate(const parser::Expr& expr, EvalContext& context);
 // Evaluates like Evaluate, but exposes -top deferral to the run driver. With no deferred plumbing in
 // the context this is equivalent to `{Evaluate(...), score, false}`.
 EvaluationResult EvaluateDeferred(const parser::Expr& expr, EvalContext& context);
+
+// Experimental preparation-only dispatch binding. The syntax tree and its matcher data must
+// outlive this object. No CLI mode selects it until paired measurements justify adoption.
+class BoundExpression final {
+ public:
+  static absl::StatusOr<BoundExpression> Prepare(const parser::Expr& expression);
+  BoundExpression(BoundExpression&&) noexcept = default;
+  BoundExpression& operator=(BoundExpression&&) noexcept = default;
+  BoundExpression(const BoundExpression&) = delete;
+  BoundExpression& operator=(const BoundExpression&) = delete;
+  ~BoundExpression() = default;
+
+  EvaluationResult Evaluate(EvalContext& context) const;
+
+  [[nodiscard]] std::size_t NodeCount() const { return nodes_.size(); }
+
+ private:
+  using Evaluator = bool (*)(const parser::Expr&, EvalContext&);
+
+  struct Node {
+    std::reference_wrapper<const parser::Expr> expression;
+    Evaluator evaluate;
+    ExpressionSourceId lhs;
+    ExpressionSourceId rhs;
+    bool fuzzy_only = false;
+  };
+  struct Cursor;
+
+  explicit BoundExpression(std::vector<Node> nodes) : nodes_(std::move(nodes)) {}
+
+  std::vector<Node> nodes_;
+};
 
 // True if `expr` contains any action node (-print, ...). The driver uses this
 // to decide whether an implicit -print applies: find adds -print only when the

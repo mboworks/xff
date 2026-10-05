@@ -161,6 +161,7 @@ cc_library(
     visibility = ["//xff:__subpackages__"],
     deps = [
         ":collect_cc",
+        ":expression_contract_cc",
         ":extract_cc",
         ":mount_cc",
         ":walk_cc",
