@@ -25,11 +25,5 @@
       "total": 15994,
       "percent": 91.85
     }
-  },
-  "pull_state": "merged",
-  "reference_time": "2026-10-05T16:47:01Z",
-  "history": {
-    "commit": "0fe0fa63136bde362b47f9cae481d8912b0cd9e6",
-    "position": 936
   }
 }
