@@ -82,6 +82,7 @@ constexpr auto kExecutors = std::to_array<Executor>({
     {.name = "prepared", .executor = ExpressionExecutor::kPrepared},
     {.name = "program-switch", .executor = ExpressionExecutor::kProgramSwitch},
     {.name = "program-functions", .executor = ExpressionExecutor::kProgramFunctions},
+    {.name = "program-optimized", .executor = ExpressionExecutor::kProgramOptimized},
 });
 
 double FastestSeven(const std::vector<double>& times) {

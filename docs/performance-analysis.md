@@ -19,6 +19,17 @@ execution path should avoid name lookup altogether. EP01-EP07 in TODO track the 
 No production speedup is claimed yet. Append each stage's measured results and retain/revise/reject
 decision here, including preparation, memory, portability and unsuccessful experiments.
 
+MBO [PR #550](https://github.com/mboworks/mbo/pull/550) merged experimental `FrozenMap` / `FrozenSet`
+at `bf65c21c495fc789feab79f4516d1ae7215cb292`. The previous missing-container finding is resolved
+upstream; XFF still pins the earlier dependency. Their immutable constexpr index and checked
+optional-reference lookup fit the planned exact per-mode startup experiment. Application-level
+lookup, parsing, compiler-budget and storage measurements remain necessary before adoption; MBO's
+synthetic container timings are not evidence of an XFF speedup. The detailed adoption checklist is
+in the [data-structure audit](design-expression-program.md#frozenmapset-adoption-check-after-mbo-550).
+The user subsequently reported substantial lookup regressions against standard unordered
+containers. Raw results are not yet part of this record. API availability does not qualify the
+containers for adoption; retain the current index and require a measured XFF workload win.
+
 ### EP01 baseline and EP02 dispatch experiment
 
 [CI run 37203099430](https://github.com/mboworks/xff/actions/runs/37203099430) retained nine raw rounds
@@ -2033,3 +2044,109 @@ final selection must remove losing production paths and avoid redundant preparat
 startup, binary/RSS accounting, archive/configuration composition coverage, remaining operand
 families and optimizer passes still require their separate acceptance evidence. No whole-command
 speedup is claimed before those results exist.
+
+### Whole-engine expression qualification, first native session
+
+CI run `37216302909`, PR #966 head `43fe90d250`, produced 250 valid in-memory engine cases
+on both Linux x86-64 and macOS ARM64. Each case retains all nine randomized/interleaved raw rounds
+and reports the fastest-seven mean. There were no correctness-check failures. The fixture covers
+0/1/10/1,000/10,000 files and requested workers 1/3; it times complete `RunFind` preparation,
+traversal, evaluation, output and teardown, excluding command parsing and process startup.
+Artifacts `expression-baseline-{linux,macos}` contain `expression-engine-{linux,macos}.json`.
+These are initial session results, not a production decision or a whole-process speedup claim.
+
+The table gives candidate/tree elapsed-time ratios at 10,000 files (smaller is better):
+
+| Workload      | Linux bound, 1 worker | Linux prepared, 1 worker | Linux prepared, 3 workers | macOS prepared, 1 worker | macOS prepared, 3 workers |
+| ------------- | --------------------: | -----------------------: | ------------------------: | -----------------------: | ------------------------: |
+| Name          |                 0.868 |                    0.875 |                     0.860 |                    0.912 |                     0.935 |
+| Scalar chain  |                 0.758 |                    0.652 |                     0.660 |                    0.768 |                     0.692 |
+| Regex output  |                 0.792 |                    0.771 |                     0.889 |                    0.751 |                     1.192 |
+| Summary       |                 0.827 |                    0.793 |                     0.837 |                    0.714 |                     1.087 |
+| Scored replay |                 0.928 |                    0.907 |                     0.921 |                    0.892 |                     0.932 |
+
+Linux small-run results expose preparation overhead: eager indexed regex forks add roughly
+4-13 microseconds to empty/single-file cases. Do not turn this into an unconditional default
+without reducing or amortizing preparation. The iterative program's scored-replay path is
+12-18 percent slower than the tree at 1,000/10,000 files on Linux; recursive bound/prepared
+execution remains a measured alternative for this semantic family.
+
+macOS exhibits much wider sample variation, including apparently faster empty runs for candidates
+that perform strictly more preparation. Its pooled content/summary measurements also disagree with
+Linux. Repeat native sessions and inspect spread before attributing these differences to a specific
+executor or making a platform-specific selection. The next EP06 matrix measures each boolean
+rewrite independently and their combined whole-engine candidate; it does not enable production use.
+
+### EP06 native session and repeated whole-engine evidence
+
+Run `37220141643`, PR head `cc1589eec0`, retained 1,494 valid kernel/preparation cases and 300
+valid whole-engine cases on each native platform in `expression-baseline-{linux,macos}`. The JSON
+records GitHub's tested merge revision `52c2614124b75331eb8e7b90d091328cdef4da1e`. Nine interleaved
+rounds and fastest-seven means use the same protocol as the earlier session. Untimed benchmark correctness checks passed;
+the separate coverage suite found an incorrect expected error in the new unreachable-deletion
+test, including for the original tree, so these measurements do not establish merge readiness.
+Remaining checks were still running when this evidence was recorded.
+
+At 10,000 files with one requested worker, elapsed-time ratios to the same-session tree were:
+
+| Workload      | Bound | Prepared | Program switch | Program functions | Optimized program |
+| ------------- | ----: | -------: | -------------: | ----------------: | ----------------: |
+| Name          | 0.854 |    0.864 |          0.901 |             0.961 |             0.965 |
+| Scalar chain  | 0.759 |    0.645 |          0.650 |             0.657 |             0.650 |
+| Regex output  | 0.779 |    0.799 |          0.813 |             0.818 |             0.821 |
+| Summary       | 0.831 |    0.848 |          1.059 |             1.063 |             1.062 |
+| Scored replay | 0.933 |    0.944 |          1.195 |             1.196 |             1.190 |
+
+This repeats the earlier Linux evidence favoring bound/prepared execution, particularly prepared
+scalars, and rejecting an unconditional iterative-program default for scored/replay contexts.
+Small-run setup remains material: empty regex searches were 23.6/23.8 microseconds for tree
+at requested workers 1/3, and prepared ratios were 1.179/1.376. On-demand worker initialization
+is being evaluated separately rather than assuming a large-file win excuses this setup cost.
+
+Against the unoptimized function-dispatch program, geometric means of six corresponding kernel
+case ratios show jump threading at 0.502 for early AND misses and 0.488 for early OR hits.
+Constant folding measures 0.108 for literal-true chains and 0.358 for literal-false chains.
+These are targeted control-flow wins, not general file-search speedups. Branch fusion alone is
+between 0.962 and 1.010 for the listed type, size, short-circuit and constant families; it has
+not established a repeatable general benefit. Neither the combined passes nor the program
+representation has displaced recursive prepared execution as the whole-engine candidate to beat.
+Keep per-pass selection and the simpler executors; the macOS observations below provide the
+same-run cross-platform check.
+
+The macOS one-worker ratios at 10,000 files were:
+
+| Workload      | Bound | Prepared | Program switch | Program functions | Optimized program |
+| ------------- | ----: | -------: | -------------: | ----------------: | ----------------: |
+| Name          | 0.825 |    0.889 |          0.759 |             0.825 |             0.868 |
+| Scalar chain  | 0.717 |    0.709 |          0.711 |             0.716 |             0.618 |
+| Regex output  | 0.773 |    0.758 |          0.748 |             0.738 |             0.727 |
+| Summary       | 0.919 |    0.848 |          0.901 |             0.950 |             0.913 |
+| Scored replay | 1.002 |    0.889 |          1.029 |             1.058 |             1.110 |
+
+Mac timing spread remains a constraint on small differences: the nine tree/name/10,000-file
+rounds have sample coefficient of variation 9.1% with one worker and 13.4% with three, versus
+0.5% and 1.2% on Linux. The combined optimizer improves macOS type/size kernels to 0.702/0.671
+of the unoptimized function program, while jump threading improves early AND/OR to 0.225/0.236.
+These larger targeted gains merit retaining the candidate. The variable whole-engine results
+do not justify a universal program default; scalar preparation and bound dispatch remain the
+more consistently useful choices across the two sessions/platforms.
+
+### CI binary-size accounting for the expression stack
+
+Compare the saved `benchmark-head` executables from main run `37205106353` (main `0ac0e62aa0`)
+and PR run `37220141643` (tested merge `52c2614124`). Both build `//xff/cli:xff` using
+`--config=clang_release`, which retains symbols. Strip copies of both downloaded artifacts with
+the same cached `llvm-strip --strip-all`; this requires no local compilation or execution of the
+benchmarked binaries. Byte counts are file sizes, not Mach-O virtual segment totals.
+
+| Platform     | Main artifact | Candidate artifact | Main stripped | Candidate stripped | Stripped increase | Increase |
+| ------------ | ------------: | -----------------: | ------------: | -----------------: | ----------------: | -------: |
+| Linux x86-64 |    11,705,976 |         11,975,456 |     3,437,480 |          3,483,208 |            45,728 |    1.33% |
+| macOS ARM64  |     3,849,200 |          3,964,208 |     3,086,016 |          3,152,688 |            66,672 |    2.16% |
+
+The qualification stack exceeds the plan's 1% size-review budget on both platforms; macOS also
+exceeds 64 KiB. It still includes multiple candidate executors and registry preparation callbacks
+while production uses the original tree. Remove losing production paths or explicitly justify
+their retained diagnostic cost before final adoption. These are the benchmark CLI target's sizes,
+not a measurement of every separately packaged lean/full release variant. Raw artifacts remain
+associated with the named CI runs; final shipping-size accounting remains part of EP07.

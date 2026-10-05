@@ -55,8 +55,12 @@ absl::StatusOr<ExpressionExecution> ExpressionExecution::Prepare(
       break;
     }
     case ExpressionExecutor::kProgramSwitch:
-    case ExpressionExecutor::kProgramFunctions: {
-      MBO_ASSIGN_OR_RETURN(auto program, ExpressionProgram::Prepare(expression));
+    case ExpressionExecutor::kProgramFunctions:
+    case ExpressionExecutor::kProgramOptimized: {
+      const bool optimize = executor == ExpressionExecutor::kProgramOptimized;
+      MBO_ASSIGN_OR_RETURN(
+          auto program,
+          ExpressionProgram::Prepare(expression, {.constants = optimize, .jumps = optimize, .fusion = optimize}));
       data->program.emplace(std::move(program));
       break;
     }

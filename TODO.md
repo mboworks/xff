@@ -35,9 +35,13 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       value reuse independently; keep reordering behind a stronger equivalence proof.
 - [ ] EP07: Qualify the winning executor on native macOS ARM64 and Linux x86-64; update --explain,
       self-documentation and performance evidence; enable only measured, semantically complete paths.
-- [ ] EP-S01: Evaluate a reusable constexpr frozen/perfect-hash string map/set in MBO for startup
-      lookup. Existing LimitedMap/Set and constexpr hashes already exist; preserve exact miss checks,
-      per-mode aliases and bounded construction. This does not block EP01-EP07.
+- [ ] EP-S01: Evaluate the experimental constexpr FrozenMap/Set merged in MBO PR #550 for startup
+      lookup. They are available upstream at `bf65c21c495fc789feab79f4516d1ae7215cb292`, outside
+      XFF's current pin. Compare actual per-mode registries, exact misses, sparse/minimal placement,
+      compile-time/storage cost and complete parser commands before adoption. This does not block
+      EP01-EP07; the prepared per-entry executor must avoid name lookup altogether.
+      The user reports substantial regressions against standard unordered containers; include
+      those baselines and require an XFF workload win before changing the dependency or index.
 - [ ] EP-S02: Revisit experimental MBO interning for dynamic names only when a concrete consumer and
       measurements justify a dependency update; prefer existing strong IDs and indexed execution slots.
 
@@ -136,7 +140,7 @@ regresses 3-11% across the two sessions. Keep this tradeoff visible when compari
 - [x] Replace speculative mode scanning with one registry-driven global pass and one expression
       pass; retain resolved primary descriptors, borrow token text, and dispatch operators and
       context controls through typed effects. Generate separate constexpr indexes per mode.
-- [ ] Compare the forthcoming constexpr perfect-hash map with compact trie/automaton lookup for
+- [ ] Compare MBO's experimental FrozenMap from PR #550 with compact trie/automaton lookup for
       registered flag spellings. Preserve exact unknown-input rejection, explicit aliases and
       per-mode tables; benchmark whole-command parsing as well as lookup and table size.
 
@@ -871,3 +875,17 @@ this as intentional accounting.
       ancestry before run time so reruns cannot compare with themselves or future merges.
 - [x] Reproduce the missing-baseline report using run 37196735470 artifacts without new measurements:
       the repaired selection finds all 468 reference comparisons on each platform against #957.
+
+### Expression-program optimizer qualification (EP06/EP07)
+
+- [x] Add exhaustive small boolean-tree and seeded larger-tree differential tests, including
+      scored/unscored execution, output order and reuse across changing entry sizes. CI qualifies
+      each optimizer pass and dispatch form; full-run configuration/archive coverage remains open.
+- [ ] Qualify the constant-folding, forward-jump-threading and predicate/branch-fusion candidates
+      independently on native Linux and macOS; retain measured winners only. The implementation uses
+      registry constant metadata and preserves original validation/safety/traversal decisions.
+- [ ] Complete production selection and expose actual preparation/optimization records through
+      `--explain`; keep the slower scored/replay candidate out of the default path unless improved.
+- [ ] Recheck tiny-search preparation, eager regex-worker fork cost, retained capacities and full
+      CLI binary size after selecting the winning implementation. The first whole-engine macOS session
+      is noisy; a single session is insufficient to resolve small differences.

@@ -5,6 +5,7 @@
 #define XFF_ENGINE_EXPRESSION_PROGRAM_H_
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 
 #include "absl/status/statusor.h"
@@ -14,6 +15,27 @@
 namespace xff::engine {
 
 enum class ProgramDispatch { kSwitch, kFunctions };
+
+struct ProgramOptimizations {
+  bool constants = false;
+  bool jumps = false;
+  bool fusion = false;
+  bool measure_time = false;
+};
+
+struct ProgramPassStats {
+  bool enabled = false;
+  std::size_t input_instructions = 0;
+  std::size_t output_instructions = 0;
+  std::size_t rewrites = 0;
+  std::int64_t elapsed_ns = 0;  // collected only when explicitly requested
+};
+
+struct ProgramOptimizationStats {
+  ProgramPassStats constants;
+  ProgramPassStats jumps;
+  ProgramPassStats fusion;
+};
 
 struct ProgramEvaluation {
   EvaluationResult result;
@@ -50,7 +72,9 @@ class ExpressionProgram final {
     std::unique_ptr<State> state_;
   };
 
-  static absl::StatusOr<ExpressionProgram> Prepare(const parser::Expr& expression);
+  static absl::StatusOr<ExpressionProgram> Prepare(
+      const parser::Expr& expression,
+      ProgramOptimizations optimizations = {});
   ExpressionProgram(ExpressionProgram&&) noexcept;
   ExpressionProgram& operator=(ExpressionProgram&&) noexcept;
   ExpressionProgram(const ExpressionProgram&) = delete;
@@ -61,6 +85,7 @@ class ExpressionProgram final {
   [[nodiscard]] std::size_t InstructionCount() const;
   [[nodiscard]] std::size_t NodeCount() const;
   [[nodiscard]] std::size_t OperandCount() const;
+  [[nodiscard]] const ProgramOptimizationStats& OptimizationStats() const;
   // Owned capacities, excluding the source AST, allocator headers and regex-backend allocations.
   [[nodiscard]] std::size_t StorageBytes() const;
 
