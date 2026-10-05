@@ -196,6 +196,7 @@ cc_library(
         "@mboworks_mbo//mbo/file:artefact_cc",
         "@mboworks_mbo//mbo/status:status_macros_cc",
         "@mboworks_mbo//mbo/types:optional_ref_cc",
+        "@mboworks_mbo//mbo/types:strong_id_cc",
         "@re2",
     ],
 )

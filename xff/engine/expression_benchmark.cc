@@ -47,6 +47,8 @@ class ExpressionFs final : public xff::vfs::FileSystem {
   absl::StatusOr<std::string> ReadContent(std::string_view) const override { return std::string("needle\n"); }
 };
 
+enum class Executor { kTree, kBound, kPrepared };
+
 struct ExpressionCase {
   std::string_view name;
   std::string_view primary;
@@ -75,6 +77,16 @@ constexpr auto kCases = std::to_array<ExpressionCase>({
         .name = "permission",
         .primary = "-perm",
         .argument = "0644",
+    },
+    {
+        .name = "permission-symbolic",
+        .primary = "-perm",
+        .argument = "u+rw,go=r",
+    },
+    {
+        .name = "numeric",
+        .primary = "-links",
+        .argument = "+0",
     },
     {
         .name = "content",
@@ -115,7 +127,7 @@ absl::StatusOr<xff::parser::Command> Parse(const std::vector<std::string>& argum
   return command;
 }
 
-template<bool Bound>
+template<Executor Mode>
 void Prepare(benchmark::State& state, const ExpressionCase& example) {
   const auto arguments = Arguments(example, state.range(0));
   for (auto iteration : state) {
@@ -125,8 +137,14 @@ void Prepare(benchmark::State& state, const ExpressionCase& example) {
       state.SkipWithError(command.status().ToString());
       break;
     }
-    if constexpr (Bound) {
-      const auto program = xff::engine::BoundExpression::Prepare(*command->expression);
+    if constexpr (Mode != Executor::kTree) {
+      const auto program = [&] {
+        if constexpr (Mode == Executor::kBound) {
+          return xff::engine::BoundExpression::Prepare(*command->expression);
+        } else {
+          return xff::engine::PreparedExpression::Prepare(*command->expression);
+        }
+      }();
       if (!program.ok()) {
         state.SkipWithError(program.status().ToString());
         break;
@@ -139,7 +157,7 @@ void Prepare(benchmark::State& state, const ExpressionCase& example) {
   }
 }
 
-template<bool Bound>
+template<Executor Mode>
 void Kernel(benchmark::State& state, const ExpressionCase& example) {
   const auto command = Parse(Arguments(example, state.range(0)));
   if (!command.ok()) {
@@ -147,8 +165,10 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
     return;
   }
   const auto prepared = [&] {
-    if constexpr (Bound) {
+    if constexpr (Mode == Executor::kBound) {
       return xff::engine::BoundExpression::Prepare(*command->expression);
+    } else if constexpr (Mode == Executor::kPrepared) {
+      return xff::engine::PreparedExpression::Prepare(*command->expression);
     } else {
       return absl::StatusOr<std::reference_wrapper<const xff::parser::Expr>>(std::cref(*command->expression));
     }
@@ -159,7 +179,7 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
   }
   const auto& program = *prepared;
   const ExpressionFs fs;
-  const xff::vfs::Metadata metadata{.type = xff::vfs::FileType::kRegular, .size = 7, .mode = 0644};
+  const xff::vfs::Metadata metadata{.type = xff::vfs::FileType::kRegular, .size = 7, .mode = 0644, .nlink = 2};
   const xff::engine::Visit visit{.path = "tree/file.txt", .name = "file.txt", .metadata = metadata, .fs = fs};
   // NOLINTNEXTLINE(misc-const-correctness): EvalContext and evaluator callbacks mutate this control.
   xff::engine::Control control;
@@ -175,7 +195,7 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
   };
   // Check the result before timing; all core cases must reach their complete AND chain.
   const auto evaluate = [&] {
-    if constexpr (Bound) {
+    if constexpr (Mode != Executor::kTree) {
       return program.Evaluate(context);
     } else {
       return xff::engine::EvaluateDeferred(program.get(), context);
@@ -198,6 +218,13 @@ void Kernel(benchmark::State& state, const ExpressionCase& example) {
   benchmark::DoNotOptimize(emitted);
   state.SetItemsProcessed(state.iterations() * state.range(1));
   state.counters["predicates_per_entry"] = static_cast<double>(state.range(0));
+  if constexpr (Mode != Executor::kTree) {
+    state.counters["extra_bytes"] = static_cast<double>(program.StorageBytes());
+    state.counters["nodes"] = static_cast<double>(program.NodeCount());
+  }
+  if constexpr (Mode == Executor::kPrepared) {
+    state.counters["operands"] = static_cast<double>(program.OperandCount());
+  }
 }
 
 double FastestSeven(const std::vector<double>& values) {
@@ -212,48 +239,37 @@ double FastestSeven(const std::vector<double>& values) {
   return count == 0 ? std::numeric_limits<double>::quiet_NaN() : sum / static_cast<double>(count);
 }
 
+template<Executor Mode>
+void Register(std::string_view name, const ExpressionCase& example) {
+  benchmark::RegisterBenchmark("prepare/" + std::string(name) + "/" + std::string(example.name), Prepare<Mode>, example)
+      ->Arg(1)
+      ->Arg(16)
+      ->Arg(64)
+      ->UseRealTime()
+      ->Unit(benchmark::kNanosecond)
+      ->Repetitions(9)
+      ->MinTime(0.01)
+      ->MinWarmUpTime(0.01)
+      ->ComputeStatistics("fastest7of9", FastestSeven);
+  benchmark::RegisterBenchmark("kernel/" + std::string(name) + "/" + std::string(example.name), Kernel<Mode>, example)
+      ->ArgsProduct({{1, 16, 64}, {10, 1'000}})
+      ->UseRealTime()
+      ->Unit(benchmark::kNanosecond)
+      ->Repetitions(9)
+      ->MinTime(0.01)
+      ->MinWarmUpTime(0.01)
+      ->ComputeStatistics("fastest7of9", FastestSeven);
+}
+
 }  // namespace
 
 // XFF_ABI_POINTER: Google Benchmark's process argument interface.
 int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
   for (const auto& example : kCases) {
-    benchmark::RegisterBenchmark("prepare/tree/" + std::string(example.name), Prepare<false>, example)
-        ->Arg(1)
-        ->Arg(16)
-        ->Arg(64)
-        ->UseRealTime()
-        ->Unit(benchmark::kNanosecond)
-        ->Repetitions(9)
-        ->MinTime(0.01)
-        ->MinWarmUpTime(0.01)
-        ->ComputeStatistics("fastest7of9", FastestSeven);
-    benchmark::RegisterBenchmark("kernel/tree/" + std::string(example.name), Kernel<false>, example)
-        ->ArgsProduct({{1, 16, 64}, {10, 1'000}})
-        ->UseRealTime()
-        ->Unit(benchmark::kNanosecond)
-        ->Repetitions(9)
-        ->MinTime(0.01)
-        ->MinWarmUpTime(0.01)
-        ->ComputeStatistics("fastest7of9", FastestSeven);
-    benchmark::RegisterBenchmark("prepare/bound/" + std::string(example.name), Prepare<true>, example)
-        ->Arg(1)
-        ->Arg(16)
-        ->Arg(64)
-        ->UseRealTime()
-        ->Unit(benchmark::kNanosecond)
-        ->Repetitions(9)
-        ->MinTime(0.01)
-        ->MinWarmUpTime(0.01)
-        ->ComputeStatistics("fastest7of9", FastestSeven);
-    benchmark::RegisterBenchmark("kernel/bound/" + std::string(example.name), Kernel<true>, example)
-        ->ArgsProduct({{1, 16, 64}, {10, 1'000}})
-        ->UseRealTime()
-        ->Unit(benchmark::kNanosecond)
-        ->Repetitions(9)
-        ->MinTime(0.01)
-        ->MinWarmUpTime(0.01)
-        ->ComputeStatistics("fastest7of9", FastestSeven);
+    Register<Executor::kTree>("tree", example);
+    Register<Executor::kBound>("bound", example);
+    Register<Executor::kPrepared>("prepared", example);
   }
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();
