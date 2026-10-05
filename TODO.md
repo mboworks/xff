@@ -46,6 +46,10 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       value reuse independently; keep reordering behind a stronger equivalence proof.
 - [ ] EP07: Qualify the winning executor on native macOS ARM64 and Linux x86-64; update --explain,
       self-documentation and performance evidence; enable only measured, semantically complete paths.
+      Phase allocation diagnostics now cover parsing through teardown using isolated ASan hooks;
+      cheap-predicate steady-state allocation assertions and XML/JSON artifacts await CI validation.
+      ASan counts qualify only the instrumented regression test; native allocation profiling remains
+      open. Requested bytes are separate from retained storage, peak RSS and release timing.
 - [ ] EP-S01: Evaluate experimental constexpr FrozenMap/Set using MBO PR #553 at
       `9d11197da77646e4fa98aa69f5340a636cde2e6f`, outside XFF's current pin. Fambo replaces the
       former FNV string hash and brings the measured 64-key sparse mixed lookup to about 6 ns;

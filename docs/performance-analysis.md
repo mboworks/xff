@@ -2440,3 +2440,56 @@ MIME filtering with an independent first-N budget. Three preparation/kernel fami
 whole-engine workloads extend the native CI matrix; all preceding workloads remain regression
 controls. This candidate is not an accepted improvement until those measurements and checks pass,
 and it does not change or delay the existing green PR sequence.
+
+### Full-command Linux comparison for prepared production
+
+The ordinary CLI artifacts from run `37232116551`, tested merge
+`d8193178d8040d468cc2cf96e3d4fa6c99d8d622`, combine three shards with three rounds each.
+The compatible merged baseline is run `37205106353`, revision
+`0ac0e62aa0a2f04eb372d95f10f1657bd5176d29`. Both use fastest-seven means. The values below
+are candidate/baseline elapsed ratios at 10,000 files. Reference adjustment uses each task's `rg`
+measurement: `(X2/R2)/(X1/R1)`. This accounts for shared runner-speed differences without rewriting
+raw observations; it is not a same-host controlled experiment.
+
+| Task     | Tree  | Workers | Raw elapsed ratio | Reference-adjusted ratio |
+| :------- | :---- | ------: | ----------------: | -----------------------: |
+| files    | broad |       1 |             0.705 |                    0.876 |
+| files    | deep  |       1 |             0.716 |                    0.891 |
+| files    | broad |       3 |             0.738 |                    0.848 |
+| files    | deep  |       3 |             0.716 |                    0.857 |
+| name-txt | broad |       1 |             0.686 |                    0.944 |
+| name-txt | deep  |       1 |             0.707 |                    0.929 |
+| name-txt | broad |       3 |             0.701 |                    0.877 |
+| name-txt | deep  |       3 |             0.689 |                    0.904 |
+
+These observations support roughly 11-15% lower elapsed time for listing and 6-12% for name
+selection after reference adjustment. Content-present/absent cases span adjusted ratios
+0.957-1.073, so they do not establish a general content-search win. The much larger raw gains
+must not be attributed entirely to expression preparation. Repeated native in-process results
+isolate the executor changes; ordinary-command results validate their relevance to real invocations.
+
+The child peak-RSS samples cluster around 24 MB for both XFF and reference tools and differ by
+only tens of kilobytes between these runs. That does not prove an allocation reduction or a
+precise retained-memory cost: process-launch and allocator behavior remain part of that metric.
+Do not subtract an assumed baseline or turn this observation into an allocation-count claim.
+
+### Instrumented phase allocation regression diagnostics
+
+`expression_allocations_test` adds ASan allocator hooks only to a diagnostic test executable,
+leaving release and benchmark binaries unchanged. The nine families, three predicate lengths,
+three executors and two roles produce 162 named cases plus an allocation/free calibration test.
+The calling thread's allocation/free counts and requested bytes are measured separately for
+parse, bind, preparation, worker creation, first evaluation, steady evaluation and teardown.
+Cheap steady predicates assert zero allocations; MIME and reached regex retain payload counts.
+
+CI retains the test XML and a revision-bearing JSON conversion. Failed/skipped diagnostics,
+missing counters and negative values cannot be represented as measured zeros. The Python
+conversion tests pass locally; C++/ASan and compiler-lint validation remain assigned to CI.
+Once CI verifies it, this supplies an instrumented allocation regression check. Native allocation,
+peak-memory, suspended-entry and cross-platform acceptance requirements remain open. Sanitizer wall times are not release
+performance evidence, and requested bytes exclude sanitizer and allocator overhead.
+
+ASan replaces the allocator and may change allocation behavior and build paths. These diagnostic
+counts must not be used as production allocation counts, allocator-cost measurements or evidence
+for the performance selection. Native allocation profiling remains open; the exported JSON marks
+this distinction explicitly.

@@ -727,6 +727,24 @@ py_binary(
     deps = ["@rules_python//python/runfiles"],
 )
 
+py_library(
+    name = "expression_allocations_lib",
+    srcs = ["expression_allocations.py"],
+    imports = ["."],
+)
+
+py_binary(
+    name = "expression_allocations",
+    srcs = ["expression_allocations.py"],
+)
+
+py_test(
+    name = "expression_allocations_test",
+    size = "small",
+    srcs = ["expression_allocations_test.py"],
+    deps = [":expression_allocations_lib"],
+)
+
 # This executable inspects the complete checkout under bazel run, not sandboxed runfiles.
 py_binary(
     name = "repository_tooling_test",
@@ -785,6 +803,7 @@ test_suite(
         ":coverage_sources_test",
         ":coverage_storage_test",
         ":coverage_test",
+        ":expression_allocations_test",
         ":extras_test",
         ":fix_compile_commands_test",
         ":fuzz_targets_test",

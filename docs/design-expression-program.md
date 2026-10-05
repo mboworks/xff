@@ -798,3 +798,43 @@ Tests and native measurement cases cover both families separately. Existing case
 for preparation/record overhead. Qualification must include tiny inputs, retained storage and
 whole-run results, not just the saved decoder or case-folding calls. This work is separate from
 acceptance of the preceding production candidate.
+
+## Instrumented allocation regression diagnostics
+
+`//xff/engine:expression_allocations_test` measures allocation calls, requested bytes and free calls
+in the calling thread through LLVM's documented sanitizer allocator hooks. The hooks are installed
+only in that test executable under ASan. ASan replaces the allocator; the hooks observe that
+instrumented runtime. They do not enter production or timing binaries. Other configurations compile the fixture and explicitly skip these diagnostics.
+The ordinary ASan suite runs them; no additional compilation configuration is introduced.
+
+The 162 named cases cover nine families, 1/16/64 predicate repetitions, coordinator/concurrent roles,
+and the original-tree adapter, production prepared executor and optimized-program candidate.
+Families are boolean, type, size, permission, numeric age, first-entry limit, MIME, reached regex and
+short-circuited regex. The adapter and program currently ignore the role selector; those duplicate
+rows are controls, not evidence of a distinct reference-worker implementation.
+
+Each case records parsing, matcher binding, plan preparation, worker creation, first evaluation,
+128 further evaluations, worker teardown, plan teardown and source/counter teardown independently.
+Assertions and report formatting occur outside measurement scopes. The first visit accounts for
+lazy backend state and counter insertion. Steady cheap predicates must allocate zero times; MIME
+and reached-regex payload allocations are reported separately without asserting that their
+backends allocate nothing. A calibration test must observe an actual buffer allocation and free.
+
+The ASan job retains the XML/log and a JSON conversion carrying the tested revision. The converter
+rejects failures, skips, missing/negative counters and an empty diagnostic set instead of inventing
+zero measurements. To reproduce the diagnostic and its report:
+
+```sh
+bazel test //xff/engine:expression_allocations_test --config=clang --config=asan
+python3 tools/expression_allocations.py \
+  bazel-testlogs/xff/engine/expression_allocations_test/test.xml \
+  --revision="$(git rev-parse HEAD)" --output=expression-allocations.json
+```
+
+Requested bytes exclude allocator bookkeeping and sanitizer redzones. These measurements are
+allocation counts and traffic, not retained/peak RSS, release timings, all-thread counts or a
+proof about effectful/deferred payloads. Existing owned-storage and whole-process measurements
+remain separate. ASan can also change allocation behavior and build paths, so these counts qualify
+only the instrumented regression test. They cannot establish production allocation counts or costs,
+and must not select the performance implementation. Native allocation profiling remains an open
+acceptance requirement. JSON explicitly marks these results as not production-representative.
