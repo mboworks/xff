@@ -1428,6 +1428,47 @@
             "memory_required": true,
             "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
           }
+        },
+        "4fa6fff65108a3bfa977f2236e6dae9aaecf4b8a1df594ac0d0a00cafc8decf1": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.44.1 (debian)",
+              "sha256": "f0949769ebc72cd1f8c30d91a84e1d2f1ecaa935b9a43adb68575a5a6bf78dba"
+            }
+          },
+          "build": "28769dc5e5dea360e7e781e0ea5e148818e03511189a5b9f3b9774021b8d66e0",
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+          "cpu_count": 4,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
         }
       },
       "observations": [
@@ -1810,6 +1851,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "cf4a1d961fbfc782c4d9343a3dd1a5ffcc28ab3cfad226744b800e2448e8f14b"
+        },
+        {
+          "commit": "ec341dbc82eaf9a89e17143196e42014aa30fc26",
+          "date": "2026-10-05T09:59:40Z",
+          "measured": "2026-10-05T09:59:43Z",
+          "report": "runs/37293666006/1/linux/report.json",
+          "report_identity": "6760154b998f7f6db172069dedf8fdc10b6f6c96787491aef548a03d0db7aa38",
+          "batch": null,
+          "batch_identity": null,
+          "method": "4fa6fff65108a3bfa977f2236e6dae9aaecf4b8a1df594ac0d0a00cafc8decf1"
         }
       ]
     },
@@ -3651,6 +3702,41 @@
             "memory_required": false,
             "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
           }
+        },
+        "bd197bc252114e784da80fed5dec71c8a4d17ca87253d1b95ba9e2c88465b373": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6.2-arm64-arm-64bit-Mach-O",
+              "sha256": "9cd3b4bbb80ac290fd188172e5fcbc48a6fe10ff3374313e4f01efea0101be1b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.3 (Homebrew)",
+              "sha256": "b611fe1eb0217ba0546383944de9073427c2b49517949bbac4eb659a8acac5e1"
+            }
+          },
+          "build": "28769dc5e5dea360e7e781e0ea5e148818e03511189a5b9f3b9774021b8d66e0",
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": 3,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "parent": "/Users/runner/work/_temp",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
         }
       },
       "observations": [
@@ -4033,6 +4119,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "070d44feacbb962783282661c80aaf90c21de03be23f3716ccf5cd1ee4ebfc30"
+        },
+        {
+          "commit": "ec341dbc82eaf9a89e17143196e42014aa30fc26",
+          "date": "2026-10-05T09:59:40Z",
+          "measured": "2026-10-05T09:59:43Z",
+          "report": "runs/37293666006/1/macos/report.json",
+          "report_identity": "d872cdd1d990f08f65b3c7950ba8121257c0f76bbf3e2edfa953f4d736090807",
+          "batch": null,
+          "batch_identity": null,
+          "method": "bd197bc252114e784da80fed5dec71c8a4d17ca87253d1b95ba9e2c88465b373"
         }
       ]
     },
