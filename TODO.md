@@ -18,7 +18,8 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
 - [ ] EP03: Prepare invariant operands and indexed worker matcher state; preserve validation timing,
       conditional metadata, dynamic values and errors; report remaining per-entry parsing.
       The typed scalar candidate and three-way oracle/270-case benchmark are implemented;
-      CI qualification, indexed worker matchers and the remaining audited families stay open.
+      The follow-up adds indexed worker matchers and a 333-case matrix. CI qualification,
+      production-driver integration and the remaining audited families stay open.
 - [ ] EP04: Compare contiguous opcode and bound-function programs; lower audited boolean control flow,
       reuse scratch and preserve source mapping, with explicit whole-expression fallback coverage.
 - [ ] EP05: Complete fuzzy/unknown/error/action/deferred semantics; preserve exactly-once effects,
