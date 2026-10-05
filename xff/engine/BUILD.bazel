@@ -247,6 +247,7 @@ cc_library(
     deps = [
         ":collect_cc",
         ":evaluate_cc",
+        ":expression_execution_cc",
         "//xff/parser:parser_cc",
         "//xff/registry:registry_cc",
         "@abseil-cpp//absl/base:core_headers",
@@ -282,6 +283,7 @@ cc_library(
     visibility = ["//xff:__subpackages__"],
     deps = [
         ":evaluate_cc",
+        ":expression_execution_cc",
         ":extract_cc",
         ":mount_cc",
         ":parallel_compare_cc",
@@ -737,5 +739,59 @@ cc_binary(
         "@abseil-cpp//absl/time",
         "@com_github_google_benchmark//:benchmark",
         "@mboworks_mbo//mbo/status:status_macros_cc",
+    ],
+)
+
+cc_library(
+    name = "expression_execution_cc",
+    srcs = ["expression_execution.cc"],
+    hdrs = ["expression_execution.h"],
+    visibility = ["//xff:__subpackages__"],
+    deps = [
+        ":evaluate_cc",
+        ":expression_program_cc",
+        "//xff/parser:parser_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+    ],
+)
+
+cc_test(
+    name = "expression_execution_test",
+    size = "small",
+    srcs = ["expression_execution_test.cc"],
+    deps = [
+        ":evaluate_cc",
+        ":expression_execution_cc",
+        ":run_cc",
+        ":walk_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_binary(
+    name = "expression_run_benchmark",
+    srcs = ["expression_run_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        ":expression_execution_cc",
+        ":run_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@com_github_google_benchmark//:benchmark",
     ],
 )

@@ -14,6 +14,7 @@ CLANG_TIDY_MANUAL_TARGETS = [
     "//xff/engine:compare_benchmark",
     "//xff/engine:rg_benchmark",
     "//xff/engine:expression_benchmark",
+    "//xff/engine:expression_run_benchmark",
     "//xff/matching/regex:regex_benchmark",
     "//xff/matching/similarity:near_duplicate_benchmark",
     "//xff/matching/similarity:similarity_benchmark",

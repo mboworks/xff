@@ -587,3 +587,14 @@ program variants, with persistent-worker replay, storage stability, unknown clea
 operator score combinations. Two score-consuming benchmark families extend the matrix to
 756 cases. CI must validate behavior and measure costs before production integration, which
 remains a separate EP05 step. EP06 optimization and EP07 whole-engine qualification remain open.
+
+## Implementation qualification boundary
+
+The internal `RunFind` executor argument now permits direct whole-engine comparisons of the tree,
+bound, prepared and both program layouts. It is unavailable in CLI/configuration. Preparation
+runs after the original whole-command validation and traversal/output decisions. Each matcher
+worker owns its execution state; deferred replay uses the coordinator worker and preserves sparse
+per-entry memoization. `//xff/engine:expression_execution_test` checks the integrated paths against
+the reference, and `//xff/engine:expression_run_benchmark` includes preparation and teardown for
+0 through 10,000 files. The default remains the reference until qualification selects a winner;
+this integration does not complete EP06 or the production decision.
