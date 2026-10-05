@@ -146,6 +146,8 @@ void Measure(benchmark::State& state, const Scenario& scenario, ExpressionExecut
 int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
   const auto scenarios = std::to_array<Scenario>({
+      {.name = "first-limit", .arguments = {"-type", "f", "-first", "3", "-print"}},
+      {.name = "mime", .arguments = {"-type", "f", "-mime", "TEXT/*"}},
       {.name = "name", .arguments = {"-name", "*.txt"}},
       {.name = "scalar", .arguments = {"-type", "f", "-size", "+2c", "-perm", "0644", "-name", "*.txt"}},
       {.name = "age", .arguments = {"-type", "f", "-mtime", "+2d", "-mmin", "+1", "-used", "0", "-name", "*.txt"}},

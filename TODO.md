@@ -907,6 +907,10 @@ this as intentional accounting.
 
 ### Remaining operand qualification (EP03/EP07)
 
+- [ ] Qualify prepared `-first` limits and `-mime` patterns independently. Preserve per-node
+      counters, integer validation, MIME case/glob behavior and missing-operand semantics. Compare
+      preparation, kernel and whole-run results against the reference and the preceding session;
+      retain only measured improvements without growing unrelated operand records.
 - [ ] Qualify prepared signed counts and numeric age units against both the same-session reference
       and preceding reference sessions; retain the checked overflow behavior independently of speed.
 - [x] Isolate qualification factories and iterative programs behind Bazel `testonly` dependencies;

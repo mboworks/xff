@@ -873,6 +873,112 @@ TEST_F(PreparedOperandTest, SymbolicOctalAndZeroPermissionMasksMatchTheReference
   }
 }
 
+TEST_F(PreparedOperandTest, FirstLimitKeepsCountersAndIntegerBoundariesAcrossWorkerReuse) {
+  constexpr auto kArguments = std::to_array<std::string_view>({
+      "1",
+      "3",
+      "+2",
+      " 2 ",
+      "0",
+      "-1",
+      "",
+      "garbage",
+      "2147483647",
+      "2147483648",
+      "999999999999999999999",
+  });
+  const auto descriptor = registry::Lookup("-first");
+  ASSERT_THAT(descriptor, Optional(_));
+  for (const auto argument : kArguments) {
+    SCOPED_TRACE(argument);
+    const parser::Expr expression{
+        .kind = parser::Expr::Kind::kPredicate,
+        .descriptor = descriptor,
+        .args = {std::string(argument)},
+    };
+    ASSERT_OK_AND_ASSIGN(const auto prepared, PreparedExpression::Prepare(expression));
+    const auto worker = prepared.MakeWorker();
+    EXPECT_THAT(prepared.OperandCount(), Eq(1));
+    EvalContext context{
+        .visit = visit,
+        .emit = IgnoreOutput,
+        .fs = fs,
+        .now = absl::UnixEpoch(),
+        .tz = absl::UTCTimeZone(),
+        .control = control,
+    };
+    EXPECT_THAT(prepared.Evaluate(context).matched, IsFalse());
+    EXPECT_THAT(worker.Evaluate(context).matched, IsFalse());
+    constexpr auto kInitialCounts = std::to_array<int>({0, std::numeric_limits<int>::max() - 1});
+    for (const int initial : kInitialCounts) {
+      FirstCounts expected_counts{{ExprIdentity{expression}, initial}};
+      auto prepared_counts = expected_counts;
+      auto worker_counts = expected_counts;
+      for (int entry = 0; entry < 5; ++entry) {
+        context.first_counts.set_ref(expected_counts);
+        const auto expected = EvaluateDeferred(expression, context);
+        context.first_counts.set_ref(prepared_counts);
+        EXPECT_THAT(prepared.Evaluate(context).matched, Eq(expected.matched));
+        context.first_counts.set_ref(worker_counts);
+        EXPECT_THAT(worker.Evaluate(context).matched, Eq(expected.matched));
+        EXPECT_THAT(prepared_counts, Eq(expected_counts));
+        EXPECT_THAT(worker_counts, Eq(expected_counts));
+      }
+    }
+  }
+  EXPECT_THAT(fs.events, IsEmpty());
+}
+
+TEST_F(PreparedOperandTest, MimePatternSurvivesMovesAndKeepsCaseAndGlobSemantics) {
+  constexpr auto kPatterns = std::to_array<std::string_view>({
+      "IMAGE/*",
+      "Image/PNG",
+      "TEXT/*",
+      "APPLICATION/OCTET-STREAM",
+      "IMAGE/[JP]*",
+      "*",
+      "[",
+      "",
+  });
+  constexpr auto kNames =
+      std::to_array<std::string_view>({"image.png", "other.jpg", "file.txt", "unknown", "file.XFF"});
+  const auto descriptor = registry::Lookup("-mime");
+  ASSERT_THAT(descriptor, Optional(_));
+  for (const auto pattern : kPatterns) {
+    SCOPED_TRACE(pattern);
+    const parser::Expr expression{
+        .kind = parser::Expr::Kind::kPredicate,
+        .descriptor = descriptor,
+        .args = {std::string(pattern)},
+    };
+    ASSERT_OK_AND_ASSIGN(auto prepared, PreparedExpression::Prepare(expression));
+    const auto worker = prepared.MakeWorker();
+    const auto moved = std::move(prepared);
+    const auto storage = moved.StorageBytes();
+    EXPECT_THAT(moved.OperandCount(), Eq(1));
+    for (const auto name : kNames) {
+      SCOPED_TRACE(name);
+      const Visit entry{.path = name, .name = name, .metadata = metadata, .fs = fs};
+      for (const bool fold_case : {false, true}) {
+        EvalContext context{
+            .visit = entry,
+            .emit = IgnoreOutput,
+            .fs = fs,
+            .now = absl::UnixEpoch(),
+            .tz = absl::UTCTimeZone(),
+            .fold_name_case = fold_case,
+            .control = control,
+        };
+        const auto expected = EvaluateDeferred(expression, context);
+        EXPECT_THAT(moved.Evaluate(context).matched, Eq(expected.matched));
+        EXPECT_THAT(worker.Evaluate(context).matched, Eq(expected.matched));
+      }
+    }
+    EXPECT_THAT(moved.StorageBytes(), Eq(storage));
+  }
+  EXPECT_THAT(fs.events, IsEmpty());
+}
+
 TEST_F(PreparedOperandTest, MissingOperandsStayFalseWithoutObservations) {
   constexpr auto kFlags = std::to_array<std::string_view>({
       "-type",
@@ -889,6 +995,8 @@ TEST_F(PreparedOperandTest, MissingOperandsStayFalseWithoutObservations) {
       "-mmin",
       "-Btime",
       "-Bmin",
+      "-first",
+      "-mime",
   });
   for (const auto flag : kFlags) {
     Check(flag, "", false);
