@@ -718,3 +718,19 @@ CI matrix. Existing families remain as regression controls. Compare the common v
 and prepared paths within each session, and compare the reference itself to the preceding session:
 the checked decoder changes reference cost too. Do not credit all of that difference to preparation.
 No production executor is selected by this candidate; performance qualification is still pending.
+
+## Production dependency boundary
+
+Whole-run qualification injects an `ExpressionFactory` after validation. The null factory takes
+exactly the original tree path, including its matcher ownership and absence of preparation; it is
+also supplied explicitly by the benchmark oracle so a later default change cannot silently replace
+the reference. The engine owns only the immutable-plan/worker interface. Factories and the enum
+that select all candidates live in `expression_qualification_cc`; both that target and the iterative
+`expression_program_cc` are Bazel `testonly` targets. Shipping CLI targets cannot depend on them.
+
+Plans and workers keep stable, unique-owned storage across moves. Workers borrow their plan and
+source expression and must finish first. Qualification enters a worker through one virtual call
+per entry, then uses the original candidate implementation. The ordinary tree has no such call.
+This extra boundary is included in whole-engine measurements, not hidden in kernel timings.
+No executor is enabled by this separation; the final production implementation still needs an
+explicit measured selection and matching `--explain` records.

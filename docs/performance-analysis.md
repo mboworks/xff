@@ -2199,3 +2199,19 @@ worker evaluator, `BoundExpression` and `PreparedExpression` remain linked into 
 on both platforms despite the tree default; the main artifacts have none of these symbols. This
 supports separating qualification-only alternatives from the production dependency path before
 final size review. It is binary inspection, not a new local build or timing result.
+
+### Removing qualification candidates from production linkage
+
+The downloaded native CLI artifacts described above retained every experimental executor despite
+using the original tree. Whole-run engine preparation now accepts an optional function factory;
+only test-only qualification code maps the candidate enum to a factory. Bazel marks the iterative
+program and the selection adapter `testonly`, making an accidental CLI dependency an analysis error.
+The immutable-plan/worker interface remains available to the engine for the eventual measured winner.
+The reference and default still take the original direct tree path. All seven candidate integration
+cases, error/move checks and native whole-engine benchmarks continue through the same engine seam.
+
+Qualification adds one virtual worker-entry call per evaluated entry, without changing recursive
+or instruction dispatch inside the candidate. CI must quantify that cost and verify the expected
+link-size reduction; neither a size saving nor a performance result is claimed from source inspection.
+This is dependency isolation, not a decision to enable or abandon any candidate. Native stripped
+artifacts and symbol inspection remain the evidence for the final production-size decision.

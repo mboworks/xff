@@ -897,7 +897,9 @@ this as intentional accounting.
 
 - [ ] Qualify prepared signed counts and numeric age units against both the same-session reference
       and preceding reference sessions; retain the checked overflow behavior independently of speed.
-- [ ] Choose the production executor from native whole-engine evidence and keep rejected benchmark
-      alternatives out of its link dependencies; downloaded artifacts currently contain every candidate.
+- [x] Isolate qualification factories and iterative programs behind Bazel `testonly` dependencies;
+      retain the direct tree oracle and all candidate whole-engine tests/measurements.
+- [ ] Verify the isolated CLI link size and choose the production executor from native whole-engine
+      evidence; keep rejected benchmark alternatives out of shipping dependencies.
 - [ ] Evaluate serial reuse of original validated regex state after the on-demand-slot measurements;
       preserve separate mutable backend state for concurrently evaluating workers.

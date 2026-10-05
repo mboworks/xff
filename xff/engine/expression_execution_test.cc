@@ -20,6 +20,7 @@
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
+#include "xff/engine/expression_qualification.h"
 #include "xff/engine/run.h"
 #include "xff/engine/walk.h"
 #include "xff/parser/parser.h"
@@ -121,7 +122,7 @@ struct ExpressionExecutionTest : ::testing::TestWithParam<ExpressionExecutor> {
         [&](std::string_view path, absl::Status status) {
           observed.errors.push_back(absl::StrCat(path, ": ", status.ToString()));
         },
-        std::nullopt, 0, executor);
+        std::nullopt, 0, QualifiedExpressionFactory(executor));
     std::ranges::sort(observed.errors);
     observed.stats = fs.stats.load();
     observed.reads = fs.reads.load();
@@ -217,7 +218,7 @@ TEST_P(ExpressionExecutionTest, ConditionalFailuresAndBlockedEffectsRemainObserv
 
 TEST_P(ExpressionExecutionTest, MovingPlanAndWorkerPreservesBorrowedStorage) {
   ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-type", "f"}));
-  ASSERT_OK_AND_ASSIGN(auto execution, ExpressionExecution::Prepare(*command.expression, GetParam()));
+  ASSERT_OK_AND_ASSIGN(auto execution, PrepareQualifiedExpression(*command.expression, GetParam()));
   auto worker = execution.MakeWorker();
   const auto moved_execution = std::move(execution);
   const auto moved_worker = std::move(worker);
@@ -242,14 +243,14 @@ TEST_P(ExpressionExecutionTest, MovingPlanAndWorkerPreservesBorrowedStorage) {
 TEST_P(ExpressionExecutionTest, InvalidPreparationFailsBeforeAnyTraversal) {
   ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-true"}));
   EXPECT_THAT(
-      ExpressionExecution::Prepare(*command.expression, static_cast<ExpressionExecutor>(-1)),
+      PrepareQualifiedExpression(*command.expression, static_cast<ExpressionExecutor>(-1)),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("executor")));
   const auto result = Observe(command, static_cast<ExpressionExecutor>(-1));
   EXPECT_THAT(result.result.errors, Eq(2));
   EXPECT_THAT(result.stats, Eq(0));
   if (GetParam() != ExpressionExecutor::kTree) {
     const parser::Expr invalid{.kind = parser::Expr::Kind::kAnd};
-    EXPECT_THAT(ExpressionExecution::Prepare(invalid, GetParam()), StatusIs(absl::StatusCode::kInvalidArgument, _));
+    EXPECT_THAT(PrepareQualifiedExpression(invalid, GetParam()), StatusIs(absl::StatusCode::kInvalidArgument, _));
   }
 }
 

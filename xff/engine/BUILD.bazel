@@ -689,6 +689,7 @@ cc_test(
 
 cc_library(
     name = "expression_program_cc",
+    testonly = True,
     srcs = ["expression_program.cc"],
     hdrs = ["expression_program.h"],
     deps = [
@@ -726,6 +727,7 @@ cc_test(
 
 cc_binary(
     name = "expression_benchmark",
+    testonly = True,
     srcs = ["expression_benchmark.cc"],
     tags = [
         "clang-tidy",
@@ -753,6 +755,20 @@ cc_library(
     visibility = ["//xff:__subpackages__"],
     deps = [
         ":evaluate_cc",
+        "//xff/parser:parser_cc",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+# Keeps experimental executors out of every shipping binary by Bazel dependency policy.
+cc_library(
+    name = "expression_qualification_cc",
+    testonly = True,
+    srcs = ["expression_qualification.cc"],
+    hdrs = ["expression_qualification.h"],
+    deps = [
+        ":evaluate_cc",
+        ":expression_execution_cc",
         ":expression_program_cc",
         "//xff/parser:parser_cc",
         "@abseil-cpp//absl/status",
@@ -768,6 +784,7 @@ cc_test(
     deps = [
         ":evaluate_cc",
         ":expression_execution_cc",
+        ":expression_qualification_cc",
         ":run_cc",
         ":walk_cc",
         "//xff/parser:parser_cc",
@@ -784,13 +801,14 @@ cc_test(
 
 cc_binary(
     name = "expression_run_benchmark",
+    testonly = True,
     srcs = ["expression_run_benchmark.cc"],
     tags = [
         "clang-tidy",
         "manual",
     ],
     deps = [
-        ":expression_execution_cc",
+        ":expression_qualification_cc",
         ":run_cc",
         "//xff/parser:parser_cc",
         "//xff/vfs:vfs_cc",

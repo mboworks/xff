@@ -14,7 +14,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "benchmark/benchmark.h"
-#include "xff/engine/expression_execution.h"
+#include "xff/engine/expression_qualification.h"
 #include "xff/engine/run.h"
 #include "xff/parser/parser.h"
 #include "xff/vfs/filesystem.h"
@@ -95,6 +95,7 @@ double FastestSeven(const std::vector<double>& times) {
 }
 
 void Measure(benchmark::State& state, const Scenario& scenario, ExpressionExecutor executor) {
+  const auto factory = xff::engine::QualifiedExpressionFactory(executor);
   const RunFs fs(static_cast<std::size_t>(state.range(0)));
   std::vector<std::string> arguments{
       "--exact", "--color=never", "--sort=dir", "--jobs=" + std::to_string(state.range(1)), "root",
@@ -112,10 +113,10 @@ void Measure(benchmark::State& state, const Scenario& scenario, ExpressionExecut
   std::string actual;
   bool error = false;
   const auto on_error = [&](std::string_view, absl::Status) { error = true; };
-  const auto reference =
-      xff::engine::RunFind(*command, fs, [&](std::string_view text) { expected.append(text); }, on_error);
+  const auto reference = xff::engine::RunFind(
+      *command, fs, [&](std::string_view text) { expected.append(text); }, on_error, std::nullopt, 0, nullptr);
   const auto candidate = xff::engine::RunFind(
-      *command, fs, [&](std::string_view text) { actual.append(text); }, on_error, std::nullopt, 0, executor);
+      *command, fs, [&](std::string_view text) { actual.append(text); }, on_error, std::nullopt, 0, factory);
   if (error || reference.errors != 0 || candidate.errors != 0 || expected != actual
       || reference.any_match != candidate.any_match) {
     state.SkipWithError("whole-engine expression output differs from reference");
@@ -127,7 +128,7 @@ void Measure(benchmark::State& state, const Scenario& scenario, ExpressionExecut
   // expression preparation, worker startup, traversal, metadata/content, sinks and teardown.
   for (auto iteration : state) {
     benchmark::DoNotOptimize(iteration);
-    auto result = xff::engine::RunFind(*command, fs, emit, on_error, std::nullopt, 0, executor);
+    auto result = xff::engine::RunFind(*command, fs, emit, on_error, std::nullopt, 0, factory);
     benchmark::DoNotOptimize(result);
   }
   if (error) {

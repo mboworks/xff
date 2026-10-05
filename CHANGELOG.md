@@ -3,6 +3,9 @@
 
 # 0.9.0
 
+- Keep experimental expression-program executors in test-only targets instead of linking all
+  benchmark alternatives into the shipping CLI.
+
 - Reject overflowing signed age counts without signed-integer overflow; prepare numeric age
   comparisons once in the experimental expression executor while preserving dynamic timestamps.
 
