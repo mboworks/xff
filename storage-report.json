@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "total_bytes": 250799257,
+  "total_bytes": 250796521,
   "sections": {
     "root": {
       "files": 34,
@@ -8,7 +8,7 @@
     },
     "benchmarks": {
       "files": 2394,
-      "bytes": 179194452
+      "bytes": 179191716
     },
     "tools": {
       "files": 40,
