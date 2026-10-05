@@ -18,12 +18,14 @@ enum class ProgramDispatch { kSwitch, kFunctions };
 struct ProgramEvaluation {
   EvaluationResult result;
   bool used_fallback = false;
+  bool used_stateful = false;
 };
 
 // Experimental contiguous boolean program. The source AST must outlive the program and workers;
 // a worker must also be destroyed before its program's storage. Moving owners preserves storage.
-// Scoring and deferred replay currently use a reported whole-expression fallback. No predicate
-// instruction performs name lookup. The production driver does not select this experiment.
+// Scoring and deferred replay use an iterative prepared-node continuation program, with sparse
+// memoization and reusable worker scratch. No predicate instruction performs name lookup or
+// recursive fallback. The production driver does not select this experiment.
 class ExpressionProgram final {
  private:
   struct Data;

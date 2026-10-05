@@ -3626,8 +3626,166 @@ std::size_t PreparedExpression::StorageBytes() const {
 }
 
 struct PreparedExpression::Worker::State {
+  enum class Phase { kEnter, kLeft, kRight };
+
+  struct Frame {
+    Cursor cursor;
+    Phase phase = Phase::kEnter;
+    EvaluationResult left;
+    std::optional<int> incoming;
+    bool memoize = true;
+  };
+
   Cursor::Environment environment;
   std::vector<std::optional<regex::Matcher>> matchers;
+  // Only contexts requiring score/replay state reserve this scratch, once per worker. A
+  // suspended entry retains the existing sparse memo, never a copy of these worker frames.
+  std::vector<Frame> frames;
+
+  void Finish(const EvaluationResult& result, const EvalContext& context) {
+    const auto& frame = frames.back();
+    if (frame.memoize && context.deferred.has_value()) {
+      context.deferred->memo.emplace(ExprIdentity{frame.cursor.Get()}, result);
+    }
+    frames.pop_back();
+  }
+
+  struct LeftResult {
+    EvaluationResult result;
+    bool visit_right = false;
+  };
+
+  static LeftResult AfterLeft(const Frame& frame, EvaluationResult result, const EvalContext& context) {
+    using Kind = parser::Expr::Kind;
+    switch (frame.cursor.Get().kind) {
+      case Kind::kNot: return {.result = {.matched = !result.matched}};
+      case Kind::kAnd: return {.result = result, .visit_right = result.matched};
+      case Kind::kOr:
+        return {
+            .result = result,
+            .visit_right = !result.matched || (context.fuzzy_score.has_value() && frame.cursor.Right().FuzzyOnly()),
+        };
+      case Kind::kNand: return {.result = {.matched = true}, .visit_right = result.matched};
+      case Kind::kNor: return {.result = {.matched = false}, .visit_right = !result.matched};
+      case Kind::kXor:
+      case Kind::kXnor:
+      case Kind::kComma: return {.result = result, .visit_right = true};
+      // Enter completes predicates before the left phase; all valid operator kinds return above.
+      case Kind::kPredicate: std::unreachable();  // LCOV_EXCL_LINE
+    }
+    std::unreachable();  // LCOV_EXCL_LINE: all valid operator kinds are handled above.
+  }  // LCOV_EXCL_LINE: no valid frame reaches the fallthrough exit.
+
+  static EvaluationResult Combine(const Frame& frame, EvaluationResult right, EvalContext& context) {
+    using Kind = parser::Expr::Kind;
+    const auto& left = frame.left;
+    switch (frame.cursor.Get().kind) {
+      case Kind::kAnd:
+        context.incoming_fuzzy_score = frame.incoming;
+        return {.fuzzy = right.matched ? MinScore(left.fuzzy, right.fuzzy) : std::nullopt, .matched = right.matched};
+      case Kind::kOr:
+        return left.matched
+                   ? EvaluationResult{
+                         .fuzzy = right.matched ? MaxScore(left.fuzzy, right.fuzzy) : left.fuzzy,
+                         .matched = true,
+                     }
+                   : right;
+      case Kind::kNand:
+      case Kind::kNor: return {.matched = !right.matched};
+      case Kind::kXor:
+        return {
+            .fuzzy = left.matched != right.matched ? (left.matched ? left.fuzzy : right.fuzzy) : std::nullopt,
+            .matched = left.matched != right.matched,
+        };
+      case Kind::kXnor: return {.matched = left.matched == right.matched};
+      case Kind::kComma: return right;
+      // Enter completes predicates and AfterLeft completes NOT without entering the right phase.
+      case Kind::kNot:                            // LCOV_EXCL_LINE
+      case Kind::kPredicate: std::unreachable();  // LCOV_EXCL_LINE
+    }
+    std::unreachable();  // LCOV_EXCL_LINE: all valid binary operator kinds are handled above.
+  }  // LCOV_EXCL_LINE: no valid frame reaches the fallthrough exit.
+
+  EvaluationResult Enter(EvaluationResult result, EvalContext& context) {
+    auto& frame = frames.back();
+    if (frame.memoize && context.deferred.has_value()) {
+      const auto found = context.deferred->memo.find(ExprIdentity{frame.cursor.Get()});
+      if (found != context.deferred->memo.end()) {
+        result = found->second;
+        frames.pop_back();
+        return result;
+      }
+    }
+    if (frame.memoize && context.fuzzy_score.has_value()) {
+      context.fuzzy_score->reset();
+    }
+    if (frame.cursor.Get().kind == parser::Expr::Kind::kPredicate) {
+      result = EvaluatePredicateResult(frame.cursor, context);
+      if (!(result.deferred || result.unknown)) {
+        Finish(result, context);
+      }
+    } else {
+      frame.phase = Phase::kLeft;
+      frames.push_back({.cursor = frame.cursor.Left()});
+    }
+    return result;
+  }
+
+  EvaluationResult AdvanceLeft(EvaluationResult result, EvalContext& context) {
+    auto& frame = frames.back();
+    frame.left = result;
+    const auto next = AfterLeft(frame, result, context);
+    if (next.visit_right) {
+      if (frame.cursor.Get().kind == parser::Expr::Kind::kAnd) {
+        frame.incoming = context.incoming_fuzzy_score;
+        context.incoming_fuzzy_score = MinScore(frame.incoming, result.fuzzy);
+      }
+      frame.phase = Phase::kRight;
+      frames.push_back({.cursor = frame.cursor.Right()});
+    } else {
+      Finish(next.result, context);
+    }
+    return next.result;
+  }
+
+  EvaluationResult Run(EvalContext& context) {
+    frames.clear();
+    frames.reserve(environment.data.nodes.size());
+    frames.push_back({
+        .cursor = {.environment = environment, .node = environment.data.nodes.front()},
+        .memoize = false,
+    });
+    auto outer_score = context.fuzzy_score;
+    const auto outer_incoming = context.incoming_fuzzy_score;
+    std::optional<int> score;
+    if (outer_score.has_value()) {
+      score = *outer_score;
+      context.fuzzy_score.set_ref(score);
+    }
+    EvaluationResult result;
+    while (!frames.empty()) {
+      switch (frames.back().phase) {
+        case Phase::kEnter: result = Enter(result, context); break;
+        case Phase::kLeft: result = AdvanceLeft(result, context); break;
+        case Phase::kRight:
+          result = Combine(frames.back(), result, context);
+          Finish(result, context);
+          break;
+      }
+      if (result.deferred || result.unknown) {
+        break;
+      }
+    }
+    // Restore the caller's references even on unknown/suspended paths. Completed child nodes
+    // were memoized as they finished; unresolved ancestors must never be memoized.
+    frames.clear();
+    context.incoming_fuzzy_score = outer_incoming;
+    if (outer_score.has_value()) {
+      context.fuzzy_score.set_ref(*outer_score);
+      *outer_score = result.fuzzy;
+    }
+    return result;
+  }
 };
 
 PreparedExpression::Worker::Worker(std::unique_ptr<State> state) : state_(std::move(state)) {}
@@ -3675,12 +3833,17 @@ EvaluationResult PreparedExpression::Worker::EvaluatePredicate(ExpressionSourceI
       context);
 }
 
+EvaluationResult PreparedExpression::Worker::EvaluateIterative(EvalContext& context) const {
+  return state_->Run(context);
+}
+
 std::size_t PreparedExpression::Worker::MatcherCount() const {
   return state_->matchers.size();
 }
 
 std::size_t PreparedExpression::Worker::StorageBytes() const {
-  return sizeof(*this) + sizeof(State) + (state_->matchers.capacity() * sizeof(std::optional<regex::Matcher>));
+  return sizeof(*this) + sizeof(State) + (state_->matchers.capacity() * sizeof(std::optional<regex::Matcher>))
+         + (state_->frames.capacity() * sizeof(State::Frame));
 }
 
 absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression) {

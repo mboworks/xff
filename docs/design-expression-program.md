@@ -562,3 +562,28 @@ AND early misses plus OR early hits and complete misses. The expanded core matri
 Reached-predicate counts account for short-circuit cases, and program timing rejects unexpected
 fallback during its untimed check. Instruction/storage counters and preparation timings remain
 separate from execution time. No production selection or speedup claim is made before measurement.
+
+## EP05 stateful execution candidate
+
+Scored and deferred contexts now use an iterative continuation program over the same dense
+prepared nodes. A worker reuses enter/left/right frames, carrying left outcomes and AND input
+scores without recursive expression calls. The ordinary boolean instruction stream remains
+separate so optional replay machinery does not tax every cheap predicate. This is an execution
+representation choice, not a new user-visible mode.
+
+Child outcomes are memoized under their original source identities only after completion.
+Unknown or suspended outcomes unwind worker scratch without caching unresolved ancestors;
+completed effects remain in the existing sparse per-entry memo. Replay therefore preserves
+exactly-once actions, counters and source frontiers. Fuzzy-only OR still evaluates both branches
+when a score consumer exists. AND combines incoming scores, NOT/NAND/NOR/XNOR discard scores as
+before, and XOR preserves the selected branch's score. The caller's score observer and incoming
+score are restored on every exit.
+
+The state stack reserves only on its first use and is reused thereafter; ordinary boolean
+contexts do not allocate it. It is bounded by the prepared node count and is never cloned into
+suspended entries. A future compact depth-based reservation can reduce this conservative bound,
+but requires measurement. The full evaluator suite and observation oracle include iterative and
+program variants, with persistent-worker replay, storage stability, unknown cleanup, and all
+operator score combinations. Two score-consuming benchmark families extend the matrix to
+756 cases. CI must validate behavior and measure costs before production integration, which
+remains a separate EP05 step. EP06 optimization and EP07 whole-engine qualification remain open.

@@ -1940,3 +1940,34 @@ matcher state, and moving the worker preserves its backing storage. CI must meas
 layout before attributing the regression to argument passing or claiming a recovery. Existing
 move, persistent-worker and complete evaluator oracle tests cover the lifetime change. No local
 build or benchmark campaign was run.
+
+## Iterative score and replay qualification (EP05)
+
+The next candidate removes recursive fallback from score-consuming and deferred program contexts.
+It executes dense prepared nodes with reusable continuation frames while retaining sparse memo
+identities for exactly-once replay. Ordinary boolean programs keep their compact jump executor.
+Stateful scratch allocates once per worker on first use, stays bounded by node count, and is
+included in reported worker storage after warmup; no frame vector belongs to a suspended entry.
+
+Full evaluator fixtures and the isolated oracle run through both paths. Dedicated tests cover
+all operator score combinations, nested scratch reuse, error cleanup, two replay frontiers and
+restoration of caller-owned score/incoming state. The benchmark adds scored fuzzy AND and OR to
+all five core variants (756 total cases), checks scores against the tree before timing, and
+reports stateful selection and zero recursive fallback. Measurements and full CI are pending;
+this work makes no production selection or performance claim. The first-use scratch allocation
+is excluded from warm execution and must be included in the later setup/whole-run decision.
+
+### Retried benchmark shard identity
+
+Run 37219669899 first measured macOS shards on hosts reporting 3, 3 and 5 CPUs. Strict
+contract validation correctly refused to combine them. A focused retry produced a replacement
+three-CPU shard with the same source and tool identities, but both artifacts remained under the
+same name; wildcard downloading could still select the old report. PR aggregation now selects
+the newest creation timestamp for each exact shard name before downloading by artifact ID.
+All raw attempts remain stored and CPU/tool/revision compatibility checks remain mandatory.
+Artifact IDs alone are not chronological: the replacement had a lower ID than its predecessor.
+The download action also deduplicates by highest ID before applying explicit ID selection. The
+workflow therefore downloads selected ZIPs directly through the REST API, verifies their SHA-256
+digests, and reads only `benchmark-shard.json`; it does not extract arbitrary archive paths.
+PR and post-merge benchmark aggregation use the same local download action so retry handling
+cannot diverge between the two workflows. Both aggregate jobs request only read access to artifacts.

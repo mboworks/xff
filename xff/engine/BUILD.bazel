@@ -207,6 +207,7 @@ cc_test(
     srcs = ["evaluate_test.cc"],
     deps = [
         ":evaluate_cc",
+        ":expression_program_cc",
         ":extract_cc",
         ":walk_cc",
         "//xff/parser:parser_cc",
@@ -669,6 +670,7 @@ cc_test(
     deps = [
         ":evaluate_cc",
         ":expression_contract_cc",
+        ":expression_program_cc",
         ":walk_cc",
         "//xff/parser:parser_cc",
         "//xff/registry:registry_cc",

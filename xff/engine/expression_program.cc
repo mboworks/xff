@@ -212,7 +212,7 @@ ExpressionProgram::Worker ExpressionProgram::MakeWorker(ProgramDispatch dispatch
 
 ProgramEvaluation ExpressionProgram::Worker::Evaluate(EvalContext& context) const {
   if (context.fuzzy_score.has_value() || context.deferred.has_value()) {
-    return {.result = state_->predicates.Evaluate(context), .used_fallback = true};
+    return {.result = state_->predicates.EvaluateIterative(context), .used_stateful = true};
   }
   state_->saved.clear();
   const auto& instructions = state_->program.get().instructions;

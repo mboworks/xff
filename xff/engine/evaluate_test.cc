@@ -34,6 +34,7 @@
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
+#include "xff/engine/expression_program.h"
 #include "xff/engine/walk.h"
 #include "xff/fuzzy/fuzzy.h"
 #include "xff/parser/parser.h"
@@ -60,7 +61,7 @@ using ::testing::Optional;
 using ::testing::Pair;
 using ::testing::SizeIs;
 
-enum class Evaluator { kTree, kBound, kPrepared };
+enum class Evaluator { kTree, kBound, kPrepared, kIterative, kProgram };
 
 struct EvaluateTest : ::testing::TestWithParam<Evaluator> {
   // Parses `. <expr...>` and evaluates the expression against `visit`, capturing
@@ -128,6 +129,16 @@ struct EvaluateTest : ::testing::TestWithParam<Evaluator> {
         .exec_batches = provide_exec_batches_ ? mbo::types::OptionalRef{exec_batches_}
                                               : mbo::types::OptionalRef<decltype(exec_batches_)>{},
     };
+    if (GetParam() == Evaluator::kProgram) {
+      const auto program = ExpressionProgram::Prepare(expression);
+      EXPECT_THAT(program, IsOk());
+      return program.ok() && program->MakeWorker(ProgramDispatch::kFunctions).Evaluate(context).result.matched;
+    }
+    if (GetParam() == Evaluator::kIterative) {
+      const auto program = PreparedExpression::Prepare(expression);
+      EXPECT_THAT(program, IsOk());
+      return program.ok() && program->MakeWorker().EvaluateIterative(context).matched;
+    }
     if (GetParam() == Evaluator::kBound) {
       const auto bound = BoundExpression::Prepare(expression);
       EXPECT_THAT(bound, IsOk());
@@ -2019,12 +2030,19 @@ TEST_P(EvaluateTest, ArchiveDeletionRequiresBothDeletionAndRewritePermission) {
 INSTANTIATE_TEST_SUITE_P(
     Executors,
     EvaluateTest,
-    ::testing::Values(Evaluator::kTree, Evaluator::kBound, Evaluator::kPrepared),
+    ::testing::Values(
+        Evaluator::kTree,
+        Evaluator::kBound,
+        Evaluator::kPrepared,
+        Evaluator::kIterative,
+        Evaluator::kProgram),
     [](const ::testing::TestParamInfo<Evaluator>& info) {
       switch (info.param) {
         case Evaluator::kTree: return "Tree";
         case Evaluator::kBound: return "Bound";
         case Evaluator::kPrepared: return "Prepared";
+        case Evaluator::kIterative: return "Iterative";
+        case Evaluator::kProgram: return "Program";
       }
       return "Invalid";
     });

@@ -356,6 +356,9 @@ class PreparedExpression final {
     ~Worker();
 
     EvaluationResult Evaluate(EvalContext& context) const;
+    // Iterative prepared-node execution for full scoring and sparse deferred replay. Scratch
+    // is reserved on first use and retained by this worker, never by a suspended entry.
+    EvaluationResult EvaluateIterative(EvalContext& context) const;
     // Program instruction adapter: source must name a predicate in this prepared expression.
     // Preserves metadata, safety, invalidation and deferred-control handling around its callback.
     EvaluationResult EvaluatePredicate(ExpressionSourceId source, EvalContext& context) const;

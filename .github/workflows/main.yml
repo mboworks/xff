@@ -850,6 +850,7 @@ jobs:
         platform: [linux, macos]
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
     steps:
       - uses: actions/checkout@v7
@@ -865,10 +866,9 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - uses: actions/download-artifact@v8
+      - uses: ./.github/actions/benchmark-shards-download
         with:
-          pattern: benchmark-shard-${{ matrix.platform }}-*
-          path: shards
+          platform: ${{ matrix.platform }}
       - name: Merge raw rounds and compare with compatible main measurements
         run: |
           set -euo pipefail

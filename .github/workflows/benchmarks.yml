@@ -207,6 +207,9 @@ jobs:
   aggregate:
     needs: measure
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -226,10 +229,9 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - uses: actions/download-artifact@v8
+      - uses: ./.github/actions/benchmark-shards-download
         with:
-          pattern: benchmark-shard-${{ matrix.platform }}-*
-          path: shards
+          platform: ${{ matrix.platform }}
       - name: Validate, merge and render platform results
         run: |
           set -euo pipefail
