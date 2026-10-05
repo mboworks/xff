@@ -3,6 +3,9 @@
 
 # 0.9.0
 
+- Reject overflowing signed age counts without signed-integer overflow; prepare numeric age
+  comparisons once in the experimental expression executor while preserving dynamic timestamps.
+
 - Restore merged-main benchmark baseline comparisons and keep reruns within earlier main revisions;
   put worker and file counts before benchmark/backfill progress details.
 

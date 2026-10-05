@@ -146,6 +146,7 @@ int main(int argc, char** argv) {
   const auto scenarios = std::to_array<Scenario>({
       {.name = "name", .arguments = {"-name", "*.txt"}},
       {.name = "scalar", .arguments = {"-type", "f", "-size", "+2c", "-perm", "0644", "-name", "*.txt"}},
+      {.name = "age", .arguments = {"-type", "f", "-mtime", "+2d", "-mmin", "+1", "-used", "0", "-name", "*.txt"}},
       {.name = "regex-output", .arguments = {"-type", "f", "-rxc", "needle", "-print"}},
       {.name = "regex-unreached", .arguments = {"-type", "f", "-name", "*.missing", "-rxc", "needle"}},
       {.name = "summary", .arguments = {"-type", "f", "-name", "*.txt", "--summary=ext"}},

@@ -892,3 +892,12 @@ this as intentional accounting.
 - [ ] Recheck tiny-search preparation, eager regex-worker fork cost, retained capacities and full
       CLI binary size after selecting the winning implementation. The first whole-engine macOS session
       is noisy; a single session is insufficient to resolve small differences.
+
+### Remaining operand qualification (EP03/EP07)
+
+- [ ] Qualify prepared signed counts and numeric age units against both the same-session reference
+      and preceding reference sessions; retain the checked overflow behavior independently of speed.
+- [ ] Choose the production executor from native whole-engine evidence and keep rejected benchmark
+      alternatives out of its link dependencies; downloaded artifacts currently contain every candidate.
+- [ ] Evaluate serial reuse of original validated regex state after the on-demand-slot measurements;
+      preserve separate mutable backend state for concurrently evaluating workers.

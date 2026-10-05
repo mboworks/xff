@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -21,6 +22,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/status/status_macros.h"
+#include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/expression_program.h"
@@ -32,6 +34,7 @@
 namespace xff::engine {
 namespace {
 
+using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
 using ::testing::_;
@@ -523,6 +526,59 @@ struct PreparedOperandTest : ::testing::Test {
     }
   }
 
+  void CheckAge(std::string_view flag, std::string_view argument, std::optional<bool> fixed_result = std::nullopt) {
+    SCOPED_TRACE(flag);
+    SCOPED_TRACE(argument);
+    const auto descriptor = registry::Lookup(flag);
+    ASSERT_THAT(descriptor, Optional(_));
+    const parser::Expr expression{
+        .kind = parser::Expr::Kind::kPredicate,
+        .descriptor = descriptor,
+        .args = {std::string(argument)},
+    };
+    fs.events.clear();
+    ASSERT_OK_AND_ASSIGN(const auto prepared, PreparedExpression::Prepare(expression));
+    const auto worker = prepared.MakeWorker();
+    EXPECT_THAT(prepared.OperandCount(), Eq(1));
+    EXPECT_THAT(fs.events, IsEmpty());
+    const auto bytes = prepared.StorageBytes();
+    const auto base = absl::FromUnixSeconds(1'704'067'200);
+    for (const bool birth : {false, true}) {
+      for (const std::int64_t hours : {-49, -1, 0, 1, 49}) {
+        for (const int zone : {-3'600, 3'600}) {
+          SCOPED_TRACE(hours);
+          SCOPED_TRACE(birth);
+          metadata.mtime = base;
+          metadata.atime = base + absl::Hours(hours);
+          metadata.ctime = base;
+          metadata.btime = birth ? std::optional(base) : std::nullopt;
+          EvalContext context{
+              .visit = visit,
+              .emit = IgnoreOutput,
+              .fs = fs,
+              .now = base + absl::Hours(hours),
+              .tz = absl::FixedTimeZone(zone),
+              .control = control,
+          };
+          control = {};
+          const auto expected = EvaluateDeferred(expression, context);
+          // Control exposes a borrowed diagnostic; retain its text before resetting the owner.
+          const std::string expected_unsupported(control.unsupported);
+          control = {};
+          const auto actual = worker.Evaluate(context);
+          EXPECT_THAT(actual.matched, Eq(expected.matched));
+          EXPECT_THAT(actual.unknown, Eq(expected.unknown));
+          EXPECT_THAT(control.unsupported, EqualsText(expected_unsupported));
+          if (fixed_result.has_value()) {
+            EXPECT_THAT(actual.matched, Eq(*fixed_result));
+          }
+          EXPECT_THAT(prepared.StorageBytes(), Eq(bytes));
+          EXPECT_THAT(fs.events, IsEmpty());
+        }
+      }
+    }
+  }
+
   static constexpr auto kValues = std::to_array<std::uint64_t>({
       0,
       1,
@@ -773,6 +829,40 @@ TEST_F(PreparedOperandTest, NumericComparisonsRetainMalformedAndUnsignedBoundary
   }
 }
 
+TEST_F(PreparedOperandTest, AgesKeepDynamicClockMetadataTimezoneAndUnsupportedBehavior) {
+  constexpr auto kFlags = std::to_array<std::string_view>({
+      "-used",
+      "-mtime",
+      "-mmin",
+      "-atime",
+      "-amin",
+      "-ctime",
+      "-cmin",
+      "-Btime",
+      "-Bmin",
+  });
+  constexpr auto kArguments = std::to_array<std::string_view>({
+      "0", "1", "+1", "-1", "-0",      "2h",       "-2d", "+1w", "60s",          "3m",
+      "",  "+", "s",  "1x", "+2 days", "-1 month", "1.5", "--1", "+2 elephants",
+  });
+  for (const auto flag : kFlags) {
+    for (const auto argument : kArguments) {
+      CheckAge(flag, argument);
+    }
+  }
+}
+
+TEST_F(PreparedOperandTest, SignedAgeBoundariesRejectOverflowInsteadOfWrapping) {
+  for (const std::string_view flag : {"-used", "-mtime", "-mmin", "-Btime", "-Bmin"}) {
+    CheckAge(flag, "9223372036854775807", false);
+    CheckAge(flag, "-9223372036854775807");
+    CheckAge(flag, "9223372036854775808", false);
+    CheckAge(flag, "-9223372036854775808", false);
+    CheckAge(flag, "999999999999999999999999999999999999", false);
+    CheckAge(flag, "9223372036854775808h", false);
+  }
+}
+
 TEST_F(PreparedOperandTest, SymbolicOctalAndZeroPermissionMasksMatchTheReference) {
   constexpr auto kArguments = std::to_array<std::string_view>({
       "0644",        "-0644", "/0444",    "+0444", "0",       "-0",  "/0", "+0",   "u+rw,go=r", "+r",
@@ -794,6 +884,11 @@ TEST_F(PreparedOperandTest, MissingOperandsStayFalseWithoutObservations) {
       "-uid",
       "-gid",
       "-perm",
+      "-used",
+      "-mtime",
+      "-mmin",
+      "-Btime",
+      "-Bmin",
   });
   for (const auto flag : kFlags) {
     Check(flag, "", false);

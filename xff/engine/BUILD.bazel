@@ -682,6 +682,7 @@ cc_test(
         "@abseil-cpp//absl/time",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )
