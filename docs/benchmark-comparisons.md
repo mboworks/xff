@@ -327,15 +327,15 @@ the default grid for local experiments.
 
 ## Measurement shards
 
-PR and main runs build once per platform, then distribute the exact binary and one shared plan
-to three Linux runners and three macOS runners. Every shard measures the complete file-count,
+PR and main runs build once per platform, then start three candidate shards in parallel on Linux
+and three on macOS. Every shard measures the complete file-count,
 worker-count and broad/deep matrix. All tools for each measured round run together on one runner,
 with rotating participant order; the starting order also rotates between shards.
 
-| Run  | Shards | Measured rounds per case per shard | Pooled rounds | Retained fastest rounds | Largest file count |
-| ---- | -----: | ---------------------------------: | ------------: | ----------------------: | -----------------: |
-| PR   |      3 |                                  3 |             9 |                       7 |             10,000 |
-| Main |      3 |                                  3 |             9 |                       7 |            100,000 |
+| Run  | Initial shards | Candidate cap | Measured rounds per candidate | Selected shards | Pooled rounds | Retained fastest rounds | Largest file count |
+| ---- | -------------: | ------------: | ----------------------------: | --------------: | ------------: | ----------------------: | -----------------: |
+| PR   |              3 |             5 |                             3 |               3 |             9 |                       7 |             10,000 |
+| Main |              3 |             5 |                             3 |               3 |             9 |                       7 |            100,000 |
 
 Each shard performs its own discarded, correctness-checked warm-up for each case. The aggregator
 combines raw observations before selecting the fastest seven per participant. It never
@@ -343,24 +343,36 @@ averages shard summaries or discards a shard's slow rounds before pooling. All m
 same selected observations as elapsed time. The raw JSON retains every measured observation,
 its shard and round number, the shard's hashed host identity, and the original invocation paths.
 
-Repeating the same matrix on all three runners gives approximately equal expected work and avoids
+If all three initial runners report the same host CPU count, the workflow stops measuring and
+aggregates those three. If they disagree, it schedules a fourth candidate for that platform; if
+four do not contain a three-candidate majority, it schedules a fifth. Linux and macOS vote
+independently, since their runner contracts are not comparable. The final aggregator runs once and
+selects exactly three reports with the same CPU count for each platform. If five candidates cannot
+produce that quorum, aggregation fails rather than mixing them. A missing report can use the next
+candidate slot, but a runner cancellation can still make the workflow fail and require a CI retry.
+
+Repeating the same matrix on all three selected runners gives approximately equal expected work and avoids
 assigning one tree shape or worker count to a consistently faster host. It does not make hosts
 identical: fastest-run selection may favor samples from a faster host, and the selected hosts
 can differ between tools. Linux still pins one or three logical CPUs; macOS records worker
 requests without claiming CPU affinity. Hardware, storage and background load still affect results.
 
-Warm-ups and fixture creation are repeated on every shard. Both workflows execute twelve tool
-rounds including warm-ups per case, versus ten in a serial nine-sample run. Each shard executes
-four rounds including its warm-up, allowing an ideal 2.5-fold reduction in measurement wall time
-relative to that serial run. Build, fixture setup, artifact transfer, aggregation and runner
-availability limit the end-to-end gain.
+Warm-ups and fixture creation are repeated on every candidate. The usual three-candidate case
+executes twelve tool rounds including warm-ups per case, versus ten in a serial nine-sample run;
+each additional candidate adds four rounds. Each candidate executes four rounds including its
+warm-up, allowing an ideal 2.5-fold reduction in measurement wall time for the usual case relative
+to that serial run. Build, fixture setup, artifact transfer, aggregation and runner availability
+limit the end-to-end gain.
 
-Aggregation requires the complete planned matrix on every sample shard, exactly the planned raw
-sample count, matching source, binary, reference tools, fixture contents, expected outputs and
-commands, compatible CPU affinity, equal host CPU counts and identical sampling contracts.
-Missing or incompatible shards fail the workflow rather than publishing a partial matrix. Each
-merged report retains per-shard provenance. An identity mismatch reports its shard, field and
-differing values, such as `incompatible shard 1: contract.cpu_count: expected 5, got 3`.
+Aggregation requires the complete planned matrix on each selected sample shard, exactly three raw
+rounds per selected shard, matching source, binary, reference tools, fixture contents, expected
+outputs and commands, compatible CPU affinity, equal host CPU counts and identical sampling
+contracts. Each merged report retains the selected candidates' original shard indexes and host
+provenance. An identity mismatch reports its shard, field and differing values, such as
+`incompatible shard 1: contract.cpu_count: expected 5, got 3`. The adaptive jobs run inside the same
+workflow attempt, so a provider-canceled candidate does not require a workflow rerun or a queued
+GitHub cancellation command. Ordinary measurement errors remain visible; later candidates are not
+used to conceal a malformed or incompatible report.
 Both PR and merged-main aggregation load retained main reports before rendering the overview.
 Only first-parent main revisions preceding the measured commit are eligible (for a PR merge
 preview, this includes its main parent). The nearest compatible revision wins; later reruns of
@@ -370,9 +382,11 @@ The selected revision, run, attempt and sampling policy remain in the report.
 Historical baselines and the advisory slowdown alarm are computed after pooling. JSON and HTML
 share the platform-specific basename; only final merged artifacts are selected by the publisher.
 
-`tools/benchmark_shards.py --partition=samples --count=3` creates these plans. `--repetitions`
-sets the total measured rounds and must divide evenly among shards; `--keep` selects the final
-fastest subset. The collector must retain every assigned round. The default `balanced` partition
+`tools/benchmark_shards.py --partition=samples --count=3` creates fixed plans. The CI workflows use
+`--partition=samples --adaptive --count=5 --repetitions=15 --keep=15`; each candidate collects three
+rounds, then the aggregator pools three agreeing candidates into the published 9-round, fastest-7
+contract. `--repetitions` sets total candidate rounds and must divide evenly among shards; `--keep`
+selects the final fastest subset. The collector must retain every assigned round. The default `balanced` partition
 continues to support disjoint, cost-balanced fixture plans and existing retained reports.
 Historical CI backfill campaigns and local batches retain their documented one-host-per-revision
 contract; their scheduling is separate from these ordinary PR and main workflows.

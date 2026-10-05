@@ -6,6 +6,7 @@ import argparse
 import copy
 import json
 import platform
+import re
 from pathlib import Path
 
 import benchmark_matrix
@@ -29,7 +30,10 @@ def sample_policy(plan):
     return repetitions // count, repetitions, keep
 
 
-def make_plan(file_counts, cpu_counts, count, reference=None, task_names=None, *, partition='balanced', repetitions=9, keep=7):
+def make_plan(file_counts, cpu_counts, count, reference=None, task_names=None, *, partition='balanced', repetitions=9,
+              keep=7, adaptive=False):
+    if adaptive and partition != 'samples':
+        raise ValueError('adaptive plans require the samples partition')
     if count < 1 or not file_counts or not cpu_counts or min(*file_counts, *cpu_counts) < 1:
         raise ValueError('positive file counts, CPU counts and shard count required')
     if len(set(file_counts)) != len(file_counts) or len(set(cpu_counts)) != len(cpu_counts):
@@ -57,6 +61,10 @@ def make_plan(file_counts, cpu_counts, count, reference=None, task_names=None, *
                    'fixtures': copy.deepcopy(fixtures)} for _ in range(count)]
         plan = {'schema': 1, 'partition': partition, 'file_counts': list(file_counts), 'cpu_counts': list(cpu_counts),
                 'task_names': task_names, 'shards': shards, 'repetitions': repetitions, 'retained': keep}
+        if adaptive:
+            if count != 5 or repetitions != 15 or keep != 15:
+                raise ValueError('adaptive sampling requires five candidates with three rounds each')
+            plan['adaptive'] = {'policy': 'majority-cpu-count', 'quorum': 3, 'minimum_candidates': 3}
         sample_policy(plan)
         return plan
     if partition != 'balanced':
@@ -127,13 +135,16 @@ def append_samples(target, incoming, index, report):
                                       for number, sample in enumerate(entry['samples'], 1))
 
 
-def merge_reports(records, baseline_root=None, baseline_revisions=None):
+def merge_reports(records, baseline_root=None, baseline_revisions=None, *, allow_sample_subset=False):
     if not records:
         raise ValueError('no shard reports')
     records = sorted(records, key=lambda record: record['tool_comparisons']['contract']['shard']['index'])
     reports = [record['tool_comparisons'] for record in records]
     plan = reports[0]['contract']['shard']['plan']
-    if len(records) != len(plan['shards']):
+    if allow_sample_subset:
+        if not plan.get('adaptive') or len(records) != plan['adaptive']['quorum']:
+            raise ValueError('adaptive merge requires exactly the agreed sample quorum')
+    elif len(records) != len(plan['shards']):
         raise ValueError('missing shard reports')
     sampling = sample_policy(plan)
     result = copy.deepcopy(next((record for record in records if 'base' in record), records[0]))
@@ -197,13 +208,15 @@ def merge_reports(records, baseline_root=None, baseline_revisions=None):
                 raise ValueError('incomplete task set')
         provenance.append({'index': index, 'contract': report['contract'], 'tools': report['tools'],
                            'host_id': report.get('host_id')})
-    if indices != set(range(len(plan['shards']))):
+    if (not allow_sample_subset and indices != set(range(len(plan['shards'])))):
         raise ValueError('missing shard index')
     combined['contract'] = dict(contract, affinity_by_cpu_count=affinity)
     combined.pop('host_id', None)
     if sampling:
         combined['tasks'] = list(pooled.values())
-        combined['contract'].update(repetitions=sampling[1], retained=sampling[2])
+        pooled_rounds = sampling[0] * len(records)
+        retained = min(7, pooled_rounds) if allow_sample_subset else sampling[2]
+        combined['contract'].update(repetitions=pooled_rounds, retained=retained)
         combined['sample_shards'] = {'count': len(records), 'repetitions': sampling[0]}
         for task in combined['tasks']:
             for entry in task['participants'].values():
@@ -221,6 +234,117 @@ def merge_reports(records, baseline_root=None, baseline_revisions=None):
     return result
 
 
+def adaptive_candidate_records(directory):
+    """Load candidate shard artifacts grouped by platform, ignoring absent artifacts."""
+    result = {'linux': {}, 'macos': {}}
+    for path in sorted(directory.rglob('benchmark-shard.json')):
+        name = path.parent.name
+        match = re.fullmatch(r'benchmark-shard-(linux|macos)-(\d+)', name)
+        if not match:
+            continue
+        platform_name, index = match.group(1), int(match.group(2))
+        if index in result[platform_name]:
+            raise ValueError(f'duplicate candidate artifact for {platform_name} shard {index}')
+        result[platform_name][index] = json.loads(path.read_text())
+    return result
+
+
+def _adaptive_identity(record):
+    report = record['tool_comparisons']
+    contract = copy.deepcopy(report['contract'])
+    contract.pop('shard', None)
+    contract.pop('cpu_count', None)
+    return json.dumps({'head': record['head'], 'contract': contract, 'tools': report['tools']},
+                      sort_keys=True, separators=(',', ':'))
+
+
+def validate_adaptive_candidate(record, index):
+    """Check the candidate plan and full measured matrix before counting its CPU vote."""
+    report = record['tool_comparisons']
+    contract = report['contract']
+    shard = contract.get('shard', {})
+    plan = shard.get('plan', {})
+    if not plan.get('adaptive') or shard.get('index') != index or len(plan.get('shards', [])) != 5:
+        raise ValueError(f'invalid adaptive shard identity: {index}')
+    rounds, total, retained = sample_policy(plan)
+    if (rounds, total, retained) != (3, 15, 15):
+        raise ValueError('adaptive plan must contain five complete three-round candidates')
+    if contract.get('repetitions') != rounds or contract.get('retained') != rounds:
+        raise ValueError(f'adaptive shard {index} did not retain all three rounds')
+    if not report.get('host_id'):
+        raise ValueError(f'adaptive shard {index} is missing host identity')
+    expected = assigned_fixtures(plan, index)
+    task_names = set(plan['task_names'])
+    actual = set()
+    for task in report['tasks']:
+        fixture = fixture_key(task)
+        if fixture not in expected or task['name'] not in task_names:
+            raise ValueError(f'adaptive shard {index} contains an unexpected benchmark case')
+        key = (*fixture, task['name'])
+        if key in actual:
+            raise ValueError(f'adaptive shard {index} contains a duplicate benchmark case')
+        actual.add(key)
+        for entry in task['participants'].values():
+            benchmark_matrix.selected_samples(report, entry)
+    if actual != {(*fixture, name) for fixture in expected for name in task_names}:
+        raise ValueError(f'adaptive shard {index} is missing benchmark cases')
+    cpu_count = contract.get('cpu_count')
+    if not isinstance(cpu_count, int) or cpu_count < 1:
+        raise ValueError(f'adaptive shard {index} has an invalid host CPU count')
+    return cpu_count
+
+
+def adaptive_decisions(candidates, stage):
+    """Return whether another candidate is needed for each platform."""
+    if stage not in ('initial', 'fourth'):
+        raise ValueError('unknown adaptive decision stage')
+    decisions = {}
+    for platform_name in ('linux', 'macos'):
+        reports = candidates.get(platform_name, {})
+        validated = {}
+        identity = None
+        plan = None
+        for index, record in sorted(reports.items()):
+            cpu_count = validate_adaptive_candidate(record, index)
+            current_plan = record['tool_comparisons']['contract']['shard']['plan']
+            if plan is not None and current_plan != plan:
+                raise ValueError(f'incompatible adaptive plans for {platform_name}')
+            if identity is not None and _adaptive_identity(record) != identity:
+                raise ValueError(f'incompatible non-CPU benchmark contracts for {platform_name}')
+            plan = current_plan
+            identity = _adaptive_identity(record)
+            validated[index] = cpu_count
+        largest_group = max((list(validated.values()).count(value) for value in set(validated.values())), default=0)
+        decisions[platform_name] = largest_group < 3
+        if stage == 'fourth' and len(validated) < 4 and largest_group < 3:
+            decisions[platform_name] = True
+    return decisions
+
+
+def select_adaptive_reports(candidates, platform_name):
+    """Select exactly three agreeing reports; fail if no CPU-count quorum exists."""
+    reports = candidates.get(platform_name, {})
+    groups = {}
+    identity = None
+    plan = None
+    for index, record in sorted(reports.items()):
+        cpu_count = validate_adaptive_candidate(record, index)
+        current_plan = record['tool_comparisons']['contract']['shard']['plan']
+        if plan is not None and current_plan != plan:
+            raise ValueError(f'incompatible adaptive plans for {platform_name}')
+        if identity is not None and _adaptive_identity(record) != identity:
+            raise ValueError(f'incompatible non-CPU benchmark contracts for {platform_name}')
+        plan = current_plan
+        identity = _adaptive_identity(record)
+        groups.setdefault(cpu_count, []).append((index, record))
+    eligible = [values for values in groups.values() if len(values) >= 3]
+    if not eligible:
+        counts = {cpu: len(values) for cpu, values in groups.items()}
+        raise ValueError(f'{platform_name} has no three-shard CPU-count agreement: {counts}')
+    winner = max(eligible, key=lambda values: (len(values), -values[0][0]))
+    return [record for _, record in winner[:3]]
+
+
 def latest_reference(root, machine):
     candidates = []
     for path in benchmark_records.run_paths(root):
@@ -235,12 +359,20 @@ def latest_reference(root, machine):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    mode = parser.add_mutually_exclusive_group(required=True)
+    mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--plan', action='store_true')
     mode.add_argument('--merge', type=Path, nargs='+')
     mode.add_argument('--merge-directory', type=Path,
                       help='Discover benchmark-shard.json in flat or per-artifact download directories')
-    parser.add_argument('--output', type=Path, required=True)
+    mode.add_argument('--decide-adaptive', type=Path,
+                      help='Inspect adaptive candidates and emit the next-shard workflow outputs')
+    mode.add_argument('--merge-adaptive-directory', type=Path,
+                      help='Select agreeing candidates and merge both platforms')
+    parser.add_argument('--output', type=Path)
+    parser.add_argument('--output-directory', type=Path)
+    parser.add_argument('--seed-directory', type=Path,
+                        help='Download directory containing per-platform main-run metadata seed reports')
+    parser.add_argument('--decision-stage', choices=('initial', 'fourth'))
     parser.add_argument('--files', type=int, action='append')
     parser.add_argument('--cpus', type=int, action='append')
     parser.add_argument('--count', type=int, default=3)
@@ -248,6 +380,7 @@ def main():
                         help='Balance complete fixtures, or repeat the full grid with equal rounds on every shard')
     parser.add_argument('--repetitions', type=int, default=9, help='Total measured rounds across sample shards')
     parser.add_argument('--keep', type=int, default=7, help='Fastest pooled rounds retained per participant')
+    parser.add_argument('--adaptive', action='store_true', help='Plan five candidates with a three-shard quorum')
     parser.add_argument('--baseline-root', type=Path, help='Attach a compatible main baseline after merging')
     parser.add_argument('--baseline-revisions', type=Path,
                         help='Eligible baseline commit IDs, one per line, newest first (git rev-list --first-parent)')
@@ -255,7 +388,20 @@ def main():
     reference_group.add_argument('--reference', type=Path)
     reference_group.add_argument('--reference-root', type=Path)
     args = parser.parse_args()
-    if args.baseline_revisions and (args.plan or not args.baseline_root):
+    if sum(value is not None and value is not False for value in
+           (args.plan, args.merge, args.merge_directory, args.decide_adaptive, args.merge_adaptive_directory)) != 1:
+        parser.error('select exactly one operation')
+    if args.plan and not args.output:
+        parser.error('--plan requires --output')
+    if args.merge and not args.output:
+        parser.error('--merge requires --output')
+    if args.merge_directory and not args.output:
+        parser.error('--merge-directory requires --output')
+    if args.decide_adaptive and not args.decision_stage:
+        parser.error('--decide-adaptive requires --decision-stage')
+    if args.merge_adaptive_directory and not args.output_directory:
+        parser.error('--merge-adaptive-directory requires --output-directory')
+    if args.baseline_revisions and (args.plan or args.decide_adaptive or not args.baseline_root):
         parser.error('--baseline-revisions requires merge mode and --baseline-root')
     if args.plan:
         reference = json.loads(args.reference.read_text())['tool_comparisons'] if args.reference else None
@@ -265,7 +411,34 @@ def main():
         tools = {'xff': {'path': 'xff'}, 'find': {}, 'rg': {}, 'fzf': {}}
         names = [name for name, _, _ in benchmark_compare.scenarios(Path('.'), [], tools)]
         result = make_plan(args.files or [], args.cpus or [1, 4], args.count, reference, names,
-                           partition=args.partition, repetitions=args.repetitions, keep=args.keep)
+                           partition=args.partition, repetitions=args.repetitions, keep=args.keep,
+                           adaptive=args.adaptive)
+    elif args.decide_adaptive:
+        decisions = adaptive_decisions(adaptive_candidate_records(args.decide_adaptive), args.decision_stage)
+        suffix = 'fourth' if args.decision_stage == 'initial' else 'fifth'
+        for platform_name, needed in decisions.items():
+            print(f'{platform_name}_{suffix}={str(needed).lower()}')
+        return
+    elif args.merge_adaptive_directory:
+        candidates = adaptive_candidate_records(args.merge_adaptive_directory)
+        revisions = args.baseline_revisions.read_text().splitlines() if args.baseline_revisions else None
+        args.output_directory.mkdir(parents=True, exist_ok=True)
+        for platform_name in ('linux', 'macos'):
+            selected = select_adaptive_reports(candidates, platform_name)
+            result = merge_reports(selected, args.baseline_root, revisions, allow_sample_subset=True)
+            if args.seed_directory:
+                seeds = sorted(args.seed_directory.rglob(f'benchmark-report-{platform_name}-*.json'))
+                if len(seeds) != 1:
+                    raise ValueError(f'expected exactly one {platform_name} metadata seed, found {len(seeds)}')
+                seed = json.loads(seeds[0].read_text())
+                if seed.get('head') != result.get('head'):
+                    raise ValueError(f'{platform_name} metadata seed has a different source commit')
+                seed['tool_comparisons'] = result['tool_comparisons']
+                seed['measurement_shards'] = result['measurement_shards']
+                result = seed
+            (args.output_directory / f'benchmark-merged-{platform_name}.json').write_text(
+                json.dumps(result, indent=2) + '\n')
+        return
     else:
         paths = (sorted(args.merge_directory.rglob('benchmark-shard.json'))
                  if args.merge_directory is not None else args.merge)

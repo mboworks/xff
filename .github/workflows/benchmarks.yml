@@ -23,12 +23,10 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             cpus: 3
-            shards: 3
             timeout: 45
           - os: macos-latest
             platform: macos
             cpus: 3
-            shards: 3
             timeout: 90
     runs-on: ${{ matrix.os }}
     timeout-minutes: ${{ matrix.timeout }}
@@ -140,8 +138,8 @@ jobs:
           for count in 10 20 50 100 200 500 1000 2000 5000 10000 20000 50000 100000; do
             scales+=(--files="${count}")
           done
-          python3 tools/benchmark_shards.py --plan --count=${{ matrix.shards }} "${scales[@]}" \
-            --partition=samples --repetitions=9 --keep=7 \
+          python3 tools/benchmark_shards.py --plan --adaptive --count=5 "${scales[@]}" \
+            --partition=samples --repetitions=15 --keep=15 \
             --cpus=1 --cpus=${{ matrix.cpus }} --output=benchmark-plan.json
           tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" benchmark-head
       - uses: actions/upload-artifact@v7
@@ -177,61 +175,164 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: actions/setup-python@v7
+      - uses: ./.github/actions/benchmark-measure
         with:
-          python-version: "3.13"
-      - name: Check runner CPU capacity
-        run: |
-          affinity=()
-          if [[ "${RUNNER_OS}" == Linux ]]; then
-            affinity=(--require-cpu-affinity)
-          fi
-          python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=${{ matrix.cpus }} "${affinity[@]}"
-      - uses: actions/download-artifact@v8
-        with:
-          name: benchmark-build-${{ matrix.platform }}
-      - name: Install comparison tools
-        run: |
-          if [[ "${RUNNER_OS}" == Linux ]]; then
-            sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
-          else
-            brew install findutils ripgrep fzf
-          fi
-      - name: Measure three rounds of the complete grid
-        run: |
-          set -euo pipefail
-          tar -xf benchmark-build.tar -C "${RUNNER_TEMP}"
-          storage=(--fixture-parent="${RUNNER_TEMP}")
-          if [[ "${RUNNER_OS}" == Linux ]]; then
-            storage=(--fixture-parent=/dev/shm --require-memory --require-cpu-affinity)
-          fi
-          platform="${{ matrix.platform }}-$(uname -m)"
-          if [[ "${{ matrix.shard }}" == 0 ]]; then
-            cp "benchmark-report-${platform}.json" benchmark-shard.json
-          fi
-          python3 tools/benchmark_compare.py --binary="${RUNNER_TEMP}/benchmark-head" \
-            --head="${{ github.sha }}" --report=benchmark-shard.json --require-tools "${storage[@]}" \
-            --shard-plan=benchmark-plan.json --shard-index=${{ matrix.shard }} \
-            --cpus=1 --cpus=${{ matrix.cpus }} \
-            --repetitions=3 --keep=3 --runner-class='github-hosted ${{ matrix.os }}' \
-            --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)"
-      - uses: actions/upload-artifact@v7
-        with:
-          name: benchmark-shard-${{ matrix.platform }}-${{ matrix.shard }}
-          path: benchmark-shard.json
-          retention-days: 30
-          if-no-files-found: error
+          platform: ${{ matrix.platform }}
+          runner: ${{ matrix.os }}
+          shard: ${{ matrix.shard }}
+          head: ${{ github.sha }}
 
-  aggregate:
-    needs: measure
+  select-initial:
+    name: Check initial benchmark agreement
+    needs: [build, measure]
+    if: always() && needs.build.result == 'success' && needs.measure.result != 'failure'
     runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [linux, macos]
+    outputs:
+      linux_fourth: ${{ steps.decision.outputs.linux_fourth }}
+      macos_fourth: ${{ steps.decision.outputs.macos_fourth }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: benchmark-shard-*
+          path: candidate-shards
+          if-no-artifact-found: ignore
+      - name: Schedule a fourth candidate only for unresolved platforms
+        id: decision
+        run: |
+          mkdir -p candidate-shards
+          python3 tools/benchmark_shards.py --decide-adaptive=candidate-shards \
+            --decision-stage=initial >>"${GITHUB_OUTPUT}"
+
+  measure-fourth-linux:
+    name: Benchmark measurement (linux, shard 3)
+    needs: select-initial
+    if: needs.select-initial.outputs.linux_fourth == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/benchmark-measure
+        with:
+          platform: linux
+          runner: ubuntu-latest
+          shard: 3
+          head: ${{ github.sha }}
+
+  measure-fourth-macos:
+    name: Benchmark measurement (macos, shard 3)
+    needs: select-initial
+    if: needs.select-initial.outputs.macos_fourth == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/benchmark-measure
+        with:
+          platform: macos
+          runner: macos-latest
+          shard: 3
+          head: ${{ github.sha }}
+
+  select-fourth:
+    name: Check benchmark agreement after fourth candidates
+    needs: [select-initial, measure-fourth-linux, measure-fourth-macos]
+    if: always() && needs.select-initial.result == 'success' &&
+        needs.measure-fourth-linux.result != 'failure' && needs.measure-fourth-macos.result != 'failure'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      linux_fifth: ${{ steps.decision.outputs.linux_fifth }}
+      macos_fifth: ${{ steps.decision.outputs.macos_fifth }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: benchmark-shard-*
+          path: candidate-shards
+          if-no-artifact-found: ignore
+      - name: Schedule a fifth candidate only without a three-shard majority
+        id: decision
+        run: |
+          mkdir -p candidate-shards
+          python3 tools/benchmark_shards.py --decide-adaptive=candidate-shards \
+            --decision-stage=fourth >>"${GITHUB_OUTPUT}"
+
+  measure-fifth-linux:
+    name: Benchmark measurement (linux, shard 4)
+    needs: select-fourth
+    if: needs.select-fourth.outputs.linux_fifth == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/benchmark-measure
+        with:
+          platform: linux
+          runner: ubuntu-latest
+          shard: 4
+          head: ${{ github.sha }}
+
+  measure-fifth-macos:
+    name: Benchmark measurement (macos, shard 4)
+    needs: select-fourth
+    if: needs.select-fourth.outputs.macos_fifth == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/benchmark-measure
+        with:
+          platform: macos
+          runner: macos-latest
+          shard: 4
+          head: ${{ github.sha }}
+
+  aggregate:
+    needs: [build, measure, select-initial, measure-fourth-linux, measure-fourth-macos,
+            select-fourth, measure-fifth-linux, measure-fifth-macos]
+    if: always() && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@v7
         with:
@@ -247,27 +348,42 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - uses: ./.github/actions/benchmark-shards-download
+      - uses: actions/download-artifact@v8
         with:
-          platform: ${{ matrix.platform }}
-      - name: Validate, merge and render platform results
+          pattern: benchmark-shard-*
+          path: candidate-shards
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: benchmark-build-*
+          path: build-metadata
+      - name: Select agreed candidates and render both platforms
+        id: reports
         run: |
           set -euo pipefail
           git rev-list --first-parent HEAD^1 > benchmark-baseline-revisions.txt
-          python3 tools/benchmark_shards.py --merge-directory=shards --output=benchmark-main.json \
+          python3 tools/benchmark_shards.py --merge-adaptive-directory=candidate-shards \
+            --output-directory=merged --seed-directory=build-metadata \
             --baseline-root=benchmark-baseline/benchmarks --baseline-revisions=benchmark-baseline-revisions.txt
-          arch="$(python3 -c 'import json; print(json.load(open("benchmark-main.json"))["tool_comparisons"]["contract"]["machine"])')"
-          report="benchmark-report-${{ matrix.platform }}-${arch}"
-          mv benchmark-main.json "${report}.json"
-          python3 tools/benchmark_compare.py --render-only --report="${report}.json" \
-            --html="${report}.html" --summary=benchmark-main.md
-          cat benchmark-main.md >>"${GITHUB_STEP_SUMMARY}"
-          echo "BENCHMARK_REPORT=${report}" >>"${GITHUB_ENV}"
+          for platform in linux macos; do
+            arch="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["tool_comparisons"]["contract"]["machine"])' "merged/benchmark-merged-${platform}.json")"
+            report="benchmark-report-${platform}-${arch}"
+            mv "merged/benchmark-merged-${platform}.json" "${report}.json"
+            python3 tools/benchmark_compare.py --render-only --report="${report}.json" \
+              --html="${report}.html" --summary="${report}.md"
+            cat "${report}.md" >>"${GITHUB_STEP_SUMMARY}"
+            echo "${platform}_arch=${arch}" >>"${GITHUB_OUTPUT}"
+          done
       - uses: actions/upload-artifact@v7
         with:
-          name: ${{ env.BENCHMARK_REPORT }}
+          name: benchmark-report-linux-${{ steps.reports.outputs.linux_arch }}
           path: |
-            ${{ env.BENCHMARK_REPORT }}.json
-            ${{ env.BENCHMARK_REPORT }}.html
+            benchmark-report-linux-*
+          retention-days: 30
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-report-macos-${{ steps.reports.outputs.macos_arch }}
+          path: |
+            benchmark-report-macos-*
           retention-days: 30
           if-no-files-found: error

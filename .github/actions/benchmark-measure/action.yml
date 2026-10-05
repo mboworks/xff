@@ -1,0 +1,73 @@
+# SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+# SPDX-License-Identifier: Apache-2.0
+name: Measure benchmark candidate shard
+description: Run one complete three-round benchmark candidate and upload its report
+inputs:
+  platform:
+    description: Measurement platform (linux or macos)
+    required: true
+  runner:
+    description: GitHub runner label
+    required: true
+  shard:
+    description: Zero-based candidate shard number
+    required: true
+  head:
+    description: Source commit being measured
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v7
+      with:
+        python-version: "3.13"
+    - name: Check runner CPU capacity
+      shell: bash
+      run: |
+        affinity=()
+        if [[ "${RUNNER_OS}" == Linux ]]; then
+          affinity=(--require-cpu-affinity)
+        fi
+        python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=3 "${affinity[@]}"
+    - uses: actions/download-artifact@v8
+      with:
+        name: benchmark-build-${{ inputs.platform }}
+    - name: Install comparison tools
+      shell: bash
+      run: |
+        if [[ "${RUNNER_OS}" == Linux ]]; then
+          sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
+        else
+          brew install findutils ripgrep fzf
+        fi
+    - name: Measure three rounds of the complete grid
+      shell: bash
+      env:
+        BENCHMARK_PLATFORM: ${{ inputs.platform }}
+        BENCHMARK_SHARD: ${{ inputs.shard }}
+        BENCHMARK_HEAD: ${{ inputs.head }}
+        BENCHMARK_RUNNER: ${{ inputs.runner }}
+      run: |
+        set -euo pipefail
+        tar -xf benchmark-build.tar -C "${RUNNER_TEMP}"
+        storage=(--fixture-parent="${RUNNER_TEMP}")
+        if [[ "${RUNNER_OS}" == Linux ]]; then
+          storage=(--fixture-parent=/dev/shm --require-memory --require-cpu-affinity)
+        fi
+        platform="${BENCHMARK_PLATFORM}-$(uname -m)"
+        if [[ "${BENCHMARK_SHARD}" == 0 && -f "benchmark-report-${platform}.json" ]]; then
+          cp "benchmark-report-${platform}.json" benchmark-shard.json
+        fi
+        python3 tools/benchmark_compare.py --binary="${RUNNER_TEMP}/benchmark-head" \
+          --report=benchmark-shard.json --head="${BENCHMARK_HEAD}" \
+          --shard-plan=benchmark-plan.json --shard-index="${BENCHMARK_SHARD}" \
+          --cpus=1 --cpus=3 --repetitions=3 --keep=3 --require-tools "${storage[@]}" \
+          --runner-class="github-hosted ${BENCHMARK_RUNNER}" \
+          --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)"
+    - uses: actions/upload-artifact@v7
+      with:
+        name: benchmark-shard-${{ inputs.platform }}-${{ inputs.shard }}
+        path: benchmark-shard.json
+        overwrite: true
+        retention-days: 30
+        if-no-files-found: error

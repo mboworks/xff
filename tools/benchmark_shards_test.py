@@ -12,9 +12,10 @@ from unittest import mock
 import benchmark_shards as shards
 
 
-def records(cpus=(1, 4), count=3, partition='balanced', repetitions=9, keep=7):
+def records(cpus=(1, 4), count=3, partition='balanced', repetitions=9, keep=7, *, adaptive=False,
+            host_cpu_count=3):
     plan = shards.make_plan([10, 100], cpus, count, task_names=['files', 'content'],
-                            partition=partition, repetitions=repetitions, keep=keep)
+                            partition=partition, repetitions=repetitions, keep=keep, adaptive=adaptive)
     rounds = repetitions // count if partition == 'samples' else 1
     result = []
     for index in range(count):
@@ -31,7 +32,8 @@ def records(cpus=(1, 4), count=3, partition='balanced', repetitions=9, keep=7):
                                                           for number in range(rounds)]}}, skips={}))
         result.append({'head': 'same-head', 'tool_comparisons': {
             'schema': 1, 'tools': {'xff': {'sha256': 'same-binary'}}, 'tasks': tasks, 'host_id': f'host-{index}',
-            'contract': {'file_counts': [10, 100], 'cpu_counts': list(cpus), 'repetitions': rounds, 'retained': rounds,
+                         'contract': {'file_counts': [10, 100], 'cpu_counts': list(cpus), 'cpu_count': host_cpu_count,
+                                      'repetitions': rounds, 'retained': rounds,
                          'estimator': 'mean-fastest',
                          'storage': {'parent': '/tmp', 'filesystem': 'host'},
                          'affinity_by_cpu_count': {str(cpu): list(range(cpu)) for cpu in cpus},
@@ -155,6 +157,52 @@ class BenchmarkShardsTest(unittest.TestCase):
                     plan['partition'] = 'unknown'
                 with self.assertRaises(ValueError):
                     shards.assigned_fixtures(plan, 0)
+
+    def test_adaptive_candidates_stop_at_agreement_and_escalate_only_when_needed(self):
+        def candidates(counts):
+            result = {'linux': {}, 'macos': {}}
+            for index, cpu_count in enumerate(counts):
+                record = records(count=5, partition='samples', repetitions=15, keep=15,
+                                 adaptive=True, host_cpu_count=cpu_count)[index]
+                result['linux'][index] = record
+            return result
+
+        self.assertFalse(shards.adaptive_decisions(candidates([3, 3, 3]), 'initial')['linux'])
+        self.assertTrue(shards.adaptive_decisions(candidates([3, 5, 3]), 'initial')['linux'])
+        self.assertFalse(shards.adaptive_decisions(candidates([3, 5, 3, 3]), 'fourth')['linux'])
+        self.assertTrue(shards.adaptive_decisions(candidates([3, 5, 3, 5]), 'fourth')['linux'])
+
+    def test_adaptive_merge_pools_only_three_matching_candidates(self):
+        values = records(count=5, partition='samples', repetitions=15, keep=15, adaptive=True,
+                         host_cpu_count=3)
+        selected = [values[index] for index in (0, 2, 4)]
+        result = shards.merge_reports(selected, allow_sample_subset=True)
+        report = result['tool_comparisons']
+        self.assertEqual(report['contract']['repetitions'], 9)
+        self.assertEqual(report['contract']['retained'], 7)
+        self.assertEqual(report['sample_shards'], {'count': 3, 'repetitions': 3})
+        self.assertEqual([shard['index'] for shard in result['measurement_shards']], [0, 2, 4])
+        for task in report['tasks']:
+            entry = task['participants']['xff']
+            self.assertEqual({sample['shard_index'] for sample in entry['samples']}, {0, 2, 4})
+            self.assertEqual(len(shards.benchmark_matrix.selected_samples(report, entry)), 7)
+
+    def test_adaptive_selection_requires_a_three_candidate_majority(self):
+        candidates = records(count=5, partition='samples', repetitions=15, keep=15, adaptive=True,
+                             host_cpu_count=3)
+        by_platform = {'linux': {0: candidates[0], 1: candidates[1]}, 'macos': {}}
+        with self.assertRaisesRegex(ValueError, 'no three-shard CPU-count agreement'):
+            shards.select_adaptive_reports(by_platform, 'linux')
+        by_platform['linux'][2] = records(count=5, partition='samples', repetitions=15, keep=15,
+                                          adaptive=True, host_cpu_count=5)[2]
+        by_platform['linux'][3] = records(count=5, partition='samples', repetitions=15, keep=15,
+                                          adaptive=True, host_cpu_count=3)[3]
+        by_platform['linux'][4] = records(count=5, partition='samples', repetitions=15, keep=15,
+                                          adaptive=True, host_cpu_count=5)[4]
+        by_platform['linux'][1]['tool_comparisons']['tools']['xff']['sha256'] = 'different-binary'
+        # A matching CPU count cannot hide a different binary from the final aggregator.
+        with self.assertRaisesRegex(ValueError, 'incompatible non-CPU benchmark contracts'):
+            shards.merge_reports(shards.select_adaptive_reports(by_platform, 'linux'), allow_sample_subset=True)
 
     def test_every_fixture_has_one_owner(self):
         plan = shards.make_plan([10, 20, 50, 100], [1, 4], 3, task_names=['files'])

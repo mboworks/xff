@@ -903,6 +903,8 @@ this as intentional accounting.
       ancestry before run time so reruns cannot compare with themselves or future merges.
 - [x] Reproduce the missing-baseline report using run 37196735470 artifacts without new measurements:
       the repaired selection finds all 468 reference comparisons on each platform against #957.
+- [ ] Revisit adaptive benchmark shard agreement after several CI runs. Track how often fourth and
+      fifth candidates are scheduled and whether candidate CPU-count majorities improve stability.
 
 ### Expression-program optimizer qualification (EP06/EP07)
 

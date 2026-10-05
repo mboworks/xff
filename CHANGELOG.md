@@ -58,6 +58,9 @@
 
 - Validate benchmark runner capacity before measurement and explain incompatible shard identities.
 
+- Run three benchmark shards per platform first, scheduling a fourth or fifth only when the
+  candidate CPU counts do not yet have a three-shard majority.
+
 - Build with Clang/LLVM 23.1.2 and its matching formatter; retain LLVM 22.1.8 with its instrumented libc++ for MSan.
 
 - Select ThinLTO with `--config=lto`; use mold for ordinary Linux builds, LLD for Linux LTO, and Apple linker-managed LTO on macOS.
