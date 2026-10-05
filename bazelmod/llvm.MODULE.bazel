@@ -16,7 +16,7 @@
 """LLVM 23 by default; LLVM 22 with its matching instrumented libc++ for MSan."""
 
 # The release provides feature-based linker selection and native macOS ThinLTO.
-bazel_dep(name = "toolchains_llvm", version = "1.11.0")
+bazel_dep(name = "toolchains_llvm", version = "1.11.1")
 
 # The MemorySanitizer-instrumented libc++ (`--config=msan`, Linux only). MSan reports a
 # false positive for every read of memory written by code it did not instrument, and the
