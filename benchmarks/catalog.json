@@ -3411,50 +3411,6 @@
   },
   {
     "platform": "macos / arm64",
-    "commit": "055f6f7bbb3dd78f7edfdd47ab32d63a571d2dfe",
-    "label": "PR 976 / 055f6f7bbb",
-    "source": "pr-976",
-    "source_label": "PR #976 preview",
-    "links": [
-      {
-        "label": "PR #976 preview",
-        "href": "https://github.com/mboworks/xff/pull/976"
-      }
-    ],
-    "date": "2026-10-04T22:52:54Z",
-    "measurement_date": "2026-10-05T00:42:04Z",
-    "backfill": false,
-    "run": 37241690798,
-    "attempt": 1,
-    "report": "previews/976/37241690798/1/macos/",
-    "figures": "previews/976/37241690798/1/macos/landscape.json",
-    "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS 26.6.2 / arm64"
-  },
-  {
-    "platform": "linux / x86_64",
-    "commit": "055f6f7bbb3dd78f7edfdd47ab32d63a571d2dfe",
-    "label": "PR 976 / 055f6f7bbb",
-    "source": "pr-976",
-    "source_label": "PR #976 preview",
-    "links": [
-      {
-        "label": "PR #976 preview",
-        "href": "https://github.com/mboworks/xff/pull/976"
-      }
-    ],
-    "date": "2026-10-04T22:52:54Z",
-    "measurement_date": "2026-10-05T00:42:08Z",
-    "backfill": false,
-    "run": 37241690798,
-    "attempt": 1,
-    "report": "previews/976/37241690798/1/linux/",
-    "figures": "previews/976/37241690798/1/linux/landscape.json",
-    "identity": "xff benchmarks - Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
-    "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
-  },
-  {
-    "platform": "macos / arm64",
     "commit": "afbf565326a6af1f458f41ae5226fb1d464e4c2c",
     "label": "PR 977 / afbf565326",
     "source": "pr-977",
@@ -3494,50 +3450,6 @@
     "attempt": 1,
     "report": "previews/977/37243241330/1/linux/",
     "figures": "previews/977/37243241330/1/linux/landscape.json",
-    "identity": "xff benchmarks - Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
-    "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
-  },
-  {
-    "platform": "macos / arm64",
-    "commit": "a957b51f4d2fed6d178fb8664e445662771f919b",
-    "label": "PR 980 / a957b51f4d",
-    "source": "pr-980",
-    "source_label": "PR #980 preview",
-    "links": [
-      {
-        "label": "PR #980 preview",
-        "href": "https://github.com/mboworks/xff/pull/980"
-      }
-    ],
-    "date": "2026-10-05T22:08:08Z",
-    "measurement_date": "2026-10-05T22:37:31Z",
-    "backfill": false,
-    "run": 37380490972,
-    "attempt": 1,
-    "report": "previews/980/37380490972/1/macos/",
-    "figures": "previews/980/37380490972/1/macos/landscape.json",
-    "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS 26.6.2 / arm64"
-  },
-  {
-    "platform": "linux / x86_64",
-    "commit": "a957b51f4d2fed6d178fb8664e445662771f919b",
-    "label": "PR 980 / a957b51f4d",
-    "source": "pr-980",
-    "source_label": "PR #980 preview",
-    "links": [
-      {
-        "label": "PR #980 preview",
-        "href": "https://github.com/mboworks/xff/pull/980"
-      }
-    ],
-    "date": "2026-10-05T22:08:08Z",
-    "measurement_date": "2026-10-05T22:37:15Z",
-    "backfill": false,
-    "run": 37380490972,
-    "attempt": 1,
-    "report": "previews/980/37380490972/1/linux/",
-    "figures": "previews/980/37380490972/1/linux/landscape.json",
     "identity": "xff benchmarks - Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
     "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
   }
