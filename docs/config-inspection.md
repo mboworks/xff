@@ -8,6 +8,15 @@ files, validates them, resolves selectors, and prints the resulting configuratio
 the expression. Invalid selected profiles, unreadable existing files, and missing explicit files
 remain errors; explain mode does not bypass them.
 
+The execution resource view prepares the resolved native expression without traversing roots or
+running actions. It reports the prepared recursive executor, source-node count, prepared operands,
+matcher slots, and owned record bytes. Those counts cover the original expression before any
+parallel filter/output split. Record bytes exclude the source tree, regex backends, adapter objects,
+allocator overhead and workers; they are not a process-memory estimate. Coordinator matching reuses
+the original compiled matchers; concurrent workers initialize private matcher state only when reached.
+Source order is preserved, and no optimizer reorders predicates. A command with no native expression
+reports `none`; a separate rg search is described by the `rg-search` row.
+
 Read the output in this order:
 
 1. **Sources:** which files were consulted and whether they existed. This is discovery order;

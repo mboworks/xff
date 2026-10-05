@@ -37,6 +37,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "absl/algorithm/container.h"
@@ -56,6 +57,7 @@
 #include "mbo/diff/diff_options.h"
 #include "mbo/file/artefact.h"
 #include "mbo/status/status_macros.h"
+#include "mbo/types/strong_id.h"
 #include "re2/re2.h"
 #include "xff/content/line_match.h"
 #include "xff/content/word.h"
@@ -489,57 +491,88 @@ bool MatchesSize(std::string_view arg, std::uint64_t size_bytes, std::uint64_t b
 
 // Matches a plain integer metadata field (e.g. -links) with an optional +/-
 // prefix: `+N` greater than N, `-N` less than N, `N` exactly.
-bool MatchesNumeric(std::string_view arg, std::uint64_t value) {
+struct NumericSpec {
   char compare = '=';
+  std::uint64_t want = 0;
+};
+
+std::optional<NumericSpec> ParseNumericSpec(std::string_view arg) {
+  NumericSpec spec;
   if (!arg.empty() && (arg.front() == '+' || arg.front() == '-')) {
-    compare = arg.front();
+    spec.compare = arg.front();
     arg.remove_prefix(1);
   }
   if (arg.empty()) {
-    return false;
+    return std::nullopt;
   }
-  std::uint64_t want = 0;
   for (const char digit : arg) {
     if (digit < '0' || digit > '9') {
-      return false;
+      return std::nullopt;
     }
-    want = (want * 10) + static_cast<std::uint64_t>(digit - '0');
+    // Preserve the existing unsigned accumulation semantics; validation is separate.
+    spec.want = (spec.want * 10) + static_cast<std::uint64_t>(digit - '0');
   }
-  if (compare == '+') {
-    return value > want;
+  return spec;
+}
+
+bool MatchesNumericSpec(const NumericSpec& spec, std::uint64_t value) {
+  if (spec.compare == '+') {
+    return value > spec.want;
   }
-  if (compare == '-') {
-    return value < want;
+  if (spec.compare == '-') {
+    return value < spec.want;
   }
-  return value == want;
+  return value == spec.want;
+}
+
+bool MatchesNumeric(std::string_view arg, std::uint64_t value) {
+  const auto spec = ParseNumericSpec(arg);
+  return spec.has_value() && MatchesNumericSpec(*spec, value);
 }
 
 // Like MatchesNumeric, but over a signed count: find's -used day delta is
 // negative when a file's access time predates its status-change time. The
 // argument N is still non-negative (a leading +/- is the comparison operator).
-bool MatchesSignedNumeric(std::string_view arg, std::int64_t value) {
+struct SignedNumericSpec {
   char compare = '=';
+  std::int64_t want = 0;
+};
+
+std::optional<SignedNumericSpec> ParseSignedNumericSpec(std::string_view arg) {
+  SignedNumericSpec spec;
   if (!arg.empty() && (arg.front() == '+' || arg.front() == '-')) {
-    compare = arg.front();
+    spec.compare = arg.front();
     arg.remove_prefix(1);
   }
   if (arg.empty()) {
-    return false;
+    return std::nullopt;
   }
-  std::int64_t want = 0;
   for (const char digit : arg) {
     if (digit < '0' || digit > '9') {
-      return false;
+      return std::nullopt;
     }
-    want = (want * 10) + static_cast<std::int64_t>(digit - '0');
+    const auto value = static_cast<std::int64_t>(digit - '0');
+    if (spec.want > (std::numeric_limits<std::int64_t>::max() - value) / 10) {
+      return std::nullopt;
+    }
+    spec.want = (spec.want * 10) + value;
   }
-  if (compare == '+') {
-    return value > want;
+  return spec;
+}
+
+bool MatchesSignedNumericSpec(const SignedNumericSpec& spec, std::int64_t value) {
+  if (spec.compare == '+') {
+    return value > spec.want;
   }
-  if (compare == '-') {
-    return value < want;
+  if (spec.compare == '-') {
+    return value < spec.want;
   }
-  return value == want;
+  return value == spec.want;
+}
+
+bool MatchesSignedNumeric(std::string_view arg, std::int64_t value) {
+  const auto spec = ParseSignedNumericSpec(arg);
+  return spec.has_value() && MatchesSignedNumericSpec(*spec, value);
 }
 
 // Matches find's `-perm` over the permission bits (incl. setuid/setgid/sticky):
@@ -645,7 +678,12 @@ std::optional<std::uint32_t> ParseSymbolicPerm(std::string_view spec) {
   return want;
 }
 
-bool MatchesPerm(std::string_view arg, std::uint32_t mode) {
+struct PermissionSpec {
+  char op = '=';
+  std::uint32_t want = 0;
+};
+
+std::optional<PermissionSpec> ParsePermissionSpec(std::string_view arg) {
   char op = '=';
   if (!arg.empty() && (arg.front() == '-' || arg.front() == '/')) {
     op = arg.front();  // '-' all-of, '/' (GNU) any-of, bare exact
@@ -655,7 +693,7 @@ bool MatchesPerm(std::string_view arg, std::uint32_t mode) {
     arg.remove_prefix(1);
   }
   if (arg.empty()) {
-    return false;
+    return std::nullopt;
   }
   std::uint32_t want = 0;
   if (arg.find_first_not_of("01234567") == std::string_view::npos) {
@@ -665,18 +703,27 @@ bool MatchesPerm(std::string_view arg, std::uint32_t mode) {
   } else {
     const std::optional<std::uint32_t> symbolic = ParseSymbolicPerm(arg);
     if (!symbolic.has_value()) {
-      return false;  // neither octal nor a valid symbolic mode
+      return std::nullopt;  // neither octal nor a valid symbolic mode
     }
     want = *symbolic;
   }
+  return PermissionSpec{.op = op, .want = want};
+}
+
+bool MatchesPermissionSpec(const PermissionSpec& spec, std::uint32_t mode) {
   const std::uint32_t bits = mode & 07777U;  // permission + setuid/setgid/sticky bits
-  if (op == '-') {
-    return (bits & want) == want;  // all requested bits set
+  if (spec.op == '-') {
+    return (bits & spec.want) == spec.want;  // all requested bits set
   }
-  if (op == '/' || op == '+') {
-    return want == 0 || (bits & want) != 0;  // any requested bit set
+  if (spec.op == '/' || spec.op == '+') {
+    return spec.want == 0 || (bits & spec.want) != 0;  // any requested bit set
   }
-  return bits == want;  // exact
+  return bits == spec.want;  // exact
+}
+
+bool MatchesPerm(std::string_view arg, std::uint32_t mode) {
+  const auto spec = ParsePermissionSpec(arg);
+  return spec.has_value() && MatchesPermissionSpec(*spec, mode);
 }
 
 // find's -empty: an empty regular file (size 0) or a directory with no entries.
@@ -753,44 +800,42 @@ constexpr auto kTimeUnits = mbo::container::MakeLimitedMap(
 // find's -mtime/-mmin: the entry was modified N units ago -- 24h for -mtime, one
 // minute for -mmin -- with any fractional unit discarded (floor), so a 2.9-day
 // file is "2 days". +N means strictly more than N units ago, -N strictly fewer.
-bool MatchesTime(std::string_view arg, absl::Time mtime, absl::Time now, absl::Duration unit, bool allow_unit_suffix) {
-  char compare = '=';
-  if (!arg.empty() && (arg.front() == '+' || arg.front() == '-')) {
-    compare = arg.front();
-    arg.remove_prefix(1);
-  }
+struct TimeSpec {
+  SignedNumericSpec numeric;
+  std::int64_t unit_seconds;
+};
+
+static_assert(sizeof(TimeSpec) <= sizeof(SizeSpec));
+static_assert(alignof(TimeSpec) <= alignof(SizeSpec));
+
+std::optional<TimeSpec> ParseTimeSpec(std::string_view arg, std::int64_t unit_seconds, bool allow_unit_suffix) {
   if (arg.empty()) {
-    return false;
+    return std::nullopt;
   }
-  // BSD unit suffix: -mtime/-atime/-ctime accept a trailing s/m/h/d/w that
-  // overrides the predicate's default unit (e.g. "-mtime -1h"). find-compatible
-  // (BSD); the GNU -mmin/-amin/-cmin family keeps integer minutes (no suffix).
+  // BSD day predicates permit s/m/h/d/w. Minute predicates keep integer minutes.
   if (allow_unit_suffix && (arg.back() < '0' || arg.back() > '9')) {
-    const auto it = kTimeUnits.find(arg.back());
-    if (it == kTimeUnits.end()) {
-      return false;  // unrecognised suffix
+    const auto unit = kTimeUnits.find(arg.back());
+    if (unit == kTimeUnits.end()) {
+      return std::nullopt;
     }
-    unit = it->second;
+    unit_seconds = absl::ToInt64Seconds(unit->second);
     arg.remove_suffix(1);
-    if (arg.empty()) {
-      return false;
-    }
   }
-  std::int64_t want = 0;
-  for (const char digit : arg) {
-    if (digit < '0' || digit > '9') {
-      return false;
-    }
-    want = (want * 10) + (digit - '0');
+  const auto numeric = ParseSignedNumericSpec(arg);
+  if (!numeric.has_value()) {
+    return std::nullopt;
   }
-  const auto units = static_cast<std::int64_t>((now - mtime) / unit);
-  if (compare == '+') {
-    return units > want;
-  }
-  if (compare == '-') {
-    return units < want;
-  }
-  return units == want;
+  return TimeSpec{.numeric = *numeric, .unit_seconds = unit_seconds};
+}
+
+bool MatchesTimeSpec(const TimeSpec& spec, absl::Time time, absl::Time now) {
+  const auto units = static_cast<std::int64_t>((now - time) / absl::Seconds(spec.unit_seconds));
+  return MatchesSignedNumericSpec(spec.numeric, units);
+}
+
+bool MatchesTime(std::string_view arg, absl::Time time, absl::Time now, absl::Duration unit, bool allow_unit_suffix) {
+  const auto spec = ParseTimeSpec(arg, absl::ToInt64Seconds(unit), allow_unit_suffix);
+  return spec.has_value() && MatchesTimeSpec(*spec, time, now);
 }
 
 // xff word/compound duration on -mtime/-atime/-ctime (e.g. "-3 weeks 3 hours",
@@ -981,20 +1026,27 @@ bool EvalCollect(const parser::Expr& expr, EvalContext& ctx) {
   return true;
 }
 
-bool EvalFirst(const parser::Expr& expr, EvalContext& ctx) {
-  if (expr.args.empty() || !ctx.first_counts.has_value()) {
-    return false;
-  }
+int ParseFirstLimit(std::string_view argument) {
   int limit = 0;
-  if (!absl::SimpleAtoi(expr.args.front(), &limit) || limit <= 0) {
+  return absl::SimpleAtoi(argument, &limit) && limit > 0 ? limit : 0;
+}
+
+bool AdmitFirst(const parser::Expr& expr, int limit, FirstCounts& counts) {
+  if (limit == 0) {
     return false;
   }
-  int& seen = (*ctx.first_counts)[ExprIdentity{expr}];
+  int& seen = counts[ExprIdentity{expr}];
   if (seen >= limit) {
     return false;
   }
   ++seen;
   return true;
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
+bool EvalFirst(const parser::Expr& expr, EvalContext& ctx) {
+  return !expr.args.empty() && ctx.first_counts.has_value()
+         && AdmitFirst(expr, ParseFirstLimit(expr.args.front()), *ctx.first_counts);
 }
 
 // -fuzzy / -ifuzzy: the BASENAME, the fzf-ish default.
@@ -1200,13 +1252,17 @@ bool EvalContent(const parser::Expr& expr, EvalContext& ctx) {
 // FullMatch). The matcher is pre-compiled by the parser, with case folding baked in
 // for -irxc. Non-regular, unreadable, and binary files do not match.
 // NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
-bool EvalRxc(const parser::Expr& expr, EvalContext& ctx) {
-  const MatcherRef matcher = MatcherFor(expr, ctx);
+bool MatchesContentRegex(MatcherRef matcher, const EvalContext& ctx) {
   if (!matcher.has_value()) {
     return false;
   }
   const auto content = ContentToSearch(ctx);
   return content.has_value() && matcher->get().PartialMatch(*content);
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
+bool EvalRxc(const parser::Expr& expr, EvalContext& ctx) {
+  return MatchesContentRegex(MatcherFor(expr, ctx), ctx);
 }
 
 // xff -cmp TARGET: true when the entry's content is byte-for-byte identical to
@@ -2785,6 +2841,255 @@ bool EvalQuit(const parser::Expr&, EvalContext& ctx) {
   return true;
 }
 
+// Typed operands occupy a separate pool, so boolean nodes and unprepared predicates do not
+// carry the largest operand record. monostate preserves a malformed operand's existing no-match.
+struct TypeSpec {
+  std::uint32_t mask = 0;
+};
+
+struct MatcherSlotTag {};
+
+using MatcherSlotId = mbo::types::ConstStrongId<MatcherSlotTag, std::size_t>;
+
+struct MatcherSlot {
+  std::optional<regex::Matcher> matcher;
+  bool initialized = false;
+
+  void Initialize(const parser::Expr& expression) {
+    if (initialized) {
+      return;
+    }
+    initialized = true;
+    if (expression.matcher) {
+      if (auto fork = expression.matcher->ForkForWorker(); fork.ok()) {
+        matcher.emplace(std::move(*fork));
+      }
+    }
+  }
+};
+
+// Mutable execution state belongs exclusively to one worker. Shared plans contain no slots.
+using MatcherSlots = absl::Span<MatcherSlot>;
+
+// Calendar/word ages need the current evaluation clock/timezone, not preparation-time observations.
+struct CalendarAge {};
+
+struct FirstLimit {
+  int value = 0;
+};
+
+struct MimePattern {
+  // Includes the terminator required by fnmatch. Unlike std::string, capacity has no
+  // inline storage, so owned byte accounting remains exact without allocator inspection.
+  std::vector<char> bytes;
+};
+
+using PreparedOperand = std::variant<
+    std::monostate,
+    TypeSpec,
+    SizeSpec,
+    NumericSpec,
+    PermissionSpec,
+    MatcherSlotId,
+    SignedNumericSpec,
+    TimeSpec,
+    CalendarAge,
+    FirstLimit,
+    MimePattern>;
+using PreparedEvalFn = bool (*)(const parser::Expr&, const PreparedOperand&, MatcherSlots, EvalContext&);
+using PrepareOperandFn = PreparedOperand (*)(std::string_view);
+
+PreparedOperand PrepareTypeOperand(std::string_view argument) {
+  TypeSpec result;
+  // Use the existing decoder, including its complete-list validation. Seven preparation-only
+  // checks avoid introducing a second type grammar; execution needs just one mask test.
+  for (const auto& entry : kTypeChars) {
+    const auto type = entry.second;
+    if (MatchesType(argument, type)) {
+      result.mask |= std::uint32_t{1} << static_cast<unsigned>(type);
+    }
+  }
+  return result;
+}
+
+bool MatchesTypeSpec(const TypeSpec& spec, vfs::FileType type) {
+  const auto index = static_cast<unsigned>(type);
+  return index < std::numeric_limits<std::uint32_t>::digits && (spec.mask & (std::uint32_t{1} << index)) != 0;
+}
+
+PreparedOperand PrepareSizeOperand(std::string_view argument) {
+  // Zero records a context-selected block unit. Explicit units remain fixed in the operand.
+  const auto spec = ParseSizeSpec(argument, 0);
+  return spec.ok() ? PreparedOperand{*spec} : PreparedOperand{};
+}
+
+PreparedOperand PrepareNumericOperand(std::string_view argument) {
+  const auto spec = ParseNumericSpec(argument);
+  return spec.has_value() ? PreparedOperand{*spec} : PreparedOperand{};
+}
+
+PreparedOperand PreparePermissionOperand(std::string_view argument) {
+  const auto spec = ParsePermissionSpec(argument);
+  return spec.has_value() ? PreparedOperand{*spec} : PreparedOperand{};
+}
+
+PreparedOperand PrepareSignedNumericOperand(std::string_view argument) {
+  const auto spec = ParseSignedNumericSpec(argument);
+  return spec.has_value() ? PreparedOperand{*spec} : PreparedOperand{};
+}
+
+PreparedOperand PrepareFirstOperand(std::string_view argument) {
+  return FirstLimit{.value = ParseFirstLimit(argument)};
+}
+
+PreparedOperand PrepareMimeOperand(std::string_view argument) {
+  MimePattern pattern;
+  pattern.bytes.reserve(argument.size() + 1);
+  for (const char byte : argument) {
+    pattern.bytes.push_back(absl::ascii_tolower(byte));
+  }
+  pattern.bytes.push_back('\0');
+  return pattern;
+}
+
+bool EvalPreparedFirst(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    MatcherSlots,
+    // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+    EvalContext& context) {
+  return std::holds_alternative<FirstLimit>(operand) && context.first_counts.has_value()
+         && AdmitFirst(expression, std::get<FirstLimit>(operand).value, *context.first_counts);
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+bool EvalPreparedMime(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+  if (!std::holds_alternative<MimePattern>(operand)) {
+    return false;
+  }
+  const auto& pattern = std::get<MimePattern>(operand).bytes;
+  const auto type = absl::AsciiStrToLower(mime::TypeForName(context.visit.name));
+  return ::fnmatch(pattern.data(), type.c_str(), 0) == 0;
+}
+
+template<std::int64_t UnitSeconds, bool AllowUnitSuffix>
+PreparedOperand PrepareTimeOperand(std::string_view argument) {
+  if (AllowUnitSuffix && absl::StrContains(argument, ' ')) {
+    return CalendarAge{};
+  }
+  const auto spec = ParseTimeSpec(argument, UnitSeconds, AllowUnitSuffix);
+  return spec.has_value() ? PreparedOperand{*spec} : PreparedOperand{};
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+bool EvalPreparedUsed(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+  if (!std::holds_alternative<SignedNumericSpec>(operand)) {
+    return false;
+  }
+  const auto seconds = absl::ToInt64Seconds(context.visit.metadata.atime - context.visit.metadata.ctime);
+  return MatchesSignedNumericSpec(std::get<SignedNumericSpec>(operand), seconds / 86'400);
+}
+
+template<char Field>
+bool EvalPreparedTime(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    MatcherSlots,
+    EvalContext& context) {
+  if (expression.args.empty()) {
+    return false;
+  }
+  const auto time = TimeField(context.visit.metadata, Field);
+  if (!time.has_value()) {
+    return ReportNoBtime(context);
+  }
+  if (std::holds_alternative<CalendarAge>(operand)) {
+    return MatchesAge(expression.args.front(), *time, context.now, context.tz);
+  }
+  return std::holds_alternative<TimeSpec>(operand) && MatchesTimeSpec(std::get<TimeSpec>(operand), *time, context.now);
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+bool EvalPreparedType(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+  return std::holds_alternative<TypeSpec>(operand)
+         && MatchesTypeSpec(std::get<TypeSpec>(operand), context.visit.metadata.type);
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+bool EvalPreparedXtype(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+  if (!std::holds_alternative<TypeSpec>(operand)) {
+    return false;
+  }
+  auto type = context.visit.metadata.type;
+  if (type == vfs::FileType::kSymlink) {
+    const auto target = context.fs.StatFields(context.visit.path, true, vfs::MetadataFields::kBasic);
+    type = target.ok() ? target->type : vfs::FileType::kSymlink;
+  }
+  return MatchesTypeSpec(std::get<TypeSpec>(operand), type);
+}
+
+bool MatchesPreparedSize(const PreparedOperand& operand, std::uint64_t bytes, std::uint64_t block_size) {
+  if (!std::holds_alternative<SizeSpec>(operand)) {
+    return false;
+  }
+  const auto& spec = std::get<SizeSpec>(operand);
+  const auto unit = spec.unit == 0 ? block_size : spec.unit;
+  const auto units = (bytes / unit) + static_cast<std::uint64_t>(bytes % unit != 0);
+  return MatchesNumericSpec({.compare = spec.compare, .want = spec.want}, units);
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+bool EvalPreparedSize(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+  return MatchesPreparedSize(operand, context.visit.metadata.size, context.block_size);
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+bool EvalPreparedBlocks(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+  return MatchesPreparedSize(operand, context.visit.metadata.blocks * 512U, context.block_size);
+}
+
+template<auto Field>
+// NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+bool EvalPreparedNumeric(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+  return std::holds_alternative<NumericSpec>(operand)
+         && MatchesNumericSpec(std::get<NumericSpec>(operand), context.visit.metadata.*Field);
+}
+
+// NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+bool EvalPreparedPermission(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+  return std::holds_alternative<PermissionSpec>(operand)
+         && MatchesPermissionSpec(std::get<PermissionSpec>(operand), context.visit.metadata.mode);
+}
+
+MatcherRef PreparedMatcherFor(const parser::Expr& expression, const PreparedOperand& operand, MatcherSlots slots) {
+  if (!slots.empty()) {
+    auto& local = slots.at(std::get<MatcherSlotId>(operand).value());
+    local.Initialize(expression);
+    if (local.matcher.has_value()) {
+      return std::cref(*local.matcher);
+    }
+  }
+  return AsRef(expression.matcher);
+}
+
+bool EvalPreparedRegex(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    MatcherSlots slots,
+    // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+    EvalContext& context) {
+  return MatchesRegex(PreparedMatcherFor(expression, operand, slots), context.visit.path, context.captures);
+}
+
+bool EvalPreparedRxc(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    MatcherSlots slots,
+    // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+    EvalContext& context) {
+  return MatchesContentRegex(PreparedMatcherFor(expression, operand, slots), context);
+}
+
 // Engine-side dispatch entry for one primary. A struct (not a bare function
 // pointer) so per-primary engine config can be added here as it is designed,
 // without changing the table or its call site. Declarative metadata (kind,
@@ -2796,118 +3101,162 @@ using EvalFn = bool (*)(const parser::Expr&, EvalContext&);
 
 struct EvalEntry {
   EvalFn eval = nullptr;
+  PrepareOperandFn prepare = nullptr;
+  PreparedEvalFn prepared_eval = nullptr;
+  bool indexed_matcher = false;
 };
+
+template<EvalFn Function>
+bool EvalOriginalOperand(const parser::Expr& expression, const PreparedOperand&, MatcherSlots, EvalContext& context) {
+  return Function(expression, context);
+}
+
+template<EvalFn Function>
+consteval EvalEntry MakeEvalEntry(
+    PrepareOperandFn prepare = nullptr,
+    PreparedEvalFn prepared_eval = nullptr,
+    bool indexed_matcher = false) {
+  return {
+      .eval = Function,
+      .prepare = prepare,
+      .prepared_eval = prepared_eval == nullptr ? &EvalOriginalOperand<Function> : prepared_eval,
+      .indexed_matcher = indexed_matcher,
+  };
+}
 
 using DispatchPair = std::pair<std::string_view, EvalEntry>;
 constexpr auto kDispatch = mbo::container::MakeLimitedMap(
-    DispatchPair{"-Bmin", {&EvalBmin}},    // capital 'B' sorts before the lowercase entries
-    DispatchPair{"-Btime", {&EvalBtime}},  // (ASCII), so the birth-time pair leads the table
-    DispatchPair{"-amin", {&EvalAmin}},
-    DispatchPair{"-anewer", {&EvalAnewer}},
-    DispatchPair{"-atime", {&EvalAtime}},
-    DispatchPair{"-binary", {&EvalBinary}},
-    DispatchPair{"-blocks", {&EvalBlocks}},
-    DispatchPair{"-capture", {&EvalCapture}},
-    DispatchPair{"-capturedir", {&EvalCapturedir}},
-    DispatchPair{"-cmin", {&EvalCmin}},
-    DispatchPair{"-cmp", {&EvalCmp}},
-    DispatchPair{"-cnewer", {&EvalCnewer}},
-    DispatchPair{"-collect", {&EvalCollect}},
-    DispatchPair{"-content", {&EvalContent}},
-    DispatchPair{"-ctime", {&EvalCtime}},
-    DispatchPair{"-delete", {&EvalDelete}},
-    DispatchPair{"-diff", {&EvalDiff}},
-    DispatchPair{"-empty", {&EvalEmpty}},
-    DispatchPair{"-eofcr", {&EvalEofcr}},
-    DispatchPair{"-eofcrlf", {&EvalEofcrlf}},
-    DispatchPair{"-eofnl", {&EvalEofnl}},
-    DispatchPair{"-exec", {&EvalExec}},
-    DispatchPair{"-execdir", {&EvalExecdir}},
-    DispatchPair{"-executable", {&EvalExecutable}},
-    DispatchPair{"-false", {&EvalFalse}},
-    DispatchPair{"-fls", {&EvalFls}},
-    DispatchPair{"-fprint", {&EvalFprint}},
-    DispatchPair{"-fprint0", {&EvalFprint0}},
-    DispatchPair{"-fprintf", {&EvalFprintf}},
-    DispatchPair{"-fprintfln", {&EvalFprintfln}},
-    DispatchPair{"-fprintln", {&EvalFprintln}},
-    DispatchPair{"-fstype", {&EvalFstype}},
-    DispatchPair{"-gid", {&EvalGid}},
-    DispatchPair{"-grep", {&EvalGrep}},
-    DispatchPair{"-group", {&EvalGroup}},
-    DispatchPair{"-hash", {&EvalHash}},
-    DispatchPair{"-hasheq", {&EvalHasheq}},
-    DispatchPair{"-icontent", {&EvalContent}},
-    DispatchPair{"-ilname", {&EvalLname}},
-    DispatchPair{"-iname", {&EvalName}},
-    DispatchPair{"-inum", {&EvalInum}},
-    DispatchPair{"-ipath", {&EvalPath}},
-    DispatchPair{"-iregex", {&EvalRegex}},
-    DispatchPair{"-irxc", {&EvalRxc}},
-    DispatchPair{"-iwholename", {&EvalPath}},
-    DispatchPair{"-lang", {&EvalLang}},
-    DispatchPair{"-links", {&EvalLinks}},
-    DispatchPair{"-lname", {&EvalLname}},
-    DispatchPair{"-ls", {&EvalLs}},
-    DispatchPair{"-mime", {&EvalMime}},
-    DispatchPair{"-mmin", {&EvalMmin}},
-    DispatchPair{"-mtime", {&EvalMtime}},
-    DispatchPair{"-first", {&EvalFirst}},
-    DispatchPair{"-fuzzy", {&EvalFuzzy}},
-    DispatchPair{"-fuzzypath", {&EvalFuzzyPath}},
-    DispatchPair{"-ifuzzy", {&EvalFuzzy}},
-    DispatchPair{"-ifuzzypath", {&EvalFuzzyPath}},
-    DispatchPair{"-name", {&EvalName}},
-    DispatchPair{"-newer", {&EvalNewer}},
-    DispatchPair{"-newerBB", {&EvalNewerXY}},  // birthtime -newerXY combos (BSD-compat)
-    DispatchPair{"-newerBa", {&EvalNewerXY}},
-    DispatchPair{"-newerBc", {&EvalNewerXY}},
-    DispatchPair{"-newerBm", {&EvalNewerXY}},
-    DispatchPair{"-newerBt", {&EvalNewerXY}},
-    DispatchPair{"-neweraB", {&EvalNewerXY}},
-    DispatchPair{"-neweraa", {&EvalNewerXY}},
-    DispatchPair{"-newerac", {&EvalNewerXY}},
-    DispatchPair{"-neweram", {&EvalNewerXY}},
-    DispatchPair{"-newerat", {&EvalNewerXY}},
-    DispatchPair{"-newerca", {&EvalNewerXY}},
-    DispatchPair{"-newercc", {&EvalNewerXY}},
-    DispatchPair{"-newercm", {&EvalNewerXY}},
-    DispatchPair{"-newerct", {&EvalNewerXY}},
-    DispatchPair{"-newercB", {&EvalNewerXY}},
-    DispatchPair{"-newermB", {&EvalNewerXY}},
-    DispatchPair{"-newerma", {&EvalNewerXY}},
-    DispatchPair{"-newermc", {&EvalNewerXY}},
-    DispatchPair{"-newermm", {&EvalNewerXY}},
-    DispatchPair{"-newermt", {&EvalNewerXY}},
-    DispatchPair{"-nogroup", {&EvalNogroup}},
-    DispatchPair{"-nouser", {&EvalNouser}},
-    DispatchPair{"-ok", {&EvalOk}},
-    DispatchPair{"-okdir", {&EvalOkdir}},
-    DispatchPair{"-path", {&EvalPath}},
-    DispatchPair{"-perm", {&EvalPerm}},
-    DispatchPair{"-print", {&EvalPrint}},
-    DispatchPair{"-print0", {&EvalPrint0}},
-    DispatchPair{"-printf", {&EvalPrintf}},
-    DispatchPair{"-printfln", {&EvalPrintfln}},
-    DispatchPair{"-println", {&EvalPrintln}},
-    DispatchPair{"-prune", {&EvalPrune}},
-    DispatchPair{"-quit", {&EvalQuit}},
-    DispatchPair{"-readable", {&EvalReadable}},
-    DispatchPair{"-regex", {&EvalRegex}},
-    DispatchPair{"-rxc", {&EvalRxc}},
-    DispatchPair{"-samefile", {&EvalSamefile}},
-    DispatchPair{"-similar", {&EvalSimilar}},
-    DispatchPair{"-size", {&EvalSize}},
-    DispatchPair{"-sparse", {&EvalSparse}},
-    DispatchPair{"-text", {&EvalText}},
-    DispatchPair{"-true", {&EvalTrue}},
-    DispatchPair{"-type", {&EvalType}},
-    DispatchPair{"-uid", {&EvalUid}},
-    DispatchPair{"-used", {&EvalUsed}},
-    DispatchPair{"-user", {&EvalUser}},
-    DispatchPair{"-wholename", {&EvalPath}},
-    DispatchPair{"-writable", {&EvalWritable}},
-    DispatchPair{"-xtype", {&EvalXtype}});
+    DispatchPair{
+        "-Bmin",
+        MakeEvalEntry<&EvalBmin>(&PrepareTimeOperand<60, false>, &EvalPreparedTime<'B'>),
+    },
+    DispatchPair{
+        "-Btime",
+        MakeEvalEntry<&EvalBtime>(&PrepareTimeOperand<86'400, true>, &EvalPreparedTime<'B'>),
+    },
+    DispatchPair{"-amin", MakeEvalEntry<&EvalAmin>(&PrepareTimeOperand<60, false>, &EvalPreparedTime<'a'>)},
+    DispatchPair{"-anewer", MakeEvalEntry<&EvalAnewer>()},
+    DispatchPair{"-atime", MakeEvalEntry<&EvalAtime>(&PrepareTimeOperand<86'400, true>, &EvalPreparedTime<'a'>)},
+    DispatchPair{"-binary", MakeEvalEntry<&EvalBinary>()},
+    DispatchPair{"-blocks", MakeEvalEntry<&EvalBlocks>(&PrepareSizeOperand, &EvalPreparedBlocks)},
+    DispatchPair{"-capture", MakeEvalEntry<&EvalCapture>()},
+    DispatchPair{"-capturedir", MakeEvalEntry<&EvalCapturedir>()},
+    DispatchPair{"-cmin", MakeEvalEntry<&EvalCmin>(&PrepareTimeOperand<60, false>, &EvalPreparedTime<'c'>)},
+    DispatchPair{"-cmp", MakeEvalEntry<&EvalCmp>()},
+    DispatchPair{"-cnewer", MakeEvalEntry<&EvalCnewer>()},
+    DispatchPair{"-collect", MakeEvalEntry<&EvalCollect>()},
+    DispatchPair{"-content", MakeEvalEntry<&EvalContent>()},
+    DispatchPair{"-ctime", MakeEvalEntry<&EvalCtime>(&PrepareTimeOperand<86'400, true>, &EvalPreparedTime<'c'>)},
+    DispatchPair{"-delete", MakeEvalEntry<&EvalDelete>()},
+    DispatchPair{"-diff", MakeEvalEntry<&EvalDiff>()},
+    DispatchPair{"-empty", MakeEvalEntry<&EvalEmpty>()},
+    DispatchPair{"-eofcr", MakeEvalEntry<&EvalEofcr>()},
+    DispatchPair{"-eofcrlf", MakeEvalEntry<&EvalEofcrlf>()},
+    DispatchPair{"-eofnl", MakeEvalEntry<&EvalEofnl>()},
+    DispatchPair{"-exec", MakeEvalEntry<&EvalExec>()},
+    DispatchPair{"-execdir", MakeEvalEntry<&EvalExecdir>()},
+    DispatchPair{"-executable", MakeEvalEntry<&EvalExecutable>()},
+    DispatchPair{"-false", MakeEvalEntry<&EvalFalse>()},
+    DispatchPair{"-fls", MakeEvalEntry<&EvalFls>()},
+    DispatchPair{"-fprint", MakeEvalEntry<&EvalFprint>()},
+    DispatchPair{"-fprint0", MakeEvalEntry<&EvalFprint0>()},
+    DispatchPair{"-fprintf", MakeEvalEntry<&EvalFprintf>()},
+    DispatchPair{"-fprintfln", MakeEvalEntry<&EvalFprintfln>()},
+    DispatchPair{"-fprintln", MakeEvalEntry<&EvalFprintln>()},
+    DispatchPair{"-fstype", MakeEvalEntry<&EvalFstype>()},
+    DispatchPair{"-gid", MakeEvalEntry<&EvalGid>(&PrepareNumericOperand, &EvalPreparedNumeric<&vfs::Metadata::gid>)},
+    DispatchPair{"-grep", MakeEvalEntry<&EvalGrep>()},
+    DispatchPair{"-group", MakeEvalEntry<&EvalGroup>()},
+    DispatchPair{"-hash", MakeEvalEntry<&EvalHash>()},
+    DispatchPair{"-hasheq", MakeEvalEntry<&EvalHasheq>()},
+    DispatchPair{"-icontent", MakeEvalEntry<&EvalContent>()},
+    DispatchPair{"-ilname", MakeEvalEntry<&EvalLname>()},
+    DispatchPair{"-iname", MakeEvalEntry<&EvalName>()},
+    DispatchPair{"-inum", MakeEvalEntry<&EvalInum>(&PrepareNumericOperand, &EvalPreparedNumeric<&vfs::Metadata::ino>)},
+    DispatchPair{"-ipath", MakeEvalEntry<&EvalPath>()},
+    DispatchPair{"-iregex", MakeEvalEntry<&EvalRegex>(nullptr, &EvalPreparedRegex, true)},
+    DispatchPair{"-irxc", MakeEvalEntry<&EvalRxc>(nullptr, &EvalPreparedRxc, true)},
+    DispatchPair{"-iwholename", MakeEvalEntry<&EvalPath>()},
+    DispatchPair{"-lang", MakeEvalEntry<&EvalLang>()},
+    DispatchPair{
+        "-links", MakeEvalEntry<&EvalLinks>(&PrepareNumericOperand, &EvalPreparedNumeric<&vfs::Metadata::nlink>)},
+    DispatchPair{"-lname", MakeEvalEntry<&EvalLname>()},
+    DispatchPair{"-ls", MakeEvalEntry<&EvalLs>()},
+    DispatchPair{"-mime", MakeEvalEntry<&EvalMime>(&PrepareMimeOperand, &EvalPreparedMime)},
+    DispatchPair{"-mmin", MakeEvalEntry<&EvalMmin>(&PrepareTimeOperand<60, false>, &EvalPreparedTime<'m'>)},
+    DispatchPair{"-mtime", MakeEvalEntry<&EvalMtime>(&PrepareTimeOperand<86'400, true>, &EvalPreparedTime<'m'>)},
+    DispatchPair{"-first", MakeEvalEntry<&EvalFirst>(&PrepareFirstOperand, &EvalPreparedFirst)},
+    DispatchPair{"-fuzzy", MakeEvalEntry<&EvalFuzzy>()},
+    DispatchPair{"-fuzzypath", MakeEvalEntry<&EvalFuzzyPath>()},
+    DispatchPair{"-ifuzzy", MakeEvalEntry<&EvalFuzzy>()},
+    DispatchPair{"-ifuzzypath", MakeEvalEntry<&EvalFuzzyPath>()},
+    DispatchPair{"-name", MakeEvalEntry<&EvalName>()},
+    DispatchPair{"-newer", MakeEvalEntry<&EvalNewer>()},
+    DispatchPair{"-newerBB", MakeEvalEntry<&EvalNewerXY>()},  // birthtime -newerXY combos (BSD-compat)
+    DispatchPair{"-newerBa", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newerBc", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newerBm", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newerBt", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-neweraB", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-neweraa", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newerac", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-neweram", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newerat", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newerca", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newercc", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newercm", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newerct", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newercB", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newermB", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newerma", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newermc", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newermm", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-newermt", MakeEvalEntry<&EvalNewerXY>()},
+    DispatchPair{"-nogroup", MakeEvalEntry<&EvalNogroup>()},
+    DispatchPair{"-nouser", MakeEvalEntry<&EvalNouser>()},
+    DispatchPair{"-ok", MakeEvalEntry<&EvalOk>()},
+    DispatchPair{"-okdir", MakeEvalEntry<&EvalOkdir>()},
+    DispatchPair{"-path", MakeEvalEntry<&EvalPath>()},
+    DispatchPair{"-perm", MakeEvalEntry<&EvalPerm>(&PreparePermissionOperand, &EvalPreparedPermission)},
+    DispatchPair{"-print", MakeEvalEntry<&EvalPrint>()},
+    DispatchPair{"-print0", MakeEvalEntry<&EvalPrint0>()},
+    DispatchPair{"-printf", MakeEvalEntry<&EvalPrintf>()},
+    DispatchPair{"-printfln", MakeEvalEntry<&EvalPrintfln>()},
+    DispatchPair{"-println", MakeEvalEntry<&EvalPrintln>()},
+    DispatchPair{"-prune", MakeEvalEntry<&EvalPrune>()},
+    DispatchPair{"-quit", MakeEvalEntry<&EvalQuit>()},
+    DispatchPair{"-readable", MakeEvalEntry<&EvalReadable>()},
+    DispatchPair{"-regex", MakeEvalEntry<&EvalRegex>(nullptr, &EvalPreparedRegex, true)},
+    DispatchPair{"-rxc", MakeEvalEntry<&EvalRxc>(nullptr, &EvalPreparedRxc, true)},
+    DispatchPair{"-samefile", MakeEvalEntry<&EvalSamefile>()},
+    DispatchPair{"-similar", MakeEvalEntry<&EvalSimilar>()},
+    DispatchPair{"-size", MakeEvalEntry<&EvalSize>(&PrepareSizeOperand, &EvalPreparedSize)},
+    DispatchPair{"-sparse", MakeEvalEntry<&EvalSparse>()},
+    DispatchPair{"-text", MakeEvalEntry<&EvalText>()},
+    DispatchPair{"-true", MakeEvalEntry<&EvalTrue>()},
+    DispatchPair{"-type", MakeEvalEntry<&EvalType>(&PrepareTypeOperand, &EvalPreparedType)},
+    DispatchPair{"-uid", MakeEvalEntry<&EvalUid>(&PrepareNumericOperand, &EvalPreparedNumeric<&vfs::Metadata::uid>)},
+    DispatchPair{"-used", MakeEvalEntry<&EvalUsed>(&PrepareSignedNumericOperand, &EvalPreparedUsed)},
+    DispatchPair{"-user", MakeEvalEntry<&EvalUser>()},
+    DispatchPair{"-wholename", MakeEvalEntry<&EvalPath>()},
+    DispatchPair{"-writable", MakeEvalEntry<&EvalWritable>()},
+    DispatchPair{"-xtype", MakeEvalEntry<&EvalXtype>(&PrepareTypeOperand, &EvalPreparedXtype)});
+
+absl::StatusOr<EvalEntry> ResolveEvaluation(const parser::Expr& expression) {
+  if (expression.kind != parser::Expr::Kind::kPredicate) {
+    return MakeEvalEntry<&EvalTrue>();
+  }
+  const auto& descriptor = *expression.descriptor;
+  if (const auto found = kDispatch.find(descriptor.name); found != kDispatch.end()) {
+    return found->second;
+  }
+  if (descriptor.evaluation_noop || descriptor.traversal_effect != registry::TraversalEffect::kNone
+      || descriptor.control == registry::Control::kDayStart || descriptor.control == registry::Control::kTop
+      || descriptor.control == registry::Control::kShardStatus) {
+    return MakeEvalEntry<&EvalTrue>();
+  }
+  return absl::InvalidArgumentError(absl::StrCat("missing engine evaluation binding: ", descriptor.name));
+}
 
 bool EvaluatePredicate(const parser::Expr& expr, EvalContext& ctx) {
   // O(log n) dispatch on the descriptor name. A name not in the table (e.g. a
@@ -2971,6 +3320,20 @@ bool IsFuzzyOnlyExpression(const parser::Expr& expr) {
   return false;
 }
 
+struct TreeCursor {
+  std::reference_wrapper<const parser::Expr> expression;
+
+  const parser::Expr& Get() const { return expression.get(); }
+
+  TreeCursor Left() const { return {std::cref(*Get().lhs)}; }
+
+  TreeCursor Right() const { return {std::cref(*Get().rhs)}; }
+
+  bool Predicate(EvalContext& context) const { return EvaluatePredicate(Get(), context); }
+
+  bool FuzzyOnly() const { return IsFuzzyOnlyExpression(Get()); }
+};
+
 std::optional<int> MinScore(std::optional<int> lhs, std::optional<int> rhs) {
   if (!lhs.has_value()) {
     return rhs;
@@ -2991,9 +3354,12 @@ std::optional<int> MaxScore(std::optional<int> lhs, std::optional<int> rhs) {
   return std::max(*lhs, *rhs);
 }
 
-EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context);
+template<typename Cursor>
+EvaluationResult EvaluateResult(Cursor cursor, EvalContext& context);
 
-EvaluationResult EvaluateChild(const parser::Expr& node, EvalContext& context) {
+template<typename Cursor>
+EvaluationResult EvaluateChild(Cursor cursor, EvalContext& context) {
+  const auto& node = cursor.Get();
   if (context.deferred.has_value()) {
     if (const auto found = context.deferred->memo.find(ExprIdentity{node}); found != context.deferred->memo.end()) {
       return found->second;
@@ -3006,7 +3372,7 @@ EvaluationResult EvaluateChild(const parser::Expr& node, EvalContext& context) {
   } else {
     context.fuzzy_score.reset();
   }
-  EvaluationResult result = EvaluateResult(node, context);
+  EvaluationResult result = EvaluateResult(cursor, context);
   if (outer.has_value()) {
     context.fuzzy_score.set_ref(*outer);
   } else {
@@ -3047,14 +3413,15 @@ EvaluationResult EvaluateShardStatus(const parser::Expr& expr, EvalContext& cont
   return {};
 }
 
-EvaluationResult EvaluateAnd(const parser::Expr& expr, EvalContext& context) {
-  EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
+template<typename Cursor>
+EvaluationResult EvaluateAnd(Cursor cursor, EvalContext& context) {
+  EvaluationResult lhs = EvaluateChild(cursor.Left(), context);
   if ((lhs.deferred || lhs.unknown) || !lhs.matched) {
     return lhs;
   }
   const std::optional<int> outer_incoming = context.incoming_fuzzy_score;
   context.incoming_fuzzy_score = MinScore(outer_incoming, lhs.fuzzy);
-  const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
+  const EvaluationResult rhs = EvaluateChild(cursor.Right(), context);
   context.incoming_fuzzy_score = outer_incoming;
   if ((rhs.deferred || rhs.unknown)) {
     return rhs;
@@ -3062,16 +3429,17 @@ EvaluationResult EvaluateAnd(const parser::Expr& expr, EvalContext& context) {
   return {.fuzzy = rhs.matched ? MinScore(lhs.fuzzy, rhs.fuzzy) : std::nullopt, .matched = rhs.matched};
 }
 
-EvaluationResult EvaluateOr(const parser::Expr& expr, EvalContext& context) {
-  EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
+template<typename Cursor>
+EvaluationResult EvaluateOr(Cursor cursor, EvalContext& context) {
+  EvaluationResult lhs = EvaluateChild(cursor.Left(), context);
   if ((lhs.deferred || lhs.unknown)) {
     return lhs;
   }
   if (!lhs.matched) {
-    return EvaluateChild(*expr.rhs, context);
+    return EvaluateChild(cursor.Right(), context);
   }
-  if (context.fuzzy_score.has_value() && IsFuzzyOnlyExpression(*expr.rhs)) {
-    const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
+  if (context.fuzzy_score.has_value() && cursor.Right().FuzzyOnly()) {
+    const EvaluationResult rhs = EvaluateChild(cursor.Right(), context);
     if ((rhs.deferred || rhs.unknown)) {
       return rhs;
     }
@@ -3080,30 +3448,33 @@ EvaluationResult EvaluateOr(const parser::Expr& expr, EvalContext& context) {
   return lhs;
 }
 
-EvaluationResult EvaluateNand(const parser::Expr& expr, EvalContext& context) {
-  const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
+template<typename Cursor>
+EvaluationResult EvaluateNand(Cursor cursor, EvalContext& context) {
+  const EvaluationResult lhs = EvaluateChild(cursor.Left(), context);
   if ((lhs.deferred || lhs.unknown) || !lhs.matched) {
     return (lhs.deferred || lhs.unknown) ? lhs : EvaluationResult{.matched = true};
   }
-  const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
+  const EvaluationResult rhs = EvaluateChild(cursor.Right(), context);
   return (rhs.deferred || rhs.unknown) ? rhs : EvaluationResult{.matched = !rhs.matched};
 }
 
-EvaluationResult EvaluateNor(const parser::Expr& expr, EvalContext& context) {
-  const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
+template<typename Cursor>
+EvaluationResult EvaluateNor(Cursor cursor, EvalContext& context) {
+  const EvaluationResult lhs = EvaluateChild(cursor.Left(), context);
   if ((lhs.deferred || lhs.unknown) || lhs.matched) {
     return (lhs.deferred || lhs.unknown) ? lhs : EvaluationResult{.matched = false};
   }
-  const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
+  const EvaluationResult rhs = EvaluateChild(cursor.Right(), context);
   return (rhs.deferred || rhs.unknown) ? rhs : EvaluationResult{.matched = !rhs.matched};
 }
 
-EvaluationResult EvaluateXor(const parser::Expr& expr, EvalContext& context) {
-  const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
+template<typename Cursor>
+EvaluationResult EvaluateXor(Cursor cursor, EvalContext& context) {
+  const EvaluationResult lhs = EvaluateChild(cursor.Left(), context);
   if ((lhs.deferred || lhs.unknown)) {
     return lhs;
   }
-  const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
+  const EvaluationResult rhs = EvaluateChild(cursor.Right(), context);
   if ((rhs.deferred || rhs.unknown)) {
     return rhs;
   }
@@ -3113,12 +3484,13 @@ EvaluationResult EvaluateXor(const parser::Expr& expr, EvalContext& context) {
   };
 }
 
-EvaluationResult EvaluateXnor(const parser::Expr& expr, EvalContext& context) {
-  const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
+template<typename Cursor>
+EvaluationResult EvaluateXnor(Cursor cursor, EvalContext& context) {
+  const EvaluationResult lhs = EvaluateChild(cursor.Left(), context);
   if ((lhs.deferred || lhs.unknown)) {
     return lhs;
   }
-  const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
+  const EvaluationResult rhs = EvaluateChild(cursor.Right(), context);
   return (rhs.deferred || rhs.unknown) ? rhs : EvaluationResult{.matched = lhs.matched == rhs.matched};
 }
 
@@ -3151,55 +3523,488 @@ void PreviewExecution(const parser::Expr& expr, const EvalContext& context) {
   context.emit(preview);
 }
 
-EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) {
-  switch (expr.kind) {
-    case parser::Expr::Kind::kPredicate: {
-      const bool invalidate = !expr.descriptor->pure || expr.descriptor->kind == registry::Kind::kAction;
-      if (invalidate) {
-        context.content.Invalidate();
-      }
-      if (expr.descriptor->needs_metadata || (expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
-        context.control.metadata_error = context.visit.EnsureMetadata();
-        if (!context.control.metadata_error.ok()) {
-          return {.unknown = true};
-        }
-      }
-      if (context.dry_run && expr.descriptor->safety == registry::Safety::kSecurity) {
-        PreviewExecution(expr, context);
-        return {.unknown = true};
-      }
-      if (expr.descriptor->control == registry::Control::kTop) {
-        return EvaluateTop(expr, context);
-      }
-      if (expr.descriptor->control == registry::Control::kShardStatus) {
-        return EvaluateShardStatus(expr, context);
-      }
-      const bool matched = EvaluatePredicate(expr, context);
-      if (invalidate) {
-        // An action may read fields before mutating this same file through its sink.
-        context.content.Invalidate();
-      }
-      return {.fuzzy = context.fuzzy_score.has_value() ? *context.fuzzy_score : std::nullopt, .matched = matched};
+template<typename Cursor>
+EvaluationResult EvaluatePredicateResult(Cursor cursor, EvalContext& context) {
+  const auto& expr = cursor.Get();
+  const bool invalidate = !expr.descriptor->pure || expr.descriptor->kind == registry::Kind::kAction;
+  if (invalidate) {
+    context.content.Invalidate();
+  }
+  if (expr.descriptor->needs_metadata || (expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
+    context.control.metadata_error = context.visit.EnsureMetadata();
+    if (!context.control.metadata_error.ok()) {
+      return {.unknown = true};
     }
+  }
+  if (context.dry_run && expr.descriptor->safety == registry::Safety::kSecurity) {
+    PreviewExecution(expr, context);
+    return {.unknown = true};
+  }
+  if (expr.descriptor->control == registry::Control::kTop) {
+    return EvaluateTop(expr, context);
+  }
+  if (expr.descriptor->control == registry::Control::kShardStatus) {
+    return EvaluateShardStatus(expr, context);
+  }
+  const bool matched = cursor.Predicate(context);
+  if (invalidate) {
+    // An action may read fields before mutating this same file through its sink.
+    context.content.Invalidate();
+  }
+  return {.fuzzy = context.fuzzy_score.has_value() ? *context.fuzzy_score : std::nullopt, .matched = matched};
+}
+
+template<typename Cursor>
+EvaluationResult EvaluateResult(Cursor cursor, EvalContext& context) {
+  const auto& expr = cursor.Get();
+  switch (expr.kind) {
+    case parser::Expr::Kind::kPredicate: return EvaluatePredicateResult(cursor, context);
     case parser::Expr::Kind::kNot: {
-      const EvaluationResult value = EvaluateChild(*expr.lhs, context);
+      const EvaluationResult value = EvaluateChild(cursor.Left(), context);
       return (value.deferred || value.unknown) ? value : EvaluationResult{.matched = !value.matched};
     }
-    case parser::Expr::Kind::kAnd: return EvaluateAnd(expr, context);
-    case parser::Expr::Kind::kOr: return EvaluateOr(expr, context);
-    case parser::Expr::Kind::kNand: return EvaluateNand(expr, context);
-    case parser::Expr::Kind::kNor: return EvaluateNor(expr, context);
-    case parser::Expr::Kind::kXor: return EvaluateXor(expr, context);
-    case parser::Expr::Kind::kXnor: return EvaluateXnor(expr, context);
+    case parser::Expr::Kind::kAnd: return EvaluateAnd(cursor, context);
+    case parser::Expr::Kind::kOr: return EvaluateOr(cursor, context);
+    case parser::Expr::Kind::kNand: return EvaluateNand(cursor, context);
+    case parser::Expr::Kind::kNor: return EvaluateNor(cursor, context);
+    case parser::Expr::Kind::kXor: return EvaluateXor(cursor, context);
+    case parser::Expr::Kind::kXnor: return EvaluateXnor(cursor, context);
     case parser::Expr::Kind::kComma: {
-      const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
-      return (lhs.deferred || lhs.unknown) ? lhs : EvaluateChild(*expr.rhs, context);
+      const EvaluationResult lhs = EvaluateChild(cursor.Left(), context);
+      return (lhs.deferred || lhs.unknown) ? lhs : EvaluateChild(cursor.Right(), context);
     }
   }
   return {.matched = true};
 }
 
 }  // namespace
+
+struct BoundExpression::Cursor {
+  const std::vector<Node>& nodes;
+  const Node& node;
+
+  const parser::Expr& Get() const { return node.expression.get(); }
+
+  Cursor Left() const { return {.nodes = nodes, .node = nodes.at(node.lhs.value())}; }
+
+  Cursor Right() const { return {.nodes = nodes, .node = nodes.at(node.rhs.value())}; }
+
+  bool Predicate(EvalContext& context) const { return node.evaluate(Get(), context); }
+
+  bool FuzzyOnly() const { return node.fuzzy_only; }
+};
+
+absl::StatusOr<BoundExpression> BoundExpression::Prepare(const parser::Expr& expression) {
+  MBO_ASSIGN_OR_RETURN(const auto sources, DescribeExpression(expression));
+  std::vector<Node> nodes;
+  nodes.reserve(sources.size());
+  for (const auto& source : sources) {
+    const auto& expr = source.expression.get();
+    MBO_ASSIGN_OR_RETURN(const auto handler, ResolveEvaluation(expr));
+    nodes.push_back({
+        .expression = source.expression,
+        .evaluate = handler.eval,
+    });
+  }
+  std::vector<std::size_t> sizes(nodes.size(), 1);
+  for (std::size_t offset = nodes.size(); offset > 0; --offset) {
+    const std::size_t index = offset - 1;
+    auto& node = nodes.at(index);
+    const auto& expr = node.expression.get();
+    if (expr.lhs) {
+      node.lhs = ExpressionSourceId{index + 1};
+      sizes.at(index) += sizes.at(node.lhs.value());
+    }
+    if (expr.rhs) {
+      node.rhs = ExpressionSourceId{index + sizes.at(index)};
+      sizes.at(index) += sizes.at(node.rhs.value());
+    }
+    switch (expr.kind) {
+      case parser::Expr::Kind::kPredicate:
+        node.fuzzy_only = expr.descriptor->binding == registry::Binding::kFuzzy;
+        break;
+      case parser::Expr::Kind::kAnd:
+      case parser::Expr::Kind::kOr:
+      case parser::Expr::Kind::kXor:
+        node.fuzzy_only = nodes.at(node.lhs.value()).fuzzy_only && nodes.at(node.rhs.value()).fuzzy_only;
+        break;
+      default: break;
+    }
+  }
+  return BoundExpression(std::move(nodes));
+}
+
+EvaluationResult BoundExpression::Evaluate(EvalContext& context) const {
+  const auto result = EvaluateResult(Cursor{.nodes = nodes_, .node = nodes_.front()}, context);
+  if (context.fuzzy_score.has_value()) {
+    *context.fuzzy_score = result.fuzzy;
+  }
+  return result;
+}
+
+struct PreparedExpression::Data {
+  struct OperandTag {};
+
+  using OperandId = mbo::types::ConstStrongId<OperandTag, std::size_t>;
+
+  struct Node {
+    std::reference_wrapper<const parser::Expr> expression;
+    PreparedEvalFn evaluate;
+    ExpressionSourceId lhs;
+    ExpressionSourceId rhs;
+    OperandId operand{0};
+    bool fuzzy_only = false;
+  };
+
+  std::vector<Node> nodes;
+  // Slot zero is shared by ordinary callbacks and carries no prepared operand.
+  std::vector<PreparedOperand> operands{std::monostate{}};
+  std::vector<std::reference_wrapper<const parser::Expr>> matcher_sources;
+};
+
+struct PreparedExpression::Cursor {
+  struct Environment {
+    const Data& data;
+    MatcherSlots matchers;
+  };
+
+  // Keep the recursively copied cursor at two references. The matcher span belongs to the
+  // evaluation environment, so adding worker state does not enlarge every recursive argument.
+  const Environment& environment;
+  const Data::Node& node;
+
+  const parser::Expr& Get() const { return node.expression.get(); }
+
+  Cursor Left() const { return {.environment = environment, .node = environment.data.nodes.at(node.lhs.value())}; }
+
+  Cursor Right() const { return {.environment = environment, .node = environment.data.nodes.at(node.rhs.value())}; }
+
+  bool Predicate(EvalContext& context) const {
+    return node.evaluate(Get(), environment.data.operands.at(node.operand.value()), environment.matchers, context);
+  }
+
+  bool FuzzyOnly() const { return node.fuzzy_only; }
+};
+
+PreparedExpression::PreparedExpression(std::unique_ptr<Data> data) : data_(std::move(data)) {}
+
+PreparedExpression::PreparedExpression(PreparedExpression&&) noexcept = default;
+PreparedExpression& PreparedExpression::operator=(PreparedExpression&&) noexcept = default;
+PreparedExpression::~PreparedExpression() = default;
+
+absl::StatusOr<PreparedExpression> PreparedExpression::Prepare(const parser::Expr& expression) {
+  MBO_ASSIGN_OR_RETURN(const auto sources, DescribeExpression(expression));
+  auto data = std::make_unique<Data>();
+  data->nodes.reserve(sources.size());
+  const auto predicates = std::ranges::count_if(sources, [](const ExpressionSource& source) {
+    return source.expression.get().kind == parser::Expr::Kind::kPredicate;
+  });
+  const auto matcher_count = std::ranges::count_if(
+      sources, [](const ExpressionSource& source) { return source.expression.get().matcher != nullptr; });
+  data->matcher_sources.reserve(static_cast<std::size_t>(matcher_count));
+  for (const auto& source : sources) {
+    const auto& expr = source.expression.get();
+    MBO_ASSIGN_OR_RETURN(const auto binding, ResolveEvaluation(expr));
+    Data::Node node{
+        .expression = source.expression,
+        .evaluate = binding.prepared_eval,
+    };
+    if (binding.indexed_matcher || (binding.prepare != nullptr && !expr.args.empty())) {
+      if (data->operands.size() == 1) {
+        data->operands.reserve(1 + static_cast<std::size_t>(predicates));
+      }
+      node.operand = Data::OperandId{data->operands.size()};
+      if (binding.indexed_matcher) {
+        data->operands.emplace_back(MatcherSlotId{data->matcher_sources.size()});
+        data->matcher_sources.push_back(source.expression);
+      } else {
+        data->operands.push_back(binding.prepare(expr.args.front()));
+      }
+    }
+    data->nodes.push_back(node);
+  }
+  std::vector<std::size_t> sizes(data->nodes.size(), 1);
+  for (std::size_t offset = data->nodes.size(); offset > 0; --offset) {
+    const std::size_t index = offset - 1;
+    auto& node = data->nodes.at(index);
+    const auto& expr = node.expression.get();
+    if (expr.lhs) {
+      node.lhs = ExpressionSourceId{index + 1};
+      sizes.at(index) += sizes.at(node.lhs.value());
+    }
+    if (expr.rhs) {
+      node.rhs = ExpressionSourceId{index + sizes.at(index)};
+      sizes.at(index) += sizes.at(node.rhs.value());
+    }
+    switch (expr.kind) {
+      case parser::Expr::Kind::kPredicate:
+        node.fuzzy_only = expr.descriptor->binding == registry::Binding::kFuzzy;
+        break;
+      case parser::Expr::Kind::kAnd:
+      case parser::Expr::Kind::kOr:
+      case parser::Expr::Kind::kXor:
+        node.fuzzy_only = data->nodes.at(node.lhs.value()).fuzzy_only && data->nodes.at(node.rhs.value()).fuzzy_only;
+        break;
+      default: break;
+    }
+  }
+  return PreparedExpression(std::move(data));
+}
+
+EvaluationResult PreparedExpression::Evaluate(EvalContext& context) const {
+  const Cursor::Environment environment{.data = *data_};
+  const auto result = EvaluateResult(Cursor{.environment = environment, .node = data_->nodes.front()}, context);
+  if (context.fuzzy_score.has_value()) {
+    *context.fuzzy_score = result.fuzzy;
+  }
+  return result;
+}
+
+std::size_t PreparedExpression::NodeCount() const {
+  return data_->nodes.size();
+}
+
+std::size_t PreparedExpression::OperandCount() const {
+  return data_->operands.size() - 1;
+}
+
+std::size_t PreparedExpression::MatcherCount() const {
+  return data_->matcher_sources.size();
+}
+
+std::size_t PreparedExpression::StorageBytes() const {
+  std::size_t text_bytes = 0;
+  for (const auto& operand : data_->operands) {
+    if (std::holds_alternative<MimePattern>(operand)) {
+      text_bytes += std::get<MimePattern>(operand).bytes.capacity();
+    }
+  }
+  return sizeof(*this) + sizeof(Data) + (data_->nodes.capacity() * sizeof(Data::Node))
+         + (data_->operands.capacity() * sizeof(PreparedOperand))
+         + (data_->matcher_sources.capacity() * sizeof(std::reference_wrapper<const parser::Expr>)) + text_bytes;
+}
+
+struct PreparedExpression::Worker::State {
+  enum class Phase { kEnter, kLeft, kRight };
+
+  struct Frame {
+    Cursor cursor;
+    Phase phase = Phase::kEnter;
+    EvaluationResult left;
+    std::optional<int> incoming;
+    bool memoize = true;
+  };
+
+  Cursor::Environment environment;
+  std::vector<MatcherSlot> matchers;
+  // Only contexts requiring score/replay state reserve this scratch, once per worker. A
+  // suspended entry retains the existing sparse memo, never a copy of these worker frames.
+  std::vector<Frame> frames;
+
+  void Finish(const EvaluationResult& result, const EvalContext& context) {
+    const auto& frame = frames.back();
+    if (frame.memoize && context.deferred.has_value()) {
+      context.deferred->memo.emplace(ExprIdentity{frame.cursor.Get()}, result);
+    }
+    frames.pop_back();
+  }
+
+  struct LeftResult {
+    EvaluationResult result;
+    bool visit_right = false;
+  };
+
+  static LeftResult AfterLeft(const Frame& frame, EvaluationResult result, const EvalContext& context) {
+    using Kind = parser::Expr::Kind;
+    switch (frame.cursor.Get().kind) {
+      case Kind::kNot: return {.result = {.matched = !result.matched}};
+      case Kind::kAnd: return {.result = result, .visit_right = result.matched};
+      case Kind::kOr:
+        return {
+            .result = result,
+            .visit_right = !result.matched || (context.fuzzy_score.has_value() && frame.cursor.Right().FuzzyOnly()),
+        };
+      case Kind::kNand: return {.result = {.matched = true}, .visit_right = result.matched};
+      case Kind::kNor: return {.result = {.matched = false}, .visit_right = !result.matched};
+      case Kind::kXor:
+      case Kind::kXnor:
+      case Kind::kComma: return {.result = result, .visit_right = true};
+      // Enter completes predicates before the left phase; all valid operator kinds return above.
+      case Kind::kPredicate: std::unreachable();  // LCOV_EXCL_LINE
+    }
+    std::unreachable();  // LCOV_EXCL_LINE: all valid operator kinds are handled above.
+  }  // LCOV_EXCL_LINE: no valid frame reaches the fallthrough exit.
+
+  static EvaluationResult Combine(const Frame& frame, EvaluationResult right, EvalContext& context) {
+    using Kind = parser::Expr::Kind;
+    const auto& left = frame.left;
+    switch (frame.cursor.Get().kind) {
+      case Kind::kAnd:
+        context.incoming_fuzzy_score = frame.incoming;
+        return {.fuzzy = right.matched ? MinScore(left.fuzzy, right.fuzzy) : std::nullopt, .matched = right.matched};
+      case Kind::kOr:
+        return left.matched
+                   ? EvaluationResult{
+                         .fuzzy = right.matched ? MaxScore(left.fuzzy, right.fuzzy) : left.fuzzy,
+                         .matched = true,
+                     }
+                   : right;
+      case Kind::kNand:
+      case Kind::kNor: return {.matched = !right.matched};
+      case Kind::kXor:
+        return {
+            .fuzzy = left.matched != right.matched ? (left.matched ? left.fuzzy : right.fuzzy) : std::nullopt,
+            .matched = left.matched != right.matched,
+        };
+      case Kind::kXnor: return {.matched = left.matched == right.matched};
+      case Kind::kComma: return right;
+      // Enter completes predicates and AfterLeft completes NOT without entering the right phase.
+      case Kind::kNot:                            // LCOV_EXCL_LINE
+      case Kind::kPredicate: std::unreachable();  // LCOV_EXCL_LINE
+    }
+    std::unreachable();  // LCOV_EXCL_LINE: all valid binary operator kinds are handled above.
+  }  // LCOV_EXCL_LINE: no valid frame reaches the fallthrough exit.
+
+  EvaluationResult Enter(EvaluationResult result, EvalContext& context) {
+    auto& frame = frames.back();
+    if (frame.memoize && context.deferred.has_value()) {
+      const auto found = context.deferred->memo.find(ExprIdentity{frame.cursor.Get()});
+      if (found != context.deferred->memo.end()) {
+        result = found->second;
+        frames.pop_back();
+        return result;
+      }
+    }
+    if (frame.memoize && context.fuzzy_score.has_value()) {
+      context.fuzzy_score->reset();
+    }
+    if (frame.cursor.Get().kind == parser::Expr::Kind::kPredicate) {
+      result = EvaluatePredicateResult(frame.cursor, context);
+      if (!(result.deferred || result.unknown)) {
+        Finish(result, context);
+      }
+    } else {
+      frame.phase = Phase::kLeft;
+      frames.push_back({.cursor = frame.cursor.Left()});
+    }
+    return result;
+  }
+
+  EvaluationResult AdvanceLeft(EvaluationResult result, EvalContext& context) {
+    auto& frame = frames.back();
+    frame.left = result;
+    const auto next = AfterLeft(frame, result, context);
+    if (next.visit_right) {
+      if (frame.cursor.Get().kind == parser::Expr::Kind::kAnd) {
+        frame.incoming = context.incoming_fuzzy_score;
+        context.incoming_fuzzy_score = MinScore(frame.incoming, result.fuzzy);
+      }
+      frame.phase = Phase::kRight;
+      frames.push_back({.cursor = frame.cursor.Right()});
+    } else {
+      Finish(next.result, context);
+    }
+    return next.result;
+  }
+
+  EvaluationResult Run(EvalContext& context) {
+    frames.clear();
+    frames.reserve(environment.data.nodes.size());
+    frames.push_back({
+        .cursor = {.environment = environment, .node = environment.data.nodes.front()},
+        .memoize = false,
+    });
+    auto outer_score = context.fuzzy_score;
+    const auto outer_incoming = context.incoming_fuzzy_score;
+    std::optional<int> score;
+    if (outer_score.has_value()) {
+      score = *outer_score;
+      context.fuzzy_score.set_ref(score);
+    }
+    EvaluationResult result;
+    while (!frames.empty()) {
+      switch (frames.back().phase) {
+        case Phase::kEnter: result = Enter(result, context); break;
+        case Phase::kLeft: result = AdvanceLeft(result, context); break;
+        case Phase::kRight:
+          result = Combine(frames.back(), result, context);
+          Finish(result, context);
+          break;
+      }
+      if (result.deferred || result.unknown) {
+        break;
+      }
+    }
+    // Restore the caller's references even on unknown/suspended paths. Completed child nodes
+    // were memoized as they finished; unresolved ancestors must never be memoized.
+    frames.clear();
+    context.incoming_fuzzy_score = outer_incoming;
+    if (outer_score.has_value()) {
+      context.fuzzy_score.set_ref(*outer_score);
+      *outer_score = result.fuzzy;
+    }
+    return result;
+  }
+};
+
+PreparedExpression::Worker::Worker(std::unique_ptr<State> state) : state_(std::move(state)) {}
+
+PreparedExpression::Worker::Worker(Worker&&) noexcept = default;
+PreparedExpression::Worker& PreparedExpression::Worker::operator=(Worker&&) noexcept = default;
+PreparedExpression::Worker::~Worker() = default;
+
+PreparedExpression::Worker PreparedExpression::MakeWorker(MatcherInitialization initialization) const {
+  auto state = std::make_unique<Worker::State>(Worker::State{
+      .environment = {.data = *data_},
+      .matchers = std::vector<MatcherSlot>(data_->matcher_sources.size()),
+  });
+  if (initialization == MatcherInitialization::kEager) {
+    for (std::size_t index = 0; index < state->matchers.size(); ++index) {
+      state->matchers.at(index).Initialize(data_->matcher_sources.at(index).get());
+    }
+  }
+  // Unused slots allocate no backend. Reached slots remember even a failed or absent fork,
+  // falling back to the original immutable matcher without retrying on subsequent entries.
+  state->environment.matchers = MatcherSlots(state->matchers);
+  return Worker(std::move(state));
+}
+
+EvaluationResult PreparedExpression::Worker::Evaluate(EvalContext& context) const {
+  const auto& environment = state_->environment;
+  const auto result =
+      EvaluateResult(Cursor{.environment = environment, .node = environment.data.nodes.front()}, context);
+  if (context.fuzzy_score.has_value()) {
+    *context.fuzzy_score = result.fuzzy;
+  }
+  return result;
+}
+
+EvaluationResult PreparedExpression::Worker::EvaluatePredicate(ExpressionSourceId source, EvalContext& context) const {
+  const auto& environment = state_->environment;
+  return EvaluatePredicateResult(
+      Cursor{
+          .environment = environment,
+          .node = environment.data.nodes.at(source.value()),
+      },
+      context);
+}
+
+EvaluationResult PreparedExpression::Worker::EvaluateIterative(EvalContext& context) const {
+  return state_->Run(context);
+}
+
+std::size_t PreparedExpression::Worker::MatcherCount() const {
+  return state_->matchers.size();
+}
+
+std::size_t PreparedExpression::Worker::InitializedMatcherCount() const {
+  return static_cast<std::size_t>(std::ranges::count(state_->matchers, true, &MatcherSlot::initialized));
+}
+
+std::size_t PreparedExpression::Worker::StorageBytes() const {
+  return sizeof(*this) + sizeof(State) + (state_->matchers.capacity() * sizeof(MatcherSlot))
+         + (state_->frames.capacity() * sizeof(State::Frame));
+}
 
 absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression) {
   const auto source = std::make_shared<parser::Expr>(parser::Expr{.kind = parser::Expr::Kind::kPredicate});
@@ -3475,7 +4280,7 @@ bool Evaluate(const parser::Expr& expr, EvalContext& context) {
 }
 
 EvaluationResult EvaluateDeferred(const parser::Expr& expr, EvalContext& context) {
-  const EvaluationResult result = EvaluateResult(expr, context);
+  const EvaluationResult result = EvaluateResult(TreeCursor{std::cref(expr)}, context);
   if (context.fuzzy_score.has_value()) {
     *context.fuzzy_score = result.fuzzy;
   }

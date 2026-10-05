@@ -34,6 +34,7 @@
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
+#include "xff/engine/expression_program.h"
 #include "xff/engine/walk.h"
 #include "xff/fuzzy/fuzzy.h"
 #include "xff/parser/parser.h"
@@ -60,7 +61,9 @@ using ::testing::Optional;
 using ::testing::Pair;
 using ::testing::SizeIs;
 
-struct EvaluateTest : ::testing::Test {
+enum class Evaluator { kTree, kBound, kPrepared, kIterative, kProgram };
+
+struct EvaluateTest : ::testing::TestWithParam<Evaluator> {
   // Parses `. <expr...>` and evaluates the expression against `visit`, capturing
   // any action output in `emitted_`.
   bool Match(const std::vector<std::string>& expr, const Visit& visit) {
@@ -126,6 +129,26 @@ struct EvaluateTest : ::testing::Test {
         .exec_batches = provide_exec_batches_ ? mbo::types::OptionalRef{exec_batches_}
                                               : mbo::types::OptionalRef<decltype(exec_batches_)>{},
     };
+    if (GetParam() == Evaluator::kProgram) {
+      const auto program = ExpressionProgram::Prepare(expression);
+      EXPECT_THAT(program, IsOk());
+      return program.ok() && program->MakeWorker(ProgramDispatch::kFunctions).Evaluate(context).result.matched;
+    }
+    if (GetParam() == Evaluator::kIterative) {
+      const auto program = PreparedExpression::Prepare(expression);
+      EXPECT_THAT(program, IsOk());
+      return program.ok() && program->MakeWorker().EvaluateIterative(context).matched;
+    }
+    if (GetParam() == Evaluator::kBound) {
+      const auto bound = BoundExpression::Prepare(expression);
+      EXPECT_THAT(bound, IsOk());
+      return bound.ok() && bound->Evaluate(context).matched;
+    }
+    if (GetParam() == Evaluator::kPrepared) {
+      const auto prepared = PreparedExpression::Prepare(expression);
+      EXPECT_THAT(prepared, IsOk());
+      return prepared.ok() && prepared->Evaluate(context).matched;
+    }
     return Evaluate(expression, context);
   }
 
@@ -189,7 +212,7 @@ struct EvaluateTest : ::testing::Test {
   std::vector<std::string> content_files_;  // temp files written by WriteContentFile, removed in TearDown
 };
 
-TEST_F(EvaluateTest, ImplicitOutputUsesDescriptorCapabilitiesRatherThanNames) {
+TEST_P(EvaluateTest, ImplicitOutputUsesDescriptorCapabilitiesRatherThanNames) {
   MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({".", "-prune"}));
   auto descriptor = *command.expression->descriptor;
   descriptor.name = "-renamed-action";
@@ -199,7 +222,7 @@ TEST_F(EvaluateTest, ImplicitOutputUsesDescriptorCapabilitiesRatherThanNames) {
   EXPECT_THAT(ContainsAction(expression), IsTrue());
 }
 
-TEST_F(EvaluateTest, SizeValidationUsesOperandMetadata) {
+TEST_P(EvaluateTest, SizeValidationUsesOperandMetadata) {
   MBO_ASSERT_OK_AND_ASSIGN(auto command, parser::Parse({".", "-size", "invalid-size"}));
   auto descriptor = *command.expression->descriptor;
   descriptor.name = "-renamed-size";
@@ -209,7 +232,7 @@ TEST_F(EvaluateTest, SizeValidationUsesOperandMetadata) {
   EXPECT_THAT(ValidateSizeArgs(*command.expression), IsOk());
 }
 
-TEST_F(EvaluateTest, HashValidationUsesBindingRatherThanName) {
+TEST_P(EvaluateTest, HashValidationUsesBindingRatherThanName) {
   MBO_ASSERT_OK_AND_ASSIGN(auto command, parser::Parse({".", "-hash:unknown-algorithm"}));
   auto descriptor = *command.expression->descriptor;
   descriptor.name = "-renamed-hash";
@@ -219,7 +242,7 @@ TEST_F(EvaluateTest, HashValidationUsesBindingRatherThanName) {
   EXPECT_THAT(ValidateHashArgs(*command.expression), IsOk());
 }
 
-TEST_F(EvaluateTest, ExpressionIdentityTracksNodesRatherThanTheirContents) {
+TEST_P(EvaluateTest, ExpressionIdentityTracksNodesRatherThanTheirContents) {
   const parser::Expr first{.kind = parser::Expr::Kind::kPredicate};
   const parser::Expr second{.kind = parser::Expr::Kind::kPredicate};
   const ExprIdentity first_identity{first};
@@ -233,14 +256,14 @@ TEST_F(EvaluateTest, ExpressionIdentityTracksNodesRatherThanTheirContents) {
   EXPECT_THAT(values.at(same_identity), Eq(1));
 }
 
-TEST_F(EvaluateTest, TrueAndFalse) {
+TEST_P(EvaluateTest, TrueAndFalse) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-true"}, visit), IsTrue());
   EXPECT_THAT(Match({"-false"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, HashVerificationSideChannelRecordsEveryDefensiveFailure) {
+TEST_P(EvaluateTest, HashVerificationSideChannelRecordsEveryDefensiveFailure) {
   collect_hash_verification_ = true;
   vfs::Metadata regular_md;
   const std::string path = WriteContentFile("hasheq_verdict", "abc");
@@ -267,7 +290,7 @@ TEST_F(EvaluateTest, HashVerificationSideChannelRecordsEveryDefensiveFailure) {
   EXPECT_THAT(hash_verification_, Optional(IsFalse()));
 }
 
-TEST_F(EvaluateTest, XorMatchesExactlyOneSide) {
+TEST_P(EvaluateTest, XorMatchesExactlyOneSide) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-true", "-xor", "-true"}, visit), IsFalse());
@@ -276,7 +299,7 @@ TEST_F(EvaluateTest, XorMatchesExactlyOneSide) {
   EXPECT_THAT(Match({"-false", "-xor", "-false"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, XnorMatchesWhenBothSidesAgree) {
+TEST_P(EvaluateTest, XnorMatchesWhenBothSidesAgree) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-true", "-xnor", "-true"}, visit), IsTrue());
@@ -285,7 +308,7 @@ TEST_F(EvaluateTest, XnorMatchesWhenBothSidesAgree) {
   EXPECT_THAT(Match({"-false", "-xnor", "-false"}, visit), IsTrue());
 }
 
-TEST_F(EvaluateTest, NandIsTheNegationOfAnd) {
+TEST_P(EvaluateTest, NandIsTheNegationOfAnd) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-true", "-nand", "-true"}, visit), IsFalse());
@@ -294,7 +317,7 @@ TEST_F(EvaluateTest, NandIsTheNegationOfAnd) {
   EXPECT_THAT(Match({"-false", "-nand", "-false"}, visit), IsTrue());
 }
 
-TEST_F(EvaluateTest, NorIsTheNegationOfOr) {
+TEST_P(EvaluateTest, NorIsTheNegationOfOr) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-true", "-nor", "-true"}, visit), IsFalse());
@@ -303,7 +326,7 @@ TEST_F(EvaluateTest, NorIsTheNegationOfOr) {
   EXPECT_THAT(Match({"-false", "-nor", "-false"}, visit), IsTrue());
 }
 
-TEST_F(EvaluateTest, DaystartIsAPositionalNoOp) {
+TEST_P(EvaluateTest, DaystartIsAPositionalNoOp) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
   // -daystart is consumed by the driver (it shifts the age-test reference to local
@@ -312,7 +335,7 @@ TEST_F(EvaluateTest, DaystartIsAPositionalNoOp) {
   EXPECT_THAT(Match({"-daystart", "-name", "foo"}, visit), IsTrue());
 }
 
-TEST_F(EvaluateTest, NameGlobsBasename) {
+TEST_P(EvaluateTest, NameGlobsBasename) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo.txt", "foo.txt", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-name", "*.txt"}, visit), IsTrue());
@@ -321,14 +344,14 @@ TEST_F(EvaluateTest, NameGlobsBasename) {
   EXPECT_THAT(Match({"-name", "dir/*"}, visit), IsFalse()) << "-name matches the basename, not the path";
 }
 
-TEST_F(EvaluateTest, INameFoldsCase) {
+TEST_P(EvaluateTest, INameFoldsCase) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/Foo.TXT", "Foo.TXT", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-iname", "foo.txt"}, visit), IsTrue());
   EXPECT_THAT(Match({"-name", "foo.txt"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, FsNativeFoldsNameOnCaseFoldingVolume) {
+TEST_P(EvaluateTest, FsNativeFoldsNameOnCaseFoldingVolume) {
   // fold_name_case (set by the driver for an entry on a case-folding volume, xff
   // style, no --exact) makes the case-sensitive -name fold like -iname, so it
   // matches the way the filesystem itself resolves the name.
@@ -341,7 +364,7 @@ TEST_F(EvaluateTest, FsNativeFoldsNameOnCaseFoldingVolume) {
   EXPECT_THAT(Match({"-name", "Foo.TXT"}, visit), IsTrue()) << "the exact-case name still matches when folding";
 }
 
-TEST_F(EvaluateTest, FsNativeFoldsPathOnCaseFoldingVolume) {
+TEST_P(EvaluateTest, FsNativeFoldsPathOnCaseFoldingVolume) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("Dir/Foo.TXT", "Foo.TXT", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-path", "dir/foo.txt"}, visit), IsFalse());
@@ -349,7 +372,7 @@ TEST_F(EvaluateTest, FsNativeFoldsPathOnCaseFoldingVolume) {
   EXPECT_THAT(Match({"-path", "dir/foo.txt"}, visit), IsTrue()) << "-path folds too under FS-native matching";
 }
 
-TEST_F(EvaluateTest, PathGlobsWholePath) {
+TEST_P(EvaluateTest, PathGlobsWholePath) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("a/b/c.txt", "c.txt", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-path", "a/*/c.txt"}, visit), IsTrue());
@@ -358,7 +381,7 @@ TEST_F(EvaluateTest, PathGlobsWholePath) {
   EXPECT_THAT(Match({"-ipath", "A/B/*"}, visit), IsTrue());
 }
 
-TEST_F(EvaluateTest, FuzzyPercentThresholdGatesTheMatch) {
+TEST_P(EvaluateTest, FuzzyPercentThresholdGatesTheMatch) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/far_out_of", "far_out_of", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-fuzzy:0%", "foo"}, visit), IsTrue());
@@ -367,7 +390,7 @@ TEST_F(EvaluateTest, FuzzyPercentThresholdGatesTheMatch) {
   EXPECT_THAT(fuzzy_score_, Optional(Eq(100)));
 }
 
-TEST_F(EvaluateTest, FuzzyWithoutScoreConsumerEvaluatesCompoundExpression) {
+TEST_P(EvaluateTest, FuzzyWithoutScoreConsumerEvaluatesCompoundExpression) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
   collect_fuzzy_score_ = false;
@@ -376,7 +399,7 @@ TEST_F(EvaluateTest, FuzzyWithoutScoreConsumerEvaluatesCompoundExpression) {
   EXPECT_THAT(fuzzy_score_, Eq(std::nullopt));
 }
 
-TEST_F(EvaluateTest, FuzzyModelsHaveConcreteThresholdSemantics) {
+TEST_P(EvaluateTest, FuzzyModelsHaveConcreteThresholdSemantics) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
 
@@ -393,7 +416,7 @@ TEST_F(EvaluateTest, FuzzyModelsHaveConcreteThresholdSemantics) {
   EXPECT_THAT(Match({"-fuzzy:shingles:34%", "fof"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, FuzzyAndUsesTheWeakestNormalizedScore) {
+TEST_P(EvaluateTest, FuzzyAndUsesTheWeakestNormalizedScore) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/far_out_of", "far_out_of", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-fuzzy", "foo", "-fuzzy", "far_out_of"}, visit), IsTrue());
@@ -401,14 +424,14 @@ TEST_F(EvaluateTest, FuzzyAndUsesTheWeakestNormalizedScore) {
   EXPECT_THAT(fuzzy_score_, Eq(weak));
 }
 
-TEST_F(EvaluateTest, PureFuzzyOrEvaluatesBothAlternativesAndUsesTheBestScore) {
+TEST_P(EvaluateTest, PureFuzzyOrEvaluatesBothAlternativesAndUsesTheBestScore) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/far_out_of", "far_out_of", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-fuzzy", "foo", "-o", "-fuzzy", "far_out_of"}, visit), IsTrue());
   EXPECT_THAT(fuzzy_score_, Optional(Eq(100)));
 }
 
-TEST_F(EvaluateTest, WholenameIsSynonymForPath) {
+TEST_P(EvaluateTest, WholenameIsSynonymForPath) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("a/b/c.txt", "c.txt", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-wholename", "a/*/c.txt"}, visit), IsTrue());  // -wholename == -path
@@ -417,7 +440,7 @@ TEST_F(EvaluateTest, WholenameIsSynonymForPath) {
   EXPECT_THAT(Match({"-wholename", "A/B/*"}, visit), IsFalse());     // -wholename is case-sensitive
 }
 
-TEST_F(EvaluateTest, TypeMatchesFileType) {
+TEST_P(EvaluateTest, TypeMatchesFileType) {
   vfs::Metadata file_md;
   const Visit file = MakeVisit("x", "x", vfs::FileType::kRegular, file_md);
   vfs::Metadata dir_md;
@@ -428,7 +451,7 @@ TEST_F(EvaluateTest, TypeMatchesFileType) {
   EXPECT_THAT(Match({"-type", "f"}, dir), IsFalse());
 }
 
-TEST_F(EvaluateTest, MimeGlobsTheExtensionDerivedMediaType) {
+TEST_P(EvaluateTest, MimeGlobsTheExtensionDerivedMediaType) {
   vfs::Metadata md;
   const Visit png = MakeVisit("dir/photo.png", "photo.png", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-mime", "image/*"}, png), IsTrue());    // image/png matches the glob
@@ -445,7 +468,7 @@ TEST_F(EvaluateTest, MimeGlobsTheExtensionDerivedMediaType) {
   EXPECT_THAT(Match({"-mime", "text/*"}, bin), IsFalse());
 }
 
-TEST_F(EvaluateTest, LangGlobsTheExtensionOrFilenameLanguage) {
+TEST_P(EvaluateTest, LangGlobsTheExtensionOrFilenameLanguage) {
   vfs::Metadata md;
   const Visit cpp = MakeVisit("src/main.cc", "main.cc", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-lang", "C*"}, cpp), IsTrue());   // "C++" matches the glob
@@ -460,7 +483,7 @@ TEST_F(EvaluateTest, LangGlobsTheExtensionOrFilenameLanguage) {
   EXPECT_THAT(Match({"-lang", "*"}, bin), IsTrue());
 }
 
-TEST_F(EvaluateTest, TypeListMatchesAnyListedType) {
+TEST_P(EvaluateTest, TypeListMatchesAnyListedType) {
   vfs::Metadata file_md;
   const Visit file = MakeVisit("x", "x", vfs::FileType::kRegular, file_md);
   vfs::Metadata dir_md;
@@ -475,7 +498,7 @@ TEST_F(EvaluateTest, TypeListMatchesAnyListedType) {
   // Malformed lists are rejected by the shared parser before evaluation.
 }
 
-TEST_F(EvaluateTest, AndOrNotShortCircuit) {
+TEST_P(EvaluateTest, AndOrNotShortCircuit) {
   vfs::Metadata md;
   const Visit txt = MakeVisit("dir/foo.txt", "foo.txt", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-type", "f", "-name", "*.txt"}, txt), IsTrue());        // implicit -a
@@ -485,7 +508,7 @@ TEST_F(EvaluateTest, AndOrNotShortCircuit) {
   EXPECT_THAT(Match({"!", "-name", "*.txt"}, txt), IsFalse());
 }
 
-TEST_F(EvaluateTest, PrintActionsEmit) {
+TEST_P(EvaluateTest, PrintActionsEmit) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo.txt", "foo.txt", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-print"}, visit), IsTrue());
@@ -494,7 +517,7 @@ TEST_F(EvaluateTest, PrintActionsEmit) {
   EXPECT_THAT(emitted_, std::string("dir/foo.txt\0", 12));
 }
 
-TEST_F(EvaluateTest, FileActionsWriteRecordsToNamedFiles) {
+TEST_P(EvaluateTest, FileActionsWriteRecordsToNamedFiles) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo.txt", "foo.txt", vfs::FileType::kRegular, md);
   // Each f-action mirrors its stdout counterpart's bytes, routed to the FILE arg
@@ -509,7 +532,7 @@ TEST_F(EvaluateTest, FileActionsWriteRecordsToNamedFiles) {
   EXPECT_THAT(file_emitted_, ElementsAre(Pair("log", HasSubstr("dir/foo.txt"))));
 }
 
-TEST_F(EvaluateTest, ShortCircuitSkipsAction) {
+TEST_P(EvaluateTest, ShortCircuitSkipsAction) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo.txt", "foo.txt", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-type", "f", "-print"}, visit), IsTrue());
@@ -518,7 +541,7 @@ TEST_F(EvaluateTest, ShortCircuitSkipsAction) {
   EXPECT_THAT(emitted_, IsEmpty());
 }
 
-TEST_F(EvaluateTest, SizeMatchesBytesAndUnits) {
+TEST_P(EvaluateTest, SizeMatchesBytesAndUnits) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.size = 5;  // bytes
@@ -532,7 +555,7 @@ TEST_F(EvaluateTest, SizeMatchesBytesAndUnits) {
   EXPECT_THAT(Match({"-size", "1k"}, visit), IsTrue()) << "5 bytes rounds up to one 1k unit";
 }
 
-TEST_F(EvaluateTest, SizeMatchesLargeUnits) {
+TEST_P(EvaluateTest, SizeMatchesLargeUnits) {
   // T/P/E continue the k/M/G binary scale (2^40/2^50/2^60). Exact multiples make the
   // round-up-to-unit arithmetic land on a clean count.
   vfs::Metadata md;
@@ -550,7 +573,7 @@ TEST_F(EvaluateTest, SizeMatchesLargeUnits) {
   EXPECT_THAT(Match({"-size", "1E"}, eib), IsTrue());
 }
 
-TEST_F(EvaluateTest, SizeExplicitUnitsKeepDecimalAndBinaryMeaningsDistinct) {
+TEST_P(EvaluateTest, SizeExplicitUnitsKeepDecimalAndBinaryMeaningsDistinct) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.size = 1'000'001;
@@ -562,7 +585,7 @@ TEST_F(EvaluateTest, SizeExplicitUnitsKeepDecimalAndBinaryMeaningsDistinct) {
   EXPECT_THAT(Match({"-size", "1000001B"}, visit), IsTrue());
 }
 
-TEST_F(EvaluateTest, ValidateSizeArgsRejectsBadUnits) {
+TEST_P(EvaluateTest, ValidateSizeArgsRejectsBadUnits) {
   // Valid units (incl. the T/P/E continuation) pass; an over-64-bit unit (Z/Y/...)
   // or an unknown unit is rejected with a self-documenting message, so the driver
   // fails before traversing rather than silently matching nothing.
@@ -593,7 +616,7 @@ TEST_F(EvaluateTest, ValidateSizeArgsRejectsBadUnits) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("unknown size unit")));
 }
 
-TEST_F(EvaluateTest, ParseBlockSizeAcceptsBytesAndUnits) {
+TEST_P(EvaluateTest, ParseBlockSizeAcceptsBytesAndUnits) {
   // --block-size value: a bare number is bytes (unlike -size, where bare = blocks);
   // the binary-multiple suffixes scale it. 'b' (circular), zero, and a missing/
   // non-numeric value are rejected.
@@ -613,7 +636,7 @@ TEST_F(EvaluateTest, ParseBlockSizeAcceptsBytesAndUnits) {
   EXPECT_THAT(ParseBlockSize(""), StatusIs(absl::StatusCode::kInvalidArgument));
 }
 
-TEST_F(EvaluateTest, BlocksMatchesAllocatedSpaceNotApparentSize) {
+TEST_P(EvaluateTest, BlocksMatchesAllocatedSpaceNotApparentSize) {
   // -blocks applies -size's grammar to allocated space (st_blocks * 512), so it is
   // independent of the apparent size: a 1-byte file occupying 16 512-blocks (8 KiB
   // on disk) matches -blocks but not -size of the same magnitude.
@@ -630,7 +653,7 @@ TEST_F(EvaluateTest, BlocksMatchesAllocatedSpaceNotApparentSize) {
   EXPECT_THAT(Match({"-size", "1c"}, visit), IsTrue());     // but -size sees the 1 apparent byte
 }
 
-TEST_F(EvaluateTest, BlocksZeroForUnallocatedEntry) {
+TEST_P(EvaluateTest, BlocksZeroForUnallocatedEntry) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;  // blocks defaults to 0 (nothing allocated)
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
@@ -638,7 +661,7 @@ TEST_F(EvaluateTest, BlocksZeroForUnallocatedEntry) {
   EXPECT_THAT(Match({"-blocks", "0"}, visit), IsTrue());
 }
 
-TEST_F(EvaluateTest, PermMatchesOctalModes) {
+TEST_P(EvaluateTest, PermMatchesOctalModes) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.mode = 0644;  // rw-r--r--
@@ -654,7 +677,7 @@ TEST_F(EvaluateTest, PermMatchesOctalModes) {
   EXPECT_THAT(Match({"-perm", "+022"}, visit), IsFalse());  // none of group/other write set
 }
 
-TEST_F(EvaluateTest, PermMatchesSymbolicModes) {
+TEST_P(EvaluateTest, PermMatchesSymbolicModes) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.mode = 0644;  // rw-r--r--
@@ -686,7 +709,7 @@ TEST_F(EvaluateTest, PermMatchesSymbolicModes) {
   EXPECT_THAT(Match({"-perm", "u+r"}, r_all), IsFalse());  // exact: explicit u+r == 0400, file is 0444
 }
 
-TEST_F(EvaluateTest, OptionalStatefulCapabilitiesAreExplicit) {
+TEST_P(EvaluateTest, OptionalStatefulCapabilitiesAreExplicit) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/file", "file", vfs::FileType::kRegular, md);
 
@@ -712,14 +735,14 @@ TEST_F(EvaluateTest, OptionalStatefulCapabilitiesAreExplicit) {
   EXPECT_THAT(exec_batches_, SizeIs(1));
 }
 
-TEST_F(EvaluateTest, ResultSetPredicatesWithoutDeferredEvaluationAreFalse) {
+TEST_P(EvaluateTest, ResultSetPredicatesWithoutDeferredEvaluationAreFalse) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/file", "file", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-top", "1"}, visit), IsFalse());
   EXPECT_THAT(Match({"-shard-status", "complete"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, PermSymbolicSpecialBits) {
+TEST_P(EvaluateTest, PermSymbolicSpecialBits) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.mode = 04755;  // setuid + rwxr-xr-x
@@ -729,7 +752,7 @@ TEST_F(EvaluateTest, PermSymbolicSpecialBits) {
   EXPECT_THAT(Match({"-perm", "-u+s,a+x"}, visit), IsTrue());  // setuid + all execute set
 }
 
-TEST_F(EvaluateTest, EmptyMatchesZeroByteFilesNotOthers) {
+TEST_P(EvaluateTest, EmptyMatchesZeroByteFilesNotOthers) {
   vfs::Metadata empty_file;
   empty_file.type = vfs::FileType::kRegular;
   empty_file.size = 0;
@@ -746,7 +769,7 @@ TEST_F(EvaluateTest, EmptyMatchesZeroByteFilesNotOthers) {
       << "-empty matches only regular files and directories";
 }
 
-TEST_F(EvaluateTest, SparseMatchesFilesWithHoles) {
+TEST_P(EvaluateTest, SparseMatchesFilesWithHoles) {
   vfs::Metadata sparse;
   sparse.type = vfs::FileType::kRegular;
   sparse.size = 1'000'000;
@@ -764,7 +787,7 @@ TEST_F(EvaluateTest, SparseMatchesFilesWithHoles) {
   EXPECT_THAT(Match({"-sparse"}, Visit{.path = "e", .name = "e", .depth = 1, .metadata = empty}), IsFalse());
 }
 
-TEST_F(EvaluateTest, LinksMatchesHardLinkCount) {
+TEST_P(EvaluateTest, LinksMatchesHardLinkCount) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.nlink = 1;
@@ -776,7 +799,7 @@ TEST_F(EvaluateTest, LinksMatchesHardLinkCount) {
   EXPECT_THAT(Match({"-links", "+1"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, NewerFalseWhenReferenceMissing) {
+TEST_P(EvaluateTest, NewerFalseWhenReferenceMissing) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
@@ -785,7 +808,7 @@ TEST_F(EvaluateTest, NewerFalseWhenReferenceMissing) {
   EXPECT_THAT(Match({"-newer", "/no/such/reference/file"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, InumMatchesInodeNumber) {
+TEST_P(EvaluateTest, InumMatchesInodeNumber) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.ino = 4'242;
@@ -796,7 +819,7 @@ TEST_F(EvaluateTest, InumMatchesInodeNumber) {
   EXPECT_THAT(Match({"-inum", "+4242"}, visit), IsFalse());  // not strictly greater than itself
 }
 
-TEST_F(EvaluateTest, UsedMatchesWholeDaysBetweenAtimeAndCtime) {
+TEST_P(EvaluateTest, UsedMatchesWholeDaysBetweenAtimeAndCtime) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.ctime = absl::FromUnixSeconds(1'600'000'000);
@@ -819,7 +842,7 @@ TEST_F(EvaluateTest, UsedMatchesWholeDaysBetweenAtimeAndCtime) {
   EXPECT_THAT(Match({"-used", "-1"}, earlier), IsTrue());  // -2 < 1
 }
 
-TEST_F(EvaluateTest, SamefileFalseWhenReferenceMissing) {
+TEST_P(EvaluateTest, SamefileFalseWhenReferenceMissing) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
@@ -828,7 +851,7 @@ TEST_F(EvaluateTest, SamefileFalseWhenReferenceMissing) {
   EXPECT_THAT(Match({"-samefile", "/no/such/reference/file"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, AccessReadableWritableExecutable) {
+TEST_P(EvaluateTest, AccessReadableWritableExecutable) {
   namespace stdfs = ::std::filesystem;
   const stdfs::path tmp = stdfs::temp_directory_path() / "xff_access_probe.tmp";
   { std::ofstream(tmp) << "x"; }
@@ -844,7 +867,7 @@ TEST_F(EvaluateTest, AccessReadableWritableExecutable) {
   EXPECT_THAT(Match({"-readable"}, visit), IsFalse());  // gone -> not accessible
 }
 
-TEST_F(EvaluateTest, FstypeMatchesTheHostingFilesystem) {
+TEST_P(EvaluateTest, FstypeMatchesTheHostingFilesystem) {
   namespace stdfs = ::std::filesystem;
   const stdfs::path tmp = stdfs::temp_directory_path() / "xff_fstype_probe.tmp";
   { std::ofstream(tmp) << "x"; }
@@ -864,7 +887,7 @@ TEST_F(EvaluateTest, FstypeMatchesTheHostingFilesystem) {
   EXPECT_THAT(Match({"-fstype", *actual}, visit), IsFalse());  // gone -> statfs fails -> never matches
 }
 
-TEST_F(EvaluateTest, ContentMatchesLiteralSubstring) {
+TEST_P(EvaluateTest, ContentMatchesLiteralSubstring) {
   const std::string path = WriteContentFile("literal.txt", "the quick brown fox\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "literal.txt", vfs::FileType::kRegular, md);
@@ -877,7 +900,7 @@ TEST_F(EvaluateTest, ContentMatchesLiteralSubstring) {
   EXPECT_THAT(Match({"-content", "q.ick"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, CreationDiffReportsUnreadableAndUnsupportedEntries) {
+TEST_P(EvaluateTest, CreationDiffReportsUnreadableAndUnsupportedEntries) {
   vfs::Metadata md;
   const Visit missing = MakeVisit("missing-source", "missing-source", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-diff"}, missing), IsFalse());
@@ -888,7 +911,7 @@ TEST_F(EvaluateTest, CreationDiffReportsUnreadableAndUnsupportedEntries) {
   EXPECT_THAT(control_.unsupported, HasSubstr("regular files or symlinks"));
 }
 
-TEST_F(EvaluateTest, CreationDiffRejectsUnsafePatchNames) {
+TEST_P(EvaluateTest, CreationDiffRejectsUnsafePatchNames) {
   const std::string path = WriteContentFile("unsafe.txt", "text");
   vfs::Metadata md;
   const Visit visit{.path = path, .name = "../unsafe", .root = path, .depth = 0, .metadata = md};
@@ -898,7 +921,7 @@ TEST_F(EvaluateTest, CreationDiffRejectsUnsafePatchNames) {
   EXPECT_THAT(emitted_, IsEmpty());
 }
 
-TEST_F(EvaluateTest, CreationDiffEmitsRelativePathsAndExecutableMode) {
+TEST_P(EvaluateTest, CreationDiffEmitsRelativePathsAndExecutableMode) {
   const std::string path = WriteContentFile("creation.txt", "text\n");
   const std::string root = std::filesystem::path(path).parent_path().string();
   vfs::Metadata md;
@@ -920,7 +943,7 @@ TEST_F(EvaluateTest, CreationDiffEmitsRelativePathsAndExecutableMode) {
   EXPECT_THAT(emitted_, IsEmpty());
 }
 
-TEST_F(EvaluateTest, CreationDiffEmitsSymlinkTarget) {
+TEST_P(EvaluateTest, CreationDiffEmitsSymlinkTarget) {
   const std::string path = WriteContentFile("creation-link", "");
   std::filesystem::remove(path);
   std::filesystem::create_symlink("target", path);
@@ -933,13 +956,13 @@ TEST_F(EvaluateTest, CreationDiffEmitsSymlinkTarget) {
   EXPECT_THAT(emitted_, HasSubstr("+target\n"));
 }
 
-TEST_F(EvaluateTest, DiffTreatsUnreadableSourceAsDifferent) {
+TEST_P(EvaluateTest, DiffTreatsUnreadableSourceAsDifferent) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("missing-source", "missing-source", vfs::FileType::kRegular, md);
   EXPECT_THAT(Match({"-diff:none", "missing-target"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, IcontentFoldsCase) {
+TEST_P(EvaluateTest, IcontentFoldsCase) {
   const std::string path = WriteContentFile("fold.txt", "Hello World");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "fold.txt", vfs::FileType::kRegular, md);
@@ -948,7 +971,7 @@ TEST_F(EvaluateTest, IcontentFoldsCase) {
   EXPECT_THAT(Match({"-icontent", "goodbye"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, RxcMatchesRegexAnywhere) {
+TEST_P(EvaluateTest, RxcMatchesRegexAnywhere) {
   const std::string path = WriteContentFile("rx.txt", "id=12345 name=foo\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "rx.txt", vfs::FileType::kRegular, md);
@@ -958,7 +981,7 @@ TEST_F(EvaluateTest, RxcMatchesRegexAnywhere) {
   EXPECT_THAT(Match({"-rxc", "^name="}, visit), IsFalse());     // 'name=' is not at the start of the content
 }
 
-TEST_F(EvaluateTest, RxcUnderExactMatchesLiterally) {
+TEST_P(EvaluateTest, RxcUnderExactMatchesLiterally) {
   // --regextype=EXACT reaches -rxc too (not just -grep): the content predicate matches the argument
   // as a literal substring, so metacharacters are plain text.
   const std::string path = WriteContentFile("rx_exact.txt", "value = a[0-9]b here\n");
@@ -969,7 +992,7 @@ TEST_F(EvaluateTest, RxcUnderExactMatchesLiterally) {
   EXPECT_THAT(Match({"-rxc", "a5b"}, visit), IsFalse());     // the regex interpretation is gone under EXACT
 }
 
-TEST_F(EvaluateTest, RxcUnderFnmatchUsesShellWildcards) {
+TEST_P(EvaluateTest, RxcUnderFnmatchUsesShellWildcards) {
   // --regextype=FNMATCH treats the -rxc argument as a shell glob: `*` matches any run, `?` one char.
   const std::string path = WriteContentFile("rx_glob.txt", "the quick brown fox\n");
   vfs::Metadata md;
@@ -980,7 +1003,7 @@ TEST_F(EvaluateTest, RxcUnderFnmatchUsesShellWildcards) {
   EXPECT_THAT(Match({"-rxc", "quick.fox"}, visit), IsFalse());  // '.' is literal in a glob, no dot here
 }
 
-TEST_F(EvaluateTest, RxcUnderGlobUsesPathAwareGlob) {
+TEST_P(EvaluateTest, RxcUnderGlobUsesPathAwareGlob) {
   // --regextype=GLOB reaches -rxc: a path-aware shell glob (`*` stops at '/', `**` crosses).
   const std::string path = WriteContentFile("rx_pathglob.txt", "path is src/app/main.cc\n");
   vfs::Metadata md;
@@ -991,7 +1014,7 @@ TEST_F(EvaluateTest, RxcUnderGlobUsesPathAwareGlob) {
   EXPECT_THAT(Match({"-rxc", "src/main.cc"}, visit), IsFalse());  // `*`/segment does not cross '/', 'app' is in the way
 }
 
-TEST_F(EvaluateTest, IrxcFoldsCase) {
+TEST_P(EvaluateTest, IrxcFoldsCase) {
   const std::string path = WriteContentFile("irx.txt", "STATUS: OK");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "irx.txt", vfs::FileType::kRegular, md);
@@ -999,7 +1022,7 @@ TEST_F(EvaluateTest, IrxcFoldsCase) {
   EXPECT_THAT(Match({"-rxc", "status: ok"}, visit), IsFalse());  // the case-sensitive form does not match
 }
 
-TEST_F(EvaluateTest, ContentSkipsBinaryFiles) {
+TEST_P(EvaluateTest, ContentSkipsBinaryFiles) {
   // A NUL byte in the sniffed prefix marks the file binary; content search skips it,
   // so even a literal substring that is present does not match (grep/rg behaviour).
   const std::string path = WriteContentFile("bin", std::string("ELF\0needle here", 15));
@@ -1009,7 +1032,7 @@ TEST_F(EvaluateTest, ContentSkipsBinaryFiles) {
   EXPECT_THAT(Match({"-rxc", "needle"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, TextFlavorsEnforceTheirDocumentedLineEndings) {
+TEST_P(EvaluateTest, TextFlavorsEnforceTheirDocumentedLineEndings) {
   const auto matches = [this](std::string_view tag, std::string_view content, std::string_view flavor) {
     const std::string path = WriteContentFile(tag, content);
     vfs::Metadata md;
@@ -1031,7 +1054,7 @@ TEST_F(EvaluateTest, TextFlavorsEnforceTheirDocumentedLineEndings) {
   EXPECT_THAT(matches("strict_nul", std::string_view("one\0two\n", 8), "posix"), IsFalse());
 }
 
-TEST_F(EvaluateTest, TextFlavorsIgnoreOneLeadingUtf8Bom) {
+TEST_P(EvaluateTest, TextFlavorsIgnoreOneLeadingUtf8Bom) {
   const auto matches = [this](std::string_view tag, std::string_view content, std::string_view flavor) {
     const std::string path = WriteContentFile(tag, content);
     vfs::Metadata md;
@@ -1050,7 +1073,7 @@ TEST_F(EvaluateTest, TextFlavorsIgnoreOneLeadingUtf8Bom) {
   EXPECT_THAT(matches("utf16", std::string_view("\xff\xfe\0t\0e\0x\0t", 10), "posix"), IsFalse());
 }
 
-TEST_F(EvaluateTest, GitTextAndBinaryUseOnlyTheLeadingNulSniffWindow) {
+TEST_P(EvaluateTest, GitTextAndBinaryUseOnlyTheLeadingNulSniffWindow) {
   vfs::Metadata md;
   std::string content(8'001, 'x');
   content.back() = '\0';
@@ -1070,7 +1093,7 @@ TEST_F(EvaluateTest, GitTextAndBinaryUseOnlyTheLeadingNulSniffWindow) {
   EXPECT_THAT(Match({"-binary"}, directory), IsFalse());
 }
 
-TEST_F(EvaluateTest, MatchOutputRequiresBoundContentPatterns) {
+TEST_P(EvaluateTest, MatchOutputRequiresBoundContentPatterns) {
   ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({".", "-rxc", "foo"}));
   EXPECT_THAT(
       PrepareMatchOutput(*command.expression),
@@ -1081,7 +1104,7 @@ TEST_F(EvaluateTest, MatchOutputRequiresBoundContentPatterns) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("content predicate")));
 }
 
-TEST_F(EvaluateTest, GrepOnlyMatchingEmitsEveryNonemptySpan) {
+TEST_P(EvaluateTest, GrepOnlyMatchingEmitsEveryNonemptySpan) {
   const std::string path = WriteContentFile("parts.txt", "a12 b345\nnone\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "parts.txt", vfs::FileType::kRegular, md);
@@ -1093,7 +1116,7 @@ TEST_F(EvaluateTest, GrepOnlyMatchingEmitsEveryNonemptySpan) {
   )out")));
 }
 
-TEST_F(EvaluateTest, GrepInversionSelectsLinesRatherThanNegatingFiles) {
+TEST_P(EvaluateTest, GrepInversionSelectsLinesRatherThanNegatingFiles) {
   const std::string path = WriteContentFile("invert.txt", "yes\nno\nyes\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "invert.txt", vfs::FileType::kRegular, md);
@@ -1102,7 +1125,7 @@ TEST_F(EvaluateTest, GrepInversionSelectsLinesRatherThanNegatingFiles) {
   EXPECT_THAT(emitted_, EqualsText("no\n"));
 }
 
-TEST_F(EvaluateTest, GrepFilesWithoutMatchIncludesEmptyText) {
+TEST_P(EvaluateTest, GrepFilesWithoutMatchIncludesEmptyText) {
   const std::string path = WriteContentFile("empty.txt", "");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "empty.txt", vfs::FileType::kRegular, md);
@@ -1111,7 +1134,7 @@ TEST_F(EvaluateTest, GrepFilesWithoutMatchIncludesEmptyText) {
   EXPECT_THAT(emitted_, EqualsText(path + "\n"));
 }
 
-TEST_F(EvaluateTest, GrepCountMatchesCountsPartsRatherThanLines) {
+TEST_P(EvaluateTest, GrepCountMatchesCountsPartsRatherThanLines) {
   const std::string path = WriteContentFile("count.txt", "aa aa\naa\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "count.txt", vfs::FileType::kRegular, md);
@@ -1120,7 +1143,7 @@ TEST_F(EvaluateTest, GrepCountMatchesCountsPartsRatherThanLines) {
   EXPECT_THAT(emitted_, EqualsText("3\n"));
 }
 
-TEST_F(EvaluateTest, GrepEmitsMatchingLinesAsPathLineText) {
+TEST_P(EvaluateTest, GrepEmitsMatchingLinesAsPathLineText) {
   const std::string path = WriteContentFile("grep.txt", "first TODO line\nsecond line\nanother TODO here\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep.txt", vfs::FileType::kRegular, md);
@@ -1128,7 +1151,7 @@ TEST_F(EvaluateTest, GrepEmitsMatchingLinesAsPathLineText) {
   EXPECT_THAT(emitted_, EqualsText(absl::StrCat(path, ":1:first TODO line\n", path, ":3:another TODO here\n")));
 }
 
-TEST_F(EvaluateTest, GrepUsesRegexNotLiteral) {
+TEST_P(EvaluateTest, GrepUsesRegexNotLiteral) {
   const std::string path = WriteContentFile("grep_rx.txt", "id=12345\nname=foo\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_rx.txt", vfs::FileType::kRegular, md);
@@ -1136,7 +1159,7 @@ TEST_F(EvaluateTest, GrepUsesRegexNotLiteral) {
   EXPECT_THAT(emitted_, EqualsText(absl::StrCat(path, ":1:id=12345\n")));
 }
 
-TEST_F(EvaluateTest, GrepWithNoMatchingLineIsFalseAndSilent) {
+TEST_P(EvaluateTest, GrepWithNoMatchingLineIsFalseAndSilent) {
   const std::string path = WriteContentFile("grep_none.txt", "nothing to see\nhere at all\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_none.txt", vfs::FileType::kRegular, md);
@@ -1144,7 +1167,7 @@ TEST_F(EvaluateTest, GrepWithNoMatchingLineIsFalseAndSilent) {
   EXPECT_THAT(emitted_, IsEmpty());
 }
 
-TEST_F(EvaluateTest, GrepSkipsBinaryFiles) {
+TEST_P(EvaluateTest, GrepSkipsBinaryFiles) {
   const std::string path = WriteContentFile("grep_bin", std::string("ELF\0TODO here\n", 14));
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_bin", vfs::FileType::kRegular, md);
@@ -1152,7 +1175,7 @@ TEST_F(EvaluateTest, GrepSkipsBinaryFiles) {
   EXPECT_THAT(emitted_, IsEmpty());
 }
 
-TEST_F(EvaluateTest, GrepExactModeMatchesLiterally) {
+TEST_P(EvaluateTest, GrepExactModeMatchesLiterally) {
   // grep_literal (--regextype=EXACT) treats the pattern as a literal substring, so
   // '.' is a literal dot, not a regex wildcard.
   const std::string path = WriteContentFile("grep_exact.txt", "price 3.50\nprice 3X50\n");
@@ -1163,7 +1186,7 @@ TEST_F(EvaluateTest, GrepExactModeMatchesLiterally) {
   EXPECT_THAT(emitted_, EqualsText(absl::StrCat(path, ":1:price 3.50\n")));  // only the literal 3.50, not 3X50
 }
 
-TEST_F(EvaluateTest, GrepExactModeAcceptsRegexMetacharactersAsLiterals) {
+TEST_P(EvaluateTest, GrepExactModeAcceptsRegexMetacharactersAsLiterals) {
   // A pattern that is not a valid regex is still a fine literal under EXACT.
   const std::string path = WriteContentFile("grep_lit.txt", "call foo(bar) now\n");
   vfs::Metadata md;
@@ -1173,7 +1196,7 @@ TEST_F(EvaluateTest, GrepExactModeAcceptsRegexMetacharactersAsLiterals) {
   EXPECT_THAT(emitted_, EqualsText(absl::StrCat(path, ":1:call foo(bar) now\n")));
 }
 
-TEST_F(EvaluateTest, GrepFormatRendersTemplatePerMatchLine) {
+TEST_P(EvaluateTest, GrepFormatRendersTemplatePerMatchLine) {
   // -grep:FORMAT overrides the default path:line:text; {line}/{text} bind per line.
   const std::string path = WriteContentFile("grep_fmt.txt", "alpha\nhit one\nbeta\nhit two\n");
   vfs::Metadata md;
@@ -1182,7 +1205,7 @@ TEST_F(EvaluateTest, GrepFormatRendersTemplatePerMatchLine) {
   EXPECT_THAT(emitted_, EqualsText("2: hit one\n4: hit two\n"));
 }
 
-TEST_F(EvaluateTest, GrepFormatCanReferenceEntryFields) {
+TEST_P(EvaluateTest, GrepFormatCanReferenceEntryFields) {
   // The template sees the entry's field vocabulary too, not just {line}/{text}.
   const std::string path = WriteContentFile("grep_fmt2.txt", "x hit y\n");
   vfs::Metadata md;
@@ -1191,7 +1214,7 @@ TEST_F(EvaluateTest, GrepFormatCanReferenceEntryFields) {
   EXPECT_THAT(emitted_, EqualsText(absl::StrCat(path, "#1\n")));
 }
 
-TEST_F(EvaluateTest, GrepFormatMatchAndColumnExtractTheMatch) {
+TEST_P(EvaluateTest, GrepFormatMatchAndColumnExtractTheMatch) {
   // {match} is the matched substring (grep -o), {column} its 1-based start.
   const std::string path = WriteContentFile("grep_o.txt", "code E42 here\n");
   vfs::Metadata md;
@@ -1200,7 +1223,7 @@ TEST_F(EvaluateTest, GrepFormatMatchAndColumnExtractTheMatch) {
   EXPECT_THAT(emitted_, EqualsText("6:E42\n"));  // E42 starts at column 6 (after "code ")
 }
 
-TEST_F(EvaluateTest, GrepFormatMatchInExactModeUsesTheLiteralSpan) {
+TEST_P(EvaluateTest, GrepFormatMatchInExactModeUsesTheLiteralSpan) {
   const std::string path = WriteContentFile("grep_o2.txt", "aXbXc\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_o2.txt", vfs::FileType::kRegular, md);
@@ -1209,7 +1232,7 @@ TEST_F(EvaluateTest, GrepFormatMatchInExactModeUsesTheLiteralSpan) {
   EXPECT_THAT(emitted_, EqualsText("2 X\n"));  // first literal X at column 2
 }
 
-TEST_F(EvaluateTest, GrepCountEmitsPerFileMatchLineCount) {
+TEST_P(EvaluateTest, GrepCountEmitsPerFileMatchLineCount) {
   // --count: one path:count (matching lines) instead of the lines; supersedes FORMAT.
   const std::string path = WriteContentFile("grep_c.txt", "TODO a\nx\nTODO b\nTODO c\n");
   vfs::Metadata md;
@@ -1219,7 +1242,7 @@ TEST_F(EvaluateTest, GrepCountEmitsPerFileMatchLineCount) {
   EXPECT_THAT(emitted_, EqualsText(absl::StrCat(path, ":3\n")));
 }
 
-TEST_F(EvaluateTest, GrepCountEmitsNothingWhenNoLineMatches) {
+TEST_P(EvaluateTest, GrepCountEmitsNothingWhenNoLineMatches) {
   const std::string path = WriteContentFile("grep_c0.txt", "nothing here\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_c0.txt", vfs::FileType::kRegular, md);
@@ -1228,7 +1251,7 @@ TEST_F(EvaluateTest, GrepCountEmitsNothingWhenNoLineMatches) {
   EXPECT_THAT(emitted_, IsEmpty());
 }
 
-TEST_F(EvaluateTest, ContentNonRegularOrMissingDoesNotMatch) {
+TEST_P(EvaluateTest, ContentNonRegularOrMissingDoesNotMatch) {
   // A directory has no searchable content and a missing path is unreadable: both are
   // a clean no-match, not an error.
   vfs::Metadata dir_md;
@@ -1240,7 +1263,7 @@ TEST_F(EvaluateTest, ContentNonRegularOrMissingDoesNotMatch) {
   EXPECT_THAT(Match({"-rxc", "anything"}, missing), IsFalse());
 }
 
-TEST_F(EvaluateTest, LnameGlobsSymlinkTarget) {
+TEST_P(EvaluateTest, LnameGlobsSymlinkTarget) {
   namespace stdfs = ::std::filesystem;
   const stdfs::path link = stdfs::temp_directory_path() / "xff_lname_probe.link";
   stdfs::remove(link);  // clear any leftover from a previous run
@@ -1260,7 +1283,7 @@ TEST_F(EvaluateTest, LnameGlobsSymlinkTarget) {
   stdfs::remove(link);
 }
 
-TEST_F(EvaluateTest, XtypeFollowsSymlinkTarget) {
+TEST_P(EvaluateTest, XtypeFollowsSymlinkTarget) {
   namespace stdfs = ::std::filesystem;
   const stdfs::path dir = stdfs::temp_directory_path() / "xff_xtype_probe.d";
   stdfs::remove_all(dir);
@@ -1294,7 +1317,7 @@ TEST_F(EvaluateTest, XtypeFollowsSymlinkTarget) {
   stdfs::remove_all(dir);
 }
 
-TEST_F(EvaluateTest, MTimeMatchesWholeDaysAgo) {
+TEST_P(EvaluateTest, MTimeMatchesWholeDaysAgo) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.mtime = now_ - absl::Hours(60);  // 2.5 days ago -> floor to 2 whole days
@@ -1306,7 +1329,7 @@ TEST_F(EvaluateTest, MTimeMatchesWholeDaysAgo) {
   EXPECT_THAT(Match({"-mtime", "-3"}, visit), IsTrue());   // strictly younger than 3 days
 }
 
-TEST_F(EvaluateTest, MMinMatchesWholeMinutesAgo) {
+TEST_P(EvaluateTest, MMinMatchesWholeMinutesAgo) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.mtime = now_ - absl::Minutes(150);  // 150 minutes ago
@@ -1317,7 +1340,7 @@ TEST_F(EvaluateTest, MMinMatchesWholeMinutesAgo) {
   EXPECT_THAT(Match({"-mmin", "-200"}, visit), IsTrue());
 }
 
-TEST_F(EvaluateTest, BTimeMatchesWholeDaysSinceBirth) {
+TEST_P(EvaluateTest, BTimeMatchesWholeDaysSinceBirth) {
   // BSD -Btime: the -mtime of the birth time. Same whole-day floor / +N older /
   // -N younger semantics, measured against `btime`.
   vfs::Metadata md;
@@ -1331,7 +1354,7 @@ TEST_F(EvaluateTest, BTimeMatchesWholeDaysSinceBirth) {
   EXPECT_THAT(Match({"-Btime", "-3"}, visit), IsTrue());   // strictly younger than 3 days
 }
 
-TEST_F(EvaluateTest, BMinMatchesWholeMinutesSinceBirth) {
+TEST_P(EvaluateTest, BMinMatchesWholeMinutesSinceBirth) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.btime = now_ - absl::Minutes(150);  // born 150 minutes ago
@@ -1342,7 +1365,7 @@ TEST_F(EvaluateTest, BMinMatchesWholeMinutesSinceBirth) {
   EXPECT_THAT(Match({"-Bmin", "-200"}, visit), IsTrue());
 }
 
-TEST_F(EvaluateTest, BirthtimePredicatesNeverMatchWhenBtimeUnrecorded) {
+TEST_P(EvaluateTest, BirthtimePredicatesNeverMatchWhenBtimeUnrecorded) {
   // btime is optional: when the kernel/FS did not record it, -Btime/-Bmin match
   // nothing -- there is no value to compare -- and must not borrow another stamp.
   vfs::Metadata md;
@@ -1354,7 +1377,7 @@ TEST_F(EvaluateTest, BirthtimePredicatesNeverMatchWhenBtimeUnrecorded) {
   EXPECT_THAT(Match({"-Bmin", "-9999"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, BirthtimePredicateFlagsUnsupportedWhenBtimeUnrecorded) {
+TEST_P(EvaluateTest, BirthtimePredicateFlagsUnsupportedWhenBtimeUnrecorded) {
   // An unrecorded birth time is an impossible task: besides not matching, the
   // predicate raises the control side-channel so the driver can fail (or, under
   // --skip-unsupported, warn and skip). Covers -Btime/-Bmin and the X=B -newerXY.
@@ -1369,7 +1392,7 @@ TEST_F(EvaluateTest, BirthtimePredicateFlagsUnsupportedWhenBtimeUnrecorded) {
   EXPECT_THAT(control_.unsupported, Not(IsEmpty()));
 }
 
-TEST_F(EvaluateTest, BirthtimePredicateDoesNotFlagUnsupportedWhenBtimePresent) {
+TEST_P(EvaluateTest, BirthtimePredicateDoesNotFlagUnsupportedWhenBtimePresent) {
   // With a recorded birth time the predicate evaluates normally and leaves the
   // control side-channel clear (no impossible-task signal).
   vfs::Metadata md;
@@ -1380,7 +1403,7 @@ TEST_F(EvaluateTest, BirthtimePredicateDoesNotFlagUnsupportedWhenBtimePresent) {
   EXPECT_THAT(control_.unsupported, IsEmpty());
 }
 
-TEST_F(EvaluateTest, MTimeAcceptsBsdUnitSuffix) {
+TEST_P(EvaluateTest, MTimeAcceptsBsdUnitSuffix) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.mtime = now_ - absl::Hours(3);  // 3 hours ago
@@ -1399,7 +1422,7 @@ TEST_F(EvaluateTest, MTimeAcceptsBsdUnitSuffix) {
   EXPECT_THAT(Match({"-mtime", "3x"}, visit), IsFalse());    // unrecognised suffix -> no match
 }
 
-TEST_F(EvaluateTest, MMinRejectsUnitSuffix) {
+TEST_P(EvaluateTest, MMinRejectsUnitSuffix) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.mtime = now_ - absl::Minutes(150);
@@ -1409,7 +1432,7 @@ TEST_F(EvaluateTest, MMinRejectsUnitSuffix) {
   EXPECT_THAT(Match({"-mmin", "-3h"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, MTimeAcceptsXffWordDuration) {
+TEST_P(EvaluateTest, MTimeAcceptsXffWordDuration) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.mtime = now_ - absl::Hours(24 * 7 * 3) - absl::Hours(3);  // 3 weeks 3 hours ago
@@ -1425,7 +1448,7 @@ TEST_F(EvaluateTest, MTimeAcceptsXffWordDuration) {
   EXPECT_THAT(Match({"-mtime", "3 weeks"}, visit), IsFalse());           // the word form requires an explicit sign
 }
 
-TEST_F(EvaluateTest, UidAndGidMatchNumericOwner) {
+TEST_P(EvaluateTest, UidAndGidMatchNumericOwner) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.uid = 501;
@@ -1439,7 +1462,7 @@ TEST_F(EvaluateTest, UidAndGidMatchNumericOwner) {
   EXPECT_THAT(Match({"-gid", "-21"}, visit), IsTrue());  // gid strictly less than 21
 }
 
-TEST_F(EvaluateTest, AccessAndChangeTimeFamily) {
+TEST_P(EvaluateTest, AccessAndChangeTimeFamily) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.atime = now_ - absl::Hours(60);     // 2.5 days / 3600 minutes ago
@@ -1454,7 +1477,7 @@ TEST_F(EvaluateTest, AccessAndChangeTimeFamily) {
   EXPECT_THAT(Match({"-cmin", "+150"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, UserGroupNumericFallback) {
+TEST_P(EvaluateTest, UserGroupNumericFallback) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.uid = 501;
@@ -1469,7 +1492,7 @@ TEST_F(EvaluateTest, UserGroupNumericFallback) {
   EXPECT_THAT(Match({"-group", "21"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, NouserNogroupMatchOrphanedIds) {
+TEST_P(EvaluateTest, NouserNogroupMatchOrphanedIds) {
   vfs::Metadata owned_md;
   owned_md.type = vfs::FileType::kRegular;
   owned_md.uid = 0;  // root: present in passwd
@@ -1486,7 +1509,7 @@ TEST_F(EvaluateTest, NouserNogroupMatchOrphanedIds) {
   EXPECT_THAT(Match({"-nogroup"}, orphan), IsTrue());
 }
 
-TEST_F(EvaluateTest, CommaEvaluatesBothValueIsRight) {
+TEST_P(EvaluateTest, CommaEvaluatesBothValueIsRight) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
@@ -1498,7 +1521,7 @@ TEST_F(EvaluateTest, CommaEvaluatesBothValueIsRight) {
   EXPECT_THAT(emitted_, "f\nf\n");
 }
 
-TEST_F(EvaluateTest, WriteActionsRefuseAVirtualEntryInsteadOfActingOnIt) {
+TEST_P(EvaluateTest, WriteActionsRefuseAVirtualEntryInsteadOfActingOnIt) {
   // An archive member exists only inside its container: there is no path to unlink and none a child
   // process could open. Before this, -delete silently did nothing (exit 0, no message) and -exec handed
   // the child `a.tar!x`. Each write action must instead report an impossible task, which the driver
@@ -1522,7 +1545,7 @@ TEST_F(EvaluateTest, WriteActionsRefuseAVirtualEntryInsteadOfActingOnIt) {
   }
 }
 
-TEST_F(EvaluateTest, WriteActionsStillActOnARealFile) {
+TEST_P(EvaluateTest, WriteActionsStillActOnARealFile) {
   // The guard keys on the entry's SOURCE, so an ordinary file is untouched by it: -exec still runs and
   // reports true, and nothing is recorded as unsupported.
   vfs::Metadata real;
@@ -1531,7 +1554,7 @@ TEST_F(EvaluateTest, WriteActionsStillActOnARealFile) {
   EXPECT_THAT(control_.unsupported, IsEmpty());
 }
 
-TEST_F(EvaluateTest, PruneAndQuitSetControl) {
+TEST_P(EvaluateTest, PruneAndQuitSetControl) {
   vfs::Metadata md;
   md.type = vfs::FileType::kDirectory;
   const Visit visit{.path = "d", .name = "d", .depth = 1, .metadata = md};
@@ -1546,7 +1569,7 @@ TEST_F(EvaluateTest, PruneAndQuitSetControl) {
   EXPECT_THAT(control_.prune, IsFalse());
 }
 
-TEST_F(EvaluateTest, RegexMatchesWholePath) {
+TEST_P(EvaluateTest, RegexMatchesWholePath) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("a/b/c.txt", "c.txt", vfs::FileType::kRegular, md);
   // -regex matches the whole path (not just the basename); -iregex folds case.
@@ -1556,7 +1579,7 @@ TEST_F(EvaluateTest, RegexMatchesWholePath) {
   EXPECT_THAT(Match({"-iregex", ".*\\.TXT"}, visit), IsTrue());
 }
 
-TEST_F(EvaluateTest, NewerXYFalseWhenReferenceMissing) {
+TEST_P(EvaluateTest, NewerXYFalseWhenReferenceMissing) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("f", "f", vfs::FileType::kRegular, md);
   // -newerXY with an unreadable reference is false; real field comparisons are
@@ -1565,7 +1588,7 @@ TEST_F(EvaluateTest, NewerXYFalseWhenReferenceMissing) {
   EXPECT_THAT(Match({"-newerac", "/no/such/reference"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, AnewerCnewerCompareEntryTimeToReferenceMtime) {
+TEST_P(EvaluateTest, AnewerCnewerCompareEntryTimeToReferenceMtime) {
   // -anewer/-cnewer are the classic spellings of -neweram/-newercm: the entry's
   // atime/ctime vs the reference file's mtime. False when the reference is gone.
   vfs::Metadata missing_md;
@@ -1587,7 +1610,7 @@ TEST_F(EvaluateTest, AnewerCnewerCompareEntryTimeToReferenceMtime) {
   stdfs::remove(ref);
 }
 
-TEST_F(EvaluateTest, NewerBtComparesBirthTimeToTimeString) {
+TEST_P(EvaluateTest, NewerBtComparesBirthTimeToTimeString) {
   // -newerBt (X=B, Y=t): the entry's birth time vs a time string. now_ == 1.7e9.
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
@@ -1597,7 +1620,7 @@ TEST_F(EvaluateTest, NewerBtComparesBirthTimeToTimeString) {
   EXPECT_THAT(Match({"-newerBt", "@1700000001"}, visit), IsFalse());  // not after a later instant
 }
 
-TEST_F(EvaluateTest, NewerBCombosAreFalseWhenBirthTimeUnrecorded) {
+TEST_P(EvaluateTest, NewerBCombosAreFalseWhenBirthTimeUnrecorded) {
   // Every -newerXY touching B is false when that birth time is unrecorded -- here
   // the entry's (X=B). Both the time-string and file-reference forms short-circuit.
   vfs::Metadata md;
@@ -1608,7 +1631,7 @@ TEST_F(EvaluateTest, NewerBCombosAreFalseWhenBirthTimeUnrecorded) {
   EXPECT_THAT(Match({"-newerBm", "/no/such/reference"}, visit), IsFalse());  // X=B (also a missing ref)
 }
 
-TEST_F(EvaluateTest, NewerBmComparesBirthTimeToReferenceMtime) {
+TEST_P(EvaluateTest, NewerBmComparesBirthTimeToReferenceMtime) {
   // -newerBm: the entry's birth time vs the reference FILE's mtime (X=B, file-ref).
   namespace stdfs = ::std::filesystem;
   const stdfs::path ref = stdfs::temp_directory_path() / "xff_newerbm_ref.tmp";
@@ -1625,7 +1648,7 @@ TEST_F(EvaluateTest, NewerBmComparesBirthTimeToReferenceMtime) {
   stdfs::remove(ref);
 }
 
-TEST_F(EvaluateTest, NewerMbComparesMtimeToReferenceBirthTime) {
+TEST_P(EvaluateTest, NewerMbComparesMtimeToReferenceBirthTime) {
   // -newermB (Y=B): the entry's mtime vs the reference FILE's birth time. Only
   // assert when the test filesystem records birth time -- otherwise the reference
   // btime is absent and the comparison is always false (mirroring -Btime), which
@@ -1648,7 +1671,7 @@ TEST_F(EvaluateTest, NewerMbComparesMtimeToReferenceBirthTime) {
   stdfs::remove(ref);
 }
 
-TEST_F(EvaluateTest, PrintfExpandsDirectivesAndEscapes) {
+TEST_P(EvaluateTest, PrintfExpandsDirectivesAndEscapes) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.size = 42;
@@ -1661,7 +1684,7 @@ TEST_F(EvaluateTest, PrintfExpandsDirectivesAndEscapes) {
   EXPECT_THAT(emitted_, "%\t3");
 }
 
-TEST_F(EvaluateTest, PrintfTypeDirectiveCoversEveryFilesystemType) {
+TEST_P(EvaluateTest, PrintfTypeDirectiveCoversEveryFilesystemType) {
   static constexpr auto kCases = std::to_array<std::pair<vfs::FileType, char>>({
       {vfs::FileType::kBlockDevice, 'b'},
       {vfs::FileType::kCharDevice, 'c'},
@@ -1681,7 +1704,7 @@ TEST_F(EvaluateTest, PrintfTypeDirectiveCoversEveryFilesystemType) {
   }
 }
 
-TEST_F(EvaluateTest, PrintfHandlesRootAndBasenameDirectoriesAndZeroPermissions) {
+TEST_P(EvaluateTest, PrintfHandlesRootAndBasenameDirectoriesAndZeroPermissions) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   const Visit root_child{.path = "/entry", .name = "entry", .depth = 1, .metadata = md};
@@ -1693,7 +1716,7 @@ TEST_F(EvaluateTest, PrintfHandlesRootAndBasenameDirectoriesAndZeroPermissions) 
   EXPECT_THAT(emitted_, ".");
 }
 
-TEST_F(EvaluateTest, PrintfPreservesUnknownEscapesAndDirectives) {
+TEST_P(EvaluateTest, PrintfPreservesUnknownEscapesAndDirectives) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.ino = 42;
@@ -1702,7 +1725,7 @@ TEST_F(EvaluateTest, PrintfPreservesUnknownEscapesAndDirectives) {
   EXPECT_THAT(emitted_, "42|\\q|%Q|trailing\\|trailing%");
 }
 
-TEST_F(EvaluateTest, PrintfOwnerDirectives) {
+TEST_P(EvaluateTest, PrintfOwnerDirectives) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.uid = 1'234'567;  // no passwd entry -> %u falls back to the numeric id
@@ -1712,7 +1735,7 @@ TEST_F(EvaluateTest, PrintfOwnerDirectives) {
   EXPECT_THAT(emitted_, "1234567|1234567|7654321|7654321");  // %U/%G numeric; %u/%g fall back to the id
 }
 
-TEST_F(EvaluateTest, PrintfTimeDirectives) {
+TEST_P(EvaluateTest, PrintfTimeDirectives) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.mtime = absl::FromUnixSeconds(1'600'000'000);  // 2020-09-13 12:26:40 UTC (a Sunday)
@@ -1734,7 +1757,7 @@ TEST_F(EvaluateTest, PrintfTimeDirectives) {
   EXPECT_THAT(emitted_, "Fri Jan  2 00:00:00 1970|1970");
 }
 
-TEST_F(EvaluateTest, PrintlnAndPrintflnAppendOsLineEnding) {
+TEST_P(EvaluateTest, PrintlnAndPrintflnAppendOsLineEnding) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.size = 42;
@@ -1747,7 +1770,7 @@ TEST_F(EvaluateTest, PrintlnAndPrintflnAppendOsLineEnding) {
   EXPECT_THAT(emitted_, "c.txt|42\n");
 }
 
-TEST_F(EvaluateTest, LsEmitsAnLsStyleLine) {
+TEST_P(EvaluateTest, LsEmitsAnLsStyleLine) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.ino = 42;
@@ -1764,7 +1787,7 @@ TEST_F(EvaluateTest, LsEmitsAnLsStyleLine) {
   EXPECT_THAT(emitted_, "42 4 -rw-r--r-- 1 1234567 7654321 4096 Sep 13  2020 dir/f\n");
 }
 
-TEST_F(EvaluateTest, LsRendersEveryTypeAndSpecialPermissionState) {
+TEST_P(EvaluateTest, LsRendersEveryTypeAndSpecialPermissionState) {
   static constexpr auto kCases = std::to_array<std::tuple<vfs::FileType, std::uint32_t, std::string_view>>({
       {vfs::FileType::kBlockDevice, 04700, "brws------"},
       {vfs::FileType::kCharDevice, 04600, "crwS------"},
@@ -1786,7 +1809,7 @@ TEST_F(EvaluateTest, LsRendersEveryTypeAndSpecialPermissionState) {
   }
 }
 
-TEST_F(EvaluateTest, OkPromptsWithSubstitutionAndRunsOnlyWhenConfirmed) {
+TEST_P(EvaluateTest, OkPromptsWithSubstitutionAndRunsOnlyWhenConfirmed) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo.txt", "foo.txt", vfs::FileType::kRegular, md);
   // Declined: the command is not run, -ok is false; the prompt shows {} -> the path.
@@ -1799,7 +1822,7 @@ TEST_F(EvaluateTest, OkPromptsWithSubstitutionAndRunsOnlyWhenConfirmed) {
   EXPECT_THAT(Match({"-ok", "/bin/sh", "-c", "exit 1", ";"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, NewerMtComparesEntryTimeToTimeString) {
+TEST_P(EvaluateTest, NewerMtComparesEntryTimeToTimeString) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.mtime = absl::FromUnixSeconds(1'600'000'000);  // 2020-09-13, a fixed mtime
@@ -1814,7 +1837,7 @@ TEST_F(EvaluateTest, NewerMtComparesEntryTimeToTimeString) {
   EXPECT_THAT(Match({"-newermt", "yesterday"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, NewerMtAcceptsRelativeTimeStrings) {
+TEST_P(EvaluateTest, NewerMtAcceptsRelativeTimeStrings) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   md.mtime = now_ - absl::Hours(48);  // modified two days before the reference clock
@@ -1825,7 +1848,7 @@ TEST_F(EvaluateTest, NewerMtAcceptsRelativeTimeStrings) {
   EXPECT_THAT(Match({"-newermt", "now"}, visit), IsFalse());        // older than now
 }
 
-TEST_F(EvaluateTest, NewerMtInterpretsTheTimeStringInTheContextZone) {
+TEST_P(EvaluateTest, NewerMtInterpretsTheTimeStringInTheContextZone) {
   // A file modified at 2020-01-01 23:30 UTC straddles the 2020-01-02 boundary:
   // that midnight is 00:00 UTC but 23:00 UTC the previous day in UTC+1, so
   // -newermt 2020-01-02 flips with the context zone (EvalContext::tz, --timezone).
@@ -1840,7 +1863,7 @@ TEST_F(EvaluateTest, NewerMtInterpretsTheTimeStringInTheContextZone) {
   EXPECT_THAT(Match({"-newermt", "2020-01-02"}, visit), IsTrue());
 }
 
-TEST_F(EvaluateTest, ExecFieldsGatesNamedPlaceholderSubstitution) {
+TEST_P(EvaluateTest, ExecFieldsGatesNamedPlaceholderSubstitution) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("a/b/f.txt", "f.txt", vfs::FileType::kRegular, md);
   // Default (find-exact): {name} is not a placeholder, so the child compares the
@@ -1852,7 +1875,7 @@ TEST_F(EvaluateTest, ExecFieldsGatesNamedPlaceholderSubstitution) {
   EXPECT_THAT(Match({"-exec", "/bin/sh", "-c", "test \"{name}\" = f.txt", ";"}, visit), IsTrue());
 }
 
-TEST_F(EvaluateTest, ExecdirRunsChildInEntryDirectoryWithDotSlashBasename) {
+TEST_P(EvaluateTest, ExecdirRunsChildInEntryDirectoryWithDotSlashBasename) {
   vfs::Metadata md;
   // Entry "/x.txt" -> -execdir runs the child in "/" with {} expanded to "./x.txt"
   // ("/" always exists, so the chdir succeeds under the test sandbox).
@@ -1863,7 +1886,7 @@ TEST_F(EvaluateTest, ExecdirRunsChildInEntryDirectoryWithDotSlashBasename) {
   EXPECT_THAT(Match({"-execdir", "/bin/sh", "-c", "test \"{}\" = ./nope", ";"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, ExecdirHonorsExecFields) {
+TEST_P(EvaluateTest, ExecdirHonorsExecFields) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("/f.txt", "f.txt", vfs::FileType::kRegular, md);
   // With --exec-fields, {name} renders the basename (the vocabulary still sees the
@@ -1874,7 +1897,7 @@ TEST_F(EvaluateTest, ExecdirHonorsExecFields) {
   EXPECT_THAT(Match({"-execdir", "/bin/sh", "-c", "test \"{name}\" = f.txt", ";"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, OkdirPromptsWithDotSlashBasenameThenRunsInEntryDirOnYes) {
+TEST_P(EvaluateTest, OkdirPromptsWithDotSlashBasenameThenRunsInEntryDirOnYes) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("/x.txt", "x.txt", vfs::FileType::kRegular, md);
   confirm_reply_ = true;  // affirmative: -okdir runs the command, like -execdir
@@ -1885,14 +1908,14 @@ TEST_F(EvaluateTest, OkdirPromptsWithDotSlashBasenameThenRunsInEntryDirOnYes) {
   EXPECT_THAT(last_prompt_, "/bin/echo ./x.txt? ");  // tokens joined, then "? " (no space before, like -ok)
 }
 
-TEST_F(EvaluateTest, OkdirDeclinedDoesNotRunAndIsFalse) {
+TEST_P(EvaluateTest, OkdirDeclinedDoesNotRunAndIsFalse) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("/x.txt", "x.txt", vfs::FileType::kRegular, md);
   confirm_reply_ = false;  // declined: not run, -okdir is false (the command would exit 0)
   EXPECT_THAT(Match({"-okdir", "/bin/sh", "-c", "exit 0", ";"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, CapturedirRunsCommandInEntryDirAndBindsStdout) {
+TEST_P(EvaluateTest, CapturedirRunsCommandInEntryDirAndBindsStdout) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("/x.txt", "x.txt", vfs::FileType::kRegular, md);
   // -capturedir:NAME runs the command in the entry's directory ("/") and binds its
@@ -1901,7 +1924,7 @@ TEST_F(EvaluateTest, CapturedirRunsCommandInEntryDirAndBindsStdout) {
   EXPECT_THAT(outputs_["cwd"], "/");
 }
 
-TEST_F(EvaluateTest, CaptureWithoutOutputSinkIsANoOp) {
+TEST_P(EvaluateTest, CaptureWithoutOutputSinkIsANoOp) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("/x.txt", "x.txt", vfs::FileType::kRegular, md);
   capture_outputs_ = false;
@@ -1911,7 +1934,7 @@ TEST_F(EvaluateTest, CaptureWithoutOutputSinkIsANoOp) {
   EXPECT_THAT(outputs_, IsEmpty());
 }
 
-TEST_F(EvaluateTest, ExecFieldsSubstitutesRegexCaptures) {
+TEST_P(EvaluateTest, ExecFieldsSubstitutesRegexCaptures) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("a/b/c.txt", "c.txt", vfs::FileType::kRegular, md);
   // A preceding -regex match records its groups; -exec {1} then references group 1
@@ -1925,7 +1948,7 @@ TEST_F(EvaluateTest, ExecFieldsSubstitutesRegexCaptures) {
       Match({"-regex", "(.*)/([^/]+)\\.(.*)", "-exec", "/bin/sh", "-c", "test \"{1}\" = a/b", ";"}, visit), IsFalse());
 }
 
-TEST_F(EvaluateTest, CapturesAreVisibleLeftToRightOnly) {
+TEST_P(EvaluateTest, CapturesAreVisibleLeftToRightOnly) {
   // The variable store accumulates left-to-right, so a binding (here a -regex
   // match) is in scope for later actions and only later -- the guarantee that
   // capture/-exec chaining rests on.
@@ -1940,7 +1963,7 @@ TEST_F(EvaluateTest, CapturesAreVisibleLeftToRightOnly) {
       Match({"-exec", "/bin/sh", "-c", "test -z \"{1}\"", ";", "-regex", "(.*)/([^/]+)\\.(.*)"}, visit), IsTrue());
 }
 
-TEST_F(EvaluateTest, CaptureBindsOutputNamespace) {
+TEST_P(EvaluateTest, CaptureBindsOutputNamespace) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("a/b/c.txt", "c.txt", vfs::FileType::kRegular, md);
   exec_fields_ = true;  // so the -exec reading {capture.tag} renders the vocabulary
@@ -1953,7 +1976,7 @@ TEST_F(EvaluateTest, CaptureBindsOutputNamespace) {
       IsTrue());
 }
 
-TEST_F(EvaluateTest, PrintfDocsDocumentEveryDirective) {
+TEST_P(EvaluateTest, PrintfDocsDocumentEveryDirective) {
   // Drift guard for --help=printf: every % directive in the SOT table (kPrintfDirectives,
   // via PrintfDirectiveLetters) is documented by PrintfDocs, and the xff %{field} escape too.
   std::string codes;
@@ -1967,7 +1990,7 @@ TEST_F(EvaluateTest, PrintfDocsDocumentEveryDirective) {
   EXPECT_THAT(codes, HasSubstr("%{NAME}"));
 }
 
-TEST_F(EvaluateTest, SizeUnitDocsDocumentEveryUnit) {
+TEST_P(EvaluateTest, SizeUnitDocsDocumentEveryUnit) {
   // Drift guard for --help=size: every unit suffix in the SOT (kSizeUnits, via
   // SizeUnitSuffixes) is documented by SizeUnitDocs.
   std::string codes;
@@ -1980,7 +2003,7 @@ TEST_F(EvaluateTest, SizeUnitDocsDocumentEveryUnit) {
   }
 }
 
-TEST_F(EvaluateTest, PresentationVocabulariesHaveStableStorage) {
+TEST_P(EvaluateTest, PresentationVocabulariesHaveStableStorage) {
   const auto columns = LsColumns();
   const auto printf_docs = PrintfDocs();
   const auto size_docs = SizeUnitDocs();
@@ -1989,7 +2012,7 @@ TEST_F(EvaluateTest, PresentationVocabulariesHaveStableStorage) {
   EXPECT_THAT(SizeUnitDocs().data(), Eq(size_docs.data()));
 }
 
-TEST_F(EvaluateTest, ArchiveDeletionRequiresBothDeletionAndRewritePermission) {
+TEST_P(EvaluateTest, ArchiveDeletionRequiresBothDeletionAndRewritePermission) {
   vfs::Metadata member;
   member.type = vfs::FileType::kRegular;
   member.source = vfs::Source::kArchiveMember;
@@ -2003,6 +2026,26 @@ TEST_F(EvaluateTest, ArchiveDeletionRequiresBothDeletionAndRewritePermission) {
     EXPECT_THAT(control_.unsupported, IsEmpty());
   }
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    Executors,
+    EvaluateTest,
+    ::testing::Values(
+        Evaluator::kTree,
+        Evaluator::kBound,
+        Evaluator::kPrepared,
+        Evaluator::kIterative,
+        Evaluator::kProgram),
+    [](const ::testing::TestParamInfo<Evaluator>& info) {
+      switch (info.param) {
+        case Evaluator::kTree: return "Tree";
+        case Evaluator::kBound: return "Bound";
+        case Evaluator::kPrepared: return "Prepared";
+        case Evaluator::kIterative: return "Iterative";
+        case Evaluator::kProgram: return "Program";
+      }
+      return "Invalid";
+    });
 
 }  // namespace
 }  // namespace xff::engine

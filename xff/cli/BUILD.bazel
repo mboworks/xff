@@ -91,6 +91,8 @@ cc_library(
     name = "config_validation_cc",
     srcs = ["config_validation.cc"],
     hdrs = ["config_validation.h"],
+    # The engine's executor oracle exercises the real CLI configuration composition path.
+    visibility = ["//xff/engine:__pkg__"],
     deps = [
         ":globals_cc",
         ":help_width_cc",

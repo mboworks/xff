@@ -47,7 +47,9 @@
     "docs/benchmark-comparisons.md": "docs/benchmark-comparisons.html",
     "docs/benchmark-backfill.md": "docs/benchmark-backfill.html",
     "NOTICE.md": "NOTICE.html",
-    "NOTICE.lean.md": "NOTICE.lean.html"
+    "NOTICE.lean.md": "NOTICE.lean.html",
+    "docs/performance-analysis.md": "docs/performance-analysis.html",
+    "docs/design-expression-program.md": "docs/design-expression-program.html"
   },
   "generated_html": {
     "XFF.md": {

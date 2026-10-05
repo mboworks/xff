@@ -160,6 +160,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "regex,grammars",
+        .evaluation_noop = true,
     },
     // xff content-search predicates: match the file's CONTENT, not its path. The
     // literal pair (-content/-icontent) sidesteps grep's regex-flavor ambiguity; the
@@ -1260,6 +1261,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .see_also = "expressions,cookbook",
         .needs_metadata = false,
         .parallel_match = true,
+        .constant_truth = true,
     },
     {
         .name = "-false",
@@ -1269,6 +1271,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .see_also = "expressions,cookbook",
         .needs_metadata = false,
         .parallel_match = true,
+        .constant_truth = false,
     },
     {
         .name = "-ls",
@@ -1743,6 +1746,19 @@ constexpr auto kSpellingIndex = [] consteval {
   return result;
 }();
 static_assert(kSpellingIndex.valid, "expression spellings must be unique within each mode");
+
+static_assert(
+    std::ranges::all_of(
+        kDescriptors,
+        [](const Descriptor& entry) {
+          return !entry.constant_truth.has_value()
+                 || (entry.kind == Kind::kTest && entry.pure && entry.arity == 0 && !entry.needs_metadata
+                     && !entry.needs_time_zone && !entry.needs_birth_time && !entry.native_case
+                     && entry.safety == Safety::kNone && entry.control == Control::kNone
+                     && entry.traversal_effect == TraversalEffect::kNone && !entry.stdout_output && !entry.content_match
+                     && !entry.binds_capture && !entry.terminal);
+        }),
+    "constant truth requires an effect-free, context-independent test");
 
 }  // namespace
 

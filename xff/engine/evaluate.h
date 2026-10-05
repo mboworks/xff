@@ -36,6 +36,7 @@
 #include "xff/content/snapshot.h"
 #include "xff/datetime/datetime.h"
 #include "xff/engine/collect.h"
+#include "xff/engine/expression_contract.h"
 #include "xff/engine/extract.h"
 #include "xff/engine/mount.h"
 #include "xff/engine/walk.h"
@@ -302,6 +303,101 @@ bool Evaluate(const parser::Expr& expr, EvalContext& context);
 // Evaluates like Evaluate, but exposes -top deferral to the run driver. With no deferred plumbing in
 // the context this is equivalent to `{Evaluate(...), score, false}`.
 EvaluationResult EvaluateDeferred(const parser::Expr& expr, EvalContext& context);
+
+// Experimental preparation-only dispatch binding. The syntax tree and its matcher data must
+// outlive this object. No CLI mode selects it until paired measurements justify adoption.
+class BoundExpression final {
+ public:
+  static absl::StatusOr<BoundExpression> Prepare(const parser::Expr& expression);
+  BoundExpression(BoundExpression&&) noexcept = default;
+  BoundExpression& operator=(BoundExpression&&) noexcept = default;
+  BoundExpression(const BoundExpression&) = delete;
+  BoundExpression& operator=(const BoundExpression&) = delete;
+  ~BoundExpression() = default;
+
+  EvaluationResult Evaluate(EvalContext& context) const;
+
+  [[nodiscard]] std::size_t NodeCount() const { return nodes_.size(); }
+
+  [[nodiscard]] std::size_t StorageBytes() const { return sizeof(*this) + (nodes_.capacity() * sizeof(Node)); }
+
+ private:
+  using Evaluator = bool (*)(const parser::Expr&, EvalContext&);
+
+  struct Node {
+    std::reference_wrapper<const parser::Expr> expression;
+    Evaluator evaluate;
+    ExpressionSourceId lhs;
+    ExpressionSourceId rhs;
+    bool fuzzy_only = false;
+  };
+  struct Cursor;
+
+  explicit BoundExpression(std::vector<Node> nodes) : nodes_(std::move(nodes)) {}
+
+  std::vector<Node> nodes_;
+};
+
+// Bound tree with typed immutable operand pools. Source ownership follows
+// BoundExpression. Preparation performs no filesystem or account-database observations.
+class PreparedExpression final {
+ private:
+  struct Data;
+
+ public:
+  // Eager construction remains available for qualification against on-demand worker slots.
+  enum class MatcherInitialization { kOnDemand, kEager };
+
+  // Owns one worker's mutable matcher state. The prepared expression (including across a move)
+  // and its source AST must outlive this worker. Do not evaluate one worker concurrently.
+  class Worker final {
+   public:
+    Worker(Worker&&) noexcept;
+    Worker& operator=(Worker&&) noexcept;
+    Worker(const Worker&) = delete;
+    Worker& operator=(const Worker&) = delete;
+    ~Worker();
+
+    EvaluationResult Evaluate(EvalContext& context) const;
+    // Iterative prepared-node execution for full scoring and sparse deferred replay. Scratch
+    // is reserved on first use and retained by this worker, never by a suspended entry.
+    EvaluationResult EvaluateIterative(EvalContext& context) const;
+    // Program instruction adapter: source must name a predicate in this prepared expression.
+    // Preserves metadata, safety, invalidation and deferred-control handling around its callback.
+    EvaluationResult EvaluatePredicate(ExpressionSourceId source, EvalContext& context) const;
+    [[nodiscard]] std::size_t MatcherCount() const;
+    // Includes absent/failed forks: each slot is resolved at most once per worker.
+    [[nodiscard]] std::size_t InitializedMatcherCount() const;
+    // Slot capacity only; regex backend allocations and the shared expression are excluded.
+    [[nodiscard]] std::size_t StorageBytes() const;
+
+   private:
+    friend class PreparedExpression;
+    struct State;
+    explicit Worker(std::unique_ptr<State> state);
+    std::unique_ptr<State> state_;
+  };
+
+  static absl::StatusOr<PreparedExpression> Prepare(const parser::Expr& expression);
+  PreparedExpression(PreparedExpression&&) noexcept;
+  PreparedExpression& operator=(PreparedExpression&&) noexcept;
+  PreparedExpression(const PreparedExpression&) = delete;
+  PreparedExpression& operator=(const PreparedExpression&) = delete;
+  ~PreparedExpression();
+
+  EvaluationResult Evaluate(EvalContext& context) const;
+  [[nodiscard]] Worker MakeWorker(MatcherInitialization initialization = MatcherInitialization::kOnDemand) const;
+  [[nodiscard]] std::size_t NodeCount() const;
+  [[nodiscard]] std::size_t OperandCount() const;
+  [[nodiscard]] std::size_t MatcherCount() const;
+  // Object and owned buffer capacities, excluding allocator headers and the shared source AST.
+  [[nodiscard]] std::size_t StorageBytes() const;
+
+ private:
+  struct Cursor;
+  explicit PreparedExpression(std::unique_ptr<Data> data);
+  std::unique_ptr<Data> data_;
+};
 
 // True if `expr` contains any action node (-print, ...). The driver uses this
 // to decide whether an implicit -print applies: find adds -print only when the

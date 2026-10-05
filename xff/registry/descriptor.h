@@ -17,6 +17,7 @@
 #define XFF_REGISTRY_DESCRIPTOR_H_
 
 #include <cstddef>
+#include <optional>
 #include <string_view>
 
 #include "xff/registry/consumers.h"
@@ -120,7 +121,7 @@ struct Descriptor {
   bool writes_file = false;      // named file output; runtime writing/overwrite policy applies
   Modes modes = Modes::kNative;  // expression spellings accepted in find and xff by default
   Cost cost = Cost::kCheap;
-  bool pure = true;  // side-effect-free (reorderable within a conjunction)
+  bool pure = true;  // no explicit mutation; does NOT prove totality, stable reads, or safe reordering
   // The help topic (--help=TOPIC) this primary belongs to, or empty for none. The counterpart of
   // cli::GlobalFlag::topic: a topic page pulls its family from this tag, so the list cannot drift.
   std::string_view topic;
@@ -155,7 +156,11 @@ struct Descriptor {
   bool native_case = false;       // name matching consumes filesystem-native case sensitivity
   bool parallel_match = false;    // audited independent matcher with no per-run mutable state
   bool path_output = false;       // unconditional path-only stdout action, safe to emit after matching
+  bool evaluation_noop = false;   // consumed during preparation; no per-entry handler (for example grammar)
   bool size_argument = false;     // first operand uses the shared size specification grammar
+  // Audited total, effect-free literal truth, independent of the entry and evaluation context.
+  // This stronger contract is deliberately separate from pure; ordinary predicates stay unknown.
+  std::optional<bool> constant_truth;
 };
 
 template<typename Sink>

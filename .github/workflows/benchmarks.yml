@@ -61,7 +61,7 @@ jobs:
           head_sha="$(git rev-parse HEAD)"
           base_sha="$(git rev-parse HEAD^1)"
           git worktree add --detach "${RUNNER_TEMP}/benchmark-base" "${base_sha}"
-          bazel build //xff/cli:xff //xff/engine:read_benchmark //tools:benchmark_resources --config=clang_release \
+          bazel build //xff/cli:xff //xff/engine:read_benchmark //tools:benchmark_resources //xff/engine:expression_benchmark //xff/engine:expression_run_benchmark --config=clang_release \
             --disk_cache="${HOME}/.cache/bazel-disk"
           cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-head"
           cp bazel-bin/xff/engine/read_benchmark "${RUNNER_TEMP}/benchmark-head-reads"
@@ -78,6 +78,46 @@ jobs:
             echo "BENCHMARK_BASE=${base_sha}"
             echo "BENCHMARK_DRIVER=${driver}"
           } >>"${GITHUB_ENV}"
+      - name: Measure expression preparation and execution baseline
+        run: |
+          bazel run //xff/engine:expression_benchmark --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk" -- \
+            --benchmark_out="${GITHUB_WORKSPACE}/expression-baseline-${{ matrix.platform }}.json" \
+            --benchmark_out_format=json --benchmark_display_aggregates_only=true \
+            --benchmark_enable_random_interleaving=true \
+            --benchmark_context="revision=$(git rev-parse HEAD),sampling=random-interleaved-9-fastest-7"
+          python3 - <<'PY_CHECK'
+          import json
+          import os
+          from pathlib import Path
+          report = Path(os.environ["GITHUB_WORKSPACE"]) / "expression-baseline-${{ matrix.platform }}.json"
+          rows = json.loads(report.read_text())["benchmarks"]
+          if not rows or any(row.get("error_occurred") for row in rows):
+              raise SystemExit("expression baseline failed correctness validation")
+          PY_CHECK
+      - name: Measure whole-engine expression integration
+        run: |
+          bazel run //xff/engine:expression_run_benchmark --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk" -- \
+            --benchmark_out="${GITHUB_WORKSPACE}/expression-engine-${{ matrix.platform }}.json" \
+            --benchmark_out_format=json --benchmark_display_aggregates_only=true \
+            --benchmark_enable_random_interleaving=true \
+            --benchmark_context="revision=$(git rev-parse HEAD),sampling=random-interleaved-9-fastest-7"
+          python3 - <<'PY_CHECK'
+          import json
+          import os
+          from pathlib import Path
+          report = Path(os.environ["GITHUB_WORKSPACE"]) / "expression-engine-${{ matrix.platform }}.json"
+          rows = json.loads(report.read_text())["benchmarks"]
+          if not rows or any(row.get("error_occurred") for row in rows):
+              raise SystemExit("whole-engine expression benchmark failed correctness validation")
+          PY_CHECK
+      - uses: actions/upload-artifact@v7
+        with:
+          name: expression-baseline-${{ matrix.platform }}
+          path: |
+            expression-baseline-${{ matrix.platform }}.json
+            expression-engine-${{ matrix.platform }}.json
+          retention-days: 30
+          if-no-files-found: error
       - name: Measure alternating base and head workloads
         run: |
           set -euo pipefail
@@ -185,6 +225,9 @@ jobs:
   aggregate:
     needs: measure
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -204,10 +247,9 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - uses: actions/download-artifact@v8
+      - uses: ./.github/actions/benchmark-shards-download
         with:
-          pattern: benchmark-shard-${{ matrix.platform }}-*
-          path: shards
+          platform: ${{ matrix.platform }}
       - name: Validate, merge and render platform results
         run: |
           set -euo pipefail

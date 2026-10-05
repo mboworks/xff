@@ -1,5 +1,155 @@
 # Traversal performance analysis
 
+## Planned prepared expression execution
+
+EP01 established a preparation contract, an isolated behavioral oracle and separate preparation/
+execution microbenchmarks. The production candidate now selects prepared recursion; the original
+tree remains an explicit qualification reference. Native acceptance is still pending. The CI build
+jobs retain nine-round JSON artifacts for Linux/macOS, including fastest-seven statistics; no local
+benchmark campaign is needed. The sections below distinguish initial kernel evidence from later
+whole-engine qualification and list the remaining acceptance work.
+
+The [implementation, benchmark and decision plan](design-expression-program.md) specifies bound
+operations, prepared operands, an immutable execution program and a conservative optimizer.
+It separates once-per-command parsing/preparation from per-entry execution and records the
+data-structure audit against XFF's pinned MBO revision and a newer local MBO checkout.
+
+Existing constexpr ordered maps/sets, strong IDs, vectors and arenas are sufficient to start.
+A frozen/perfect-hash map/set is a separate optional startup-lookup improvement; the prepared
+execution path should avoid name lookup altogether. EP01-EP07 in TODO track the implementation.
+No production speedup is claimed yet. Append each stage's measured results and retain/revise/reject
+decision here, including preparation, memory, portability and unsuccessful experiments.
+
+MBO [PR #550](https://github.com/mboworks/mbo/pull/550) merged experimental `FrozenMap` / `FrozenSet`
+at `bf65c21c495fc789feab79f4516d1ae7215cb292`. The previous missing-container finding is resolved
+upstream; XFF still pins the earlier dependency. Their immutable constexpr index and checked
+optional-reference lookup fit the planned exact per-mode startup experiment. Application-level
+lookup, parsing, compiler-budget and storage measurements remain necessary before adoption; MBO's
+synthetic container timings are not evidence of an XFF speedup. The detailed adoption checklist is
+in the [data-structure audit](design-expression-program.md#frozenmapset-adoption-check-after-mbo-550-and-553).
+MBO [PR #553](https://github.com/mboworks/mbo/pull/553) changes the string default from FNV-1a
+to fambo and supplies evidence that hash cost caused much of the earlier slowdown: mixed lookup
+for 64 fixed ten-byte keys drops from 11.16 to 5.97 ns on its Apple M5 Pro test. The containers
+are viable candidates again. XFF's known per-mode vocabularies also permit testing simpler hashes
+with compile-time verified placement. Keep exact equality for unknown tokens, bounds-safe handling
+of short inputs, and the current index until full-parser measurements justify adoption.
+
+### EP01 baseline and EP02 dispatch experiment
+
+[CI run 37203099430](https://github.com/mboworks/xff/actions/runs/37203099430) retained nine raw rounds
+for each of 72 cases, plus aggregates, in `expression-baseline-linux` and
+`expression-baseline-macos`. No case reported a correctness error. The following fastest-seven
+means describe the original tree evaluator; kernel values are divided by their 1,000-entry batch.
+
+| Platform     | Prepare one type predicate, ns | Execute one type predicate, ns/entry | Execute 64 type predicates, ns/entry |
+| :----------- | -----------------------------: | -----------------------------------: | -----------------------------------: |
+| Linux x86-64 |                         526.23 |                                49.51 |                             4,332.50 |
+| macOS ARM64  |                         449.58 |                                49.81 |                             4,093.23 |
+
+Preparation in that initial baseline includes the diagnostic contract table as well as parse/bind
+and teardown. EP02's `prepare/tree` removes that diagnostic-only work so the comparison reflects
+the shipping tree path. Do not compare the two preparation series as a product speedup.
+
+The EP02 experiment resolves the existing dispatch table during `BoundExpression::Prepare` and
+uses direct function pointers thereafter. A reserved node vector holds source references, typed
+child indices and cached fuzzy-only properties. The AST and bound matcher data remain owned by
+the command; no per-entry clone is made. Recursive boolean control and every effect/error path are
+shared with the reference executor through compile-time cursor types. Original node identities
+continue to key counters and deferred replay, preserving exactly-once prefix effects.
+
+Production still selects the tree. Both executors run the same trace assertions, including
+truth/short-circuit order, metadata failures, dry-run unknowns, fuzzy scoring, independent counters,
+deferred replay and denied mutation. Registry coverage rejects an unclassified missing handler;
+configuration/traversal-only behavior is explicit metadata rather than a silent new fallback.
+
+CI compares preparation and kernel results in the same release binary with randomized interleaving
+of nine repetitions and a fastest-seven statistic. This avoids measuring every baseline repetition
+before every candidate repetition; it is not a claim that arbitrary repetition indices are exact
+temporal pairs. The report records the revision and sampling policy.
+
+Two independent CI sessions retained 144 valid cases on each platform, with no untimed correctness
+failures: [37204470952](https://github.com/mboworks/xff/actions/runs/37204470952) and
+[37205289267](https://github.com/mboworks/xff/actions/runs/37205289267). Each value below is the
+geometric mean of bound/tree elapsed-time ratios across six kernel cases (1/16/64 predicates,
+10/1,000 entries). Smaller means faster; these are in-process evaluator results, not CLI speedups.
+
+| Family     | Linux, first | Linux, second | macOS, first | macOS, second |
+| :--------- | -----------: | ------------: | -----------: | ------------: |
+| Type       |        0.503 |         0.520 |        0.448 |         0.444 |
+| Name       |        0.636 |         0.629 |        0.759 |         0.786 |
+| Size       |        0.519 |         0.519 |        0.473 |         0.467 |
+| Permission |        0.460 |         0.456 |        0.400 |         0.422 |
+| Content    |        0.582 |         0.572 |        0.505 |         0.539 |
+| Regex      |        0.745 |         0.726 |        0.692 |         0.659 |
+| Fuzzy      |        0.500 |         0.510 |        0.415 |         0.401 |
+| Output     |        0.592 |         0.595 |        0.462 |         0.470 |
+
+The first session added 124-176 ns of preparation for the one-predicate cases; its measured
+1,000-entry kernels recovered that cost after roughly 4-6 entries. This crossover excludes the
+rest of CLI startup and traversal. Decision: retain bound dispatch as an experimental baseline for
+operand/control-flow work. Whole-engine measurements, mixed selectivity, memory/size accounting,
+and final production adoption remain open. Rebased CI still has to finish all required checks.
+
+### EP03 typed scalar operand candidate
+
+`PreparedExpression` prepares type lists, size/block specifications, unsigned numeric comparisons,
+and permission masks once. Its operand factories live alongside their handlers in the existing
+engine dispatch table; both evaluators share numeric and permission decoders. A separate typed
+operand pool keeps the largest payload out of boolean nodes. Missing or malformed operands keep
+existing no-match behavior; normal whole-command validation still applies. Symlink target reads
+remain conditional, and default size units still use the evaluation context's block size.
+
+The differential corpus reuses one prepared object across metadata values and block sizes, with
+unsigned boundaries, malformed suffixes, octal/symbolic modes, every file type, and broken or valid
+symlink targets. All existing trace cases also run through the candidate. The release benchmark
+now compares tree, bound-only and prepared variants in 270 cases, including symbolic permissions
+and numeric fields. `extra_bytes`, `nodes`, and `operands` counters report owned buffer capacities;
+allocator headers and the shared AST are excluded. Allocation counts and final binary-size impact
+remain to be measured, including any code retained by the enlarged dispatch table.
+
+CI coverage exposed two gaps: the binding factory was declared `constexpr` even though every
+invocation is compile-time, and most ordinary-handler adapters had not run through the small
+oracle. The factory is now `consteval`; the existing full evaluator suite runs as named tree,
+bound and prepared cases with independent fixtures. This exercises the established conditional
+read, output, controlled action and failure tests through each implementation rather than
+inventing no-op calls just to mark adapter functions covered. Coverage thresholds are unchanged.
+
+The first Linux scalar session (run 37207735076) produced 270 valid cases. Prepared/bound kernel
+family ratios were 0.786 for type, 0.740 for size, 0.909 for octal permission and 0.595 for symbolic
+permission. Numeric tests were 1.034; unprepared families ranged from 1.007 to 1.033. These early
+results justify continuing the size/type/permission experiment, but do not justify accepting the
+numeric specialization or the overhead on other families without repeated cross-platform data.
+
+The candidate is not selected by production. CI measurements are pending; indexed worker matchers
+and the other invariant families in the operand audit still remain to implement or reject with
+evidence. No additional speedup is claimed for scalar preparation yet.
+
+### EP03 indexed worker matcher candidate
+
+The follow-up assigns dense matcher slots while preparing path/content regex operations, then
+forks execution state once per worker. Its callbacks index worker-owned storage directly; other
+predicates do not gain a matcher lookup. The API binds workers to the prepared expression to avoid
+cross-program slot mismatches. Missing matchers and failed forks retain existing behavior.
+
+The 333-case matrix retains tree/bound/prepared scalar measurements and adds `tree-worker` and
+`prepared-worker` comparisons for path and content regexes. Preparation includes worker setup;
+kernels reuse the same worker. Stored capacities exclude regex-backend allocations, which must
+be measured separately. CI timing and complete driver integration remain pending. Keep this as an
+experiment until the oracle, sanitizer checks and repeated native measurements support adoption.
+
+### EP04 linear control-flow pilot
+
+The candidate compiles boolean control into explicit jumps and a small saved-value stack. Workers
+reserve scratch once, and predicate instructions reuse the existing prepared callbacks and
+metadata/safety boundary. The experiment compares switch and function-pointer dispatch over an
+identical instruction layout, including preparation, instructions and owned capacities.
+
+The 666-case core matrix adds early AND failure, early OR success and all-false OR chains to the
+existing families. It reports reached predicates rather than counting skipped ones. Program
+benchmarks reject accidental fallback before timing. Score-collecting and deferred contexts are
+currently reported whole-expression fallbacks, covered separately by tests; they are not evidence
+of linear execution. Cross-platform timing and production integration remain pending.
+
 ## Hosted capacity and benchmark backfill
 
 Benchmark run 36831896372 failed macOS aggregation because one shard recorded five host CPUs
@@ -1775,3 +1925,571 @@ HAMT persistence and structural sharing are not needed for an immutable flag voc
 string interning adds little when names already have static storage, unless it performs the
 name-to-descriptor mapping directly. Unknown inputs must still be rejected by an exact spelling
 check, even if hashes of all registered keys are collision-free.
+
+## Indexed-worker cursor layout qualification (EP03)
+
+Run `37209991588` completed 333 correctness-checked cases on each native platform. Each family
+below summarizes six kernel cases using the geometric mean of per-case fastest-seven means
+from nine interleaved repetitions. A ratio below one favors the numerator. These are isolated
+kernels, not whole-command gains.
+
+| Comparison                               | Linux x86-64 | macOS ARM64 |
+| :--------------------------------------- | -----------: | ----------: |
+| Indexed / tree-map worker: path regex    |        0.856 |       0.582 |
+| Indexed / tree-map worker: content regex |        0.881 |       0.659 |
+| Prepared / bound: type                   |        1.146 |       0.722 |
+| Prepared / bound: size                   |        1.074 |       0.683 |
+| Prepared / bound: ordinary content       |        1.505 |       1.095 |
+| Prepared / bound: name                   |        1.289 |       1.041 |
+
+The same-session prepared/bound regression on Linux prevents adopting this layout. The preceding
+scalar-only run `37209923516` instead measured type/size ratios of 0.791/0.744 on Linux and
+0.661/0.629 on macOS, with ordinary content 1.061/1.009. This is a diagnostic comparison between
+runs; the within-run paired controls above are the decision evidence.
+
+Adding a matcher span enlarged the recursively copied cursor from two references to two references
+plus a two-word span. The revised candidate stores that span in a shared evaluation environment,
+restoring the small cursor. Worker environments are bound once after matcher storage is finalized;
+serial evaluation creates one stack environment per expression. Workers still own independent
+matcher state, and moving the worker preserves its backing storage. CI must measure the revised
+layout before attributing the regression to argument passing or claiming a recovery. Existing
+move, persistent-worker and complete evaluator oracle tests cover the lifetime change. No local
+build or benchmark campaign was run.
+
+## Iterative score and replay qualification (EP05)
+
+The next candidate removes recursive fallback from score-consuming and deferred program contexts.
+It executes dense prepared nodes with reusable continuation frames while retaining sparse memo
+identities for exactly-once replay. Ordinary boolean programs keep their compact jump executor.
+Stateful scratch allocates once per worker on first use, stays bounded by node count, and is
+included in reported worker storage after warmup; no frame vector belongs to a suspended entry.
+
+Full evaluator fixtures and the isolated oracle run through both paths. Dedicated tests cover
+all operator score combinations, nested scratch reuse, error cleanup, two replay frontiers and
+restoration of caller-owned score/incoming state. The benchmark adds scored fuzzy AND and OR to
+all five core variants (756 total cases), checks scores against the tree before timing, and
+reports stateful selection and zero recursive fallback. Measurements and full CI are pending;
+this work makes no production selection or performance claim. The first-use scratch allocation
+is excluded from warm execution and must be included in the later setup/whole-run decision.
+
+### Retried benchmark shard identity
+
+Run 37219669899 first measured macOS shards on hosts reporting 3, 3 and 5 CPUs. Strict
+contract validation correctly refused to combine them. A focused retry produced a replacement
+three-CPU shard with the same source and tool identities, but both artifacts remained under the
+same name; wildcard downloading could still select the old report. PR aggregation now selects
+the newest creation timestamp for each exact shard name before downloading by artifact ID.
+All raw attempts remain stored and CPU/tool/revision compatibility checks remain mandatory.
+Artifact IDs alone are not chronological: the replacement had a lower ID than its predecessor.
+The download action also deduplicates by highest ID before applying explicit ID selection. The
+workflow therefore downloads selected ZIPs directly through the REST API, verifies their SHA-256
+digests, and reads only `benchmark-shard.json`; it does not extract arbitrary archive paths.
+PR and post-merge benchmark aggregation use the same local download action so retry handling
+cannot diverge between the two workflows. Both aggregate jobs request only read access to artifacts.
+
+## Native cursor and program comparison results
+
+The revised small cursor was measured in native run `37212464515` (333 valid cases/platform).
+Run `37212554009` measured the compact programs (666 valid cases/platform), and run
+`37212730981` measured scored iterative execution (756 valid cases/platform). These measurements
+precede the test-only restoration-assertion repair; they do not certify later heads. Each value
+is the geometric mean of six same-session case ratios, using fastest-seven means from nine
+interleaved repetitions. Ratios below one favor the first executor. No local timing was run.
+
+| Run         | Comparison                                | Linux x86-64 | macOS ARM64 |
+| ----------- | ----------------------------------------- | -----------: | ----------: |
+| 37212464515 | Prepared / bound: type                    |        0.709 |       0.648 |
+| 37212464515 | Prepared / bound: size                    |        0.700 |       0.619 |
+| 37212464515 | Prepared / bound: ordinary content        |        1.032 |       1.007 |
+| 37212464515 | Prepared / bound: name                    |        1.020 |       0.934 |
+| 37212464515 | Indexed / tree-map worker: path regex     |        0.685 |       0.575 |
+| 37212464515 | Indexed / tree-map worker: content regex  |        0.706 |       0.611 |
+| 37212554009 | Program functions / bound: type           |        0.656 |       0.641 |
+| 37212554009 | Program functions / bound: size           |        0.559 |       0.667 |
+| 37212554009 | Program functions / bound: early AND miss |        0.419 |       0.554 |
+| 37212554009 | Program functions / bound: early OR hit   |        0.403 |       0.569 |
+| 37212730981 | Stateful program / bound: scored AND      |        1.163 |       1.161 |
+| 37212730981 | Stateful program / bound: scored OR       |        1.120 |       1.101 |
+
+The smaller cursor recovers the substantial Linux regression seen with the larger recursively
+copied cursor. Typed scalar preparation and indexed matchers retain useful isolated gains.
+Compact branching improves these aggregate boolean kernels, but a one-predicate case can still
+lose, and layout/session variation remains visible. The iterative scored path costs about
+10-16% more than bound recursion in both platforms. Do not adopt it unchanged solely because
+it removes recursion. Its explicit state and replay correctness remain useful for qualification.
+
+## Whole-engine executor qualification
+
+`RunFind` now has an internal executor selector for tests and benchmarks. CLI and INI cannot
+select it. The ordinary tree remains the default; changing production selection requires the
+EP07 decision. Candidate preparation follows the original command's validation, safety,
+implicit-output and traversal decisions. The coordinator, parallel predicate subtree and any
+coordinator-owned trailing output each retain immutable prepared storage. Each actual matcher
+thread creates and reuses its own worker. Small batches use a separate coordinator worker.
+Deferred entries retain the original sparse memo, not the worker's dense continuation frames.
+
+The integration oracle compares exact output, errors, truth, metadata/content read counts and
+mutation attempts against the original whole-run path. It covers implicit output, summaries,
+comparison, pruning/quit, counters, multi-frontier replay, failures, blocked deletion, dry-run,
+native match output and native filters followed by rg semantics. These are isolated VFS fixtures;
+no fixture executes commands or permits a host mutation. Existing worker eligibility and ordered
+output remain unchanged.
+
+`//xff/engine:expression_run_benchmark` measures 250 combinations: five executors, five workloads,
+0/1/10/1,000/10,000 files and 1/3 workers. Parsing and fixture construction are outside timing;
+every iteration includes preflight, preparation, worker startup, traversal, effects/rendering and
+teardown. Outputs are checked against the reference before timing. Native CI publishes raw nine
+interleaved rounds and fastest-seven summaries alongside the existing kernel artifacts. Zero and
+one-file cases expose fixed setup cost; they are not excluded from the adoption decision.
+
+The qualification selector currently links every candidate into the CLI library, and separately
+prepares serial and parallel subtrees. This makes preparation and code-size overhead visible;
+final selection must remove losing production paths and avoid redundant preparation. Process
+startup, binary/RSS accounting, archive/configuration composition coverage, remaining operand
+families and optimizer passes still require their separate acceptance evidence. No whole-command
+speedup is claimed before those results exist.
+
+### Whole-engine expression qualification, first native session
+
+CI run `37216302909`, PR #966 head `43fe90d250`, produced 250 valid in-memory engine cases
+on both Linux x86-64 and macOS ARM64. Each case retains all nine randomized/interleaved raw rounds
+and reports the fastest-seven mean. There were no correctness-check failures. The fixture covers
+0/1/10/1,000/10,000 files and requested workers 1/3; it times complete `RunFind` preparation,
+traversal, evaluation, output and teardown, excluding command parsing and process startup.
+Artifacts `expression-baseline-{linux,macos}` contain `expression-engine-{linux,macos}.json`.
+These are initial session results, not a production decision or a whole-process speedup claim.
+
+The table gives candidate/tree elapsed-time ratios at 10,000 files (smaller is better):
+
+| Workload      | Linux bound, 1 worker | Linux prepared, 1 worker | Linux prepared, 3 workers | macOS prepared, 1 worker | macOS prepared, 3 workers |
+| ------------- | --------------------: | -----------------------: | ------------------------: | -----------------------: | ------------------------: |
+| Name          |                 0.868 |                    0.875 |                     0.860 |                    0.912 |                     0.935 |
+| Scalar chain  |                 0.758 |                    0.652 |                     0.660 |                    0.768 |                     0.692 |
+| Regex output  |                 0.792 |                    0.771 |                     0.889 |                    0.751 |                     1.192 |
+| Summary       |                 0.827 |                    0.793 |                     0.837 |                    0.714 |                     1.087 |
+| Scored replay |                 0.928 |                    0.907 |                     0.921 |                    0.892 |                     0.932 |
+
+Linux small-run results expose preparation overhead: eager indexed regex forks add roughly
+4-13 microseconds to empty/single-file cases. Do not turn this into an unconditional default
+without reducing or amortizing preparation. The iterative program's scored-replay path is
+12-18 percent slower than the tree at 1,000/10,000 files on Linux; recursive bound/prepared
+execution remains a measured alternative for this semantic family.
+
+macOS exhibits much wider sample variation, including apparently faster empty runs for candidates
+that perform strictly more preparation. Its pooled content/summary measurements also disagree with
+Linux. Repeat native sessions and inspect spread before attributing these differences to a specific
+executor or making a platform-specific selection. The next EP06 matrix measures each boolean
+rewrite independently and their combined whole-engine candidate; it does not enable production use.
+
+### EP06 native session and repeated whole-engine evidence
+
+Run `37220141643`, PR head `cc1589eec0`, retained 1,494 valid kernel/preparation cases and 300
+valid whole-engine cases on each native platform in `expression-baseline-{linux,macos}`. The JSON
+records GitHub's tested merge revision `52c2614124b75331eb8e7b90d091328cdef4da1e`. Nine interleaved
+rounds and fastest-seven means use the same protocol as the earlier session. Untimed benchmark correctness checks passed;
+the separate coverage suite found an incorrect expected error in the new unreachable-deletion
+test, including for the original tree, so these measurements do not establish merge readiness.
+Remaining checks were still running when this evidence was recorded.
+
+At 10,000 files with one requested worker, elapsed-time ratios to the same-session tree were:
+
+| Workload      | Bound | Prepared | Program switch | Program functions | Optimized program |
+| ------------- | ----: | -------: | -------------: | ----------------: | ----------------: |
+| Name          | 0.854 |    0.864 |          0.901 |             0.961 |             0.965 |
+| Scalar chain  | 0.759 |    0.645 |          0.650 |             0.657 |             0.650 |
+| Regex output  | 0.779 |    0.799 |          0.813 |             0.818 |             0.821 |
+| Summary       | 0.831 |    0.848 |          1.059 |             1.063 |             1.062 |
+| Scored replay | 0.933 |    0.944 |          1.195 |             1.196 |             1.190 |
+
+This repeats the earlier Linux evidence favoring bound/prepared execution, particularly prepared
+scalars, and rejecting an unconditional iterative-program default for scored/replay contexts.
+Small-run setup remains material: empty regex searches were 23.6/23.8 microseconds for tree
+at requested workers 1/3, and prepared ratios were 1.179/1.376. On-demand worker initialization
+is being evaluated separately rather than assuming a large-file win excuses this setup cost.
+
+Against the unoptimized function-dispatch program, geometric means of six corresponding kernel
+case ratios show jump threading at 0.502 for early AND misses and 0.488 for early OR hits.
+Constant folding measures 0.108 for literal-true chains and 0.358 for literal-false chains.
+These are targeted control-flow wins, not general file-search speedups. Branch fusion alone is
+between 0.962 and 1.010 for the listed type, size, short-circuit and constant families; it has
+not established a repeatable general benefit. Neither the combined passes nor the program
+representation has displaced recursive prepared execution as the whole-engine candidate to beat.
+Keep per-pass selection and the simpler executors; the macOS observations below provide the
+same-run cross-platform check.
+
+The macOS one-worker ratios at 10,000 files were:
+
+| Workload      | Bound | Prepared | Program switch | Program functions | Optimized program |
+| ------------- | ----: | -------: | -------------: | ----------------: | ----------------: |
+| Name          | 0.825 |    0.889 |          0.759 |             0.825 |             0.868 |
+| Scalar chain  | 0.717 |    0.709 |          0.711 |             0.716 |             0.618 |
+| Regex output  | 0.773 |    0.758 |          0.748 |             0.738 |             0.727 |
+| Summary       | 0.919 |    0.848 |          0.901 |             0.950 |             0.913 |
+| Scored replay | 1.002 |    0.889 |          1.029 |             1.058 |             1.110 |
+
+Mac timing spread remains a constraint on small differences: the nine tree/name/10,000-file
+rounds have sample coefficient of variation 9.1% with one worker and 13.4% with three, versus
+0.5% and 1.2% on Linux. The combined optimizer improves macOS type/size kernels to 0.702/0.671
+of the unoptimized function program, while jump threading improves early AND/OR to 0.225/0.236.
+These larger targeted gains merit retaining the candidate. The variable whole-engine results
+do not justify a universal program default; scalar preparation and bound dispatch remain the
+more consistently useful choices across the two sessions/platforms.
+
+### CI binary-size accounting for the expression stack
+
+Compare the saved `benchmark-head` executables from main run `37205106353` (main `0ac0e62aa0`)
+and PR run `37220141643` (tested merge `52c2614124`). Both build `//xff/cli:xff` using
+`--config=clang_release`, which retains symbols. Strip copies of both downloaded artifacts with
+the same cached `llvm-strip --strip-all`; this requires no local compilation or execution of the
+benchmarked binaries. Byte counts are file sizes, not Mach-O virtual segment totals.
+
+| Platform     | Main artifact | Candidate artifact | Main stripped | Candidate stripped | Stripped increase | Increase |
+| ------------ | ------------: | -----------------: | ------------: | -----------------: | ----------------: | -------: |
+| Linux x86-64 |    11,705,976 |         11,975,456 |     3,437,480 |          3,483,208 |            45,728 |    1.33% |
+| macOS ARM64  |     3,849,200 |          3,964,208 |     3,086,016 |          3,152,688 |            66,672 |    2.16% |
+
+The qualification stack exceeds the plan's 1% size-review budget on both platforms; macOS also
+exceeds 64 KiB. It still includes multiple candidate executors and registry preparation callbacks
+while production uses the original tree. Remove losing production paths or explicitly justify
+their retained diagnostic cost before final adoption. These are the benchmark CLI target's sizes,
+not a measurement of every separately packaged lean/full release variant. Raw artifacts remain
+associated with the named CI runs; final shipping-size accounting remains part of EP07.
+
+### Candidate response: initialize only reached worker matchers
+
+The initial whole-engine session measured roughly 4-13 microseconds of eager regex-fork setup
+in empty/single-file searches. The next candidate allocates the indexed slots once, but forks
+each backend only when its regex predicate is first reached. Initialization is private to a
+non-concurrently used worker, with no locks. Absent and failed forks are remembered rather than
+retried; the validated immutable matcher remains the fallback. Pattern compilation/validation
+and all conditional content/metadata reads retain their earlier boundaries.
+
+Retain an eager policy for same-session comparison. The complete-engine matrix grows to 420
+cases: seven executors, six workloads (including an entirely skipped regex), five file counts
+and two requested worker counts. Kernel comparisons include eager/on-demand worker preparation
+and warm matching, initialized slot counts and owned storage bytes. Both policies share the new
+slot bookkeeping; comparisons against the unchanged tree and previous candidate sessions must
+also check total hot-loop overhead. The initialization flag can increase aligned slot size.
+
+This is a response to measured setup cost, not a measured improvement yet. Native Linux/macOS
+CI must establish empty, first-match and large-search costs before production adoption. No
+local C++ compilation or timing campaign is required, and the production executor remains the tree.
+
+### Numeric age preparation candidate and remaining operand audit
+
+Numeric ages still decoded the comparison, decimal count and optional BSD suffix on every reached
+entry. The candidate binds those operations through the existing dispatch factory for `-used` and
+the modification/access/change/birth age families. Signed counts and the seconds-per-unit record
+fit within the existing operand size/alignment; they add no text allocation or shared mutable state.
+The clock and timestamps remain dynamic, and unsupported birth-time observations retain their order.
+
+The audit also found unchecked signed decimal accumulation in both `MatchesSignedNumeric` and
+`MatchesTime`. The shared checked decoder rejects out-of-range counts rather than invoking signed
+overflow. This is a reference-path correctness change as well as prepared-path work, so native
+comparisons must show any baseline-cost change rather than attributing it to the executor.
+The four new kernel families are `age-days`, `age-suffix`, `age-minutes` and `used-days`; the full
+engine adds an age/scalar/name chain at 0/1/10/1,000/10,000 files and requested workers 1/3.
+No local compilation or timing campaign is used; native CI must establish whether to retain it.
+
+Remaining invariant work has distinct boundaries. MIME pattern lowercasing is a possible separate
+text-pool candidate; embedding an owning string in every operand could enlarge unrelated scalar
+slots. Word/calendar durations depend on the final evaluation clock/timezone and currently keep
+that interpretation dynamic. Reference-file metadata and account databases remain observable and
+conditional; this work does not silently cache them. Existing regex and prepared output templates
+should be reused. This does not cover every template consumer: the peer-path helper for `-cmp`,
+`-diff`, and the expected-value template for `-hasheq` still call `fields::Template::Compile` during
+evaluation. Compiling those immutable templates once must preserve entry-dependent rendering,
+captures, definitions, conditional reads, and errors.
+
+Downloaded binary symbols from run `37220141643` confirm that `ExpressionProgram::Prepare`, its
+worker evaluator, `BoundExpression` and `PreparedExpression` remain linked into the benchmark CLI
+on both platforms despite the tree default; the main artifacts have none of these symbols. This
+supports separating qualification-only alternatives from the production dependency path before
+final size review. It is binary inspection, not a new local build or timing result.
+
+### Removing qualification candidates from production linkage
+
+The downloaded native CLI artifacts described above retained every experimental executor despite
+using the original tree. Whole-run engine preparation now accepts an optional function factory;
+only test-only qualification code maps the candidate enum to a factory. Bazel marks the iterative
+program and the selection adapter `testonly`, making an accidental CLI dependency an analysis error.
+The immutable-plan/worker interface remains available to the engine for the eventual measured winner.
+The reference and default still take the original direct tree path. All seven candidate integration
+cases, error/move checks and native whole-engine benchmarks continue through the same engine seam.
+
+Qualification adds one virtual worker-entry call per evaluated entry, without changing recursive
+or instruction dispatch inside the candidate. CI must quantify that cost and verify the expected
+link-size reduction; neither a size saving nor a performance result is claimed from source inspection.
+This is dependency isolation, not a decision to enable or abandon any candidate. Native stripped
+artifacts and symbol inspection remain the evidence for the final production-size decision.
+
+### Native evidence for coordinator matcher reuse
+
+Lazy-slot run `37224067597` retained 420 valid cases per platform and numeric-age run
+`37224426616` retained 490, each with nine raw rounds and no correctness errors. Values
+below are fastest-seven whole-engine means for one worker and 10,000 entries. Ratios
+compare candidates with their own same-session tree; smaller is faster. Cross-run absolute
+times are not attributed to source changes because runner frequency and load changed.
+
+| Workload        | Lazy Linux prepared/tree | Lazy macOS prepared/tree | Age Linux prepared/tree | Age macOS prepared/tree |
+| :-------------- | -----------------------: | -----------------------: | ----------------------: | ----------------------: |
+| name            |                    0.881 |                    0.894 |                   0.893 |                   0.843 |
+| scalar          |                    0.688 |                    0.632 |                   0.693 |                   0.718 |
+| regex-output    |                    0.764 |                    0.769 |                   0.800 |                   0.740 |
+| regex-unreached |                    0.809 |                    0.851 |                   0.822 |                   0.830 |
+| summary         |                    0.820 |                    0.837 |                   0.806 |                   0.814 |
+| scored-replay   |                    0.919 |                    0.995 |                   0.927 |                   0.903 |
+| age             |             not measured |             not measured |                   0.713 |                   0.672 |
+
+Linux reference all-round CV stayed around 0.6-1.8%; several macOS cases had 10-25% CV.
+Do not use tiny macOS differences to select a backend. The Linux iterative scored/replay
+candidates remained 15-23% slower than the tree; recursive preparation remains the broader
+candidate. Age preparation adds less than 1% over binding alone for the Linux whole-run age
+case and roughly 6% on macOS, so checked overflow is retained as correctness work independently
+of the preparation-speed decision.
+
+For Linux zero-entry regex output, lazy slots reduced prepared/tree from the same-session eager
+1.178 to 1.048. For one reached regex, the ratio remained 1.314 (7.9 microseconds extra); the
+next session measured 1.270 (4.8 microseconds extra). MacOS likewise shows a first-reached
+fork cost. Unreached/empty cases avoid the backend construction as intended. The existing
+`PreparedExpression::Evaluate` already reads the immutable compiled matcher directly, whereas
+`MakeWorker` forks backend state. The next candidate should distinguish coordinator evaluation
+from concurrent worker evaluation rather than duplicating regex compilation on the coordinator.
+
+Required implementation checks: coordinator may reuse original const matchers just as the tree
+currently does; pool workers keep private on-demand matcher slots; small batches use the coordinator
+and later larger batches may activate the pool; archive fallback/deferred replay can return to
+coordinator evaluation without invalidating any private state. Compare one/ten-entry regex latency
+and large one/three-worker throughput, captures, errors, move lifetime, and TSan behavior. Keep
+original reference evaluation explicitly selected in benchmark correctness comparisons.
+
+The production follow-up implements that coordinator/worker distinction and adds `production`
+to the same whole-engine matrix, retaining all earlier candidates and the explicit tree reference.
+It also avoids duplicate preparation for an identical serial/pool expression and unused parallel
+paths. No new local timing is claimed: native CI must establish whether this removes the tiny-search
+regression while retaining large-search gains. Iterative programs and their optimizers remain
+test-only because the whole-engine evidence does not justify enabling them broadly.
+
+### First production-candidate Linux session
+
+Run `37230954320`, tested merge `c348a522e79d2a8a75d884b1015c9318113d25b4`, retained 560
+whole-engine cases with nine raw rounds each and no benchmark correctness errors. These are
+in-process run times: parsing and fixture construction are excluded, while expression preparation,
+worker creation, traversal, output and teardown are included. They are not whole-process startup
+measurements. The table uses fastest-seven means, one requested worker, and the same-session tree
+oracle. Ratios below one favor the production candidate.
+
+| Workload        | One-entry tree us | One-entry production us | One-entry ratio | 10,000-entry ratio |
+| :-------------- | ----------------: | ----------------------: | --------------: | -----------------: |
+| name            |             17.56 |                   17.61 |           1.003 |              0.891 |
+| scalar          |             18.09 |                   18.59 |           1.028 |              0.697 |
+| age             |             18.56 |                   19.27 |           1.038 |              0.700 |
+| regex-output    |             18.13 |                   18.31 |           1.010 |              0.800 |
+| regex-unreached |             17.65 |                   18.31 |           1.037 |              0.803 |
+| summary         |             19.85 |                   20.26 |           1.020 |              0.813 |
+| scored-replay   |             18.86 |                   19.85 |           1.052 |              0.939 |
+
+Coordinator reuse removes the previous first-reached regex penalty: in this same session the
+ordinary private-worker candidate takes 1.252 times the tree's one-entry time, versus 1.010 for
+production. Ten-entry regex is 0.994 versus 1.220. Preparation still adds roughly 0.4-1.0
+microseconds for several tiny scalar/scored workloads; the 2-5% relative differences must stay
+visible rather than being hidden by large-search wins. At 10,000 entries reference CV is below
+1% for name/scalar/age/regex/summary, but 5.3% for scored replay. A repeat session and native macOS
+results are still required before acceptance.
+
+The downloaded Linux benchmark CLI is 3,471,320 bytes after LLVM stripping: 33,840 bytes (0.98%)
+above the earlier main artifact and 13,792 bytes above the production-boundary artifact. Symbol
+inspection finds the prepared production factory but no iterative-program or qualification
+factory implementation. This is the benchmark CLI configuration, not a measurement of every
+lean/full release package, and stripping downloaded artifacts did not require a local build.
+
+The remaining operand audit also identifies `-first` limit decoding, MIME pattern lowercasing,
+hash algorithm/encoding resolution, and diff style/ignore-option decoding. The diff ignore regex
+is still compiled per reached diff operation. These are invariant syntax/configuration work,
+distinct from dynamic file observations and template rendering. Do not claim the prepared path
+eliminates all per-entry interpretation: add separate output/hash/diff preparation cases before
+deciding which records belong in a run-owned pool. Account/database lookups and reference-file
+metadata must retain their conditional observation boundaries.
+
+### Repeated production-candidate Linux session
+
+Run `37232116551`, tested merge `d8193178d8040d468cc2cf96e3d4fa6c99d8d622`, repeats all 560
+whole-engine cases with nine rounds each and no correctness errors. The table again uses
+fastest-seven means and one requested worker. Each ratio compares production to the original tree
+within its own session; it does not divide elapsed times from different machines.
+
+| Workload        | First session, 10,000 entries | Repeat, one entry | Repeat, ten entries | Repeat, 10,000 entries | Repeat tree CV at 10,000 |
+| :-------------- | ----------------------------: | ----------------: | ------------------: | ---------------------: | -----------------------: |
+| name            |                         0.891 |             1.019 |               0.990 |                  0.865 |                     1.2% |
+| scalar          |                         0.697 |             1.033 |               0.960 |                  0.632 |                     1.7% |
+| age             |                         0.700 |             1.041 |               0.960 |                  0.664 |                     0.9% |
+| regex-output    |                         0.800 |             1.034 |               0.986 |                  0.745 |                     0.4% |
+| regex-unreached |                         0.803 |             1.037 |               0.998 |                  0.784 |                     1.2% |
+| summary         |                         0.813 |             1.039 |               1.003 |                  0.777 |                     0.6% |
+| scored-replay   |                         0.939 |             1.047 |               1.022 |                  0.925 |                     2.2% |
+
+The larger-search improvements repeat beyond observed noise. Preparation remains visible at one
+entry: approximately 0.45-1.25 microseconds in this session. Most families reach parity or improve
+by ten entries; summary and scored replay need more entries. Those are observed matrix points,
+not a precise break-even estimate. The repeated tiny-search overhead must be weighed explicitly
+against the larger-search benefit, and macOS qualification remains outstanding.
+
+Despite an identical generic runner hostname, the two reports have different CPU frequencies and
+L2 cache descriptors. Absolute times are not a controlled before/after comparison. Raw rounds,
+medians and spreads remain in the two `expression-baseline-linux` artifacts. Linux correctness
+checks passing on the repeated session's head do not validate later configuration/archive tests.
+
+### Production release sizes and expression record storage
+
+The stripped release artifacts from the ordinary Linux test jobs also cover both shipped variants.
+The baseline is PR #960 run `37209738848`, before production expression changes; the candidate is
+PR #971 run `37232116551`. These are the actual staged, smoke-tested binaries, not sizes inferred
+from compressed archives or a local rebuild.
+
+| Linux binary | Baseline bytes | Candidate bytes | Increase bytes | Increase |
+| :----------- | -------------: | --------------: | -------------: | -------: |
+| Lean         |      3,437,848 |       3,471,688 |         33,840 |    0.98% |
+| Full         |      7,420,776 |       7,454,536 |         33,760 |    0.46% |
+
+The repeat session's kernel artifact records owned expression storage after warm-up. Below, each
+cell is bytes for 1 / 16 / 64 repeated predicates; binary operators bring the corresponding node
+counts to 1 / 31 / 127. These are capacity-based record sizes, excluding the original syntax tree,
+backend allocations, allocator bookkeeping and production adapter objects. They are not allocation
+counts or process RSS. Worker columns include one worker; additional workers retain their own slots.
+
+| Expression       |    Bound recursion |  Prepared recursion | Prepared plus private worker | Optimized program plus worker |
+| :--------------- | -----------------: | ------------------: | ---------------------------: | ----------------------------: |
+| Name             | 64 / 1,264 / 5,104 | 160 / 1,600 / 6,208 |           Not in this matrix |          512 / 3,872 / 14,624 |
+| Type             | 64 / 1,264 / 5,104 | 192 / 2,112 / 8,256 |           Not in this matrix |          544 / 4,384 / 16,672 |
+| Regex            | 64 / 1,264 / 5,104 | 200 / 2,240 / 8,768 |         352 / 3,472 / 13,456 |          624 / 5,664 / 21,792 |
+| Scored fuzzy AND | 64 / 1,264 / 5,104 | 160 / 1,600 / 6,208 |           Not in this matrix |          584 / 6,104 / 23,768 |
+
+This accounting reinforces the choice of prepared recursion: the iterative candidate's additional
+instructions and score frames cost materially more and did not provide a universal whole-run win.
+The tree oracle owns none of these extra prepared records. Ordinary prepared dispatch/control flow
+reuses its records without per-entry cloning; content, output and deferred memoization have separate
+allocation behavior. Phase allocation counts, final ordinary-command RSS and native macOS release
+sizes remain acceptance work, not conclusions established by this table.
+
+### Production-candidate native macOS session
+
+Run `37232116551` also retained all 560 whole-engine cases on macOS ARM64, with nine raw rounds
+each and no correctness errors. It tests the same merge revision as the repeated Linux session.
+The table reports production/tree fastest-seven mean ratios within that macOS session. Worker
+counts are requests; predicates that are not pool-eligible keep the normal serial path.
+
+| Workload        | One entry, one worker | 10,000 entries, one worker | 10,000 entries, three workers | Tree CV, 10,000 entries / one worker |
+| :-------------- | --------------------: | -------------------------: | ----------------------------: | -----------------------------------: |
+| name            |                 0.968 |                      0.905 |                         0.890 |                                 7.3% |
+| scalar          |                 0.978 |                      0.736 |                         0.693 |                                 3.9% |
+| age             |                 1.041 |                      0.667 |                         0.660 |                                 5.7% |
+| regex-output    |                 1.066 |                      0.783 |                         0.985 |                                13.5% |
+| regex-unreached |                 1.004 |                      0.860 |                         0.935 |                                 8.3% |
+| summary         |                 1.075 |                      0.826 |                         0.881 |                                11.4% |
+| scored-replay   |                 1.023 |                      0.946 |                         0.924 |                                18.3% |
+
+The strongest scalar and age improvements agree with Linux and preceding native prepared-executor
+sessions. Three-worker reached regex is effectively unchanged, and the smaller scored differences
+are within the noisy sample spread. Do not interpret the apparently faster one-entry name/scalar
+cases as proof that preparation is free. The slower one-entry age/regex/summary cases add roughly
+0.6/1.0/1.2 microseconds, respectively. A second current production session and ordinary CLI/RSS
+results remain required for final acceptance.
+
+The downloaded macOS benchmark CLI strips to 3,135,888 bytes, 49,872 bytes (1.62%) above the earlier
+main artifact. This exceeds the initial 1% review budget while remaining below 64 KiB. The proposed
+tradeoff is the repeatable larger-search benefit with a small absolute footprint; it must remain
+visible in the production decision. Experimental program factories stay out of the binary. The
+separately staged macOS lean/full release artifacts are still pending.
+
+### Configuration and archive integration qualification
+
+The whole-engine executor oracle now composes validated system, user and explicit INI profiles
+through the CLI's actual application function. A transitive profile contributes a type predicate;
+later files refine the same profile with size and permission predicates. Final CLI case, regex
+grammar and block-size overrides determine the results, including a native-filter/rg transition.
+An unconditional system deletion block still prevents mutation after `--no-safe`.
+
+A synthetic archive reader exercises the real mount interface without opening a host archive.
+The outer and mounted filesystems share atomic observation counters while retaining independent
+ownership. Tests compare output, diagnostics, metadata/content calls and mutations across the
+tree oracle and every candidate, with one/three requested workers, regex matching, scored replay,
+pruning and early termination. Output assertions ensure the test reaches actual archive members
+rather than accepting an empty traversal. These tests qualify executor integration; existing
+extension tests remain responsible for decoding real archive formats. Native CI results are
+required before treating the added cases as verified.
+
+### Limit and MIME operand preparation candidate
+
+The next independent candidate removes repeated `-first` integer decoding and `-mime` pattern
+lowercasing. `-first` keeps a checked positive `int`, matching its existing counter and validation
+range. Zero represents the existing no-match result for invalid input; no counter is created or
+changed in that case. Counters remain run-owned and keyed by the original expression node. The
+reference callback uses the same decoder and admission helper but still decodes on every entry.
+
+MIME preparation owns a lowercase, null-terminated character vector once per predicate. The prepared
+callback passes that buffer to the existing POSIX glob semantics, avoiding a further pattern copy.
+Filename-to-MIME resolution and folding of the resulting type remain per-entry operations. The
+character vector fits the compact operand pool without requiring every scalar to own a string;
+its capacity is included in storage reporting. Missing arguments still take the existing false
+path. No filesystem or account-database observation moves to preparation.
+
+Boundary tests compare reference, prepared and reused worker results through exhausted counters,
+signed-int overflow, malformed and absent operands. MIME fixtures exercise case independence,
+wildcards, malformed patterns, unknown extensions and owner moves. The full-run oracle combines
+MIME filtering with an independent first-N budget. Three preparation/kernel families and two
+whole-engine workloads extend the native CI matrix; all preceding workloads remain regression
+controls. This candidate is not an accepted improvement until those measurements and checks pass,
+and it does not change or delay the existing green PR sequence.
+
+### Full-command Linux comparison for prepared production
+
+The ordinary CLI artifacts from run `37232116551`, tested merge
+`d8193178d8040d468cc2cf96e3d4fa6c99d8d622`, combine three shards with three rounds each.
+The compatible merged baseline is run `37205106353`, revision
+`0ac0e62aa0a2f04eb372d95f10f1657bd5176d29`. Both use fastest-seven means. The values below
+are candidate/baseline elapsed ratios at 10,000 files. Reference adjustment uses each task's `rg`
+measurement: `(X2/R2)/(X1/R1)`. This accounts for shared runner-speed differences without rewriting
+raw observations; it is not a same-host controlled experiment.
+
+| Task     | Tree  | Workers | Raw elapsed ratio | Reference-adjusted ratio |
+| :------- | :---- | ------: | ----------------: | -----------------------: |
+| files    | broad |       1 |             0.705 |                    0.876 |
+| files    | deep  |       1 |             0.716 |                    0.891 |
+| files    | broad |       3 |             0.738 |                    0.848 |
+| files    | deep  |       3 |             0.716 |                    0.857 |
+| name-txt | broad |       1 |             0.686 |                    0.944 |
+| name-txt | deep  |       1 |             0.707 |                    0.929 |
+| name-txt | broad |       3 |             0.701 |                    0.877 |
+| name-txt | deep  |       3 |             0.689 |                    0.904 |
+
+These observations support roughly 11-15% lower elapsed time for listing and 6-12% for name
+selection after reference adjustment. Content-present/absent cases span adjusted ratios
+0.957-1.073, so they do not establish a general content-search win. The much larger raw gains
+must not be attributed entirely to expression preparation. Repeated native in-process results
+isolate the executor changes; ordinary-command results validate their relevance to real invocations.
+
+The child peak-RSS samples cluster around 24 MB for both XFF and reference tools and differ by
+only tens of kilobytes between these runs. That does not prove an allocation reduction or a
+precise retained-memory cost: process-launch and allocator behavior remain part of that metric.
+Do not subtract an assumed baseline or turn this observation into an allocation-count claim.
+
+### Instrumented phase allocation regression diagnostics
+
+`expression_allocations_test` adds ASan allocator hooks only to a diagnostic test executable,
+leaving release and benchmark binaries unchanged. The nine families, three predicate lengths,
+three executors and two roles produce 162 named cases plus an allocation/free calibration test.
+The calling thread's allocation/free counts and requested bytes are measured separately for
+parse, bind, preparation, worker creation, first evaluation, steady evaluation and teardown.
+Cheap steady predicates assert zero allocations; MIME and reached regex retain payload counts.
+
+CI retains the test XML and a revision-bearing JSON conversion. Failed/skipped diagnostics,
+missing counters and negative values cannot be represented as measured zeros. The Python
+conversion tests pass locally; C++/ASan and compiler-lint validation remain assigned to CI.
+Once CI verifies it, this supplies an instrumented allocation regression check. Native allocation,
+peak-memory, suspended-entry and cross-platform acceptance requirements remain open. Sanitizer wall times are not release
+performance evidence, and requested bytes exclude sanitizer and allocator overhead.
+
+ASan replaces the allocator and may change allocation behavior and build paths. These diagnostic
+counts must not be used as production allocation counts, allocator-cost measurements or evidence
+for the performance selection. Native allocation profiling remains open; the exported JSON marks
+this distinction explicitly.

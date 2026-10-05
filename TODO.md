@@ -1,5 +1,67 @@
 # TODO
 
+## Prepared expression execution and optimizer
+
+Detailed scope, data-structure audit, benchmark matrix and decision gates:
+[`docs/design-expression-program.md`](docs/design-expression-program.md).
+
+- [ ] EP01: Inventory evaluator operands/effects; add source-node identities, conservative
+      optimization properties, an isolated equivalence oracle and preparation/execution baselines.
+      Initial contract/oracle and 72-case in-memory baseline are implemented; CI evidence and
+      expanded selectivity/error/state coverage remain before the stage is complete.
+- [ ] EP02: Bind predicate handlers once through registry-derived semantic IDs; measure a bound-tree
+      executor against current name-dispatched evaluation before changing control flow.
+      Experimental BoundExpression resolves registered handlers once, caches fuzzy-only subtree
+      properties and shares control semantics with the reference tree. Both run the trace oracle;
+      two native CI sessions show consistent kernel gains. Whole-engine qualification and
+      the production adoption decision remain pending.
+- [ ] EP03: Prepare invariant operands and indexed worker matcher state; preserve validation timing,
+      conditional metadata, dynamic values and errors; report remaining per-entry parsing.
+      The typed scalar candidate and three-way oracle/270-case benchmark are implemented;
+      The follow-up adds indexed worker matchers and a 333-case matrix. CI qualification,
+      production-driver integration and the remaining audited families stay open.
+      On-demand worker slots now address the measured eager regex-fork startup cost; the eager
+      comparison remains in both kernel and whole-engine benchmarks. Adoption awaits native
+      setup/hot-loop/storage measurements. Prepared recursion is now selected for production CI
+      qualification, with coordinator matcher reuse and private lazy concurrent-worker state.
+      Remaining audit candidates include first-limit decoding, MIME case normalization,
+      peer-path/expected-hash template compilation, hash spec resolution and diff option/regex
+      preparation. Keep entry-dependent rendering and conditional observations dynamic; measure
+      these families separately before deciding on additional run-owned records.
+- [ ] EP04: Compare contiguous opcode and bound-function programs; lower audited boolean control flow,
+      reuse scratch and preserve source mapping, with explicit whole-expression fallback coverage.
+      The switch/function pilot, branch-selectivity cases and storage-reuse tests are implemented;
+      CI measurements and layout selection remain open.
+- [ ] EP05: Complete fuzzy/unknown/error/action/deferred semantics; preserve exactly-once effects,
+      VFS safety, coordinator ownership and bounded suspended-entry memory.
+      Iterative scored/deferred candidate uses reusable worker frames and sparse source-keyed
+      replay memoization; complete oracle and evaluator variants plus scored kernels await CI.
+      Internal whole-engine selection now routes serial, pooled and deferred evaluation through
+      the candidates, with isolated output/read/effect comparisons and a 250-case native matrix.
+      CI qualification, production selection and complete integration coverage remain pending.
+      The engine oracle now includes layered system/user/explicit INI composition, final CLI
+      case/grammar/block-size overrides, rg transitions, mandatory deletion blocks, and mounted
+      archive-member output, prune/quit and scored replay. The new cases await native CI.
+- [ ] EP06: Measure deterministic constant folding, jump simplification, selected fusion and proven
+      value reuse independently; keep reordering behind a stronger equivalence proof.
+- [ ] EP07: Qualify the winning executor on native macOS ARM64 and Linux x86-64; update --explain,
+      self-documentation and performance evidence; enable only measured, semantically complete paths.
+      Phase allocation diagnostics now cover parsing through teardown using isolated ASan hooks;
+      cheap-predicate steady-state allocation assertions and XML/JSON artifacts await CI validation.
+      ASan counts qualify only the instrumented regression test; native allocation profiling remains
+      open. Requested bytes are separate from retained storage, peak RSS and release timing.
+- [ ] EP-S01: Evaluate experimental constexpr FrozenMap/Set using MBO PR #553 at
+      `9d11197da77646e4fa98aa69f5340a636cde2e6f`, outside XFF's current pin. Fambo replaces the
+      former FNV string hash and brings the measured 64-key sparse mixed lookup to about 6 ns;
+      the earlier blanket negative assessment no longer applies. Compare default fambo and simple
+      registry-specific hash candidates against the sorted/probing/unordered baselines. Prove
+      collision-free placement for each mode's known keys; retain exact equality for unknown input.
+      Measure actual aliases/misses, sparse/minimal placement, compile-time/storage cost and whole
+      parser commands on both platforms. This does not block EP01-EP07; the prepared per-entry
+      executor must avoid name lookup altogether. Adopt only after an XFF workload win.
+- [ ] EP-S02: Revisit experimental MBO interning for dynamic names only when a concrete consumer and
+      measurements justify a dependency update; prefer existing strong IDs and indexed execution slots.
+
 ## Pages deployment size
 
 - [x] Redirect byte-identical stable coverage HTML to preserved run archives in all publishers;
@@ -95,7 +157,7 @@ regresses 3-11% across the two sessions. Keep this tradeoff visible when compari
 - [x] Replace speculative mode scanning with one registry-driven global pass and one expression
       pass; retain resolved primary descriptors, borrow token text, and dispatch operators and
       context controls through typed effects. Generate separate constexpr indexes per mode.
-- [ ] Compare the forthcoming constexpr perfect-hash map with compact trie/automaton lookup for
+- [ ] Compare MBO's experimental FrozenMap from PR #550 with compact trie/automaton lookup for
       registered flag spellings. Preserve exact unknown-input rejection, explicit aliases and
       per-mode tables; benchmark whole-command parsing as well as lookup and table size.
 
@@ -830,3 +892,34 @@ this as intentional accounting.
       ancestry before run time so reruns cannot compare with themselves or future merges.
 - [x] Reproduce the missing-baseline report using run 37196735470 artifacts without new measurements:
       the repaired selection finds all 468 reference comparisons on each platform against #957.
+
+### Expression-program optimizer qualification (EP06/EP07)
+
+- [x] Add exhaustive small boolean-tree and seeded larger-tree differential tests, including
+      scored/unscored execution, output order and reuse across changing entry sizes. CI qualifies
+      each optimizer pass and dispatch form; full-run configuration/archive coverage remains open.
+- [ ] Qualify the constant-folding, forward-jump-threading and predicate/branch-fusion candidates
+      independently on native Linux and macOS; retain measured winners only. The implementation uses
+      registry constant metadata and preserves original validation/safety/traversal decisions.
+- [ ] Finish native qualification of the selected prepared-recursive production path and its
+      actual `--explain` preparation records; keep the slower scored/replay program out of the default
+      path unless improved. Coordinator matcher reuse, pool transitions and capture isolation have
+      dedicated tests; binary size, startup and the full configuration/archive matrix remain open.
+- [ ] Recheck tiny-search preparation, eager regex-worker fork cost, retained capacities and full
+      CLI binary size after selecting the winning implementation. The first whole-engine macOS session
+      is noisy; a single session is insufficient to resolve small differences.
+
+### Remaining operand qualification (EP03/EP07)
+
+- [ ] Qualify prepared `-first` limits and `-mime` patterns independently. Preserve per-node
+      counters, integer validation, MIME case/glob behavior and missing-operand semantics. Compare
+      preparation, kernel and whole-run results against the reference and the preceding session;
+      retain only measured improvements without growing unrelated operand records.
+- [ ] Qualify prepared signed counts and numeric age units against both the same-session reference
+      and preceding reference sessions; retain the checked overflow behavior independently of speed.
+- [x] Isolate qualification factories and iterative programs behind Bazel `testonly` dependencies;
+      retain the direct tree oracle and all candidate whole-engine tests/measurements.
+- [ ] Verify the isolated CLI link size and choose the production executor from native whole-engine
+      evidence; keep rejected benchmark alternatives out of shipping dependencies.
+- [ ] Qualify the implemented serial reuse of original validated regex state against the
+      on-demand-slot measurements; separate mutable backend state remains private to concurrent workers.
