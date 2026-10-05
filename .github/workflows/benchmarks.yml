@@ -257,7 +257,7 @@ jobs:
     name: Check benchmark agreement after fourth candidates
     needs: [select-initial, measure-fourth-linux, measure-fourth-macos]
     if: always() && needs.select-initial.result == 'success' &&
-        needs.measure-fourth-linux.result != 'failure' && needs.measure-fourth-macos.result != 'failure'
+      needs.measure-fourth-linux.result != 'failure' && needs.measure-fourth-macos.result != 'failure'
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -326,8 +326,17 @@ jobs:
           head: ${{ github.sha }}
 
   aggregate:
-    needs: [build, measure, select-initial, measure-fourth-linux, measure-fourth-macos,
-            select-fourth, measure-fifth-linux, measure-fifth-macos]
+    needs:
+      [
+        build,
+        measure,
+        select-initial,
+        measure-fourth-linux,
+        measure-fourth-macos,
+        select-fourth,
+        measure-fifth-linux,
+        measure-fifth-macos,
+      ]
     if: always() && needs.build.result == 'success'
     runs-on: ubuntu-latest
     permissions:

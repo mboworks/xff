@@ -845,8 +845,9 @@ jobs:
   benchmark-select-initial:
     name: Check initial benchmark agreement
     needs: [benchmark-build, benchmark-measure]
-    if: always() && github.event_name == 'pull_request' && needs.benchmark-build.result == 'success' &&
-        needs.benchmark-measure.result != 'failure'
+    if:
+      always() && github.event_name == 'pull_request' && needs.benchmark-build.result == 'success' &&
+      needs.benchmark-measure.result != 'failure'
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -916,10 +917,15 @@ jobs:
   benchmark-select-fourth:
     name: Check benchmark agreement after fourth candidates
     needs:
-      [benchmark-select-initial, benchmark-measure-fourth-linux, benchmark-measure-fourth-macos]
-    if: always() && github.event_name == 'pull_request' && needs.benchmark-select-initial.result == 'success' &&
-        needs.benchmark-measure-fourth-linux.result != 'failure' &&
-        needs.benchmark-measure-fourth-macos.result != 'failure'
+      [
+        benchmark-select-initial,
+        benchmark-measure-fourth-linux,
+        benchmark-measure-fourth-macos,
+      ]
+    if:
+      always() && github.event_name == 'pull_request' && needs.benchmark-select-initial.result == 'success' &&
+      needs.benchmark-measure-fourth-linux.result != 'failure' &&
+      needs.benchmark-measure-fourth-macos.result != 'failure'
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -989,9 +995,16 @@ jobs:
   benchmark-aggregate:
     name: Benchmark comparison (Linux and macOS, best 7 of 9)
     needs:
-      [benchmark-build, benchmark-measure, benchmark-select-initial, benchmark-measure-fourth-linux,
-       benchmark-measure-fourth-macos, benchmark-select-fourth, benchmark-measure-fifth-linux,
-       benchmark-measure-fifth-macos]
+      [
+        benchmark-build,
+        benchmark-measure,
+        benchmark-select-initial,
+        benchmark-measure-fourth-linux,
+        benchmark-measure-fourth-macos,
+        benchmark-select-fourth,
+        benchmark-measure-fifth-linux,
+        benchmark-measure-fifth-macos,
+      ]
     if: always() && github.event_name == 'pull_request' && needs.benchmark-build.result == 'success'
     runs-on: ubuntu-latest
     permissions:
@@ -1114,8 +1127,9 @@ jobs:
             echo "Cache inventory unavailable; repository storage usage could not be measured." >>"${GITHUB_STEP_SUMMARY}"
           fi
       - name: Fail if any dependency did not succeed
-        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') ||
-            (github.event_name == 'pull_request' && needs.benchmark-aggregate.result != 'success')
+        if:
+          contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') ||
+          (github.event_name == 'pull_request' && needs.benchmark-aggregate.result != 'success')
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
           EVENT_NAME: ${{ github.event_name }}
