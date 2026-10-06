@@ -4831,6 +4831,2429 @@
       ]
     },
     {
+      "id": "59332c071d34784536b1a79dc013ae64b99966472966f87c1cc3dae695eec3bf",
+      "series": "linux-zen5",
+      "kind": "local",
+      "platform": "linux",
+      "architecture": "x86_64",
+      "recipe": {
+        "files": [
+          10,
+          20,
+          50,
+          100,
+          200,
+          500,
+          1000,
+          2000,
+          5000,
+          10000,
+          20000,
+          50000,
+          100000
+        ],
+        "cpus": [
+          1,
+          3,
+          10
+        ],
+        "depth": 40,
+        "repetitions": 9,
+        "keep": 7,
+        "estimator": "mean-fastest",
+        "fixture_version": 2,
+        "custom_fixtures": false,
+        "trees": [
+          "broad",
+          "deep"
+        ],
+        "tasks": {
+          "content-absent_marker": [
+            "rg",
+            "xff"
+          ],
+          "content-needle": [
+            "rg",
+            "xff"
+          ],
+          "files": [
+            "find",
+            "rg",
+            "xff"
+          ],
+          "files-safe": [
+            "xff"
+          ],
+          "fuzzy-discovery-hdn": [
+            "find+fzf",
+            "xff"
+          ],
+          "fuzzy-discovery-itm": [
+            "find+fzf",
+            "xff"
+          ],
+          "fuzzy-discovery-zzzz": [
+            "find+fzf",
+            "xff"
+          ],
+          "fuzzy-list-hdn": [
+            "fzf"
+          ],
+          "fuzzy-list-itm": [
+            "fzf"
+          ],
+          "fuzzy-list-zzzz": [
+            "fzf"
+          ],
+          "name-txt": [
+            "find",
+            "rg",
+            "xff"
+          ]
+        },
+        "allocation": "physical-cores",
+        "memory_required": true,
+        "warmup_rounds": 1,
+        "order": "rotate starting participant by task and round",
+        "cache": "just written, then reused; no flush; discarded correctness-checked warmup round",
+        "output": "NUL paths, unordered multiset; drained pipe; validation after timing"
+      },
+      "machines": [
+        {
+          "machine_id": "5ca47d4f57bd672222e926d10f51aa872bc33219b4688fe724c4fddf1a59681b",
+          "host_id": "7769bf37e3bd3fc0d1896b6caf86ae66e408f125e3dbda910bb80c9c40eaad75",
+          "architecture": "x86_64",
+          "cpu_count": 10
+        }
+      ],
+      "methods": {
+        "3f863c5f9bbc32719ff602e1e817de5578eb09c7a301e85e44289774b2e23d8b": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "b5166dcabc93612772280bb7c6d386963999470870c93316c437789c245c176c",
+            "revision": "0ab588d69fe6115538b3e43e4b2020a72187144d",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "5d1c74dd498b89d3f14bc8f63498d0bf95d42fd38d3a4aa0c0dbd52cc269b307",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a4cda0cd2902f5b830ac6856b816e279d4f5f3e519552973165d7bb4e8f6115c",
+              "MODULE.bazel.lock": "818cfebec02ef0f971cdc3bbb14e9ae333b3b4e8497b8c6a7b329b8e90057cb8",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "c2e398a742186b3c5fc5cf2c6af5d66f379f8ab73709cd5baeb2ba262bde53d9": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "57b9713930557d9ba4666c4e28dea3380e35a79e92ddd7b2853549a01f671347",
+            "revision": "0c80a02e7329f89595f3c9a63274d61ecbff3496",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "e3c0f883e0779a6df2eb4951d7a6e46d693044b55402aa32611a99a44202606e",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "e58a629aa6eb70657d199242347a014b11f24b197772a3bbdfb980719aef6d4c",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "077f1c1954fd9fe587cea9360687eb07ce57a1afae91d26ae87cdfb4737b8d75": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "b5166dcabc93612772280bb7c6d386963999470870c93316c437789c245c176c",
+            "revision": "0f184124aab0f391e451b109c99307416cbf9d2a",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "5d1c74dd498b89d3f14bc8f63498d0bf95d42fd38d3a4aa0c0dbd52cc269b307",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a4cda0cd2902f5b830ac6856b816e279d4f5f3e519552973165d7bb4e8f6115c",
+              "MODULE.bazel.lock": "818cfebec02ef0f971cdc3bbb14e9ae333b3b4e8497b8c6a7b329b8e90057cb8",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "2507ecca854067c2801df16e48d96cd33b4c22604945feaaf593e6afefb26672": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "909c985a797bcb50b87c9f7bfab1176a6c921d521e18e45bdb9202b14c4b7d76",
+            "revision": "134b25424bd4d21c55c9ede887c7523e89f73843",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "e3c0f883e0779a6df2eb4951d7a6e46d693044b55402aa32611a99a44202606e",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "70e47751dd9d7e397efd8c59e92e5ff3e169b61331b74346e1b2b557eb7a84e4",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "b39feefb05ce9542586f7e7b924bfeaad2f48ab4c62295907d5e1d83e6085148": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "b5166dcabc93612772280bb7c6d386963999470870c93316c437789c245c176c",
+            "revision": "32af598d6fc203a6b07eadb4e8a6410bf40256ab",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "5d1c74dd498b89d3f14bc8f63498d0bf95d42fd38d3a4aa0c0dbd52cc269b307",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a4cda0cd2902f5b830ac6856b816e279d4f5f3e519552973165d7bb4e8f6115c",
+              "MODULE.bazel.lock": "818cfebec02ef0f971cdc3bbb14e9ae333b3b4e8497b8c6a7b329b8e90057cb8",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "7f59bb69c9b8743ed54802014b4935060129f1810dab18e6b3695f4d07515565": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "e10168ad8789ff15df1c03b3d7b57ca67da2c302bbc56895261fb8843bc9254d",
+            "revision": "471284c4d8a5df8d599a368559bc13e0b215530a",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "e3c0f883e0779a6df2eb4951d7a6e46d693044b55402aa32611a99a44202606e",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "e58a629aa6eb70657d199242347a014b11f24b197772a3bbdfb980719aef6d4c",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "618ba00363a85b0fbe16b0bbe1eb2ef49a744630232ed46f8a397bdd6860e1e5": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "40061ea36f7b5ad91992bf27ffbb7da730d9b8353b05a8446ddda9aa9aecaf1b",
+            "revision": "4ef35c0305deea429ea4a535d58e253fa7ff4f91",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "74b580e6463dbdf73d245705c5c23784fc519f6238bf43876edf78d99ff0d71e": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "e1f21a1e2cb00a13b7c743a1f8080c4cff70ca40b9005dabea3ebe7e25bf00d6",
+            "revision": "5a327394fbbb23f7ac7d3c762c1814c2cb022130",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "14810a4f91b7fa57b2064d9753b7a767af3ab7742a0aa6d4054392a170ff9573": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "9091a10a2306a686002c1136e2c1551fa3d0b4ed0087a81a2e4a89ed2d84889c",
+            "revision": "5db1240146be20c4da283698bebb27d265810d33",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "1ed458cd27e1660d93c509d9b28d15b4f34586018b8c340ac79caff22eb8cccf": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "5425fe0dc503ed49813cc7bad2e2a7f1fc6d446a6365db4cf84dfa4256299024",
+            "revision": "709d085b833e7ee3f9fdeabec4939969b39cb560",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a4cda0cd2902f5b830ac6856b816e279d4f5f3e519552973165d7bb4e8f6115c",
+              "MODULE.bazel.lock": "818cfebec02ef0f971cdc3bbb14e9ae333b3b4e8497b8c6a7b329b8e90057cb8",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "1583a3203a71fadbb095b037e6ab7aaea304ef1136e1ee330cb8ad18216e31eb": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "c9efb09519a79b666a732e26df863024052311c7bb5c8aebb45ceb768da440b8",
+            "revision": "7c8164de5b06b25328032d52392a25bd5f8b0825",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "9756cea55ecaf6abaec19bfa7dc0567211165a179b43f5575aa400e9f386f8b0": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "5425fe0dc503ed49813cc7bad2e2a7f1fc6d446a6365db4cf84dfa4256299024",
+            "revision": "8d7963e2a66be3fd9dcc4cd517761957e099faa1",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a4cda0cd2902f5b830ac6856b816e279d4f5f3e519552973165d7bb4e8f6115c",
+              "MODULE.bazel.lock": "818cfebec02ef0f971cdc3bbb14e9ae333b3b4e8497b8c6a7b329b8e90057cb8",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "85539006109776da5d6f97456e28996d1d259d458f639a3ee1d76b658f802fb5": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "097c12b86cfab02eac6ae525c210b1f7df7fcf2aaf0db83566a33efcd76c7f5d",
+            "revision": "97c5e68ac92d36d0f76d896a8ebc0c21a4d22379",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "50e1a8246d266fdf5b673bff51390b37640abc8677c3513aa951080a26df6ca0": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "5425fe0dc503ed49813cc7bad2e2a7f1fc6d446a6365db4cf84dfa4256299024",
+            "revision": "9bbee34da11e0d97b2b740cf25f4d90ca62447d9",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a4cda0cd2902f5b830ac6856b816e279d4f5f3e519552973165d7bb4e8f6115c",
+              "MODULE.bazel.lock": "818cfebec02ef0f971cdc3bbb14e9ae333b3b4e8497b8c6a7b329b8e90057cb8",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "55932f7cdbef7133535bed94cebfeecbdbcbe0e103475f877dbbbde1e21470de": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "74c7dd60f7b0d4fbf41cf381f040315b3c86c677bbbc5b4ff9fc37ecd9122882",
+            "revision": "9fc7117f9388ddacfe0b14f673d4acf49a86efb7",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "e3c0f883e0779a6df2eb4951d7a6e46d693044b55402aa32611a99a44202606e",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a9d7e10c8cab3d71021e35e0ac77275fc6068e246a39387b743cdcb0c3f6fb39",
+              "MODULE.bazel.lock": "6a64bda5ef766ace56ba9f336ae3b4faa1e0c570cafe0e8ba39f2d0f00ff7754",
+              "bazelmod/llvm.MODULE.bazel": "40d7faf212161c589f23f847972144b75f5a631e071aafb8f854400d4c179c5a"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "be7e8cdb050f33a0ef5aed5cf8aa2db6c2c24bc6a9e25449eed0978e1c5401aa": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "2cb84d581aebafc2a7eb98a82c70c774bf65cafb32f945b775863c9b016cf19e",
+            "revision": "aebd53b799031be1018348e8afcfe3dbcbd248d7",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "5d1c74dd498b89d3f14bc8f63498d0bf95d42fd38d3a4aa0c0dbd52cc269b307",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a4cda0cd2902f5b830ac6856b816e279d4f5f3e519552973165d7bb4e8f6115c",
+              "MODULE.bazel.lock": "818cfebec02ef0f971cdc3bbb14e9ae333b3b4e8497b8c6a7b329b8e90057cb8",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "f5315b1f79e6b972399f74727c3d8650bf5a7e4457af1e0efd073a76e4f3ae74": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "cbece4243361233d9dc67e097904d3d59cc9f0f6a0cccd41231949b818dd4fd5",
+            "revision": "be954012e0487c0ddd1b6a3787a292a1a26c1c78",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "de9bc75bd6fe1a40219f105c217372bd667dba40549de11e33bbdc895ec20d61",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a9d7e10c8cab3d71021e35e0ac77275fc6068e246a39387b743cdcb0c3f6fb39",
+              "MODULE.bazel.lock": "01be2cfa5c1164f88f1787695a21ebda639fd9543fb4e884b55b3355c12171d0",
+              "bazelmod/llvm.MODULE.bazel": "7ff75a2ed63d4fd05f91c04b6ad2c3f559863a9c151f4c5a82ddcaebab64cdea"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "3df19a63a093e805fbff5ee4306e1efd092cc566297895fe2c0897ed83aa96ed": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "45da6a1542bc8d1a3659b4cee8daae642f37b6eabf45ef73f15ed9a61069767b",
+            "revision": "c5f3dc93efd18fdd18fc3b7a5538c23bf3bafda0",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "e3c0f883e0779a6df2eb4951d7a6e46d693044b55402aa32611a99a44202606e",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "e58a629aa6eb70657d199242347a014b11f24b197772a3bbdfb980719aef6d4c",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "919c472e0a7334d0d2d77b62d1c072521d5bed4628d7ca1bc26ff1b1e92d76f3": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "bbf3cb1f42be6dfaf55f153732c2cfefaa927f8dcf4701c09f3a5c5c5e56bb21",
+            "revision": "c91e823c4577d640ea84591669794221105ed445",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "39f03b7c7384d1928802bd694210ba3ae4f95f2be54f83f718bda9dff40e60a4": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "2cb84d581aebafc2a7eb98a82c70c774bf65cafb32f945b775863c9b016cf19e",
+            "revision": "cb882b639a5db96cd4ff6001de81db8d6a3cf609",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "5d1c74dd498b89d3f14bc8f63498d0bf95d42fd38d3a4aa0c0dbd52cc269b307",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a4cda0cd2902f5b830ac6856b816e279d4f5f3e519552973165d7bb4e8f6115c",
+              "MODULE.bazel.lock": "818cfebec02ef0f971cdc3bbb14e9ae333b3b4e8497b8c6a7b329b8e90057cb8",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "3203a2cd251a767eb6f3b23d2ffdbd2178681e77c9fe24bef93a064ca5b13659": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "53e915a4025f0bc45e544bf5e3c2aa7e923a39aec8bf837ae37af7819c703843",
+            "revision": "ce5ee3c40579bfd3aa90f0285353105504de81a2",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "272c729f0766c2525ff89dd7e3f7f44c491411d0f63e943a0d2ed2faa29875c5": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "7d1edcc5b29479e97c98be6b67684cf6207805dad599f79827b7991ad226f185",
+            "revision": "d3bfe71b4271eedeb8ed4301dbcd357ef6ed1a99",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "e3c0f883e0779a6df2eb4951d7a6e46d693044b55402aa32611a99a44202606e",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "e58a629aa6eb70657d199242347a014b11f24b197772a3bbdfb980719aef6d4c",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "03c23e0d4e991f443416a2fa125b18eaecee0e66be583cc6366817953669f61d": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "488f3f3475ab9bb57723995711347978bd74eda7f58ac4a6bfb1df227d4bf4c8",
+            "revision": "df460ae32bc2df63d0c4f742be26d7598e506bdd",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "b5364b481229f3a576c472fcd19c29a6ec7a7b44f233514a7fd477a2846279dc": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "da94c621e5e0c5ef50b1e66d5fa03cc095ce8c3315eede5bc6e57b12d016edb6",
+            "revision": "e22306a3756a58467dc0884758b89a2469787bb0",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "e3c0f883e0779a6df2eb4951d7a6e46d693044b55402aa32611a99a44202606e",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "e58a629aa6eb70657d199242347a014b11f24b197772a3bbdfb980719aef6d4c",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "b321eb988c41db1ae7ddda9308e097898182bd69fc330aad572f005249e6136c": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "b5166dcabc93612772280bb7c6d386963999470870c93316c437789c245c176c",
+            "revision": "e9def2a4e0430f0dbb074124be796d072ccc6706",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "5d1c74dd498b89d3f14bc8f63498d0bf95d42fd38d3a4aa0c0dbd52cc269b307",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a4cda0cd2902f5b830ac6856b816e279d4f5f3e519552973165d7bb4e8f6115c",
+              "MODULE.bazel.lock": "818cfebec02ef0f971cdc3bbb14e9ae333b3b4e8497b8c6a7b329b8e90057cb8",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "d47edfb2a9cc482228b8c395b8da39bc9acb8f44d3a97588353c5429536b99c9": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "cf90f615df2d64108dcd98e5fa0a3fdca581435b5495fc6b49be5f57f93a3399",
+            "revision": "ed28be9eb60150089eb7aaae052244aad1c6e534",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "e3c0f883e0779a6df2eb4951d7a6e46d693044b55402aa32611a99a44202606e",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "e58a629aa6eb70657d199242347a014b11f24b197772a3bbdfb980719aef6d4c",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "cda06cf194c6ab605920077f78c4dd1be6a2802c4ca579ec5a6436d0229d1f66": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.67.0 (debian)",
+              "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+            }
+          },
+          "build": {
+            "sha256": "c3db4117511c815ea2cdfa063b4c2646c100724fd5e0a963dd16ab58d2c06e27",
+            "revision": "f0dfc3edefc7f4ee35180be0b8417c16e7725fbb",
+            "command": [
+              "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/home/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "e3c0f883e0779a6df2eb4951d7a6e46d693044b55402aa32611a99a44202606e",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "e58a629aa6eb70657d199242347a014b11f24b197772a3bbdfb980719aef6d4c",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+          "cpu_count": 10,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ],
+            "10": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        }
+      },
+      "observations": [
+        {
+          "commit": "0ab588d69fe6115538b3e43e4b2020a72187144d",
+          "date": "2026-09-22T22:49:21Z",
+          "measured": "2026-10-04T19:06:01.089090+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/0ab588d69fe6115538b3e43e4b2020a72187144d/report.json",
+          "report_identity": "2c1c3ab197a30bd70c335a41a5ea94a67899687b3d3c6132e26e2c87a141f392",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "3f863c5f9bbc32719ff602e1e817de5578eb09c7a301e85e44289774b2e23d8b"
+        },
+        {
+          "commit": "0c80a02e7329f89595f3c9a63274d61ecbff3496",
+          "date": "2026-09-27T19:17:49Z",
+          "measured": "2026-10-04T23:22:51.499348+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/0c80a02e7329f89595f3c9a63274d61ecbff3496/report.json",
+          "report_identity": "f2ec5e981bc23e49598c25178e541d2ba8ee8b07754470afadc598d3ae860ab4",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "c2e398a742186b3c5fc5cf2c6af5d66f379f8ab73709cd5baeb2ba262bde53d9"
+        },
+        {
+          "commit": "0f184124aab0f391e451b109c99307416cbf9d2a",
+          "date": "2026-09-23T20:02:13Z",
+          "measured": "2026-10-04T19:20:00.809659+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/0f184124aab0f391e451b109c99307416cbf9d2a/report.json",
+          "report_identity": "f219b222705286e1977fd2fd8e72ebe00cab267814e12f7aa6bc9baca0f59932",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "077f1c1954fd9fe587cea9360687eb07ce57a1afae91d26ae87cdfb4737b8d75"
+        },
+        {
+          "commit": "134b25424bd4d21c55c9ede887c7523e89f73843",
+          "date": "2026-09-28T06:13:27Z",
+          "measured": "2026-10-05T00:50:11.046846+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/134b25424bd4d21c55c9ede887c7523e89f73843/report.json",
+          "report_identity": "39a04c141d31416e8883811a3c0c53866dfee449f45c66e15e566929cd575a46",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "2507ecca854067c2801df16e48d96cd33b4c22604945feaaf593e6afefb26672"
+        },
+        {
+          "commit": "32af598d6fc203a6b07eadb4e8a6410bf40256ab",
+          "date": "2026-09-22T03:10:52Z",
+          "measured": "2026-10-04T18:52:05.383489+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/32af598d6fc203a6b07eadb4e8a6410bf40256ab/report.json",
+          "report_identity": "139ba31778db6af4e70bb8c34ac16c6f8347e99f17d56c9cf1bcb6c364f07235",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "b39feefb05ce9542586f7e7b924bfeaad2f48ab4c62295907d5e1d83e6085148"
+        },
+        {
+          "commit": "471284c4d8a5df8d599a368559bc13e0b215530a",
+          "date": "2026-09-27T21:45:55Z",
+          "measured": "2026-10-05T00:20:40.899924+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/471284c4d8a5df8d599a368559bc13e0b215530a/report.json",
+          "report_identity": "dde86015ffa51667b0785bd668d7b3ede9ca4cfb706d36f7adf0a0ae0b1ecedb",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "7f59bb69c9b8743ed54802014b4935060129f1810dab18e6b3695f4d07515565"
+        },
+        {
+          "commit": "4ef35c0305deea429ea4a535d58e253fa7ff4f91",
+          "date": "2026-09-27T16:11:24Z",
+          "measured": "2026-10-04T21:43:37.301761+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/4ef35c0305deea429ea4a535d58e253fa7ff4f91/report.json",
+          "report_identity": "3ed7c330e012578b3f45c6743903d94d22c41059cad5acf0d8a4fceff3774bbc",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "618ba00363a85b0fbe16b0bbe1eb2ef49a744630232ed46f8a397bdd6860e1e5"
+        },
+        {
+          "commit": "5a327394fbbb23f7ac7d3c762c1814c2cb022130",
+          "date": "2026-09-27T16:11:25Z",
+          "measured": "2026-10-04T22:12:08.612817+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/5a327394fbbb23f7ac7d3c762c1814c2cb022130/report.json",
+          "report_identity": "8feb8bde85f9b4539a9d53662f9e8fb38ec5bcaa1cebafe7f956ba488c194f0a",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "74b580e6463dbdf73d245705c5c23784fc519f6238bf43876edf78d99ff0d71e"
+        },
+        {
+          "commit": "5db1240146be20c4da283698bebb27d265810d33",
+          "date": "2026-09-27T16:11:26Z",
+          "measured": "2026-10-04T22:40:21.240350+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/5db1240146be20c4da283698bebb27d265810d33/report.json",
+          "report_identity": "a5c702988088369473fcd37764a3e71ce50a733a2db142be81eec3519821a3f5",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "14810a4f91b7fa57b2064d9753b7a767af3ab7742a0aa6d4054392a170ff9573"
+        },
+        {
+          "commit": "709d085b833e7ee3f9fdeabec4939969b39cb560",
+          "date": "2026-09-24T22:06:36Z",
+          "measured": "2026-10-04T20:39:30.115586+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/709d085b833e7ee3f9fdeabec4939969b39cb560/report.json",
+          "report_identity": "fe7319b6d1354abfb6f575a8116377ee89336cc569425ab724c0bc6b339df538",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "1ed458cd27e1660d93c509d9b28d15b4f34586018b8c340ac79caff22eb8cccf"
+        },
+        {
+          "commit": "7c8164de5b06b25328032d52392a25bd5f8b0825",
+          "date": "2026-09-27T16:11:25Z",
+          "measured": "2026-10-04T22:26:18.549052+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/7c8164de5b06b25328032d52392a25bd5f8b0825/report.json",
+          "report_identity": "54409fd36c3eff3b2d8963de7be33985c430e29ba15f4573460feeb178dfa199",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "1583a3203a71fadbb095b037e6ab7aaea304ef1136e1ee330cb8ad18216e31eb"
+        },
+        {
+          "commit": "8d7963e2a66be3fd9dcc4cd517761957e099faa1",
+          "date": "2026-09-24T20:57:31Z",
+          "measured": "2026-10-04T20:23:06.781927+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/8d7963e2a66be3fd9dcc4cd517761957e099faa1/report.json",
+          "report_identity": "a4631dc1e9e378cdccaf1f58a2b2772367616f5fa9816a4d0d56badd5ff934c5",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "9756cea55ecaf6abaec19bfa7dc0567211165a179b43f5575aa400e9f386f8b0"
+        },
+        {
+          "commit": "97c5e68ac92d36d0f76d896a8ebc0c21a4d22379",
+          "date": "2026-09-27T16:11:24Z",
+          "measured": "2026-10-04T21:57:51.041420+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/97c5e68ac92d36d0f76d896a8ebc0c21a4d22379/report.json",
+          "report_identity": "e4507f01dd538d15eca668928ffabf538e489a49d5939c439a054595e5a09cac",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "85539006109776da5d6f97456e28996d1d259d458f639a3ee1d76b658f802fb5"
+        },
+        {
+          "commit": "9bbee34da11e0d97b2b740cf25f4d90ca62447d9",
+          "date": "2026-09-24T22:42:57Z",
+          "measured": "2026-10-04T20:55:50.831933+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/9bbee34da11e0d97b2b740cf25f4d90ca62447d9/report.json",
+          "report_identity": "5c3ca97b99416e1b38b33ba2232ee2c0aa30161c081d70f4454c99c8e663f283",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "50e1a8246d266fdf5b673bff51390b37640abc8677c3513aa951080a26df6ca0"
+        },
+        {
+          "commit": "9fc7117f9388ddacfe0b14f673d4acf49a86efb7",
+          "date": "2026-09-28T21:09:25Z",
+          "measured": "2026-10-05T01:04:57.896082+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/9fc7117f9388ddacfe0b14f673d4acf49a86efb7/report.json",
+          "report_identity": "dcf97f9020a70d3d74922d37eab812dd804d807f5ed1b1a678bbd2d929067900",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "55932f7cdbef7133535bed94cebfeecbdbcbe0e103475f877dbbbde1e21470de"
+        },
+        {
+          "commit": "aebd53b799031be1018348e8afcfe3dbcbd248d7",
+          "date": "2026-09-24T06:44:48Z",
+          "measured": "2026-10-04T20:06:47.889577+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/aebd53b799031be1018348e8afcfe3dbcbd248d7/report.json",
+          "report_identity": "41bf74f1835c55dbf262f8ea21c650b393b5a5fe4d2171fe7671d29b18062cff",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "be7e8cdb050f33a0ef5aed5cf8aa2db6c2c24bc6a9e25449eed0978e1c5401aa"
+        },
+        {
+          "commit": "be954012e0487c0ddd1b6a3787a292a1a26c1c78",
+          "date": "2026-10-01T06:42:01Z",
+          "measured": "2026-10-05T01:19:42.544346+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/be954012e0487c0ddd1b6a3787a292a1a26c1c78/report.json",
+          "report_identity": "22f69c889fd484e8f8dd9522aeff53e1ce6bf8704cbbc5cc3ce9ee6cabbb5507",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "f5315b1f79e6b972399f74727c3d8650bf5a7e4457af1e0efd073a76e4f3ae74"
+        },
+        {
+          "commit": "c5f3dc93efd18fdd18fc3b7a5538c23bf3bafda0",
+          "date": "2026-09-27T16:11:26Z",
+          "measured": "2026-10-04T22:54:35.363294+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/c5f3dc93efd18fdd18fc3b7a5538c23bf3bafda0/report.json",
+          "report_identity": "b35774b0ada2069514787aa40a3ba74fbe25f1186d09551dd974946dfbfddf98",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "3df19a63a093e805fbff5ee4306e1efd092cc566297895fe2c0897ed83aa96ed"
+        },
+        {
+          "commit": "c91e823c4577d640ea84591669794221105ed445",
+          "date": "2026-09-25T08:47:04Z",
+          "measured": "2026-10-04T21:12:15.015965+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/c91e823c4577d640ea84591669794221105ed445/report.json",
+          "report_identity": "75100a54e0d205a0724222829f5c4c8f16c9bb7b37980f9f236abb18fab5366b",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "919c472e0a7334d0d2d77b62d1c072521d5bed4628d7ca1bc26ff1b1e92d76f3"
+        },
+        {
+          "commit": "cb882b639a5db96cd4ff6001de81db8d6a3cf609",
+          "date": "2026-09-23T23:29:54Z",
+          "measured": "2026-10-04T19:50:20.243258+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/cb882b639a5db96cd4ff6001de81db8d6a3cf609/report.json",
+          "report_identity": "7547a1921d93bde4ea773295d395cf75d9e91ef4d6fa0016bace2a888cb045a7",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "39f03b7c7384d1928802bd694210ba3ae4f95f2be54f83f718bda9dff40e60a4"
+        },
+        {
+          "commit": "ce5ee3c40579bfd3aa90f0285353105504de81a2",
+          "date": "2026-09-27T16:11:23Z",
+          "measured": "2026-10-04T21:28:03.124081+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/ce5ee3c40579bfd3aa90f0285353105504de81a2/report.json",
+          "report_identity": "e20c409d36e785b21214eb6f0d21f63d659a818ddc16d49e421ebca993c02257",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "3203a2cd251a767eb6f3b23d2ffdbd2178681e77c9fe24bef93a064ca5b13659"
+        },
+        {
+          "commit": "d3bfe71b4271eedeb8ed4301dbcd357ef6ed1a99",
+          "date": "2026-09-27T20:18:49Z",
+          "measured": "2026-10-04T23:37:08.161108+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/d3bfe71b4271eedeb8ed4301dbcd357ef6ed1a99/report.json",
+          "report_identity": "658a00e4322e66b513235c10ab6cf8d6340570091f22accae69abfa0130cb328",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "272c729f0766c2525ff89dd7e3f7f44c491411d0f63e943a0d2ed2faa29875c5"
+        },
+        {
+          "commit": "df460ae32bc2df63d0c4f742be26d7598e506bdd",
+          "date": "2026-09-27T16:11:26Z",
+          "measured": "2026-10-04T23:08:42.039899+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/df460ae32bc2df63d0c4f742be26d7598e506bdd/report.json",
+          "report_identity": "d0f9dcf839529a34ea2de3f3338005a1b478a310b2b3159db76944bcd6ef7dec",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "03c23e0d4e991f443416a2fa125b18eaecee0e66be583cc6366817953669f61d"
+        },
+        {
+          "commit": "e22306a3756a58467dc0884758b89a2469787bb0",
+          "date": "2026-09-27T20:57:15Z",
+          "measured": "2026-10-04T23:51:15.576082+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/e22306a3756a58467dc0884758b89a2469787bb0/report.json",
+          "report_identity": "86ab15ad3341a63bd9ae19727e7d817ffc6af9098b5b24e0717d0e02e81dbde9",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "b5364b481229f3a576c472fcd19c29a6ec7a7b44f233514a7fd477a2846279dc"
+        },
+        {
+          "commit": "e9def2a4e0430f0dbb074124be796d072ccc6706",
+          "date": "2026-09-23T21:22:39Z",
+          "measured": "2026-10-04T19:34:24.396738+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/e9def2a4e0430f0dbb074124be796d072ccc6706/report.json",
+          "report_identity": "fb678bbb75b0af9dd92c152a3c74f55bf6b621b44fad275c0ba4f905b01e0e89",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "b321eb988c41db1ae7ddda9308e097898182bd69fc330aad572f005249e6136c"
+        },
+        {
+          "commit": "ed28be9eb60150089eb7aaae052244aad1c6e534",
+          "date": "2026-09-27T21:45:55Z",
+          "measured": "2026-10-05T00:35:24.820320+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/ed28be9eb60150089eb7aaae052244aad1c6e534/report.json",
+          "report_identity": "cc243f107e9dfce69556295ff5627b62f68f482dc80e1277f9333967a6aac82f",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "d47edfb2a9cc482228b8c395b8da39bc9acb8f44d3a97588353c5429536b99c9"
+        },
+        {
+          "commit": "f0dfc3edefc7f4ee35180be0b8417c16e7725fbb",
+          "date": "2026-09-27T21:45:54Z",
+          "measured": "2026-10-05T00:05:54.794896+00:00",
+          "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/f0dfc3edefc7f4ee35180be0b8417c16e7725fbb/report.json",
+          "report_identity": "d066e287af418226f5d93279a12184230afd62e3fca5fcd10635efa462c3d27c",
+          "batch": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/batch.json",
+          "batch_identity": "7a8e81930393609497d1b510142237ce876d17e159c20bfec5a3e5eb0cbd31bb",
+          "method": "cda06cf194c6ab605920077f78c4dd1be6a2802c4ca579ec5a6436d0229d1f66"
+        }
+      ]
+    },
+    {
       "id": "edc73c2b56c3f7e534c8cf13c48a532c51a8e011a8f20cd481d7e256cd7f2979",
       "series": "macos-m5-pro",
       "kind": "local",

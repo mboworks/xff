@@ -836,6 +836,600 @@
     "platform_details": "macOS 26.6.2 / arm64"
   },
   {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "0ab588d69fe6115538b3e43e4b2020a72187144d",
+    "label": "Local / 0ab588d69f",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #907",
+        "href": "https://github.com/mboworks/xff/pull/907"
+      }
+    ],
+    "date": "2026-09-22T22:49:21Z",
+    "measurement_date": "2026-10-04T19:06:01.089090+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T19:06:01.089090+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/0ab588d69fe6115538b3e43e4b2020a72187144d/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/0ab588d69fe6115538b3e43e4b2020a72187144d/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "0c80a02e7329f89595f3c9a63274d61ecbff3496",
+    "label": "Local / 0c80a02e73",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #925",
+        "href": "https://github.com/mboworks/xff/pull/925"
+      }
+    ],
+    "date": "2026-09-27T19:17:49Z",
+    "measurement_date": "2026-10-04T23:22:51.499348+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T23:22:51.499348+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/0c80a02e7329f89595f3c9a63274d61ecbff3496/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/0c80a02e7329f89595f3c9a63274d61ecbff3496/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "0f184124aab0f391e451b109c99307416cbf9d2a",
+    "label": "Local / 0f184124aa",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #908",
+        "href": "https://github.com/mboworks/xff/pull/908"
+      }
+    ],
+    "date": "2026-09-23T20:02:13Z",
+    "measurement_date": "2026-10-04T19:20:00.809659+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T19:20:00.809659+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/0f184124aab0f391e451b109c99307416cbf9d2a/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/0f184124aab0f391e451b109c99307416cbf9d2a/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "134b25424bd4d21c55c9ede887c7523e89f73843",
+    "label": "Local / 134b25424b",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #932",
+        "href": "https://github.com/mboworks/xff/pull/932"
+      }
+    ],
+    "date": "2026-09-28T06:13:27Z",
+    "measurement_date": "2026-10-05T00:50:11.046846+00:00",
+    "backfill": false,
+    "measured": "2026-10-05T00:50:11.046846+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/134b25424bd4d21c55c9ede887c7523e89f73843/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/134b25424bd4d21c55c9ede887c7523e89f73843/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "32af598d6fc203a6b07eadb4e8a6410bf40256ab",
+    "label": "Local / 32af598d6f",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #900",
+        "href": "https://github.com/mboworks/xff/pull/900"
+      }
+    ],
+    "date": "2026-09-22T03:10:52Z",
+    "measurement_date": "2026-10-04T18:52:05.383489+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T18:52:05.383489+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/32af598d6fc203a6b07eadb4e8a6410bf40256ab/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/32af598d6fc203a6b07eadb4e8a6410bf40256ab/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "471284c4d8a5df8d599a368559bc13e0b215530a",
+    "label": "Local / 471284c4d8",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #929",
+        "href": "https://github.com/mboworks/xff/pull/929"
+      }
+    ],
+    "date": "2026-09-27T21:45:55Z",
+    "measurement_date": "2026-10-05T00:20:40.899924+00:00",
+    "backfill": false,
+    "measured": "2026-10-05T00:20:40.899924+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/471284c4d8a5df8d599a368559bc13e0b215530a/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/471284c4d8a5df8d599a368559bc13e0b215530a/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "4ef35c0305deea429ea4a535d58e253fa7ff4f91",
+    "label": "Local / 4ef35c0305",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #917",
+        "href": "https://github.com/mboworks/xff/pull/917"
+      }
+    ],
+    "date": "2026-09-27T16:11:24Z",
+    "measurement_date": "2026-10-04T21:43:37.301761+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T21:43:37.301761+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/4ef35c0305deea429ea4a535d58e253fa7ff4f91/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/4ef35c0305deea429ea4a535d58e253fa7ff4f91/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "5a327394fbbb23f7ac7d3c762c1814c2cb022130",
+    "label": "Local / 5a327394fb",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #920",
+        "href": "https://github.com/mboworks/xff/pull/920"
+      }
+    ],
+    "date": "2026-09-27T16:11:25Z",
+    "measurement_date": "2026-10-04T22:12:08.612817+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T22:12:08.612817+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/5a327394fbbb23f7ac7d3c762c1814c2cb022130/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/5a327394fbbb23f7ac7d3c762c1814c2cb022130/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "5db1240146be20c4da283698bebb27d265810d33",
+    "label": "Local / 5db1240146",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #922",
+        "href": "https://github.com/mboworks/xff/pull/922"
+      }
+    ],
+    "date": "2026-09-27T16:11:26Z",
+    "measurement_date": "2026-10-04T22:40:21.240350+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T22:40:21.240350+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/5db1240146be20c4da283698bebb27d265810d33/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/5db1240146be20c4da283698bebb27d265810d33/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "709d085b833e7ee3f9fdeabec4939969b39cb560",
+    "label": "Local / 709d085b83",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #913",
+        "href": "https://github.com/mboworks/xff/pull/913"
+      }
+    ],
+    "date": "2026-09-24T22:06:36Z",
+    "measurement_date": "2026-10-04T20:39:30.115586+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T20:39:30.115586+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/709d085b833e7ee3f9fdeabec4939969b39cb560/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/709d085b833e7ee3f9fdeabec4939969b39cb560/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "7c8164de5b06b25328032d52392a25bd5f8b0825",
+    "label": "Local / 7c8164de5b",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #919",
+        "href": "https://github.com/mboworks/xff/pull/919"
+      }
+    ],
+    "date": "2026-09-27T16:11:25Z",
+    "measurement_date": "2026-10-04T22:26:18.549052+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T22:26:18.549052+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/7c8164de5b06b25328032d52392a25bd5f8b0825/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/7c8164de5b06b25328032d52392a25bd5f8b0825/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "8d7963e2a66be3fd9dcc4cd517761957e099faa1",
+    "label": "Local / 8d7963e2a6",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #912",
+        "href": "https://github.com/mboworks/xff/pull/912"
+      }
+    ],
+    "date": "2026-09-24T20:57:31Z",
+    "measurement_date": "2026-10-04T20:23:06.781927+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T20:23:06.781927+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/8d7963e2a66be3fd9dcc4cd517761957e099faa1/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/8d7963e2a66be3fd9dcc4cd517761957e099faa1/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "97c5e68ac92d36d0f76d896a8ebc0c21a4d22379",
+    "label": "Local / 97c5e68ac9",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #918",
+        "href": "https://github.com/mboworks/xff/pull/918"
+      }
+    ],
+    "date": "2026-09-27T16:11:24Z",
+    "measurement_date": "2026-10-04T21:57:51.041420+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T21:57:51.041420+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/97c5e68ac92d36d0f76d896a8ebc0c21a4d22379/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/97c5e68ac92d36d0f76d896a8ebc0c21a4d22379/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "9bbee34da11e0d97b2b740cf25f4d90ca62447d9",
+    "label": "Local / 9bbee34da1",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #914",
+        "href": "https://github.com/mboworks/xff/pull/914"
+      }
+    ],
+    "date": "2026-09-24T22:42:57Z",
+    "measurement_date": "2026-10-04T20:55:50.831933+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T20:55:50.831933+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/9bbee34da11e0d97b2b740cf25f4d90ca62447d9/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/9bbee34da11e0d97b2b740cf25f4d90ca62447d9/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "9fc7117f9388ddacfe0b14f673d4acf49a86efb7",
+    "label": "Local / 9fc7117f93",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #933",
+        "href": "https://github.com/mboworks/xff/pull/933"
+      }
+    ],
+    "date": "2026-09-28T21:09:25Z",
+    "measurement_date": "2026-10-05T01:04:57.896082+00:00",
+    "backfill": false,
+    "measured": "2026-10-05T01:04:57.896082+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/9fc7117f9388ddacfe0b14f673d4acf49a86efb7/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/9fc7117f9388ddacfe0b14f673d4acf49a86efb7/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "aebd53b799031be1018348e8afcfe3dbcbd248d7",
+    "label": "Local / aebd53b799",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #911",
+        "href": "https://github.com/mboworks/xff/pull/911"
+      }
+    ],
+    "date": "2026-09-24T06:44:48Z",
+    "measurement_date": "2026-10-04T20:06:47.889577+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T20:06:47.889577+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/aebd53b799031be1018348e8afcfe3dbcbd248d7/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/aebd53b799031be1018348e8afcfe3dbcbd248d7/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "be954012e0487c0ddd1b6a3787a292a1a26c1c78",
+    "label": "Local / be954012e0",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #936",
+        "href": "https://github.com/mboworks/xff/pull/936"
+      }
+    ],
+    "date": "2026-10-01T06:42:01Z",
+    "measurement_date": "2026-10-05T01:19:42.544346+00:00",
+    "backfill": false,
+    "measured": "2026-10-05T01:19:42.544346+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/be954012e0487c0ddd1b6a3787a292a1a26c1c78/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/be954012e0487c0ddd1b6a3787a292a1a26c1c78/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "c5f3dc93efd18fdd18fc3b7a5538c23bf3bafda0",
+    "label": "Local / c5f3dc93ef",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #923",
+        "href": "https://github.com/mboworks/xff/pull/923"
+      }
+    ],
+    "date": "2026-09-27T16:11:26Z",
+    "measurement_date": "2026-10-04T22:54:35.363294+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T22:54:35.363294+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/c5f3dc93efd18fdd18fc3b7a5538c23bf3bafda0/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/c5f3dc93efd18fdd18fc3b7a5538c23bf3bafda0/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "c91e823c4577d640ea84591669794221105ed445",
+    "label": "Local / c91e823c45",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #915",
+        "href": "https://github.com/mboworks/xff/pull/915"
+      }
+    ],
+    "date": "2026-09-25T08:47:04Z",
+    "measurement_date": "2026-10-04T21:12:15.015965+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T21:12:15.015965+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/c91e823c4577d640ea84591669794221105ed445/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/c91e823c4577d640ea84591669794221105ed445/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "cb882b639a5db96cd4ff6001de81db8d6a3cf609",
+    "label": "Local / cb882b639a",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #910",
+        "href": "https://github.com/mboworks/xff/pull/910"
+      }
+    ],
+    "date": "2026-09-23T23:29:54Z",
+    "measurement_date": "2026-10-04T19:50:20.243258+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T19:50:20.243258+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/cb882b639a5db96cd4ff6001de81db8d6a3cf609/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/cb882b639a5db96cd4ff6001de81db8d6a3cf609/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "ce5ee3c40579bfd3aa90f0285353105504de81a2",
+    "label": "Local / ce5ee3c405",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #916",
+        "href": "https://github.com/mboworks/xff/pull/916"
+      }
+    ],
+    "date": "2026-09-27T16:11:23Z",
+    "measurement_date": "2026-10-04T21:28:03.124081+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T21:28:03.124081+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/ce5ee3c40579bfd3aa90f0285353105504de81a2/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/ce5ee3c40579bfd3aa90f0285353105504de81a2/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "d3bfe71b4271eedeb8ed4301dbcd357ef6ed1a99",
+    "label": "Local / d3bfe71b42",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #926",
+        "href": "https://github.com/mboworks/xff/pull/926"
+      }
+    ],
+    "date": "2026-09-27T20:18:49Z",
+    "measurement_date": "2026-10-04T23:37:08.161108+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T23:37:08.161108+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/d3bfe71b4271eedeb8ed4301dbcd357ef6ed1a99/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/d3bfe71b4271eedeb8ed4301dbcd357ef6ed1a99/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "df460ae32bc2df63d0c4f742be26d7598e506bdd",
+    "label": "Local / df460ae32b",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #921",
+        "href": "https://github.com/mboworks/xff/pull/921"
+      }
+    ],
+    "date": "2026-09-27T16:11:26Z",
+    "measurement_date": "2026-10-04T23:08:42.039899+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T23:08:42.039899+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/df460ae32bc2df63d0c4f742be26d7598e506bdd/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/df460ae32bc2df63d0c4f742be26d7598e506bdd/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "e22306a3756a58467dc0884758b89a2469787bb0",
+    "label": "Local / e22306a375",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #927",
+        "href": "https://github.com/mboworks/xff/pull/927"
+      }
+    ],
+    "date": "2026-09-27T20:57:15Z",
+    "measurement_date": "2026-10-04T23:51:15.576082+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T23:51:15.576082+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/e22306a3756a58467dc0884758b89a2469787bb0/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/e22306a3756a58467dc0884758b89a2469787bb0/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "e9def2a4e0430f0dbb074124be796d072ccc6706",
+    "label": "Local / e9def2a4e0",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #909",
+        "href": "https://github.com/mboworks/xff/pull/909"
+      }
+    ],
+    "date": "2026-09-23T21:22:39Z",
+    "measurement_date": "2026-10-04T19:34:24.396738+00:00",
+    "backfill": false,
+    "measured": "2026-10-04T19:34:24.396738+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/e9def2a4e0430f0dbb074124be796d072ccc6706/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/e9def2a4e0430f0dbb074124be796d072ccc6706/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "ed28be9eb60150089eb7aaae052244aad1c6e534",
+    "label": "Local / ed28be9eb6",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #930",
+        "href": "https://github.com/mboworks/xff/pull/930"
+      }
+    ],
+    "date": "2026-09-27T21:45:55Z",
+    "measurement_date": "2026-10-05T00:35:24.820320+00:00",
+    "backfill": false,
+    "measured": "2026-10-05T00:35:24.820320+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/ed28be9eb60150089eb7aaae052244aad1c6e534/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/ed28be9eb60150089eb7aaae052244aad1c6e534/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "Local / linux-zen5 / x86_64",
+    "commit": "f0dfc3edefc7f4ee35180be0b8417c16e7725fbb",
+    "label": "Local / f0dfc3edef",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #928",
+        "href": "https://github.com/mboworks/xff/pull/928"
+      }
+    ],
+    "date": "2026-09-27T21:45:54Z",
+    "measurement_date": "2026-10-05T00:05:54.794896+00:00",
+    "backfill": false,
+    "measured": "2026-10-05T00:05:54.794896+00:00",
+    "local": true,
+    "report": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/f0dfc3edefc7f4ee35180be0b8417c16e7725fbb/",
+    "figures": "local/linux-zen5/0957eb2cce8f17156ff0cf5425fbe1d29b0b07fcc86ef2701dae95159832ef75/f0dfc3edefc7f4ee35180be0b8417c16e7725fbb/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+  },
+  {
     "platform": "Local / macos-m5-pro / arm64",
     "commit": "623cab238f6a2ede58b20f538d310c1e12c60dfc",
     "label": "Local / 623cab238f",
