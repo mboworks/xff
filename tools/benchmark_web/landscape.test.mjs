@@ -224,13 +224,14 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
     }
     await page.selectOption("#range", "auto");
     await page.selectOption("#metric", "percent");
-    const legendBox = await page
-      .locator(".landscape-legend-scale")
-      .boundingBox();
-    await page.mouse.move(
-      legendBox.x + legendBox.width / 2,
-      legendBox.y + legendBox.height / 2,
+    const threshold = page.locator(".landscape-threshold-slider");
+    assert.equal(await threshold.isVisible(), true);
+    assert.equal(await threshold.inputValue(), "0");
+    assert.equal(
+      await page.getByLabel("Lower performance threshold").isDisabled(),
+      true,
     );
+    await threshold.fill("50");
     assert.ok(
       Math.abs(
         Number(await page.locator("#landscape").getAttribute("data-minimum")),
@@ -251,8 +252,10 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
     });
     assert.ok(filtered.length > 0);
     assert.ok(filtered.every((value) => value >= 0));
+    await page.getByLabel("Raise performance threshold").click();
+    assert.equal(await threshold.inputValue(), "51");
     await page.mouse.move(0, 0);
-    assert.equal(
+    assert.notEqual(
       await page.locator("#landscape").getAttribute("data-minimum"),
       null,
     );
@@ -274,7 +277,15 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
       true,
     );
     await page.locator(".landscape-preview-plane").uncheck();
+    assert.equal(await threshold.isVisible(), false);
+    assert.equal(
+      await page.locator("#landscape").getAttribute("data-minimum"),
+      null,
+    );
     const unfilteredImage = await captureCanvas();
+    const legendBox = await page
+      .locator(".landscape-legend-scale")
+      .boundingBox();
     const previews = [];
     for (const value of ["0", "0.5", "0.25"]) {
       await page.selectOption(".landscape-preview-opacity", value);
@@ -292,10 +303,8 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
       "hide and both transparency levels render differently",
     );
     await page.locator(".landscape-preview-plane").check();
-    await page.mouse.move(
-      legendBox.x + legendBox.width / 2,
-      legendBox.y + legendBox.height / 2,
-    );
+    assert.equal(await threshold.isVisible(), true);
+    await threshold.fill("50");
     assert.notEqual(
       await captureCanvas(),
       previews[2],
@@ -305,11 +314,7 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
     for (const metric of ["percent", "factor"]) {
       await page.selectOption("#metric", metric);
       await page.selectOption("#range", "1");
-      const scale = await page.locator(".landscape-legend-scale").boundingBox();
-      await page.mouse.move(
-        scale.x + scale.width * 0.63,
-        scale.y + scale.height / 2,
-      );
+      await page.locator(".landscape-threshold-slider").fill("63");
       assert.equal(
         await page.locator(".hover-axis-value").textContent(),
         metric === "percent" ? "26%" : "0.26",
@@ -324,8 +329,12 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
       );
       await page.keyboard.press("Home");
       await page.mouse.move(0, 0);
-      assert.equal(await page.locator(".hover-axis-value").count(), 0);
+      assert.notEqual(
+        await page.locator("#landscape").getAttribute("data-minimum"),
+        null,
+      );
     }
+    await page.locator(".landscape-preview-plane").uncheck();
     await page.selectOption("#metric", "percent");
     await page.selectOption("#range", "auto");
     await page.mouse.move(0, 0);
@@ -513,6 +522,19 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
     const panelBox = await versionPanel.boundingBox();
     const legendBox = await legendPanel.boundingBox();
     const chartBox = await host.boundingBox();
+    assert.equal(
+      await versionPanel.locator("summary").textContent(),
+      "Version",
+    );
+    assert.equal(
+      await legendPanel.locator("summary").textContent(),
+      "Performance: %",
+    );
+    for (const name of ["metric", "range", "overflow"])
+      assert.equal(
+        await legendPanel.locator(`[data-control="${name}"]`).count(),
+        1,
+      );
     assert.equal(panelBox.x, chartBox.x + 12);
     assert.equal(panelBox.y, chartBox.y + 12);
     assert.equal(legendBox.x, panelBox.x);
@@ -521,6 +543,11 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
       await versionPanel.locator('[data-control="version"]').count(),
       1,
     );
+    const versionControl = versionPanel.locator(".landscape-version-control");
+    const versionControlBox = await versionControl.boundingBox();
+    assert.ok(versionControlBox.width >= panelBox.width - 18);
+    assert.equal(await page.getByLabel("Next version").isDisabled(), true);
+    assert.equal(await page.getByLabel("Previous version").isDisabled(), false);
     assert.equal(
       await page.locator("[data-version-count]").textContent(),
       "2 of 2",
@@ -548,6 +575,14 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
         ),
         "1px",
       );
+    for (const panel of [versionPanel, legendPanel]) {
+      const expanded = await panel.boundingBox();
+      await panel.locator("summary").click();
+      assert.equal(await panel.locator("summary").isVisible(), true);
+      assert.ok((await panel.boundingBox()).height < expanded.height);
+      await panel.locator("summary").click();
+      assert.deepEqual(await panel.boundingBox(), expanded);
+    }
     for (const tick of await page
       .locator(".landscape-legend-ticks span")
       .all()) {
@@ -556,9 +591,11 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
       assert.ok(bounds.x + bounds.width <= legendBox.x + legendBox.width);
     }
     const originalBox = await host.boundingBox();
+    const size = ({ width, height }) => ({ width, height });
     const originalCanvas = await host.locator("canvas").elementHandle();
     await page.selectOption(".landscape-preview-opacity", "0.5");
     await page.locator(".landscape-preview-plane").uncheck();
+    const inactiveLegendBox = await legendPanel.boundingBox();
     let releaseResponse, requestStarted;
     const heldResponse = new Promise((resolve) => {
       releaseResponse = resolve;
@@ -571,13 +608,16 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
       await heldResponse;
       await route.continue();
     });
-    await slider.fill("0");
+    await page.getByLabel("Previous version").click();
     await loading;
     assert.equal(await host.isVisible(), true);
     assert.equal(await host.getAttribute("data-commit"), "b".repeat(40));
-    assert.deepEqual(await host.boundingBox(), originalBox);
-    assert.deepEqual(await versionPanel.boundingBox(), panelBox);
-    assert.deepEqual(await legendPanel.boundingBox(), legendBox);
+    assert.deepEqual(size(await host.boundingBox()), size(originalBox));
+    assert.deepEqual(size(await versionPanel.boundingBox()), size(panelBox));
+    assert.deepEqual(
+      size(await legendPanel.boundingBox()),
+      size(inactiveLegendBox),
+    );
     assert.ok(
       (await page.locator("[data-report]").textContent()).includes(
         "b".repeat(10),
@@ -598,9 +638,12 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
       "https://github.com/owner/project/pull/12",
     );
     await page.unroute("**/runs/1/1/linux/landscape.json");
-    assert.deepEqual(await host.boundingBox(), originalBox);
-    assert.deepEqual(await versionPanel.boundingBox(), panelBox);
-    assert.deepEqual(await legendPanel.boundingBox(), legendBox);
+    assert.deepEqual(size(await host.boundingBox()), size(originalBox));
+    assert.deepEqual(size(await versionPanel.boundingBox()), size(panelBox));
+    assert.deepEqual(
+      size(await legendPanel.boundingBox()),
+      size(inactiveLegendBox),
+    );
     assert.equal(
       await originalCanvas.evaluate(
         (canvas) => canvas === document.querySelector("[data-chart] canvas"),
@@ -630,7 +673,7 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
     await page.route("**/runs/2/1/linux/landscape.json", (route) =>
       route.fulfill({ status: 503, body: "unavailable" }),
     );
-    await slider.fill("1");
+    await page.getByLabel("Next version").click();
     await page.waitForFunction(() =>
       document
         .querySelector('[role="status"]')
@@ -647,8 +690,14 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
       await page.locator("[data-report]").textContent(),
       "a".repeat(10),
     );
-    assert.deepEqual(await versionPanel.boundingBox(), beforeFailurePanel);
-    assert.deepEqual(await legendPanel.boundingBox(), beforeFailureLegend);
+    assert.deepEqual(
+      size(await versionPanel.boundingBox()),
+      size(beforeFailurePanel),
+    );
+    assert.deepEqual(
+      size(await legendPanel.boundingBox()),
+      size(beforeFailureLegend),
+    );
     assert.equal(
       await host.evaluate((element) => element.clientHeight),
       originalBox.height,
@@ -687,7 +736,7 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
     assert.equal(await page.locator("[data-measured-row]").isVisible(), true);
     assert.equal(await page.locator('[role="status"]').isVisible(), false);
     const localPanelBox = await versionPanel.boundingBox();
-    assert.equal(localPanelBox.y, chartBox.y + 12);
+    assert.equal(localPanelBox.y, (await host.boundingBox()).y + 12);
     assert.ok(
       (await legendPanel.boundingBox()).y >=
         localPanelBox.y + localPanelBox.height + 8,
