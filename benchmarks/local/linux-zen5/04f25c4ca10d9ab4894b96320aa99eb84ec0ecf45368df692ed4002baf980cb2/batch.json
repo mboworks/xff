@@ -1,0 +1,152 @@
+{
+  "created_at": "2026-10-06T10:07:28.126163+00:00",
+  "contract": {
+    "schema": 1,
+    "series": "linux-zen5",
+    "revisions": [
+      {
+        "sha": "ec0460a0f09d6fa20fb3bda40fa05f8074d555fd",
+        "date": "2026-10-05T23:25:11+01:00",
+        "subject": "Prepare first-entry limits and MIME patterns once (#972)"
+      },
+      {
+        "sha": "dfd5447644f0f2e1622a4dcc58ea7f2f704e3f95",
+        "date": "2026-10-06T00:25:44+01:00",
+        "subject": "Check expression allocation regressions under ASan (#973)"
+      },
+      {
+        "sha": "378d3540691e65ac5ce833dd50ee56c6d523c4a2",
+        "date": "2026-10-06T00:26:22+01:00",
+        "subject": "Bump lz4 from 1.10.0.bcr.1 to 1.10.0.bcr.2 (#979)"
+      },
+      {
+        "sha": "e4cbf5938ff5e7d69e714d46cd926d155530a04b",
+        "date": "2026-10-06T00:27:26+01:00",
+        "subject": "Bump zlib from 1.3.2 to 1.3.2.bcr.2 (#980)"
+      },
+      {
+        "sha": "73b2cfcd710170cd95e0e324e1d0aa9a93ec5ce1",
+        "date": "2026-10-06T01:17:35+01:00",
+        "subject": "Record expression qualification evidence and worker-startup follow-up (#976)"
+      },
+      {
+        "sha": "fbded52d89fbc0681b34ffb6137a2eec741c1e7e",
+        "date": "2026-10-06T01:21:26+01:00",
+        "subject": "Reconstruct missing historical benchmark baselines during publication (#974)"
+      },
+      {
+        "sha": "21c7f3656b005b23113d936c1cd2ca0fd2221ab2",
+        "date": "2026-10-06T02:23:48+01:00",
+        "subject": "Prepare peer and expected-hash field templates once (#977)"
+      },
+      {
+        "sha": "c33efe99d0df0b4866a9f77fde71dde9959d3cdb",
+        "date": "2026-10-06T03:40:08+01:00",
+        "subject": "Adapt benchmark shard count to runner CPU agreement (#981)"
+      }
+    ],
+    "platform": "linux",
+    "purpose": "local-addition",
+    "allocation": {
+      "kind": "physical-cores",
+      "cpu_ids": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "required": true
+    },
+    "replacement_target": null,
+    "environment": {
+      "host_id": "7769bf37e3bd3fc0d1896b6caf86ae66e408f125e3dbda910bb80c9c40eaad75",
+      "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+      "machine": "x86_64",
+      "cpu_count": 10,
+      "allowed_cpus": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "python": "3.13.13 (main, Apr 14 2026, 14:28:56) [Clang 22.1.3 ]",
+      "tools": {
+        "find": {
+          "status": "available",
+          "path": "/usr/bin/find",
+          "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+          "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+        },
+        "rg": {
+          "status": "available",
+          "path": "/usr/bin/rg",
+          "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+          "sha256": "5659967081c0bc37cc062837541b7a65abb646575cb0d921fe32c9552215c58d"
+        },
+        "fzf": {
+          "status": "available",
+          "path": "/usr/bin/fzf",
+          "version": "0.67.0 (debian)",
+          "sha256": "c725adef03c72f8b665b0172df88f376c23d5d231c993f6d5f4333b6b3804018"
+        }
+      }
+    },
+    "driver": {
+      "benchmark_backfill.py": "b87bcb4f7794aecae0a27866cb670d51cd85173a9472bfa860359e5059be77cc",
+      "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+      "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+      "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+      "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+    },
+    "files": [
+      10,
+      20,
+      50,
+      100,
+      200,
+      500,
+      1000,
+      2000,
+      5000,
+      10000,
+      20000,
+      50000,
+      100000
+    ],
+    "cpus": [
+      1,
+      3,
+      10
+    ],
+    "depth": 40,
+    "repetitions": 9,
+    "retained": 7,
+    "require_cpu_affinity": true,
+    "storage": {
+      "parent": "/dev/shm",
+      "filesystem": "tmpfs",
+      "memory_required": true,
+      "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+    },
+    "build": {
+      "config": "clang_release",
+      "bazel": "/home/marcus/.cache/bazelisk/downloads/sha256/7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694/bin/bazel",
+      "version": "bazel 9.2.0",
+      "library_path": "/tmp/xff-icu70/usr/lib/x86_64-linux-gnu"
+    },
+    "machine_id": "5ca47d4f57bd672222e926d10f51aa872bc33219b4688fe724c4fddf1a59681b"
+  },
+  "identity": "04f25c4ca10d9ab4894b96320aa99eb84ec0ecf45368df692ed4002baf980cb2"
+}
