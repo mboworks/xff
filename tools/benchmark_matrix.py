@@ -95,11 +95,16 @@ def participant_contract(report, label, entry):
 
 def attach_baseline(report, root, revisions=None):
     """Retained reports come from the trusted main publisher; never execute their data."""
+    records = (benchmark_records.read(path) for path in benchmark_records.run_paths(root))
+    attach_baseline_records(report, records, revisions)
+
+
+def attach_baseline_records(report, records, revisions=None):
+    """Share baseline selection with publication without repeatedly decoding retained JSON."""
     candidates = []
     ranks = {head: -index for index, head in enumerate(revisions)} if revisions is not None else None
     current_tasks = {task_key(task): task for task in report['tasks']}
-    for path in benchmark_records.run_paths(root):
-        record = benchmark_records.read(path)
+    for record in records:
         source = record.get('source', {})
         other = record.get('tool_comparisons')
         if ranks is not None and record.get('head') not in ranks:
