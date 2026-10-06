@@ -350,6 +350,13 @@ class BenchmarkLandscapeTest(unittest.TestCase):
         self.assertNotIn('</script><script>alert', text)
         self.assertIn('type="range"', text)
         self.assertIn('aria-live="polite"', text)
+        self.assertIn('<summary><strong>Version</strong></summary>', text)
+        self.assertIn('data-version-previous', text)
+        self.assertIn('data-version-next', text)
+        controls = text.split('<div data-performance-controls', 1)[1].split('</div>', 1)[0]
+        self.assertIn('Scale:', controls)
+        self.assertIn('Range:', controls)
+        self.assertIn('Out of range:', controls)
         self.assertIn(',[]);', landscape.history_panel([]))
 
     def test_hover_cells_match_ticks_after_every_reordering(self):
