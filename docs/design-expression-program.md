@@ -838,3 +838,32 @@ remain separate. ASan can also change allocation behavior and build paths, so th
 only the instrumented regression test. They cannot establish production allocation counts or costs,
 and must not select the performance implementation. Native allocation profiling remains an open
 acceptance requirement. JSON explicitly marks these results as not production-representative.
+
+## Prepared field-template candidate
+
+`-cmp`, `-similar`, `-diff` and `-hasheq` now register invariant field-template preparation in
+that primary's existing engine dispatch entry. A compact operand owns the compiled field program
+through a unique pointer; no per-entry reference counting or separate flag-name switch is needed.
+The tree reference still compiles the template when reached, so benchmarks can isolate preparation
+from binding. Output, reads, similarity/diff/hash evaluation and verification bookkeeping use the
+same implementation body on both paths.
+
+Only syntax/field-transform compilation moves earlier. Definitions, captures, environment fields,
+link targets, content-dependent fields and final hash/time settings are read while rendering each
+reached entry. Reference content and link observations retain their previous order. Missing operands,
+empty rendered values and `/dev/null` creation patches retain the existing behavior. Whole-command
+validation remains responsible for syntax errors; the prepared factory introduces no earlier VFS
+observation and no new error policy.
+
+Field programs contribute a conservative record/text-capacity budget to expression storage.
+This counts string capacity even when it is inline and counts shared transform capacity for each
+owning template. Regex backend allocations, diagnostic payloads, allocator headers and reference-count
+bookkeeping remain excluded; this is neither allocation traffic nor peak RSS. Native phase accounting
+remains a separate requirement.
+
+Differential cases cover dynamic definitions, link/content failures, content fields, skipped branches,
+missing/empty arguments, moved owners and repeated workers. Whole-run cases cover final hash defaults,
+rendered peer paths and failures. Native CI adds literal and transformed peer, similarity, diff and
+expected-hash preparation/kernels plus three whole-engine scenarios. No speedup or final retention
+claim precedes those measurements. Hash-spec resolution and diff option/ignore-regex preparation
+remain separate invariant-work candidates.

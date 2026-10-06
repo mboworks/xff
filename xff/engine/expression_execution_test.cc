@@ -270,6 +270,26 @@ TEST_P(ExpressionExecutionTest, SelectionOutputSummariesAndComparisonPreserveThe
   }
 }
 
+TEST_P(ExpressionExecutionTest, PreparedTemplatesKeepResolvedDefaultsAndConditionalFailures) {
+  const std::vector<std::vector<std::string>> cases{
+      {"root", "-type", "f", "-cmp", "{path}"},
+      {"root", "-type", "f", "-cmp", "peer/{relpath:s/txt/cc/}"},
+      {"root", "-type", "f", "-similar", "{path}"},
+      {"root", "-type", "f", "-diff", "{path}"},
+      {"root", "-type", "f", "-diff:none", "/dev/null"},
+      {"--hash-algorithm=sha1", "--hash-encoding=base64", "root", "-type", "f", "-hasheq", "{hash}"},
+      {"--define=PEER=peer", "root", "-type", "f", "-cmp", "{def.PEER}/{name}"},
+      {"root", "-false", "-a", "-hasheq", "{hash}"},
+  };
+  for (const auto& arguments : cases) {
+    Check(arguments);
+    ASSERT_OK_AND_ASSIGN(auto command, parser::Parse(arguments));
+    parser::BindMatchers(command, regex::Grammar::kRe2, parser::CaseMode::kSensitive);
+    const auto expected = Observe(command, ExpressionExecutor::kTree, true);
+    ExpectEquivalent(Observe(command, GetParam(), true), expected);
+  }
+}
+
 TEST_P(ExpressionExecutionTest, SerialAndPooledRegexFilteringUseTheSameOrderedOutput) {
   for (const std::string_view jobs : {"--jobs=1", "--jobs=4"}) {
     for (const std::string_view primary : {"-content", "-rxc"}) {

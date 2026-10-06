@@ -22,6 +22,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "absl/time/time.h"
@@ -45,6 +46,8 @@ using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
+using ::testing::Ge;
+using ::testing::Gt;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
@@ -76,6 +79,34 @@ TEST_F(FieldsTest, BoundTransformOwnsItsProgramAcrossCopiesMovesAndSourceChanges
   for (int repeat = 0; repeat < 3; ++repeat) {
     EXPECT_THAT(copied.Render(context), EqualsText("<a>:(aa),(a)"));
     EXPECT_THAT(moved.Render(context), EqualsText("<a>:(aa),(a)"));
+  }
+}
+
+TEST_F(FieldsTest, StorageBudgetIncludesProgramsAndRemainsStableDuringRendering) {
+  const auto empty = Template::Compile("");
+  const auto literal = Template::Compile(std::string(4'096, 'a'));
+  EXPECT_THAT(empty.StorageBytes(), Ge(sizeof(Template)));
+  EXPECT_THAT(literal.StorageBytes(), Gt(empty.StorageBytes() + 4'096));
+  constexpr auto kPrograms = std::to_array<std::string_view>({
+      "{name}",
+      "{name:s/a/b/g}",
+      "{def.LINES:m/a/b/}",
+      "{def.LINES:m/a/b/;join(,);s/b/c/g}",
+  });
+  const auto metadata = Meta(vfs::FileType::kRegular, 0);
+  const std::map<std::string, std::string> defines{{"LINES", "a\naa"}};
+  const RenderContext context{.path = "a", .metadata = metadata, .defines = defines};
+  for (const auto program : kPrograms) {
+    SCOPED_TRACE(program);
+    auto compiled = Template::Compile(program);
+    ASSERT_THAT(compiled.Validate(), IsOk());
+    const auto bytes = compiled.StorageBytes();
+    EXPECT_THAT(bytes, Gt(empty.StorageBytes()));
+    const auto copy = compiled;
+    const auto moved = std::move(compiled);
+    EXPECT_THAT(copy.Render(context), EqualsText(moved.Render(context)));
+    EXPECT_THAT(copy.StorageBytes(), Eq(bytes));
+    EXPECT_THAT(moved.StorageBytes(), Eq(bytes));
   }
 }
 
