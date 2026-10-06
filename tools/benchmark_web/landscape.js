@@ -683,12 +683,7 @@ window.XffLandscape = function createLandscape(root, figures) {
     const inset = Math.max(...tickLabels.map((text) => text.length)) / 2 + 1;
     scaleAxis.style.margin = `0 ${inset}ch`;
     scaleAxis.append(bar, scale);
-    legendBody.append(
-      scaleAxis,
-      filterNote,
-      previewOptions,
-      thresholdControls,
-    );
+    legendBody.append(scaleAxis, filterNote, previewOptions, thresholdControls);
     const note = document.createElement("div");
     note.textContent = view.limit
       ? cut
