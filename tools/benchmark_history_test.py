@@ -183,6 +183,7 @@ class BenchmarkHistoryTest(unittest.TestCase):
 
     def test_workflow_keeps_measurement_unprivileged_and_publication_serialized(self):
         measure = repository_file(".github/workflows/benchmarks.yml").read_text()
+        shard_action = repository_file(".github/actions/benchmark-measure/action.yml").read_text()
         publish = repository_file(".github/workflows/benchmark_pages.yml").read_text()
         self.assertIn("permissions:\n  contents: read", measure)
         self.assertIn("persist-credentials: false", measure)
@@ -205,31 +206,30 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn("ref: main\n          path: source", publish)
         self.assertIn("Verify live benchmark publication", publish)
         self.assertNotIn("--keep=100", publish)
-        self.assertIn("retention-days: 30", measure)
+        self.assertIn("retention-days: 30", shard_action)
         self.assertIn("shard: [0, 1, 2]", measure)
-        self.assertIn("--shard-plan=benchmark-plan.json", measure)
-        self.assertIn("--partition=samples --repetitions=9 --keep=7", measure)
-        self.assertIn("--repetitions=3 --keep=3", measure)
-        self.assertIn("--merge-directory=shards --output=benchmark-main.json", measure)
+        self.assertIn("fail-fast: false", measure)
+        self.assertIn("--adaptive --count=5", measure)
+        self.assertIn("--partition=samples --repetitions=15 --keep=15", measure)
+        self.assertIn("--shard-plan=benchmark-plan.json", shard_action)
+        self.assertIn("--repetitions=3 --keep=3", shard_action)
+        self.assertIn("--merge-adaptive-directory=candidate-shards", measure)
         self.assertNotIn('shards/*/*.json', measure)
-        aggregate = measure.split('\n  aggregate:', 1)[1]
-        self.assertIn('fail-fast: false', aggregate)
-        self.assertIn("--repetitions=9 --keep=7", measure)
         self.assertIn("git -C site add --all", publish)
 
     def test_pr_and_main_measurements_use_the_same_runner_identity(self):
-        pattern = r"--runner-class=['\"]([^'\"]+)['\"]"
         main = repository_file(".github/workflows/benchmarks.yml").read_text()
         pr = repository_file(".github/workflows/main.yml").read_text()
-        labels = set(re.findall(pattern, main))
-        self.assertTrue(labels)
-        self.assertEqual(labels, set(re.findall(pattern, pr)))
+        shard_action = repository_file(".github/actions/benchmark-measure/action.yml").read_text()
+        self.assertIn('--runner-class="github-hosted ${BENCHMARK_RUNNER}"', shard_action)
+        self.assertIn("runner: ${{ matrix.os }}", main)
+        self.assertIn("runner: ${{ matrix.os }}", pr)
         self.assertIn("platform: linux\n            os: ubuntu-latest", main)
         self.assertIn("platform: macos\n            os: macos-latest", main)
 
     def test_pr_and_main_aggregation_attach_only_earlier_main_baselines(self):
         for workflow, job in (('.github/workflows/benchmarks.yml', 'aggregate'),
-                              ('.github/workflows/main.yml', 'benchmark-compare')):
+                              ('.github/workflows/main.yml', 'benchmark-aggregate')):
             with self.subTest(workflow=workflow):
                 source = repository_file(workflow).read_text().split('\n  ' + job + ':', 1)[1]
                 source = re.split(r'\n  [a-z][a-z-]*:', source, maxsplit=1)[0]

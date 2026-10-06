@@ -799,8 +799,8 @@ jobs:
           for count in 10 20 50 100 200 500 1000 2000 5000 10000; do
             scales+=(--files="${count}")
           done
-          python3 tools/benchmark_shards.py --plan --partition=samples --count=3 \
-            --repetitions=9 --keep=7 --cpus=1 --cpus=3 "${scales[@]}" --output=benchmark-plan.json
+          python3 tools/benchmark_shards.py --plan --partition=samples --adaptive --count=5 \
+            --repetitions=15 --keep=15 --cpus=1 --cpus=3 "${scales[@]}" --output=benchmark-plan.json
       - uses: actions/upload-artifact@v7
         with:
           name: benchmark-build-${{ matrix.platform }}
@@ -833,56 +833,179 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/benchmark-measure
+        with:
+          platform: ${{ matrix.platform }}
+          runner: ${{ matrix.os }}
+          shard: ${{ matrix.shard }}
+          head: ${{ github.sha }}
+
+  benchmark-select-initial:
+    name: Check initial benchmark agreement
+    needs: [benchmark-build, benchmark-measure]
+    if:
+      always() && github.event_name == 'pull_request' && needs.benchmark-build.result == 'success' &&
+      needs.benchmark-measure.result != 'failure'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      linux_fourth: ${{ steps.decision.outputs.linux_fourth }}
+      macos_fourth: ${{ steps.decision.outputs.macos_fourth }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - name: Check runner CPU capacity
-        run: |
-          affinity=()
-          if [[ "${RUNNER_OS}" == Linux ]]; then
-            affinity=(--require-cpu-affinity)
-          fi
-          python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=3 "${affinity[@]}"
       - uses: actions/download-artifact@v8
         with:
-          name: benchmark-build-${{ matrix.platform }}
-      - name: Install comparison tools
+          pattern: benchmark-shard-*
+          path: candidate-shards
+          if-no-artifact-found: ignore
+      - name: Schedule a fourth candidate only for unresolved platforms
+        id: decision
         run: |
-          if [[ "${RUNNER_OS}" == Linux ]]; then
-            sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
-          else
-            brew install findutils ripgrep fzf
-          fi
-      - name: Measure three rounds of the complete grid
-        run: |
-          set -euo pipefail
-          tar -xf benchmark-build.tar -C "${RUNNER_TEMP}"
-          storage=(--fixture-parent="${RUNNER_TEMP}")
-          if [[ "${RUNNER_OS}" == Linux ]]; then
-            storage=(--fixture-parent=/dev/shm --require-memory --require-cpu-affinity)
-          fi
-          python3 tools/benchmark_compare.py --binary="${RUNNER_TEMP}/benchmark-head" \
-            --report=benchmark-shard.json --head='${{ github.sha }}' \
-            --shard-plan=benchmark-plan.json --shard-index=${{ matrix.shard }} \
-            --repetitions=3 --keep=3 --require-tools "${storage[@]}" \
-            --runner-class='github-hosted ${{ matrix.os }}' \
-            --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)"
-      - uses: actions/upload-artifact@v7
-        with:
-          name: benchmark-shard-${{ matrix.platform }}-${{ matrix.shard }}
-          path: benchmark-shard.json
-          retention-days: 30
-          if-no-files-found: error
+          mkdir -p candidate-shards
+          python3 tools/benchmark_shards.py --decide-adaptive=candidate-shards \
+            --decision-stage=initial >>"${GITHUB_OUTPUT}"
 
-  benchmark-compare:
-    name: Benchmark comparison (${{ matrix.platform }}, best 7 of 9)
-    needs: benchmark-measure
-    if: github.event_name == 'pull_request'
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [linux, macos]
+  benchmark-measure-fourth-linux:
+    name: Benchmark measurement (linux, shard 3)
+    needs: benchmark-select-initial
+    if: github.event_name == 'pull_request' && needs.benchmark-select-initial.outputs.linux_fourth == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/benchmark-measure
+        with:
+          platform: linux
+          runner: ubuntu-latest
+          shard: 3
+          head: ${{ github.sha }}
+
+  benchmark-measure-fourth-macos:
+    name: Benchmark measurement (macos, shard 3)
+    needs: benchmark-select-initial
+    if: github.event_name == 'pull_request' && needs.benchmark-select-initial.outputs.macos_fourth == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/benchmark-measure
+        with:
+          platform: macos
+          runner: macos-latest
+          shard: 3
+          head: ${{ github.sha }}
+
+  benchmark-select-fourth:
+    name: Check benchmark agreement after fourth candidates
+    needs:
+      [
+        benchmark-select-initial,
+        benchmark-measure-fourth-linux,
+        benchmark-measure-fourth-macos,
+      ]
+    if:
+      always() && github.event_name == 'pull_request' && needs.benchmark-select-initial.result == 'success' &&
+      needs.benchmark-measure-fourth-linux.result != 'failure' &&
+      needs.benchmark-measure-fourth-macos.result != 'failure'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      linux_fifth: ${{ steps.decision.outputs.linux_fifth }}
+      macos_fifth: ${{ steps.decision.outputs.macos_fifth }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: benchmark-shard-*
+          path: candidate-shards
+          if-no-artifact-found: ignore
+      - name: Schedule a fifth candidate only without a three-shard majority
+        id: decision
+        run: |
+          mkdir -p candidate-shards
+          python3 tools/benchmark_shards.py --decide-adaptive=candidate-shards \
+            --decision-stage=fourth >>"${GITHUB_OUTPUT}"
+
+  benchmark-measure-fifth-linux:
+    name: Benchmark measurement (linux, shard 4)
+    needs: benchmark-select-fourth
+    if: github.event_name == 'pull_request' && needs.benchmark-select-fourth.outputs.linux_fifth == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/benchmark-measure
+        with:
+          platform: linux
+          runner: ubuntu-latest
+          shard: 4
+          head: ${{ github.sha }}
+
+  benchmark-measure-fifth-macos:
+    name: Benchmark measurement (macos, shard 4)
+    needs: benchmark-select-fourth
+    if: github.event_name == 'pull_request' && needs.benchmark-select-fourth.outputs.macos_fifth == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/benchmark-measure
+        with:
+          platform: macos
+          runner: macos-latest
+          shard: 4
+          head: ${{ github.sha }}
+
+  benchmark-aggregate:
+    name: Benchmark comparison (Linux and macOS, best 7 of 9)
+    needs:
+      [
+        benchmark-build,
+        benchmark-measure,
+        benchmark-select-initial,
+        benchmark-measure-fourth-linux,
+        benchmark-measure-fourth-macos,
+        benchmark-select-fourth,
+        benchmark-measure-fifth-linux,
+        benchmark-measure-fifth-macos,
+      ]
+    if: always() && github.event_name == 'pull_request' && needs.benchmark-build.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -901,29 +1024,36 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - uses: ./.github/actions/benchmark-shards-download
+      - uses: actions/download-artifact@v8
         with:
-          platform: ${{ matrix.platform }}
-      - name: Merge raw rounds and compare with compatible main measurements
+          pattern: benchmark-shard-*
+          path: candidate-shards
+      - name: Select agreed candidates and compare both platforms with main
+        id: reports
         run: |
           set -euo pipefail
           git rev-list --first-parent HEAD^1 > benchmark-baseline-revisions.txt
-          python3 tools/benchmark_shards.py --merge-directory=shards --output=benchmark-merged.json \
+          python3 tools/benchmark_shards.py --merge-adaptive-directory=candidate-shards --output-directory=. \
             --baseline-root=benchmark-baseline/benchmarks --baseline-revisions=benchmark-baseline-revisions.txt
-          arch="$(python3 -c 'import json; print(json.load(open("benchmark-merged.json"))["tool_comparisons"]["contract"]["machine"])')"
-          report="benchmark-pr-${{ matrix.platform }}-${arch}"
-          mv benchmark-merged.json "${report}.json"
-          python3 tools/benchmark_compare.py --render-only --report="${report}.json" \
-            --summary=benchmark-pr.md --html="${report}.html"
-          cat benchmark-pr.md >>"${GITHUB_STEP_SUMMARY}"
-          echo "BENCHMARK_REPORT=${report}" >>"${GITHUB_ENV}"
+          for platform in linux macos; do
+            arch="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["tool_comparisons"]["contract"]["machine"])' "benchmark-merged-${platform}.json")"
+            report="benchmark-pr-${platform}-${arch}"
+            mv "benchmark-merged-${platform}.json" "${report}.json"
+            python3 tools/benchmark_compare.py --render-only --report="${report}.json" \
+              --summary="${report}.md" --html="${report}.html"
+            cat "${report}.md" >>"${GITHUB_STEP_SUMMARY}"
+            echo "${platform}_arch=${arch}" >>"${GITHUB_OUTPUT}"
+          done
       - uses: actions/upload-artifact@v7
         with:
-          name: ${{ env.BENCHMARK_REPORT }}
-          path: |
-            ${{ env.BENCHMARK_REPORT }}.json
-            benchmark-pr.md
-            ${{ env.BENCHMARK_REPORT }}.html
+          name: benchmark-pr-linux-${{ steps.reports.outputs.linux_arch }}
+          path: benchmark-pr-linux-*
+          retention-days: 30
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-pr-macos-${{ steps.reports.outputs.macos_arch }}
+          path: benchmark-pr-macos-*
           retention-days: 30
           if-no-files-found: error
 
@@ -938,7 +1068,13 @@ jobs:
         release-site-tests,
         benchmark-build,
         benchmark-measure,
-        benchmark-compare,
+        benchmark-select-initial,
+        benchmark-measure-fourth-linux,
+        benchmark-measure-fourth-macos,
+        benchmark-select-fourth,
+        benchmark-measure-fifth-linux,
+        benchmark-measure-fifth-macos,
+        benchmark-aggregate,
         test,
         pre-commit,
         trunk,
@@ -991,5 +1127,32 @@ jobs:
             echo "Cache inventory unavailable; repository storage usage could not be measured." >>"${GITHUB_STEP_SUMMARY}"
           fi
       - name: Fail if any dependency did not succeed
-        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
-        run: exit 1
+        if:
+          contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') ||
+          (github.event_name == 'pull_request' && needs.benchmark-aggregate.result != 'success')
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          EVENT_NAME: ${{ github.event_name }}
+          BENCHMARK_AGGREGATE_RESULT: ${{ needs.benchmark-aggregate.result }}
+        run: |
+          set -euo pipefail
+          failed=false
+          while read -r job; do
+            case "${job}" in
+              benchmark-measure | benchmark-select-initial | benchmark-measure-fourth-linux | \
+              benchmark-measure-fourth-macos | benchmark-select-fourth | benchmark-measure-fifth-linux | \
+              benchmark-measure-fifth-macos)
+                result="$(jq -r --arg job "${job}" '.[$job].result' <<<"${NEEDS_JSON}")"
+                if [[ "${EVENT_NAME}" == pull_request && "${BENCHMARK_AGGREGATE_RESULT}" == success && \
+                      "${result}" == cancelled ]]; then
+                  echo "${job} had no successful result, but the adaptive aggregate validated a complete quorum."
+                  continue
+                fi
+                ;;
+            esac
+            echo "Required workflow job did not succeed: ${job}"
+            failed=true
+          done < <(jq -r 'to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | .key' <<<"${NEEDS_JSON}")
+          if [[ "${failed}" == true || ( "${EVENT_NAME}" == pull_request && "${BENCHMARK_AGGREGATE_RESULT}" != success ) ]]; then
+            exit 1
+          fi
