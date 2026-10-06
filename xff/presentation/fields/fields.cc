@@ -1103,7 +1103,7 @@ std::size_t Template::StorageBytes() const {
     }
     return bytes;
   };
-  std::size_t bytes = sizeof(*this) + segments_.capacity() * sizeof(Segment);
+  std::size_t bytes = sizeof(*this) + (segments_.capacity() * sizeof(Segment));
   for (const auto& segment : segments_) {
     bytes += segment.literal.capacity() + segment.key.capacity() + segment.qualifier.capacity() + 3;
     if (segment.transform) {
