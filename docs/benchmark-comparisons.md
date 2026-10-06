@@ -414,19 +414,16 @@ run/attempt for each platform and commit. Platform labels include architecture w
 Switching platforms preserves the selected commit when available; otherwise it selects that
 platform's newest report. A single available version disables the slider.
 
-The chart's upper-left **Version** card holds a compact table with version position,
+The chart's upper-left panel holds the version slider above a compact table: version position,
 linked commit, PR/release, revision date, measurement date when recorded, and platform. All rows
 remain visible, using explicit placeholders for missing information. Platform details come last
-in a reserved three-line area; their full text remains available in the tooltip. A full-width
-slider follows the table, between minus and plus buttons that select the adjacent retained version.
-The buttons disable at the respective endpoints.
+in a reserved three-line area; their full text remains available in the tooltip.
 Revision date identifies the code revision. Measured uses the recorded completion date for both
 CI backfills and local runs; older revisions can therefore have newer measurement dates.
 The commit opens the full report, including tables and raw data;
-its tooltip retains the full branch, time and run/attempt information. The **Performance** card sits
-directly below it, with inset endpoints to keep long tick labels inside the border. It owns the
-Scale, Range, and Out of range selectors and identifies the selected scale in its short title.
-Scale, order and camera state survive version changes. Each chart retains its
+its tooltip retains the full branch, time and run/attempt information. The performance scale sits
+in a separate outlined panel directly below it, with inset endpoints to keep long tick labels
+inside the border. Scale, order and camera state survive version changes. Each chart retains its
 own measurement contract and automatically scaled axes/colors: moving the slider is exploration,
 not a paired cross-host or cross-version regression claim. Missing versions are not interpolated.
 The overview downloads only the selected report's generated landscape JSON. While loading, the
@@ -445,9 +442,6 @@ all three pairs (`1/3`, `1/10`, and `3/10`); no unmeasured allocation is synthes
 
 ### View range and selection
 
-The Version and Performance cards are expanded initially. Each has a disclosure arrow before its
-bold title; collapsing it leaves only that title and the card border.
-
 **Range** offers Auto and symmetric limits of +/-20%, 50%, 100%, or 200% in percentage mode;
 logarithmic mode uses +/-0.2, 0.5, 1, or 2. The default is +/-100% (+/-1 in logarithmic mode),
 so changing versions retains the same vertical scale. **Cap** places outliers at the boundary and marks
@@ -459,12 +453,10 @@ values pin it to the appropriate endpoint. Hovering over the legend temporarily 
 above the pointed-to performance level. **Below threshold** offers increasing transparency:
 50% transparent (the default), 75% transparent, or Hide. **Threshold plane** shows a subtle
 horizontal plane at that level and highlights its exact performance value on the vertical axis,
-including between ticks. It is enabled by default, starts at the lowest displayed level, and remains
-visible rather than acting as a hover preview. Its full-width slider and minus/plus buttons move the
-plane down or up; those controls are present only while the plane is enabled. With the plane disabled,
-hovering the color legend remains a temporary preview and leaving it restores the full view.
-Opacity and plane-mode preferences persist across version, worker-pair, and scale changes. This
-selection changes neither the selected range nor the source data.
+including between ticks. It is enabled by default. Leaving the legend restores the full view
+and removes the plane and its axis highlight.
+The two preferences persist across version, worker-pair, and scale changes. This preview changes
+neither the selected range nor the source data.
 
 ### Reference-window timing normalization
 

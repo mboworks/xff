@@ -273,16 +273,13 @@ def figures(report, normalization=None):
     return result
 
 
-def range_controls(attribute):
+def view_controls(attribute):
     return ('<label>Range: <select ' + attribute + '="range"><option value="auto">Auto</option>'
             + ''.join(f'<option value="{value}"' + (' selected' if value == 1 else '') + f'>+/- {int(value * 100)}%</option>'
                       for value in (0.2, 0.5, 1, 2)) + '</select></label> '
             '<label>Out of range: <select ' + attribute + '="overflow">'
-            '<option value="cap">Cap</option><option value="cut">Cut off</option></select></label> ')
-
-
-def view_controls(attribute):
-    return (range_controls(attribute) + '<label>Timings: <select ' + attribute + '="normalization">'
+            '<option value="cap">Cap</option><option value="cut">Cut off</option></select></label> '
+            '<label>Timings: <select ' + attribute + '="normalization">'
             '<option value="reference">Reference normalized</option><option value="raw">Raw</option></select></label> ')
 
 
@@ -302,21 +299,20 @@ def history_panel(catalog):
             'logarithmic = log10(reference/xff time). Green is faster, red slower. '
             'Surfaces connect measured neighbors; they are not predictions.</p>'
             '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:.75rem">'
+            '<label>Scale: <select data-control="metric"><option value="percent">Percentage</option>'
+            '<option value="factor">Logarithmic</option></select></label> '
+            + view_controls('data-control') +
             '<label>Order: <select data-control="order">' +
             ''.join('<option value="' + key + '">' + label + '</option>'
                     for key, label in ORDER_LABELS.items()) + '</select></label> '
             '<label>Platform: <select data-control="platform"></select></label> '
             '<label>Source: <select data-control="source"><option value="merged">Merged history</option></select></label> '
             '<label data-allocation-label hidden>Workers: <select data-control="allocations"></select></label> '
-            '<label>Timings: <select data-control="normalization">'
-            '<option value="reference">Reference normalized</option><option value="raw">Raw</option></select></label> '
             '<button type="button" data-reset style="margin-left:auto">Reset view</button></div>'
-            '<div data-performance-controls style="display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-bottom:6px">'
-            '<label>Scale: <select data-control="metric"><option value="percent">Percentage</option>'
-            '<option value="factor">Logarithmic</option></select></label> '
-            + range_controls('data-control') + '</div>'
-            '<div data-chart><details data-version-panel class="landscape-card" open>'
-            '<summary><strong>Version</strong></summary><div data-version-body>'
+            '<div data-chart><div data-version-panel>'
+            '<label style="display:flex;align-items:center;gap:.5rem;margin-bottom:4px">Version '
+            '<input data-control="version" type="range" min="0" max="0" step="1" value="0" '
+            'style="flex:1;min-width:0"></label>'
             '<table class="landscape-version-table"><tbody>'
             '<tr><th scope="row">Version</th><td data-version-count></td></tr>'
             '<tr><th scope="row">Commit</th><td><a data-report title="Open the full benchmark report"></a></td></tr>'
@@ -325,12 +321,7 @@ def history_panel(catalog):
             '<tr data-measured-row><th scope="row">Measured</th><td data-measured>Not recorded</td></tr>'
             '<tr><th scope="row">Platform</th><td data-platform></td></tr>'
             '<tr><th scope="row">Details</th><td><div data-platform-details></div></td></tr>'
-            '</tbody></table><div role="status" aria-live="polite" hidden></div>'
-            '<div class="landscape-version-control">'
-            '<button type="button" data-version-previous aria-label="Previous version">-</button>'
-            '<input data-control="version" type="range" min="0" max="0" step="1" value="0" '
-            'aria-label="Version"><button type="button" data-version-next aria-label="Next version">+</button>'
-            '</div></div></details></div></details>'
+            '</tbody></table><div role="status" aria-live="polite" hidden></div></div></div></details>'
             '<section data-overview aria-live="polite"><h2>Performance overview</h2>'
             '<p>Select a measurement to compare it with its recorded merged baseline.</p></section>'
             '<script src="assets/three-landscape.js"></script><script>'
