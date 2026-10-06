@@ -771,6 +771,7 @@ test_suite(
         ":benchmark_fixture_test",
         ":benchmark_history_test",
         ":benchmark_landscape_test",
+        ":benchmark_layouts_test",
         ":benchmark_local_test",
         ":benchmark_matrix_test",
         ":benchmark_normalization_test",
@@ -892,7 +893,10 @@ py_library(
     name = "benchmark_datasets_lib",
     srcs = ["benchmark_datasets.py"],
     imports = ["."],
-    deps = [":benchmark_records_lib"],
+    deps = [
+        ":benchmark_layouts_lib",
+        ":benchmark_records_lib",
+    ],
 )
 
 py_library(
@@ -959,6 +963,7 @@ py_library(
     deps = [
         ":benchmark_compare_lib",
         ":benchmark_fixture_lib",
+        ":benchmark_layouts_lib",
         ":benchmark_matrix_lib",
         ":benchmark_records_lib",
         ":benchmark_shards_lib",
@@ -971,6 +976,7 @@ py_binary(
     deps = [
         ":benchmark_compare_lib",
         ":benchmark_fixture_lib",
+        ":benchmark_layouts_lib",
         ":benchmark_matrix_lib",
         ":benchmark_records_lib",
         ":benchmark_shards_lib",
@@ -990,6 +996,7 @@ py_library(
     imports = ["."],
     deps = [
         ":benchmark_fixture_lib",
+        ":benchmark_layouts_lib",
         ":benchmark_matrix_lib",
         ":benchmark_overview_lib",
         ":benchmark_shards_lib",
@@ -1001,6 +1008,7 @@ py_binary(
     srcs = ["benchmark_compare.py"],
     deps = [
         ":benchmark_fixture_lib",
+        ":benchmark_layouts_lib",
         ":benchmark_matrix_lib",
         ":benchmark_overview_lib",
         ":benchmark_shards_lib",
@@ -1021,6 +1029,23 @@ py_library(
     name = "benchmark_fixture_lib",
     srcs = ["benchmark_fixture.py"],
     imports = ["."],
+)
+
+py_library(
+    name = "benchmark_layouts_lib",
+    srcs = ["benchmark_layouts.py"],
+    imports = ["."],
+    deps = [":benchmark_fixture_lib"],
+)
+
+py_test(
+    name = "benchmark_layouts_test",
+    size = "small",
+    srcs = ["benchmark_layouts_test.py"],
+    deps = [
+        ":benchmark_fixture_lib",
+        ":benchmark_layouts_lib",
+    ],
 )
 
 py_test(

@@ -131,7 +131,8 @@ def report_status(directory, value, revision, requested):
     contract = value['contract']
     if (not set(requested.files).issubset(contract['files']) or not set(requested.cpus).issubset(contract['cpus'])
             or (requested.depth, requested.repetitions, requested.keep)
-            != (contract['depth'], contract['repetitions'], contract['retained'])):
+            != (contract['depth'], contract['repetitions'], contract['retained'])
+            or list(getattr(requested, 'layouts', None) or []) != contract.get('layouts', [])):
         return 'incompatible grid/sampling'
     sha = revision['sha']
     arch = contract['environment']['machine'].lower()
@@ -452,6 +453,8 @@ def parser_for_cli():
         sub.add_argument('--cpus', type=int, action='append', help='worker/core counts (repeatable; default: selected dataset, otherwise 1, 3, 10)')
         sub.add_argument('--files', type=int, action='append', help='file counts (repeatable; default: selected dataset, otherwise 10 through 100,000)')
         sub.add_argument('--depth', type=int, help='deep fixture depth (default: selected dataset, otherwise 40)')
+        sub.add_argument('--layout-revision', choices=('legacy', 'v2'),
+                         help='generated fixture layouts (default: selected dataset, otherwise v2)')
         sub.add_argument('--repetitions', type=int, help='samples per case (default: selected dataset, otherwise 9)')
         sub.add_argument('--keep', type=int, help='fastest samples retained (default: selected dataset, otherwise 7)')
         sub.add_argument('--fixture-parent', type=Path, help='fixture storage (Linux default: /dev/shm)')
@@ -497,6 +500,8 @@ def main(argv=None):
         identity = machine_identity()
         args.dataset_catalog = discovery.catalog(args)
         args.dataset_selection = None
+        args.layouts = ({'legacy': [], 'v2': ['broad/v2', 'deep/v2']}[args.layout_revision]
+                        if args.layout_revision else None)
         local_batches = load_batches(args.root, None)
         if args.dataset_catalog is not None:
             options = discovery.choices(args.dataset_catalog, identity)
@@ -516,6 +521,8 @@ def main(argv=None):
             if known_machine:
                 args.series = detected_series
         discovery.apply_recipe(args, args.dataset_selection, local_batches)
+        if args.layouts is None:
+            args.layouts = ['broad/v2', 'deep/v2']
         args.cpus = args.cpus or [1, 3, 10]
         args.files = args.files or campaign.FILE_COUNTS
         args.depth = 40 if args.depth is None else args.depth

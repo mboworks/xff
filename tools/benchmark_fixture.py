@@ -132,6 +132,17 @@ def identity(entries):
     return digest.hexdigest()
 
 
+def materialized_identity(entries):
+    """Hash entries including directories implicitly created for their parents."""
+    expanded = {entry.name: entry for entry in entries}
+    for entry in entries:
+        for parent in PurePosixPath(entry.name).parents:
+            name = str(parent)
+            if name != '.':
+                expanded.setdefault(name, Entry(name, 'dir'))
+    return identity(expanded.values())
+
+
 def materialize(root, entries):
     validate(entries)
     # The caller owns a private temporary parent; never populate an existing tree.
@@ -150,6 +161,23 @@ def materialize(root, entries):
         if entry.kind == 'link':
             (root / entry.name).symlink_to(entry.value)
     return rows
+
+
+def tree_identity(root):
+    """Hash a materialized tree without following its symlinks."""
+    root = Path(root)
+    entries = []
+    for path in sorted(root.rglob('*')):
+        name = path.relative_to(root).as_posix()
+        if path.is_symlink():
+            entries.append(Entry(name, 'link', path.readlink().as_posix()))
+        elif path.is_dir():
+            entries.append(Entry(name, 'dir'))
+        elif path.is_file():
+            entries.append(Entry(name, 'file', path.read_bytes()))
+        else:
+            raise ValueError('unsupported materialized fixture entry: ' + name)
+    return identity(entries)
 
 
 def mapping(values):

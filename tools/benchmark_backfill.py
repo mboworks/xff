@@ -22,6 +22,7 @@ import sys
 
 import benchmark_compare as compare
 import benchmark_fixture
+import benchmark_layouts
 import benchmark_matrix
 import benchmark_shards
 
@@ -137,7 +138,8 @@ def environment():
 
 def driver_identity():
     return {Path(module.__file__).name: compare.digest(module.__file__)
-            for module in (sys.modules[__name__], compare, benchmark_fixture, benchmark_matrix, benchmark_shards)}
+            for module in (sys.modules[__name__], compare, benchmark_fixture, benchmark_layouts,
+                           benchmark_matrix, benchmark_shards)}
 
 
 def check_environment(expected):
@@ -158,6 +160,10 @@ def make_contract(args, *, campaign=None, collection=None):
         cpus = [1, 3]
     if len(set(counts)) != len(counts) or min(counts) < 1 or len(set(cpus)) != len(cpus) or min(cpus) < 1:
         raise ValueError('file and CPU counts must be unique and positive')
+    if getattr(args, 'layouts', None) and counts != sorted(counts):
+        raise ValueError('prepared-layout file counts must be increasing')
+    if getattr(args, 'layouts', None) not in (None, [], ['broad/v2', 'deep/v2']):
+        raise ValueError('local prepared layouts must be broad/v2 and deep/v2 together')
     if args.depth < 1 or not 1 <= args.keep <= args.repetitions:
         raise ValueError('positive depth and 1 <= keep <= repetitions required')
     allocation = allocation_policy(args, cpus)
@@ -187,6 +193,8 @@ def make_contract(args, *, campaign=None, collection=None):
                   'version': subprocess.check_output([bazel, '--version'], text=True).strip(),
                   'library_path': str(library_path) if library_path else None},
     }
+    if getattr(args, 'layouts', None):
+        contract['layouts'] = list(args.layouts)
     if campaign is not None:
         contract.update(campaign=campaign, collection=collection)
     if getattr(args, 'machine_id', None):
@@ -327,7 +335,8 @@ def run(args, batch):
                         binary, contract['files'], depth=contract['depth'], repetitions=contract['repetitions'],
                         keep=contract['retained'], cpu_counts=contract['cpus'], require_tools=True,
                         fixture_parent=contract['storage']['parent'], require_memory=contract['storage']['memory_required'],
-                        require_cpu_affinity=contract['require_cpu_affinity'], progress=progress)
+                        require_cpu_affinity=contract['require_cpu_affinity'], progress=progress,
+                        layouts=contract.get('layouts') or None)
                 check_environment(contract['environment'])
                 report['contract'].update(runner_class=contract['series'], batch=batch['identity'],
                                           build_identity=json.dumps(build_record['configuration'], sort_keys=True))
@@ -374,6 +383,8 @@ def main():
     parser.add_argument('--cpus', action='append', type=int,
                         help='Explicit local grid; CI requires 1/3 on both platforms; local Linux pins distinct physical cores')
     parser.add_argument('--depth', type=int, default=40)
+    parser.add_argument('--layout-revision', choices=('legacy', 'v2'), default='v2',
+                        help='local generated layouts; hosted CI remains legacy')
     parser.add_argument('--repetitions', type=int, default=9)
     parser.add_argument('--keep', type=int, default=7)
     parser.add_argument('--require-cpu-affinity', action='store_true')
@@ -384,6 +395,8 @@ def main():
                         help='runtime libraries for historical build tools; passed to Bazel build actions')
     parser.add_argument('--run', action='store_true', help='Build and measure; otherwise only write/validate the batch plan')
     args = parser.parse_args()
+    args.layouts = ([] if args.purpose == 'ci-replacement' or args.layout_revision == 'legacy'
+                    else ['broad/v2', 'deep/v2'])
     args.output = args.output.resolve()
     try:
         batch = prepare(args)

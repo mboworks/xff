@@ -280,6 +280,26 @@ class BenchmarkCompareTest(unittest.TestCase):
             expected = compare.benchmark_fixture.identity(compare.fixture_entries(2, 0 if shape == 'broad' else 1))
             self.assertEqual({task['fixture_identity'] for task in tasks}, {expected})
 
+    def test_prepared_layouts_are_reused_in_layout_worker_file_order(self):
+        messages = []
+        with mock.patch.object(compare, 'tool_info', return_value={'status': 'unavailable', 'path': '/unused'}):
+            result = compare.collect_scales(Path('/unused'), [10, 20], depth=2, repetitions=1, keep=1,
+                                            cpu_counts=(1, 3), layouts=('broad/v2', 'deep/v2'),
+                                            progress=compare.MeasurementProgress(write=messages.append))
+        coordinates = []
+        for task in result['tasks']:
+            coordinate = task['dataset'], task['cpus'], task['files']
+            if not coordinates or coordinates[-1] != coordinate:
+                coordinates.append(coordinate)
+            self.assertEqual(task['layout']['revision'], 2)
+            self.assertEqual(task['fixture_identity'], task['anchor_sha256'])
+        self.assertEqual(coordinates, [('broad', 1, 10), ('broad', 1, 20), ('broad', 3, 10),
+                                       ('broad', 3, 20), ('deep', 1, 10), ('deep', 1, 20),
+                                       ('deep', 3, 10), ('deep', 3, 20)])
+        self.assertEqual(result['contract']['fixture_version'], 3)
+        self.assertEqual(result['contract']['collection_order'], 'layout, worker count, file count')
+        self.assertEqual([layout['name'] for layout in result['contract']['layouts']], ['broad', 'deep'])
+
     def test_warmup_is_discarded_and_tools_are_interleaved(self):
         calls = []
         def invoke(spec, worker):

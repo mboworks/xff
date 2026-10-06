@@ -147,6 +147,7 @@ class BenchmarkDatasetsTest(unittest.TestCase):
                 discovery.apply_recipe(args, selected, [])
             self.assertEqual((args.series, args.files, args.cpus, args.depth, args.repetitions, args.keep),
                              ('mac', [10, 100], [1, 3], 20, 9, 7))
+            self.assertEqual(args.layouts, [])
             args.cpus = [1]
             with contextlib.redirect_stdout(io.StringIO()):
                 discovery.apply_recipe(args, selected, [])
