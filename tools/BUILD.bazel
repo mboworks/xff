@@ -923,6 +923,7 @@ py_library(
         ":benchmark_backfill_lib",
         ":benchmark_campaign_lib",
         ":benchmark_discovery_lib",
+        ":benchmark_local_lib",
         ":benchmark_records_lib",
     ],
 )
@@ -934,6 +935,7 @@ py_binary(
         ":benchmark_backfill_lib",
         ":benchmark_campaign_lib",
         ":benchmark_discovery_lib",
+        ":benchmark_local_lib",
         ":benchmark_records_lib",
     ],
 )

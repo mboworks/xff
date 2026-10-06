@@ -162,6 +162,11 @@ files (including `.gitignore`), plus a file symlink and a directory symlink. Bro
 across up to 40 nested levels, capped by the requested count. The `.gitignore` is included in
 reported input counts and throughput. No third-party corpus is downloaded.
 
+The proposed replacement for generated local fixtures is specified in
+[Versioned benchmark fixture layouts](design-benchmark-layouts.md). It uses reusable nested anchors,
+keeps historical layout revisions distinct, and leaves hosted CI unchanged until local measurements
+support a separate adoption decision.
+
 ## Tasks and equivalence
 
 | Task                   | Participants           | Contract                                              |

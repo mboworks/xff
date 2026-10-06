@@ -46,7 +46,7 @@ class BenchmarkBackfillTest(unittest.TestCase):
                                   revision=['main'], revisions_file=None, history_root=None,
                                   files=[10], cpus=[1, 3, 10], depth=4, repetitions=3, keep=2,
                                   require_cpu_affinity=False, fixture_parent=root,
-                                  require_memory=False, disk_cache=None)
+                                  require_memory=False, disk_cache=None, build_library_path=None)
 
     def batch(self):
         return {'identity': 'batch', 'contract': {
@@ -253,6 +253,26 @@ class BenchmarkBackfillTest(unittest.TestCase):
                 status = json.loads((args.output / 'status.json').read_text())
                 self.assertEqual(status['b' * 40]['status'], 'complete')
                 self.assertNotEqual(status['a' * 40]['status'], 'complete')
+
+    def test_build_failure_reports_log_error_and_retry_guidance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args, batch = self.args(Path(directory)), self.batch()
+            args.output.mkdir()
+            log = args.output / 'binaries' / ('a' * 40) / 'build.log'
+            log.parent.mkdir(parents=True)
+            log.write_text('noise\nld.lld: error: missing libicu\n')
+            success = (Path('/binary'), {'sha256': 'binary', 'configuration': {}})
+            output = io.StringIO()
+            with mock.patch.object(backfill, 'build', side_effect=[subprocess.CalledProcessError(1, ['bazel']), success]), \
+                    mock.patch.object(backfill, 'check_environment'), \
+                    mock.patch.object(backfill.compare, 'collect_scales', return_value=self.report()), \
+                    mock.patch.object(backfill.compare, 'render_document', return_value='report'), \
+                    contextlib.redirect_stderr(output):
+                self.assertEqual(backfill.run(args, batch), 1)
+            status = json.loads((args.output / 'status.json').read_text())
+            self.assertEqual(status['a' * 40]['error'], 'ld.lld: error: missing libicu')
+            self.assertEqual(status['a' * 40]['log'], 'binaries/' + 'a' * 40 + '/build.log')
+            self.assertIn('repeat the identical backfill command to retry', output.getvalue())
 
     def test_host_drift_stops_the_entire_batch(self):
         with mock.patch.object(backfill, 'environment', return_value={'host': 'other'}):

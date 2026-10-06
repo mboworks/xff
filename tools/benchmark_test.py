@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Automatic local backfill discovery, machine separation and execution consent."""
 
+import argparse
 import contextlib
 import copy
 import gzip
@@ -188,6 +189,48 @@ class BenchmarkTest(unittest.TestCase):
             rows = cli.available_revisions(root, 'main')
             self.assertEqual([row['sha'] for row in rows], [first, second])
 
+    def test_inventory_formats_pull_request_number_before_title(self):
+        self.assertEqual(cli.display_subject('Improve benchmarks (#123)'), 'PR 123: Improve benchmarks')
+        self.assertEqual(cli.display_subject('Direct commit'), 'Direct commit')
+        self.assertEqual(cli.display_detail({'state': 'complete', 'detail': 'complete'}), 'ok')
+        self.assertEqual(cli.display_detail({'state': 'missing', 'detail': 'build-failed'}), 'build-failed')
+        self.assertEqual(cli.display_detail({'state': 'missing', 'detail': 'no measurements'}), 'n/a')
+
+    def test_backfill_inventory_groups_older_rows_and_keeps_latest_ten(self):
+        rows = [dict(date=f'2026-09-{day:02}T12:00:00Z', sha=f'{day:040x}', state='complete', detail='complete',
+                     subject=f'Merge {day} (#{day})') for day in range(1, 26)]
+        rows[2].update(state='missing', detail='build-failed')
+        groups, recent = cli.grouped_inventory(rows)
+        self.assertEqual(sum(map(len, groups)), 15)
+        self.assertLessEqual(len(groups), 10)
+        self.assertTrue(all(len({(row['state'], cli.display_detail(row)) for row in group}) == 1
+                            for group in groups))
+        self.assertEqual(len(recent), 10)
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            cli.show_aggregate(rows[:5])
+        self.assertRegex(output.getvalue(), r'2026-09-01 - 2026-09-05\s+5 commits')
+        self.assertIn('complete:4, missing:1', output.getvalue())
+        self.assertIn('build-failed:1, ok:4', output.getvalue())
+        self.assertIn('PR 1 - 5 (5 PRs)', output.getvalue())
+
+        args = self.options(Path('/tmp'))
+        args.command = 'backfill'
+        with contextlib.redirect_stdout(io.StringIO()) as output:
+            cli.show_inventory(rows, 'macos-test', True, args)
+        self.assertRegex(output.getvalue(), r'Earlier revisions.*\n(?:.*\n)+\nLatest 10 revisions')
+
+    def test_single_date_and_date_range_aggregates_align_commit_counts(self):
+        def row(day):
+            return dict(date=f'2026-09-{day:02}T12:00:00Z', sha=f'{day:040x}', state='complete', detail='complete',
+                        subject=f'Merge {day} (#{day})')
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            cli.show_aggregate([row(1)])
+            cli.show_aggregate([row(1), row(2)])
+        lines = output.getvalue().splitlines()
+        self.assertEqual(lines[0].index('commits'), lines[1].index('commits'))
+
     def test_published_inventory_extracts_json_only_and_handles_packed_reports(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -261,12 +304,106 @@ class BenchmarkTest(unittest.TestCase):
 
     def test_help_and_list_do_not_build_or_prompt(self):
         with mock.patch.object(batch, 'run') as run, mock.patch('builtins.input') as prompt:
-            for argv in ([], ['help'], ['help', 'list'], ['help', 'backfill']):
+            for argv in ([], ['help'], ['help', 'list'], ['help', 'backfill'], ['help', 'upload']):
                 with contextlib.redirect_stdout(io.StringIO()) as output:
                     self.assertEqual(cli.main(argv), 0)
-                    self.assertIn('backfill', output.getvalue())
+                    self.assertIn(argv[-1] if argv and argv[0] == 'help' else 'backfill', output.getvalue())
             run.assert_not_called()
             prompt.assert_not_called()
+
+    def test_upload_batch_selection_accepts_path_and_unique_prefix(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            first = root / 'batches' / ('a' * 64)
+            second = root / 'batches' / ('b' * 64)
+            for directory in (first, second):
+                directory.mkdir(parents=True)
+                (directory / 'batch.json').write_text('{}')
+            self.assertEqual(cli.upload_batches(root, ['aaaa']), [first.resolve()])
+            self.assertEqual(cli.upload_batches(root, [str(second)]), [second.resolve()])
+            with self.assertRaisesRegex(ValueError, 'unique identity prefix'):
+                cli.upload_batches(root, ['missing'])
+
+    def test_upload_picker_lists_state_and_accepts_selection_or_cancel(self):
+        candidates = [dict(directory=Path('/first'), identity='a' * 64, series='linux-one', complete=27,
+                           total=49, uploaded=True),
+                      dict(directory=Path('/second'), identity='b' * 64, series='macos-two', complete=8,
+                           total=8, uploaded=False)]
+        with mock.patch('builtins.input', return_value='2'), \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(cli.choose_upload(candidates), Path('/second'))
+        self.assertIn('aaaaaaaaaaaa  linux-one  uploaded; 27/49 revisions complete', output.getvalue())
+        self.assertIn('bbbbbbbbbbbb  macos-two  ready; 8/8 revisions complete', output.getvalue())
+        with mock.patch('builtins.input', return_value='q'), \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertIsNone(cli.choose_upload(candidates))
+        self.assertIn('Cancelled', output.getvalue())
+
+    def test_upload_candidates_only_include_valid_batches_with_completed_observations(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            value, _ = fixture()
+            ready = save(root / 'batches' / value['identity'], value)
+            revision = value['contract']['revisions'][0]['sha']
+            (ready / 'status.json').write_text(json.dumps({revision: {'status': 'complete'}}))
+            pending = copy.deepcopy(value)
+            pending['contract']['series'] = 'macos-pending'
+            pending['identity'] = campaign.identity(pending['contract'])
+            pending_root = save(root / 'batches' / pending['identity'], pending)
+            (pending_root / 'status.json').write_text(json.dumps({revision: {'status': 'pending'}}))
+            pages = root / 'pages'
+            (pages / 'local/macos-test' / value['identity']).mkdir(parents=True)
+            candidates = cli.upload_candidates(root, pages)
+            self.assertEqual(len(candidates), 1)
+            self.assertEqual(candidates[0]['identity'], value['identity'])
+            self.assertTrue(candidates[0]['uploaded'])
+
+    def test_upload_requires_confirmation_before_commit_and_push(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            directory = root / 'batches' / ('a' * 64)
+            directory.mkdir(parents=True)
+            (directory / 'batch.json').write_text('{}')
+            args = argparse.Namespace(repo=root, root=root, batch=['aaaa'], remote='origin',
+                                      pages_ref='coverage-pages', github_repository='owner/repo', publish_ref='main',
+                                      no_publish=False, yes=False)
+            def run(command, **kwargs):
+                if command[3:5] == ['worktree', 'add']:
+                    Path(command[6]).mkdir(parents=True)
+                return subprocess.CompletedProcess(command, 0, stdout=' M benchmarks/local/data\n')
+            with mock.patch.object(cli.subprocess, 'run', side_effect=run) as execute, \
+                    mock.patch.object(cli.local, 'retain',
+                                      side_effect=lambda pages, unused: pages / 'local/series/batch'), \
+                    mock.patch('builtins.input', return_value=''):
+                self.assertEqual(cli.upload(args), 0)
+            commands = [call.args[0] for call in execute.call_args_list]
+            self.assertFalse(any('commit' in command or 'push' in command for command in commands))
+            self.assertFalse(any(command[:3] == ['gh', 'workflow', 'run'] for command in commands))
+
+    def test_already_uploaded_retry_still_dispatches_publication(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            directory = root / 'batches' / ('a' * 64)
+            directory.mkdir(parents=True)
+            (directory / 'batch.json').write_text('{}')
+            args = argparse.Namespace(repo=root, root=root, batch=['aaaa'], remote='origin',
+                                      pages_ref='coverage-pages', github_repository='owner/repo', publish_ref='main',
+                                      no_publish=False, yes=True)
+
+            def run(command, **kwargs):
+                if command[3:5] == ['worktree', 'add']:
+                    Path(command[6]).mkdir(parents=True)
+                return subprocess.CompletedProcess(command, 0, stdout='')
+
+            with mock.patch.object(cli.subprocess, 'run', side_effect=run) as execute, \
+                    mock.patch.object(cli.local, 'retain',
+                                      side_effect=lambda pages, unused: pages / 'local/series/batch'), \
+                    contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(cli.upload(args), 0)
+            commands = [call.args[0] for call in execute.call_args_list]
+            self.assertTrue(any(command[:3] == ['gh', 'workflow', 'run'] for command in commands))
+            self.assertFalse(any('commit' in command or 'push' in command for command in commands))
+            self.assertIn('already uploaded', output.getvalue())
 
     def test_published_recipe_drives_list_defaults_and_reuses_observations(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -287,10 +424,50 @@ class BenchmarkTest(unittest.TestCase):
                 self.assertEqual(cli.main(['list', '--no-fetch', '--root=' + str(root / 'new'),
                                            '--history-root=' + str(history)]), 0)
             self.assertIn('1 revisions; 0 missing', output.getvalue())
-            self.assertIn('complete  Merge (#1)', output.getvalue())
+            self.assertIn('2026-09-01  12:00', output.getvalue())
+            self.assertRegex(output.getvalue(), r'complete\s+ok\s+PR 1: Merge')
             self.assertIn('macos-test', output.getvalue())
+            self.assertIn('\n\nMeasurement inventory for dataset 1:', output.getvalue())
             run.assert_not_called()
             prompt.assert_not_called()
+
+    def test_saved_series_reuses_latest_nonempty_build_library_path(self):
+        value, _ = fixture()
+        older, newer = copy.deepcopy(value), copy.deepcopy(value)
+        older.update(created_at='2026-10-01T00:00:00Z')
+        newer.update(created_at='2026-10-02T00:00:00Z')
+        older['contract']['build'] = {'library_path': '/compat/icu70'}
+        newer['contract']['build'] = {'library_path': None}
+        args = self.options(Path('/tmp'))
+        args.series = 'macos-test'
+        with contextlib.redirect_stdout(io.StringIO()):
+            cli.discovery.apply_recipe(args, None, [(Path('/older'), older), (Path('/newer'), newer)])
+        self.assertEqual(args.build_library_path, Path('/compat/icu70'))
+
+    def test_full_inventory_does_not_group_list_output(self):
+        args = self.options(Path('/tmp'))
+        args.command = 'list'
+        args.full = True
+        rows = [dict(date='2026-09-01T12:00:00Z', sha=f'{index:040x}', state='complete', detail='complete',
+                     subject=f'Merge {index} (#{index})') for index in range(1, 13)]
+        with contextlib.redirect_stdout(io.StringIO()) as output:
+            cli.show_inventory(rows, 'macos-test', True, args)
+        self.assertNotIn('Earlier revisions', output.getvalue())
+        self.assertNotIn('use --full', output.getvalue())
+        self.assertIn('Measurement inventory for local series macos-test; published dataset entry: none',
+                      output.getvalue())
+        self.assertIn('Date        Time   Revision    Status    Detail', output.getvalue())
+        self.assertEqual(output.getvalue().count('PR '), 13)  # Header plus twelve revisions.
+
+    def test_compact_inventory_hints_at_full_display(self):
+        args = self.options(Path('/tmp'))
+        args.command = 'list'
+        rows = [dict(date='2026-09-01T12:00:00Z', sha='a' * 40, state='complete', detail='complete',
+                     subject='Merge (#1)')]
+        with contextlib.redirect_stdout(io.StringIO()) as output:
+            cli.show_inventory(rows, 'macos-test', True, args)
+        self.assertIn('Display: compact; use --full to show all 1 revisions.', output.getvalue())
+        self.assertIn('revisions.\n\nDate', output.getvalue())
 
     def test_confirmation_cancel_eof_yes_and_automatic_yes(self):
         cases = [('list', [], 'yes', False), ('backfill', [], '', False), ('backfill', [], EOFError, False),

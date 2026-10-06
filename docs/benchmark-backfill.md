@@ -76,7 +76,12 @@ After dataset selection, `backfill` shows the revision inventory and its propose
 `Build and measure the missing revisions? [y/N]`. Only `y` or `yes` proceeds; empty input or EOF
 cancels. `-Y` / `--yes` supplies that confirmation for unattended runs. Discovery can refresh Git
 refs before confirmation; building, measuring and saving new batches happen only after confirmation.
-Nothing uploads automatically. See [Publishing a completed local series](#publishing-a-completed-local-series).
+Nothing uploads automatically. See [Publishing completed local observations](#publishing-completed-local-observations).
+
+To keep long histories readable, `list` and `backfill` show the newest ten revisions individually and group
+older revisions into adaptive day, ISO-week, month, or year ranges. A range never crosses a status or
+diagnostic-detail transition. Each aggregate reports its date span, commit count, PR range, and counts by
+status and diagnostic detail. Pass `--full` to show every revision.
 
 Machine identification hashes the macOS platform UUID or Linux installation machine ID; raw IDs
 are never stored. New machines receive distinct series names automatically. Existing batches
@@ -208,9 +213,16 @@ Repeat the same command to resume. A changed host, driver, tool or invocation co
 use another output directory for a new series. Moving Git references that resolve to new commits
 also fail the frozen-contract check. Use the recorded full SHAs when resuming after a branch advances.
 Saved binaries are verified by hash, and completed reports are validated and reused. An interrupted
-revision restarts from the beginning; partial samples are never pooled with a later invocation.
+revision restarts from the beginning; partial samples are never pooled with a later invocation. Failed
+builds and measurements are retried by the identical command, while completed observations are reused.
+If a historical build tool needs a compatibility runtime absent from the host, pass its library directory
+with `--build-library-path=PATH`. The path is frozen in the batch contract and reaches build actions through
+Bazel's `LD_LIBRARY_PATH` action environment; it does not affect benchmark execution. Later collections for
+the same local series automatically reuse its newest recorded non-empty build-library path and reject it
+before building if the directory is no longer available. An explicit flag overrides the inherited path.
 
-A historical build failure or unsupported CLI workload is recorded and does not prevent later
+A historical build failure or unsupported CLI workload is recorded with its actionable diagnostic and
+build-log link and does not prevent later
 revisions from running. Any missing revision makes the batch exit nonzero. Environment drift
 stops the entire batch. Do not change historical commands just to obtain a passing comparison:
 that would change the task being measured.
@@ -277,14 +289,36 @@ backfill records are also kept outside that bounded run cache. New commits remai
 entries. Host and reference-tool differences between revisions remain visible in the raw contracts;
 publication does not normalize, pool or relabel their observations.
 
-## Publishing a completed local series
+## Publishing completed local observations
 
-Local collection writes reports on the measurement machine. Upload a completed batch once; the
+Local collection writes reports on the measurement machine. Upload its completed observations; the
 benchmark publisher then includes it in the main page's platform/version selector and report table.
 Local series have their own names and never replace the CI series. The landscape's Workers selector
 chooses any measured pair (for a 1/3/10 grid: 1/3, 1/10 or 3/10); detailed tables retain all allocations.
 
-Use a current source checkout and a separate checkout of the `coverage-pages` branch:
+Use the automatic uploader from a current source checkout:
+
+```sh
+bazel run //tools:benchmark -- upload
+```
+
+The command fetches `origin/coverage-pages`, creates a temporary detached worktree, and lists every
+local dataset with completed observations. Each row shows whether its raw observations are ready or
+already uploaded and how many revisions completed. Pick one numbered dataset or cancel; that selection
+authorizes its validation, import, commit, push, and publication. An already-uploaded selection still
+dispatches publication, so retrying after an authentication or dispatch failure repairs the missing step.
+
+For unattended operation, select batches explicitly by directory, batch JSON path, or unique identity
+prefix; repeat `--batch` to publish several batches together and pass `-Y` to confirm the push:
+
+```sh
+bazel run //tools:benchmark -- upload --batch=0957eb2cce8f -Y
+```
+
+After the push, the command dispatches `benchmark_pages.yml` from trusted `main`. Use `--no-publish`
+to push the raw observations without dispatching the site publication workflow.
+
+The equivalent manual procedure uses a separate checkout of the `coverage-pages` branch:
 
 ```sh
 python3 tools/benchmark_local.py --batch="$HOME/xff-benchmarks/macos-m5-pro" \
@@ -295,8 +329,9 @@ git -C /path/to/pages-checkout push origin HEAD:coverage-pages
 gh workflow run benchmark_pages.yml --repo mboworks/xff --ref main
 ```
 
-The importer validates every revision, allocation, task, participant and sample before retaining
-anything. It preserves raw reports and the frozen host/build contract under
+The importer validates every completed revision, allocation, task, participant and sample before retaining
+anything. Failed or pending revisions do not prevent completed observations from being retained. It preserves
+raw reports and the frozen host/build contract under
 `local/SERIES/BATCH_ID/`. Re-importing identical observations is harmless; changing an existing
 batch fails. Binaries, source checkouts and build logs are not uploaded. There is no automatic
 upload from the measurement machine.

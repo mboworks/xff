@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 # SPDX-License-Identifier: Apache-2.0
-"""Import a completed local batch into a Pages checkout without replacing CI data."""
+"""Import completed observations from a local batch without replacing CI data."""
 
 import argparse
 from datetime import datetime
@@ -36,8 +36,10 @@ def retain(root, directory):
     require(shas and len(shas) == len(set(shas)) and set(shas) == set(status), 'incomplete revision set')
     arch = contract['environment']['machine'].lower()
     require(re.fullmatch('[a-z0-9_]+', arch), 'invalid machine architecture')
+    complete = {sha for sha, state in status.items() if state.get('status') == 'complete'}
+    require(complete, 'local batch has no completed observations')
     expected_paths = {directory / 'reports' / sha / f"benchmark-report-{contract['platform']}-{arch}.json"
-                      for sha in shas}
+                      for sha in complete}
     require(set(directory.glob('reports/*/*.json')) == expected_paths, 'unexpected report set')
     tools = {'xff': {'path': 'xff'}, 'find': {}, 'rg': {}, 'fzf': {}}
     tasks = {name: sorted(participants) for name, _, participants in
@@ -47,7 +49,8 @@ def retain(root, directory):
         sha = revision['sha']
         require(re.fullmatch('[0-9a-f]{40}', sha), 'invalid revision')
         require(datetime.fromisoformat(revision['date']).tzinfo is not None, 'revision date needs a timezone')
-        require(status[sha]['status'] == 'complete', 'incomplete local batch')
+        if sha not in complete:
+            continue
         path = directory / 'reports' / sha / f"benchmark-report-{contract['platform']}-{arch}.json"
         record = json.loads(path.read_text())
         require('source' not in record, 'local observations cannot claim CI workflow provenance')

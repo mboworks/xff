@@ -6,6 +6,7 @@
 import argparse
 from contextlib import contextmanager
 import copy
+from datetime import datetime
 import fcntl
 import hashlib
 import json
@@ -22,6 +23,7 @@ import tempfile
 import benchmark_backfill as batch
 import benchmark_campaign as campaign
 import benchmark_discovery as discovery
+import benchmark_local as local
 import benchmark_records as records
 
 
@@ -166,15 +168,98 @@ def inventory(revisions, batches, series, requested):
     return rows
 
 
+def display_subject(subject):
+    match = re.fullmatch(r'(.*) \(#([1-9][0-9]*)\)', subject)
+    return f'PR {match.group(2)}: {match.group(1)}' if match else subject
+
+
+def display_detail(row):
+    if row['state'] == 'complete':
+        return 'ok'
+    detail = row.get('detail')
+    return 'n/a' if not detail or detail in ('no measurements', 'pending') else detail
+
+
+def count_values(values):
+    counts = {}
+    for value in values:
+        counts[value] = counts.get(value, 0) + 1
+    return ', '.join(f'{value}:{count}' for value, count in sorted(counts.items()))
+
+
+def pr_number(subject):
+    match = re.fullmatch(r'.* \(#([1-9][0-9]*)\)', subject)
+    return int(match.group(1)) if match else None
+
+
+def grouped_inventory(rows, tail=10, max_groups=10):
+    older, recent = rows[:-tail], rows[-tail:]
+    if not older:
+        return [], recent
+    dated = [(datetime.fromisoformat(row['date']), row) for row in older]
+    groupings = (
+        lambda value: value.date(),
+        lambda value: value.isocalendar()[:2],
+        lambda value: (value.year, value.month),
+        lambda value: value.year,
+    )
+    groups = []
+    for key in groupings:
+        groups = []
+        for timestamp, row in dated:
+            bucket = (key(timestamp), row['state'], display_detail(row))
+            if not groups or groups[-1][0] != bucket:
+                groups.append((bucket, []))
+            groups[-1][1].append(row)
+        if len(groups) <= max_groups:
+            break
+    return [items for _, items in groups], recent
+
+
+def show_aggregate(rows):
+    first, last = rows[0], rows[-1]
+    dates = (first['date'][:10] if first['date'][:10] == last['date'][:10]
+             else first['date'][:10] + ' - ' + last['date'][:10])
+    statuses = count_values(row['state'] for row in rows)
+    details = count_values(display_detail(row) for row in rows)
+    prs = [number for row in rows if (number := pr_number(row['subject'])) is not None]
+    pr_range = ('n/a' if not prs else f'PR {min(prs)}' if min(prs) == max(prs)
+                else f'PR {min(prs)} - {max(prs)}')
+    print(f'{dates:23}  {len(rows):3} commits  {statuses:20}  {details:24}  {pr_range} ({len(prs)} PRs)')
+
+
+def show_inventory_row(row):
+    print(f"{row['date'][:10]}  {row['date'][11:16]}  {row['sha'][:10]}  {row['state']:8}  "
+          f"{display_detail(row):18}  {display_subject(row['subject'])}")
+
+
 def show_inventory(rows, series, known, args):
+    print()
+    selection = getattr(args, 'dataset_selection', None)
+    if selection:
+        dataset = selection['dataset']
+        print(f"Measurement inventory for dataset {args.dataset_number}: {dataset['id'][:12]}  {dataset['series']}")
+    else:
+        print(f'Measurement inventory for local series {series}; published dataset entry: none')
     print(f"Machine series: {series} ({'recognized' if known else 'new machine'})")
     print('Workers: ' + ', '.join(map(str, args.cpus)) + f'; fastest {args.keep} of {args.repetitions}')
     print(f"History: {args.main_ref}; {len(rows)} revisions; "
           f"{sum(row['state'] == 'missing' for row in rows)} missing")
-    print('Date        Revision    State     PR / subject (missing-data reason)')
+    if not args.full:
+        print(f'Display: compact; use --full to show all {len(rows)} revisions.')
+    print()
+    if not args.full:
+        groups, recent = grouped_inventory(rows)
+        if groups:
+            print('Earlier revisions (Date range; commits; status counts; detail counts; PR range)')
+            for group in groups:
+                show_aggregate(group)
+            print()
+            print(f'Latest {len(recent)} revisions')
+        rows = recent
+    print('Date        Time   Revision    Status    Detail              PR / subject')
     for row in rows:
-        suffix = f" ({row['detail']})" if row['state'] == 'missing' else ''
-        print(f"{row['date'][:10]}  {row['sha'][:10]}  {row['state']:8}  {row['subject']}{suffix}")
+        show_inventory_row(row)
 
 
 def batch_options(args, series, machine_id, revisions):
@@ -226,14 +311,125 @@ def collection_lock(root, machine_id):
         yield
 
 
+def upload_batches(root, selections):
+    available = sorted(root.glob('batches/*/batch.json'))
+    result = []
+    for selection in selections:
+        path = Path(selection).expanduser()
+        if path.is_dir():
+            path = path / 'batch.json'
+        matches = [candidate for candidate in available if candidate.parent.name.startswith(selection)]
+        if path.is_file():
+            matches = [path]
+        if len(matches) != 1:
+            raise ValueError('batch must be a path or unique identity prefix: ' + selection)
+        directory = matches[0].parent.resolve()
+        if directory not in result:
+            result.append(directory)
+    return result
+
+
+def upload_candidates(root, pages_root):
+    candidates = []
+    for path in sorted(root.glob('batches/*/batch.json')):
+        try:
+            value = records.read(path)
+            contract = value['contract']
+            status = records.read(path.parent / 'status.json')
+            if (value['identity'] != campaign.identity(contract)
+                    or contract['purpose'] != 'local-addition'
+                    or not any(state.get('status') == 'complete' for state in status.values())):
+                continue
+            destination = pages_root / 'local' / contract['series'] / value['identity']
+            complete = sum(state.get('status') == 'complete' for state in status.values())
+            candidates.append(dict(directory=path.parent.resolve(), identity=value['identity'],
+                                   series=contract['series'], complete=complete,
+                                   total=len(contract['revisions']), uploaded=destination.exists()))
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+    return candidates
+
+
+def choose_upload(candidates):
+    if not candidates:
+        raise ValueError('no local datasets have completed observations to upload')
+    print('Eligible local measurement datasets:')
+    for number, candidate in enumerate(candidates, 1):
+        state = 'uploaded' if candidate['uploaded'] else 'ready'
+        print(f"  {number}. {candidate['identity'][:12]}  {candidate['series']}  {state}; "
+              f"{candidate['complete']}/{candidate['total']} revisions complete")
+    try:
+        answer = input(f'Select dataset to upload [1-{len(candidates)}, q to cancel]: ').strip().lower()
+    except EOFError:
+        answer = ''
+    if answer in ('', 'q', 'quit', 'cancel'):
+        print('Cancelled; nothing was pushed or published.')
+        return None
+    try:
+        selected = int(answer)
+    except ValueError as error:
+        raise ValueError('dataset selection must be a listed number or q') from error
+    if not 1 <= selected <= len(candidates):
+        raise ValueError('dataset selection is outside the listed range')
+    return candidates[selected - 1]['directory']
+
+
+def upload(args):
+    if args.yes and not args.batch:
+        raise ValueError('--yes requires an explicit --batch')
+    subprocess.run(['git', '-C', str(args.repo), 'fetch', args.remote, args.pages_ref], check=True)
+    with tempfile.TemporaryDirectory(prefix='xff-benchmark-upload-') as temporary:
+        checkout = Path(temporary) / 'pages'
+        subprocess.run(['git', '-C', str(args.repo), 'worktree', 'add', '--detach', str(checkout),
+                        f'{args.remote}/{args.pages_ref}'], check=True)
+        try:
+            interactive = not args.batch
+            if interactive:
+                selected = choose_upload(upload_candidates(args.root, checkout / 'benchmarks'))
+                if selected is None:
+                    return 0
+                directories = [selected]
+            else:
+                directories = upload_batches(args.root, args.batch)
+            destinations = [local.retain(checkout / 'benchmarks', directory) for directory in directories]
+            changed = subprocess.run(['git', '-C', str(checkout), 'status', '--porcelain', '--', 'benchmarks/local'],
+                                     text=True, capture_output=True, check=True).stdout.strip()
+            if not changed:
+                print('Selected benchmark observations are already uploaded.')
+            else:
+                print('Upload completed observations from:')
+                for directory, destination in zip(directories, destinations):
+                    print(f'  {directory} -> {destination.relative_to(checkout)}')
+                if not interactive and not args.yes:
+                    try:
+                        answer = input(f'Commit and push to {args.remote}/{args.pages_ref}? [y/N] ')
+                    except EOFError:
+                        answer = ''
+                    if answer.strip().lower() not in ('y', 'yes'):
+                        print('Cancelled; nothing was pushed.')
+                        return 0
+                subprocess.run(['git', '-C', str(checkout), 'add', 'benchmarks/local'], check=True)
+                subprocess.run(['git', '-C', str(checkout), 'commit', '-m',
+                                'benchmarks: retain completed local observations'], check=True)
+                subprocess.run(['git', '-C', str(checkout), 'push', args.remote, f'HEAD:{args.pages_ref}'], check=True)
+        finally:
+            subprocess.run(['git', '-C', str(args.repo), 'worktree', 'remove', '--force', str(checkout)], check=False)
+    if not args.no_publish:
+        subprocess.run(['gh', 'workflow', 'run', 'benchmark_pages.yml', '--repo', args.github_repository,
+                        '--ref', args.publish_ref], check=True)
+    print('Benchmark observations uploaded' + ('; publication not requested.' if args.no_publish
+                                                else '; benchmark publication started.'))
+    return 0
+
+
 def parser_for_cli():
     parser = argparse.ArgumentParser(description=__doc__, epilog=(
         'Checks saved local batches and published local observations for this machine. '
-        'CI measurements never satisfy local coverage. Nothing is uploaded automatically. '
-        'Use "help backfill" for examples and confirmation rules.'))
+        'CI measurements never satisfy local coverage. Upload is an explicit, confirmed operation. '
+        'Use "help backfill" or "help upload" for examples and confirmation rules.'))
     commands = parser.add_subparsers(dest='command')
     help_parser = commands.add_parser('help', help='explain the tool or one subcommand')
-    help_parser.add_argument('topic', nargs='?', choices=('list', 'backfill'))
+    help_parser.add_argument('topic', nargs='?', choices=('list', 'backfill', 'upload'))
     for command in ('list', 'backfill'):
         sub = commands.add_parser(command, help=('show available revisions and missing data' if command == 'list'
                                                 else 'confirm and measure missing revisions'),
@@ -260,8 +456,28 @@ def parser_for_cli():
         sub.add_argument('--keep', type=int, help='fastest samples retained (default: selected dataset, otherwise 7)')
         sub.add_argument('--fixture-parent', type=Path, help='fixture storage (Linux default: /dev/shm)')
         sub.add_argument('--disk-cache', type=Path, default=Path.home() / '.cache/bazel-disk', help='Bazel action cache')
+        sub.add_argument('--build-library-path', type=Path,
+                         help='runtime libraries for historical build tools; passed to Bazel build actions')
+        sub.add_argument('--full', action='store_true', help='show every revision instead of compact history ranges')
         if command == 'backfill':
             sub.add_argument('-Y', '--yes', action='store_true', help='answer the execution confirmation with yes')
+    upload_parser = commands.add_parser('upload', help='validate and upload completed local observations',
+                                        description=('Import completed observations into a temporary coverage-pages '
+                                                     'worktree, commit and push them, then start site publication.'))
+    upload_parser.add_argument('--repo', type=Path,
+                               default=Path(os.environ.get('BUILD_WORKSPACE_DIRECTORY', Path.cwd())),
+                               help='source checkout whose remote receives the upload')
+    upload_parser.add_argument('--root', type=Path, default=Path.home() / 'xff-benchmarks',
+                               help='local batch storage')
+    upload_parser.add_argument('--batch', action='append',
+                               help='select without the interactive dataset picker; directory/path or unique identity prefix; repeatable')
+    upload_parser.add_argument('--remote', default='origin', help='Git remote containing the Pages branch')
+    upload_parser.add_argument('--pages-ref', default='coverage-pages', help='branch retaining benchmark data')
+    upload_parser.add_argument('--github-repository', default=os.environ.get('GITHUB_REPOSITORY', 'mboworks/xff'),
+                               help='GitHub repository used to dispatch publication')
+    upload_parser.add_argument('--publish-ref', default='main', help='trusted ref used to publish the benchmark site')
+    upload_parser.add_argument('--no-publish', action='store_true', help='push observations without starting publication')
+    upload_parser.add_argument('-Y', '--yes', action='store_true', help='answer the push confirmation with yes')
     return parser, commands
 
 
@@ -273,6 +489,8 @@ def main(argv=None):
         (commands.choices[topic] if topic else parser).print_help()
         return 0
     try:
+        if args.command == 'upload':
+            return upload(args)
         if not args.no_fetch:
             subprocess.run(['git', '-C', str(args.repo), 'fetch', 'origin', 'main'], check=True)
         revisions = available_revisions(args.repo, args.main_ref)
@@ -284,6 +502,8 @@ def main(argv=None):
             options = discovery.choices(args.dataset_catalog, identity)
             discovery.show_choices(options, revisions)
             args.dataset_selection = discovery.choose(options, args)
+            args.dataset_number = (options.index(args.dataset_selection) + 1 if args.dataset_selection else None)
+            print()
             if args.command == 'list' and args.dataset_selection is None and any(
                     not option['reasons'] and (not args.series or option['dataset']['series'] == args.series)
                     for option in options):
