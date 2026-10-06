@@ -132,7 +132,8 @@ which population predicates, actions, summaries, and comparison use. The referen
 complete current vocabulary.
 
 [Near-duplicate design](design-near-duplicates.md), [implementation planning](implementation-plan.md),
-[test planning](test-plan.md), and [coverage policy](coverage.md) describe their boundaries and gates.
+[test planning](test-plan.md), [coverage policy](coverage.md), and
+[versioned benchmark fixture layouts](design-benchmark-layouts.md) describe their boundaries and gates.
 macOS and Linux are tested in CI. Other platforms, additional backends, and proposed options remain
 roadmap work until implemented and self-documented.
 

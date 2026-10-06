@@ -134,6 +134,12 @@ class BenchmarkDatasetsTest(unittest.TestCase):
                 with contextlib.redirect_stdout(io.StringIO()) as output:
                     discovery.show_choices(other, [{'sha': 'a' * 40}])
                 self.assertIn('this machine: 0 available, 1 missing', output.getvalue())
+                longer = copy.deepcopy(other[0])
+                longer['dataset']['series'] = 'github-ci-macos'
+                with contextlib.redirect_stdout(io.StringIO()) as output:
+                    discovery.show_choices([other[0], longer], [{'sha': 'a' * 40}])
+                headings = [line for line in output.getvalue().splitlines() if line.lstrip().startswith(('1.', '2.'))]
+                self.assertEqual(headings[0].index('macos/arm64'), headings[1].index('macos/arm64'))
             args = argparse.Namespace(dataset=None, series=None, command='backfill', yes=False,
                                       files=None, cpus=None, depth=None, repetitions=None, keep=None)
             selected = discovery.choose(options, args)

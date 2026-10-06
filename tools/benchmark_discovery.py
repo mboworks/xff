@@ -87,13 +87,16 @@ def choices(catalog, machine_id):
 def show_choices(options, revisions):
     commits = {revision['sha'] for revision in revisions}
     print('Published measurement datasets:')
+    index_width = len(str(len(options)))
+    series_width = max((len(option['dataset']['series']) for option in options), default=0)
     for index, option in enumerate(options, 1):
         dataset, recipe = option['dataset'], option['dataset']['recipe']
         observed = {observation['commit'] for observation in dataset['observations']}
         covered = len(observed & commits) if option['same_machine'] else 0
         status = ('incompatible: ' + '; '.join(option['reasons']) if option['reasons'] else
                   'continue this machine' if option['same_machine'] else 'runnable as a new local series')
-        print(f"  {index}. {dataset['id'][:12]}  {dataset['series']}  {dataset['platform']}/{dataset['architecture']}")
+        print(f"  {index:>{index_width}}. {dataset['id'][:12]}  {dataset['series']:<{series_width}}  "
+              f"{dataset['platform']}/{dataset['architecture']}")
         print(f"     CPUs {recipe.get('cpus')}; files {recipe.get('files')}; "
               f"fastest {recipe.get('keep')}/{recipe.get('repetitions')}; {status}")
         print(f'     Published: {len(observed)} revisions; this machine: {covered} available, {len(commits) - covered} missing')
@@ -146,6 +149,13 @@ def apply_recipe(args, selection, local_batches):
         if matches:
             newest = max(matches, key=lambda value: value.get('created_at', ''))['contract']
             recipe = {**newest, 'keep': newest['retained']}
+    if getattr(args, 'build_library_path', None) is None and args.series:
+        paths = [(value.get('created_at', ''), value['contract'].get('build', {}).get('library_path'))
+                 for _, value in local_batches if value['contract']['series'] == args.series]
+        inherited = [item for item in paths if item[1]]
+        if inherited:
+            args.build_library_path = Path(max(inherited)[1])
+            print('Reusing historical build runtime libraries: ' + str(args.build_library_path))
     for key in ('files', 'cpus', 'depth', 'repetitions', 'keep'):
         if getattr(args, key) is None and key in recipe:
             setattr(args, key, recipe[key])

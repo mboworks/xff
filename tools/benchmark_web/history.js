@@ -7,6 +7,8 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   const platform = root.querySelector('[data-control="platform"]');
   const source = root.querySelector('[data-control="source"]');
   const version = root.querySelector('[data-control="version"]');
+  const previousVersion = root.querySelector("[data-version-previous]");
+  const nextVersion = root.querySelector("[data-version-next]");
   const status = root.querySelector('[role="status"]');
   const reportLink = root.querySelector("[data-report]");
   const versionLinks = root.querySelector("[data-version-links]");
@@ -16,13 +18,18 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   versionPanel.style.cssText = panelStyle;
   chartSidebar(host).append(versionPanel);
   const versionStyle = document.createElement("style");
-  versionStyle.textContent = `.landscape-version-table{width:100%;border-collapse:collapse;margin:0;font:inherit}
+  versionStyle.textContent = `.landscape-card>summary{cursor:pointer;user-select:none;margin:-2px 0 6px}
+    .landscape-card:not([open])>summary{margin-bottom:-2px}
+    .landscape-version-table{width:100%;border-collapse:collapse;margin:0;font:inherit}
     .landscape-version-table th,.landscape-version-table td{padding:2px 4px;border:0;vertical-align:top;background:transparent}
     .landscape-version-table th{text-align:left;font-weight:500;white-space:nowrap}
     .landscape-version-table td{text-align:right;overflow-wrap:anywhere}
     [data-platform-details]{height:48px;line-height:16px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
     [data-version-panel] [role=status]{margin-top:4px;height:16px;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    [data-version-panel] [role=status][hidden]{display:block;visibility:hidden}`;
+    [data-version-panel] [role=status][hidden]{display:block;visibility:hidden}
+    .landscape-version-control{display:flex;align-items:center;gap:6px;margin-top:6px;width:100%}
+    .landscape-version-control input{flex:1;min-width:0;width:100%}
+    .landscape-version-control button{width:28px;height:24px;padding:0;font-weight:bold}`;
   host.append(versionStyle);
   const metric = root.querySelector('[data-control="metric"]');
   const range = root.querySelector('[data-control="range"]');
@@ -36,6 +43,11 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     chart,
     serial = 0,
     pending;
+  function updateVersionControls() {
+    const index = Number(version.value);
+    previousVersion.disabled = version.disabled || index <= 0;
+    nextVersion.disabled = version.disabled || index >= records.length - 1;
+  }
   const platforms = [...new Set(catalog.map((row) => row.platform))].sort(
     (left, right) =>
       Number(left.startsWith("Local /")) -
@@ -62,6 +74,7 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
       reportLink.title = `Open the full benchmark report: ${reportText}`;
       root.querySelector("[data-version-count]").textContent =
         `${index + 1} of ${records.length}`;
+      updateVersionControls();
       root.querySelector("[data-platform]").textContent = record.platform;
       root.querySelector("[data-platform-details]").textContent =
         record.platform_details || record.identity;
@@ -147,6 +160,7 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     version.disabled = records.length < 2;
     const matching = records.findIndex((row) => row.commit === commit);
     version.value = String(matching < 0 ? records.length - 1 : matching);
+    updateVersionControls();
     selectVersion();
   }
   function selectSource() {
@@ -167,6 +181,15 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   source?.addEventListener("change", selectSource);
   platform.addEventListener("change", selectPlatform);
   version.addEventListener("input", selectVersion);
+  for (const [button, delta] of [
+    [previousVersion, -1],
+    [nextVersion, 1],
+  ])
+    button.addEventListener("click", () => {
+      version.value = String(Number(version.value) + delta);
+      updateVersionControls();
+      selectVersion();
+    });
   for (const selector of [
     metric,
     order,
@@ -183,9 +206,10 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   root
     .querySelector("[data-reset]")
     .addEventListener("click", () => chart?.reset?.());
-  root.querySelector("details").addEventListener("toggle", (event) => {
-    if (event.target.open) requestAnimationFrame(() => chart?.resize());
-  });
+  for (const disclosure of root.querySelectorAll("details"))
+    disclosure.addEventListener("toggle", (event) => {
+      if (event.target.open) requestAnimationFrame(() => chart?.resize());
+    });
   if (catalog.length) selectSource();
   else {
     status.hidden = false;

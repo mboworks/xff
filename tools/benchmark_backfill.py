@@ -169,6 +169,11 @@ def make_contract(args, *, campaign=None, collection=None):
     bazel = shutil.which('bazel')
     if bazel is None:
         raise ValueError('Bazel is required to build historical revisions')
+    library_path = getattr(args, 'build_library_path', None)
+    if library_path is not None:
+        library_path = library_path.resolve(strict=True)
+        if not library_path.is_dir():
+            raise ValueError('build library path is not a directory: ' + str(library_path))
     contract = {
         'schema': 1, 'series': args.series, 'revisions': selected,
         'platform': system, 'purpose': args.purpose, 'allocation': allocation,
@@ -179,7 +184,8 @@ def make_contract(args, *, campaign=None, collection=None):
         'require_cpu_affinity': allocation['required'],
         'storage': compare.fixture_storage(args.fixture_parent, args.require_memory),
         'build': {'config': 'clang_release', 'bazel': str(Path(bazel).resolve()),
-                  'version': subprocess.check_output([bazel, '--version'], text=True).strip()},
+                  'version': subprocess.check_output([bazel, '--version'], text=True).strip(),
+                  'library_path': str(library_path) if library_path else None},
     }
     if campaign is not None:
         contract.update(campaign=campaign, collection=collection)
@@ -224,6 +230,8 @@ def build(repo, output, revision, contract, disk_cache):
     command = [contract['build']['bazel'], 'build', '--config=clang_release', '//xff/cli:xff']
     if disk_cache:
         command.append('--disk_cache=' + str(disk_cache.resolve()))
+    if contract['build'].get('library_path'):
+        command.append('--action_env=LD_LIBRARY_PATH=' + contract['build']['library_path'])
     with (folder / 'build.log').open('w') as log:
         subprocess.run(command, cwd=checkout, stdout=log, stderr=subprocess.STDOUT, check=True)
     # Use this revision's Bazel/toolchain configuration, then copy its executable out before checkout changes.
@@ -244,8 +252,11 @@ def render_index(output, batch, status):
         label = html.escape(sha[:10] + ' ' + revision['subject'])
         if state['status'] == 'complete':
             label = f'<a href="{html.escape(state["report"])}">{label}</a>'
+        diagnostic = html.escape(state.get('error', ''))
+        if state.get('log'):
+            diagnostic += f' (<a href="{html.escape(state["log"])}">build log</a>)'
         rows.append(f'<tr><td>{label}</td><td>{html.escape(state["status"])}</td>'
-                    f'<td>{html.escape(state.get("error", ""))}</td></tr>')
+                    f'<td>{diagnostic}</td></tr>')
     title = 'XFF benchmark backfill: ' + html.escape(batch['contract']['series'])
     (output / 'index.html').write_text(
         '<!doctype html><html lang="en"><meta charset="utf-8"><title>' + title + '</title>'
@@ -257,6 +268,18 @@ def render_index(output, batch, status):
         '. Raw observations are retained; '
         'no cross-host or cross-allocation normalization is applied.</p>'
         '<table><tr><th>Revision</th><th>Status</th><th>Diagnostic</th></tr>' + ''.join(rows) + '</table>')
+
+
+def build_failure(output, sha, error):
+    log = output / 'binaries' / sha / 'build.log'
+    diagnostic = str(error)
+    if log.is_file():
+        errors = [line.strip() for line in log.read_text(errors='replace').splitlines()
+                  if 'error:' in line.lower()]
+        if errors:
+            diagnostic = '\n'.join(dict.fromkeys(errors[-4:]))
+    return {'status': 'build-failed', 'error': diagnostic,
+            'log': log.relative_to(output).as_posix()}
 
 
 def run(args, batch):
@@ -273,8 +296,8 @@ def run(args, batch):
         try:
             binaries[sha] = build(args.repo.resolve(), output, revision, contract, args.disk_cache)
         except subprocess.CalledProcessError as error:
-            log_progress(f'Build failed: {sha}: {error}', index, total)
-            status[sha] = {'status': 'build-failed', 'error': str(error)}
+            status[sha] = build_failure(output, sha, error)
+            log_progress(f'Build failed: {sha}: {status[sha]["error"]}; log: {status[sha]["log"]}', index, total)
             write_json(status_path, status)
             render_index(output, batch, status)
     for index, revision in enumerate(contract['revisions'], 1):
@@ -327,7 +350,13 @@ def run(args, batch):
         write_json(status_path, status)
         render_index(output, batch, status)
         log_progress(f'Complete: {page}', index, total)
-    return 0 if all(status.get(item['sha'], {}).get('status') == 'complete' for item in contract['revisions']) else 1
+    failures = [item['sha'] for item in contract['revisions']
+                if status.get(item['sha'], {}).get('status') != 'complete']
+    if failures:
+        log_progress(f'{len(failures)} revisions incomplete; repeat the identical backfill command to retry them',
+                     total, total)
+        return 1
+    return 0
 
 
 def main():
@@ -351,6 +380,8 @@ def main():
     parser.add_argument('--fixture-parent', type=Path)
     parser.add_argument('--require-memory', action='store_true')
     parser.add_argument('--disk-cache', type=Path)
+    parser.add_argument('--build-library-path', type=Path,
+                        help='runtime libraries for historical build tools; passed to Bazel build actions')
     parser.add_argument('--run', action='store_true', help='Build and measure; otherwise only write/validate the batch plan')
     args = parser.parse_args()
     args.output = args.output.resolve()

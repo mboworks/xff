@@ -58,7 +58,34 @@ def write_batch(root, batch, record):
     return path
 
 
+def add_failed_revision(batch, root):
+    revision = dict(sha='e' * 40, date='2026-09-02T12:00:00Z', subject='Historical build failure')
+    batch['contract']['revisions'].append(revision)
+    batch['identity'] = campaign.identity(batch['contract'])
+    status = json.loads((root / 'status.json').read_text())
+    status[revision['sha']] = {'status': 'build-failed'}
+    (root / 'status.json').write_text(json.dumps(status))
+    report_path = next(root.glob('reports/*/*.json'))
+    record = json.loads(report_path.read_text())
+    record['batch'] = batch['identity']
+    record['tool_comparisons']['contract']['batch'] = batch['identity']
+    report_path.write_text(json.dumps(record))
+    (root / 'batch.json').write_text(json.dumps(batch))
+
+
 class BenchmarkLocalTest(unittest.TestCase):
+    def test_publish_completed_observations_from_partially_failed_batch(self):
+        batch, record = batch_data()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            incoming = root / 'incoming'
+            write_batch(incoming, batch, record)
+            add_failed_revision(batch, incoming)
+            destination = local.retain(root / 'site', incoming)
+            self.assertEqual(json.loads((destination / record['head'] / 'report.json').read_text())['head'],
+                             record['head'])
+            self.assertFalse((destination / ('e' * 40) / 'report.json').exists())
+
     def test_publish_round_trip_and_homepage_series(self):
         batch, record = batch_data()
         with tempfile.TemporaryDirectory() as temporary:
