@@ -22,6 +22,7 @@ import tempfile
 import time
 
 import benchmark_fixture
+import benchmark_layouts
 import benchmark_matrix
 import benchmark_overview
 import benchmark_shards
@@ -231,7 +232,7 @@ def cpu_allocation(cpus, require_cpu_affinity=False):
 
 def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_tools=False,
             fixture_parent=None, require_memory=False, cpus=1, require_cpu_affinity=False, keep=None, fixtures=None, progress=None,
-            shapes=("broad", "deep"), round_offset=0):
+            shapes=("broad", "deep"), round_offset=0, prepared_fixtures=None):
     progress = progress or MeasurementProgress()
     keep = min(7, repetitions) if keep is None else keep
     if not 1 <= keep <= repetitions:
@@ -261,12 +262,29 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
         empty.write_bytes(b"")
         datasets = fixtures or {shape: (fixture_entries(files, levels), None)
                                 for shape, levels in (("broad", 0), ("deep", depth)) if shape in shapes}
-        for shape, (entries, source_hash) in datasets.items():
-            root = base / shape
-            progress(f'Workers: {cpus} Files: {files:,} Preparing: {shape}')
-            rows = benchmark_fixture.materialize(root, entries)
-            fixture_identity = benchmark_fixture.identity(entries)
-            progress(f'Workers: {cpus} Files: {len(rows):,} Fixture ready: {shape}')
+        if prepared_fixtures is not None:
+            datasets = {shape: prepared_fixtures[shape] for shape in shapes}
+        for shape, source in datasets.items():
+            layout = None
+            if prepared_fixtures is None:
+                entries, source_hash = source
+                root = base / shape
+                progress(f'Workers: {cpus} Files: {files:,} Preparing: {shape}')
+                rows = benchmark_fixture.materialize(root, entries)
+                fixture_identity = benchmark_fixture.identity(entries)
+                anchor_hash = fixture_identity
+                progress(f'Workers: {cpus} Files: {len(rows):,} Fixture ready: {shape}')
+            else:
+                prepared, materialized_root, all_rows = source
+                anchor = prepared.anchors[files]
+                root = materialized_root / anchor
+                prefix = root.as_posix() + '/'
+                rows = [(path, data) for path, data in all_rows if path.as_posix().startswith(prefix)]
+                source_hash = None
+                fixture_identity = prepared.anchor_hashes[files]
+                anchor_hash = fixture_identity
+                layout = prepared.identity
+                progress(f'Workers: {cpus} Files: {len(rows):,} Fixture ready: {shape}')
             candidates = base / (shape + ".paths")
             candidates.write_bytes(b"".join(os.fsencode("./" + path.relative_to(root).as_posix()) + b"\0" for path, _ in rows))
             for name, expected, commands in scenarios(root, rows, tools, cpus):
@@ -275,6 +293,8 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
                         "fixture_identity": fixture_identity, "fixture_source_sha256": source_hash,
                         "expected_sha256": hashlib.sha256(b"\0".join(sorted(expected))).hexdigest(),
                         "participants": {}, "skips": {}}
+                if layout is not None:
+                    task.update(anchor_sha256=anchor_hash, layout=layout)
                 report["tasks"].append(task)
                 if name.startswith("content-") and any(b"\0" in data for _, data in rows):
                     task["skips"] = {label: "binary fixture: xff/rg binary-skip semantics differ" for label in commands}
@@ -312,13 +332,15 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
 
 def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=False,
                    fixture_parent=None, require_memory=False, cpu_counts=(1, 4), require_cpu_affinity=False, keep=None, fixtures=None,
-                   shard_plan=None, shard_index=0, progress=None):
+                   shard_plan=None, shard_index=0, progress=None, layouts=None):
     """Retain independent scales without mixing sample populations or tool identities."""
     if not file_counts or len(set(file_counts)) != len(file_counts) or min(file_counts) < 1 or depth < 1:
         raise ValueError("file counts must be unique and positive; depth must be positive")
     if not cpu_counts or len(set(cpu_counts)) != len(cpu_counts) or min(cpu_counts) < 1:
         raise ValueError("CPU counts must be unique and positive")
     cpu_allocation(max(cpu_counts), require_cpu_affinity)
+    if layouts is not None and (fixtures is not None or shard_plan is not None):
+        raise ValueError('prepared layouts do not support custom fixtures or CI shards')
     selected = benchmark_shards.assigned_fixtures(shard_plan, shard_index) if shard_plan else None
     if shard_plan and (list(file_counts) != shard_plan['file_counts'] or list(cpu_counts) != shard_plan['cpu_counts'] or fixtures):
         raise ValueError('shard plan requires its exact standard fixture grid')
@@ -332,10 +354,35 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
                                for (shape, count), value in sorted((fixtures or {}).items())]}
     progress = progress or MeasurementProgress()
     total_scales = len({(files, cpus) for files, cpus, _ in selected}) if selected is not None else len(cpu_counts) * len(file_counts)
+    prepared_fixtures = None
+    prepared_directory = None
+    layout_definitions = None
+    if layouts is not None:
+        storage = fixture_storage(fixture_parent, require_memory)
+        prepared_directory = tempfile.TemporaryDirectory(prefix='xff-prepared-layouts-', dir=storage['parent'])
+        prepared_fixtures = {}
+        layout_definitions = []
+        for layout in benchmark_layouts.registered(layouts):
+            prepared = benchmark_layouts.prepare(layout.label, tuple(file_counts))
+            root = Path(prepared_directory.name) / layout.label.replace('/', '-')
+            progress(f'Preparing layout: {layout.label}', force=True)
+            rows = benchmark_fixture.materialize(root, prepared.entries)
+            prepared_fixtures[layout.name] = (prepared, root, rows)
+            definition = prepared.identity
+            definition['generator_identity'] = benchmark_layouts.generator_identity(prepared)
+            definition['anchor_hashes'] = {str(key): value for key, value in prepared.anchor_hashes.items()}
+            layout_definitions.append(definition)
+    if layouts is not None:
+        shapes_order = [layout.name for layout in benchmark_layouts.registered(layouts)]
+        coordinates = ((cpus, files, shape) for shape in shapes_order for cpus in cpu_counts for files in file_counts)
+        total_scales *= len(shapes_order)
+    else:
+        coordinates = ((cpus, files, None) for cpus in cpu_counts for files in file_counts)
     completed_scales = 0
-    for cpus in cpu_counts:
-        for files in file_counts:
-            shapes = [shape for shape in ('broad', 'deep') if selected is None or (files, cpus, shape) in selected]
+    try:
+        for cpus, files, shape in coordinates:
+            shapes = ([shape] if shape is not None else
+                      [name for name in ('broad', 'deep') if selected is None or (files, cpus, name) in selected])
             if not shapes:
                 continue
             progress(f'Workers: {cpus} Files: {files:,} Scale: {completed_scales + 1}/{total_scales}', force=True)
@@ -344,7 +391,7 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
                              require_cpu_affinity=require_cpu_affinity, keep=keep, progress=progress, shapes=shapes,
                              round_offset=shard_index * sampling[0] if sampling else 0,
                              fixtures={shape: value for (shape, count), value in fixtures.items() if count == files}
-                             if fixtures is not None else None)
+                             if fixtures is not None else None, prepared_fixtures=prepared_fixtures)
             completed_scales += 1
             progress(f'Workers: {cpus} Files: {files:,} Completed scale: {completed_scales}/{total_scales}', force=True)
             for task in report["tasks"]:
@@ -365,11 +412,21 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
                     raise ValueError("tool identity changed between fixture scales")
                 combined["contract"]["affinity_by_cpu_count"][str(cpus)] = report["contract"].get("cpu_affinity")
                 combined["tasks"].extend(report["tasks"])
+    finally:
+        if prepared_directory is not None:
+            for prepared, root, _ in prepared_fixtures.values():
+                if benchmark_fixture.tree_identity(root) != benchmark_fixture.materialized_identity(prepared.entries):
+                    raise ValueError(f'prepared layout changed during measurement: {prepared.layout.label}')
+            prepared_directory.cleanup()
     if combined is None:
         raise ValueError('shard contains no measurements')
     if shard_plan:
         combined['contract']['shard'] = {'index': shard_index, 'plan': shard_plan}
         combined['host_id'] = hashlib.sha256(platform.node().encode()).hexdigest()
+    if layout_definitions is not None:
+        combined['contract']['layouts'] = layout_definitions
+        combined['contract']['fixture_version'] = 3
+        combined['contract']['collection_order'] = 'layout, worker count, file count'
     return combined
 
 
@@ -381,7 +438,24 @@ def render(report):
     rows = []
     overview = []
     keys = set()
+    layout_values = report['contract'].get('layouts', [])
+    definitions = {layout['name']: layout for layout in layout_values}
+    if ((report['contract'].get('fixture_version') == 3) != bool(definitions)
+            or len(definitions) != len(layout_values)):
+        raise ValueError('measurement contract has missing or duplicate layout definitions')
+    layout_labels = ', '.join(f"{layout['name']}/v{layout['revision']}"
+                              for layout in report['contract'].get('layouts', []))
     for task in report["tasks"]:
+        if definitions:
+            definition = definitions.get(task['dataset'])
+            layout = task.get('layout')
+            expected_layout = ({key: value for key, value in definition.items()
+                                if key not in ('generator_identity', 'anchor_hashes')} if definition else None)
+            if (layout != expected_layout or task.get('anchor_sha256') !=
+                    (definition or {}).get('anchor_hashes', {}).get(str(task.get('files')))):
+                raise ValueError('task layout or anchor identity disagrees with measurement contract')
+        elif task.get('layout') or task.get('anchor_sha256'):
+            raise ValueError('task has layout identity but measurement contract does not')
         key = (task["shape"], task["name"])
         if key in keys:
             raise ValueError("duplicate comparison task")
@@ -402,7 +476,8 @@ def render(report):
                 return f"{mean(values) * scale:.2f}" if values else "n/a"
             elapsed = benchmark_matrix.elapsed_mean(report, entry)
             throughput = f"{task['input_files'] / elapsed:.0f}" if task.get("input_files") and elapsed > 0 else "n/a"
-            cells = [task["shape"] + "/" + task["name"], label, str(task["expected_count"]),
+            shape = task["shape"] + (f"/v{task['layout']['revision']}" if task.get('layout') else '')
+            cells = [shape + "/" + task["name"], label, str(task["expected_count"]),
                      average_cell("elapsed_seconds", 1000), throughput, average_cell("first_stdout_seconds", 1000),
                      average_cell("peak_child_rss_bytes", 1 / 1048576),
                      average_cell("sum_child_peak_rss_bytes", 1 / 1048576) if len(entry["pipeline"]) > 1 else "n/a",
@@ -411,16 +486,18 @@ def render(report):
             for metric in METRICS:
                 values = [sample[metric] for sample in entry["samples"] if sample[metric] is not None]
                 if values:
-                    cells = [task["shape"] + "/" + task["name"], label, metric,
+                    cells = [shape + "/" + task["name"], label, metric,
                              f"{statistics.median(values):.6g}", f"{min(values):.6g}", f"{max(values):.6g}",
                              f"{statistics.stdev(values) if len(values) > 1 else 0:.6g}", str(len(values))]
                     rows.append('<tr>' + ''.join('<td>' + html.escape(cell) + '</td>' for cell in cells) + '</tr>')
         for label, reason in task["skips"].items():
-            skipped = ('<tr><td>' + html.escape(task["shape"] + '/' + task["name"]) + '</td><td>' +
+            shape = task["shape"] + (f"/v{task['layout']['revision']}" if task.get('layout') else '')
+            skipped = ('<tr><td>' + html.escape(shape + '/' + task["name"]) + '</td><td>' +
                        html.escape(label) + '</td><td colspan="6">Skipped: ' + html.escape(reason) + '</td></tr>')
             rows.append(skipped)
             overview.append(skipped.replace('colspan="6"', 'colspan="7"'))
-    return (benchmark_overview.render_html(report) +
+    layout_text = ('<p><strong>Layouts:</strong> ' + html.escape(layout_labels) + '</p>' if layout_labels else '')
+    return (benchmark_overview.render_html(report) + layout_text +
             '<h2>Tool comparisons</h2><p>Correctness-checked batch tasks; no ranking or interactive comparison. '
             'Overview: selected averages in ms and MiB (legacy reports use medians); raw-sample details: seconds and bytes. Pipeline memory is a sum of process high-water marks, '
             'not simultaneous peak memory. No cross-scope ratios.</p><details><summary>Tools and contract</summary><pre>' +

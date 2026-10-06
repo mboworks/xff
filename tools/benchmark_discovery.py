@@ -99,6 +99,9 @@ def show_choices(options, revisions):
               f"{dataset['platform']}/{dataset['architecture']}")
         print(f"     CPUs {recipe.get('cpus')}; files {recipe.get('files')}; "
               f"fastest {recipe.get('keep')}/{recipe.get('repetitions')}; {status}")
+        layouts = recipe.get('layouts', [])
+        labels = ', '.join(f"{layout['name']}/v{layout['revision']}" for layout in layouts)
+        print('     Layouts: ' + (labels or 'broad/v1, deep/v1 (legacy)'))
         print(f'     Published: {len(observed)} revisions; this machine: {covered} available, {len(commits) - covered} missing')
 
 
@@ -159,6 +162,11 @@ def apply_recipe(args, selection, local_batches):
     for key in ('files', 'cpus', 'depth', 'repetitions', 'keep'):
         if getattr(args, key) is None and key in recipe:
             setattr(args, key, recipe[key])
+    if getattr(args, 'layouts', None) is None and selected:
+        args.layouts = ([f"{layout['name']}/v{layout['revision']}" for layout in recipe.get('layouts', [])]
+                        if recipe.get('fixture_version') == 3 else [])
+    elif getattr(args, 'layouts', None) is None and recipe:
+        args.layouts = list(recipe.get('layouts', []))
     if selected:
         print('Selected dataset: ' + selected['id'][:12])
         print('Historical tool/build identities remain recorded. New observations use the current driver and '

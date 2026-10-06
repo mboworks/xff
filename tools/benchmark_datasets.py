@@ -8,6 +8,7 @@ import json
 from pathlib import PurePosixPath
 
 import benchmark_records as records
+import benchmark_layouts
 
 
 def identity(value):
@@ -23,16 +24,19 @@ def recipe(report, local_contract=None):
     if allocation is None:
         masks = contract.get('affinity_by_cpu_count', {})
         allocation = 'logical-cpus' if masks and all(mask is not None for mask in masks.values()) else 'workers'
-    return dict(files=contract.get('file_counts'), cpus=contract.get('cpu_counts'), depth=contract.get('depth'),
-                repetitions=contract.get('repetitions'), keep=contract.get('retained'),
-                estimator=contract.get('estimator'), fixture_version=contract.get('fixture_version'),
-                custom_fixtures=bool(contract.get('invocation', {}).get('fixtures')) or
-                any(task.get('fixture_source_sha256') for task in report['tasks']),
-                trees=sorted({task['dataset'] for task in report['tasks']}),
-                tasks={key: sorted(value) for key, value in sorted(tasks.items())},
-                allocation=allocation, memory_required=contract.get('storage', {}).get('memory_required'),
-                warmup_rounds=contract.get('warmup_rounds'), order=contract.get('order'),
-                cache=contract.get('cache'), output=contract.get('output'))
+    result = dict(files=contract.get('file_counts'), cpus=contract.get('cpu_counts'), depth=contract.get('depth'),
+                  repetitions=contract.get('repetitions'), keep=contract.get('retained'),
+                  estimator=contract.get('estimator'), fixture_version=contract.get('fixture_version'),
+                  custom_fixtures=bool(contract.get('invocation', {}).get('fixtures')) or
+                  any(task.get('fixture_source_sha256') for task in report['tasks']),
+                  trees=sorted({task['dataset'] for task in report['tasks']}),
+                  tasks={key: sorted(value) for key, value in sorted(tasks.items())},
+                  allocation=allocation, memory_required=contract.get('storage', {}).get('memory_required'),
+                  warmup_rounds=contract.get('warmup_rounds'), order=contract.get('order'),
+                  cache=contract.get('cache'), output=contract.get('output'))
+    if contract.get('layouts'):
+        result['layouts'] = [dict(layout) for layout in contract['layouts']]
+    return result
 
 
 def build_catalog(root):
@@ -134,8 +138,27 @@ def compatibility(dataset, platform, architecture, capacity, tasks):
             reasons.append('invalid or unknown ' + key + ' grid')
     if not reasons and max(value['cpus']) > capacity:
         reasons.append(f'requires {max(value["cpus"])} CPUs; {capacity} available')
-    if value.get('fixture_version') != 2 or value.get('custom_fixtures'):
+    layouts = value.get('layouts', [])
+    supported_layouts = [(layout.get('name'), layout.get('revision')) for layout in layouts]
+    if value.get('fixture_version') not in (2, 3) or value.get('custom_fixtures'):
         reasons.append('unsupported or unknown fixture recipe')
+    if layouts and value.get('fixture_version') != 3:
+        reasons.append('layout definitions require fixture version 3')
+    if value.get('fixture_version') == 3 and supported_layouts != [('broad', 2), ('deep', 2)]:
+        reasons.append('unsupported or unknown layout revision')
+    if value.get('fixture_version') == 3 and isinstance(value.get('files'), list):
+        expected = []
+        try:
+            for name, revision in supported_layouts:
+                prepared = benchmark_layouts.prepare(f'{name}/v{revision}', tuple(value['files']))
+                definition = prepared.identity
+                definition['generator_identity'] = benchmark_layouts.generator_identity(prepared)
+                definition['anchor_hashes'] = {str(key): item for key, item in prepared.anchor_hashes.items()}
+                expected.append(definition)
+        except ValueError:
+            expected = None
+        if layouts != expected:
+            reasons.append('layout recipe does not match the registered definition')
     if value.get('trees') != ['broad', 'deep'] or value.get('tasks') != tasks:
         reasons.append('different tree/task/participant definitions')
     samples = [value.get(key) for key in ('depth', 'repetitions', 'keep')]
@@ -161,6 +184,8 @@ def render(catalog):
         files = value.get('files') or []
         cells = [dataset['id'][:12], dataset['series'], dataset['kind'],
                  f"{dataset['platform']} / {dataset['architecture'] or 'unknown'}",
+                 ', '.join(f"{layout['name']}/v{layout['revision']}" for layout in value.get('layouts', []))
+                 or 'broad/v1, deep/v1 (legacy)',
                  ', '.join(map(str, value.get('cpus') or [])),
                  f'{min(files):,} to {max(files):,} ({len(files)} sizes)' if files else 'Unknown',
                  f"{value.get('keep')} of {value.get('repetitions')}; {value.get('estimator')}",
@@ -174,7 +199,7 @@ def render(catalog):
             '<p><a href="datasets.json">Download dataset metadata</a>. '
             'Run <code>bazel run //tools:benchmark -- list</code> to discover recipes compatible with your machine; '
             '<code>bazel run //tools:benchmark -- backfill</code> selects a recipe and asks before measuring missing revisions.</p>'
-            '<table><tr><th>Dataset</th><th>Series</th><th>Origin</th><th>Platform</th><th>CPUs/workers</th>'
+            '<table><tr><th>Dataset</th><th>Series</th><th>Origin</th><th>Platform</th><th>Layouts</th><th>CPUs/workers</th>'
             '<th>File counts</th><th>Sampling</th><th>Revisions</th></tr>' + ''.join(rows) + '</table></details>')
 
 

@@ -17,6 +17,7 @@ class BenchmarkFixtureTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / 'tree'
             rows = fixture.materialize(root, entries)
+            self.assertEqual(fixture.tree_identity(root), fixture.materialized_identity(entries))
             self.assertEqual((root / 'src/a').read_bytes(), b' a=b \\n')
             self.assertEqual((root / 'binary').read_bytes(), b'\0\1\2\xff')
             self.assertEqual((root / 'empty').read_bytes(), b'')

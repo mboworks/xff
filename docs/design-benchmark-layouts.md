@@ -2,10 +2,10 @@
 
 ## Status and purpose
 
-This document defines the implementation plan for reusable, versioned filesystem layouts in the
-benchmark collector. It records a proposed change, not current command behavior. The first rollout
-is deliberately local: prepare the new layouts, remeasure on the two participating local machines,
-and use that evidence to decide whether hosted CI should change.
+This document defines reusable, versioned filesystem layouts in the benchmark collector. The v2
+registry, prepared-layout lifecycle, report identity, and viewer labels are implemented for local
+collection. The remaining rollout is deliberately local: remeasure on the two participating local
+machines and use that evidence to decide whether hosted CI should change.
 
 The change addresses three limitations in the current generated fixtures:
 
@@ -106,8 +106,9 @@ The layout continues through 100,000 files for the local experiment. That scale 
 extreme, but a distributed broad tree is more representative than the legacy 100,000-entry flat
 directory and can expose worker-scaling behavior hidden by a single-directory bottleneck.
 
-The exact fanout, files-per-directory target, and placement of remainder files must be selected by a
-small fixture-only prototype before the registry is frozen. The selected parameters must satisfy:
+Revision 2 places at most 64 generated files in each leaf group. Remainders occupy the final group
+at the same level. This gives the 100,000-file anchor many sibling directories while keeping its
+maximum regular-file path depth at 15, including the observable anchor chain. The parameters satisfy:
 
 - bounded shallow depth across the entire count range;
 - more than one traversable directory at scales where multiple workers are measured;
@@ -116,11 +117,10 @@ small fixture-only prototype before the registry is frozen. The selected paramet
 
 ### Deep revision
 
-The revised deep layout models narrow, bounded-depth traversal. It uses chains or low-fanout groups
-whose directories contain moderate populations, rather than making depth grow once per file or
-distributing files by the legacy modulo rule. Candidate directory populations are in the range of
-tens through roughly one thousand files; the prototype determines the concrete value and maximum
-depth.
+The revised deep layout models narrow, bounded-depth traversal. It uses chains whose directories
+contain at most 512 generated files, rather than making depth grow once per file or distributing
+files by the legacy modulo rule. The registered 100,000-file tree has a maximum regular-file path
+depth of 98, including the observable anchor chain.
 
 The registered revision must keep depth meaningful at small and large scales while avoiding a
 pathological 100,000-component chain. It should provide less sibling parallelism than broad without
@@ -249,17 +249,17 @@ cost. There is no presumption that local adoption implies CI adoption.
 
 ## Implementation sequence
 
-1. **Registry and schema:** introduce declarative layout definitions and structured versioned layout
+1. **Implemented - registry and schema:** introduce declarative layout definitions and structured versioned layout
    identity while preserving legacy-report decoding.
-2. **Generator prototype:** choose and document concrete broad/deep topology parameters; generate
+2. **Implemented - generator prototype:** choose and document concrete broad/deep topology parameters; generate
    the maximum trees and prove exact anchor containment.
-3. **Prepared-layout API:** separate materialization and validation from timing, and provide anchors
+3. **Implemented - prepared-layout API:** separate materialization and validation from timing, and provide anchors
    as immutable traversal roots.
-4. **Collector lifecycle:** change generated local collection to commit/layout/worker/count order,
+4. **Implemented - collector lifecycle:** change generated local collection to commit/layout/worker/count order,
    retain both layouts, and verify post-run hashes.
-5. **Report, retry, and shards:** include layout revision and anchor identity in cell keys, completion
+5. **Implemented for local reports - report, retry, and shards:** include layout revision and anchor identity in cell keys, completion
    state, merge validation, and retry behavior.
-6. **Catalog and viewer:** derive layout labels and available choices from report metadata, render
+6. **Implemented - catalog and viewer:** derive layout labels and available choices from report metadata, render
    revision boundaries, and prevent incompatible aggregation.
 7. **Local pilot:** run both machines, publish or inspect the isolated experimental datasets, and
    write the evidence-based CI recommendation.
@@ -294,9 +294,8 @@ both compact and detailed history.
 
 ## Risks and open parameters
 
-- The concrete broad fanout, files-per-directory target, deep group size, and maximum depth remain to
-  be selected by the fixture prototype. Once data is published, changing any of them creates another
-  layout revision.
+- The registered broad fanout, files-per-directory target, deep group size, and maximum depth are now
+  frozen for revision 2. Changing any of them creates another layout revision.
 - Anchor nesting adds directories to every larger traversal. The topology must be judged as a whole;
   anchors cannot be dismissed as unmeasured scaffolding.
 - Reusing one physical tree stabilizes inode and fragmentation history within a run, but host-level

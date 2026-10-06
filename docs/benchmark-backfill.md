@@ -95,8 +95,10 @@ must be made unique before collecting separate machine histories.
 
 Without a published recipe, a recognized local series supplies its latest saved settings. For a new
 series without a recipe, the default workload is 1/3/10 workers or cores, file counts 10 through
-100,000, both tree shapes, and the fastest seven of nine measurements. Override it with repeated `--cpus` / `--files` and
-`--depth`, `--repetitions`, or `--keep`. A small host must select an allocation it can support;
+100,000, the prepared `broad/v2` and `deep/v2` layouts, and the fastest seven of nine measurements.
+Override it with repeated `--cpus` / `--files` and `--depth`, `--repetitions`, or `--keep`.
+`--layout-revision=legacy` explicitly selects the old independently generated fixtures; selecting a
+published legacy dataset does the same automatically. A small host must select an allocation it can support;
 the tool never silently reduces the requested grid. On Linux, fixtures default to `/dev/shm` and
 must be memory-backed; one logical CPU per physical core is pinned. macOS requests workers.
 
@@ -126,7 +128,8 @@ Schema version 1 separates:
 
 - **Dataset identity:** local or CI origin, named series, OS, architecture and a workload recipe.
   The recipe records file counts, CPU counts and allocation policy, tree shapes/depth, fixture
-  version/source, tasks and reference participants, warm-up/order, estimator and sampling, and storage.
+  version/source, complete ordered layout definitions and anchor hashes, tasks and reference participants,
+  warm-up/order, estimator and sampling, and storage.
   Changing the recipe creates another dataset ID within the series.
 - **Machine identity:** stable hashed IDs where available, plus explicitly recorded legacy host
   fingerprints. Reusing another host's recipe never adopts that host's observation history.

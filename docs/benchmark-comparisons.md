@@ -157,15 +157,18 @@ python3 tools/benchmark_compare.py --binary=/path/to/optimized/xff --report=repo
 
 The count is the exact number of regular files in that input. Directories and symlinks do not count;
 inputs are never silently truncated or replicated. Missing shape/count combinations appear as `n/a`.
-Without custom inputs, deterministic broad/deep trees are generated: the requested number of regular
-files (including `.gitignore`), plus a file symlink and a directory symlink. Broad is flat; deep distributes files
-across up to 40 nested levels, capped by the requested count. The `.gitignore` is included in
-reported input counts and throughput. No third-party corpus is downloaded.
+Without custom inputs, hosted CI continues to generate the legacy `broad/v1` and `deep/v1` trees for
+each matrix cell. Legacy broad is flat; legacy deep distributes files across up to 40 nested levels,
+capped by the requested count.
 
-The proposed replacement for generated local fixtures is specified in
-[Versioned benchmark fixture layouts](design-benchmark-layouts.md). It uses reusable nested anchors,
-keeps historical layout revisions distinct, and leaves hosted CI unchanged until local measurements
-support a separate adoption decision.
+New local collections default to the versioned `broad/v2` and `deep/v2` layouts specified in
+[Versioned benchmark fixture layouts](design-benchmark-layouts.md). One maximum tree per layout has
+nested exact-count anchors and is reused in layout, worker-count, file-count order. Broad uses
+shallow groups of at most 64 generated files; deep uses a narrow chain with at most 512 generated
+files per directory. Both layouts are prepared before measurement and verified unchanged afterward.
+Pass `--layout-revision=legacy` to continue an existing legacy dataset explicitly. The `.gitignore`
+is included in reported input counts and throughput in every revision. No third-party corpus is
+downloaded, and hosted CI remains unchanged until the local measurements support a separate decision.
 
 ## Tasks and equivalence
 
