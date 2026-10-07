@@ -17645,6 +17645,12 @@
       },
       "machines": [
         {
+          "machine_id": "e332623ec34fd5e53745f9cf547a0bf4445da92112526e48e24d2e5b661bbca2",
+          "host_id": "8b3795aa25390811064d8e7276e56384b720d78e3ab2780e415c7dc9d4e9522b",
+          "architecture": "arm64",
+          "cpu_count": 18
+        },
+        {
           "machine_id": null,
           "host_id": "5380f824bcba5159f0d2b8149f5b320d6bcc86b8ed13e6726abc458285b214e2",
           "architecture": "arm64",
@@ -17658,6 +17664,2663 @@
         }
       ],
       "methods": {
+        "957a428598882e558494733fb2a04bc7e2e862e3589528043d2e5f6817fd7bfe": {
+          "driver": {
+            "benchmark_backfill.py": "cf03a6340b333956ae7215ec91612a37a0aeab170c8f14473b408e2afb00bce6",
+            "benchmark_compare.py": "5a55fbc8d0955e701fd4314441e345a2edd49b9eb4f7f3d3963055e6380f233b",
+            "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+            "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "e2de7c9841cc0ebe959d664b7b8aaf5dbeb9385b5476f66df61b5d3bf328dba0",
+            "revision": "103fbf65b22979f75f5adbac67a53f15cf74d03e",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "e3bef3a20dd7cbe58bd25db54c8ae44398da99034b8d376a92e1c926781e0437",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "71b107301b567646f4b643446058db77c34921af38558af013080955ec2f1763": {
+          "driver": {
+            "benchmark_backfill.py": "cf03a6340b333956ae7215ec91612a37a0aeab170c8f14473b408e2afb00bce6",
+            "benchmark_compare.py": "5a55fbc8d0955e701fd4314441e345a2edd49b9eb4f7f3d3963055e6380f233b",
+            "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+            "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "e2de7c9841cc0ebe959d664b7b8aaf5dbeb9385b5476f66df61b5d3bf328dba0",
+            "revision": "9210100af8007a2f17b22597a349714d9e6069e1",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "e3bef3a20dd7cbe58bd25db54c8ae44398da99034b8d376a92e1c926781e0437",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "fb5321972dcf3aacfc4c081faed2c224114f74ce803b0052d2b12d59ecb3213e": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "1ff2298dbd5dc25fc83f215318eed1e77867dd30ab4cd832116352805759f600",
+            "revision": "0ac0e62aa0a2f04eb372d95f10f1657bd5176d29",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "c15978d7d064b08ff64be4ca56e5402f40a03b7a10e174aa356211f536613bd2",
+              "bazelmod/llvm.MODULE.bazel": "e46a546c8f7f0b6b05766d606a7b8c53142049636bd34c2c7f97c1657c187f5d"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "e8803e08806aa0b0e4332e418fb9fa3b6e6a37c3ff2ef8eff15870e94115c33e": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "44f0552855b2cc19463d66d5a905a74cc860b28dfb116d6bb6e81e6894bb560c",
+            "revision": "0fe0fa63136bde362b47f9cae481d8912b0cd9e6",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "90cdd9d14c12900750866130caca1fae450de2de503061480dd4217b0f5e978f",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "efcccf1a5e8a2ac6461d29661efec6723f3f25b6bc52e549b7e18a2880e969a2": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "a25fdde0b6c66e2da28c65a6f052c41aabe55bc11db2031898fa6c7495253de8",
+            "revision": "11eb1e91c745ba813aac34c284944e8cd8d3bf49",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "90cdd9d14c12900750866130caca1fae450de2de503061480dd4217b0f5e978f",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "f7274729aca6e05eb256f3b37092241ebac0902c74e84ce4c69ae81c2b5093ff": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "e15c5cd6a9bc4c678869e0289c4ba598569c09b76dff52d0b9a42377661913aa",
+            "revision": "21c7f3656b005b23113d936c1cd2ca0fd2221ab2",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "e3bef3a20dd7cbe58bd25db54c8ae44398da99034b8d376a92e1c926781e0437",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "a91a72fe9229aff75c5cfddb239eab727f59f3cfe2d37a789e74b09b16518ba8": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "a49febb2010e541ad098358d9b96e2cad1ca401298a1c0804bee54146679410c",
+            "revision": "2df43ac95a5825d25ab782d550f247d57b5f2636",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "90cdd9d14c12900750866130caca1fae450de2de503061480dd4217b0f5e978f",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "42abb0508194027675653e1feca9bf90e1ba198cbeb93b06bec3c22ecd614a79": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "0e017a39b0c9123406da65eaee435062c3dc809df56e81a137c78a033b2f2a78",
+            "revision": "35e726cde0f672276997170d0e27b44d2ed174df",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "90cdd9d14c12900750866130caca1fae450de2de503061480dd4217b0f5e978f",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "3f0e95d7b91c2638266e30975241f84b7c2224ea4c0e20e8c8d8cb22f3c0b8cd": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "d20ed62cbe6f71ded6341771d5e1a5518bd68064052da5a5d1b9509ae11aa4b2",
+            "revision": "378d3540691e65ac5ce833dd50ee56c6d523c4a2",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "a08ef460c933e6329746677bcfbc9992d52efaa70eeb925ef55bd5cf934bb2b4",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "d080fbcd7584b9f3d53763bf433a5d5ba258d19724250ea91608625b99f636db": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+            "revision": "4331864b62fb1bdc8e8ffee6722d2b0b6cdc98bb",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "573e2ef53be35233238d11019228a853561223785df5ae6528bbf224af117d7d",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "525c1d482181db8455cf687e4395318791f201c892f93f84e874e5150957c843",
+              "MODULE.bazel.lock": "d6e58123ffaaa8429e4446c6392365ffce08516fe19a94661e16ba027d0ef557",
+              "bazelmod/llvm.MODULE.bazel": "43525bbd60a6049c321c4cbc1dc782859631f9aefaed51a9b50c71538f070d32"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "4389b106d3409bddf6465c2a1f2242b837c2a9cab15c67f81331098efb1a513e": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "1ff2298dbd5dc25fc83f215318eed1e77867dd30ab4cd832116352805759f600",
+            "revision": "5a38a874ffa6175056f80b2e1bbba6a7d7c954a4",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "c15978d7d064b08ff64be4ca56e5402f40a03b7a10e174aa356211f536613bd2",
+              "bazelmod/llvm.MODULE.bazel": "e46a546c8f7f0b6b05766d606a7b8c53142049636bd34c2c7f97c1657c187f5d"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "edc35f049eec00b18cc8460a3fc8508c102448584157c3e78cd2a7d83325b590": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+            "revision": "605da2aa0b4f2e0987807a1eac1c0224508ece71",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "573e2ef53be35233238d11019228a853561223785df5ae6528bbf224af117d7d",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "525c1d482181db8455cf687e4395318791f201c892f93f84e874e5150957c843",
+              "MODULE.bazel.lock": "d6e58123ffaaa8429e4446c6392365ffce08516fe19a94661e16ba027d0ef557",
+              "bazelmod/llvm.MODULE.bazel": "43525bbd60a6049c321c4cbc1dc782859631f9aefaed51a9b50c71538f070d32"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "8952465b44ae6581b88ee76688a084f9fc7fd127b678bc1ac442805f1e5817d9": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "d20ed62cbe6f71ded6341771d5e1a5518bd68064052da5a5d1b9509ae11aa4b2",
+            "revision": "73b2cfcd710170cd95e0e324e1d0aa9a93ec5ce1",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "e3bef3a20dd7cbe58bd25db54c8ae44398da99034b8d376a92e1c926781e0437",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "3a2e0942d4efe4917fdaaf247e6219060cce472bbf32e5264260fd7a64293a24": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "dce2a660aa25e48e99bf8199a22c9927dd0c80652c71f609976304145ab2db99",
+            "revision": "8d25cd131e6ac8e475bc58c6d13ac1518c789d58",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "c15978d7d064b08ff64be4ca56e5402f40a03b7a10e174aa356211f536613bd2",
+              "bazelmod/llvm.MODULE.bazel": "e46a546c8f7f0b6b05766d606a7b8c53142049636bd34c2c7f97c1657c187f5d"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "3fb1ca8480b7c0136234333cec0a73ff2c466e0b9d07651401a2e7ef74b44436": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "389a7a7c27e4c6dc4447de42f25e9caa7bac33f01019f7afad7bc00eeb23f9f4",
+            "revision": "910ca43c4e5d0d39a0d5338094cf82fb57f6fcbf",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "90cdd9d14c12900750866130caca1fae450de2de503061480dd4217b0f5e978f",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "3c468aec37d66681045feb3903496312bcf13f9d489410a8a90b42359a801d8f": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+            "revision": "91a865617cd5eed9caf64f1ff5b2dcbd7b50d5f5",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "573e2ef53be35233238d11019228a853561223785df5ae6528bbf224af117d7d",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "525c1d482181db8455cf687e4395318791f201c892f93f84e874e5150957c843",
+              "MODULE.bazel.lock": "d6e58123ffaaa8429e4446c6392365ffce08516fe19a94661e16ba027d0ef557",
+              "bazelmod/llvm.MODULE.bazel": "43525bbd60a6049c321c4cbc1dc782859631f9aefaed51a9b50c71538f070d32"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "ae45e46541988b60ba94864a580d6fb891b1feb0ef211be97286e4ba7050d1ac": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "2e3c167e42d0e18dff9dae347c9d11de8ad7f98ab97bb15cef0fe890d1b3d09e",
+            "revision": "989fb3aff9e095a96384a17184484ce7c155e5a9",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "c15978d7d064b08ff64be4ca56e5402f40a03b7a10e174aa356211f536613bd2",
+              "bazelmod/llvm.MODULE.bazel": "e46a546c8f7f0b6b05766d606a7b8c53142049636bd34c2c7f97c1657c187f5d"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "2eb70fa5bf5d107460da8f0b0faca6b0e303d448d316420f8ebb4a9c8beddd27": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "1ff2298dbd5dc25fc83f215318eed1e77867dd30ab4cd832116352805759f600",
+            "revision": "9cb9a1ae42351d32be48dd3b15ab2014c3d96327",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "c15978d7d064b08ff64be4ca56e5402f40a03b7a10e174aa356211f536613bd2",
+              "bazelmod/llvm.MODULE.bazel": "e46a546c8f7f0b6b05766d606a7b8c53142049636bd34c2c7f97c1657c187f5d"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "74791192d00e12c8e51bf6a4f8b6802e198582e108b5ace3a1818da96f388929": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "29cf23f3d203998dcdc283e23233a51ff2ed4dabb0a378201b64f8bd3a4f0b23",
+            "revision": "a5902a8080b072275cee4240627d0a414ba671cc",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "c15978d7d064b08ff64be4ca56e5402f40a03b7a10e174aa356211f536613bd2",
+              "bazelmod/llvm.MODULE.bazel": "e46a546c8f7f0b6b05766d606a7b8c53142049636bd34c2c7f97c1657c187f5d"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "7489c50139991742a8d2ff58b3e70e00a121dfc1a90b12ef6b6bd727227d5d1c": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "125c6ece55fad350eb7ce441f65616aba61be431cbe1ee685c0ad5ebbe848464",
+            "revision": "abaf4d4c219cdc27b6b579a0949cfd850ac27169",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "90cdd9d14c12900750866130caca1fae450de2de503061480dd4217b0f5e978f",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "fd7b6f956c95091e401bb7f2f4d4058cc7b002f6d197867abb3e01f32219797f": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "e15c5cd6a9bc4c678869e0289c4ba598569c09b76dff52d0b9a42377661913aa",
+            "revision": "c33efe99d0df0b4866a9f77fde71dde9959d3cdb",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "e3bef3a20dd7cbe58bd25db54c8ae44398da99034b8d376a92e1c926781e0437",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "966614d2a21a28fb134cb8a4bcf6c362f29d1e6a0c25545d31a6085a178a5d21": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "8a59c213a55333f2c889fc748bb8575ec5c2ca061f8eda172e98024c92838fc2",
+            "revision": "d30da7c59a0ca311ac93d23ba87500cdd0ce4e8e",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "90cdd9d14c12900750866130caca1fae450de2de503061480dd4217b0f5e978f",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "14ec5f0c8eec7a6b56974633f7168af083206431f801d6cc89baa77ff7a81fb9": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "d20ed62cbe6f71ded6341771d5e1a5518bd68064052da5a5d1b9509ae11aa4b2",
+            "revision": "dfd5447644f0f2e1622a4dcc58ea7f2f704e3f95",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "90cdd9d14c12900750866130caca1fae450de2de503061480dd4217b0f5e978f",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "184cdc7caac8425f2d2ef57a8dca3c450143711912c9b399ef20626ab655d1ba": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "d20ed62cbe6f71ded6341771d5e1a5518bd68064052da5a5d1b9509ae11aa4b2",
+            "revision": "e4cbf5938ff5e7d69e714d46cd926d155530a04b",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "e3bef3a20dd7cbe58bd25db54c8ae44398da99034b8d376a92e1c926781e0437",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "a17fe990d274125ffc7920575e4f9c43cca4192206301eff69a1728b617ee498": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "d20ed62cbe6f71ded6341771d5e1a5518bd68064052da5a5d1b9509ae11aa4b2",
+            "revision": "ec0460a0f09d6fa20fb3bda40fa05f8074d555fd",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "90cdd9d14c12900750866130caca1fae450de2de503061480dd4217b0f5e978f",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "22a5a7a90de99d831056eb2e2ac0ec3317eb90d7c04dd0f3edb6c8048c78500d": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "bfd53275f25b5fd7a613d2e945de7260ad2431a006376a5220e4f1563b879e18",
+            "revision": "ec341dbc82eaf9a89e17143196e42014aa30fc26",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "90cdd9d14c12900750866130caca1fae450de2de503061480dd4217b0f5e978f",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "3dd196e5eaee0349be18b7a1eb169b93cff73c110491bc34c0dd913baf94337f": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "fadc18a59da4300796df8e66c709e0016c7102584d1b7ade2fac0d11b2bb689b",
+            "revision": "f1a47a8d291a23aed96e5aeeebc3264e15f1d91c",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "c15978d7d064b08ff64be4ca56e5402f40a03b7a10e174aa356211f536613bd2",
+              "bazelmod/llvm.MODULE.bazel": "e46a546c8f7f0b6b05766d606a7b8c53142049636bd34c2c7f97c1657c187f5d"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "aef448d8b3ab32d8ed21077acdfbad5d0fa2bed317acd93dac690811dfae1484": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "d20ed62cbe6f71ded6341771d5e1a5518bd68064052da5a5d1b9509ae11aa4b2",
+            "revision": "fbded52d89fbc0681b34ffb6137a2eec741c1e7e",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "e3bef3a20dd7cbe58bd25db54c8ae44398da99034b8d376a92e1c926781e0437",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "e1ac9a8306614ef967500d117ecd395aecb649f926485b4f0bd1ca35fa68ed32": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+            "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "2b558139bb98381c144865c65ad574333ee7b79b396f7c3a48c947693823cf91",
+            "revision": "ffdaf1107a9f39cfdc44b485f1504f5534b52bcd",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "90cdd9d14c12900750866130caca1fae450de2de503061480dd4217b0f5e978f",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "81ec4768a2cbc682a9b99ef2ff2574faee32ed91a3987a38e2581926e8bc65de": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "22d1acf3896924fd33fe5b24a1044153ff793aea9f58c1577f574ba5d610bcd3",
+            "revision": "471284c4d8a5df8d599a368559bc13e0b215530a",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "e3c0f883e0779a6df2eb4951d7a6e46d693044b55402aa32611a99a44202606e",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "e58a629aa6eb70657d199242347a014b11f24b197772a3bbdfb980719aef6d4c",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "911d63b111183d15438ac716300924d43d7b91ab72e0fadf578d251e6db00a4e": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+            "revision": "481c32aaf2bde15e0da23e1acddb53a9bce63afc",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "573e2ef53be35233238d11019228a853561223785df5ae6528bbf224af117d7d",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a9d7e10c8cab3d71021e35e0ac77275fc6068e246a39387b743cdcb0c3f6fb39",
+              "MODULE.bazel.lock": "01be2cfa5c1164f88f1787695a21ebda639fd9543fb4e884b55b3355c12171d0",
+              "bazelmod/llvm.MODULE.bazel": "43525bbd60a6049c321c4cbc1dc782859631f9aefaed51a9b50c71538f070d32"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "6866a29986486d12d137ee3ad186fbcf27ec61d86c6723b8a94eac38e0d967e5": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "4bc19a01ebbbeefa83cf292e2453db3a7430195a4e5dabb6f2253123162ad862",
+            "revision": "4ef35c0305deea429ea4a535d58e253fa7ff4f91",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "51ababb5e1fdb5cfd64f07421d9457d958864a599e11bfdc674f9892db2760ae": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "f8915dec66ddae09b7a58d1614ddf096560385cda5743e60a63904fd86b11a4b",
+            "revision": "5a327394fbbb23f7ac7d3c762c1814c2cb022130",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "e845697a1de0ceaf97487e45fd7515f85e852f126f42fcc5bff619fe3da6a7e6": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "2aac05736b97b03c265fdbc0ae22fd250286904dd4f7572770eb9fe32c47e1bb",
+            "revision": "5db1240146be20c4da283698bebb27d265810d33",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "d71824a9497c6d8caba313c43361a6a91abad610e4f68a7d66f1701f9b055969": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "fb839bdc05339be62ed812d408c553f5b8679c62f11cd08cd8285085480a75f5",
+            "revision": "7c8164de5b06b25328032d52392a25bd5f8b0825",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "7a1aa6557c1c7ef00cdde81323c5b98a040845a7da444263d4188707558f285e": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "908239d45a188380e5ec86205559c5a6059f7d5acf2cac3718a8b47d1cfede90",
+            "revision": "97c5e68ac92d36d0f76d896a8ebc0c21a4d22379",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "e2ecdc4983438c66ecef74974b74008bdf8b0c22a8acdb39904afe5839d90d0d": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "dff5a2df622edc56a277f53de252bd63dea3ba16a13a0c350ac1a8d17925c4ef",
+            "revision": "9bbee34da11e0d97b2b740cf25f4d90ca62447d9",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a4cda0cd2902f5b830ac6856b816e279d4f5f3e519552973165d7bb4e8f6115c",
+              "MODULE.bazel.lock": "818cfebec02ef0f971cdc3bbb14e9ae333b3b4e8497b8c6a7b329b8e90057cb8",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "3843949fee1c2326c0ea44934f5b3d4af788cd55f8845f08f02972053f6ef537": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "55e39c19d9d2b1475da830a88e8fe5266688863407f9a97c39993cfabf9bc7f3",
+            "revision": "be954012e0487c0ddd1b6a3787a292a1a26c1c78",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "de9bc75bd6fe1a40219f105c217372bd667dba40549de11e33bbdc895ec20d61",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a9d7e10c8cab3d71021e35e0ac77275fc6068e246a39387b743cdcb0c3f6fb39",
+              "MODULE.bazel.lock": "01be2cfa5c1164f88f1787695a21ebda639fd9543fb4e884b55b3355c12171d0",
+              "bazelmod/llvm.MODULE.bazel": "7ff75a2ed63d4fd05f91c04b6ad2c3f559863a9c151f4c5a82ddcaebab64cdea"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "786ab24e9c5a27e826a2d108acc078a6a1478ca642f261cda67769b84f60c923": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+            "revision": "c8a5fe9e22c329ca40ea0eed047a760eb9e34802",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "573e2ef53be35233238d11019228a853561223785df5ae6528bbf224af117d7d",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "a9d7e10c8cab3d71021e35e0ac77275fc6068e246a39387b743cdcb0c3f6fb39",
+              "MODULE.bazel.lock": "01be2cfa5c1164f88f1787695a21ebda639fd9543fb4e884b55b3355c12171d0",
+              "bazelmod/llvm.MODULE.bazel": "43525bbd60a6049c321c4cbc1dc782859631f9aefaed51a9b50c71538f070d32"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "4e788cc118851111326186c6f92d3d84f05fea41b311fb0b6030bd1dad822ca5": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+            "revision": "cc01d2edbab62575f4d3940c2e306b705eba6cdc",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "573e2ef53be35233238d11019228a853561223785df5ae6528bbf224af117d7d",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "525c1d482181db8455cf687e4395318791f201c892f93f84e874e5150957c843",
+              "MODULE.bazel.lock": "d6e58123ffaaa8429e4446c6392365ffce08516fe19a94661e16ba027d0ef557",
+              "bazelmod/llvm.MODULE.bazel": "43525bbd60a6049c321c4cbc1dc782859631f9aefaed51a9b50c71538f070d32"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "47e128fee620bd076ec70443d93523f2d618dcd134a4ef557b0da414db30930f": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "555c3a5e2a23fdd6c9ae2796aa36bd223606dcd37b4f8d05f0171728207e02b9",
+            "revision": "ce5ee3c40579bfd3aa90f0285353105504de81a2",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "9eaadf5437bce7a0f7c274444e1c2540026c6532980523e4b8171c9e6c7c808b": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+            "revision": "d2cd1e88242867c5d9e1982725fc2032ab370594",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "573e2ef53be35233238d11019228a853561223785df5ae6528bbf224af117d7d",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "525c1d482181db8455cf687e4395318791f201c892f93f84e874e5150957c843",
+              "MODULE.bazel.lock": "d6e58123ffaaa8429e4446c6392365ffce08516fe19a94661e16ba027d0ef557",
+              "bazelmod/llvm.MODULE.bazel": "43525bbd60a6049c321c4cbc1dc782859631f9aefaed51a9b50c71538f070d32"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "0bc54fc9fcb3f3ac4a1b0bbaee838f84cf4430d96a927b8d43aba1a7722faebb": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+            "revision": "d8dd4f608e030be77cdefde8575e0b1a5fffe820",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "573e2ef53be35233238d11019228a853561223785df5ae6528bbf224af117d7d",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "525c1d482181db8455cf687e4395318791f201c892f93f84e874e5150957c843",
+              "MODULE.bazel.lock": "d6e58123ffaaa8429e4446c6392365ffce08516fe19a94661e16ba027d0ef557",
+              "bazelmod/llvm.MODULE.bazel": "43525bbd60a6049c321c4cbc1dc782859631f9aefaed51a9b50c71538f070d32"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "11b6afee45ec7e1cae0f671afa760c4a74b0f8e126f95cd7eed1662c908cc470": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "ff8228f5a8b79e66d9e0c9a0cb14c1455c02a2a95f1b4f7b444b1c5ecb7ce561",
+            "revision": "df460ae32bc2df63d0c4f742be26d7598e506bdd",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "842a0b0d0ce7e31424d5711258897bc96476a52259b016f1e7a551d382ecc909",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "40dea4cd96b3275753c0ec6bb3086548a6b0d6f4a79739451432184d7baa2b57",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
+        "695d43eb8b5905ecface161fb20f2d2bf94ce514a677c0e7bcdaa55fb4c3acbb": {
+          "driver": {
+            "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+            "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+            "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+            "benchmark_matrix.py": "3b82247b680ccb236e09ff58d456bce3a84687135d573f8ad3c6f81b2ca183df",
+            "benchmark_shards.py": "0ec869c7eb4217f2281ee73bfdbf522d9ecd033cf9b0970ba873e3f0b80fe890"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+              "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.4 (Homebrew)",
+              "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+            }
+          },
+          "build": {
+            "sha256": "0036825b6736e8d6f7a03045760836a66a2d323af0ddda10ee4d994c94f8bb6a",
+            "revision": "f0dfc3edefc7f4ee35180be0b8417c16e7725fbb",
+            "command": [
+              "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+              "build",
+              "--config=clang_release",
+              "//xff/cli:xff",
+              "--disk_cache=/Users/marcus/.cache/bazel-disk"
+            ],
+            "configuration": {
+              ".bazelrc": "e3c0f883e0779a6df2eb4951d7a6e46d693044b55402aa32611a99a44202606e",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "e58a629aa6eb70657d199242347a014b11f24b197772a3bbdfb980719aef6d4c",
+              "MODULE.bazel.lock": "2244adacea897e57993f425a3edec2cac5343efcdf1242735923dad67b8ff172",
+              "bazelmod/llvm.MODULE.bazel": "c1c2c0d8cbf7908a1ec2e1d351a16475aaf933b7ef6c1313e8a4256809f5d3d1"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+          "cpu_count": 18,
+          "affinity": {
+            "1": null,
+            "3": null,
+            "10": null
+          },
+          "storage": {
+            "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          }
+        },
         "63f7c6a791296ecf5527a662da7b8ae9febfaf2639fa31ef3b12e18028c4938d": {
           "driver": {
             "benchmark_backfill.py": "43baaf3151e406e0c569c0ebf5121764d72381a57af02ebad70a2c594f8a5d97",
@@ -19253,6 +21916,456 @@
         }
       },
       "observations": [
+        {
+          "commit": "103fbf65b22979f75f5adbac67a53f15cf74d03e",
+          "date": "2026-10-06T20:09:52Z",
+          "measured": "2026-10-07T19:55:41.301676+00:00",
+          "report": "local/macos-m5-pro/14620686da0d294b9bf80298fa064467e2fa3e45923e4b827ec34e77b34b9dde/103fbf65b22979f75f5adbac67a53f15cf74d03e/report.json",
+          "report_identity": "57e2e0848e03f91ddb9f3fd5589d3e228e71f440bac90f241df0c3cfffc51388",
+          "batch": "local/macos-m5-pro/14620686da0d294b9bf80298fa064467e2fa3e45923e4b827ec34e77b34b9dde/batch.json",
+          "batch_identity": "8b7d50ba7c43009fd1c1a58f696a33ec44b4a65849d653942acbb2e12419ca63",
+          "method": "957a428598882e558494733fb2a04bc7e2e862e3589528043d2e5f6817fd7bfe"
+        },
+        {
+          "commit": "9210100af8007a2f17b22597a349714d9e6069e1",
+          "date": "2026-10-06T22:08:43Z",
+          "measured": "2026-10-07T20:44:44.886554+00:00",
+          "report": "local/macos-m5-pro/14620686da0d294b9bf80298fa064467e2fa3e45923e4b827ec34e77b34b9dde/9210100af8007a2f17b22597a349714d9e6069e1/report.json",
+          "report_identity": "4a19d7754bfc601082fa143e680c083682f11ddaf7ba11d1f0d938bf68773b6e",
+          "batch": "local/macos-m5-pro/14620686da0d294b9bf80298fa064467e2fa3e45923e4b827ec34e77b34b9dde/batch.json",
+          "batch_identity": "8b7d50ba7c43009fd1c1a58f696a33ec44b4a65849d653942acbb2e12419ca63",
+          "method": "71b107301b567646f4b643446058db77c34921af38558af013080955ec2f1763"
+        },
+        {
+          "commit": "0ac0e62aa0a2f04eb372d95f10f1657bd5176d29",
+          "date": "2026-10-04T13:17:40Z",
+          "measured": "2026-10-06T18:58:05.066813+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/0ac0e62aa0a2f04eb372d95f10f1657bd5176d29/report.json",
+          "report_identity": "12d40c53f559b0051b3089c1e3ed42b8f302ca465b7c86266d5152c798290064",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "fb5321972dcf3aacfc4c081faed2c224114f74ce803b0052d2b12d59ecb3213e"
+        },
+        {
+          "commit": "0fe0fa63136bde362b47f9cae481d8912b0cd9e6",
+          "date": "2026-10-05T16:47:00Z",
+          "measured": "2026-10-07T03:46:46.115052+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/0fe0fa63136bde362b47f9cae481d8912b0cd9e6/report.json",
+          "report_identity": "5a0761a53cde52f7088da8ee8bf2b69764c4aec5e93d840ac735f4f7c706cc48",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "e8803e08806aa0b0e4332e418fb9fa3b6e6a37c3ff2ef8eff15870e94115c33e"
+        },
+        {
+          "commit": "11eb1e91c745ba813aac34c284944e8cd8d3bf49",
+          "date": "2026-10-05T12:35:04Z",
+          "measured": "2026-10-07T00:39:27.264029+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/11eb1e91c745ba813aac34c284944e8cd8d3bf49/report.json",
+          "report_identity": "a70de344a747dab16cfa9b4e317fcd6c8f41e983e9d50bb2b47f87b5ce7412a0",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "efcccf1a5e8a2ac6461d29661efec6723f3f25b6bc52e549b7e18a2880e969a2"
+        },
+        {
+          "commit": "21c7f3656b005b23113d936c1cd2ca0fd2221ab2",
+          "date": "2026-10-06T01:23:48Z",
+          "measured": "2026-10-07T12:31:12.340850+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/21c7f3656b005b23113d936c1cd2ca0fd2221ab2/report.json",
+          "report_identity": "59dc7fb0a7b9d622cc31dee1fd429366ac940228a2f3a0235329978cb6437377",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "f7274729aca6e05eb256f3b37092241ebac0902c74e84ce4c69ae81c2b5093ff"
+        },
+        {
+          "commit": "2df43ac95a5825d25ab782d550f247d57b5f2636",
+          "date": "2026-10-05T14:26:19Z",
+          "measured": "2026-10-07T02:13:37.378179+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/2df43ac95a5825d25ab782d550f247d57b5f2636/report.json",
+          "report_identity": "0816d5b2676a710dc0122fe7114312b2639acfc5f3c8161b81fb3766bfc00382",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "a91a72fe9229aff75c5cfddb239eab727f59f3cfe2d37a789e74b09b16518ba8"
+        },
+        {
+          "commit": "35e726cde0f672276997170d0e27b44d2ed174df",
+          "date": "2026-10-05T18:09:16Z",
+          "measured": "2026-10-07T04:34:30.893092+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/35e726cde0f672276997170d0e27b44d2ed174df/report.json",
+          "report_identity": "20d64e93be4c28e93b3b1be80a414c3dd614e96ce24dce2a83e370fc26687cc3",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "42abb0508194027675653e1feca9bf90e1ba198cbeb93b06bec3c22ecd614a79"
+        },
+        {
+          "commit": "378d3540691e65ac5ce833dd50ee56c6d523c4a2",
+          "date": "2026-10-05T23:26:22Z",
+          "measured": "2026-10-07T08:04:04.207195+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/378d3540691e65ac5ce833dd50ee56c6d523c4a2/report.json",
+          "report_identity": "7b549c10324119b5ea40d9009d451879911ce2f100cee9d8fac25ca53f50d856",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "3f0e95d7b91c2638266e30975241f84b7c2224ea4c0e20e8c8d8cb22f3c0b8cd"
+        },
+        {
+          "commit": "4331864b62fb1bdc8e8ffee6722d2b0b6cdc98bb",
+          "date": "2026-10-01T23:53:58Z",
+          "measured": "2026-10-06T15:06:08.025688+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/4331864b62fb1bdc8e8ffee6722d2b0b6cdc98bb/report.json",
+          "report_identity": "30d63a2b331c3ad7b88cb0f02b7fa09f8c308a385fc92aed56a64541f096559d",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "d080fbcd7584b9f3d53763bf433a5d5ba258d19724250ea91608625b99f636db"
+        },
+        {
+          "commit": "5a38a874ffa6175056f80b2e1bbba6a7d7c954a4",
+          "date": "2026-10-04T09:57:42Z",
+          "measured": "2026-10-06T17:25:58.302079+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/5a38a874ffa6175056f80b2e1bbba6a7d7c954a4/report.json",
+          "report_identity": "8d2a11f8c85ab966597ae468a9302e0cf0afb159302e210a81923f05f96c52af",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "4389b106d3409bddf6465c2a1f2242b837c2a9cab15c67f81331098efb1a513e"
+        },
+        {
+          "commit": "605da2aa0b4f2e0987807a1eac1c0224508ece71",
+          "date": "2026-10-02T18:09:47Z",
+          "measured": "2026-10-06T16:40:35.571386+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/605da2aa0b4f2e0987807a1eac1c0224508ece71/report.json",
+          "report_identity": "f64caa92a670cef3627676cb7a69dc6486b53e46b3f55f96ad9f7646fedb6649",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "edc35f049eec00b18cc8460a3fc8508c102448584157c3e78cd2a7d83325b590"
+        },
+        {
+          "commit": "73b2cfcd710170cd95e0e324e1d0aa9a93ec5ce1",
+          "date": "2026-10-06T00:17:35Z",
+          "measured": "2026-10-07T10:13:56.180775+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/73b2cfcd710170cd95e0e324e1d0aa9a93ec5ce1/report.json",
+          "report_identity": "98c9181122fc4e67860eb2a3d9d17736d7c2dddcaf86734b1f3d5b6f2986ccce",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "8952465b44ae6581b88ee76688a084f9fc7fd127b678bc1ac442805f1e5817d9"
+        },
+        {
+          "commit": "8d25cd131e6ac8e475bc58c6d13ac1518c789d58",
+          "date": "2026-10-05T02:57:01Z",
+          "measured": "2026-10-06T20:34:48.022375+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/8d25cd131e6ac8e475bc58c6d13ac1518c789d58/report.json",
+          "report_identity": "259d72bca4fe6d73e09ae2e9760956a44cba2a8544c2ce9263a7a4dbb5c7926f",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "3a2e0942d4efe4917fdaaf247e6219060cce472bbf32e5264260fd7a64293a24"
+        },
+        {
+          "commit": "910ca43c4e5d0d39a0d5338094cf82fb57f6fcbf",
+          "date": "2026-10-05T21:17:51Z",
+          "measured": "2026-10-07T05:21:33.084772+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/910ca43c4e5d0d39a0d5338094cf82fb57f6fcbf/report.json",
+          "report_identity": "84b6a62f2073e9b6792cd6b9073be46e5a326524d42dd47687e35a029a6464ee",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "3fb1ca8480b7c0136234333cec0a73ff2c466e0b9d07651401a2e7ef74b44436"
+        },
+        {
+          "commit": "91a865617cd5eed9caf64f1ff5b2dcbd7b50d5f5",
+          "date": "2026-10-02T15:18:12Z",
+          "measured": "2026-10-06T15:53:25.877390+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/91a865617cd5eed9caf64f1ff5b2dcbd7b50d5f5/report.json",
+          "report_identity": "3e4c858aa466c0be240597bf986e14772451e0fd767b8347d9d4489056127be4",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "3c468aec37d66681045feb3903496312bcf13f9d489410a8a90b42359a801d8f"
+        },
+        {
+          "commit": "989fb3aff9e095a96384a17184484ce7c155e5a9",
+          "date": "2026-10-04T23:34:36Z",
+          "measured": "2026-10-06T19:47:08.148659+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/989fb3aff9e095a96384a17184484ce7c155e5a9/report.json",
+          "report_identity": "f795d49d8e3324861b3f2e2657e9cadef4b002b2fd431f7f5c8f70aa74144aff",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "ae45e46541988b60ba94864a580d6fb891b1feb0ef211be97286e4ba7050d1ac"
+        },
+        {
+          "commit": "9cb9a1ae42351d32be48dd3b15ab2014c3d96327",
+          "date": "2026-10-04T10:51:31Z",
+          "measured": "2026-10-06T18:11:25.639304+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/9cb9a1ae42351d32be48dd3b15ab2014c3d96327/report.json",
+          "report_identity": "4869ae252ed6390350c83ac5260be4c864a753fa955de03391adbab04854b784",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "2eb70fa5bf5d107460da8f0b0faca6b0e303d448d316420f8ebb4a9c8beddd27"
+        },
+        {
+          "commit": "a5902a8080b072275cee4240627d0a414ba671cc",
+          "date": "2026-10-05T05:24:43Z",
+          "measured": "2026-10-06T21:21:50.157344+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/a5902a8080b072275cee4240627d0a414ba671cc/report.json",
+          "report_identity": "733a31fb93e43e5266e138d6023ce3f88ce1cf37dcc31f96ce5a47fd638b52a9",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "74791192d00e12c8e51bf6a4f8b6802e198582e108b5ace3a1818da96f388929"
+        },
+        {
+          "commit": "abaf4d4c219cdc27b6b579a0949cfd850ac27169",
+          "date": "2026-10-05T15:37:15Z",
+          "measured": "2026-10-07T03:00:55.410487+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/abaf4d4c219cdc27b6b579a0949cfd850ac27169/report.json",
+          "report_identity": "bc7feb7f82912006ac3abe5bbf192818ab66e8a647dbf41706fbaf4d82fba418",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "7489c50139991742a8d2ff58b3e70e00a121dfc1a90b12ef6b6bd727227d5d1c"
+        },
+        {
+          "commit": "c33efe99d0df0b4866a9f77fde71dde9959d3cdb",
+          "date": "2026-10-06T02:40:08Z",
+          "measured": "2026-10-07T13:45:05.332830+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/c33efe99d0df0b4866a9f77fde71dde9959d3cdb/report.json",
+          "report_identity": "69aa7f52188250401c70e25405602f8d8a50ed21bd77af0a4ff9c4d3ddbb83f8",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "fd7b6f956c95091e401bb7f2f4d4058cc7b002f6d197867abb3e01f32219797f"
+        },
+        {
+          "commit": "d30da7c59a0ca311ac93d23ba87500cdd0ce4e8e",
+          "date": "2026-10-05T11:00:25Z",
+          "measured": "2026-10-06T23:51:57.118286+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/d30da7c59a0ca311ac93d23ba87500cdd0ce4e8e/report.json",
+          "report_identity": "862295630488043a4d5d486f71130e90a3a71d6079aa87444011ef570e0c67cc",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "966614d2a21a28fb134cb8a4bcf6c362f29d1e6a0c25545d31a6085a178a5d21"
+        },
+        {
+          "commit": "dfd5447644f0f2e1622a4dcc58ea7f2f704e3f95",
+          "date": "2026-10-05T23:25:44Z",
+          "measured": "2026-10-07T06:55:51.317134+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/dfd5447644f0f2e1622a4dcc58ea7f2f704e3f95/report.json",
+          "report_identity": "4b982f77b6ee856eb70d974ce87cfcecea5989d393bb5d4ffdc79a9218efd9c2",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "14ec5f0c8eec7a6b56974633f7168af083206431f801d6cc89baa77ff7a81fb9"
+        },
+        {
+          "commit": "e4cbf5938ff5e7d69e714d46cd926d155530a04b",
+          "date": "2026-10-05T23:27:26Z",
+          "measured": "2026-10-07T09:00:44.770380+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/e4cbf5938ff5e7d69e714d46cd926d155530a04b/report.json",
+          "report_identity": "73dcd9eebc0865d87a52202a7a886047e6e4b6e98a11eafc3d6d3be402560582",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "184cdc7caac8425f2d2ef57a8dca3c450143711912c9b399ef20626ab655d1ba"
+        },
+        {
+          "commit": "ec0460a0f09d6fa20fb3bda40fa05f8074d555fd",
+          "date": "2026-10-05T22:25:11Z",
+          "measured": "2026-10-07T06:08:11.058664+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/ec0460a0f09d6fa20fb3bda40fa05f8074d555fd/report.json",
+          "report_identity": "de419667f0a0b82d3f4ef1a03654de5e5481bb01c3fa4a5333d68a4e80376073",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "a17fe990d274125ffc7920575e4f9c43cca4192206301eff69a1728b617ee498"
+        },
+        {
+          "commit": "ec341dbc82eaf9a89e17143196e42014aa30fc26",
+          "date": "2026-10-05T09:59:40Z",
+          "measured": "2026-10-06T22:56:22.057515+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/ec341dbc82eaf9a89e17143196e42014aa30fc26/report.json",
+          "report_identity": "d908df1ef0bc551f254194099489d7cd6ef222758aae03d18c499d3accbbde14",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "22a5a7a90de99d831056eb2e2ac0ec3317eb90d7c04dd0f3edb6c8048c78500d"
+        },
+        {
+          "commit": "f1a47a8d291a23aed96e5aeeebc3264e15f1d91c",
+          "date": "2026-10-05T07:31:45Z",
+          "measured": "2026-10-06T22:09:56.740843+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/f1a47a8d291a23aed96e5aeeebc3264e15f1d91c/report.json",
+          "report_identity": "c9e6ad404232795dc7015295c2631ae26cace4ca24bb58f091a86d64074a5fd3",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "3dd196e5eaee0349be18b7a1eb169b93cff73c110491bc34c0dd913baf94337f"
+        },
+        {
+          "commit": "fbded52d89fbc0681b34ffb6137a2eec741c1e7e",
+          "date": "2026-10-06T00:21:26Z",
+          "measured": "2026-10-07T11:19:40.310204+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/fbded52d89fbc0681b34ffb6137a2eec741c1e7e/report.json",
+          "report_identity": "95111da147432106a121cc34c0145f79c4054190ff01e9ba71381855a69c7961",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "aef448d8b3ab32d8ed21077acdfbad5d0fa2bed317acd93dac690811dfae1484"
+        },
+        {
+          "commit": "ffdaf1107a9f39cfdc44b485f1504f5534b52bcd",
+          "date": "2026-10-05T13:24:08Z",
+          "measured": "2026-10-07T01:26:36.672607+00:00",
+          "report": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/ffdaf1107a9f39cfdc44b485f1504f5534b52bcd/report.json",
+          "report_identity": "caf20505612e438d47a54bbd4c5d159efb851ecc914ff7ca8c5aeb67ead8aa74",
+          "batch": "local/macos-m5-pro/3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8/batch.json",
+          "batch_identity": "6fedd99ba02ebd4c8a1454577c40233761d15211f18718af905ae441c26b17c3",
+          "method": "e1ac9a8306614ef967500d117ecd395aecb649f926485b4f0bd1ca35fa68ed32"
+        },
+        {
+          "commit": "471284c4d8a5df8d599a368559bc13e0b215530a",
+          "date": "2026-09-27T21:45:55Z",
+          "measured": "2026-10-06T08:13:03.369284+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/471284c4d8a5df8d599a368559bc13e0b215530a/report.json",
+          "report_identity": "243fcc12cdb5a512c27ef73f9bccd25e9d1a08b103c4b115c6af4eac6c18acdb",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "81ec4768a2cbc682a9b99ef2ff2574faee32ed91a3987a38e2581926e8bc65de"
+        },
+        {
+          "commit": "481c32aaf2bde15e0da23e1acddb53a9bce63afc",
+          "date": "2026-10-01T07:42:31Z",
+          "measured": "2026-10-06T10:35:19.098963+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/481c32aaf2bde15e0da23e1acddb53a9bce63afc/report.json",
+          "report_identity": "8390f10f76b65dd793c9d7de3ef49ea1f7aa60d109208c08d8f1d3314bd17303",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "911d63b111183d15438ac716300924d43d7b91ab72e0fadf578d251e6db00a4e"
+        },
+        {
+          "commit": "4ef35c0305deea429ea4a535d58e253fa7ff4f91",
+          "date": "2026-09-27T16:11:24Z",
+          "measured": "2026-10-06T02:34:30.649739+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/4ef35c0305deea429ea4a535d58e253fa7ff4f91/report.json",
+          "report_identity": "5751822204abc4a279de2564703f577e9d474fc3b3f35c17e01d4dc238711959",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "6866a29986486d12d137ee3ad186fbcf27ec61d86c6723b8a94eac38e0d967e5"
+        },
+        {
+          "commit": "5a327394fbbb23f7ac7d3c762c1814c2cb022130",
+          "date": "2026-09-27T16:11:25Z",
+          "measured": "2026-10-06T04:11:01.755302+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/5a327394fbbb23f7ac7d3c762c1814c2cb022130/report.json",
+          "report_identity": "d62013b2981d5bc23ade35ab67b4e950ccac97357e906009edca5a50762d05c0",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "51ababb5e1fdb5cfd64f07421d9457d958864a599e11bfdc674f9892db2760ae"
+        },
+        {
+          "commit": "5db1240146be20c4da283698bebb27d265810d33",
+          "date": "2026-09-27T16:11:26Z",
+          "measured": "2026-10-06T05:47:51.786312+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/5db1240146be20c4da283698bebb27d265810d33/report.json",
+          "report_identity": "ea0a104e0bfa9cfc8357cdc1eafff5c909797c2dd2e0dacdb465203d9745008f",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "e845697a1de0ceaf97487e45fd7515f85e852f126f42fcc5bff619fe3da6a7e6"
+        },
+        {
+          "commit": "7c8164de5b06b25328032d52392a25bd5f8b0825",
+          "date": "2026-09-27T16:11:25Z",
+          "measured": "2026-10-06T04:59:34.060112+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/7c8164de5b06b25328032d52392a25bd5f8b0825/report.json",
+          "report_identity": "c6de0288bd38db42cb2bfb3f39a556c2f5493d9bc111744095fc3d68833797a4",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "d71824a9497c6d8caba313c43361a6a91abad610e4f68a7d66f1701f9b055969"
+        },
+        {
+          "commit": "97c5e68ac92d36d0f76d896a8ebc0c21a4d22379",
+          "date": "2026-09-27T16:11:24Z",
+          "measured": "2026-10-06T03:24:02.645820+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/97c5e68ac92d36d0f76d896a8ebc0c21a4d22379/report.json",
+          "report_identity": "caae0ab4153a92b3f20e5178f9119e46fc29ae8d65f6f8b1413ed7d4067f1915",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "7a1aa6557c1c7ef00cdde81323c5b98a040845a7da444263d4188707558f285e"
+        },
+        {
+          "commit": "9bbee34da11e0d97b2b740cf25f4d90ca62447d9",
+          "date": "2026-09-24T22:42:57Z",
+          "measured": "2026-10-06T00:56:20.914935+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/9bbee34da11e0d97b2b740cf25f4d90ca62447d9/report.json",
+          "report_identity": "b59fdee742136dec61dd223dd753c70fadc7233f012acc6aa17b7f3d51ecf1bb",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "e2ecdc4983438c66ecef74974b74008bdf8b0c22a8acdb39904afe5839d90d0d"
+        },
+        {
+          "commit": "be954012e0487c0ddd1b6a3787a292a1a26c1c78",
+          "date": "2026-10-01T06:42:01Z",
+          "measured": "2026-10-06T08:59:40.489613+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/be954012e0487c0ddd1b6a3787a292a1a26c1c78/report.json",
+          "report_identity": "01222f7958a0aee35c26cd555fa6971654f663f1dabfc2c98ea21a3e21c30723",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "3843949fee1c2326c0ea44934f5b3d4af788cd55f8845f08f02972053f6ef537"
+        },
+        {
+          "commit": "c8a5fe9e22c329ca40ea0eed047a760eb9e34802",
+          "date": "2026-10-01T06:42:01Z",
+          "measured": "2026-10-06T09:47:33.019701+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/c8a5fe9e22c329ca40ea0eed047a760eb9e34802/report.json",
+          "report_identity": "a624917254610db0ce7c6122c65332b6668c2523800704c01f8d88bfafc6f979",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "786ab24e9c5a27e826a2d108acc078a6a1478ca642f261cda67769b84f60c923"
+        },
+        {
+          "commit": "cc01d2edbab62575f4d3940c2e306b705eba6cdc",
+          "date": "2026-10-01T21:08:41Z",
+          "measured": "2026-10-06T11:24:05.576194+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/cc01d2edbab62575f4d3940c2e306b705eba6cdc/report.json",
+          "report_identity": "8044053a85e6ef8920a209b0fac2eed2805597ccc480e0abbce112e8d13777a6",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "4e788cc118851111326186c6f92d3d84f05fea41b311fb0b6030bd1dad822ca5"
+        },
+        {
+          "commit": "ce5ee3c40579bfd3aa90f0285353105504de81a2",
+          "date": "2026-09-27T16:11:23Z",
+          "measured": "2026-10-06T01:46:01.735195+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/ce5ee3c40579bfd3aa90f0285353105504de81a2/report.json",
+          "report_identity": "9bc82f152e38562d3fd849860457aedc3c9380b89278c7c13e74fc6b628ce051",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "47e128fee620bd076ec70443d93523f2d618dcd134a4ef557b0da414db30930f"
+        },
+        {
+          "commit": "d2cd1e88242867c5d9e1982725fc2032ab370594",
+          "date": "2026-10-01T21:08:42Z",
+          "measured": "2026-10-06T12:10:36.691833+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/d2cd1e88242867c5d9e1982725fc2032ab370594/report.json",
+          "report_identity": "88049b80d07bac23df773eca982578497bc0cad1bd8ae734f8d7fce9b56a0e98",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "9eaadf5437bce7a0f7c274444e1c2540026c6532980523e4b8171c9e6c7c808b"
+        },
+        {
+          "commit": "d8dd4f608e030be77cdefde8575e0b1a5fffe820",
+          "date": "2026-10-01T23:10:12Z",
+          "measured": "2026-10-06T12:59:37.886340+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/d8dd4f608e030be77cdefde8575e0b1a5fffe820/report.json",
+          "report_identity": "1bd541a79e1d83ac1d3669a91618161692a21cd93e8be91d7120a48bfdc3d1cc",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "0bc54fc9fcb3f3ac4a1b0bbaee838f84cf4430d96a927b8d43aba1a7722faebb"
+        },
+        {
+          "commit": "df460ae32bc2df63d0c4f742be26d7598e506bdd",
+          "date": "2026-09-27T16:11:26Z",
+          "measured": "2026-10-06T06:35:24.150522+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/df460ae32bc2df63d0c4f742be26d7598e506bdd/report.json",
+          "report_identity": "ecf2ff61cda0c03a0df2130e2e98abacbbf83b666e560d39f7a294fd6bfe35ce",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "11b6afee45ec7e1cae0f671afa760c4a74b0f8e126f95cd7eed1662c908cc470"
+        },
+        {
+          "commit": "f0dfc3edefc7f4ee35180be0b8417c16e7725fbb",
+          "date": "2026-09-27T21:45:54Z",
+          "measured": "2026-10-06T07:23:43.731981+00:00",
+          "report": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/f0dfc3edefc7f4ee35180be0b8417c16e7725fbb/report.json",
+          "report_identity": "f6ef35b09ac7b3367c5c60755148cd3968ae5c4d79edd5aebb506eda1b4ea52b",
+          "batch": "local/macos-m5-pro/4b0c8629ee839bb92a3d73b2ce0dbb40a5fa259e473205c4c5f1e826585c84aa/batch.json",
+          "batch_identity": "052c9ed5f92038fb66ac6b314981bcc6e21316170fc1faa1d4d2c44b72b7db9e",
+          "method": "695d43eb8b5905ecface161fb20f2d2bf94ce514a677c0e7bcdaa55fb4c3acbb"
+        },
         {
           "commit": "623cab238f6a2ede58b20f538d310c1e12c60dfc",
           "date": "2026-10-02T19:19:46Z",
