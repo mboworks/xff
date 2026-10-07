@@ -432,7 +432,9 @@ for run, platform, commit in [(1, 'linux', 'a'), (2, 'linux', 'b'), (3, 'macos',
     (folder / 'index.html').write_text('<h1>Report</h1>')
 folder = root / 'local/macos-test/batch' / ('c' * 40)
 folder.mkdir(parents=True)
-(folder / 'report.json').write_text(json.dumps(dict(tool_comparisons=report(cpus=(1, 3, 10)),
+local_report = report(cpus=(1, 3, 10))
+local_report['contract']['machine'] = 'arm64'
+(folder / 'report.json').write_text(json.dumps(dict(tool_comparisons=local_report,
     platform='macos', kind='backfill', purpose='local-addition', series='macos-test', head='c' * 40,
     revision=dict(date='2026-09-01T00:00:00Z'), completed_at='2026-10-02T00:00:00Z')))
 (folder / 'index.html').write_text('<h1>Local report</h1>')
@@ -710,7 +712,7 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
     );
     await page.selectOption(
       '[data-control="platform"]',
-      "Local / macos-test / ",
+      "Local / macos-test / arm64 / broad/v1 + deep/v1",
     );
     await waitCommit("c");
     assert.equal(await page.locator("[data-links-row]").isVisible(), true);

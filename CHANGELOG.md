@@ -15,6 +15,8 @@
 - Restore merged-main benchmark baseline comparisons and keep reruns within earlier main revisions;
   put worker and file counts before benchmark/backfill progress details.
 
+- Keep legacy and versioned local benchmark layouts separate in the history explorer.
+
 - Publish benchmark dataset recipes and provenance; discover compatible workloads and derive local
   backfill settings from the selected dataset. Document the Bazel invocation and support direct execution.
 
