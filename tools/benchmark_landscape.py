@@ -37,6 +37,14 @@ def platform_details(value):
     return value
 
 
+def layout_details(contract):
+    """Name the workload revision anywhere multiple dataset recipes can coexist."""
+    layouts = contract.get('layouts', [])
+    if not layouts:
+        return 'broad/v1 + deep/v1'
+    return ' + '.join(f"{layout['name']}/v{layout['revision']}" for layout in layouts)
+
+
 def ordered_pairs(rows, mode):
     """Minimize adjacent mean absolute differences, then orient better inward."""
     if mode not in ORDER_LABELS:
@@ -461,7 +469,7 @@ def publish(root, javascript, previews=(), incremental=False, repository='mbowor
             if machine and machine.lower() not in platform.lower():
                 platform += ' / ' + machine
             if local:
-                platform = 'Local / ' + record['series'] + ' / ' + machine
+                platform = 'Local / ' + record['series'] + ' / ' + machine + ' / ' + layout_details(contract)
             commit = record.get('head') or source['head_sha']
             label = ('Local' if local else source['head_branch']) + ' / ' + commit[:10]
             if source and source.get('pull_requests'):

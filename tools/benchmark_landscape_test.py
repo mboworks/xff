@@ -52,6 +52,12 @@ class BenchmarkLandscapeTest(unittest.TestCase):
         self.assertEqual(landscape.platform_details('Linux-6.8-x86_64'), 'Linux-6.8-x86_64')
         self.assertEqual(landscape.platform_details('custom-platform'), 'custom-platform')
 
+    def test_layout_details_distinguish_legacy_and_versioned_datasets(self):
+        self.assertEqual(landscape.layout_details({}), 'broad/v1 + deep/v1')
+        self.assertEqual(landscape.layout_details({'layouts': [
+            {'name': 'broad', 'revision': 2}, {'name': 'deep', 'revision': 2},
+        ]}), 'broad/v2 + deep/v2')
+
     def test_incremental_preview_publication_preserves_merged_pages_and_removes_stale_selection(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -344,6 +350,29 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                 self.assertTrue((root / row['report'] / 'index.html').is_file())
             landscape.publish(root, '/* renderer */')
             self.assertEqual((root / 'index.html').read_text(), first)
+
+    def test_local_history_keeps_layout_revisions_as_separate_platforms(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'index.html').write_text('<h1>History</h1>')
+            for batch, layouts in [('legacy', []), ('versioned', [
+                    {'name': 'broad', 'revision': 2}, {'name': 'deep', 'revision': 2},
+            ])]:
+                folder = root / 'local' / 'zen5' / batch / ('a' * 40)
+                folder.mkdir(parents=True)
+                comparison = report()
+                comparison['contract'].update(machine='x86_64', platform='Linux-6.8-x86_64', layouts=layouts)
+                data = dict(tool_comparisons=comparison, platform='linux', kind='backfill',
+                            purpose='local-addition', series='zen5', head='a' * 40,
+                            revision={'date': '2026-09-01T00:00:00Z'}, completed_at='2026-10-01T00:00:00Z')
+                (folder / 'report.json').write_text(json.dumps(data))
+                (folder / 'index.html').write_text('<h1>Report</h1>')
+            self.assertEqual(landscape.publish(root, '/* renderer */'), 2)
+            catalog = json.loads((root / 'catalog.json').read_text())
+            self.assertEqual({row['platform'] for row in catalog}, {
+                'Local / zen5 / x86_64 / broad/v1 + deep/v1',
+                'Local / zen5 / x86_64 / broad/v2 + deep/v2',
+            })
 
     def test_history_catalog_escapes_script_content_and_handles_empty_data(self):
         text = landscape.history_panel([dict(label='</script><script>alert(1)</script>')])
