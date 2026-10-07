@@ -1,0 +1,10 @@
+{
+  "103fbf65b22979f75f5adbac67a53f15cf74d03e": {
+    "status": "complete",
+    "report": "reports/103fbf65b22979f75f5adbac67a53f15cf74d03e/benchmark-report-macos-arm64.html"
+  },
+  "9210100af8007a2f17b22597a349714d9e6069e1": {
+    "status": "complete",
+    "report": "reports/9210100af8007a2f17b22597a349714d9e6069e1/benchmark-report-macos-arm64.html"
+  }
+}

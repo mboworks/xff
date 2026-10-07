@@ -1,0 +1,225 @@
+{
+  "created_at": "2026-10-06T14:18:08.941949+00:00",
+  "contract": {
+    "schema": 1,
+    "series": "macos-m5-pro",
+    "revisions": [
+      {
+        "sha": "4331864b62fb1bdc8e8ffee6722d2b0b6cdc98bb",
+        "date": "2026-10-02T00:53:58+01:00",
+        "subject": "Publish complete revision CI benchmark backfill campaigns (#943)"
+      },
+      {
+        "sha": "91a865617cd5eed9caf64f1ff5b2dcbd7b50d5f5",
+        "date": "2026-10-02T16:18:12+01:00",
+        "subject": "Publish local benchmark series on the main benchmark page (#945)"
+      },
+      {
+        "sha": "605da2aa0b4f2e0987807a1eac1c0224508ece71",
+        "date": "2026-10-02T19:09:47+01:00",
+        "subject": "Reduce Pages artifacts by redirecting duplicate coverage reports (#946)"
+      },
+      {
+        "sha": "5a38a874ffa6175056f80b2e1bbba6a7d7c954a4",
+        "date": "2026-10-04T10:57:42+01:00",
+        "subject": "Discover and backfill missing local benchmark measurements (#957)"
+      },
+      {
+        "sha": "9cb9a1ae42351d32be48dd3b15ab2014c3d96327",
+        "date": "2026-10-04T11:51:31+01:00",
+        "subject": "Publish benchmark dataset recipes and discover compatible backfills (#958)"
+      },
+      {
+        "sha": "0ac0e62aa0a2f04eb372d95f10f1657bd5176d29",
+        "date": "2026-10-04T14:17:40+01:00",
+        "subject": "Restore main benchmark baselines and clarify measurement progress (#959)"
+      },
+      {
+        "sha": "989fb3aff9e095a96384a17184484ce7c155e5a9",
+        "date": "2026-10-05T00:34:36+01:00",
+        "subject": "Establish expression execution contracts and CI baselines (EP01) (#960)"
+      },
+      {
+        "sha": "8d25cd131e6ac8e475bc58c6d13ac1518c789d58",
+        "date": "2026-10-05T03:57:01+01:00",
+        "subject": "Bind expression dispatch once and compare executors in CI (#961)"
+      },
+      {
+        "sha": "a5902a8080b072275cee4240627d0a414ba671cc",
+        "date": "2026-10-05T06:24:43+01:00",
+        "subject": "Prepare typed scalar operands for expression execution (#962)"
+      },
+      {
+        "sha": "f1a47a8d291a23aed96e5aeeebc3264e15f1d91c",
+        "date": "2026-10-05T08:31:45+01:00",
+        "subject": "Index worker regex state in prepared expressions (#963)"
+      },
+      {
+        "sha": "ec341dbc82eaf9a89e17143196e42014aa30fc26",
+        "date": "2026-10-05T10:59:40+01:00",
+        "subject": "Evaluate toolchains_llvm 1.11.1 in isolation (#975)"
+      },
+      {
+        "sha": "d30da7c59a0ca311ac93d23ba87500cdd0ce4e8e",
+        "date": "2026-10-05T12:00:25+01:00",
+        "subject": "Compare contiguous expression programs and dispatch strategies (#964)"
+      },
+      {
+        "sha": "11eb1e91c745ba813aac34c284944e8cd8d3bf49",
+        "date": "2026-10-05T13:35:04+01:00",
+        "subject": "Preserve scoring and replay with iterative expression execution (#965)"
+      },
+      {
+        "sha": "ffdaf1107a9f39cfdc44b485f1504f5534b52bcd",
+        "date": "2026-10-05T14:24:08+01:00",
+        "subject": "Qualify expression executors through complete engine runs (#966)"
+      },
+      {
+        "sha": "2df43ac95a5825d25ab782d550f247d57b5f2636",
+        "date": "2026-10-05T15:26:19+01:00",
+        "subject": "Qualify constant folding, jump threading, and branch fusion (#967)"
+      },
+      {
+        "sha": "abaf4d4c219cdc27b6b579a0949cfd850ac27169",
+        "date": "2026-10-05T16:37:15+01:00",
+        "subject": "Defer prepared worker regex initialization until first use (#968)"
+      },
+      {
+        "sha": "0fe0fa63136bde362b47f9cae481d8912b0cd9e6",
+        "date": "2026-10-05T17:47:00+01:00",
+        "subject": "Prepare numeric age predicates and reject signed count overflow (#969)"
+      },
+      {
+        "sha": "35e726cde0f672276997170d0e27b44d2ed174df",
+        "date": "2026-10-05T19:09:16+01:00",
+        "subject": "refactor(engine): isolate executor qualification from production linkage (#970)"
+      },
+      {
+        "sha": "910ca43c4e5d0d39a0d5338094cf82fb57f6fcbf",
+        "date": "2026-10-05T22:17:51+01:00",
+        "subject": "Use prepared expression execution and reuse coordinator matchers (#971)"
+      },
+      {
+        "sha": "ec0460a0f09d6fa20fb3bda40fa05f8074d555fd",
+        "date": "2026-10-05T23:25:11+01:00",
+        "subject": "Prepare first-entry limits and MIME patterns once (#972)"
+      },
+      {
+        "sha": "dfd5447644f0f2e1622a4dcc58ea7f2f704e3f95",
+        "date": "2026-10-06T00:25:44+01:00",
+        "subject": "Check expression allocation regressions under ASan (#973)"
+      },
+      {
+        "sha": "378d3540691e65ac5ce833dd50ee56c6d523c4a2",
+        "date": "2026-10-06T00:26:22+01:00",
+        "subject": "Bump lz4 from 1.10.0.bcr.1 to 1.10.0.bcr.2 (#979)"
+      },
+      {
+        "sha": "e4cbf5938ff5e7d69e714d46cd926d155530a04b",
+        "date": "2026-10-06T00:27:26+01:00",
+        "subject": "Bump zlib from 1.3.2 to 1.3.2.bcr.2 (#980)"
+      },
+      {
+        "sha": "73b2cfcd710170cd95e0e324e1d0aa9a93ec5ce1",
+        "date": "2026-10-06T01:17:35+01:00",
+        "subject": "Record expression qualification evidence and worker-startup follow-up (#976)"
+      },
+      {
+        "sha": "fbded52d89fbc0681b34ffb6137a2eec741c1e7e",
+        "date": "2026-10-06T01:21:26+01:00",
+        "subject": "Reconstruct missing historical benchmark baselines during publication (#974)"
+      },
+      {
+        "sha": "21c7f3656b005b23113d936c1cd2ca0fd2221ab2",
+        "date": "2026-10-06T02:23:48+01:00",
+        "subject": "Prepare peer and expected-hash field templates once (#977)"
+      },
+      {
+        "sha": "c33efe99d0df0b4866a9f77fde71dde9959d3cdb",
+        "date": "2026-10-06T03:40:08+01:00",
+        "subject": "Adapt benchmark shard count to runner CPU agreement (#981)"
+      }
+    ],
+    "platform": "macos",
+    "purpose": "local-addition",
+    "allocation": {
+      "kind": "workers",
+      "cpu_ids": null,
+      "required": false
+    },
+    "replacement_target": null,
+    "environment": {
+      "host_id": "8b3795aa25390811064d8e7276e56384b720d78e3ab2780e415c7dc9d4e9522b",
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "machine": "arm64",
+      "cpu_count": 18,
+      "allowed_cpus": null,
+      "python": "3.13.13 (main, Apr 14 2026, 14:32:41) [Clang 22.1.3 ]",
+      "tools": {
+        "find": {
+          "status": "available",
+          "path": "/usr/bin/find",
+          "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+          "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+        },
+        "rg": {
+          "status": "available",
+          "path": "/opt/homebrew/Cellar/ripgrep/15.2.0/bin/rg",
+          "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+          "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+        },
+        "fzf": {
+          "status": "available",
+          "path": "/opt/homebrew/Cellar/fzf/0.74.4/bin/fzf",
+          "version": "0.74.4 (Homebrew)",
+          "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+        }
+      }
+    },
+    "driver": {
+      "benchmark_backfill.py": "b5747bb37f3c093879884d43ff6098f1d08e5d7119623f663c010749efd90bb0",
+      "benchmark_compare.py": "db878f412cd9d6bbde67e18ca17928cc3f8b01fe1261246611f48a6a08a4d99f",
+      "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+      "benchmark_matrix.py": "3fcc1ed7557abfef369f4018f595705e1a420873716a75c927c0fe91ea03cfd2",
+      "benchmark_shards.py": "91289bcffad1d2a101f1e747691f7fd0eaf9eebd47af437400ebfec282e3e0af"
+    },
+    "files": [
+      10,
+      20,
+      50,
+      100,
+      200,
+      500,
+      1000,
+      2000,
+      5000,
+      10000,
+      20000,
+      50000,
+      100000
+    ],
+    "cpus": [
+      1,
+      3,
+      10
+    ],
+    "depth": 40,
+    "repetitions": 9,
+    "retained": 7,
+    "require_cpu_affinity": false,
+    "storage": {
+      "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+      "filesystem": "unverified host filesystem",
+      "memory_required": false,
+      "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+    },
+    "build": {
+      "config": "clang_release",
+      "bazel": "/Users/marcus/Library/Caches/bazelisk/downloads/sha256/dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6/bin/bazel",
+      "version": "bazel 9.2.0"
+    },
+    "machine_id": "e332623ec34fd5e53745f9cf547a0bf4445da92112526e48e24d2e5b661bbca2",
+    "source_dataset": "edc73c2b56c3f7e534c8cf13c48a532c51a8e011a8f20cd481d7e256cd7f2979"
+  },
+  "identity": "3ab847def6e38a0353ddd8ae4d5025246cfba1d02a996341fcbc63d5109f0ce8"
+}
