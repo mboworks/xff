@@ -159,6 +159,8 @@ def inventory(revisions, batches, series, requested):
             continue
         for revision in value['contract']['revisions']:
             state = report_status(directory, value, revision, requested)
+            if state == 'incompatible grid/sampling':
+                continue
             observations.setdefault(revision['sha'], []).append((state, directory))
     rows = []
     for revision in revisions:
@@ -167,6 +169,24 @@ def inventory(revisions, batches, series, requested):
         detail = ', '.join(sorted({state for state, _ in found})) if found else 'no measurements'
         rows.append({**revision, 'state': state, 'detail': detail})
     return rows
+
+
+def selected_recipe_options(args):
+    """Return display options matching the selected dataset, independent of target overrides."""
+    selection = getattr(args, 'dataset_selection', None)
+    if selection is None or not selection['same_machine']:
+        return args
+    result = copy.copy(args)
+    recipe = selection['dataset']['recipe']
+    for key in ('files', 'cpus', 'depth', 'repetitions', 'keep'):
+        setattr(result, key, recipe[key])
+    result.layouts = ([f"{layout['name']}/v{layout['revision']}" for layout in recipe.get('layouts', [])]
+                      if recipe.get('fixture_version') == 3 else [])
+    return result
+
+
+def recipe_identity(args):
+    return (tuple(args.files), tuple(args.cpus), args.depth, args.repetitions, args.keep, tuple(args.layouts))
 
 
 def display_subject(subject):
@@ -354,25 +374,31 @@ def upload_candidates(root, pages_root):
 def choose_upload(candidates):
     if not candidates:
         raise ValueError('no local datasets have completed observations to upload')
-    print('Eligible local measurement datasets:')
+    print('Eligible local measurement batches:')
     for number, candidate in enumerate(candidates, 1):
         state = 'uploaded' if candidate['uploaded'] else 'ready'
         print(f"  {number}. {candidate['identity'][:12]}  {candidate['series']}  {state}; "
               f"{candidate['complete']}/{candidate['total']} revisions complete")
     try:
-        answer = input(f'Select dataset to upload [1-{len(candidates)}, q to cancel]: ').strip().lower()
+        answer = input(f'Select batch to upload [1-{len(candidates)}, a for all ready, q to cancel]: ').strip().lower()
     except EOFError:
         answer = ''
     if answer in ('', 'q', 'quit', 'cancel'):
         print('Cancelled; nothing was pushed or published.')
         return None
+    if answer in ('a', 'all'):
+        selected = [candidate['directory'] for candidate in candidates if not candidate['uploaded']]
+        if not selected:
+            raise ValueError('no ready local measurement batches remain to upload')
+        print(f'Selected all {len(selected)} ready batches; already uploaded batches are excluded.')
+        return selected
     try:
         selected = int(answer)
     except ValueError as error:
-        raise ValueError('dataset selection must be a listed number or q') from error
+        raise ValueError('batch selection must be a listed number, a, or q') from error
     if not 1 <= selected <= len(candidates):
-        raise ValueError('dataset selection is outside the listed range')
-    return candidates[selected - 1]['directory']
+        raise ValueError('batch selection is outside the listed range')
+    return [candidates[selected - 1]['directory']]
 
 
 def upload(args):
@@ -386,10 +412,9 @@ def upload(args):
         try:
             interactive = not args.batch
             if interactive:
-                selected = choose_upload(upload_candidates(args.root, checkout / 'benchmarks'))
-                if selected is None:
+                directories = choose_upload(upload_candidates(args.root, checkout / 'benchmarks'))
+                if directories is None:
                     return 0
-                directories = [selected]
             else:
                 directories = upload_batches(args.root, args.batch)
             destinations = [local.retain(checkout / 'benchmarks', directory) for directory in directories]
@@ -466,14 +491,15 @@ def parser_for_cli():
             sub.add_argument('-Y', '--yes', action='store_true', help='answer the execution confirmation with yes')
     upload_parser = commands.add_parser('upload', help='validate and upload completed local observations',
                                         description=('Import completed observations into a temporary coverage-pages '
-                                                     'worktree, commit and push them, then start site publication.'))
+                                                     'worktree, commit and push them, then start site publication. '
+                                                     'The interactive picker accepts one batch or all ready batches.'))
     upload_parser.add_argument('--repo', type=Path,
                                default=Path(os.environ.get('BUILD_WORKSPACE_DIRECTORY', Path.cwd())),
                                help='source checkout whose remote receives the upload')
     upload_parser.add_argument('--root', type=Path, default=Path.home() / 'xff-benchmarks',
                                help='local batch storage')
     upload_parser.add_argument('--batch', action='append',
-                               help='select without the interactive dataset picker; directory/path or unique identity prefix; repeatable')
+                               help='select without the interactive batch picker; directory/path or unique identity prefix; repeatable')
     upload_parser.add_argument('--remote', default='origin', help='Git remote containing the Pages branch')
     upload_parser.add_argument('--pages-ref', default='coverage-pages', help='branch retaining benchmark data')
     upload_parser.add_argument('--github-repository', default=os.environ.get('GITHUB_REPOSITORY', 'mboworks/xff'),
@@ -541,8 +567,15 @@ def main(argv=None):
         with published_history(args) as history:
             batches = load_batches(args.root, history)
             series, known = select_series(batches, identity, args.series)
-            rows = inventory(revisions, batches, series, args)
-            show_inventory(rows, series, known, args)
+            history_args = selected_recipe_options(args)
+            display_args = args
+            if recipe_identity(history_args) == recipe_identity(args):
+                rows = inventory(revisions, batches, series, args)
+            else:
+                rows = inventory(revisions, batches, series, args)
+                display_args = copy.copy(args)
+                display_args.dataset_selection = None
+            show_inventory(rows, series, known, display_args)
             if args.command == 'list' or all(row['state'] == 'complete' for row in rows):
                 return 0
             plans = execution_plan(args, series, identity, rows, batches)

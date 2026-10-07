@@ -17,6 +17,9 @@
 
 - Keep legacy and versioned local benchmark layouts separate in the history explorer.
 
+- Keep explicit local layout selections separate from published dataset inventory and allow the
+  interactive uploader to select every ready batch at once.
+
 - Publish benchmark dataset recipes and provenance; discover compatible workloads and derive local
   backfill settings from the selected dataset. Document the Bazel invocation and support direct execution.
 

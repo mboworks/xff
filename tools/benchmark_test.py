@@ -150,6 +150,26 @@ class BenchmarkTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'identity changed'):
                 cli.load_batches(root, None)
 
+    def test_selected_v1_observations_do_not_spill_into_v2_inventory(self):
+        value, record = fixture()
+        selection = dict(same_machine=True, dataset=dict(
+            id='dataset', series='macos-test', recipe=dict(
+                files=[10], cpus=[1], depth=40, repetitions=1, keep=1, fixture_version=2)))
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            saved = save(root / 'published', value, record, published=True)
+            args = self.options(root)
+            args.dataset_selection = selection
+            args.layouts = ['broad/v2', 'deep/v2']
+            history_args = cli.selected_recipe_options(args)
+            history = cli.inventory(value['contract']['revisions'], [(saved, value)], 'macos-test', history_args)
+            target = cli.inventory(value['contract']['revisions'], [(saved, value)], 'macos-test', args)
+            self.assertEqual(history[0]['state'], 'complete')
+            self.assertEqual(history[0]['detail'], 'complete')
+            self.assertEqual(target[0]['state'], 'missing')
+            self.assertEqual(target[0]['detail'], 'no measurements')
+            self.assertNotEqual(cli.recipe_identity(history_args), cli.recipe_identity(args))
+
     def test_missing_corrupt_incomplete_and_incompatible_reports_remain_missing(self):
         mutations = [lambda r: r['tool_comparisons']['tasks'].pop(),
                      lambda r: r.update(head='b' * 40),
@@ -324,20 +344,33 @@ class BenchmarkTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'unique identity prefix'):
                 cli.upload_batches(root, ['missing'])
 
-    def test_upload_picker_lists_state_and_accepts_selection_or_cancel(self):
+    def test_upload_picker_lists_state_and_accepts_selection_all_or_cancel(self):
         candidates = [dict(directory=Path('/first'), identity='a' * 64, series='linux-one', complete=27,
                            total=49, uploaded=True),
                       dict(directory=Path('/second'), identity='b' * 64, series='macos-two', complete=8,
-                           total=8, uploaded=False)]
+                           total=8, uploaded=False),
+                      dict(directory=Path('/third'), identity='c' * 64, series='linux-three', complete=3,
+                           total=5, uploaded=False)]
         with mock.patch('builtins.input', return_value='2'), \
                 contextlib.redirect_stdout(io.StringIO()) as output:
-            self.assertEqual(cli.choose_upload(candidates), Path('/second'))
+            self.assertEqual(cli.choose_upload(candidates), [Path('/second')])
         self.assertIn('aaaaaaaaaaaa  linux-one  uploaded; 27/49 revisions complete', output.getvalue())
         self.assertIn('bbbbbbbbbbbb  macos-two  ready; 8/8 revisions complete', output.getvalue())
+        with mock.patch('builtins.input', return_value='a'), \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(cli.choose_upload(candidates), [Path('/second'), Path('/third')])
+        self.assertIn('Selected all 2 ready batches; already uploaded batches are excluded.', output.getvalue())
         with mock.patch('builtins.input', return_value='q'), \
                 contextlib.redirect_stdout(io.StringIO()) as output:
             self.assertIsNone(cli.choose_upload(candidates))
         self.assertIn('Cancelled', output.getvalue())
+
+    def test_upload_picker_rejects_all_when_every_batch_is_uploaded(self):
+        candidates = [dict(directory=Path('/first'), identity='a' * 64, series='linux-one', complete=1,
+                           total=1, uploaded=True)]
+        with mock.patch('builtins.input', return_value='all'), \
+                self.assertRaisesRegex(ValueError, 'no ready local measurement batches'):
+            cli.choose_upload(candidates)
 
     def test_upload_candidates_only_include_valid_batches_with_completed_observations(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -430,6 +463,30 @@ class BenchmarkTest(unittest.TestCase):
             self.assertIn('\n\nMeasurement inventory for dataset 1:', output.getvalue())
             run.assert_not_called()
             prompt.assert_not_called()
+
+    def test_explicit_v2_list_does_not_display_selected_v1_observations(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            value, record = fixture()
+            record['tool_comparisons']['contract'].update(
+                fixture_version=2, warmup_rounds=1, order='rotate starting participant by task and round')
+            history = root / 'site'
+            save(history / 'local/macos-test/batch', value, record, published=True)
+            cli.discovery.datasets.publish(history)
+            with mock.patch.object(cli, 'available_revisions', return_value=value['contract']['revisions']), \
+                    mock.patch.object(cli, 'machine_identity', return_value='machine'), \
+                    mock.patch.object(batch, 'host_platform', return_value='macos'), \
+                    mock.patch.object(cli.platform, 'machine', return_value='arm64'), \
+                    mock.patch.object(cli.os, 'cpu_count', return_value=18), \
+                    contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(cli.main(['list', '--no-fetch', '--root=' + str(root / 'new'),
+                                           '--history-root=' + str(history), '--layout-revision=v2']), 0)
+            text = output.getvalue()
+            self.assertIn('Measurement inventory for local series macos-test; published dataset entry: none', text)
+            self.assertIn('1 revisions; 1 missing', text)
+            self.assertRegex(text, r'missing\s+n/a\s+PR 1: Merge')
+            self.assertNotIn('incompatible grid/sampling', text)
+            self.assertNotIn('Measurement inventory for dataset 1:', text)
 
     def test_saved_series_reuses_latest_nonempty_build_library_path(self):
         value, _ = fixture()
