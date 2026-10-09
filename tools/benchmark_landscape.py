@@ -45,6 +45,17 @@ def layout_details(contract):
     return ' + '.join(f"{layout['name']}/v{layout['revision']}" for layout in layouts)
 
 
+def dataset_metadata(record):
+    """Separate the measured platform from the workload recipes in a dataset."""
+    contract = record.get('tool_comparisons', {}).get('contract', {})
+    platform = (record['series'] if benchmark_records.is_local(record) else
+                benchmark_records.platform_key(record) or contract.get('platform', 'Unknown platform'))
+    machine = contract.get('machine', record.get('contract', {}).get('machine', ''))
+    if machine and machine.lower() not in platform.lower():
+        platform += ' / ' + machine
+    return dict(platform_name=platform, dataset_type=layout_details(contract))
+
+
 def ordered_pairs(rows, mode):
     """Minimize adjacent mean absolute differences, then orient better inward."""
     if mode not in ORDER_LABELS:
@@ -301,8 +312,9 @@ def history_panel(catalog):
             '<details open><summary>3D comparison chart (show/hide)</summary>'
             '<details data-help-panel class="landscape-card">'
             '<summary><strong>Help</strong></summary><div class="landscape-help-body">'
-            '<p>Select a measured platform and version. Oldest is left; newest is right. '
-            'A platform switch retains the commit when available, otherwise selects its newest report. '
+            '<p>Select a measured dataset and version. Oldest is left; newest is right. '
+            'A dataset groups measurements from the same machine and measurement configuration. '
+            'A dataset switch retains the commit when available, otherwise selects its newest report. '
             'Only retained successful reports with comparison data appear. '
             'Each chart compares xff with reference tools measured in that run; '
             'different dates, machines or measurement contracts are not paired performance comparisons. '
@@ -313,9 +325,9 @@ def history_panel(catalog):
             'Surfaces connect measured neighbors; they are not predictions.</p>'
             '</div></details>'
             '<details data-view-panel class="landscape-card" open>'
-            '<summary><strong>View</strong><span data-view-platform>No measured platforms</span></summary>'
+            '<summary><strong>View</strong><span data-view-platform>No measured datasets</span></summary>'
             '<div class="landscape-view-controls">'
-            '<label>Platform: <select data-control="platform"></select></label> '
+            '<label>Dataset: <select data-control="platform"></select></label> '
             '<label>Source: <select data-control="source"><option value="merged">Merged history</option></select></label> '
             '<label>Order: <select data-control="order">' +
             ''.join('<option value="' + key + '">' + label + '</option>'
@@ -324,10 +336,12 @@ def history_panel(catalog):
             '<label>Timings: <select data-control="normalization">'
             '<option value="reference">Reference normalized</option><option value="raw">Raw</option></select></label> '
             '<button type="button" data-reset>Reset</button></div></details>'
+            '<details data-performance-panel class="landscape-card landscape-legend-panel" open>'
+            '<summary><strong>Performance</strong></summary><div data-performance-body>'
             '<div data-performance-controls style="display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-bottom:6px">'
             '<label>Scale: <select data-control="metric"><option value="percent">Percentage</option>'
             '<option value="factor">Logarithmic</option></select></label> '
-            + range_controls('data-control') + '</div>'
+            + range_controls('data-control') + '</div></div></details>'
             '<div data-chart><details data-version-panel class="landscape-card" open>'
             '<summary><strong>Version</strong></summary><div data-version-body>'
             '<table class="landscape-version-table"><tbody>'
@@ -337,6 +351,7 @@ def history_panel(catalog):
             '<tr><th scope="row">Revision date</th><td data-revision-date></td></tr>'
             '<tr data-measured-row><th scope="row">Measured</th><td data-measured>Not recorded</td></tr>'
             '<tr><th scope="row">Platform</th><td data-platform></td></tr>'
+            '<tr><th scope="row">Dataset type</th><td data-dataset-type></td></tr>'
             '<tr><th scope="row">Details</th><td><div data-platform-details></div></td></tr>'
             '</tbody></table><div role="status" aria-live="polite" hidden></div>'
             '<div class="landscape-version-control">'
@@ -371,6 +386,11 @@ def publish_history(root, catalog):
             selected[key] = (rank, item)
     entries = sorted((item for _, item in selected.values()),
                      key=lambda item: (item['date'], item.get('run', 0), item.get('attempt', 0)))
+    for index, item in enumerate(entries):
+        if 'platform_name' not in item or 'dataset_type' not in item:
+            report_path = root / item['report'] / 'report.json'
+            if benchmark_records.exists(report_path):
+                entries[index] = dict(item, **dataset_metadata(benchmark_records.read(report_path)))
     insertion = text.index('</h1>') + len('</h1>')
     page.write_text(text[:insertion] + start + history_panel(entries) + end + text[insertion:], encoding='utf-8')
 
@@ -486,6 +506,7 @@ def publish(root, javascript, previews=(), incremental=False, repository='mbowor
                 number = record.get('pull_number') or source['pull_requests'][0]['number']
                 links = [{'label': f'PR #{number} preview', 'href': f'https://github.com/{repository}/pull/{number}'}]
             catalog.append(dict(platform=platform, commit=commit, label=label,
+                                **dataset_metadata(record),
                                 source=f'pr-{number}' if preview else 'merged',
                                 source_label=f'PR #{number} preview' if preview else 'Merged history',
                                 links=links,

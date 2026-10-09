@@ -45,15 +45,20 @@ window.XffLandscape = function createLandscape(root, figures) {
     .landscape-hover-table th{text-align:left;font-weight:500;white-space:nowrap}
     .landscape-hover-table td{text-align:right;overflow-wrap:anywhere}`;
   root.append(hoverStyle);
-  const legend = document.createElement("details");
-  legend.className = "landscape-legend-panel";
-  legend.open = true;
+  const existingLegend = root.querySelector("[data-performance-panel]");
+  const legend = existingLegend || document.createElement("details");
+  legend.classList.add("landscape-legend-panel");
+  if (!existingLegend) legend.open = true;
   legend.style.cssText = panelStyle;
-  const legendSummary = document.createElement("summary");
-  const legendTitle = document.createElement("strong");
+  const legendSummary =
+    legend.querySelector("summary") || document.createElement("summary");
+  const legendTitle =
+    legendSummary.querySelector("strong") || document.createElement("strong");
   legendTitle.textContent = "Performance: %";
   legendSummary.append(legendTitle);
-  const legendBody = document.createElement("div");
+  const legendBody =
+    legend.querySelector("[data-performance-body]") ||
+    document.createElement("div");
   legend.append(legendSummary, legendBody);
   const performanceControls = root
     .closest("#benchmark-explorer")
