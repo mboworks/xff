@@ -28,5 +28,8 @@
   },
   "pull_state": "merged",
   "reference_time": "2026-10-09T21:05:34Z",
-  "history": null
+  "history": {
+    "commit": "4ea895f63106f05df7c90b629d20433ae1e03016",
+    "position": 953
+  }
 }
