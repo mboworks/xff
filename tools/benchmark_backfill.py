@@ -190,6 +190,7 @@ def make_contract(args, *, campaign=None, collection=None):
         'require_cpu_affinity': allocation['required'],
         'storage': compare.fixture_storage(args.fixture_parent, args.require_memory),
         'build': {'config': 'clang_release', 'bazel': str(Path(bazel).resolve()),
+                  'startup_flags': ['--nosystem_rc', '--nohome_rc'],
                   'version': subprocess.check_output([bazel, '--version'], text=True).strip(),
                   'library_path': str(library_path) if library_path else None},
     }
@@ -222,32 +223,73 @@ def prepare(args, *, campaign=None, collection=None):
     return batch
 
 
+def verify_binary(binary, saved, sha):
+    """Bind the executable about to run to the revision's saved build identity."""
+    if saved.get('revision') != sha or saved['sha256'] != compare.digest(binary):
+        raise ValueError('saved benchmark binary changed: ' + sha)
+
+
+def checkout_identity(checkout, sha):
+    """Reject a wrong revision, changed sources or an unrecorded workspace RC."""
+    if git(checkout, 'rev-parse', 'HEAD') != sha:
+        raise ValueError('benchmark checkout does not match revision: ' + sha)
+    if git(checkout, 'status', '--porcelain', '--untracked-files=normal'):
+        raise ValueError('benchmark checkout has changed sources: ' + sha)
+    if (checkout / '.bazelrc.user').exists():
+        raise ValueError('benchmark checkout has an unrecorded .bazelrc.user: ' + sha)
+    return {'revision': sha, 'tree': git(checkout, 'rev-parse', 'HEAD^{tree}'), 'clean': True}
+
+
+def build_logged(command, checkout, log):
+    """Show native build progress while retaining the complete diagnostic log."""
+    with subprocess.Popen(command, cwd=checkout, stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT, text=True, bufsize=1) as process:
+        for line in process.stdout:
+            log.write(line)
+            log.flush()
+            print(line, end='', file=sys.stderr, flush=True)
+        if process.wait():
+            raise subprocess.CalledProcessError(process.returncode, command)
+
+
 def build(repo, output, revision, contract, disk_cache):
     folder = output / 'binaries' / revision['sha']
     folder.mkdir(parents=True, exist_ok=True)
     binary, identity = folder / 'xff', folder / 'build.json'
     if identity.exists():
         saved = json.loads(identity.read_text())
-        if saved['revision'] != revision['sha'] or saved['sha256'] != compare.digest(binary):
-            raise ValueError('saved benchmark binary changed: ' + revision['sha'])
+        verify_binary(binary, saved, revision['sha'])
         return binary, saved
     checkout = output / 'checkout'
     if not checkout.exists():
         subprocess.run(['git', 'clone', '--shared', '--no-checkout', str(repo), str(checkout)], check=True)
     subprocess.run(['git', '-C', str(checkout), 'checkout', '--detach', revision['sha']], check=True)
-    command = [contract['build']['bazel'], 'build', '--config=clang_release', '//xff/cli:xff']
+    source = checkout_identity(checkout, revision['sha'])
+    bazel = [contract['build']['bazel'], *contract['build'].get('startup_flags', [])]
+    options = ['--config=clang_release']
     if disk_cache:
-        command.append('--disk_cache=' + str(disk_cache.resolve()))
+        options.append('--disk_cache=' + str(disk_cache.resolve()))
     if contract['build'].get('library_path'):
-        command.append('--action_env=LD_LIBRARY_PATH=' + contract['build']['library_path'])
+        options.append('--action_env=LD_LIBRARY_PATH=' + contract['build']['library_path'])
+    command = [*bazel, 'build', *options, '//xff/cli:xff']
     with (folder / 'build.log').open('w') as log:
-        subprocess.run(command, cwd=checkout, stdout=log, stderr=subprocess.STDOUT, check=True)
+        build_logged(command, checkout, log)
+        query = [*bazel, 'cquery', *options, '//xff/cli:xff', '--output=starlark',
+                 '--starlark:expr=target.files_to_run.executable.path']
+        artifact = subprocess.check_output(query, cwd=checkout, stderr=log, text=True).strip()
+    if not artifact or len(artifact.splitlines()) != 1:
+        raise ValueError('Bazel did not identify one benchmark executable: ' + revision['sha'])
+    checkout_identity(checkout, revision['sha'])
     # Use this revision's Bazel/toolchain configuration, then copy its executable out before checkout changes.
-    shutil.copy2(checkout / 'bazel-bin/xff/cli/xff', binary)
-    saved = {'sha256': compare.digest(binary), 'revision': revision['sha'], 'command': command,
+    executable = checkout / artifact
+    original_hash = compare.digest(executable)
+    shutil.copy2(executable, binary)
+    saved = {'sha256': original_hash, 'revision': revision['sha'], 'command': command,
+             'source': source, 'artifact': artifact,
              'configuration': {name: compare.digest(checkout / name) for name in
                                ('.bazelrc', '.bazelversion', 'MODULE.bazel', 'MODULE.bazel.lock', 'bazelmod/llvm.MODULE.bazel')
                                if (checkout / name).is_file()}}
+    verify_binary(binary, saved, revision['sha'])
     write_json(identity, saved)
     return binary, saved
 
@@ -300,9 +342,13 @@ def run(args, batch):
     for index, revision in enumerate(contract['revisions'], 1):
         sha = revision['sha']
         check_environment(contract['environment'])
-        log_progress(f'Build: {sha}', index, total)
+        reused = (output / 'binaries' / sha / 'build.json').exists()
+        log_progress(f'{"Reuse saved build" if reused else "Build"}: {sha}; '
+                     f'log: {output / "binaries" / sha / "build.log"}', index, total)
         try:
             binaries[sha] = build(args.repo.resolve(), output, revision, contract, args.disk_cache)
+            binary, identity = binaries[sha]
+            log_progress(f'Build verified: {sha}; binary: {binary}; SHA-256: {identity["sha256"]}', index, total)
         except subprocess.CalledProcessError as error:
             status[sha] = build_failure(output, sha, error)
             log_progress(f'Build failed: {sha}: {status[sha]["error"]}; log: {status[sha]["log"]}', index, total)
@@ -314,6 +360,7 @@ def run(args, batch):
             continue
         check_environment(contract['environment'])
         binary, build_record = binaries[sha]
+        verify_binary(binary, build_record, sha)
         folder = output / 'reports' / sha
         folder.mkdir(parents=True, exist_ok=True)
         basename = 'benchmark-report-' + ('macos' if sys.platform == 'darwin' else 'linux') + '-' + platform.machine().lower()
@@ -326,7 +373,7 @@ def run(args, batch):
             compare.render_document(record['tool_comparisons'])  # Validate retained observations before reuse.
             log_progress(f'Reuse completed report: {sha}', index, total)
         else:
-            log_progress(f'Measure: {sha}', index, total)
+            log_progress(f'Measure: {sha}; binary: {binary}; SHA-256: {build_record["sha256"]}', index, total)
             progress = compare.MeasurementProgress(write=partial(log_progress, index=index, total=total))
             started = now()
             try:
@@ -338,6 +385,9 @@ def run(args, batch):
                         require_cpu_affinity=contract['require_cpu_affinity'], progress=progress,
                         layouts=contract.get('layouts') or None)
                 check_environment(contract['environment'])
+                if report['tools']['xff']['sha256'] != build_record['sha256']:
+                    raise ValueError('measured binary does not match build: ' + sha)
+                verify_binary(binary, build_record, sha)
                 report['contract'].update(runner_class=contract['series'], batch=batch['identity'],
                                           build_identity=json.dumps(build_record['configuration'], sort_keys=True))
                 record = {'schema': 1, 'kind': 'backfill', 'head': sha, 'series': contract['series'],

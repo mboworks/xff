@@ -42,7 +42,7 @@ def reference_windows(records):
 
 
 def _reference_windows(records):
-    selected = {}
+    groups = {}
     results = {}
     for identity, record in records:
         report = record.get('tool_comparisons')
@@ -61,12 +61,6 @@ def _reference_windows(records):
         series = (benchmark_records.platform_key(record), report['contract'].get('machine'),
                   record['series'] if local else 'CI')
         rank = ((record['completed_at'], identity) if local else benchmark_records.preference(record))
-        key = (series, commit)
-        if key not in selected or rank > selected[key][0]:
-            selected[key] = (rank, identity, record, series)
-    groups = {}
-    for _, identity, record, series in selected.values():
-        report = record['tool_comparisons']
         for task in report['tasks']:
             if 'xff' not in task['participants']:
                 continue
@@ -85,14 +79,20 @@ def _reference_windows(records):
                 xff_args = [command[1:] for command in task['participants']['xff'].get('pipeline', [])]
                 grouping = json.dumps([series, contract, key, matrix.cell_contract(task),
                                       matrix.participant_contract(report, reference, entry), xff_args], sort_keys=True)
-                groups.setdefault(grouping, []).append({
+                candidate = {
                     'identity': identity, 'key': key,
                     'commit': record.get('head') or record['source']['head_sha'],
                     'date': benchmark_records.reference_time(record),
                     'reference_seconds': matrix.elapsed_mean(report, entry),
                     'xff_seconds': matrix.elapsed_mean(report, task['participants']['xff']),
-                })
-    for measurements in groups.values():
+                }
+                # Select duplicates within each compatible cell. A newer workload
+                # or smaller grid must not discard another retained dataset's cells.
+                selected = groups.setdefault(grouping, {})
+                if commit not in selected or rank > selected[commit][0]:
+                    selected[commit] = (rank, candidate)
+    for selected in groups.values():
+        measurements = [candidate for _, candidate in selected.values()]
         measurements.sort(key=lambda item: (item['date'], item['commit']))
         for index, current in enumerate(measurements):
             if len(measurements) < 5:

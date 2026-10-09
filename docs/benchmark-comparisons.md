@@ -485,6 +485,10 @@ XFF time, reference mean, correction, and separate rows for the window's measure
 (or unavailability reason), window start date and window end date. Unavailable windows omit the date rows.
 The card presents these values together with task, tree, allocation and file count in an aligned table.
 Each report's generated `normalization.json` retains the full window identities and commit hashes.
+For duplicate measurements of one commit, selection happens separately for each compatible
+cell. A newer layout revision or smaller measurement grid does not hide retained cells from
+another layout or a larger grid. Each compatible cell contributes at most one measurement per
+commit to its reference window.
 Reference binaries, invocation arguments,
 fixtures, machine series and CPU allocations must match; CI and local series remain separate.
 Ordinary CI and its replacement backfills share reference history: the recorded runner labels

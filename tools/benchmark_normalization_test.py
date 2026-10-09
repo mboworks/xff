@@ -111,6 +111,49 @@ class BenchmarkNormalizationTest(unittest.TestCase):
         self.assertEqual(current['reference_mean_seconds'], 6)
         self.assertEqual(current['window'][-1]['report'], inputs[-1][0])
 
+    def test_local_layout_versions_keep_independent_reference_windows(self):
+        legacy, versioned = [], []
+        for identity, record in records(5):
+            record.update(kind='backfill', purpose='local-addition', series='linux-zen5',
+                          completed_at=record['source']['created_at'],
+                          revision={'date': record['source']['created_at']})
+            legacy.append(('local/legacy/' + identity, record))
+            newer = copy.deepcopy(record)
+            newer['completed_at'] = record['completed_at'].replace('T00:', 'T01:')
+            newer['tool_comparisons']['contract']['layouts'] = [{'name': 'broad', 'revision': 2}]
+            newer['tool_comparisons']['tasks'][0]['fixture_identity'] = 'versioned-fixture'
+            newer['tool_comparisons']['tasks'][0]['participants']['rg']['samples'][0]['elapsed_seconds'] *= 3
+            versioned.append(('local/versioned/' + identity, newer))
+        inputs = [*legacy, *versioned]
+        original = copy.deepcopy(inputs)
+        values = normalization.reference_windows(inputs)
+        for series in (legacy, versioned):
+            isolated = normalization.reference_windows(series)
+            for identity, _ in series:
+                self.assertEqual(values[identity], isolated[identity])
+                self.assertEqual(next(iter(values[identity].values()))['status'], 'available')
+        self.assertEqual(normalization.reference_windows(list(reversed(inputs))), values)
+        self.assertEqual(inputs, original)
+
+    def test_duplicate_commit_preserves_cells_absent_from_newer_report(self):
+        inputs = records(5)
+        for _, record in inputs:
+            larger = copy.deepcopy(record['tool_comparisons']['tasks'][0])
+            larger.update(files=20, input_files=20, fixture_identity='larger-fixture')
+            record['tool_comparisons']['tasks'].append(larger)
+        original_identity, original = inputs[-1]
+        duplicate = copy.deepcopy(original)
+        duplicate['source']['run_attempt'] = 2
+        duplicate['tool_comparisons']['tasks'] = duplicate['tool_comparisons']['tasks'][:1]
+        inputs.append(('runs/5/2/linux/report.json', duplicate))
+        values = normalization.reference_windows(inputs)
+        shared = normalization.cell_key(original['tool_comparisons']['tasks'][0], 'rg')
+        retained = normalization.cell_key(original['tool_comparisons']['tasks'][1], 'rg')
+        self.assertEqual(values[original_identity][shared]['status'], 'unavailable')
+        self.assertEqual(values[inputs[-1][0]][shared]['status'], 'available')
+        self.assertEqual(values[original_identity][retained]['status'], 'available')
+        self.assertEqual(values[original_identity][retained]['window'][-1]['report'], original_identity)
+
     def test_previews_never_change_merged_or_other_preview_windows(self):
         merged = records(5)
         preview = records(6)[-1]
