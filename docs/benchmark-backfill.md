@@ -198,13 +198,29 @@ The timestamp uses `YYYYMMDD HHMMSS`; `10/17` means the tenth of seventeen selec
 The initial batch summary uses `0/17` before any revision starts. Build, measurement, nested
 fixture/sample progress, failures, reused reports and completion messages carry this prefix.
 Nested progress retains its five-second throttle, with scale boundaries always shown.
-Raw build-tool logs remain available separately in each revision's `build.log`.
+Native Bazel build output is shown as it arrives and retained in each revision's `build.log`.
+The revision progress lines distinguish a new build from reuse and show the log path, saved
+executable path and SHA-256. The measurement announcement repeats that executable identity.
 
 All selected binaries are built before measurement begins. An isolated shared Git clone under the
 output directory checks out each exact revision and uses its own `clang_release` configuration,
 Bazel version and dependency pins. Binaries and build logs are retained outside the checkout.
 Compilation does not overlap measurements. Historical build changes remain visible in each
 record; they are not silently replaced with today's compiler configuration.
+
+New build contracts disable the system and home Bazel RC files; the checked-out workspace RC
+still supplies its historical configuration. The driver verifies the checkout's HEAD, tree and
+clean source state before and after building, and rejects a workspace `.bazelrc.user`. It asks
+Bazel for the executable under the same release configuration, copies that artifact into the
+revision directory, and checks the copy's hash. Build records retain the source tree and artifact
+path. Generated, ignored files such as `MODULE.bazel.lock` remain separate from the Git source
+tree; their hashes are retained in the build configuration.
+
+Before measurement or report reuse, the executable must match its build identity. Newly collected
+reports must name that same executable hash, and the saved file is checked again after collection.
+A file changed between the compilation and measurement phases stops the batch. Older saved build
+records retain their original evidence: a matching binary hash alone cannot independently prove
+which source was compiled. See the [correctness audit and native investigation](benchmark-correctness-audit.md).
 
 Measurements then run sequentially, with the existing discarded warm-up and interleaved reference
 tool samples. Reference executable hashes, versions, driver hashes, Python, OS, architecture,

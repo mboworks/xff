@@ -214,6 +214,8 @@ class BenchmarkBackfillTest(unittest.TestCase):
                 kwargs['progress']('Nested fixture progress', force=True)
                 return self.report()
             with mock.patch.object(backfill, 'build', side_effect=build), \
+                    mock.patch.object(backfill, 'verify_binary'), \
+                    mock.patch.object(backfill, 'retained_identity', return_value={}), \
                     mock.patch.object(backfill, 'check_environment'), \
                     mock.patch.object(backfill.compare, 'collect_scales', side_effect=measure) as collect, \
                     mock.patch.object(backfill.compare, 'render_document', return_value='<h1>Report</h1>'), \
@@ -246,6 +248,8 @@ class BenchmarkBackfillTest(unittest.TestCase):
                 build = [subprocess.CalledProcessError(1, ['bazel']), success] if failure == 'build' else [success, success]
                 measurements = [ValueError('unsupported old flag'), self.report()] if failure == 'measure' else [self.report()]
                 with mock.patch.object(backfill, 'build', side_effect=build), \
+                        mock.patch.object(backfill, 'verify_binary'), \
+                        mock.patch.object(backfill, 'retained_identity', return_value={}), \
                         mock.patch.object(backfill, 'check_environment'), \
                         mock.patch.object(backfill.compare, 'collect_scales', side_effect=measurements), \
                         mock.patch.object(backfill.compare, 'render_document', return_value='report'):
@@ -264,6 +268,8 @@ class BenchmarkBackfillTest(unittest.TestCase):
             success = (Path('/binary'), {'sha256': 'binary', 'configuration': {}})
             output = io.StringIO()
             with mock.patch.object(backfill, 'build', side_effect=[subprocess.CalledProcessError(1, ['bazel']), success]), \
+                    mock.patch.object(backfill, 'verify_binary'), \
+                    mock.patch.object(backfill, 'retained_identity', return_value={}), \
                     mock.patch.object(backfill, 'check_environment'), \
                     mock.patch.object(backfill.compare, 'collect_scales', return_value=self.report()), \
                     mock.patch.object(backfill.compare, 'render_document', return_value='report'), \
@@ -297,6 +303,99 @@ class BenchmarkBackfillTest(unittest.TestCase):
             (folder / 'build.json').write_text(json.dumps({'sha256': 'wrong', 'revision': revision['sha']}))
             with self.assertRaisesRegex(ValueError, 'binary changed'):
                 backfill.build(output, output, revision, {}, None)
+
+    def test_binary_drift_between_build_and_measurement_stops_the_batch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args, batch = self.args(Path(directory)), self.batch()
+            args.output.mkdir()
+            binary = args.output / 'xff'
+            binary.write_text('correct binary')
+            original_hash = backfill.compare.digest(binary)
+            def build(repo, output, revision, contract, cache):
+                if revision['sha'][0] == 'b':
+                    binary.write_text('replaced binary')
+                return binary, {'revision': revision['sha'], 'sha256': original_hash, 'configuration': {}}
+            with mock.patch.object(backfill, 'build', side_effect=build), \
+                    mock.patch.object(backfill, 'check_environment'), \
+                    mock.patch.object(backfill.compare, 'collect_scales') as measure:
+                with self.assertRaisesRegex(ValueError, 'binary changed'):
+                    backfill.run(args, batch)
+                measure.assert_not_called()
+
+    def test_report_binary_must_match_the_expected_build(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args, batch = self.args(Path(directory)), self.batch()
+            batch['contract']['revisions'] = batch['contract']['revisions'][:1]
+            args.output.mkdir()
+            binary = args.output / 'xff'
+            binary.write_text('correct binary')
+            identity = {'revision': 'a' * 40, 'sha256': backfill.compare.digest(binary), 'configuration': {}}
+            with mock.patch.object(backfill, 'build', return_value=(binary, identity)), \
+                    mock.patch.object(backfill, 'check_environment'), \
+                    mock.patch.object(backfill.compare, 'collect_scales', return_value=self.report()):
+                self.assertEqual(backfill.run(args, batch), 1)
+            self.assertFalse(list(args.output.glob('reports/*/*.json')))
+            status = json.loads((args.output / 'status.json').read_text())
+            self.assertIn('measured binary does not match build', status['a' * 40]['error'])
+
+    def test_checkout_identity_rejects_wrong_head_changed_sources_and_local_rc(self):
+        with tempfile.TemporaryDirectory() as directory:
+            checkout = Path(directory)
+            sha = 'a' * 40
+            with mock.patch.object(backfill, 'git', return_value='b' * 40):
+                with self.assertRaisesRegex(ValueError, 'does not match revision'):
+                    backfill.checkout_identity(checkout, sha)
+            with mock.patch.object(backfill, 'git', side_effect=[sha, ' M xff/engine/walk.cc']):
+                with self.assertRaisesRegex(ValueError, 'changed sources'):
+                    backfill.checkout_identity(checkout, sha)
+            (checkout / '.bazelrc.user').write_text('build --compilation_mode=dbg')
+            with mock.patch.object(backfill, 'git', side_effect=[sha, '']):
+                with self.assertRaisesRegex(ValueError, 'unrecorded .bazelrc.user'):
+                    backfill.checkout_identity(checkout, sha)
+            (checkout / '.bazelrc.user').unlink()
+            with mock.patch.object(backfill, 'git', side_effect=[sha, '', 'tree']):
+                self.assertEqual(backfill.checkout_identity(checkout, sha),
+                                 {'revision': sha, 'tree': 'tree', 'clean': True})
+
+    def test_build_resolves_configured_artifact_and_copies_before_checkout_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            revision = {'sha': 'a' * 40}
+            checkout = root / 'checkout'
+            artifact = checkout / 'bazel-out/custom/bin/xff'
+            artifact.parent.mkdir(parents=True)
+            artifact.write_text('correct executable')
+            stale = checkout / 'bazel-bin/xff/cli/xff'
+            stale.parent.mkdir(parents=True)
+            stale.write_text('stale executable')
+            (checkout / '.bazelrc').write_text('common:clang_release --config=release')
+            contract = {'build': {'bazel': '/bazel', 'startup_flags': ['--nosystem_rc', '--nohome_rc']}}
+            with mock.patch.object(backfill.subprocess, 'run') as run, \
+                    mock.patch.object(backfill, 'checkout_identity', return_value={'revision': revision['sha'], 'tree': 'tree', 'clean': True}) as source, \
+                    mock.patch.object(backfill, 'build_logged') as build_logged, \
+                    mock.patch.object(backfill.subprocess, 'check_output', return_value='bazel-out/custom/bin/xff\n') as query:
+                binary, saved = backfill.build(root, root, revision, contract, None)
+                run.assert_called_once_with(['git', '-C', str(checkout), 'checkout', '--detach', revision['sha']], check=True)
+                self.assertEqual(source.call_count, 2)
+                self.assertEqual(binary.read_text(), 'correct executable')
+                self.assertEqual(saved['artifact'], 'bazel-out/custom/bin/xff')
+                self.assertEqual(saved['source']['tree'], 'tree')
+                self.assertEqual(saved['sha256'], backfill.compare.digest(artifact))
+                self.assertEqual(build_logged.call_args.args[0][:4],
+                                 ['/bazel', '--nosystem_rc', '--nohome_rc', 'build'])
+                self.assertEqual(query.call_args.args[0][:4],
+                                 ['/bazel', '--nosystem_rc', '--nohome_rc', 'cquery'])
+                binary_again, saved_again = backfill.build(root, root, revision, contract, None)
+                self.assertEqual((binary_again, saved_again), (binary, saved))
+                self.assertEqual(build_logged.call_count, 1)
+
+    def test_native_build_output_is_visible_and_logged_on_failure(self):
+        output, log = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stderr(output):
+            with self.assertRaises(subprocess.CalledProcessError):
+                backfill.build_logged([sys.executable, '-c', 'print("compiler diagnostic"); raise SystemExit(1)'], Path.cwd(), log)
+        self.assertEqual(output.getvalue(), 'compiler diagnostic\n')
+        self.assertEqual(log.getvalue(), output.getvalue())
 
 
 if __name__ == '__main__':

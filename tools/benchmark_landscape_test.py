@@ -3,6 +3,8 @@
 """Check landscape coordinates and comparison semantics without a browser dependency."""
 
 import itertools
+import hashlib
+import io
 import json
 import math
 from pathlib import Path
@@ -46,6 +48,37 @@ def preview_report():
 
 
 class BenchmarkLandscapeTest(unittest.TestCase):
+    def test_binary_evidence_enriches_catalog_and_sidecars_preserve_raw_reports(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'index.html').write_text('<h1>History</h1>')
+            folder = root / 'runs/42/1/linux'
+            folder.mkdir(parents=True)
+            data = report()
+            sha = hashlib.sha256(b'original executable').hexdigest()
+            data['tools'] = {'xff': {'sha256': sha}}
+            record = dict(head='a' * 40, tool_comparisons=data,
+                          build={'revision': 'a' * 40, 'sha256': sha},
+                          platform='linux', source=dict(id=42, run_attempt=1, head_sha='a' * 40,
+                          head_branch='main', created_at='2026-10-09T12:00:00Z'))
+            path = folder / 'report.json'
+            path.write_text(json.dumps(record))
+            original = path.read_bytes()
+            (folder / 'index.html').write_text('<h1>Report</h1>')
+            landscape.publish(root, '/* renderer */')
+            catalog = json.loads((root / 'catalog.json').read_text())
+            self.assertEqual(catalog[0]['binary']['state'], 'Consistent')
+            proof = landscape.benchmark_provenance.verify_retention(record, io.BytesIO(b'original executable'), 'CI retained build')
+            (folder / 'binary-verification.json').write_text(json.dumps(proof))
+            landscape.publish_history(root, catalog)
+            self.assertEqual(catalog[0]['binary']['state'], 'Verified against Retention')
+            self.assertIn('Verified against Retention', (root / 'index.html').read_text())
+            self.assertIn('data-binary-state', (root / 'index.html').read_text())
+            self.assertEqual(path.read_bytes(), original)
+            (folder / 'binary-verification.json').write_text('{}')
+            landscape.publish_history(root, catalog)
+            self.assertEqual(catalog[0]['binary']['state'], 'Not verified')
+
     def test_platform_details_remove_redundant_macos_architecture(self):
         self.assertEqual(landscape.platform_details('macOS-26.6-arm64-arm-64bit-Mach-O'), 'macOS 26.6 / arm64')
         self.assertEqual(landscape.platform_details('macOS-15.5-x86_64-i386-64bit'), 'macOS 15.5 / x86_64')
