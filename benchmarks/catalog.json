@@ -13,6 +13,11 @@
         "href": "https://github.com/mboworks/xff/pull/907"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "bd0cf005cdda5c4657006af1045d2f1d1f952652061eb4cc9a3ee51ac71bafa3",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-22T22:49:21Z",
     "measurement_date": "2026-10-02T02:13:37.775227+00:00",
     "backfill": true,
@@ -37,6 +42,11 @@
         "href": "https://github.com/mboworks/xff/pull/925"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "bb617ec338b4d33601e75d02ae6cf5cfc9b0b72b1ee9c9ce608945d1584b1e4f",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-27T19:17:49Z",
     "measurement_date": "2026-10-02T02:44:24.560122+00:00",
     "backfill": true,
@@ -61,6 +71,11 @@
         "href": "https://github.com/mboworks/xff/pull/908"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "bd0cf005cdda5c4657006af1045d2f1d1f952652061eb4cc9a3ee51ac71bafa3",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-23T20:02:13Z",
     "measurement_date": "2026-10-02T02:15:26.377927+00:00",
     "backfill": true,
@@ -85,6 +100,11 @@
         "href": "https://github.com/mboworks/xff/pull/932"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "4f3fdc689ec846c11087d6682ac8bd1cc4bffe46d0af04321eb89ad2e24236be",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-28T06:13:27Z",
     "measurement_date": "2026-10-02T02:45:48.847298+00:00",
     "backfill": true,
@@ -109,6 +129,11 @@
         "href": "https://github.com/mboworks/xff/pull/900"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "bd0cf005cdda5c4657006af1045d2f1d1f952652061eb4cc9a3ee51ac71bafa3",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-22T03:10:52Z",
     "measurement_date": "2026-10-02T02:03:52.960894+00:00",
     "backfill": true,
@@ -133,6 +158,11 @@
         "href": "https://github.com/mboworks/xff/pull/943"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e70a0620e9fdd2b73793aca6a46f0032bd3c54fb7fbf6b788527b3e99aa2eb22",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T23:53:58Z",
     "measurement_date": "2026-10-02T03:13:06.373841+00:00",
     "backfill": true,
@@ -157,6 +187,11 @@
         "href": "https://github.com/mboworks/xff/pull/934"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "e70a0620e9fdd2b73793aca6a46f0032bd3c54fb7fbf6b788527b3e99aa2eb22",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-10-01T18:28:57Z",
     "measurement_date": "2026-10-02T03:03:45.626088+00:00",
     "backfill": true,
@@ -181,6 +216,11 @@
         "href": "https://github.com/mboworks/xff/pull/913"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "3e38518d0ab55756640d3ea50e9861ea0b2417d2b35d62b8a5be234ab1459a75",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-24T22:06:36Z",
     "measurement_date": "2026-10-02T02:15:12.786686+00:00",
     "backfill": true,
@@ -205,6 +245,11 @@
         "href": "https://github.com/mboworks/xff/pull/912"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "3e38518d0ab55756640d3ea50e9861ea0b2417d2b35d62b8a5be234ab1459a75",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-24T20:57:31Z",
     "measurement_date": "2026-10-02T02:14:41.734228+00:00",
     "backfill": true,
@@ -229,6 +274,11 @@
         "href": "https://github.com/mboworks/xff/pull/933"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "6d03a6f9f54e8d526f0a092c47b73e63713d1fcd8230c1084029a5a371a979ab",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-28T21:09:25Z",
     "measurement_date": "2026-10-02T02:37:25.738689+00:00",
     "backfill": true,
@@ -253,6 +303,11 @@
         "href": "https://github.com/mboworks/xff/pull/911"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "d2f41b9e0da21cfafa2296f1cf12c575a7a5e19a54ccc6c8cd6fdc40ecedacdd",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-24T06:44:48Z",
     "measurement_date": "2026-10-02T02:15:36.073591+00:00",
     "backfill": true,
@@ -277,6 +332,11 @@
         "href": "https://github.com/mboworks/xff/pull/923"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "77533f684b9cd43e7da00ba4ffc0696e3b06fa6d6600558ad7c593db2b996c46",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-27T16:11:26Z",
     "measurement_date": "2026-10-02T02:43:11.486352+00:00",
     "backfill": true,
@@ -301,6 +361,11 @@
         "href": "https://github.com/mboworks/xff/pull/915"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "88f75a87693b091c92cdc6e78bbe125671ee9e7aebfffb850ab584edc6b8ee4d",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-25T08:47:04Z",
     "measurement_date": "2026-10-02T02:33:45.815113+00:00",
     "backfill": true,
@@ -325,6 +390,11 @@
         "href": "https://github.com/mboworks/xff/pull/910"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "d2f41b9e0da21cfafa2296f1cf12c575a7a5e19a54ccc6c8cd6fdc40ecedacdd",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-23T23:29:54Z",
     "measurement_date": "2026-10-02T02:15:10.750947+00:00",
     "backfill": true,
@@ -349,6 +419,11 @@
         "href": "https://github.com/mboworks/xff/pull/926"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "32f55edef1b0240b16721f6cae0b8ee16206957884bea863545deb2344e78bc5",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-27T20:18:49Z",
     "measurement_date": "2026-10-02T02:43:52.021986+00:00",
     "backfill": true,
@@ -373,6 +448,11 @@
         "href": "https://github.com/mboworks/xff/pull/942"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "e70a0620e9fdd2b73793aca6a46f0032bd3c54fb7fbf6b788527b3e99aa2eb22",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-10-01T23:10:12Z",
     "measurement_date": "2026-10-02T03:00:32.667481+00:00",
     "backfill": true,
@@ -397,6 +477,11 @@
         "href": "https://github.com/mboworks/xff/pull/927"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "e90a346a4fc911adffb31f5cf22dece04199418696e17ebf29631e9826974d1e",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-27T20:57:15Z",
     "measurement_date": "2026-10-02T02:45:35.511076+00:00",
     "backfill": true,
@@ -421,6 +506,11 @@
         "href": "https://github.com/mboworks/xff/pull/909"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "bd0cf005cdda5c4657006af1045d2f1d1f952652061eb4cc9a3ee51ac71bafa3",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-23T21:22:39Z",
     "measurement_date": "2026-10-02T02:14:22.764295+00:00",
     "backfill": true,
@@ -445,6 +535,11 @@
         "href": "https://github.com/mboworks/xff/pull/930"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "ecb0aed3ae2ac88fb9b9f8440f61f1295f78baf7a40a1df015ee1b69c6eb7e01",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-27T21:45:55Z",
     "measurement_date": "2026-10-02T02:44:07.983580+00:00",
     "backfill": true,
@@ -469,6 +564,11 @@
         "href": "https://github.com/mboworks/xff/pull/907"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "7a2b858a6cb7f1833973854734feee84933d6e5825ca80caff2e345f8af455e8",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-22T22:49:21Z",
     "measurement_date": "2026-10-02T03:45:24.279555+00:00",
     "backfill": true,
@@ -493,6 +593,11 @@
         "href": "https://github.com/mboworks/xff/pull/925"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "b45b889bdf01c03a45c01f408a41115e6162ba125c15cc93bf330a8248f9c061",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-27T19:17:49Z",
     "measurement_date": "2026-10-02T06:14:04.563785+00:00",
     "backfill": true,
@@ -517,6 +622,11 @@
         "href": "https://github.com/mboworks/xff/pull/908"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "d8803614d2eacdc72a9d2c5e5ac18c04bbc42da0c3ab76ccd7f9c62807187e7b",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-23T20:02:13Z",
     "measurement_date": "2026-10-02T04:01:36.362045+00:00",
     "backfill": true,
@@ -541,6 +651,11 @@
         "href": "https://github.com/mboworks/xff/pull/932"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "06b1f2d46aa09935d8558ea7005cdc8819b938de318aefbed864d114e18a5591",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-28T06:13:27Z",
     "measurement_date": "2026-10-02T05:57:32.149229+00:00",
     "backfill": true,
@@ -565,6 +680,11 @@
         "href": "https://github.com/mboworks/xff/pull/900"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "b60f6554e76651214c3f8796daa21dfbe8a75507e9716c25339b8bbc8bc88861",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-22T03:10:52Z",
     "measurement_date": "2026-10-02T04:05:03.957670+00:00",
     "backfill": true,
@@ -589,6 +709,11 @@
         "href": "https://github.com/mboworks/xff/pull/943"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "3bea2c3caafe9b0449c90f3b18c992667417e715a83100d836cb034c8eacd4c0",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T23:53:58Z",
     "measurement_date": "2026-10-02T07:49:21.752722+00:00",
     "backfill": true,
@@ -613,6 +738,11 @@
         "href": "https://github.com/mboworks/xff/pull/934"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "ccf57c6c30fe4a2d9f8f1cb6415637922c4dbb006a6fe12902f604909ad2552e",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-10-01T18:28:57Z",
     "measurement_date": "2026-10-02T07:31:02.483673+00:00",
     "backfill": true,
@@ -637,6 +767,11 @@
         "href": "https://github.com/mboworks/xff/pull/913"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "1e57a183648bb6e3c9f51b8b74d0c5b9693b285fbb57c6f5a518bfb64b9f7b12",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-24T22:06:36Z",
     "measurement_date": "2026-10-02T05:15:32.231506+00:00",
     "backfill": true,
@@ -661,6 +796,11 @@
         "href": "https://github.com/mboworks/xff/pull/912"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "621d1e5fce4080e46ad83ded8e37e3fb5edaca1c499f3e8e35d29b676df4bb72",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-24T20:57:31Z",
     "measurement_date": "2026-10-02T05:23:49.271445+00:00",
     "backfill": true,
@@ -685,6 +825,11 @@
         "href": "https://github.com/mboworks/xff/pull/933"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "0b14c22124028148f35b800e501f51b15a49b6a9ac637b314ab2054117982c5e",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-28T21:09:25Z",
     "measurement_date": "2026-10-02T06:40:08.045945+00:00",
     "backfill": true,
@@ -709,6 +854,11 @@
         "href": "https://github.com/mboworks/xff/pull/911"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "7250aecf984098344e002c0e410d826ba3b3fa02a650fd01a606d61503b1883b",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-24T06:44:48Z",
     "measurement_date": "2026-10-02T05:10:30.143347+00:00",
     "backfill": true,
@@ -733,6 +883,11 @@
         "href": "https://github.com/mboworks/xff/pull/923"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "f178909e46f7e888246a4d89f60cffd049d90ef107b1997badc57a9be492258a",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-27T16:11:26Z",
     "measurement_date": "2026-10-02T05:15:04.346826+00:00",
     "backfill": true,
@@ -757,6 +912,11 @@
         "href": "https://github.com/mboworks/xff/pull/915"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "056f2861dc2abc721f9aff7ad6378a6d488e5e4c21207723feb0247a89bd9b5f",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-25T08:47:04Z",
     "measurement_date": "2026-10-02T04:59:36.784989+00:00",
     "backfill": true,
@@ -781,6 +941,11 @@
         "href": "https://github.com/mboworks/xff/pull/910"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "73f5b89f05135225f599ffc69b2ba212773c68db9330a0782ef347fb076a344e",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-23T23:29:54Z",
     "measurement_date": "2026-10-02T03:54:56.941726+00:00",
     "backfill": true,
@@ -805,6 +970,11 @@
         "href": "https://github.com/mboworks/xff/pull/926"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "7a31b3a9ed9d91f5aa9cda9b1d18798d5874f69dfd197e664e4b92b0f5148e40",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-27T20:18:49Z",
     "measurement_date": "2026-10-02T06:29:55.469694+00:00",
     "backfill": true,
@@ -829,6 +999,11 @@
         "href": "https://github.com/mboworks/xff/pull/942"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "cee24408a4ff5cfce60d46a06b8fe68c6d45e70beb51349767809e6329f22578",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-10-01T23:10:12Z",
     "measurement_date": "2026-10-02T07:25:13.777587+00:00",
     "backfill": true,
@@ -853,6 +1028,11 @@
         "href": "https://github.com/mboworks/xff/pull/927"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "54cf9f6a1ad1e5285a7610b893b2913a015e02a1217a235cd965897e0e3e05c1",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-27T20:57:15Z",
     "measurement_date": "2026-10-02T09:40:18.098926+00:00",
     "backfill": true,
@@ -877,6 +1057,11 @@
         "href": "https://github.com/mboworks/xff/pull/909"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "bde70bdc768ada2c361e411462eb51742f56e13959a9965e0825cd60ac3db3dd",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-23T21:22:39Z",
     "measurement_date": "2026-10-02T03:54:21.208895+00:00",
     "backfill": true,
@@ -901,6 +1086,11 @@
         "href": "https://github.com/mboworks/xff/pull/930"
       }
     ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "a375b48f9ed2b557b89d484939eb4b0bfb2b2b01269630335ba6f39f543f506e",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
     "date": "2026-09-27T21:45:55Z",
     "measurement_date": "2026-10-02T06:12:49.749989+00:00",
     "backfill": true,
@@ -925,6 +1115,11 @@
         "href": "https://github.com/mboworks/xff/pull/977"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T01:23:48Z",
     "measurement_date": "2026-10-06T11:47:30.506470+00:00",
     "backfill": false,
@@ -949,6 +1144,11 @@
         "href": "https://github.com/mboworks/xff/pull/979"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "09d7322e5aead8e9a7e9d1969eccba61798823f01b6beb84f23c9d1baae6dddf",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T23:26:22Z",
     "measurement_date": "2026-10-06T10:50:42.468707+00:00",
     "backfill": false,
@@ -973,6 +1173,11 @@
         "href": "https://github.com/mboworks/xff/pull/976"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "09d7322e5aead8e9a7e9d1969eccba61798823f01b6beb84f23c9d1baae6dddf",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T00:17:35Z",
     "measurement_date": "2026-10-06T11:19:16.249967+00:00",
     "backfill": false,
@@ -997,6 +1202,11 @@
         "href": "https://github.com/mboworks/xff/pull/981"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T02:40:08Z",
     "measurement_date": "2026-10-06T12:01:41.452020+00:00",
     "backfill": false,
@@ -1021,6 +1231,11 @@
         "href": "https://github.com/mboworks/xff/pull/973"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "09d7322e5aead8e9a7e9d1969eccba61798823f01b6beb84f23c9d1baae6dddf",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T23:25:44Z",
     "measurement_date": "2026-10-06T10:36:31.031215+00:00",
     "backfill": false,
@@ -1045,6 +1260,11 @@
         "href": "https://github.com/mboworks/xff/pull/980"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "09d7322e5aead8e9a7e9d1969eccba61798823f01b6beb84f23c9d1baae6dddf",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T23:27:26Z",
     "measurement_date": "2026-10-06T11:04:58.832076+00:00",
     "backfill": false,
@@ -1069,6 +1289,11 @@
         "href": "https://github.com/mboworks/xff/pull/972"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "09d7322e5aead8e9a7e9d1969eccba61798823f01b6beb84f23c9d1baae6dddf",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T22:25:11Z",
     "measurement_date": "2026-10-06T10:22:18.144425+00:00",
     "backfill": false,
@@ -1093,6 +1318,11 @@
         "href": "https://github.com/mboworks/xff/pull/974"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "09d7322e5aead8e9a7e9d1969eccba61798823f01b6beb84f23c9d1baae6dddf",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T00:21:26Z",
     "measurement_date": "2026-10-06T11:33:26.006102+00:00",
     "backfill": false,
@@ -1117,6 +1347,11 @@
         "href": "https://github.com/mboworks/xff/pull/907"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "b5166dcabc93612772280bb7c6d386963999470870c93316c437789c245c176c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-22T22:49:21Z",
     "measurement_date": "2026-10-04T19:06:01.089090+00:00",
     "backfill": false,
@@ -1141,6 +1376,11 @@
         "href": "https://github.com/mboworks/xff/pull/925"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "57b9713930557d9ba4666c4e28dea3380e35a79e92ddd7b2853549a01f671347",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T19:17:49Z",
     "measurement_date": "2026-10-04T23:22:51.499348+00:00",
     "backfill": false,
@@ -1165,6 +1405,11 @@
         "href": "https://github.com/mboworks/xff/pull/908"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "b5166dcabc93612772280bb7c6d386963999470870c93316c437789c245c176c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T20:02:13Z",
     "measurement_date": "2026-10-04T19:20:00.809659+00:00",
     "backfill": false,
@@ -1189,6 +1434,11 @@
         "href": "https://github.com/mboworks/xff/pull/932"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "909c985a797bcb50b87c9f7bfab1176a6c921d521e18e45bdb9202b14c4b7d76",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-28T06:13:27Z",
     "measurement_date": "2026-10-05T00:50:11.046846+00:00",
     "backfill": false,
@@ -1213,6 +1463,11 @@
         "href": "https://github.com/mboworks/xff/pull/900"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "b5166dcabc93612772280bb7c6d386963999470870c93316c437789c245c176c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-22T03:10:52Z",
     "measurement_date": "2026-10-04T18:52:05.383489+00:00",
     "backfill": false,
@@ -1237,6 +1492,11 @@
         "href": "https://github.com/mboworks/xff/pull/929"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e10168ad8789ff15df1c03b3d7b57ca67da2c302bbc56895261fb8843bc9254d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T21:45:55Z",
     "measurement_date": "2026-10-05T00:20:40.899924+00:00",
     "backfill": false,
@@ -1261,6 +1521,11 @@
         "href": "https://github.com/mboworks/xff/pull/917"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "40061ea36f7b5ad91992bf27ffbb7da730d9b8353b05a8446ddda9aa9aecaf1b",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:24Z",
     "measurement_date": "2026-10-04T21:43:37.301761+00:00",
     "backfill": false,
@@ -1285,6 +1550,11 @@
         "href": "https://github.com/mboworks/xff/pull/920"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e1f21a1e2cb00a13b7c743a1f8080c4cff70ca40b9005dabea3ebe7e25bf00d6",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:25Z",
     "measurement_date": "2026-10-04T22:12:08.612817+00:00",
     "backfill": false,
@@ -1309,6 +1579,11 @@
         "href": "https://github.com/mboworks/xff/pull/922"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "9091a10a2306a686002c1136e2c1551fa3d0b4ed0087a81a2e4a89ed2d84889c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:26Z",
     "measurement_date": "2026-10-04T22:40:21.240350+00:00",
     "backfill": false,
@@ -1333,6 +1608,11 @@
         "href": "https://github.com/mboworks/xff/pull/913"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "5425fe0dc503ed49813cc7bad2e2a7f1fc6d446a6365db4cf84dfa4256299024",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T22:06:36Z",
     "measurement_date": "2026-10-04T20:39:30.115586+00:00",
     "backfill": false,
@@ -1357,6 +1637,11 @@
         "href": "https://github.com/mboworks/xff/pull/919"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "c9efb09519a79b666a732e26df863024052311c7bb5c8aebb45ceb768da440b8",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:25Z",
     "measurement_date": "2026-10-04T22:26:18.549052+00:00",
     "backfill": false,
@@ -1381,6 +1666,11 @@
         "href": "https://github.com/mboworks/xff/pull/912"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "5425fe0dc503ed49813cc7bad2e2a7f1fc6d446a6365db4cf84dfa4256299024",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T20:57:31Z",
     "measurement_date": "2026-10-04T20:23:06.781927+00:00",
     "backfill": false,
@@ -1405,6 +1695,11 @@
         "href": "https://github.com/mboworks/xff/pull/918"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "097c12b86cfab02eac6ae525c210b1f7df7fcf2aaf0db83566a33efcd76c7f5d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:24Z",
     "measurement_date": "2026-10-04T21:57:51.041420+00:00",
     "backfill": false,
@@ -1429,6 +1724,11 @@
         "href": "https://github.com/mboworks/xff/pull/914"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "5425fe0dc503ed49813cc7bad2e2a7f1fc6d446a6365db4cf84dfa4256299024",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T22:42:57Z",
     "measurement_date": "2026-10-04T20:55:50.831933+00:00",
     "backfill": false,
@@ -1453,6 +1753,11 @@
         "href": "https://github.com/mboworks/xff/pull/933"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "74c7dd60f7b0d4fbf41cf381f040315b3c86c677bbbc5b4ff9fc37ecd9122882",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-28T21:09:25Z",
     "measurement_date": "2026-10-05T01:04:57.896082+00:00",
     "backfill": false,
@@ -1477,6 +1782,11 @@
         "href": "https://github.com/mboworks/xff/pull/911"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2cb84d581aebafc2a7eb98a82c70c774bf65cafb32f945b775863c9b016cf19e",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T06:44:48Z",
     "measurement_date": "2026-10-04T20:06:47.889577+00:00",
     "backfill": false,
@@ -1501,6 +1811,11 @@
         "href": "https://github.com/mboworks/xff/pull/936"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "cbece4243361233d9dc67e097904d3d59cc9f0f6a0cccd41231949b818dd4fd5",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T06:42:01Z",
     "measurement_date": "2026-10-05T01:19:42.544346+00:00",
     "backfill": false,
@@ -1525,6 +1840,11 @@
         "href": "https://github.com/mboworks/xff/pull/923"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "45da6a1542bc8d1a3659b4cee8daae642f37b6eabf45ef73f15ed9a61069767b",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:26Z",
     "measurement_date": "2026-10-04T22:54:35.363294+00:00",
     "backfill": false,
@@ -1549,6 +1869,11 @@
         "href": "https://github.com/mboworks/xff/pull/915"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "bbf3cb1f42be6dfaf55f153732c2cfefaa927f8dcf4701c09f3a5c5c5e56bb21",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-25T08:47:04Z",
     "measurement_date": "2026-10-04T21:12:15.015965+00:00",
     "backfill": false,
@@ -1573,6 +1898,11 @@
         "href": "https://github.com/mboworks/xff/pull/910"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2cb84d581aebafc2a7eb98a82c70c774bf65cafb32f945b775863c9b016cf19e",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T23:29:54Z",
     "measurement_date": "2026-10-04T19:50:20.243258+00:00",
     "backfill": false,
@@ -1597,6 +1927,11 @@
         "href": "https://github.com/mboworks/xff/pull/916"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "53e915a4025f0bc45e544bf5e3c2aa7e923a39aec8bf837ae37af7819c703843",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:23Z",
     "measurement_date": "2026-10-04T21:28:03.124081+00:00",
     "backfill": false,
@@ -1621,6 +1956,11 @@
         "href": "https://github.com/mboworks/xff/pull/926"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "7d1edcc5b29479e97c98be6b67684cf6207805dad599f79827b7991ad226f185",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T20:18:49Z",
     "measurement_date": "2026-10-04T23:37:08.161108+00:00",
     "backfill": false,
@@ -1645,6 +1985,11 @@
         "href": "https://github.com/mboworks/xff/pull/921"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "488f3f3475ab9bb57723995711347978bd74eda7f58ac4a6bfb1df227d4bf4c8",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:26Z",
     "measurement_date": "2026-10-04T23:08:42.039899+00:00",
     "backfill": false,
@@ -1669,6 +2014,11 @@
         "href": "https://github.com/mboworks/xff/pull/927"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "da94c621e5e0c5ef50b1e66d5fa03cc095ce8c3315eede5bc6e57b12d016edb6",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T20:57:15Z",
     "measurement_date": "2026-10-04T23:51:15.576082+00:00",
     "backfill": false,
@@ -1693,6 +2043,11 @@
         "href": "https://github.com/mboworks/xff/pull/909"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "b5166dcabc93612772280bb7c6d386963999470870c93316c437789c245c176c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T21:22:39Z",
     "measurement_date": "2026-10-04T19:34:24.396738+00:00",
     "backfill": false,
@@ -1717,6 +2072,11 @@
         "href": "https://github.com/mboworks/xff/pull/930"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "cf90f615df2d64108dcd98e5fa0a3fdca581435b5495fc6b49be5f57f93a3399",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T21:45:55Z",
     "measurement_date": "2026-10-05T00:35:24.820320+00:00",
     "backfill": false,
@@ -1741,6 +2101,11 @@
         "href": "https://github.com/mboworks/xff/pull/928"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "c3db4117511c815ea2cdfa063b4c2646c100724fd5e0a963dd16ab58d2c06e27",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T21:45:54Z",
     "measurement_date": "2026-10-05T00:05:54.794896+00:00",
     "backfill": false,
@@ -1765,6 +2130,11 @@
         "href": "https://github.com/mboworks/xff/pull/959"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f68ba26bd09400b3ae160f5ad753f2afc2d44d9ca12aba499123b23df40cf123",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T13:17:40Z",
     "measurement_date": "2026-10-06T03:06:36.023458+00:00",
     "backfill": false,
@@ -1789,6 +2159,11 @@
         "href": "https://github.com/mboworks/xff/pull/951"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T13:22:37Z",
     "measurement_date": "2026-10-06T01:12:19.680654+00:00",
     "backfill": false,
@@ -1813,6 +2188,11 @@
         "href": "https://github.com/mboworks/xff/pull/969"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "be2aee9614d3417b1257e8771187f806b1c10b4afd44a95abe7096804f76003d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T16:47:00Z",
     "measurement_date": "2026-10-06T05:43:34.482240+00:00",
     "backfill": false,
@@ -1837,6 +2217,11 @@
         "href": "https://github.com/mboworks/xff/pull/965"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "669046eab0f57aad410d0dee4df0a1ea326728c8faf045a5a09ed0eaf485064a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T12:35:04Z",
     "measurement_date": "2026-10-06T04:46:26.474188+00:00",
     "backfill": false,
@@ -1861,6 +2246,11 @@
         "href": "https://github.com/mboworks/xff/pull/954"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T16:45:57Z",
     "measurement_date": "2026-10-06T01:55:02.130701+00:00",
     "backfill": false,
@@ -1885,6 +2275,11 @@
         "href": "https://github.com/mboworks/xff/pull/967"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "a3e918bd5ff1a35d4941c227c90f10b675a4a51f65201fd605c13caaa8de84db",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T14:26:19Z",
     "measurement_date": "2026-10-06T05:14:55.907373+00:00",
     "backfill": false,
@@ -1909,6 +2304,11 @@
         "href": "https://github.com/mboworks/xff/pull/970"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "71ec90a2f0e729f6c28454300a8e6f09ec115e7720455ea1255634132e7984f4",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T18:09:16Z",
     "measurement_date": "2026-10-06T05:57:41.791249+00:00",
     "backfill": false,
@@ -1933,6 +2333,11 @@
         "href": "https://github.com/mboworks/xff/pull/943"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T23:53:58Z",
     "measurement_date": "2026-10-05T23:32:21.670362+00:00",
     "backfill": false,
@@ -1957,6 +2362,11 @@
         "href": "https://github.com/mboworks/xff/pull/935"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T07:42:31Z",
     "measurement_date": "2026-10-05T22:21:00.950439+00:00",
     "backfill": false,
@@ -1981,6 +2391,11 @@
         "href": "https://github.com/mboworks/xff/pull/949"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T22:33:09Z",
     "measurement_date": "2026-10-06T00:43:45.753400+00:00",
     "backfill": false,
@@ -2005,6 +2420,11 @@
         "href": "https://github.com/mboworks/xff/pull/957"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f68ba26bd09400b3ae160f5ad753f2afc2d44d9ca12aba499123b23df40cf123",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T09:57:42Z",
     "measurement_date": "2026-10-06T02:38:00.109835+00:00",
     "backfill": false,
@@ -2029,6 +2449,11 @@
         "href": "https://github.com/mboworks/xff/pull/946"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T18:09:47Z",
     "measurement_date": "2026-10-06T00:00:57.092158+00:00",
     "backfill": false,
@@ -2053,6 +2478,11 @@
         "href": "https://github.com/mboworks/xff/pull/947"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T19:19:46Z",
     "measurement_date": "2026-10-06T00:15:28.352879+00:00",
     "backfill": false,
@@ -2077,6 +2507,11 @@
         "href": "https://github.com/mboworks/xff/pull/934"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T18:28:57Z",
     "measurement_date": "2026-10-05T22:35:19.537376+00:00",
     "backfill": false,
@@ -2101,6 +2536,11 @@
         "href": "https://github.com/mboworks/xff/pull/953"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T15:32:45Z",
     "measurement_date": "2026-10-06T01:40:41.476356+00:00",
     "backfill": false,
@@ -2125,6 +2565,11 @@
         "href": "https://github.com/mboworks/xff/pull/956"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f68ba26bd09400b3ae160f5ad753f2afc2d44d9ca12aba499123b23df40cf123",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T00:03:54Z",
     "measurement_date": "2026-10-06T02:23:37.370936+00:00",
     "backfill": false,
@@ -2149,6 +2594,11 @@
         "href": "https://github.com/mboworks/xff/pull/948"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T20:54:49Z",
     "measurement_date": "2026-10-06T00:29:40.708996+00:00",
     "backfill": false,
@@ -2173,6 +2623,11 @@
         "href": "https://github.com/mboworks/xff/pull/961"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "a4c556da8658186510b36f71897f4ece2e2ed6c38998ed4923d20be14eb5fcef",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T02:57:01Z",
     "measurement_date": "2026-10-06T03:35:08.526938+00:00",
     "backfill": false,
@@ -2197,6 +2652,11 @@
         "href": "https://github.com/mboworks/xff/pull/955"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T18:23:18Z",
     "measurement_date": "2026-10-06T02:09:22.175922+00:00",
     "backfill": false,
@@ -2221,6 +2681,11 @@
         "href": "https://github.com/mboworks/xff/pull/971"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "66212bbed1f3bfd50b6903618f8bfb5b524eda1e5b0e8a81ca53ffd517c7250e",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T21:17:51Z",
     "measurement_date": "2026-10-06T06:11:53.112244+00:00",
     "backfill": false,
@@ -2245,6 +2710,11 @@
         "href": "https://github.com/mboworks/xff/pull/945"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T15:18:12Z",
     "measurement_date": "2026-10-05T23:46:37.778805+00:00",
     "backfill": false,
@@ -2269,6 +2739,11 @@
         "href": "https://github.com/mboworks/xff/pull/960"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "68195b3095f275a498efee2e689cab367068dc5694af5dc26393fa7dea23d94c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T23:34:36Z",
     "measurement_date": "2026-10-06T03:20:56.789006+00:00",
     "backfill": false,
@@ -2293,6 +2768,11 @@
         "href": "https://github.com/mboworks/xff/pull/958"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f68ba26bd09400b3ae160f5ad753f2afc2d44d9ca12aba499123b23df40cf123",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T10:51:31Z",
     "measurement_date": "2026-10-06T02:52:18.804601+00:00",
     "backfill": false,
@@ -2317,6 +2797,11 @@
         "href": "https://github.com/mboworks/xff/pull/962"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "0d99fa04269da1d456f8c0fc9e9a7e5f9bf65317a72c38c33d5e9f03f5dac826",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T05:24:43Z",
     "measurement_date": "2026-10-06T03:49:20.570636+00:00",
     "backfill": false,
@@ -2341,6 +2826,11 @@
         "href": "https://github.com/mboworks/xff/pull/968"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "93bcbf8203a02cee4b664b41f8cb64ac335a1124e87dd6ecc1005361b766491b",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T15:37:15Z",
     "measurement_date": "2026-10-06T05:29:15.947929+00:00",
     "backfill": false,
@@ -2365,6 +2855,11 @@
         "href": "https://github.com/mboworks/xff/pull/950"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T09:53:03Z",
     "measurement_date": "2026-10-06T00:58:03.778126+00:00",
     "backfill": false,
@@ -2389,6 +2884,11 @@
         "href": "https://github.com/mboworks/xff/pull/952"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T14:26:44Z",
     "measurement_date": "2026-10-06T01:26:28.419547+00:00",
     "backfill": false,
@@ -2413,6 +2913,11 @@
         "href": "https://github.com/mboworks/xff/pull/937"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T06:42:01Z",
     "measurement_date": "2026-10-05T22:06:43.694427+00:00",
     "backfill": false,
@@ -2437,6 +2942,11 @@
         "href": "https://github.com/mboworks/xff/pull/939"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T21:08:41Z",
     "measurement_date": "2026-10-05T22:49:36.423509+00:00",
     "backfill": false,
@@ -2461,6 +2971,11 @@
         "href": "https://github.com/mboworks/xff/pull/940"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T21:08:42Z",
     "measurement_date": "2026-10-05T23:03:47.559192+00:00",
     "backfill": false,
@@ -2485,6 +3000,11 @@
         "href": "https://github.com/mboworks/xff/pull/964"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "31d8b67474ded81f831883e7ab0f67b5d36042eeb3810961a6be83d987c99ba6",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T11:00:25Z",
     "measurement_date": "2026-10-06T04:32:08.340924+00:00",
     "backfill": false,
@@ -2509,6 +3029,11 @@
         "href": "https://github.com/mboworks/xff/pull/942"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T23:10:12Z",
     "measurement_date": "2026-10-05T23:18:04.833045+00:00",
     "backfill": false,
@@ -2533,6 +3058,11 @@
         "href": "https://github.com/mboworks/xff/pull/975"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "83faaf1462f99667196890836934ac1df1500358c6972d486862e974338c39d1",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T09:59:40Z",
     "measurement_date": "2026-10-06T04:17:47.362723+00:00",
     "backfill": false,
@@ -2557,6 +3087,11 @@
         "href": "https://github.com/mboworks/xff/pull/963"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "83faaf1462f99667196890836934ac1df1500358c6972d486862e974338c39d1",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T07:31:45Z",
     "measurement_date": "2026-10-06T04:03:28.621026+00:00",
     "backfill": false,
@@ -2581,6 +3116,11 @@
         "href": "https://github.com/mboworks/xff/pull/966"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "4af9864b60b4f442e8c83746f75c33d3afa3cab0ff176a194ee70e69cf80b10d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T13:24:08Z",
     "measurement_date": "2026-10-06T05:00:37.264387+00:00",
     "backfill": false,
@@ -2605,6 +3145,11 @@
         "href": "https://github.com/mboworks/xff/pull/907"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "b5166dcabc93612772280bb7c6d386963999470870c93316c437789c245c176c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-22T22:49:21Z",
     "measurement_date": "2026-10-06T23:17:04.579184+00:00",
     "backfill": false,
@@ -2629,6 +3174,11 @@
         "href": "https://github.com/mboworks/xff/pull/959"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f68ba26bd09400b3ae160f5ad753f2afc2d44d9ca12aba499123b23df40cf123",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T13:17:40Z",
     "measurement_date": "2026-10-07T13:04:25.853377+00:00",
     "backfill": false,
@@ -2653,6 +3203,11 @@
         "href": "https://github.com/mboworks/xff/pull/925"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "57b9713930557d9ba4666c4e28dea3380e35a79e92ddd7b2853549a01f671347",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T19:17:49Z",
     "measurement_date": "2026-10-07T04:14:27.715519+00:00",
     "backfill": false,
@@ -2677,6 +3232,11 @@
         "href": "https://github.com/mboworks/xff/pull/908"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "b5166dcabc93612772280bb7c6d386963999470870c93316c437789c245c176c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T20:02:13Z",
     "measurement_date": "2026-10-06T23:34:16.511401+00:00",
     "backfill": false,
@@ -2701,6 +3261,11 @@
         "href": "https://github.com/mboworks/xff/pull/951"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T13:22:37Z",
     "measurement_date": "2026-10-07T10:47:43.369252+00:00",
     "backfill": false,
@@ -2725,6 +3290,11 @@
         "href": "https://github.com/mboworks/xff/pull/969"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "be2aee9614d3417b1257e8771187f806b1c10b4afd44a95abe7096804f76003d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T16:47:00Z",
     "measurement_date": "2026-10-07T16:13:03.506501+00:00",
     "backfill": false,
@@ -2749,6 +3319,11 @@
         "href": "https://github.com/mboworks/xff/pull/982"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T20:09:52Z",
     "measurement_date": "2026-10-07T19:21:30.379894+00:00",
     "backfill": false,
@@ -2773,6 +3348,11 @@
         "href": "https://github.com/mboworks/xff/pull/965"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "669046eab0f57aad410d0dee4df0a1ea326728c8faf045a5a09ed0eaf485064a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T12:35:04Z",
     "measurement_date": "2026-10-07T15:04:20.333615+00:00",
     "backfill": false,
@@ -2797,6 +3377,11 @@
         "href": "https://github.com/mboworks/xff/pull/932"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "909c985a797bcb50b87c9f7bfab1176a6c921d521e18e45bdb9202b14c4b7d76",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-28T06:13:27Z",
     "measurement_date": "2026-10-07T05:58:32.020080+00:00",
     "backfill": false,
@@ -2821,6 +3406,11 @@
         "href": "https://github.com/mboworks/xff/pull/977"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T01:23:48Z",
     "measurement_date": "2026-10-07T18:47:06.376805+00:00",
     "backfill": false,
@@ -2845,6 +3435,11 @@
         "href": "https://github.com/mboworks/xff/pull/954"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T16:45:57Z",
     "measurement_date": "2026-10-07T11:38:48.304543+00:00",
     "backfill": false,
@@ -2869,6 +3464,11 @@
         "href": "https://github.com/mboworks/xff/pull/967"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "a3e918bd5ff1a35d4941c227c90f10b675a4a51f65201fd605c13caaa8de84db",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T14:26:19Z",
     "measurement_date": "2026-10-07T15:38:43.173150+00:00",
     "backfill": false,
@@ -2893,6 +3493,11 @@
         "href": "https://github.com/mboworks/xff/pull/900"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "b5166dcabc93612772280bb7c6d386963999470870c93316c437789c245c176c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-22T03:10:52Z",
     "measurement_date": "2026-10-06T22:59:54.283014+00:00",
     "backfill": false,
@@ -2917,6 +3522,11 @@
         "href": "https://github.com/mboworks/xff/pull/970"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "71ec90a2f0e729f6c28454300a8e6f09ec115e7720455ea1255634132e7984f4",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T18:09:16Z",
     "measurement_date": "2026-10-07T16:30:09.700121+00:00",
     "backfill": false,
@@ -2941,6 +3551,11 @@
         "href": "https://github.com/mboworks/xff/pull/979"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "09d7322e5aead8e9a7e9d1969eccba61798823f01b6beb84f23c9d1baae6dddf",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T23:26:22Z",
     "measurement_date": "2026-10-07T17:38:24.838018+00:00",
     "backfill": false,
@@ -2965,6 +3580,11 @@
         "href": "https://github.com/mboworks/xff/pull/943"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T23:53:58Z",
     "measurement_date": "2026-10-07T08:39:11.559812+00:00",
     "backfill": false,
@@ -2989,6 +3609,11 @@
         "href": "https://github.com/mboworks/xff/pull/929"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e10168ad8789ff15df1c03b3d7b57ca67da2c302bbc56895261fb8843bc9254d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T21:45:55Z",
     "measurement_date": "2026-10-07T05:23:57.463289+00:00",
     "backfill": false,
@@ -3013,6 +3638,11 @@
         "href": "https://github.com/mboworks/xff/pull/935"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T07:42:31Z",
     "measurement_date": "2026-10-07T07:07:18.645291+00:00",
     "backfill": false,
@@ -3037,6 +3667,11 @@
         "href": "https://github.com/mboworks/xff/pull/949"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T22:33:09Z",
     "measurement_date": "2026-10-07T10:13:31.349082+00:00",
     "backfill": false,
@@ -3061,6 +3696,11 @@
         "href": "https://github.com/mboworks/xff/pull/917"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "40061ea36f7b5ad91992bf27ffbb7da730d9b8353b05a8446ddda9aa9aecaf1b",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:24Z",
     "measurement_date": "2026-10-07T02:13:02.288974+00:00",
     "backfill": false,
@@ -3085,6 +3725,11 @@
         "href": "https://github.com/mboworks/xff/pull/920"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e1f21a1e2cb00a13b7c743a1f8080c4cff70ca40b9005dabea3ebe7e25bf00d6",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:25Z",
     "measurement_date": "2026-10-07T02:47:44.561481+00:00",
     "backfill": false,
@@ -3109,6 +3754,11 @@
         "href": "https://github.com/mboworks/xff/pull/957"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f68ba26bd09400b3ae160f5ad753f2afc2d44d9ca12aba499123b23df40cf123",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T09:57:42Z",
     "measurement_date": "2026-10-07T12:30:21.652795+00:00",
     "backfill": false,
@@ -3133,6 +3783,11 @@
         "href": "https://github.com/mboworks/xff/pull/922"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "9091a10a2306a686002c1136e2c1551fa3d0b4ed0087a81a2e4a89ed2d84889c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:26Z",
     "measurement_date": "2026-10-07T03:22:32.866545+00:00",
     "backfill": false,
@@ -3157,6 +3812,11 @@
         "href": "https://github.com/mboworks/xff/pull/946"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T18:09:47Z",
     "measurement_date": "2026-10-07T09:18:55.217679+00:00",
     "backfill": false,
@@ -3181,6 +3841,11 @@
         "href": "https://github.com/mboworks/xff/pull/947"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T19:19:46Z",
     "measurement_date": "2026-10-07T09:38:03.339187+00:00",
     "backfill": false,
@@ -3205,6 +3870,11 @@
         "href": "https://github.com/mboworks/xff/pull/934"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T18:28:57Z",
     "measurement_date": "2026-10-07T07:24:33.093087+00:00",
     "backfill": false,
@@ -3229,6 +3899,11 @@
         "href": "https://github.com/mboworks/xff/pull/953"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T15:32:45Z",
     "measurement_date": "2026-10-07T11:21:46.196820+00:00",
     "backfill": false,
@@ -3253,6 +3928,11 @@
         "href": "https://github.com/mboworks/xff/pull/956"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f68ba26bd09400b3ae160f5ad753f2afc2d44d9ca12aba499123b23df40cf123",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T00:03:54Z",
     "measurement_date": "2026-10-07T12:13:08.734091+00:00",
     "backfill": false,
@@ -3277,6 +3957,11 @@
         "href": "https://github.com/mboworks/xff/pull/913"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "5425fe0dc503ed49813cc7bad2e2a7f1fc6d446a6365db4cf84dfa4256299024",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T22:06:36Z",
     "measurement_date": "2026-10-07T01:02:22.343776+00:00",
     "backfill": false,
@@ -3301,6 +3986,11 @@
         "href": "https://github.com/mboworks/xff/pull/976"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "09d7322e5aead8e9a7e9d1969eccba61798823f01b6beb84f23c9d1baae6dddf",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T00:17:35Z",
     "measurement_date": "2026-10-07T18:12:47.181778+00:00",
     "backfill": false,
@@ -3325,6 +4015,11 @@
         "href": "https://github.com/mboworks/xff/pull/919"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "c9efb09519a79b666a732e26df863024052311c7bb5c8aebb45ceb768da440b8",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:25Z",
     "measurement_date": "2026-10-07T03:05:06.988881+00:00",
     "backfill": false,
@@ -3349,6 +4044,11 @@
         "href": "https://github.com/mboworks/xff/pull/948"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T20:54:49Z",
     "measurement_date": "2026-10-07T09:56:18.285834+00:00",
     "backfill": false,
@@ -3373,6 +4073,11 @@
         "href": "https://github.com/mboworks/xff/pull/961"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "a4c556da8658186510b36f71897f4ece2e2ed6c38998ed4923d20be14eb5fcef",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T02:57:01Z",
     "measurement_date": "2026-10-07T13:38:48.737600+00:00",
     "backfill": false,
@@ -3397,6 +4102,11 @@
         "href": "https://github.com/mboworks/xff/pull/912"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "5425fe0dc503ed49813cc7bad2e2a7f1fc6d446a6365db4cf84dfa4256299024",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T20:57:31Z",
     "measurement_date": "2026-10-07T00:44:36.532477+00:00",
     "backfill": false,
@@ -3421,6 +4131,11 @@
         "href": "https://github.com/mboworks/xff/pull/955"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T18:23:18Z",
     "measurement_date": "2026-10-07T11:55:53.927214+00:00",
     "backfill": false,
@@ -3445,6 +4160,11 @@
         "href": "https://github.com/mboworks/xff/pull/971"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "66212bbed1f3bfd50b6903618f8bfb5b524eda1e5b0e8a81ca53ffd517c7250e",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T21:17:51Z",
     "measurement_date": "2026-10-07T16:47:07.055525+00:00",
     "backfill": false,
@@ -3469,6 +4189,11 @@
         "href": "https://github.com/mboworks/xff/pull/945"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T15:18:12Z",
     "measurement_date": "2026-10-07T08:58:39.946903+00:00",
     "backfill": false,
@@ -3493,6 +4218,11 @@
         "href": "https://github.com/mboworks/xff/pull/985"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T22:08:43Z",
     "measurement_date": "2026-10-07T19:38:42.145119+00:00",
     "backfill": false,
@@ -3517,6 +4247,11 @@
         "href": "https://github.com/mboworks/xff/pull/918"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "097c12b86cfab02eac6ae525c210b1f7df7fcf2aaf0db83566a33efcd76c7f5d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:24Z",
     "measurement_date": "2026-10-07T02:30:23.764131+00:00",
     "backfill": false,
@@ -3541,6 +4276,11 @@
         "href": "https://github.com/mboworks/xff/pull/960"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "68195b3095f275a498efee2e689cab367068dc5694af5dc26393fa7dea23d94c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T23:34:36Z",
     "measurement_date": "2026-10-07T13:21:38.593354+00:00",
     "backfill": false,
@@ -3565,6 +4305,11 @@
         "href": "https://github.com/mboworks/xff/pull/914"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "5425fe0dc503ed49813cc7bad2e2a7f1fc6d446a6365db4cf84dfa4256299024",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T22:42:57Z",
     "measurement_date": "2026-10-07T01:20:10.758054+00:00",
     "backfill": false,
@@ -3589,6 +4334,11 @@
         "href": "https://github.com/mboworks/xff/pull/958"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f68ba26bd09400b3ae160f5ad753f2afc2d44d9ca12aba499123b23df40cf123",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T10:51:31Z",
     "measurement_date": "2026-10-07T12:47:23.892441+00:00",
     "backfill": false,
@@ -3613,6 +4363,11 @@
         "href": "https://github.com/mboworks/xff/pull/933"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "74c7dd60f7b0d4fbf41cf381f040315b3c86c677bbbc5b4ff9fc37ecd9122882",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-28T21:09:25Z",
     "measurement_date": "2026-10-07T06:15:40.753324+00:00",
     "backfill": false,
@@ -3637,6 +4392,11 @@
         "href": "https://github.com/mboworks/xff/pull/962"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "0d99fa04269da1d456f8c0fc9e9a7e5f9bf65317a72c38c33d5e9f03f5dac826",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T05:24:43Z",
     "measurement_date": "2026-10-07T13:55:50.807262+00:00",
     "backfill": false,
@@ -3661,6 +4421,11 @@
         "href": "https://github.com/mboworks/xff/pull/968"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "93bcbf8203a02cee4b664b41f8cb64ac335a1124e87dd6ecc1005361b766491b",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T15:37:15Z",
     "measurement_date": "2026-10-07T15:55:51.701762+00:00",
     "backfill": false,
@@ -3685,6 +4450,11 @@
         "href": "https://github.com/mboworks/xff/pull/911"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2cb84d581aebafc2a7eb98a82c70c774bf65cafb32f945b775863c9b016cf19e",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T06:44:48Z",
     "measurement_date": "2026-10-07T00:26:45.399621+00:00",
     "backfill": false,
@@ -3709,6 +4479,11 @@
         "href": "https://github.com/mboworks/xff/pull/936"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "cbece4243361233d9dc67e097904d3d59cc9f0f6a0cccd41231949b818dd4fd5",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T06:42:01Z",
     "measurement_date": "2026-10-07T06:32:50.807315+00:00",
     "backfill": false,
@@ -3733,6 +4508,11 @@
         "href": "https://github.com/mboworks/xff/pull/950"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T09:53:03Z",
     "measurement_date": "2026-10-07T10:30:42.980255+00:00",
     "backfill": false,
@@ -3757,6 +4537,11 @@
         "href": "https://github.com/mboworks/xff/pull/981"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T02:40:08Z",
     "measurement_date": "2026-10-07T19:04:17.640553+00:00",
     "backfill": false,
@@ -3781,6 +4566,11 @@
         "href": "https://github.com/mboworks/xff/pull/952"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "38f42a7e4e1f4ed092b89d2d2bbe592458284d21695d927371055a0a86a02401",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T14:26:44Z",
     "measurement_date": "2026-10-07T11:04:47.360702+00:00",
     "backfill": false,
@@ -3805,6 +4595,11 @@
         "href": "https://github.com/mboworks/xff/pull/923"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "45da6a1542bc8d1a3659b4cee8daae642f37b6eabf45ef73f15ed9a61069767b",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:26Z",
     "measurement_date": "2026-10-07T03:39:53.083255+00:00",
     "backfill": false,
@@ -3829,6 +4624,11 @@
         "href": "https://github.com/mboworks/xff/pull/937"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T06:42:01Z",
     "measurement_date": "2026-10-07T06:50:02.448999+00:00",
     "backfill": false,
@@ -3853,6 +4653,11 @@
         "href": "https://github.com/mboworks/xff/pull/915"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "bbf3cb1f42be6dfaf55f153732c2cfefaa927f8dcf4701c09f3a5c5c5e56bb21",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-25T08:47:04Z",
     "measurement_date": "2026-10-07T01:37:55.472227+00:00",
     "backfill": false,
@@ -3877,6 +4682,11 @@
         "href": "https://github.com/mboworks/xff/pull/910"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2cb84d581aebafc2a7eb98a82c70c774bf65cafb32f945b775863c9b016cf19e",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T23:29:54Z",
     "measurement_date": "2026-10-07T00:08:47.863466+00:00",
     "backfill": false,
@@ -3901,6 +4711,11 @@
         "href": "https://github.com/mboworks/xff/pull/939"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T21:08:41Z",
     "measurement_date": "2026-10-07T07:41:42.020494+00:00",
     "backfill": false,
@@ -3925,6 +4740,11 @@
         "href": "https://github.com/mboworks/xff/pull/916"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "53e915a4025f0bc45e544bf5e3c2aa7e923a39aec8bf837ae37af7819c703843",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:23Z",
     "measurement_date": "2026-10-07T01:55:41.821383+00:00",
     "backfill": false,
@@ -3949,6 +4769,11 @@
         "href": "https://github.com/mboworks/xff/pull/940"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T21:08:42Z",
     "measurement_date": "2026-10-07T08:00:36.678606+00:00",
     "backfill": false,
@@ -3973,6 +4798,11 @@
         "href": "https://github.com/mboworks/xff/pull/964"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "31d8b67474ded81f831883e7ab0f67b5d36042eeb3810961a6be83d987c99ba6",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T11:00:25Z",
     "measurement_date": "2026-10-07T14:47:08.468207+00:00",
     "backfill": false,
@@ -3997,6 +4827,11 @@
         "href": "https://github.com/mboworks/xff/pull/926"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "7d1edcc5b29479e97c98be6b67684cf6207805dad599f79827b7991ad226f185",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T20:18:49Z",
     "measurement_date": "2026-10-07T04:31:48.446747+00:00",
     "backfill": false,
@@ -4021,6 +4856,11 @@
         "href": "https://github.com/mboworks/xff/pull/942"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "92fb5cd4eae63a7ff814fc4a01b1ab036b1324eef3b981204b3827e21929b30a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T23:10:12Z",
     "measurement_date": "2026-10-07T08:19:52.124842+00:00",
     "backfill": false,
@@ -4045,6 +4885,11 @@
         "href": "https://github.com/mboworks/xff/pull/921"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "488f3f3475ab9bb57723995711347978bd74eda7f58ac4a6bfb1df227d4bf4c8",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:26Z",
     "measurement_date": "2026-10-07T03:57:06.980569+00:00",
     "backfill": false,
@@ -4069,6 +4914,11 @@
         "href": "https://github.com/mboworks/xff/pull/973"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "09d7322e5aead8e9a7e9d1969eccba61798823f01b6beb84f23c9d1baae6dddf",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T23:25:44Z",
     "measurement_date": "2026-10-07T17:21:16.460917+00:00",
     "backfill": false,
@@ -4093,6 +4943,11 @@
         "href": "https://github.com/mboworks/xff/pull/927"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "da94c621e5e0c5ef50b1e66d5fa03cc095ce8c3315eede5bc6e57b12d016edb6",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T20:57:15Z",
     "measurement_date": "2026-10-07T04:49:12.437226+00:00",
     "backfill": false,
@@ -4117,6 +4972,11 @@
         "href": "https://github.com/mboworks/xff/pull/980"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "09d7322e5aead8e9a7e9d1969eccba61798823f01b6beb84f23c9d1baae6dddf",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T23:27:26Z",
     "measurement_date": "2026-10-07T17:55:34.428655+00:00",
     "backfill": false,
@@ -4141,6 +5001,11 @@
         "href": "https://github.com/mboworks/xff/pull/909"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "b5166dcabc93612772280bb7c6d386963999470870c93316c437789c245c176c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T21:22:39Z",
     "measurement_date": "2026-10-06T23:51:24.005506+00:00",
     "backfill": false,
@@ -4165,6 +5030,11 @@
         "href": "https://github.com/mboworks/xff/pull/972"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "09d7322e5aead8e9a7e9d1969eccba61798823f01b6beb84f23c9d1baae6dddf",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T22:25:11Z",
     "measurement_date": "2026-10-07T17:04:12.575466+00:00",
     "backfill": false,
@@ -4189,6 +5059,11 @@
         "href": "https://github.com/mboworks/xff/pull/975"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "83faaf1462f99667196890836934ac1df1500358c6972d486862e974338c39d1",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T09:59:40Z",
     "measurement_date": "2026-10-07T14:30:04.853533+00:00",
     "backfill": false,
@@ -4213,6 +5088,11 @@
         "href": "https://github.com/mboworks/xff/pull/930"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "cf90f615df2d64108dcd98e5fa0a3fdca581435b5495fc6b49be5f57f93a3399",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T21:45:55Z",
     "measurement_date": "2026-10-07T05:41:13.498888+00:00",
     "backfill": false,
@@ -4237,6 +5117,11 @@
         "href": "https://github.com/mboworks/xff/pull/928"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "c3db4117511c815ea2cdfa063b4c2646c100724fd5e0a963dd16ab58d2c06e27",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T21:45:54Z",
     "measurement_date": "2026-10-07T05:06:38.915017+00:00",
     "backfill": false,
@@ -4261,6 +5146,11 @@
         "href": "https://github.com/mboworks/xff/pull/963"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "83faaf1462f99667196890836934ac1df1500358c6972d486862e974338c39d1",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T07:31:45Z",
     "measurement_date": "2026-10-07T14:12:58.771055+00:00",
     "backfill": false,
@@ -4285,6 +5175,11 @@
         "href": "https://github.com/mboworks/xff/pull/974"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "09d7322e5aead8e9a7e9d1969eccba61798823f01b6beb84f23c9d1baae6dddf",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T00:21:26Z",
     "measurement_date": "2026-10-07T18:29:58.295634+00:00",
     "backfill": false,
@@ -4309,6 +5204,11 @@
         "href": "https://github.com/mboworks/xff/pull/966"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "4af9864b60b4f442e8c83746f75c33d3afa3cab0ff176a194ee70e69cf80b10d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T13:24:08Z",
     "measurement_date": "2026-10-07T15:21:32.719233+00:00",
     "backfill": false,
@@ -4333,6 +5233,11 @@
         "href": "https://github.com/mboworks/xff/pull/982"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e2de7c9841cc0ebe959d664b7b8aaf5dbeb9385b5476f66df61b5d3bf328dba0",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T20:09:52Z",
     "measurement_date": "2026-10-07T19:55:41.301676+00:00",
     "backfill": false,
@@ -4357,6 +5262,11 @@
         "href": "https://github.com/mboworks/xff/pull/985"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e2de7c9841cc0ebe959d664b7b8aaf5dbeb9385b5476f66df61b5d3bf328dba0",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T22:08:43Z",
     "measurement_date": "2026-10-07T20:44:44.886554+00:00",
     "backfill": false,
@@ -4381,6 +5291,11 @@
         "href": "https://github.com/mboworks/xff/pull/959"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "1ff2298dbd5dc25fc83f215318eed1e77867dd30ab4cd832116352805759f600",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T13:17:40Z",
     "measurement_date": "2026-10-06T18:58:05.066813+00:00",
     "backfill": false,
@@ -4405,6 +5320,11 @@
         "href": "https://github.com/mboworks/xff/pull/969"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "44f0552855b2cc19463d66d5a905a74cc860b28dfb116d6bb6e81e6894bb560c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T16:47:00Z",
     "measurement_date": "2026-10-07T03:46:46.115052+00:00",
     "backfill": false,
@@ -4429,6 +5349,11 @@
         "href": "https://github.com/mboworks/xff/pull/965"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "a25fdde0b6c66e2da28c65a6f052c41aabe55bc11db2031898fa6c7495253de8",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T12:35:04Z",
     "measurement_date": "2026-10-07T00:39:27.264029+00:00",
     "backfill": false,
@@ -4453,6 +5378,11 @@
         "href": "https://github.com/mboworks/xff/pull/977"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e15c5cd6a9bc4c678869e0289c4ba598569c09b76dff52d0b9a42377661913aa",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T01:23:48Z",
     "measurement_date": "2026-10-07T12:31:12.340850+00:00",
     "backfill": false,
@@ -4477,6 +5407,11 @@
         "href": "https://github.com/mboworks/xff/pull/967"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "a49febb2010e541ad098358d9b96e2cad1ca401298a1c0804bee54146679410c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T14:26:19Z",
     "measurement_date": "2026-10-07T02:13:37.378179+00:00",
     "backfill": false,
@@ -4501,6 +5436,11 @@
         "href": "https://github.com/mboworks/xff/pull/970"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "0e017a39b0c9123406da65eaee435062c3dc809df56e81a137c78a033b2f2a78",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T18:09:16Z",
     "measurement_date": "2026-10-07T04:34:30.893092+00:00",
     "backfill": false,
@@ -4525,6 +5465,11 @@
         "href": "https://github.com/mboworks/xff/pull/979"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "d20ed62cbe6f71ded6341771d5e1a5518bd68064052da5a5d1b9509ae11aa4b2",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T23:26:22Z",
     "measurement_date": "2026-10-07T08:04:04.207195+00:00",
     "backfill": false,
@@ -4549,6 +5494,11 @@
         "href": "https://github.com/mboworks/xff/pull/943"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T23:53:58Z",
     "measurement_date": "2026-10-06T15:06:08.025688+00:00",
     "backfill": false,
@@ -4573,6 +5523,11 @@
         "href": "https://github.com/mboworks/xff/pull/957"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "1ff2298dbd5dc25fc83f215318eed1e77867dd30ab4cd832116352805759f600",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T09:57:42Z",
     "measurement_date": "2026-10-06T17:25:58.302079+00:00",
     "backfill": false,
@@ -4597,6 +5552,11 @@
         "href": "https://github.com/mboworks/xff/pull/946"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T18:09:47Z",
     "measurement_date": "2026-10-06T16:40:35.571386+00:00",
     "backfill": false,
@@ -4621,6 +5581,11 @@
         "href": "https://github.com/mboworks/xff/pull/976"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "d20ed62cbe6f71ded6341771d5e1a5518bd68064052da5a5d1b9509ae11aa4b2",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T00:17:35Z",
     "measurement_date": "2026-10-07T10:13:56.180775+00:00",
     "backfill": false,
@@ -4645,6 +5610,11 @@
         "href": "https://github.com/mboworks/xff/pull/961"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "dce2a660aa25e48e99bf8199a22c9927dd0c80652c71f609976304145ab2db99",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T02:57:01Z",
     "measurement_date": "2026-10-06T20:34:48.022375+00:00",
     "backfill": false,
@@ -4669,6 +5639,11 @@
         "href": "https://github.com/mboworks/xff/pull/971"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "389a7a7c27e4c6dc4447de42f25e9caa7bac33f01019f7afad7bc00eeb23f9f4",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T21:17:51Z",
     "measurement_date": "2026-10-07T05:21:33.084772+00:00",
     "backfill": false,
@@ -4693,6 +5668,11 @@
         "href": "https://github.com/mboworks/xff/pull/945"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T15:18:12Z",
     "measurement_date": "2026-10-06T15:53:25.877390+00:00",
     "backfill": false,
@@ -4717,6 +5697,11 @@
         "href": "https://github.com/mboworks/xff/pull/960"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2e3c167e42d0e18dff9dae347c9d11de8ad7f98ab97bb15cef0fe890d1b3d09e",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T23:34:36Z",
     "measurement_date": "2026-10-06T19:47:08.148659+00:00",
     "backfill": false,
@@ -4741,6 +5726,11 @@
         "href": "https://github.com/mboworks/xff/pull/958"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "1ff2298dbd5dc25fc83f215318eed1e77867dd30ab4cd832116352805759f600",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T10:51:31Z",
     "measurement_date": "2026-10-06T18:11:25.639304+00:00",
     "backfill": false,
@@ -4765,6 +5755,11 @@
         "href": "https://github.com/mboworks/xff/pull/962"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "29cf23f3d203998dcdc283e23233a51ff2ed4dabb0a378201b64f8bd3a4f0b23",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T05:24:43Z",
     "measurement_date": "2026-10-06T21:21:50.157344+00:00",
     "backfill": false,
@@ -4789,6 +5784,11 @@
         "href": "https://github.com/mboworks/xff/pull/968"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "125c6ece55fad350eb7ce441f65616aba61be431cbe1ee685c0ad5ebbe848464",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T15:37:15Z",
     "measurement_date": "2026-10-07T03:00:55.410487+00:00",
     "backfill": false,
@@ -4813,6 +5813,11 @@
         "href": "https://github.com/mboworks/xff/pull/981"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e15c5cd6a9bc4c678869e0289c4ba598569c09b76dff52d0b9a42377661913aa",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T02:40:08Z",
     "measurement_date": "2026-10-07T13:45:05.332830+00:00",
     "backfill": false,
@@ -4837,6 +5842,11 @@
         "href": "https://github.com/mboworks/xff/pull/964"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "8a59c213a55333f2c889fc748bb8575ec5c2ca061f8eda172e98024c92838fc2",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T11:00:25Z",
     "measurement_date": "2026-10-06T23:51:57.118286+00:00",
     "backfill": false,
@@ -4861,6 +5871,11 @@
         "href": "https://github.com/mboworks/xff/pull/973"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "d20ed62cbe6f71ded6341771d5e1a5518bd68064052da5a5d1b9509ae11aa4b2",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T23:25:44Z",
     "measurement_date": "2026-10-07T06:55:51.317134+00:00",
     "backfill": false,
@@ -4885,6 +5900,11 @@
         "href": "https://github.com/mboworks/xff/pull/980"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "d20ed62cbe6f71ded6341771d5e1a5518bd68064052da5a5d1b9509ae11aa4b2",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T23:27:26Z",
     "measurement_date": "2026-10-07T09:00:44.770380+00:00",
     "backfill": false,
@@ -4909,6 +5929,11 @@
         "href": "https://github.com/mboworks/xff/pull/972"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "d20ed62cbe6f71ded6341771d5e1a5518bd68064052da5a5d1b9509ae11aa4b2",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T22:25:11Z",
     "measurement_date": "2026-10-07T06:08:11.058664+00:00",
     "backfill": false,
@@ -4933,6 +5958,11 @@
         "href": "https://github.com/mboworks/xff/pull/975"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "bfd53275f25b5fd7a613d2e945de7260ad2431a006376a5220e4f1563b879e18",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T09:59:40Z",
     "measurement_date": "2026-10-06T22:56:22.057515+00:00",
     "backfill": false,
@@ -4957,6 +5987,11 @@
         "href": "https://github.com/mboworks/xff/pull/963"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "fadc18a59da4300796df8e66c709e0016c7102584d1b7ade2fac0d11b2bb689b",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T07:31:45Z",
     "measurement_date": "2026-10-06T22:09:56.740843+00:00",
     "backfill": false,
@@ -4981,6 +6016,11 @@
         "href": "https://github.com/mboworks/xff/pull/974"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "d20ed62cbe6f71ded6341771d5e1a5518bd68064052da5a5d1b9509ae11aa4b2",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T00:21:26Z",
     "measurement_date": "2026-10-07T11:19:40.310204+00:00",
     "backfill": false,
@@ -5005,6 +6045,11 @@
         "href": "https://github.com/mboworks/xff/pull/966"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2b558139bb98381c144865c65ad574333ee7b79b396f7c3a48c947693823cf91",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T13:24:08Z",
     "measurement_date": "2026-10-07T01:26:36.672607+00:00",
     "backfill": false,
@@ -5029,6 +6074,11 @@
         "href": "https://github.com/mboworks/xff/pull/929"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "22d1acf3896924fd33fe5b24a1044153ff793aea9f58c1577f574ba5d610bcd3",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T21:45:55Z",
     "measurement_date": "2026-10-06T08:13:03.369284+00:00",
     "backfill": false,
@@ -5053,6 +6103,11 @@
         "href": "https://github.com/mboworks/xff/pull/935"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T07:42:31Z",
     "measurement_date": "2026-10-06T10:35:19.098963+00:00",
     "backfill": false,
@@ -5077,6 +6132,11 @@
         "href": "https://github.com/mboworks/xff/pull/917"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "4bc19a01ebbbeefa83cf292e2453db3a7430195a4e5dabb6f2253123162ad862",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:24Z",
     "measurement_date": "2026-10-06T02:34:30.649739+00:00",
     "backfill": false,
@@ -5101,6 +6161,11 @@
         "href": "https://github.com/mboworks/xff/pull/920"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f8915dec66ddae09b7a58d1614ddf096560385cda5743e60a63904fd86b11a4b",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:25Z",
     "measurement_date": "2026-10-06T04:11:01.755302+00:00",
     "backfill": false,
@@ -5125,6 +6190,11 @@
         "href": "https://github.com/mboworks/xff/pull/922"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2aac05736b97b03c265fdbc0ae22fd250286904dd4f7572770eb9fe32c47e1bb",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:26Z",
     "measurement_date": "2026-10-06T05:47:51.786312+00:00",
     "backfill": false,
@@ -5149,6 +6219,11 @@
         "href": "https://github.com/mboworks/xff/pull/919"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "fb839bdc05339be62ed812d408c553f5b8679c62f11cd08cd8285085480a75f5",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:25Z",
     "measurement_date": "2026-10-06T04:59:34.060112+00:00",
     "backfill": false,
@@ -5173,6 +6248,11 @@
         "href": "https://github.com/mboworks/xff/pull/918"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "908239d45a188380e5ec86205559c5a6059f7d5acf2cac3718a8b47d1cfede90",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:24Z",
     "measurement_date": "2026-10-06T03:24:02.645820+00:00",
     "backfill": false,
@@ -5197,6 +6277,11 @@
         "href": "https://github.com/mboworks/xff/pull/914"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "dff5a2df622edc56a277f53de252bd63dea3ba16a13a0c350ac1a8d17925c4ef",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T22:42:57Z",
     "measurement_date": "2026-10-06T00:56:20.914935+00:00",
     "backfill": false,
@@ -5221,6 +6306,11 @@
         "href": "https://github.com/mboworks/xff/pull/936"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "55e39c19d9d2b1475da830a88e8fe5266688863407f9a97c39993cfabf9bc7f3",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T06:42:01Z",
     "measurement_date": "2026-10-06T08:59:40.489613+00:00",
     "backfill": false,
@@ -5245,6 +6335,11 @@
         "href": "https://github.com/mboworks/xff/pull/937"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T06:42:01Z",
     "measurement_date": "2026-10-06T09:47:33.019701+00:00",
     "backfill": false,
@@ -5269,6 +6364,11 @@
         "href": "https://github.com/mboworks/xff/pull/939"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T21:08:41Z",
     "measurement_date": "2026-10-06T11:24:05.576194+00:00",
     "backfill": false,
@@ -5293,6 +6393,11 @@
         "href": "https://github.com/mboworks/xff/pull/916"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "555c3a5e2a23fdd6c9ae2796aa36bd223606dcd37b4f8d05f0171728207e02b9",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:23Z",
     "measurement_date": "2026-10-06T01:46:01.735195+00:00",
     "backfill": false,
@@ -5317,6 +6422,11 @@
         "href": "https://github.com/mboworks/xff/pull/940"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T21:08:42Z",
     "measurement_date": "2026-10-06T12:10:36.691833+00:00",
     "backfill": false,
@@ -5341,6 +6451,11 @@
         "href": "https://github.com/mboworks/xff/pull/942"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T23:10:12Z",
     "measurement_date": "2026-10-06T12:59:37.886340+00:00",
     "backfill": false,
@@ -5365,6 +6480,11 @@
         "href": "https://github.com/mboworks/xff/pull/921"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "ff8228f5a8b79e66d9e0c9a0cb14c1455c02a2a95f1b4f7b444b1c5ecb7ce561",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:26Z",
     "measurement_date": "2026-10-06T06:35:24.150522+00:00",
     "backfill": false,
@@ -5389,6 +6509,11 @@
         "href": "https://github.com/mboworks/xff/pull/928"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "0036825b6736e8d6f7a03045760836a66a2d323af0ddda10ee4d994c94f8bb6a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T21:45:54Z",
     "measurement_date": "2026-10-06T07:23:43.731981+00:00",
     "backfill": false,
@@ -5413,6 +6538,11 @@
         "href": "https://github.com/mboworks/xff/pull/947"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2b529738bd3621ce655ba48b74bf5392aaccfd71e33144b7838e52ce612189e9",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T19:19:46Z",
     "measurement_date": "2026-10-02T21:00:23.576540+00:00",
     "backfill": false,
@@ -5437,6 +6567,11 @@
         "href": "https://github.com/mboworks/xff/pull/951"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2b529738bd3621ce655ba48b74bf5392aaccfd71e33144b7838e52ce612189e9",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T13:22:37Z",
     "measurement_date": "2026-10-04T11:48:09.904638+00:00",
     "backfill": false,
@@ -5461,6 +6596,11 @@
         "href": "https://github.com/mboworks/xff/pull/954"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2b529738bd3621ce655ba48b74bf5392aaccfd71e33144b7838e52ce612189e9",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T16:45:57Z",
     "measurement_date": "2026-10-04T14:23:46.824339+00:00",
     "backfill": false,
@@ -5485,6 +6625,11 @@
         "href": "https://github.com/mboworks/xff/pull/949"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2b529738bd3621ce655ba48b74bf5392aaccfd71e33144b7838e52ce612189e9",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T22:33:09Z",
     "measurement_date": "2026-10-04T09:59:23.839878+00:00",
     "backfill": false,
@@ -5509,6 +6654,11 @@
         "href": "https://github.com/mboworks/xff/pull/953"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2b529738bd3621ce655ba48b74bf5392aaccfd71e33144b7838e52ce612189e9",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T15:32:45Z",
     "measurement_date": "2026-10-04T13:31:56.799224+00:00",
     "backfill": false,
@@ -5533,6 +6683,11 @@
         "href": "https://github.com/mboworks/xff/pull/956"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "1ff2298dbd5dc25fc83f215318eed1e77867dd30ab4cd832116352805759f600",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T00:03:54Z",
     "measurement_date": "2026-10-04T16:16:32.502572+00:00",
     "backfill": false,
@@ -5557,6 +6712,11 @@
         "href": "https://github.com/mboworks/xff/pull/948"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2b529738bd3621ce655ba48b74bf5392aaccfd71e33144b7838e52ce612189e9",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T20:54:49Z",
     "measurement_date": "2026-10-04T09:07:05.172246+00:00",
     "backfill": false,
@@ -5581,6 +6741,11 @@
         "href": "https://github.com/mboworks/xff/pull/955"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2b529738bd3621ce655ba48b74bf5392aaccfd71e33144b7838e52ce612189e9",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T18:23:18Z",
     "measurement_date": "2026-10-04T15:20:50.404762+00:00",
     "backfill": false,
@@ -5605,6 +6770,11 @@
         "href": "https://github.com/mboworks/xff/pull/950"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2b529738bd3621ce655ba48b74bf5392aaccfd71e33144b7838e52ce612189e9",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T09:53:03Z",
     "measurement_date": "2026-10-04T10:52:36.058286+00:00",
     "backfill": false,
@@ -5629,6 +6799,11 @@
         "href": "https://github.com/mboworks/xff/pull/952"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2b529738bd3621ce655ba48b74bf5392aaccfd71e33144b7838e52ce612189e9",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T14:26:44Z",
     "measurement_date": "2026-10-04T12:38:02.154485+00:00",
     "backfill": false,
@@ -5653,6 +6828,11 @@
         "href": "https://github.com/mboworks/xff/pull/907"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "903e1e7e3a097de6c09abe0e9616257ff98b46a2704f4ffea0070b137c7dd8b6",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-22T22:49:21Z",
     "measurement_date": "2026-10-02T01:38:27.536642+00:00",
     "backfill": false,
@@ -5677,6 +6857,11 @@
         "href": "https://github.com/mboworks/xff/pull/925"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "41ee4654d4a1e515845ae7f7bb0da941c884429119d195a840bd46b7fa64c395",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T19:17:49Z",
     "measurement_date": "2026-10-02T08:56:29.900485+00:00",
     "backfill": false,
@@ -5701,6 +6886,11 @@
         "href": "https://github.com/mboworks/xff/pull/908"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "903e1e7e3a097de6c09abe0e9616257ff98b46a2704f4ffea0070b137c7dd8b6",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T20:02:13Z",
     "measurement_date": "2026-10-02T02:27:23.739893+00:00",
     "backfill": false,
@@ -5725,6 +6915,11 @@
         "href": "https://github.com/mboworks/xff/pull/932"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "851e74bf033f17074189123db356fa196002331c94ee93eb655cd95f63135685",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-28T06:13:27Z",
     "measurement_date": "2026-10-02T12:11:48.076808+00:00",
     "backfill": false,
@@ -5749,6 +6944,11 @@
         "href": "https://github.com/mboworks/xff/pull/900"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "903e1e7e3a097de6c09abe0e9616257ff98b46a2704f4ffea0070b137c7dd8b6",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-22T03:10:52Z",
     "measurement_date": "2026-10-02T00:49:43.764458+00:00",
     "backfill": false,
@@ -5773,6 +6973,11 @@
         "href": "https://github.com/mboworks/xff/pull/934"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e88dcc51d0289179a511a871a1bf839118eca114ee61ca80321090ccd32b6223",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T18:28:57Z",
     "measurement_date": "2026-10-02T13:50:43.859511+00:00",
     "backfill": false,
@@ -5797,6 +7002,11 @@
         "href": "https://github.com/mboworks/xff/pull/913"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f159bf0066bd1c1513eeefafcef74f98e3b6e67ad42d28dfa110cf37fe41cc19",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T22:06:36Z",
     "measurement_date": "2026-10-02T06:29:34.586068+00:00",
     "backfill": false,
@@ -5821,6 +7031,11 @@
         "href": "https://github.com/mboworks/xff/pull/912"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f159bf0066bd1c1513eeefafcef74f98e3b6e67ad42d28dfa110cf37fe41cc19",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T20:57:31Z",
     "measurement_date": "2026-10-02T05:41:01.509195+00:00",
     "backfill": false,
@@ -5845,6 +7060,11 @@
         "href": "https://github.com/mboworks/xff/pull/933"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "d22a8cd1739b05b3b8a3fd71db11816102085d3c6c2824b8fa1b048248998dcf",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-28T21:09:25Z",
     "measurement_date": "2026-10-02T13:00:57.459892+00:00",
     "backfill": false,
@@ -5869,6 +7089,11 @@
         "href": "https://github.com/mboworks/xff/pull/911"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "07bf3668cefe3d28d705755fa3bad53a261bbac690431ac992e8816e88089cb2",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T06:44:48Z",
     "measurement_date": "2026-10-02T04:51:40.712011+00:00",
     "backfill": false,
@@ -5893,6 +7118,11 @@
         "href": "https://github.com/mboworks/xff/pull/923"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "fd69553dbc40f5a932100492f1d2078100383b343d690ab636d7669fb3bbf777",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:26Z",
     "measurement_date": "2026-10-02T08:06:25.552001+00:00",
     "backfill": false,
@@ -5917,6 +7147,11 @@
         "href": "https://github.com/mboworks/xff/pull/915"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "fa52a393bb57c3cce36df1d18c7f0408ca36b7ac325df8a7498e4f8988312080",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-25T08:47:04Z",
     "measurement_date": "2026-10-02T07:18:24.738504+00:00",
     "backfill": false,
@@ -5941,6 +7176,11 @@
         "href": "https://github.com/mboworks/xff/pull/910"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "07bf3668cefe3d28d705755fa3bad53a261bbac690431ac992e8816e88089cb2",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T23:29:54Z",
     "measurement_date": "2026-10-02T04:03:29.655457+00:00",
     "backfill": false,
@@ -5965,6 +7205,11 @@
         "href": "https://github.com/mboworks/xff/pull/926"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "a0a12d3be1ad6dd58944a81dfb724cd723dd224f0d5b7af7978dbad096547440",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T20:18:49Z",
     "measurement_date": "2026-10-02T09:46:09.347868+00:00",
     "backfill": false,
@@ -5989,6 +7234,11 @@
         "href": "https://github.com/mboworks/xff/pull/927"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "dd31d79535bed37936b875f2cb5c24f4252272042de7373f3c45dcf7f3d6c868",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T20:57:15Z",
     "measurement_date": "2026-10-02T10:33:56.024502+00:00",
     "backfill": false,
@@ -6013,6 +7263,11 @@
         "href": "https://github.com/mboworks/xff/pull/909"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "903e1e7e3a097de6c09abe0e9616257ff98b46a2704f4ffea0070b137c7dd8b6",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T21:22:39Z",
     "measurement_date": "2026-10-02T03:15:55.992240+00:00",
     "backfill": false,
@@ -6037,6 +7292,11 @@
         "href": "https://github.com/mboworks/xff/pull/930"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "777c92c7a44a83f6e052439532560281ab901f8e8f8be1ca48952983ff386710",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T21:45:55Z",
     "measurement_date": "2026-10-02T11:22:39.353303+00:00",
     "backfill": false,
@@ -6061,6 +7321,11 @@
         "href": "https://github.com/mboworks/xff/pull/900"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "bd0cf005cdda5c4657006af1045d2f1d1f952652061eb4cc9a3ee51ac71bafa3",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-22T03:10:52Z",
     "measurement_date": null,
     "backfill": false,
@@ -6085,6 +7350,11 @@
         "href": "https://github.com/mboworks/xff/pull/900"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "158644388a14cbce6a2e6193ee62548b1b9b9bacb230ddc4d7e566a0b1854dc9",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-22T03:10:52Z",
     "measurement_date": null,
     "backfill": false,
@@ -6109,6 +7379,11 @@
         "href": "https://github.com/mboworks/xff/pull/907"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "bd0cf005cdda5c4657006af1045d2f1d1f952652061eb4cc9a3ee51ac71bafa3",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-22T22:49:21Z",
     "measurement_date": null,
     "backfill": false,
@@ -6133,6 +7408,11 @@
         "href": "https://github.com/mboworks/xff/pull/907"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2fd49f31624d66803b069c30ef69d5d537cff43c2f317689148a35be3513c014",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-22T22:49:21Z",
     "measurement_date": null,
     "backfill": false,
@@ -6157,6 +7437,11 @@
         "href": "https://github.com/mboworks/xff/pull/908"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "bd0cf005cdda5c4657006af1045d2f1d1f952652061eb4cc9a3ee51ac71bafa3",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T20:02:13Z",
     "measurement_date": null,
     "backfill": false,
@@ -6181,6 +7466,11 @@
         "href": "https://github.com/mboworks/xff/pull/908"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "928b9cf3bcffdea2ee3ed1b8c4f26d5bca8f101ed0d08fb278445e948e14780e",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T20:02:13Z",
     "measurement_date": null,
     "backfill": false,
@@ -6205,6 +7495,11 @@
         "href": "https://github.com/mboworks/xff/pull/909"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "bd0cf005cdda5c4657006af1045d2f1d1f952652061eb4cc9a3ee51ac71bafa3",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T21:22:39Z",
     "measurement_date": null,
     "backfill": false,
@@ -6229,6 +7524,11 @@
         "href": "https://github.com/mboworks/xff/pull/909"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "216b97f7c14649a710314401b8e4b8b898e207751e957f6f02f17508a5f814ba",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T21:22:39Z",
     "measurement_date": null,
     "backfill": false,
@@ -6253,6 +7553,11 @@
         "href": "https://github.com/mboworks/xff/pull/910"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "d2f41b9e0da21cfafa2296f1cf12c575a7a5e19a54ccc6c8cd6fdc40ecedacdd",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T23:29:54Z",
     "measurement_date": null,
     "backfill": false,
@@ -6277,6 +7582,11 @@
         "href": "https://github.com/mboworks/xff/pull/910"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "511baecbdaa5275132d125a2383761bbe564a1830f042fa803d3bfc83279290b",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-23T23:29:54Z",
     "measurement_date": null,
     "backfill": false,
@@ -6301,6 +7611,11 @@
         "href": "https://github.com/mboworks/xff/pull/911"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "d2f41b9e0da21cfafa2296f1cf12c575a7a5e19a54ccc6c8cd6fdc40ecedacdd",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T06:44:48Z",
     "measurement_date": null,
     "backfill": false,
@@ -6325,6 +7640,11 @@
         "href": "https://github.com/mboworks/xff/pull/911"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "de58fc9428f04d9a8a2d68ad88eec6f52d85bd72b261374b8104ff8cff4e61df",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T06:44:48Z",
     "measurement_date": null,
     "backfill": false,
@@ -6349,6 +7669,11 @@
         "href": "https://github.com/mboworks/xff/pull/912"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "3e38518d0ab55756640d3ea50e9861ea0b2417d2b35d62b8a5be234ab1459a75",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T20:57:31Z",
     "measurement_date": null,
     "backfill": false,
@@ -6373,6 +7698,11 @@
         "href": "https://github.com/mboworks/xff/pull/912"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "72d5b0e44f209cca1fa8e05f6c6734e853fe4ae50951bd824dd569f12ee66d13",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T20:57:31Z",
     "measurement_date": null,
     "backfill": false,
@@ -6397,6 +7727,11 @@
         "href": "https://github.com/mboworks/xff/pull/913"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "3e38518d0ab55756640d3ea50e9861ea0b2417d2b35d62b8a5be234ab1459a75",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T22:06:36Z",
     "measurement_date": null,
     "backfill": false,
@@ -6421,6 +7756,11 @@
         "href": "https://github.com/mboworks/xff/pull/913"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "d6febdd664a4a9d699bf4090a3881dac4de4e251ab795ef4223011c8d5b9d90b",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-24T22:06:36Z",
     "measurement_date": null,
     "backfill": false,
@@ -6445,6 +7785,11 @@
         "href": "https://github.com/mboworks/xff/pull/915"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "88f75a87693b091c92cdc6e78bbe125671ee9e7aebfffb850ab584edc6b8ee4d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-25T08:47:04Z",
     "measurement_date": null,
     "backfill": false,
@@ -6469,6 +7814,11 @@
         "href": "https://github.com/mboworks/xff/pull/915"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "3de1853e5ae08ac9585789a0b5a614a7bdb70ec4fc52de4222783b64da7f33a8",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-25T08:47:04Z",
     "measurement_date": null,
     "backfill": false,
@@ -6493,6 +7843,11 @@
         "href": "https://github.com/mboworks/xff/pull/923"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "77533f684b9cd43e7da00ba4ffc0696e3b06fa6d6600558ad7c593db2b996c46",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:26Z",
     "measurement_date": null,
     "backfill": false,
@@ -6517,6 +7872,11 @@
         "href": "https://github.com/mboworks/xff/pull/923"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "ea07b3defa6c3326a2e0ac266acc09856812ca50a43bb7bd752b1bbce887442c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T16:11:26Z",
     "measurement_date": null,
     "backfill": false,
@@ -6541,6 +7901,11 @@
         "href": "https://github.com/mboworks/xff/pull/925"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "bb617ec338b4d33601e75d02ae6cf5cfc9b0b72b1ee9c9ce608945d1584b1e4f",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T19:17:49Z",
     "measurement_date": null,
     "backfill": false,
@@ -6565,6 +7930,11 @@
         "href": "https://github.com/mboworks/xff/pull/925"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2b71a6fe69353b12e3770a016c6132bcd9d1d163a0dcf5bb623b30e3ec7447b7",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T19:17:49Z",
     "measurement_date": null,
     "backfill": false,
@@ -6589,6 +7959,11 @@
         "href": "https://github.com/mboworks/xff/pull/926"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "32f55edef1b0240b16721f6cae0b8ee16206957884bea863545deb2344e78bc5",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T20:18:49Z",
     "measurement_date": null,
     "backfill": false,
@@ -6613,6 +7988,11 @@
         "href": "https://github.com/mboworks/xff/pull/926"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "a43a4fb6d98c7a72b60b0dee6d2e11c6cccf21e7d698bd465cb02ce7940a1a23",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T20:18:49Z",
     "measurement_date": null,
     "backfill": false,
@@ -6637,6 +8017,11 @@
         "href": "https://github.com/mboworks/xff/pull/927"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e90a346a4fc911adffb31f5cf22dece04199418696e17ebf29631e9826974d1e",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T20:57:15Z",
     "measurement_date": null,
     "backfill": false,
@@ -6661,6 +8046,11 @@
         "href": "https://github.com/mboworks/xff/pull/927"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "84dc0bee93b554a452c3625d73ea042eaf196e6001995672804afbc4eb70442a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T20:57:15Z",
     "measurement_date": null,
     "backfill": false,
@@ -6685,6 +8075,11 @@
         "href": "https://github.com/mboworks/xff/pull/930"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "ecb0aed3ae2ac88fb9b9f8440f61f1295f78baf7a40a1df015ee1b69c6eb7e01",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T21:45:55Z",
     "measurement_date": null,
     "backfill": false,
@@ -6709,6 +8104,11 @@
         "href": "https://github.com/mboworks/xff/pull/930"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "d63acf209f00de375cdfc619a76b61858da7316fd9b063709c96a43af5878320",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-27T21:45:55Z",
     "measurement_date": null,
     "backfill": false,
@@ -6733,6 +8133,11 @@
         "href": "https://github.com/mboworks/xff/pull/932"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "4f3fdc689ec846c11087d6682ac8bd1cc4bffe46d0af04321eb89ad2e24236be",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-28T06:13:27Z",
     "measurement_date": null,
     "backfill": false,
@@ -6757,6 +8162,11 @@
         "href": "https://github.com/mboworks/xff/pull/932"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "361c3d3c3b6732345fd5e0a6f260b93db927fb1a0ca799ecdb81953540c62473",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-28T06:13:27Z",
     "measurement_date": null,
     "backfill": false,
@@ -6781,6 +8191,11 @@
         "href": "https://github.com/mboworks/xff/pull/933"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "6d03a6f9f54e8d526f0a092c47b73e63713d1fcd8230c1084029a5a371a979ab",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-28T21:09:25Z",
     "measurement_date": null,
     "backfill": false,
@@ -6805,6 +8220,11 @@
         "href": "https://github.com/mboworks/xff/pull/933"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "30ff5faeca0120177db9270d8c9df787fdfc18444815ad6fb92093eed6a61b7d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-09-28T21:09:25Z",
     "measurement_date": null,
     "backfill": false,
@@ -6829,6 +8249,11 @@
         "href": "https://github.com/mboworks/xff/pull/934"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e70a0620e9fdd2b73793aca6a46f0032bd3c54fb7fbf6b788527b3e99aa2eb22",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T18:28:57Z",
     "measurement_date": null,
     "backfill": false,
@@ -6853,6 +8278,11 @@
         "href": "https://github.com/mboworks/xff/pull/934"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "59eb35ef4512012f29bfaa920c6410da20f481dea6f6ae298a56aee3ba7b5c05",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T18:28:57Z",
     "measurement_date": null,
     "backfill": false,
@@ -6877,6 +8307,11 @@
         "href": "https://github.com/mboworks/xff/pull/942"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e70a0620e9fdd2b73793aca6a46f0032bd3c54fb7fbf6b788527b3e99aa2eb22",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T23:10:12Z",
     "measurement_date": null,
     "backfill": false,
@@ -6901,6 +8336,11 @@
         "href": "https://github.com/mboworks/xff/pull/942"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2f1c8f3fb845aa9e4f7974d9f6e21b2d8d958c626b554837acbfc9afdee44d6f",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T23:10:12Z",
     "measurement_date": null,
     "backfill": false,
@@ -6925,6 +8365,11 @@
         "href": "https://github.com/mboworks/xff/pull/943"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e70a0620e9fdd2b73793aca6a46f0032bd3c54fb7fbf6b788527b3e99aa2eb22",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T23:53:58Z",
     "measurement_date": null,
     "backfill": false,
@@ -6949,6 +8394,11 @@
         "href": "https://github.com/mboworks/xff/pull/943"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "cf854954b1d0de82c0800d2060df5dba3d49b79235c2848f65675dedd95fdfdb",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-01T23:53:58Z",
     "measurement_date": null,
     "backfill": false,
@@ -6973,6 +8423,11 @@
         "href": "https://github.com/mboworks/xff/pull/945"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e70a0620e9fdd2b73793aca6a46f0032bd3c54fb7fbf6b788527b3e99aa2eb22",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T15:18:12Z",
     "measurement_date": null,
     "backfill": false,
@@ -6997,6 +8452,11 @@
         "href": "https://github.com/mboworks/xff/pull/945"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "bcff012e822b7639fffdf6986440e2d64fe447160a443cbbcbdba4d07a2045d2",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T15:18:12Z",
     "measurement_date": null,
     "backfill": false,
@@ -7021,6 +8481,11 @@
         "href": "https://github.com/mboworks/xff/pull/946"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "e70a0620e9fdd2b73793aca6a46f0032bd3c54fb7fbf6b788527b3e99aa2eb22",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T18:09:47Z",
     "measurement_date": null,
     "backfill": false,
@@ -7045,6 +8510,11 @@
         "href": "https://github.com/mboworks/xff/pull/946"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "692eacba4d3ddb72c71711c51b5f14b2ec09f2b6b80cf298957f5c8a3613ff4f",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T18:09:47Z",
     "measurement_date": null,
     "backfill": false,
@@ -7069,6 +8539,11 @@
         "href": "https://github.com/mboworks/xff/pull/947"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "834a6617182623a08dca61fdc540d559d44f41697288ba04a3c64ac2da71b79d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T19:19:46Z",
     "measurement_date": null,
     "backfill": false,
@@ -7093,6 +8568,11 @@
         "href": "https://github.com/mboworks/xff/pull/947"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f2a1dd6a0bfeb043da82ff4d4fc4de572f341af7394e018525107f79ac8da5c0",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T19:19:46Z",
     "measurement_date": null,
     "backfill": false,
@@ -7117,6 +8597,11 @@
         "href": "https://github.com/mboworks/xff/pull/948"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "834a6617182623a08dca61fdc540d559d44f41697288ba04a3c64ac2da71b79d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T20:54:49Z",
     "measurement_date": null,
     "backfill": false,
@@ -7141,6 +8626,11 @@
         "href": "https://github.com/mboworks/xff/pull/948"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f1ad6f3116901f39e46791bb65815d348a93f1c83a36e06804e04b1bec74413c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T20:54:49Z",
     "measurement_date": null,
     "backfill": false,
@@ -7165,6 +8655,11 @@
         "href": "https://github.com/mboworks/xff/pull/949"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "834a6617182623a08dca61fdc540d559d44f41697288ba04a3c64ac2da71b79d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T22:33:09Z",
     "measurement_date": null,
     "backfill": false,
@@ -7189,6 +8684,11 @@
         "href": "https://github.com/mboworks/xff/pull/949"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "0819e19c6b7f53c432802e63bb73257e8ba392b1f6dca4ec235f3f3c6b10af87",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-02T22:33:09Z",
     "measurement_date": null,
     "backfill": false,
@@ -7213,6 +8713,11 @@
         "href": "https://github.com/mboworks/xff/pull/951"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "834a6617182623a08dca61fdc540d559d44f41697288ba04a3c64ac2da71b79d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T13:22:37Z",
     "measurement_date": null,
     "backfill": false,
@@ -7237,6 +8742,11 @@
         "href": "https://github.com/mboworks/xff/pull/951"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "882bd49ad62623a2d451e15753bcfcaa81071d095db5c68a719cc1e6ede81276",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T13:22:37Z",
     "measurement_date": null,
     "backfill": false,
@@ -7261,6 +8771,11 @@
         "href": "https://github.com/mboworks/xff/pull/952"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "834a6617182623a08dca61fdc540d559d44f41697288ba04a3c64ac2da71b79d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T14:26:44Z",
     "measurement_date": null,
     "backfill": false,
@@ -7285,6 +8800,11 @@
         "href": "https://github.com/mboworks/xff/pull/952"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "89b66a570057e4d560ab29a867962b965c39a355e7e9feeba0fb6be397c6594a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T14:26:44Z",
     "measurement_date": null,
     "backfill": false,
@@ -7309,6 +8829,11 @@
         "href": "https://github.com/mboworks/xff/pull/953"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "834a6617182623a08dca61fdc540d559d44f41697288ba04a3c64ac2da71b79d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T15:32:45Z",
     "measurement_date": null,
     "backfill": false,
@@ -7333,6 +8858,11 @@
         "href": "https://github.com/mboworks/xff/pull/953"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "5e6f816a6442aba79508d65fb07b36db2edb3f297a466f4cd33e8926befbe06c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T15:32:45Z",
     "measurement_date": null,
     "backfill": false,
@@ -7357,6 +8887,11 @@
         "href": "https://github.com/mboworks/xff/pull/955"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "834a6617182623a08dca61fdc540d559d44f41697288ba04a3c64ac2da71b79d",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T18:23:18Z",
     "measurement_date": null,
     "backfill": false,
@@ -7381,6 +8916,11 @@
         "href": "https://github.com/mboworks/xff/pull/955"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "ddf65fb77bd7386d5b8e54bae020ef75f2fe7b45f2c40bf365508462a18c1d74",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-03T18:23:18Z",
     "measurement_date": null,
     "backfill": false,
@@ -7405,6 +8945,11 @@
         "href": "https://github.com/mboworks/xff/pull/956"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "76a476424c7d89ca2ee1d749b28243b2f6f9140d65883ff836996d45ec4e2f05",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T00:03:54Z",
     "measurement_date": null,
     "backfill": false,
@@ -7429,6 +8974,11 @@
         "href": "https://github.com/mboworks/xff/pull/956"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "7aeda11aa126795519efb947e86ffb4ffd1d63fe34168f883a9e39a31b74454c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T00:03:54Z",
     "measurement_date": null,
     "backfill": false,
@@ -7453,6 +9003,11 @@
         "href": "https://github.com/mboworks/xff/pull/957"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "76a476424c7d89ca2ee1d749b28243b2f6f9140d65883ff836996d45ec4e2f05",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T09:57:42Z",
     "measurement_date": null,
     "backfill": false,
@@ -7477,6 +9032,11 @@
         "href": "https://github.com/mboworks/xff/pull/957"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f3175c00b7e1617c8da59e678249c7510dd2eae11b04d684d20b070e21e33704",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T09:57:42Z",
     "measurement_date": null,
     "backfill": false,
@@ -7501,6 +9061,11 @@
         "href": "https://github.com/mboworks/xff/pull/958"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "76a476424c7d89ca2ee1d749b28243b2f6f9140d65883ff836996d45ec4e2f05",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T10:51:31Z",
     "measurement_date": null,
     "backfill": false,
@@ -7525,6 +9090,11 @@
         "href": "https://github.com/mboworks/xff/pull/958"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "6b1cbbe7093acc62d445533d71ccf704ba7f942663d72a71341465268b6ff43e",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T10:51:31Z",
     "measurement_date": null,
     "backfill": false,
@@ -7549,6 +9119,11 @@
         "href": "https://github.com/mboworks/xff/pull/959"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "76a476424c7d89ca2ee1d749b28243b2f6f9140d65883ff836996d45ec4e2f05",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T13:17:40Z",
     "measurement_date": null,
     "backfill": false,
@@ -7573,6 +9148,11 @@
         "href": "https://github.com/mboworks/xff/pull/959"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "b59b0c51e07b4358cc6eaf57aa2079fb84bf07e6821a968004376fc5b124cd14",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T13:17:40Z",
     "measurement_date": null,
     "backfill": false,
@@ -7597,6 +9177,11 @@
         "href": "https://github.com/mboworks/xff/pull/960"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "51fda363652cfe83d11de457cb32554c3ce85d096bc5263a93a4e843bbfc164f",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T23:34:36Z",
     "measurement_date": null,
     "backfill": false,
@@ -7621,6 +9206,11 @@
         "href": "https://github.com/mboworks/xff/pull/960"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "1916e4e82a4879c3605f5f6c6b93b6d14174e8d33baacc1c6cdd581dc127c3df",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-04T23:34:36Z",
     "measurement_date": null,
     "backfill": false,
@@ -7645,6 +9235,11 @@
         "href": "https://github.com/mboworks/xff/pull/961"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "b6812600d6c5e040119e5da6000ab29415507495694195199fd392223e9dd3ef",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T02:57:01Z",
     "measurement_date": null,
     "backfill": false,
@@ -7669,6 +9264,11 @@
         "href": "https://github.com/mboworks/xff/pull/961"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "39f94a5ad93e56b15f713e174e577f3e6608038134647243c60feab6d6e32fe5",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T02:57:01Z",
     "measurement_date": null,
     "backfill": false,
@@ -7693,6 +9293,11 @@
         "href": "https://github.com/mboworks/xff/pull/962"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "95231aece1d81169e8074a858cd039948d534c1cad4feed6a8af61ffe6c94ace",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T05:24:43Z",
     "measurement_date": null,
     "backfill": false,
@@ -7717,6 +9322,11 @@
         "href": "https://github.com/mboworks/xff/pull/962"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "da0fa903155d0946edbc37ab81809a34a502631b1125f42948d80f0b6804716b",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T05:24:43Z",
     "measurement_date": null,
     "backfill": false,
@@ -7741,6 +9351,11 @@
         "href": "https://github.com/mboworks/xff/pull/963"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "0f9ed83e4f70edf6cc0f812fb66729ea6a7bdd46cb02601a7f95f987ea974dd1",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T07:31:45Z",
     "measurement_date": null,
     "backfill": false,
@@ -7765,6 +9380,11 @@
         "href": "https://github.com/mboworks/xff/pull/963"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "abcbeba311f5702cff2b67db0dc6e1cbdf4aab7b751199f32c4a63b040bc3ac1",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T07:31:45Z",
     "measurement_date": null,
     "backfill": false,
@@ -7789,6 +9409,11 @@
         "href": "https://github.com/mboworks/xff/pull/975"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "0f9ed83e4f70edf6cc0f812fb66729ea6a7bdd46cb02601a7f95f987ea974dd1",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T09:59:40Z",
     "measurement_date": null,
     "backfill": false,
@@ -7813,6 +9438,11 @@
         "href": "https://github.com/mboworks/xff/pull/975"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "49d255fb417dc703afe93f1c8bcd857a78c6169bd207a9535762cca58d54f1de",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T09:59:40Z",
     "measurement_date": null,
     "backfill": false,
@@ -7837,6 +9467,11 @@
         "href": "https://github.com/mboworks/xff/pull/964"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "0396a5f5b064df8322b67290f3b5dd25f029aaa7a67a5a8a14aeb5e6da0a0878",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T11:00:25Z",
     "measurement_date": null,
     "backfill": false,
@@ -7861,6 +9496,11 @@
         "href": "https://github.com/mboworks/xff/pull/964"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "a2c753e62e22913dd729b7e95fa76cecc7c75b419d81e6c6d9bb3695365a308e",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T11:00:25Z",
     "measurement_date": null,
     "backfill": false,
@@ -7885,6 +9525,11 @@
         "href": "https://github.com/mboworks/xff/pull/965"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "72880709c157ef358be0349e13b3852c33cd0bc0591a1e64dfca8ec00ef346d8",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T12:35:04Z",
     "measurement_date": null,
     "backfill": false,
@@ -7909,6 +9554,11 @@
         "href": "https://github.com/mboworks/xff/pull/965"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "000a04e836f86f1ac2f513ca860fda87e3fa15b87c02211b2ef84a7da564a823",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T12:35:04Z",
     "measurement_date": null,
     "backfill": false,
@@ -7933,6 +9583,11 @@
         "href": "https://github.com/mboworks/xff/pull/966"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "ea77fc3e549cf7908fcb00ea4781f8b97cefb4d936064b0cbeab3f673e9b5852",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T13:24:08Z",
     "measurement_date": null,
     "backfill": false,
@@ -7957,6 +9612,11 @@
         "href": "https://github.com/mboworks/xff/pull/966"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "160b57bd151ac60333715e1605520cfbfd73bda5af3bd7f6303c0aef656323d4",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T13:24:08Z",
     "measurement_date": null,
     "backfill": false,
@@ -7981,6 +9641,11 @@
         "href": "https://github.com/mboworks/xff/pull/967"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "8e42beeb21250a9272ac2b80716ce0883925e70ab36bf0b029e60973e589fdf2",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T14:26:19Z",
     "measurement_date": null,
     "backfill": false,
@@ -8005,6 +9670,11 @@
         "href": "https://github.com/mboworks/xff/pull/967"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "ec2f394c38489ad1629a362a979b42b82170a86af952acd4c7a438f10822425c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T14:26:19Z",
     "measurement_date": null,
     "backfill": false,
@@ -8029,6 +9699,11 @@
         "href": "https://github.com/mboworks/xff/pull/968"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "d76a31682c144c4e2caea0ba77d42196b602532100d032040f8647c7d8f68548",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T15:37:15Z",
     "measurement_date": null,
     "backfill": false,
@@ -8053,6 +9728,11 @@
         "href": "https://github.com/mboworks/xff/pull/968"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "029e003d5cdfc15c229868013b5272c5107bf8d5f9aa5acdb408583c2ef8e6ce",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T15:37:15Z",
     "measurement_date": null,
     "backfill": false,
@@ -8077,6 +9757,11 @@
         "href": "https://github.com/mboworks/xff/pull/969"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "0489f1d5ca64e53f0ab088750500ec9cf8f5827609bf0163314953593aa770f4",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T16:47:00Z",
     "measurement_date": null,
     "backfill": false,
@@ -8101,6 +9786,11 @@
         "href": "https://github.com/mboworks/xff/pull/969"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "2ef7c8c9c0694d98acb68e56a104a55aedc9935f59813f6e276c6d705efa5067",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T16:47:00Z",
     "measurement_date": null,
     "backfill": false,
@@ -8125,6 +9815,11 @@
         "href": "https://github.com/mboworks/xff/pull/970"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "1d061780024acf2128f3417b4c628e1132014c7daff474d7f2eb8c6bf93095c1",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T18:09:16Z",
     "measurement_date": null,
     "backfill": false,
@@ -8149,6 +9844,11 @@
         "href": "https://github.com/mboworks/xff/pull/970"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "c6ba3968a26ace447409fd3ef07113e66b7b2e51259f8ebc2ac49f091b846d3f",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T18:09:16Z",
     "measurement_date": null,
     "backfill": false,
@@ -8173,6 +9873,11 @@
         "href": "https://github.com/mboworks/xff/pull/971"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "ecf9d74e44cf345e48a894b7807bccc8ddb94c9f8a8e2ce91bda6fac65fcfff2",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T21:17:51Z",
     "measurement_date": null,
     "backfill": false,
@@ -8197,6 +9902,11 @@
         "href": "https://github.com/mboworks/xff/pull/971"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "7acd90c3b7736edd2a57c383cdf7352c9cacdb43c99346ca375662c397a9e22a",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T21:17:51Z",
     "measurement_date": null,
     "backfill": false,
@@ -8221,6 +9931,11 @@
         "href": "https://github.com/mboworks/xff/pull/972"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "509658dd83e6c2e447ad3b19093ac22a6b0eb3c027a72927205357e1a31c112c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T22:25:11Z",
     "measurement_date": null,
     "backfill": false,
@@ -8245,6 +9960,11 @@
         "href": "https://github.com/mboworks/xff/pull/972"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "cc343291f5164ca539efaa59a9f6566835e1fb33571dd2bc5c04c173975e0dff",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T22:25:11Z",
     "measurement_date": null,
     "backfill": false,
@@ -8269,6 +9989,11 @@
         "href": "https://github.com/mboworks/xff/pull/980"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "509658dd83e6c2e447ad3b19093ac22a6b0eb3c027a72927205357e1a31c112c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T23:27:26Z",
     "measurement_date": null,
     "backfill": false,
@@ -8293,6 +10018,11 @@
         "href": "https://github.com/mboworks/xff/pull/980"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "745721f2eb4b8bf40244fe4b01c0bbcda886a93478a2a74d13e45d2a5ab2c7b6",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-05T23:27:26Z",
     "measurement_date": null,
     "backfill": false,
@@ -8317,6 +10047,11 @@
         "href": "https://github.com/mboworks/xff/pull/974"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "509658dd83e6c2e447ad3b19093ac22a6b0eb3c027a72927205357e1a31c112c",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T00:21:26Z",
     "measurement_date": null,
     "backfill": false,
@@ -8341,6 +10076,11 @@
         "href": "https://github.com/mboworks/xff/pull/974"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "ca39b71d7931316d250bd92240c7d1c4e05298df4bf4ca38b2cd166b71e7bcdf",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T00:21:26Z",
     "measurement_date": null,
     "backfill": false,
@@ -8365,6 +10105,11 @@
         "href": "https://github.com/mboworks/xff/pull/977"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "01787d5feddc348d125608c8947ed45d4f8169a75fe94a2c89d234134ab98f60",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T01:23:48Z",
     "measurement_date": null,
     "backfill": false,
@@ -8389,6 +10134,11 @@
         "href": "https://github.com/mboworks/xff/pull/977"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "58a1c3af345f2d86297bf89c1f131099aca171369ebb8344adafe5f023515664",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T01:23:48Z",
     "measurement_date": null,
     "backfill": false,
@@ -8413,6 +10163,11 @@
         "href": "https://github.com/mboworks/xff/pull/981"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "01787d5feddc348d125608c8947ed45d4f8169a75fe94a2c89d234134ab98f60",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T02:40:08Z",
     "measurement_date": null,
     "backfill": false,
@@ -8437,6 +10192,11 @@
         "href": "https://github.com/mboworks/xff/pull/981"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "68ba7d8733412c0a39060a2000603f0b5f6cc1cc1f8936c3d61c132160a79b47",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T02:40:08Z",
     "measurement_date": null,
     "backfill": false,
@@ -8461,6 +10221,11 @@
         "href": "https://github.com/mboworks/xff/pull/982"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "01787d5feddc348d125608c8947ed45d4f8169a75fe94a2c89d234134ab98f60",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T20:09:52Z",
     "measurement_date": null,
     "backfill": false,
@@ -8485,6 +10250,11 @@
         "href": "https://github.com/mboworks/xff/pull/982"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "f4fac9344834399e4907766d6b6c7da0638cad6b7adedf86cb9900698de3d603",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T20:09:52Z",
     "measurement_date": null,
     "backfill": false,
@@ -8509,6 +10279,11 @@
         "href": "https://github.com/mboworks/xff/pull/985"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "01787d5feddc348d125608c8947ed45d4f8169a75fe94a2c89d234134ab98f60",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T22:08:43Z",
     "measurement_date": null,
     "backfill": false,
@@ -8533,6 +10308,11 @@
         "href": "https://github.com/mboworks/xff/pull/985"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "a9a44e331a7e861f065de1350c800947ad98613d1eeee78d8255feab30d0a275",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-06T22:08:43Z",
     "measurement_date": null,
     "backfill": false,
@@ -8557,6 +10337,11 @@
         "href": "https://github.com/mboworks/xff/pull/987"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "01787d5feddc348d125608c8947ed45d4f8169a75fe94a2c89d234134ab98f60",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-07T22:23:39Z",
     "measurement_date": null,
     "backfill": false,
@@ -8581,6 +10366,11 @@
         "href": "https://github.com/mboworks/xff/pull/987"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "a4b890d9fa7ba3906b539bccef4b6c9aa14853fa8c2555c2c28b57f9f7cc8df9",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-07T22:23:39Z",
     "measurement_date": null,
     "backfill": false,
@@ -8605,6 +10395,11 @@
         "href": "https://github.com/mboworks/xff/pull/988"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "01787d5feddc348d125608c8947ed45d4f8169a75fe94a2c89d234134ab98f60",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-09T16:03:40Z",
     "measurement_date": null,
     "backfill": false,
@@ -8629,6 +10424,11 @@
         "href": "https://github.com/mboworks/xff/pull/988"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "995b3822d1a6df0156bead4f8f79aac0cc337ccab8462cd3333a49e2bd22ddf5",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-09T16:03:40Z",
     "measurement_date": null,
     "backfill": false,
@@ -8653,6 +10453,11 @@
         "href": "https://github.com/mboworks/xff/pull/989"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "01787d5feddc348d125608c8947ed45d4f8169a75fe94a2c89d234134ab98f60",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-09T17:20:37Z",
     "measurement_date": null,
     "backfill": false,
@@ -8677,6 +10482,11 @@
         "href": "https://github.com/mboworks/xff/pull/989"
       }
     ],
+    "binary": {
+      "state": "Consistent",
+      "sha256": "9383c164936e3caa29d20f306fda4a0ec059e675e817ce6a34e8120d4d7f0190",
+      "reason": "All available executable hashes, revision identities and commands agree. Original retained executable bytes have not been independently checked."
+    },
     "date": "2026-10-09T17:20:37Z",
     "measurement_date": null,
     "backfill": false,
@@ -8684,6 +10494,68 @@
     "attempt": 1,
     "report": "runs/37965590381/1/macos/",
     "figures": "runs/37965590381/1/macos/landscape.json",
+    "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "platform_details": "macOS 26.6.2 / arm64"
+  },
+  {
+    "platform": "linux / x86_64",
+    "commit": "4ea895f63106f05df7c90b629d20433ae1e03016",
+    "label": "main / 4ea895f631",
+    "platform_name": "linux / x86_64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #990",
+        "href": "https://github.com/mboworks/xff/pull/990"
+      }
+    ],
+    "binary": {
+      "state": "Verified against Retention",
+      "sha256": "01787d5feddc348d125608c8947ed45d4f8169a75fe94a2c89d234134ab98f60",
+      "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/37991291676/attempts/1 (benchmark-build-linux) at 2026-10-09T21:58:10.355208+00:00.",
+      "retention_reference": "https://github.com/mboworks/xff/actions/runs/37991291676/attempts/1 (benchmark-build-linux)",
+      "verified_at": "2026-10-09T21:58:10.355208+00:00"
+    },
+    "date": "2026-10-09T21:05:33Z",
+    "measurement_date": null,
+    "backfill": false,
+    "run": 37991291676,
+    "attempt": 1,
+    "report": "runs/37991291676/1/linux/",
+    "figures": "runs/37991291676/1/linux/landscape.json",
+    "identity": "xff benchmarks - Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
+  },
+  {
+    "platform": "macos / arm64",
+    "commit": "4ea895f63106f05df7c90b629d20433ae1e03016",
+    "label": "main / 4ea895f631",
+    "platform_name": "macos / arm64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #990",
+        "href": "https://github.com/mboworks/xff/pull/990"
+      }
+    ],
+    "binary": {
+      "state": "Verified against Retention",
+      "sha256": "1917dcd0daac7db3b2a34c994ccfa871813748068cef1d6f518f76c9ec59cbaf",
+      "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/37991291676/attempts/1 (benchmark-build-macos) at 2026-10-09T21:58:11.384444+00:00.",
+      "retention_reference": "https://github.com/mboworks/xff/actions/runs/37991291676/attempts/1 (benchmark-build-macos)",
+      "verified_at": "2026-10-09T21:58:11.384444+00:00"
+    },
+    "date": "2026-10-09T21:05:33Z",
+    "measurement_date": null,
+    "backfill": false,
+    "run": 37991291676,
+    "attempt": 1,
+    "report": "runs/37991291676/1/macos/",
+    "figures": "runs/37991291676/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
     "platform_details": "macOS 26.6.2 / arm64"
   }
