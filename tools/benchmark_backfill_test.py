@@ -215,6 +215,7 @@ class BenchmarkBackfillTest(unittest.TestCase):
                 return self.report()
             with mock.patch.object(backfill, 'build', side_effect=build), \
                     mock.patch.object(backfill, 'verify_binary'), \
+                    mock.patch.object(backfill, 'retained_identity', return_value={}), \
                     mock.patch.object(backfill, 'check_environment'), \
                     mock.patch.object(backfill.compare, 'collect_scales', side_effect=measure) as collect, \
                     mock.patch.object(backfill.compare, 'render_document', return_value='<h1>Report</h1>'), \
@@ -248,6 +249,7 @@ class BenchmarkBackfillTest(unittest.TestCase):
                 measurements = [ValueError('unsupported old flag'), self.report()] if failure == 'measure' else [self.report()]
                 with mock.patch.object(backfill, 'build', side_effect=build), \
                         mock.patch.object(backfill, 'verify_binary'), \
+                        mock.patch.object(backfill, 'retained_identity', return_value={}), \
                         mock.patch.object(backfill, 'check_environment'), \
                         mock.patch.object(backfill.compare, 'collect_scales', side_effect=measurements), \
                         mock.patch.object(backfill.compare, 'render_document', return_value='report'):
@@ -267,6 +269,7 @@ class BenchmarkBackfillTest(unittest.TestCase):
             output = io.StringIO()
             with mock.patch.object(backfill, 'build', side_effect=[subprocess.CalledProcessError(1, ['bazel']), success]), \
                     mock.patch.object(backfill, 'verify_binary'), \
+                    mock.patch.object(backfill, 'retained_identity', return_value={}), \
                     mock.patch.object(backfill, 'check_environment'), \
                     mock.patch.object(backfill.compare, 'collect_scales', return_value=self.report()), \
                     mock.patch.object(backfill.compare, 'render_document', return_value='report'), \

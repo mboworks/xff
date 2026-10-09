@@ -489,6 +489,35 @@ For duplicate measurements of one commit, selection happens separately for each 
 cell. A newer layout revision or smaller measurement grid does not hide retained cells from
 another layout or a larger grid. Each compatible cell contributes at most one measurement per
 commit to its reference window.
+
+### Binary evidence in Version
+
+The Version card shows **Binary** as **Not recorded**, **Not verified**, **Consistent**, or
+**Verified against Retention**. Expand **SHA-256** for the complete hash and the reason behind
+the state. Consistent requires corroborating hashes and agreement of the available revision and
+command identities. A mismatch or invalid retention proof remains Not verified.
+
+Verified against Retention requires hashing the actual retained executable and matching its
+measured identity. CI checks the original build archive after shard aggregation; new backfill
+reports check their saved revision executable. The proof is bound to the measured commit and
+data and retains a verification timestamp and artifact reference. Publication metadata can be
+added without invalidating this check. Verification describes binary identity, not a guarantee
+of compiler behavior or timing stability, and remains historical evidence after artifact expiry.
+
+Historical reports can acquire a separate `binary-verification.json` without changing raw data:
+
+```sh
+python3.13 tools/benchmark_provenance.py \
+  --report=/path/to/retained/report.json --binary=/path/to/original/xff \
+  --retention-reference='original batch or CI artifact identity'
+```
+
+Use `--archive=... --member=benchmark-head` for an original CI build archive. The verifier reads
+only the named regular file and never extracts the archive. `--embed` is reserved for new,
+unpublished reports; sidecars keep already published observations immutable. Missing hashes are
+recovered for display from original paired samples when available. A rebuild cannot supply an
+unknown historical measured hash. Existing catalog entries are enriched from retained reports
+when the history viewer is republished.
 Reference binaries, invocation arguments,
 fixtures, machine series and CPU allocations must match; CI and local series remain separate.
 Ordinary CI and its replacement backfills share reference history: the recorded runner labels

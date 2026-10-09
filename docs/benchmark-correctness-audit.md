@@ -104,8 +104,8 @@ Use these four states for the measured XFF executable:
   the measured hash, and the available report/build identities are consistent. Record which
   retained artifact was checked, the verification time and the report identity it verifies.
 
-The viewer implementation is in progress. The native investigation should retain the evidence
-needed for these states independently of the UI. All 491 downloaded reports already contain a
+The viewer derives these states from the available report and retention evidence. The native
+investigation should retain that evidence independently of the UI. All 491 downloaded reports contain a
 binary hash: 472 have a tool comparison hash, and the remaining 19 have paired measurement hashes.
 Recover any missing display metadata from those original observations. A new rebuild cannot
 retrofit the binary identity of a historical measurement.
@@ -114,6 +114,13 @@ Regular CI retains report artifacts for 30 days and executable build artifacts f
 hosted backfill artifacts omit executables. Preserve available original binaries, build manifests
 and logs before cleanup or artifact expiry. Linux executable verification remains outstanding;
 the 72 checked Mac binaries do not verify the Linux measurements.
+
+On Linux, verify each retained executable against its original report with the PR's
+`tools/benchmark_provenance.py --report=... --binary=... --retention-reference=...` command.
+Retain the resulting `binary-verification.json` next to that report; it binds the check to the
+measurement without changing the historical observations. See
+[Binary evidence in Version](benchmark-comparisons.md#binary-evidence-in-version) for CI archive
+verification and the full state semantics. Record mismatches before attempting new builds.
 
 ## Linux timing evidence and first hypothesis
 

@@ -423,11 +423,12 @@ test("history platform/version controls preserve selection and recover from load
   execFileSync(process.env.PYTHON || "python3", [
     "-c",
     `
-import sys, json
+import sys, json, hashlib, io
 from pathlib import Path
 sys.path.insert(0, sys.argv[1])
 from benchmark_landscape import publish
 from benchmark_landscape_test import report, preview_report
+from benchmark_provenance import verify_retention
 root = Path(sys.argv[3])
 (root / 'index.html').write_text('<h1>History</h1><table><tr><td>Original</td></tr></table>')
 (root / 'version-links.json').write_text(json.dumps({'a' * 40: [dict(label='PR #12', href='https://github.com/owner/project/pull/12')], 'b' * 40: [dict(label='Release v1.0.0', href='https://github.com/owner/project/releases/tag/v1.0.0')]}))
@@ -445,9 +446,14 @@ folder = root / 'local/macos-test/batch' / ('c' * 40)
 folder.mkdir(parents=True)
 local_report = report(cpus=(1, 3, 10))
 local_report['contract']['machine'] = 'arm64'
-(folder / 'report.json').write_text(json.dumps(dict(tool_comparisons=local_report,
+binary_hash = hashlib.sha256(b'original executable').hexdigest()
+local_report['tools'] = {'xff': {'sha256': binary_hash}}
+local_record = dict(tool_comparisons=local_report,
     platform='macos', kind='backfill', purpose='local-addition', series='macos-test', head='c' * 40,
-    revision=dict(date='2026-09-01T00:00:00Z'), completed_at='2026-10-02T00:00:00Z')))
+    build={'revision': 'c' * 40, 'sha256': binary_hash},
+    revision=dict(date='2026-09-01T00:00:00Z'), completed_at='2026-10-02T00:00:00Z')
+local_record['binary_verification'] = verify_retention(local_record, io.BytesIO(b'original executable'), 'original test retention')
+(folder / 'report.json').write_text(json.dumps(local_record))
 (folder / 'index.html').write_text('<h1>Local report</h1>')
 folder = root / 'previews/952/4/1/linux'
 folder.mkdir(parents=True)
@@ -536,7 +542,7 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
     const legendBox = await legendPanel.boundingBox();
     const chartBox = await host.boundingBox();
     assert.equal(
-      await versionPanel.locator("summary").textContent(),
+      await versionPanel.locator(":scope > summary").textContent(),
       "Version",
     );
     assert.equal(
@@ -567,6 +573,14 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
       "2 of 2",
     );
     assert.equal(await page.locator("[data-platform]").textContent(), "linux");
+    assert.equal(
+      await page.locator("[data-binary-state]").textContent(),
+      "Not recorded",
+    );
+    assert.equal(
+      await page.locator("[data-binary-hash]").textContent(),
+      "Not recorded",
+    );
     assert.equal(await page.locator("[data-measured-row]").isVisible(), true);
     assert.equal(
       await page.locator("[data-measured]").textContent(),
@@ -591,10 +605,10 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
       );
     for (const panel of [versionPanel, legendPanel]) {
       const expanded = await panel.boundingBox();
-      await panel.locator("summary").click();
-      assert.equal(await panel.locator("summary").isVisible(), true);
+      await panel.locator(":scope > summary").click();
+      assert.equal(await panel.locator(":scope > summary").isVisible(), true);
       assert.ok((await panel.boundingBox()).height < expanded.height);
-      await panel.locator("summary").click();
+      await panel.locator(":scope > summary").click();
       assert.deepEqual(await panel.boundingBox(), expanded);
     }
     for (const tick of await page
@@ -727,6 +741,20 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
       "Local / macos-test / arm64 / broad/v1 + deep/v1",
     );
     await waitCommit("c");
+    assert.equal(
+      await page.locator("[data-binary-state]").textContent(),
+      "Verified against Retention",
+    );
+    await page.locator("[data-binary-hash]").click();
+    assert.match(
+      await page.locator("[data-binary-sha256]").textContent(),
+      /^[0-9a-f]{64}$/,
+    );
+    assert.match(
+      await page.locator("[data-binary-evidence]").textContent(),
+      /original test retention/,
+    );
+    await page.locator("[data-binary-hash]").click();
     assert.equal(await page.locator("[data-links-row]").isVisible(), true);
     assert.equal(
       await page.locator("[data-version-links]").textContent(),

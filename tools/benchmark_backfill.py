@@ -24,6 +24,7 @@ import benchmark_compare as compare
 import benchmark_fixture
 import benchmark_layouts
 import benchmark_matrix
+import benchmark_provenance
 import benchmark_shards
 
 
@@ -139,7 +140,7 @@ def environment():
 def driver_identity():
     return {Path(module.__file__).name: compare.digest(module.__file__)
             for module in (sys.modules[__name__], compare, benchmark_fixture, benchmark_layouts,
-                           benchmark_matrix, benchmark_shards)}
+                           benchmark_matrix, benchmark_shards, benchmark_provenance)}
 
 
 def check_environment(expected):
@@ -238,6 +239,11 @@ def checkout_identity(checkout, sha):
     if (checkout / '.bazelrc.user').exists():
         raise ValueError('benchmark checkout has an unrecorded .bazelrc.user: ' + sha)
     return {'revision': sha, 'tree': git(checkout, 'rev-parse', 'HEAD^{tree}'), 'clean': True}
+
+
+def retained_identity(binary, record, reference):
+    with binary.open('rb') as executable:
+        return benchmark_provenance.verify_retention(record, executable, reference)
 
 
 def build_logged(command, checkout, log):
@@ -395,6 +401,8 @@ def run(args, batch):
                           'platform': contract['platform'], 'purpose': contract['purpose'],
                           'replacement_target': contract['replacement_target'], 'allocation': contract['allocation'],
                           'started_at': started, 'completed_at': now(), 'tool_comparisons': report}
+                record['binary_verification'] = retained_identity(record=record, binary=binary,
+                                                                 reference='binaries/' + sha + '/xff')
                 write_json(path, record)
             except (ValueError, subprocess.SubprocessError) as error:
                 check_environment(contract['environment'])  # Host/tool drift stops the whole series.

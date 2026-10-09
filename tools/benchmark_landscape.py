@@ -19,6 +19,7 @@ import benchmark_matrix as matrix
 import benchmark_normalization
 import benchmark_overview
 import benchmark_preview
+import benchmark_provenance
 import benchmark_records
 
 
@@ -352,6 +353,10 @@ def history_panel(catalog):
             '<tr data-measured-row><th scope="row">Measured</th><td data-measured>Not recorded</td></tr>'
             '<tr><th scope="row">Platform</th><td data-platform></td></tr>'
             '<tr><th scope="row">Dataset type</th><td data-dataset-type></td></tr>'
+            '<tr><th scope="row">Binary</th><td data-binary-state>Not recorded</td></tr>'
+            '<tr><th scope="row">SHA-256</th><td><details data-binary-details>'
+            '<summary data-binary-hash>Not recorded</summary><code data-binary-sha256></code>'
+            '<div data-binary-evidence></div></details></td></tr>'
             '<tr><th scope="row">Details</th><td><div data-platform-details></div></td></tr>'
             '</tbody></table><div role="status" aria-live="polite" hidden></div>'
             '<div class="landscape-version-control">'
@@ -380,6 +385,9 @@ def publish_history(root, catalog):
         text = before + after
     selected = {}
     for item in catalog:
+        record_path = root / item['report'] / 'report.json'
+        if benchmark_records.exists(record_path):
+            item['binary'] = binary_evidence(record_path, benchmark_records.read(record_path))
         key = (item.get('source', 'merged'), item['platform'], item['commit'])
         rank = (item.get('backfill', False), item.get('measured', ''), item.get('run', 0), item.get('attempt', 0))
         if key not in selected or rank > selected[key][0]:
@@ -393,6 +401,17 @@ def publish_history(root, catalog):
                 entries[index] = dict(item, **dataset_metadata(benchmark_records.read(report_path)))
     insertion = text.index('</h1>') + len('</h1>')
     page.write_text(text[:insertion] + start + history_panel(entries) + end + text[insertion:], encoding='utf-8')
+
+
+def binary_evidence(path, record):
+    proof = path.with_name('binary-verification.json')
+    if benchmark_records.exists(proof):
+        try:
+            retained = benchmark_records.read(proof)
+        except (ValueError, OSError):
+            retained = {}
+        return benchmark_provenance.describe(record, retained)
+    return benchmark_provenance.describe(record)
 
 
 def render(report, javascript, normalization=None):
@@ -510,6 +529,7 @@ def publish(root, javascript, previews=(), incremental=False, repository='mbowor
                                 source=f'pr-{number}' if preview else 'merged',
                                 source_label=f'PR #{number} preview' if preview else 'Merged history',
                                 links=links,
+                                binary=binary_evidence(path, record),
                                 date=benchmark_records.reference_time(record),
                                 measurement_date=record.get('completed_at'),
                                 backfill=benchmark_records.is_backfill(record),

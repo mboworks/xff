@@ -40,6 +40,10 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     .landscape-version-table th,.landscape-version-table td{padding:2px 4px;border:0;vertical-align:top;background:transparent}
     .landscape-version-table th{text-align:left;font-weight:500;white-space:nowrap}
     .landscape-version-table td{text-align:right;overflow-wrap:anywhere}
+    [data-binary-details]{margin:0;font:inherit}
+    [data-binary-details] summary{font-weight:normal;cursor:pointer}
+    [data-binary-sha256]{display:block;overflow-wrap:anywhere;user-select:text}
+    [data-binary-evidence]{margin-top:4px;text-align:left}
     [data-platform-details]{height:48px;line-height:16px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
     [data-version-panel] [role=status]{margin-top:4px;height:16px;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     [data-version-panel] [role=status][hidden]{display:block;visibility:hidden}
@@ -98,6 +102,19 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
         (local ? parts.slice(1, -1).join(" / ") : record.platform);
       root.querySelector("[data-dataset-type]").textContent =
         record.dataset_type || (local ? parts.at(-1) : "Not recorded");
+      const binary = record.binary || {
+        state: "Not recorded",
+        reason: "Binary evidence was not included in this catalog.",
+      };
+      root.querySelector("[data-binary-state]").textContent = binary.state;
+      root.querySelector("[data-binary-state]").title = binary.reason;
+      root.querySelector("[data-binary-hash]").textContent = binary.sha256
+        ? `${binary.sha256.slice(0, 12)}...`
+        : "Not recorded";
+      root.querySelector("[data-binary-hash]").title = binary.sha256 || "";
+      root.querySelector("[data-binary-sha256]").textContent =
+        binary.sha256 || "";
+      root.querySelector("[data-binary-evidence]").textContent = binary.reason;
       root.querySelector("[data-platform-details]").textContent =
         record.platform_details || record.identity;
       root.querySelector("[data-platform-details]").title =

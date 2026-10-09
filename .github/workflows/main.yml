@@ -1028,6 +1028,10 @@ jobs:
         with:
           pattern: benchmark-shard-*
           path: candidate-shards
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: benchmark-build-*
+          path: build-metadata
       - name: Select agreed candidates and compare both platforms with main
         id: reports
         run: |
@@ -1039,6 +1043,9 @@ jobs:
             arch="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["tool_comparisons"]["contract"]["machine"])' "benchmark-merged-${platform}.json")"
             report="benchmark-pr-${platform}-${arch}"
             mv "benchmark-merged-${platform}.json" "${report}.json"
+            python3 tools/benchmark_provenance.py --report="${report}.json" --embed \
+              --archive="build-metadata/benchmark-build-${platform}/benchmark-build.tar" \
+              --retention-reference="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }} (benchmark-build-${platform})"
             python3 tools/benchmark_compare.py --render-only --report="${report}.json" \
               --summary="${report}.md" --html="${report}.html"
             cat "${report}.md" >>"${GITHUB_STEP_SUMMARY}"

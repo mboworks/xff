@@ -377,6 +377,9 @@ jobs:
             arch="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["tool_comparisons"]["contract"]["machine"])' "merged/benchmark-merged-${platform}.json")"
             report="benchmark-report-${platform}-${arch}"
             mv "merged/benchmark-merged-${platform}.json" "${report}.json"
+            python3 tools/benchmark_provenance.py --report="${report}.json" --embed \
+              --archive="build-metadata/benchmark-build-${platform}/benchmark-build.tar" \
+              --retention-reference="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }} (benchmark-build-${platform})"
             python3 tools/benchmark_compare.py --render-only --report="${report}.json" \
               --html="${report}.html" --summary="${report}.md"
             cat "${report}.md" >>"${GITHUB_STEP_SUMMARY}"

@@ -778,6 +778,7 @@ test_suite(
         ":benchmark_overview_test",
         ":benchmark_preview_ci_test",
         ":benchmark_preview_test",
+        ":benchmark_provenance_test",
         ":benchmark_regex_test",
         ":benchmark_shards_test",
         ":benchmark_test",
@@ -965,6 +966,7 @@ py_library(
         ":benchmark_fixture_lib",
         ":benchmark_layouts_lib",
         ":benchmark_matrix_lib",
+        ":benchmark_provenance_lib",
         ":benchmark_records_lib",
         ":benchmark_shards_lib",
     ],
@@ -978,6 +980,7 @@ py_binary(
         ":benchmark_fixture_lib",
         ":benchmark_layouts_lib",
         ":benchmark_matrix_lib",
+        ":benchmark_provenance_lib",
         ":benchmark_records_lib",
         ":benchmark_shards_lib",
     ],
@@ -1171,6 +1174,7 @@ py_library(
         ":benchmark_normalization_lib",
         ":benchmark_overview_lib",
         ":benchmark_preview_lib",
+        ":benchmark_provenance_lib",
         ":benchmark_records_lib",
     ],
 )
@@ -1184,6 +1188,7 @@ py_binary(
         ":benchmark_normalization_lib",
         ":benchmark_overview_lib",
         ":benchmark_preview_lib",
+        ":benchmark_provenance_lib",
         ":benchmark_records_lib",
     ],
 )
@@ -1193,6 +1198,26 @@ py_test(
     size = "small",
     srcs = ["benchmark_landscape_test.py"],
     deps = [":benchmark_landscape_lib"],
+)
+
+py_library(
+    name = "benchmark_provenance_lib",
+    srcs = ["benchmark_provenance.py"],
+    imports = ["."],
+    deps = [":benchmark_records_lib"],
+)
+
+py_binary(
+    name = "benchmark_provenance",
+    srcs = ["benchmark_provenance.py"],
+    deps = [":benchmark_records_lib"],
+)
+
+py_test(
+    name = "benchmark_provenance_test",
+    size = "small",
+    srcs = ["benchmark_provenance_test.py"],
+    deps = [":benchmark_provenance_lib"],
 )
 
 py_library(
