@@ -5,6 +5,8 @@
 import argparse
 import os
 from pathlib import Path
+import re
+import shlex
 import unittest
 
 import build_rules
@@ -36,6 +38,36 @@ class RepositoryToolingTest(unittest.TestCase):
         self.assertEqual(suites, owners)
         self.assertIn(("py_binary", "repository_tooling_test"),
                       {(rule.kind, rule.name) for rule in rules})
+
+    def test_linux_perf_config_is_explicitly_opt_in(self):
+        commands = [shlex.split(line, comments=True)
+                    for line in (self.workspace / ".bazelrc").read_text().splitlines()]
+        commands = [command for command in commands if command]
+        settings = [option for command in commands if command[0] == "common:linux_perf"
+                    for option in command[1:]]
+        self.assertEqual(settings, ["--define=pfm=1",
+                                    "--downloader_config=bazelmod/linux_perf_downloader.cfg"])
+        for command in commands:
+            if command[0] != "common:linux_perf":
+                self.assertNotIn("--define=pfm=1", command)
+                self.assertNotIn("--config=linux_perf", command)
+
+    def test_libpfm_downloader_rewrites_only_the_retired_archive(self):
+        config = self.workspace / "bazelmod/linux_perf_downloader.cfg"
+        directives = [line.split() for line in config.read_text().splitlines()
+                      if line.strip() and not line.lstrip().startswith("#")]
+        self.assertEqual(len(directives), 1)
+        directive, pattern, replacement = directives[0]
+        self.assertEqual(directive, "rewrite")
+        retired = "netcologne.dl.sourceforge.net/project/perfmon2/libpfm4/libpfm-4.11.0.tar.gz"
+        canonical = "https://downloads.sourceforge.net/project/perfmon2/libpfm4/libpfm-4.11.0.tar.gz"
+        self.assertIsNotNone(re.fullmatch(pattern, retired))
+        self.assertEqual(replacement, canonical)
+        for unrelated in (retired.replace("4.11.0", "4.13.0"),
+                          retired.replace("netcologne", "another-mirror"),
+                          retired.replace("libpfm4", "another-project"),
+                          retired + "?download=1", canonical.removeprefix("https://")):
+            self.assertIsNone(re.fullmatch(pattern, unrelated))
 
 
 if __name__ == "__main__":

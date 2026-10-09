@@ -126,6 +126,13 @@ common:release --config=lto
 common:release --//xff:xff_release_elf_link_optimizations=True
 common:clang_release --config=clang --config=release
 
+# --config=linux_perf : opt-in Google Benchmark hardware counters on native Linux.
+# libpfm is built by Bazel; no system libpfm install or toolchain change is needed.
+# Keep this out of release/default/platform configs, especially macOS. The downloader
+# rule repairs only the pinned libpfm archive's obsolete SourceForge mirror.
+common:linux_perf --define=pfm=1
+common:linux_perf --downloader_config=bazelmod/linux_perf_downloader.cfg
+
 # --config=clang-coverage : collect C++ coverage with the same hermetic Clang/libc++ toolchain
 # that owns the default build. Bazel otherwise defaults C++ coverage to the local gcov toolchain.
 common:clang-coverage --config=clang
