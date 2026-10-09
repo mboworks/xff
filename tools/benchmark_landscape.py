@@ -45,6 +45,17 @@ def layout_details(contract):
     return ' + '.join(f"{layout['name']}/v{layout['revision']}" for layout in layouts)
 
 
+def dataset_metadata(record):
+    """Separate the measured platform from the workload recipes in a dataset."""
+    contract = record.get('tool_comparisons', {}).get('contract', {})
+    platform = (record['series'] if benchmark_records.is_local(record) else
+                benchmark_records.platform_key(record) or contract.get('platform', 'Unknown platform'))
+    machine = contract.get('machine', record.get('contract', {}).get('machine', ''))
+    if machine and machine.lower() not in platform.lower():
+        platform += ' / ' + machine
+    return dict(platform_name=platform, dataset_type=layout_details(contract))
+
+
 def ordered_pairs(rows, mode):
     """Minimize adjacent mean absolute differences, then orient better inward."""
     if mode not in ORDER_LABELS:
@@ -337,7 +348,8 @@ def history_panel(catalog):
             '<tr data-links-row><th scope="row">PR / Release</th><td data-version-links>Not available</td></tr>'
             '<tr><th scope="row">Revision date</th><td data-revision-date></td></tr>'
             '<tr data-measured-row><th scope="row">Measured</th><td data-measured>Not recorded</td></tr>'
-            '<tr><th scope="row">Dataset</th><td data-platform></td></tr>'
+            '<tr><th scope="row">Platform</th><td data-platform></td></tr>'
+            '<tr><th scope="row">Dataset type</th><td data-dataset-type></td></tr>'
             '<tr><th scope="row">Details</th><td><div data-platform-details></div></td></tr>'
             '</tbody></table><div role="status" aria-live="polite" hidden></div>'
             '<div class="landscape-version-control">'
@@ -372,6 +384,11 @@ def publish_history(root, catalog):
             selected[key] = (rank, item)
     entries = sorted((item for _, item in selected.values()),
                      key=lambda item: (item['date'], item.get('run', 0), item.get('attempt', 0)))
+    for index, item in enumerate(entries):
+        if 'platform_name' not in item or 'dataset_type' not in item:
+            report_path = root / item['report'] / 'report.json'
+            if benchmark_records.exists(report_path):
+                entries[index] = dict(item, **dataset_metadata(benchmark_records.read(report_path)))
     insertion = text.index('</h1>') + len('</h1>')
     page.write_text(text[:insertion] + start + history_panel(entries) + end + text[insertion:], encoding='utf-8')
 
@@ -487,6 +504,7 @@ def publish(root, javascript, previews=(), incremental=False, repository='mbowor
                 number = record.get('pull_number') or source['pull_requests'][0]['number']
                 links = [{'label': f'PR #{number} preview', 'href': f'https://github.com/{repository}/pull/{number}'}]
             catalog.append(dict(platform=platform, commit=commit, label=label,
+                                **dataset_metadata(record),
                                 source=f'pr-{number}' if preview else 'merged',
                                 source_label=f'PR #{number} preview' if preview else 'Merged history',
                                 links=links,

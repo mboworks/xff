@@ -89,7 +89,13 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
       root.querySelector("[data-version-count]").textContent =
         `${index + 1} of ${records.length}`;
       updateVersionControls();
-      root.querySelector("[data-platform]").textContent = record.platform;
+      const parts = record.platform.split(" / ");
+      const local = parts[0] === "Local";
+      root.querySelector("[data-platform]").textContent =
+        record.platform_name ||
+        (local ? parts.slice(1, -1).join(" / ") : record.platform);
+      root.querySelector("[data-dataset-type]").textContent =
+        record.dataset_type || (local ? parts.at(-1) : "Not recorded");
       root.querySelector("[data-platform-details]").textContent =
         record.platform_details || record.identity;
       root.querySelector("[data-platform-details]").title =
