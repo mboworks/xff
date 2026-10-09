@@ -164,7 +164,7 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   }
   function selectPlatform() {
     viewPlatform.textContent =
-      platform.selectedOptions[0]?.textContent || "No measured platforms";
+      platform.selectedOptions[0]?.textContent || "No measured datasets";
     viewPlatform.title = viewPlatform.textContent;
     const commit = current?.commit;
     records = catalog.filter(

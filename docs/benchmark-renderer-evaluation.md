@@ -67,11 +67,12 @@ filter independently of the Threshold plane checkbox, which only shows or hides 
 Hovering the heatbar temporarily overrides the minimum without changing the slider or its step
 buttons; leaving the heatbar restores the slider threshold.
 
-The View card groups Platform, Source, Order, Workers, and Timings, followed by Reset. When
-collapsed, its summary retains the selected platform name. Workers appears when the measurement
-provides allocation pairs to select.
+The View card groups Dataset, Source, Order, Workers, and Timings, followed by Reset. A dataset
+groups measurements from the same machine and measurement configuration. When collapsed, the
+card's summary retains the selected dataset name. Workers appears when the measurement provides
+allocation pairs to select.
 
-Help and the measurement detail card appear on the right. Help contains platform/version guidance
+Help and the measurement detail card appear on the right. Help contains dataset/version guidance
 and chart interaction instructions, collapsed by default. View, Version, and Performance appear
 on the left in that order.
 
