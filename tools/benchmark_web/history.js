@@ -14,12 +14,26 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   const versionLinks = root.querySelector("[data-version-links]");
   const host = root.querySelector("[data-chart]");
   reserveChart(host);
+  const viewPanel = root.querySelector("[data-view-panel]");
+  const viewPlatform = viewPanel.querySelector("[data-view-platform]");
   const versionPanel = root.querySelector("[data-version-panel]");
+  const helpPanel = root.querySelector("[data-help-panel]");
+  viewPanel.style.cssText = panelStyle;
   versionPanel.style.cssText = panelStyle;
-  chartSidebar(host).append(versionPanel);
+  helpPanel.style.cssText = panelStyle;
+  chartSidebar(host).append(viewPanel, versionPanel);
+  chartSidebar(host, "right").append(helpPanel);
   const versionStyle = document.createElement("style");
   versionStyle.textContent = `.landscape-card>summary{cursor:pointer;user-select:none;margin:-2px 0 6px}
     .landscape-card:not([open])>summary{margin-bottom:-2px}
+    [data-view-platform]{display:block;margin-top:4px;font-weight:normal;overflow-wrap:anywhere}
+    [data-view-panel][open] [data-view-platform]{display:none}
+    .landscape-view-controls{display:grid;gap:6px}
+    .landscape-view-controls>label:not([hidden]){display:grid;grid-template-columns:58px minmax(0,1fr);align-items:center;gap:6px}
+    .landscape-view-controls select{width:100%;min-width:0;font:inherit}
+    .landscape-view-controls button{justify-self:end;font:inherit}
+    .landscape-help-body p{margin:0 0 1lh}
+    .landscape-help-body p:last-child{margin-bottom:0}
     .landscape-version-table{width:100%;border-collapse:collapse;margin:0;font:inherit}
     .landscape-version-table th,.landscape-version-table td{padding:2px 4px;border:0;vertical-align:top;background:transparent}
     .landscape-version-table th{text-align:left;font-weight:500;white-space:nowrap}
@@ -149,6 +163,9 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     );
   }
   function selectPlatform() {
+    viewPlatform.textContent =
+      platform.selectedOptions[0]?.textContent || "No measured platforms";
+    viewPlatform.title = viewPlatform.textContent;
     const commit = current?.commit;
     records = catalog.filter(
       (row) =>
@@ -176,7 +193,7 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     for (const name of platforms.filter((name) => available.has(name)))
       platform.add(new Option(name, name));
     if (available.has(previous)) platform.value = previous;
-    if (available.size) selectPlatform();
+    selectPlatform();
   }
   source?.addEventListener("change", selectSource);
   platform.addEventListener("change", selectPlatform);

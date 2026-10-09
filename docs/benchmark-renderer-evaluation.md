@@ -62,6 +62,19 @@ The legend, keyboard controls, reset button, responsive sizing, collapse/reopen 
 are included. Chromium tests exercise all selector combinations and verify point identity against
 the generated figures. Published pages share one pinned bundle; standalone reports embed it.
 
+The Performance card always shows the threshold slider. Its value controls the minimum-performance
+filter independently of the Threshold plane checkbox, which only shows or hides the plane.
+Hovering the heatbar temporarily overrides the minimum without changing the slider or its step
+buttons; leaving the heatbar restores the slider threshold.
+
+The View card groups Platform, Source, Order, Workers, and Timings, followed by Reset. When
+collapsed, its summary retains the selected platform name. Workers appears when the measurement
+provides allocation pairs to select.
+
+Help and the measurement detail card appear on the right. Help contains platform/version guidance
+and chart interaction instructions, collapsed by default. View, Version, and Performance appear
+on the left in that order.
+
 The full data tables remain the accessible alternative. The renderer does not provide Plotly's
 image-export toolbar. Firefox/Safari testing and matched production startup, rotation and hover
 measurements remain follow-ups. The initial timings do not establish a cross-browser guarantee.

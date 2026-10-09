@@ -113,11 +113,8 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
         assert.equal(await hoverTable.isVisible(), true);
         const hoverPanel = page.locator(".landscape-hover-panel");
         const hoverBounds = await hoverPanel.boundingBox();
-        const scaleBounds = await page
-          .locator(".landscape-legend-panel")
-          .boundingBox();
-        assert.equal(hoverBounds.x, scaleBounds.x);
-        assert.ok(hoverBounds.y >= scaleBounds.y + scaleBounds.height + 8);
+        assert.equal(hoverBounds.x + hoverBounds.width, box.x + box.width - 12);
+        assert.equal(hoverBounds.y, box.y + 12);
         assert.equal(
           await hoverPanel.evaluate(
             (element) => getComputedStyle(element).pointerEvents,
@@ -277,25 +274,38 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
       true,
     );
     await page.locator(".landscape-preview-plane").uncheck();
-    assert.equal(await threshold.isVisible(), false);
-    assert.equal(
+    assert.equal(await threshold.isVisible(), true);
+    assert.notEqual(
       await page.locator("#landscape").getAttribute("data-minimum"),
       null,
     );
+    await threshold.fill("0");
     const unfilteredImage = await captureCanvas();
     const legendBox = await page
       .locator(".landscape-legend-scale")
       .boundingBox();
+    await threshold.fill("25");
+    const savedMinimum = await page
+      .locator("#landscape")
+      .getAttribute("data-minimum");
     const previews = [];
     for (const value of ["0", "0.5", "0.25"]) {
       await page.selectOption(".landscape-preview-opacity", value);
+      await page.mouse.move(0, 0);
+      const sliderImage = await captureCanvas();
       await page.mouse.move(
         legendBox.x + legendBox.width / 2,
         legendBox.y + legendBox.height / 2,
       );
+      assert.equal(await threshold.inputValue(), "25");
       previews.push(await captureCanvas());
       await page.mouse.move(0, 0);
-      assert.equal(await captureCanvas(), unfilteredImage);
+      assert.equal(await threshold.inputValue(), "25");
+      assert.equal(
+        await page.locator("#landscape").getAttribute("data-minimum"),
+        savedMinimum,
+      );
+      assert.equal(await captureCanvas(), sliderImage);
     }
     assert.equal(
       new Set(previews).size,
@@ -337,9 +347,10 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
     await page.locator(".landscape-preview-plane").uncheck();
     await page.selectOption("#metric", "percent");
     await page.selectOption("#range", "auto");
+    await threshold.fill("0");
+    await page.selectOption(".landscape-preview-opacity", "0.5");
     await page.mouse.move(0, 0);
     assert.equal(await captureCanvas(), unfilteredImage);
-    await page.selectOption(".landscape-preview-opacity", "0.5");
     await page.locator(".landscape-preview-plane").uncheck();
     await page.selectOption("#metric", "factor");
     assert.equal(
@@ -538,7 +549,8 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
         1,
       );
     assert.equal(panelBox.x, chartBox.x + 12);
-    assert.equal(panelBox.y, chartBox.y + 12);
+    const viewBox = await page.locator("[data-view-panel]").boundingBox();
+    assert.ok(panelBox.y >= viewBox.y + viewBox.height + 8);
     assert.equal(legendBox.x, panelBox.x);
     assert.ok(legendBox.y >= panelBox.y + panelBox.height + 8);
     assert.equal(
@@ -738,7 +750,8 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
     assert.equal(await page.locator("[data-measured-row]").isVisible(), true);
     assert.equal(await page.locator('[role="status"]').isVisible(), false);
     const localPanelBox = await versionPanel.boundingBox();
-    assert.equal(localPanelBox.y, (await host.boundingBox()).y + 12);
+    const localViewBox = await page.locator("[data-view-panel]").boundingBox();
+    assert.ok(localPanelBox.y >= localViewBox.y + localViewBox.height + 8);
     assert.ok(
       (await legendPanel.boundingBox()).y >=
         localPanelBox.y + localPanelBox.height + 8,
