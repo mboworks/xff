@@ -19,6 +19,28 @@ load("//xff:cc.bzl", "cc_binary", "cc_library", "cc_test")
 
 package(default_visibility = ["//visibility:private"])
 
+cc_library(
+    name = "run_executor_cc",
+    srcs = ["run_executor.cc"],
+    hdrs = ["run_executor.h"],
+    visibility = ["//xff:__subpackages__"],
+    deps = [
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/synchronization",
+    ],
+)
+
+cc_test(
+    name = "run_executor_test",
+    size = "small",
+    srcs = ["run_executor_test.cc"],
+    deps = [
+        ":run_executor_cc",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
+)
+
 # Directory traversal over a vfs::FileSystem: a worker pool reads (readdir+lstat)
 # in parallel while a single coordinator thread visits in --sort order.
 cc_library(
@@ -27,6 +49,7 @@ cc_library(
     hdrs = ["walk.h"],
     visibility = ["//xff:__subpackages__"],
     deps = [
+        ":run_executor_cc",
         "//xff/vfs:vfs_cc",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
@@ -248,6 +271,7 @@ cc_library(
         ":collect_cc",
         ":evaluate_cc",
         ":expression_execution_cc",
+        ":run_executor_cc",
         "//xff/parser:parser_cc",
         "//xff/registry:registry_cc",
         "@abseil-cpp//absl/base:core_headers",

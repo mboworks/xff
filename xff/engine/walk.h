@@ -32,6 +32,8 @@
 
 namespace xff::engine {
 
+class RunExecutor;
+
 // Which symlinks the walk resolves (stats the target) before testing/descending:
 // none (find `-P`, the default), only command-line operands (`-H`), or all
 // (`-L`). Following enables filesystem-loop detection.
@@ -187,6 +189,14 @@ absl::Status Walk(
     Visitor visit,
     WalkErrorFn on_error);
 
+absl::Status Walk(
+    const vfs::FileSystem& fs,
+    absl::Span<const std::string> roots,
+    const WalkOptions& options,
+    RunExecutor& executor,
+    Visitor visit,
+    WalkErrorFn on_error);
+
 // As above, plus archive diving: when `options.archive` allows it, a FILE the walk meets is offered to
 // `mount_container`, and a container that opens is descended into as though it were a directory - its
 // members visited at the depth below it, through the mounted filesystem.
@@ -199,6 +209,15 @@ absl::Status Walk(
     const vfs::FileSystem& fs,
     absl::Span<const std::string> roots,
     const WalkOptions& options,
+    Visitor visit,
+    WalkErrorFn on_error,
+    ContainerMounter mount_container);
+
+absl::Status Walk(
+    const vfs::FileSystem& fs,
+    absl::Span<const std::string> roots,
+    const WalkOptions& options,
+    RunExecutor& executor,
     Visitor visit,
     WalkErrorFn on_error,
     ContainerMounter mount_container);

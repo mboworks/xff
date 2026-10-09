@@ -18,17 +18,13 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <future>
 #include <memory>
 #include <numeric>
-#include <queue>
 #include <ranges>
 #include <set>
 #include <string>
 #include <string_view>
-#include <thread>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -40,6 +36,7 @@
 #include "absl/types/span.h"
 #include "mbo/status/status_macros.h"
 #include "mbo/types/optional_ref.h"
+#include "xff/engine/run_executor.h"
 #include "xff/vfs/entry.h"
 #include "xff/vfs/filesystem.h"
 
@@ -77,84 +74,6 @@ using Listing = absl::StatusOr<std::vector<Stated>>;
 // so layout shape remains part of the decision and narrow/deep walks stay serial.
 inline constexpr std::size_t kMinParallelDirectoryReads = 64;
 
-// A fixed pool of worker threads running leaf directory or stat jobs.
-// Workers touch only their job's inputs and the (thread-safe) FileSystem and the
-// task queue; they never call back into the walk, so no job can wait on another
-// and there is no shared walk state to race (the coordinator runs everything
-// else on one thread). With zero workers, `Submit` runs the job inline.
-class ReadPool {
- public:
-  explicit ReadPool(std::size_t workers) : max_workers_(workers) {}
-
-  // Start only when sibling directories or eager stat chunks provide independent work.
-  void Start(std::size_t directories) {
-    const std::size_t count = std::min(max_workers_, directories);
-    threads_.reserve(count);
-    while (threads_.size() < count) {
-      threads_.emplace_back([this] { Run(); });
-    }
-  }
-
-  ~ReadPool() {
-    {
-      const absl::MutexLock lock(mutex_);
-      stop_ = true;  // turns Pending() true, so every worker's Await wakes
-    }
-    for (std::thread& thread : threads_) {
-      thread.join();
-    }
-  }
-
-  ReadPool(const ReadPool&) = delete;
-  ReadPool& operator=(const ReadPool&) = delete;
-  ReadPool(ReadPool&&) = delete;
-  ReadPool& operator=(ReadPool&&) = delete;
-
-  // Enqueues a read job (or runs it inline with no workers). Caller must NOT
-  // hold `mutex_`.
-  template<typename Job>
-  auto Submit(Job job) ABSL_LOCKS_EXCLUDED(mutex_) {
-    using Result = std::invoke_result_t<Job>;
-    const auto task = std::make_shared<std::packaged_task<Result()>>(std::move(job));
-    std::future<Result> future = task->get_future();
-    if (threads_.empty()) {
-      (*task)();  // sequential: run inline
-      return future;
-    }
-    const absl::MutexLock lock(mutex_);
-    queue_.emplace([task] { (*task)(); });
-    return future;
-  }
-
- private:
-  // A job is ready or the pool is stopping. `absl::Mutex::Await` evaluates this
-  // with `mutex_` held, so it requires the lock.
-  bool Pending() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return stop_ || !queue_.empty(); }
-
-  // Worker loop: drain jobs until stopped and the queue is empty. Caller (the
-  // worker thread) must NOT hold `mutex_`.
-  void Run() ABSL_LOCKS_EXCLUDED(mutex_) {
-    for (;;) {
-      std::function<void()> job;
-      {
-        const absl::MutexLock lock(mutex_, absl::Condition(this, &ReadPool::Pending));
-        if (stop_ && queue_.empty()) {
-          return;
-        }
-        job = std::move(queue_.front());
-        queue_.pop();
-      }
-      job();
-    }
-  }
-
-  const std::size_t max_workers_;
-  mutable absl::Mutex mutex_;
-  std::queue<std::function<void()>> queue_ ABSL_GUARDED_BY(mutex_);
-  bool stop_ ABSL_GUARDED_BY(mutex_) = false;
-  std::vector<std::thread> threads_;  // started on demand, joined in the dtor; not shared otherwise
-};
-
 class Walker {
  public:
   Walker(
@@ -162,14 +81,15 @@ class Walker {
       const WalkOptions& options,
       Visitor visit,
       WalkErrorFn on_error,
-      mbo::types::OptionalRef<const ContainerMounter> mount_container)
+      mbo::types::OptionalRef<const ContainerMounter> mount_container,
+      RunExecutor& executor)
       : fs_(fs),
         options_(options),
         visit_(visit),
         on_error_(on_error),
         mount_container_(mount_container),
         follow_children_(options.symlinks == SymlinkMode::kAll),
-        pool_(options.workers > 1 ? options.workers : std::size_t{0}) {}
+        executor_(executor) {}
 
   // Whether `stated` is a FILE this walk should try to open as a container. `kRoots` offers only the
   // paths named on the command line (depth 0), `kAll` offers every file met; `kNone` never asks.
@@ -224,7 +144,7 @@ class Walker {
     // The mounter is passed on, so a container inside a container dives too - bounded by
     // --archive-depth through `container_depth_`. Under `roots` that bound never binds: a member is
     // never at depth 0, so the mode itself already says "only the archive I was pointed at".
-    Walker inner(*mounted, options_, visit_, on_error_, mount_container_);
+    Walker inner(*mounted, options_, visit_, on_error_, mount_container_, executor_);
     // The inner walk's entries belong to the CONTAINER's filesystem, so they carry shared
     // ownership of it: a consumer that outlives the dive (a mount) keeps the reader alive.
     inner.fs_owner_ = std::move(mounted);
@@ -342,12 +262,12 @@ class Walker {
     }
     const auto chunks = (entries.size() + kChunk - 1) / kChunk;
     const auto pending = std::min(chunks, options_.workers);
-    pool_.Start(pending);
+    executor_.Start(pending);
     const auto all_entries = absl::MakeSpan(entries);
     const auto submit = [&](std::size_t index) {
       const auto offset = index * kChunk;
       const auto chunk = all_entries.subspan(offset, std::min(kChunk, entries.size() - offset));
-      return pool_.Submit([this, chunk] { return StatEntries(chunk); });
+      return executor_.Submit([this, chunk] { return StatEntries(chunk); });
     };
     std::vector<std::future<std::vector<Stated>>> reads;
     reads.reserve(pending);
@@ -367,7 +287,7 @@ class Walker {
   }
 
   std::future<Listing> SubmitRead(const std::string& dir) {
-    return pool_.Submit([this, dir] { return ReadDir(dir); });
+    return executor_.Submit([this, dir] { return ReadDir(dir); });
   }
 
   bool Descendable(const Stated& stated, int depth) const {
@@ -598,7 +518,7 @@ class Walker {
     if (directories.size() < kMinParallelDirectoryReads) {
       return reads;
     }
-    pool_.Start(directories.size());
+    executor_.Start(directories.size());
     for (const std::size_t index : directories) {
       reads[index] = SubmitRead(children[index].path);
     }
@@ -622,8 +542,7 @@ class Walker {
   std::string_view current_root_;
   std::size_t current_root_index_ = 0;
   std::set<std::pair<std::uint64_t, std::uint64_t>> ancestors_;
-  // Join pending reads before destroying the mounted filesystem or other walker state.
-  ReadPool pool_;
+  RunExecutor& executor_;
 };
 
 }  // namespace
@@ -634,7 +553,18 @@ absl::Status Walk(
     const WalkOptions& options,
     Visitor visit,
     WalkErrorFn on_error) {
-  Walker walker(fs, options, visit, on_error, /*mount_container=*/{});
+  RunExecutor executor(options.workers > 1 ? options.workers : std::size_t{0});
+  return Walk(fs, roots, options, executor, visit, on_error);
+}
+
+absl::Status Walk(
+    const vfs::FileSystem& fs,
+    absl::Span<const std::string> roots,
+    const WalkOptions& options,
+    RunExecutor& executor,
+    Visitor visit,
+    WalkErrorFn on_error) {
+  Walker walker(fs, options, visit, on_error, /*mount_container=*/{}, executor);
   walker.WalkRoots(roots);
   return absl::OkStatus();
 }
@@ -646,7 +576,19 @@ absl::Status Walk(
     Visitor visit,
     WalkErrorFn on_error,
     ContainerMounter mount_container) {
-  Walker walker(fs, options, visit, on_error, mount_container);
+  RunExecutor executor(options.workers > 1 ? options.workers : std::size_t{0});
+  return Walk(fs, roots, options, executor, visit, on_error, mount_container);
+}
+
+absl::Status Walk(
+    const vfs::FileSystem& fs,
+    absl::Span<const std::string> roots,
+    const WalkOptions& options,
+    RunExecutor& executor,
+    Visitor visit,
+    WalkErrorFn on_error,
+    ContainerMounter mount_container) {
+  Walker walker(fs, options, visit, on_error, mount_container, executor);
   walker.WalkRoots(roots);
   return absl::OkStatus();
 }

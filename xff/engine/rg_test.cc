@@ -454,7 +454,9 @@ TEST_F(RgEngineTest, MatcherPoolGrowsForLaterBatchesAndRunsShortTailsInline) {
     return result;
   };
   MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
-  ParallelMatch matcher(*command.expression, 12, false);
+  RunExecutor executor(12);
+  executor.Start(12);
+  ParallelMatch matcher(*command.expression, 12, executor, false);
   fs.track_threads = true;
   for (const auto& [count, workers] : {std::pair{64UZ, 4UZ}, {256UZ, 12UZ}, {8UZ, 1UZ}}) {
     fs.expected_threads = workers;

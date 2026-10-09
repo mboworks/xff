@@ -9,17 +9,15 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <thread>
 #include <utility>
 #include <vector>
 
-#include "absl/base/thread_annotations.h"
 #include "absl/status/statusor.h"
-#include "absl/synchronization/mutex.h"
 #include "mbo/types/optional_ref.h"
 #include "xff/engine/collect.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/expression_execution.h"
+#include "xff/engine/run_executor.h"
 #include "xff/parser/ast.h"
 
 namespace xff::engine {
@@ -56,6 +54,7 @@ class ParallelMatch final {
   ParallelMatch(
       mbo::types::OptionalRef<const parser::Expr> expression,
       std::size_t workers,
+      RunExecutor& executor,
       bool scores,
       std::optional<ParallelContentOutput> output = std::nullopt,
       mbo::types::OptionalRef<const ExpressionExecution> execution = {});
@@ -72,9 +71,8 @@ class ParallelMatch final {
   const std::vector<CollectedEntry>& Entries() const { return entries_; }
 
  private:
-  void Run();
-  bool Ready(std::size_t generation) const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  bool Finished() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  struct WorkerState;
+  void EvaluateWorker(std::size_t worker);
   void EvaluateEntries(
       mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output = {},
       mbo::types::OptionalRef<const WorkerMatchers> matchers = {},
@@ -87,19 +85,16 @@ class ParallelMatch final {
 
   const mbo::types::OptionalRef<const parser::Expr> expression_;
   const std::size_t workers_;
+  RunExecutor& executor_;
   const bool scores_;
   const std::optional<ParallelContentOutput> output_;
   const mbo::types::OptionalRef<const ExpressionExecution> execution_;
   std::optional<ExpressionExecution::Worker> coordinator_;
-  std::vector<std::thread> threads_;
-  absl::Mutex mutex_;
-  bool stop_ ABSL_GUARDED_BY(mutex_) = false;
-  std::size_t generation_ ABSL_GUARDED_BY(mutex_) = 0;
-  std::size_t remaining_ ABSL_GUARDED_BY(mutex_) = 0;
-  // Published under mutex_, immutable until all workers have completed the batch.
+  std::vector<std::unique_ptr<WorkerState>> worker_states_;
   std::vector<CollectedEntry> entries_;
   std::vector<ParallelResult> results_;
   std::atomic<std::size_t> next_ = 0;
+  std::size_t serial_entries_ = 0;
 };
 
 }  // namespace xff::engine
