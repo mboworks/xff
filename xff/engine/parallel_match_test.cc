@@ -106,7 +106,7 @@ TEST_F(ParallelMatchTest, PreparedCoordinatorAndWorkersRetainRegexStateAcrossPoo
   ParallelMatch matcher(*command.expression, 4, executor_pool, false, std::nullopt, execution);
   // Small batches run on the coordinator, large batches activate private worker state;
   // returning to the coordinator must not reuse a worker's previous match or scratch.
-  for (const std::size_t count : {1, 128, 7, 512, 4'096, 10}) {
+  for (const std::size_t count : {1, 128, 7, 512, 8'192, 10}) {
     const auto& results = matcher.Match(Entries(count));
     ASSERT_THAT(results, SizeIs(count));
     for (std::size_t index = 0; index < count; ++index) {
@@ -114,6 +114,7 @@ TEST_F(ParallelMatchTest, PreparedCoordinatorAndWorkersRetainRegexStateAcrossPoo
       EXPECT_THAT(results.at(index).evaluation.matched, Eq(path.find_first_of("13579") == std::string::npos));
     }
   }
+  EXPECT_THAT(executor_pool.worker_count(), Eq(4));
 }
 
 TEST_F(ParallelMatchTest, ColdExecutorWaitsForAccumulatedWork) {

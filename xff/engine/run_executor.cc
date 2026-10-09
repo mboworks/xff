@@ -31,7 +31,7 @@ bool RunExecutor::Pending() const {
 
 void RunExecutor::Run() {
   for (;;) {
-    std::function<void()> job;
+    absl::AnyInvocable<void()> job;
     {
       const absl::MutexLock lock(mutex_, absl::Condition(this, &RunExecutor::Pending));
       if (stop_ && queue_.empty()) {

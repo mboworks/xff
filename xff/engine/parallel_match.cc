@@ -5,7 +5,6 @@
 
 #include <algorithm>
 #include <chrono>
-#include <future>
 #include <optional>
 #include <string_view>
 #include <utility>
@@ -123,13 +122,13 @@ const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEnt
   while (worker_states_.size() < count) {
     worker_states_.push_back(std::make_unique<WorkerState>(*this));
   }
-  std::vector<std::future<void>> futures;
-  futures.reserve(count);
+  std::vector<RunTask<void>> tasks;
+  tasks.reserve(count);
   for (std::size_t worker = 0; worker < count; ++worker) {
-    futures.push_back(executor_.Submit([this, worker] { EvaluateWorker(worker); }));
+    tasks.push_back(executor_.Submit([this, worker] { EvaluateWorker(worker); }));
   }
-  for (std::future<void>& future : futures) {
-    future.get();
+  for (RunTask<void>& task : tasks) {
+    task.Get();
   }
   return results_;
 }

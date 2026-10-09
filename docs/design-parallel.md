@@ -132,13 +132,34 @@ actions still occur in traversal order.
 
 ## Parallelism control
 
-A single knob, `-j N` (long form `--jobs`), configures independent limits: up to
-`N` directory-read workers, up to `N` eligible content-matcher workers, and at most
-`N` outstanding semicolon-form `-exec`/`-execdir` children. These are separate
-limits, not one shared `N`-operation budget. Content matching does not run alongside
-execution actions in the same expression. `-j 1` makes each part synchronous.
-`-j all` (`--jobs=all`) uses every detected core (`hardware_concurrency()`) for
-each limit, regardless of the active mode's default.
+A single knob, `-j N` (long form `--jobs`), caps one run-owned executor at `N`
+workers for directory reads, eager stat batches and eligible content matching.
+The coordinator retains traversal and output ownership. The executor starts
+lazily, grows only as useful work becomes available, and reuses its threads
+across phases and mounted-filesystem walks until the command finishes.
+Semicolon-form `-exec`/`-execdir` separately allows at most `N` outstanding child
+processes; content matching does not run alongside execution actions in the same
+expression. `-j 1` makes each part synchronous. `-j all` (`--jobs=all`) uses every
+detected core (`hardware_concurrency()`) for these limits, regardless of the
+active mode's default.
+
+The coordinator admits directory read-ahead when at least 64 independent sibling
+reads are available. It submits at most one drain job per worker; each job claims
+successive directories from that batch and publishes indexed listing results.
+Workers perform leaf reads and never recurse or wait on jobs in their own
+executor. Eager stat work similarly uses drain jobs over 128-entry chunks after
+at least 512 entries are available. This bounds executor queue operations by
+worker count while preserving coordinator visitation order.
+
+Content matching retains private evaluator and regex state for each logical
+worker. Decision-only matching collects up to 8,192 entries before flushing;
+rendered-content batches remain bounded at 256 entries because their output can
+be large. A cold executor keeps cheap small batches on the coordinator until
+8,192 entries have accumulated. A timed 16-entry prefix admits slower work
+earlier when that prefix takes at least 500 microseconds. Once traversal or
+matching has started the executor, batches of at least 16 entries may reuse it.
+Each submitted matcher job drains entry chunks, and results are consumed in
+original entry order.
 
 Under `-j > 1` the serial `-exec ... ;` / `-execdir ... ;` form launches its child
 on a bounded runner (at most `N` outstanding) instead of running it synchronously.
@@ -178,7 +199,8 @@ design-config.md):
   entry from the pruned subtree is visited or acted upon.
 - **`-quit`** - the coordinator stops visiting entries immediately. Workers only
   perform leaf directory reads and do not inspect the walk's stop flag; already
-  submitted reads finish while the pool is destroyed. Their results are ignored,
+  submitted drain jobs finish before their walker is destroyed, even when the
+  executor will be reused by a later phase. Their results are ignored,
   and no new expression actions are run. Exit status follows the normal model.
 - **`-depth` (post-order)** - children before parent. The ordering layer holds a
   directory's own visit until its subtree has been emitted; under `none` this

@@ -26,6 +26,7 @@ cc_library(
     visibility = ["//xff:__subpackages__"],
     deps = [
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/functional:any_invocable",
         "@abseil-cpp//absl/synchronization",
     ],
 )
@@ -36,6 +37,7 @@ cc_test(
     srcs = ["run_executor_test.cc"],
     deps = [
         ":run_executor_cc",
+        "@abseil-cpp//absl/synchronization",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],
@@ -163,12 +165,15 @@ cc_test(
     size = "small",
     srcs = ["walk_test.cc"],
     deps = [
+        ":run_executor_cc",
         ":walk_cc",
         "//xff/vfs:local_fs_cc",
         "//xff/vfs:vfs_cc",
         "@abseil-cpp//absl/functional:function_ref",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/synchronization",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:status_cc",

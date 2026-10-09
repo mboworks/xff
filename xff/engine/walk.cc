@@ -16,12 +16,11 @@
 #include "xff/engine/walk.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
-#include <future>
 #include <memory>
 #include <numeric>
-#include <ranges>
 #include <set>
 #include <string>
 #include <string_view>
@@ -90,6 +89,15 @@ class Walker {
         mount_container_(mount_container),
         follow_children_(options.symlinks == SymlinkMode::kAll),
         executor_(executor) {}
+
+  ~Walker() {
+    // A stop action may leave prefetched siblings unconsumed. Their drain jobs
+    // still reference this walker, so join those jobs before its state is torn
+    // down. Normal walks reach already-completed jobs here.
+    for (RunTask<void>& drain : drain_tasks_) {
+      drain.Wait();
+    }
+  }
 
   // Whether `stated` is a FILE this walk should try to open as a container. `kRoots` offers only the
   // paths named on the command line (depth 0), `kAll` offers every file met; `kNone` never asks.
@@ -223,23 +231,26 @@ class Walker {
     return Stated{.path = std::move(path), .name = std::move(entry_name), .metadata = *metadata, .ok = true};
   }
 
+  Stated StatEntry(vfs::Entry entry) const {
+    if (options_.metadata != MetadataDemand::kAlways && entry.type != vfs::FileType::kUnknown
+        && entry.type != vfs::FileType::kDirectory && (!follow_children_ || entry.type != vfs::FileType::kSymlink)) {
+      return {
+          .path = std::move(entry.path),
+          .name = std::move(entry.name),
+          .metadata = {.type = entry.type, .source = entry.source},
+          .ok = true,
+          .metadata_loaded = false,
+      };
+    }
+    return StatNode(std::move(entry.path), follow_children_, std::move(entry.name));
+  }
+
   // Resolve exactly the eager metadata required for this owned listing slice. Safe on a worker.
   std::vector<Stated> StatEntries(absl::Span<vfs::Entry> entries) const {
     std::vector<Stated> children;
     children.reserve(entries.size());
     for (vfs::Entry& entry : entries) {
-      if (options_.metadata != MetadataDemand::kAlways && entry.type != vfs::FileType::kUnknown
-          && entry.type != vfs::FileType::kDirectory && (!follow_children_ || entry.type != vfs::FileType::kSymlink)) {
-        children.push_back({
-            .path = std::move(entry.path),
-            .name = std::move(entry.name),
-            .metadata = {.type = entry.type, .source = entry.source},
-            .ok = true,
-            .metadata_loaded = false,
-        });
-      } else {
-        children.push_back(StatNode(std::move(entry.path), follow_children_, std::move(entry.name)));
-      }
+      children.push_back(StatEntry(std::move(entry)));
     }
     return children;
   }
@@ -263,31 +274,29 @@ class Walker {
     const auto chunks = (entries.size() + kChunk - 1) / kChunk;
     const auto pending = std::min(chunks, options_.workers);
     executor_.Start(pending);
-    const auto all_entries = absl::MakeSpan(entries);
-    const auto submit = [&](std::size_t index) {
-      const auto offset = index * kChunk;
-      const auto chunk = all_entries.subspan(offset, std::min(kChunk, entries.size() - offset));
-      return executor_.Submit([this, chunk] { return StatEntries(chunk); });
-    };
-    std::vector<std::future<std::vector<Stated>>> reads;
+    std::atomic<std::size_t> next = 0;
+    std::vector<Stated> children(entries.size());
+    std::vector<RunTask<void>> reads;
     reads.reserve(pending);
-    for (std::size_t index = 0; index < pending; ++index) {
-      reads.push_back(submit(index));
+    for (std::size_t worker = 0; worker < pending; ++worker) {
+      reads.push_back(executor_.Submit([&] {
+        for (;;) {
+          const std::size_t index = next.fetch_add(1, std::memory_order_relaxed);
+          if (index >= chunks) {
+            return;
+          }
+          const std::size_t first = index * kChunk;
+          const std::size_t end = std::min(first + kChunk, entries.size());
+          for (std::size_t entry_index = first; entry_index < end; ++entry_index) {
+            children[entry_index] = StatEntry(std::move(entries[entry_index]));
+          }
+        }
+      }));
     }
-    std::vector<Stated> children;
-    children.reserve(entries.size());
-    for (std::size_t index = 0; index < chunks; ++index) {
-      auto& read = reads.at(index % pending);
-      children.append_range(read.get() | std::views::as_rvalue);
-      if (index + pending < chunks) {
-        read = submit(index + pending);
-      }
+    for (RunTask<void>& read : reads) {
+      read.Get();
     }
     return children;
-  }
-
-  std::future<Listing> SubmitRead(const std::string& dir) {
-    return executor_.Submit([this, dir] { return ReadDir(dir); });
   }
 
   bool Descendable(const Stated& stated, int depth) const {
@@ -297,7 +306,7 @@ class Walker {
     return is_dir && within_depth && on_root_fs;
   }
 
-  // Only the coordinator accesses this record after its listing future completes. Exclusive
+  // Only the coordinator accesses this record after its listing completion arrives. Exclusive
   // ownership makes the lazy cache lock-free; it is never shared with matcher workers.
   absl::Status LoadMetadata(const Stated& stated) const {
     if (!stated.metadata_loaded) {
@@ -352,7 +361,7 @@ class Walker {
   // Pre-order by default; post-order (`-depth`) descends first, then visits, and
   // `-prune` has no effect (matching find). `prefetched` is the directory's
   // already-submitted listing read (from the parent's batch), or empty to read now.
-  void VisitSubtree(const Stated& stated, int depth, mbo::types::OptionalRef<std::future<Listing>> prefetched) {
+  void VisitSubtree(const Stated& stated, int depth, mbo::types::OptionalRef<RunTask<Listing>> prefetched) {
     if (stopped_) {
       return;
     }
@@ -392,15 +401,15 @@ class Walker {
     }
   }
 
-  // Reads `dir` (from its prefetched future, or now) and recurses its children,
+  // Reads `dir` (from its prefetched result, or now) and recurses its children,
   // guarding against filesystem loops (only possible when following symlinks).
-  void Descend(const Stated& dir, int depth, mbo::types::OptionalRef<std::future<Listing>> prefetched) {
+  void Descend(const Stated& dir, int depth, mbo::types::OptionalRef<RunTask<Listing>> prefetched) {
     const std::pair<std::uint64_t, std::uint64_t> id{dir.metadata.dev, dir.metadata.ino};
     if (!ancestors_.insert(id).second) {
       on_error_(dir.path, absl::FailedPreconditionError("filesystem loop detected"));
       return;
     }
-    Listing listing = prefetched.has_value() ? prefetched->get() : ReadNow(dir.path);
+    Listing listing = prefetched.has_value() ? prefetched->Get() : ReadNow(dir.path);
     if (!listing.ok()) {
       // A directory that vanished before we could read it is the same readdir race.
       if (!(options_.ignore_readdir_race && absl::IsNotFound(listing.status()))) {
@@ -425,14 +434,14 @@ class Walker {
     // Inline DFS at each entry's position. kTree emits a subtree in its sorted
     // place; post-order (`-depth`) always uses this shape (descend then visit).
     if (options_.sort == SortOrder::kTree || options_.sort == SortOrder::kGlobal || options_.post_order) {
-      std::vector<std::future<Listing>> reads = SubmitSubdirReads(children, depth);
+      std::vector<RunTask<Listing>> reads = SubmitSubdirReads(children, depth);
       for (std::size_t i = 0; i < children.size(); ++i) {
         if (stopped_) {
           return;
         }
         VisitSubtree(
             children[i], depth,
-            reads[i].valid() ? mbo::types::OptionalRef{reads[i]} : mbo::types::OptionalRef<std::future<Listing>>{});
+            reads[i].Valid() ? mbo::types::OptionalRef{reads[i]} : mbo::types::OptionalRef<RunTask<Listing>>{});
       }
       return;
     }
@@ -448,7 +457,7 @@ class Walker {
           VisitOne(children[i], depth, options_.mount_before_visit && dived[i]);
         }
       }
-      std::vector<std::future<Listing>> reads = SubmitSubdirReads(children, depth);
+      std::vector<RunTask<Listing>> reads = SubmitSubdirReads(children, depth);
       for (std::size_t i = 0; i < children.size(); ++i) {
         if (stopped_) {
           return;
@@ -456,7 +465,7 @@ class Walker {
         if (IsDir(children[i])) {
           VisitSubtree(
               children[i], depth,
-              reads[i].valid() ? mbo::types::OptionalRef{reads[i]} : mbo::types::OptionalRef<std::future<Listing>>{});
+              reads[i].Valid() ? mbo::types::OptionalRef{reads[i]} : mbo::types::OptionalRef<RunTask<Listing>>{});
         } else if (dived[i]) {
           // A container groups its members like a directory, so under kSubtree it belongs in the
           // subtree block rather than the flat block its own entry was emitted in.
@@ -476,7 +485,7 @@ class Walker {
       dived[i] = WillDive(children[i], depth);
       pruned[i] = VisitOne(children[i], depth, options_.mount_before_visit && dived[i]) == WalkAction::kPrune;
     }
-    std::vector<std::future<Listing>> reads = SubmitSubdirReads(children, depth, pruned);
+    std::vector<RunTask<Listing>> reads = SubmitSubdirReads(children, depth, pruned);
     for (std::size_t i = 0; i < children.size(); ++i) {
       if (stopped_) {
         return;
@@ -487,8 +496,8 @@ class Walker {
       if (Descendable(children[i], depth)) {
         Descend(
             children[i], depth,
-            reads[i].valid() ? mbo::types::OptionalRef{reads[i]}
-                             : mbo::types::OptionalRef<std::future<Listing>>{});  // entry already visited above
+            reads[i].Valid() ? mbo::types::OptionalRef{reads[i]}
+                             : mbo::types::OptionalRef<RunTask<Listing>>{});  // entry already visited above
       } else if (dived[i]) {
         // `--archive=all`: a container met mid-walk descends exactly where a directory would, and
         // after its own visit, so a prune on the container still skips its members.
@@ -497,15 +506,17 @@ class Walker {
     }
   }
 
-  // Submits a read for every descendable subdirectory in `children`, returning a
-  // vector aligned with `children` (an invalid future where there is no read), so
-  // the pool overlaps their IO. The sequential walk (no workers) reads lazily at
-  // descend time instead, so it never pre-reads siblings it might not reach.
-  std::vector<std::future<Listing>> SubmitSubdirReads(
+  // Makes every descendable subdirectory in `children` available to a bounded set
+  // of drain jobs, returning a vector aligned with `children` (an invalid task
+  // where there is no read). Each drain performs many reads when the batch is
+  // large, so executor synchronization is paid per worker rather than per
+  // directory. The sequential walk reads lazily at descend time instead, so it
+  // never pre-reads siblings it might not reach.
+  std::vector<RunTask<Listing>> SubmitSubdirReads(
       const std::vector<Stated>& children,
       int depth,
       const std::vector<bool>& pruned = {}) {
-    std::vector<std::future<Listing>> reads(children.size());
+    std::vector<RunTask<Listing>> reads(children.size());
     if (options_.workers <= 1) {
       return reads;
     }
@@ -518,9 +529,34 @@ class Walker {
     if (directories.size() < kMinParallelDirectoryReads) {
       return reads;
     }
+    std::erase_if(drain_tasks_, [](RunTask<void>& drain) { return drain.Ready(); });
     executor_.Start(directories.size());
-    for (const std::size_t index : directories) {
-      reads[index] = SubmitRead(children[index].path);
+
+    struct ReadBatch final {
+      std::vector<std::string> paths;
+      std::vector<RunPromise<Listing>> promises;
+      std::atomic<std::size_t> next = 0;
+    };
+
+    auto batch = std::make_shared<ReadBatch>();
+    batch->paths.reserve(directories.size());
+    batch->promises.resize(directories.size());
+    for (std::size_t batch_index = 0; batch_index < directories.size(); ++batch_index) {
+      const std::size_t child_index = directories[batch_index];
+      batch->paths.push_back(children[child_index].path);
+      reads[child_index] = batch->promises[batch_index].Task();
+    }
+    const std::size_t drains = std::min(executor_.worker_count(), directories.size());
+    for (std::size_t worker = 0; worker < drains; ++worker) {
+      drain_tasks_.push_back(executor_.Submit([this, batch] {
+        for (;;) {
+          const std::size_t index = batch->next.fetch_add(1, std::memory_order_relaxed);
+          if (index >= batch->paths.size()) {
+            return;
+          }
+          batch->promises[index].SetValue(ReadDir(batch->paths[index]));
+        }
+      }));
     }
     return reads;
   }
@@ -543,6 +579,7 @@ class Walker {
   std::size_t current_root_index_ = 0;
   std::set<std::pair<std::uint64_t, std::uint64_t>> ancestors_;
   RunExecutor& executor_;
+  std::vector<RunTask<void>> drain_tasks_;
 };
 
 }  // namespace
