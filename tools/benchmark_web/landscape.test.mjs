@@ -113,11 +113,8 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
         assert.equal(await hoverTable.isVisible(), true);
         const hoverPanel = page.locator(".landscape-hover-panel");
         const hoverBounds = await hoverPanel.boundingBox();
-        const scaleBounds = await page
-          .locator(".landscape-legend-panel")
-          .boundingBox();
-        assert.equal(hoverBounds.x, scaleBounds.x);
-        assert.ok(hoverBounds.y >= scaleBounds.y + scaleBounds.height + 8);
+        assert.equal(hoverBounds.x + hoverBounds.width, box.x + box.width - 12);
+        assert.equal(hoverBounds.y, box.y + 12);
         assert.equal(
           await hoverPanel.evaluate(
             (element) => getComputedStyle(element).pointerEvents,
@@ -277,11 +274,12 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
       true,
     );
     await page.locator(".landscape-preview-plane").uncheck();
-    assert.equal(await threshold.isVisible(), false);
-    assert.equal(
+    assert.equal(await threshold.isVisible(), true);
+    assert.notEqual(
       await page.locator("#landscape").getAttribute("data-minimum"),
       null,
     );
+    await threshold.fill("0");
     const unfilteredImage = await captureCanvas();
     const legendBox = await page
       .locator(".landscape-legend-scale")
@@ -337,6 +335,7 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
     await page.locator(".landscape-preview-plane").uncheck();
     await page.selectOption("#metric", "percent");
     await page.selectOption("#range", "auto");
+    await threshold.fill("0");
     await page.mouse.move(0, 0);
     assert.equal(await captureCanvas(), unfilteredImage);
     await page.selectOption(".landscape-preview-opacity", "0.5");
@@ -538,7 +537,8 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
         1,
       );
     assert.equal(panelBox.x, chartBox.x + 12);
-    assert.equal(panelBox.y, chartBox.y + 12);
+    const viewBox = await page.locator("[data-view-panel]").boundingBox();
+    assert.ok(panelBox.y >= viewBox.y + viewBox.height + 8);
     assert.equal(legendBox.x, panelBox.x);
     assert.ok(legendBox.y >= panelBox.y + panelBox.height + 8);
     assert.equal(

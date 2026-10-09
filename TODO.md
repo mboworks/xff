@@ -306,7 +306,7 @@ Measured follow-ups (see the P07/P08 sections of `docs/performance-analysis.md`)
 
 ## Benchmark visualization follow-up
 
-- [x] Keep the hover card in a stable panel below the version and performance-scale cards,
+- [x] Keep the hover card in a stable panel below the Help card on the right,
       instead of following the pointer.
 - [x] Replace benchmark versions in place while preserving chart space and camera state during loading.
 - [x] Add percentage/logarithmic range presets and bright capped outliers or cut-off gaps.

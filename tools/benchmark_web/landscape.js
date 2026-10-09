@@ -58,7 +58,8 @@ window.XffLandscape = function createLandscape(root, figures) {
   const performanceControls = root
     .closest("#benchmark-explorer")
     ?.querySelector("[data-performance-controls]");
-  chartSidebar(root).append(legend, tooltip);
+  chartSidebar(root).append(legend);
+  chartSidebar(root, "right").append(tooltip);
   const legendMarker = document.createElement("div");
   legendMarker.className = "landscape-legend-marker";
   legendMarker.hidden = true;
@@ -563,8 +564,8 @@ window.XffLandscape = function createLandscape(root, figures) {
     bar.style.cssText = `position:relative;width:100%;height:12px;margin:4px 0;background:linear-gradient(to right,${gradient.join(",")})`;
     bar.append(legendMarker);
     const filterNote = document.createElement("div");
-    const filterHint = "Hover scale to preview a minimum; leave to restore.";
-    filterNote.textContent = filterHint;
+    bar.title =
+      "Hover scale to preview a minimum; leave to restore the slider threshold.";
     const previewOptions = document.createElement("div");
     previewOptions.style.cssText =
       "display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;max-width:320px;margin-top:4px";
@@ -611,64 +612,56 @@ window.XffLandscape = function createLandscape(root, figures) {
     raiseThreshold.textContent = "+";
     raiseThreshold.setAttribute("aria-label", "Raise performance threshold");
     thresholdControls.append(lowerThreshold, threshold, raiseThreshold);
-    function applyThreshold(fraction, persistent) {
-      const bounded = Math.max(0, Math.min(1, fraction));
-      if (persistent) {
-        thresholdFraction = bounded;
-        threshold.value = String(Math.round(bounded * 100));
-      }
-      minimumPerformance.value = (2 * bounded - 1) * ymax;
+    let hoveredThreshold = null;
+    function applyThreshold() {
+      const fraction = hoveredThreshold ?? thresholdFraction;
+      minimumPerformance.value = (2 * fraction - 1) * ymax;
       preview.visible = true;
       plane.visible = showThresholdPlane;
-      plane.position.y = (2 * bounded - 1) * 2;
+      plane.position.y = (2 * fraction - 1) * 2;
       root.dataset.minimum = minimumPerformance.value;
       clearHover();
       if (showThresholdPlane)
         showPerformanceValue(minimumPerformance.value, plane.position.y);
       legendMarker.hidden = false;
-      legendMarker.style.left = `${bounded * 100}%`;
+      legendMarker.style.left = `${fraction * 100}%`;
       filterNote.textContent = `Minimum: ${minimumPerformance.value.toFixed(2)}${metric === "percent" ? "%" : " log10"}`;
-      lowerThreshold.disabled = bounded <= 0;
-      raiseThreshold.disabled = bounded >= 1;
+      lowerThreshold.disabled = thresholdFraction <= 0;
+      raiseThreshold.disabled = thresholdFraction >= 1;
       draw();
     }
-    function clearThreshold() {
-      minimumPerformance.value = -1e30;
-      preview.visible = false;
-      plane.visible = false;
-      delete root.dataset.minimum;
-      clearHover();
-      filterNote.textContent = filterHint;
-      draw();
+    function setThreshold(fraction) {
+      thresholdFraction = Math.max(0, Math.min(1, fraction));
+      threshold.value = String(Math.round(thresholdFraction * 100));
+      applyThreshold();
     }
     planeToggle.addEventListener("change", () => {
       showThresholdPlane = planeToggle.checked;
-      thresholdControls.style.display = showThresholdPlane ? "flex" : "none";
-      if (showThresholdPlane) applyThreshold(thresholdFraction, true);
-      else clearThreshold();
+      applyThreshold();
     });
     planeLabel.append(planeToggle, " Threshold plane");
     previewOptions.append(belowLabel, planeLabel);
     threshold.addEventListener("input", () =>
-      applyThreshold(Number(threshold.value) / 100, true),
+      setThreshold(Number(threshold.value) / 100),
     );
     for (const [button, delta] of [
       [lowerThreshold, -1],
       [raiseThreshold, 1],
     ])
       button.addEventListener("click", () =>
-        applyThreshold(thresholdFraction + delta / 100, true),
+        setThreshold(thresholdFraction + delta / 100),
       );
     bar.addEventListener("pointermove", (event) => {
       const bounds = bar.getBoundingClientRect();
-      const fraction = Math.max(
+      hoveredThreshold = Math.max(
         0,
         Math.min(1, (event.clientX - bounds.left) / bounds.width),
       );
-      applyThreshold(fraction, showThresholdPlane);
+      applyThreshold();
     });
     bar.addEventListener("pointerleave", () => {
-      if (!showThresholdPlane) clearThreshold();
+      hoveredThreshold = null;
+      applyThreshold();
     });
     const scale = document.createElement("div");
     scale.className = "landscape-legend-ticks";
@@ -691,8 +684,7 @@ window.XffLandscape = function createLandscape(root, figures) {
         : "Out of range: capped in bright green/red"
       : "Range: Auto";
     legendBody.append(note);
-    thresholdControls.style.display = showThresholdPlane ? "flex" : "none";
-    if (showThresholdPlane) applyThreshold(thresholdFraction, true);
+    applyThreshold();
     resize();
   }
   const ray = new THREE.Raycaster();
