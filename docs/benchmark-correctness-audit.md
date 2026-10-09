@@ -2,6 +2,9 @@
 
 ## Scope and status
 
+Implementation and native-session handoff: [PR #990](https://github.com/mboworks/xff/pull/990),
+branch `audit/benchmark-correctness`. Fetch the branch and record the exact driver commit before running.
+
 The first audit uses the retained Pages snapshot
 `d7d0ac89d7b0f74ecc610d4a5d81354a394b793b`, with code based on main
 `772994ab7905be77915978f06ea90ae5934aaeef`. Native Linux profiling remains required before attributing its performance
@@ -145,7 +148,8 @@ Use source revision `772994ab7905be77915978f06ea90ae5934aaeef` initially on both
 Record the driver's hashes and exact source commit before either session edits code. Start new
 batch directories: driver changes intentionally fail the frozen-contract resume check.
 
-The audit driver is on PR branch `audit/benchmark-correctness`. Checking out the baseline
+The audit driver is on [PR #990](https://github.com/mboworks/xff/pull/990), branch
+`audit/benchmark-correctness`. Checking out the baseline
 source revision alone does not install the driver fixes. Fetch this branch into a separate
 worktree, record its exact commit, and keep that checkout unchanged for the first baseline run:
 
