@@ -17,11 +17,13 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   const viewPanel = root.querySelector("[data-view-panel]");
   const viewPlatform = viewPanel.querySelector("[data-view-platform]");
   const versionPanel = root.querySelector("[data-version-panel]");
+  const performancePanel = root.querySelector("[data-performance-panel]");
   const helpPanel = root.querySelector("[data-help-panel]");
   viewPanel.style.cssText = panelStyle;
   versionPanel.style.cssText = panelStyle;
+  performancePanel.style.cssText = panelStyle;
   helpPanel.style.cssText = panelStyle;
-  chartSidebar(host).append(viewPanel, versionPanel);
+  chartSidebar(host).append(viewPanel, versionPanel, performancePanel);
   chartSidebar(host, "right").append(helpPanel);
   const versionStyle = document.createElement("style");
   versionStyle.textContent = `.landscape-card>summary{cursor:pointer;user-select:none;margin:-2px 0 6px}

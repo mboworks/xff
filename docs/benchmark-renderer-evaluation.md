@@ -66,6 +66,8 @@ The Performance card always shows the threshold slider. Its value controls the m
 filter independently of the Threshold plane checkbox, which only shows or hides the plane.
 Hovering the heatbar temporarily overrides the minimum without changing the slider or its step
 buttons; leaving the heatbar restores the slider threshold.
+The Performance card contains Scale, Range, and Out of range from initial page load, including
+while a measurement is loading or unavailable.
 
 The View card groups Dataset, Source, Order, Workers, and Timings, followed by Reset. A dataset
 groups measurements from the same machine and measurement configuration. When collapsed, the
