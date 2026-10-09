@@ -71,6 +71,12 @@ struct Stated {
 // The result of reading one directory: its children, or a ReadDir error.
 using Listing = absl::StatusOr<std::vector<Stated>>;
 
+// Creating and synchronizing the directory-read pool has a fixed cost. A small sibling fan-out
+// cannot repay it on native memory-backed fixtures; wait for enough independent directory reads
+// to keep the workers useful. This is a work-unit threshold rather than a file-count threshold,
+// so layout shape remains part of the decision and narrow/deep walks stay serial.
+inline constexpr std::size_t kMinParallelDirectoryReads = 64;
+
 // A fixed pool of worker threads running leaf directory or stat jobs.
 // Workers touch only their job's inputs and the (thread-safe) FileSystem and the
 // task queue; they never call back into the walk, so no job can wait on another
@@ -589,7 +595,7 @@ class Walker {
         directories.push_back(index);
       }
     }
-    if (directories.size() < 2) {
+    if (directories.size() < kMinParallelDirectoryReads) {
       return reads;
     }
     pool_.Start(directories.size());
