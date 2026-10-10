@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "total_bytes": 476237179,
+  "total_bytes": 476643802,
   "sections": {
     "root": {
       "files": 34,
@@ -35,8 +35,8 @@
       "bytes": 2147842
     },
     "coverage": {
-      "files": 6993,
-      "bytes": 75432184
+      "files": 7000,
+      "bytes": 75838807
     },
     "site": {
       "files": 259,
