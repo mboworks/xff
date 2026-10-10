@@ -560,8 +560,13 @@ TEST_F(RgEngineTest, ParallelNativeFilterAndRgSelectionShareEachRead) {
 }
 
 TEST_F(RgEngineTest, MetadataConsumersKeepParallelFilteringAndOrderedResults) {
+  // This controls filter eligibility with metadata consumers, not cold admission.
+  // Eager metadata for at least 512 entries warms the shared executor before matching;
+  // the first-read rendezvous then forces real overlap in the content batch. With a
+  // smaller cold batch, its serial probe can use up that rendezvous before dispatch.
+  constexpr std::size_t kFiles = 600;
   fs.files.clear();
-  for (std::size_t index = 0; index < 300; ++index) {
+  for (std::size_t index = 0; index < kFiles; ++index) {
     fs.files.emplace("tree/" + std::to_string(index) + ".txt", index % 2 == 0 ? "hit\n" : "miss\n");
   }
   const std::vector<std::vector<std::string>> consumers{
@@ -572,7 +577,9 @@ TEST_F(RgEngineTest, MetadataConsumersKeepParallelFilteringAndOrderedResults) {
       {"--no-match-output", "--color=always"},
   };
   for (const auto& consumer : consumers) {
+    SCOPED_TRACE(consumer.front());
     for (const bool rg : {false, true}) {
+      SCOPED_TRACE(rg);
       auto args = consumer;
       args.insert(args.begin(), {"--jobs=1", "--archive=none", "--sort=none"});
       if (rg) {
@@ -589,8 +596,8 @@ TEST_F(RgEngineTest, MetadataConsumersKeepParallelFilteringAndOrderedResults) {
       EXPECT_THAT(Run(args, rg).errors, Eq(0));
       fs.track_threads = false;
       EXPECT_THAT(output, EqualsText(expected));
-      EXPECT_THAT(fs.reads.load(), Eq(300));
-      EXPECT_THAT(fs.read_threads.size(), Gt(1));
+      EXPECT_THAT(fs.reads.load(), Eq(kFiles));
+      EXPECT_THAT(fs.read_threads, SizeIs(Gt(1)));
     }
   }
 }
