@@ -385,9 +385,14 @@ The separate diagnostic [executor lifecycle/task-grain probe](benchmarks/executo
 measures first dispatch and warmed leaf/claimable/drain sweeps with independently
 checkable counts and unsigned checksums. Cold samples require a fresh process;
 probe bookkeeping is included and no VFS/storage cost is measured. It does not
-change runtime admission or establish a remaining-work threshold. Native repeated
-controls, actual-workload allocation/phase attribution and macOS acceptance remain
-required.
+change runtime admission or establish a remaining-work threshold. Its completed
+Linux diagnostic retains 4,860 checked fresh invocations across three independently
+ordered default/clock-control sessions, all raw stdout/resources and independent
+offline verification. Warmed controls show that thread reuse alone does not amortize
+fine-grained dispatch; cheap work can still lose even with drains. These synthetic
+results are not a VFS or full-engine acceptance measurement. Actual-workload
+allocation/phase attribution, remaining-cost admission, metadata/slow-storage
+controls and native macOS acceptance remain required.
 
 Direct `/usr/bin/time -v` runs show approximately 5.3-5.4 MiB peak RSS for a small
 XFF invocation, while the Python comparison worker reports approximately

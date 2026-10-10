@@ -4,6 +4,7 @@
     "CHANGELOG.md": "CHANGELOG.html",
     "CONTRIBUTING.md": "CONTRIBUTING.html",
     "docs/benchmarks/execution-resources.md": "docs/benchmarks/execution-resources.html",
+    "docs/benchmarks/executor-dispatch-probe.md": "docs/benchmarks/executor-dispatch-probe.html",
     "docs/execution-resources.md": "docs/execution-resources.html",
     "docs/ci-performance.md": "docs/ci-performance.html",
     "docs/coverage.md": "docs/coverage.html",

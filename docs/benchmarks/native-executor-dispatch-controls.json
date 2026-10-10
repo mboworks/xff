@@ -1,0 +1,148 @@
+{
+  "purpose": "synthetic diagnostic; not engine or native macOS acceptance",
+  "source_revision": "c8929d16c77e318b15d87c5bfcbf07af0fa7058e",
+  "source_tree": "58bc0b9b3a4626c63ae859557551c93308e9e0a4",
+  "started_utc": "2026-10-10T06:27:51Z",
+  "completed_utc": "2026-10-10T06:33:18Z",
+  "invocations": 4860,
+  "cells": 486,
+  "warmups": 486,
+  "raw_samples": 4374,
+  "physical_cpus": [
+    {
+      "cpu": 0,
+      "package": 0,
+      "core": 0
+    },
+    {
+      "cpu": 1,
+      "package": 0,
+      "core": 1
+    },
+    {
+      "cpu": 2,
+      "package": 0,
+      "core": 2
+    },
+    {
+      "cpu": 3,
+      "package": 0,
+      "core": 3
+    },
+    {
+      "cpu": 4,
+      "package": 0,
+      "core": 4
+    },
+    {
+      "cpu": 5,
+      "package": 0,
+      "core": 5
+    },
+    {
+      "cpu": 6,
+      "package": 0,
+      "core": 6
+    },
+    {
+      "cpu": 7,
+      "package": 0,
+      "core": 7
+    },
+    {
+      "cpu": 8,
+      "package": 0,
+      "core": 8
+    },
+    {
+      "cpu": 9,
+      "package": 0,
+      "core": 9
+    }
+  ],
+  "binaries": {
+    "default": {
+      "path": "/tmp/xff-executor-dispatch-native-session.d9IxJs/executor-frozen-default",
+      "sha256": "c730092bdc474154024799b1fa9348484853489bb682c6164ee14888113d2051"
+    },
+    "clock-control": {
+      "path": "/tmp/xff-executor-dispatch-native-session.d9IxJs/executor-frozen-clock-control",
+      "sha256": "9faa695cda7dba14b2c0226d3b950b8927a18bc4c9e4bdc64f60a1d17fa69812"
+    }
+  },
+  "helper": {
+    "path": "/tmp/xff-perf-baseline-exact772-native-session1/resource-launcher",
+    "sha256": "60bcb395bb3d0eccccd0a3d0cb2407538b1f96c45d5e1e156a0bd4522f93328e"
+  },
+  "artifacts": {
+    "raw-1": {
+      "name": "native-executor-dispatch-raw-1.gz",
+      "bytes": 143901,
+      "sha256": "69a8cc9e6cd1d29964433832902407547ad90c91a56c6098df3d6185c753e78b",
+      "raw_bytes": 3036184,
+      "raw_sha256": "ce825b4a4160314f8e69bedc12afdd33bbd57ebadc807e7c55e0f9f81ec3514e"
+    },
+    "analysis-1": {
+      "name": "native-executor-dispatch-analysis-1.gz",
+      "bytes": 37920,
+      "sha256": "3ccf411fe8e0570b6c07dbe81c1622171109ba78bef4630b8b5767cdb28f6fea",
+      "raw_bytes": 1292653,
+      "raw_sha256": "b7a20c6e478bfa1a35af9cbdc6435b98d2f32eb65764372485d379c79c1a0e28"
+    },
+    "raw-2": {
+      "name": "native-executor-dispatch-raw-2.gz",
+      "bytes": 143265,
+      "sha256": "3f146087bfd95f2b01e594e885fd82e25e8e706fba9d87bcdb17507c8bd0c450",
+      "raw_bytes": 3036228,
+      "raw_sha256": "0287b68d29ea2f0e4aa8d5313a43059ce2e60812c0b939da5524ea3aedbc8952"
+    },
+    "analysis-2": {
+      "name": "native-executor-dispatch-analysis-2.gz",
+      "bytes": 37676,
+      "sha256": "b3a5071e78f9981ead6615c923f9053febd205e0f687b58ff917e55c7605206b",
+      "raw_bytes": 1292581,
+      "raw_sha256": "d1a85168f4cb6a402b25cc41f36b5e05f40ae6e729b244d9abb3ac4885d099ef"
+    },
+    "raw-3": {
+      "name": "native-executor-dispatch-raw-3.gz",
+      "bytes": 148628,
+      "sha256": "d95f8ed1ae69a17323d40eb4ad354d6bc368aefc17f799a80bb0f2947ae490b4",
+      "raw_bytes": 3036175,
+      "raw_sha256": "941c7ce8501c474572ea41433d1aedf0a89742a6833aee420263a6f2039288a5"
+    },
+    "analysis-3": {
+      "name": "native-executor-dispatch-analysis-3.gz",
+      "bytes": 39111,
+      "sha256": "93f2eac45ef6b922f885f6bbc38dfa1c0b8236db3d37bf7575e27f90f964b779",
+      "raw_bytes": 1292335,
+      "raw_sha256": "9c1a0293aaeb312bf946ca88ee70fa52328b037bfa683cff0122ab6e0a5cc17b"
+    },
+    "verified-analysis": {
+      "name": "native-executor-dispatch-verified-analysis.gz",
+      "bytes": 114543,
+      "sha256": "eb7d80ff07505cba6fef8a5f955e1e53572069b061cae5f9db99cd9df85ba8e5",
+      "raw_bytes": 4154647,
+      "raw_sha256": "3417ca03736d9c3a45c66177a5d5e18a464a6df3b021ff9edd514ae615c176cd"
+    },
+    "summary": {
+      "name": "native-executor-dispatch-summary.gz",
+      "bytes": 2949,
+      "sha256": "a4d09625c8e5b96da6c18bc72d65548c7773a8af43668a0590ac3a209e45bbbe",
+      "raw_bytes": 17033,
+      "raw_sha256": "0651ce65e462b066ed223c3fc8dfd71dd953feea4a966d9b1f81eeedf94fb4d7"
+    },
+    "provenance": {
+      "name": "native-executor-dispatch-provenance.gz",
+      "bytes": 61448,
+      "sha256": "d70c6f63f2607345a1a68147124ba4bdb6285ded1c93ae69ce80f24123be4954",
+      "raw_bytes": 280625,
+      "raw_sha256": "cc3da9ef7092d042f19f42a4d3b0f52c3022cd39094dab0c599e14cca996bea4"
+    }
+  },
+  "exclusions": [
+    "Executable/helper bytes remain at recorded local paths; only hashes, source and logs are exported.",
+    "No VFS, metadata, storage, full engine A/B, native M5 Pro or remaining-cost admission evidence.",
+    "Phase times include diagnostic bookkeeping; fastest seven selects warmed phase, not process wall time.",
+    "CPU model, kernel version and per-sample thermal/load observations were not recorded by this harness."
+  ]
+}
