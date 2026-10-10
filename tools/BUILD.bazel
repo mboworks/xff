@@ -1006,6 +1006,29 @@ py_library(
     ],
 )
 
+py_library(
+    name = "native_scheduler_handoff_lib",
+    srcs = [
+        "native_scheduler_collect.py",
+        "native_scheduler_prepare.py",
+    ],
+    imports = ["."],
+    deps = [
+        ":benchmark_backfill_lib",
+        ":benchmark_compare_lib",
+        ":benchmark_fixture_lib",
+        ":benchmark_layouts_lib",
+        ":process_resources_lib",
+    ],
+)
+
+py_test(
+    name = "native_scheduler_handoff_test",
+    size = "small",
+    srcs = ["native_scheduler_handoff_test.py"],
+    deps = [":native_scheduler_handoff_lib"],
+)
+
 py_binary(
     name = "benchmark_backfill",
     srcs = ["benchmark_backfill.py"],
