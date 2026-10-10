@@ -49,8 +49,9 @@ background workers under `--jobs=N`:
   result handles in the order required by `--sort`. Directory workers start only when at least
   64 sibling directories provide independent work. For a coordinator-read directory with at least
   512 children and eagerly required metadata, 128-entry stat chunks use the same executor. The
-  coordinator also claims stat chunks. At most one drain job per background worker is queued for
-  each batch; worker jobs never wait on nested jobs. Metadata-free, lazy and
+  coordinator also claims stat chunks. Directory reads use a bounded ordered window with
+  command-wide execution and retained-storage limits; stat and content batches use at most one
+  drain job per participating background worker. Worker jobs never wait on nested jobs. Metadata-free, lazy and
   owned/archive-source listings keep their serial per-directory path.
 - The coordinator applies traversal controls and writes the output sink in traversal order.
   Independent content predicates and rg content searches reuse that executor, with the caller also
@@ -77,8 +78,10 @@ background workers under `--jobs=N`:
   workers share compiled patterns and reuse private match scratch, with bounded retained interpreter
   heap frames and independent reentrant leases. Entry content and lazy metadata have one owner and
   need no additional locks.
-- A listing future may retain a completed directory read until the coordinator
-  reaches it. No worker emits a match and no traversal sort collects all matches.
+- A listing result may retain a completed directory read until the coordinator
+  reaches it. Completed speculative results keep their storage charge but release
+  execution slots, so cached siblings do not by themselves prevent deeper reads.
+  No worker emits a match and no traversal sort collects all matches.
 
 Comparison collects both trees sequentially on the same calling coordinator, reusing the
 command's executor across the two walks. It then evaluates eligible large regular-file pairs
@@ -156,20 +159,47 @@ The caller claims independent stat, content and comparison chunks rather than
 waiting idle while `N` additional workers run. Sequential comparison inventories
 remove the second coordinator, but may reduce overlap when each tree has a
 narrow frontier on slow storage; native A/B controls must quantify that tradeoff.
-The executor still uses FIFO batch-drain jobs. A directory drain can occupy a
-worker until its entire batch is exhausted, and completed read-ahead listings are
-not bounded by a command-wide byte budget. Fair scheduling, bounded read-ahead,
-cancellation, and useful-work admission based only on remaining work are still
-required; a thread-count limit alone does not solve those problems. The cold
+The bounded-frontier follow-up separates foreground stat/content/comparison jobs
+from speculative directory reads. When both queues contain work, dispatch
+alternates their classes, retaining FIFO order within each class. This is fairness
+at job boundaries, not preemption: a large foreground drain or a blocking VFS call
+still runs until it returns. Useful-work admission based only on remaining work,
+task-size tuning and native timing/allocation validation remain required; the
+thread-count and storage limits do not establish performance acceptance. The cold
 matcher policy below is inherited for isolation, not endorsed by this change.
 
-The coordinator admits directory read-ahead when at least 64 independent sibling
-reads are available. It submits at most one drain job per worker; each job claims
-successive directories from that batch and publishes indexed listing results.
-Workers perform leaf reads and never recurse or wait on jobs in their own
-executor. Eager stat work similarly uses drain jobs over 128-entry chunks after
-at least 512 entries are available. This bounds executor queue operations by
-worker count while preserving coordinator visitation order.
+The coordinator currently admits directory read-ahead when at least 64 independent
+sibling reads are available. This inherited count heuristic is provisional, not a
+measurement of remaining cost. Each directory job performs one leaf VFS read plus
+required metadata, publishes its result and yields before another directory.
+Workers never recurse or wait on jobs in their own executor. Eager stat work still
+uses drain jobs over 128-entry chunks after at least 512 entries are available.
+
+Each admitted directory frontier keeps an ordered window of at most twice its
+participating background-worker count. All nested and mounted-filesystem walks
+also share a command-wide limit of twice the started background-worker count in
+unfinished reads. A consumed parent request is not immediately refilled before
+descent, allowing the deeper frontier to use available slots. Completion releases
+an unfinished-read slot, while cached siblings keep their separate byte charges.
+
+The experimental shared retained-storage allowance is 8 MiB. Every queued or
+completed request first charges 512 bytes of bookkeeping plus its copied path;
+completed speculative listings additionally charge vector/string capacities and
+status storage. These conservative charges bound represented storage, not actual
+allocator use or RSS; the 512-byte estimate and 8 MiB policy require native
+allocation and performance controls. An unrepresentable or oversized speculative
+listing is discarded and read on demand when visited. If the caller already needs
+that result while its read is running, the required listing is transferred without
+an additional lookahead charge, avoiding a second read. Required and ancestor
+listings, in-flight VFS buffers and allocator overhead are outside this speculative
+storage accounting; total traversal memory is not bounded by 8 MiB.
+
+Reservations are released by their owners on consumption or destruction.
+Per-request cancellation handles pruning, and a frontier-wide flag handles early
+termination. Workers check both before and after each VFS read. Queued canceled
+requests skip filesystem access; already running VFS calls cannot be interrupted.
+The walker drains all its submitted jobs before its borrowed filesystem state
+disappears, leaving the executor reusable by the next phase.
 
 Content matching retains private evaluator and regex state for each logical
 worker. Decision-only matching collects up to 8,192 entries before flushing;
@@ -214,14 +244,16 @@ design-config.md):
 ## Concurrency correctness
 
 - **`-prune`** - the coordinator evaluates the entry and suppresses descent when
-  the visitor returns prune. Depending on the ordering mode, batched read-ahead
-  may read the pruned directory's listing before or after that decision, but no
-  entry from the pruned subtree is visited or acted upon.
+  the visitor returns prune. Known prune decisions are excluded from admission;
+  destroying an unused speculative request cancels it. A read already started
+  before that decision can still finish, but no entry from the pruned subtree is
+  visited or acted upon.
 - **`-quit`** - the coordinator stops visiting entries immediately. Workers only
-  perform leaf directory reads and do not inspect the walk's stop flag; already
-  submitted drain jobs finish before their walker is destroyed, even when the
-  executor will be reused by a later phase. Their results are ignored,
-  and no new expression actions are run. Exit status follows the normal model.
+  perform leaf directory reads and poll cancellation flags around each VFS call.
+  Queued unused reads skip the filesystem; an in-flight call finishes before its
+  walker is destroyed, even when the executor will be reused by a later phase.
+  Their results are ignored, and no new expression actions are run. Exit status
+  follows the normal model.
 - **`-depth` (post-order)** - children before parent. The ordering layer holds a
   directory's own visit until its subtree has been emitted; under `none` this
   still means a parent waits on its descendants' completion.

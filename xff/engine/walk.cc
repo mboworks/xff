@@ -19,8 +19,11 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <deque>
+#include <limits>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <set>
 #include <string>
 #include <string_view>
@@ -31,6 +34,7 @@
 #include "absl/base/thread_annotations.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/cord.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "mbo/status/status_macros.h"
@@ -67,11 +71,90 @@ struct Stated {
 // The result of reading one directory: its children, or a ReadDir error.
 using Listing = absl::StatusOr<std::vector<Stated>>;
 
+struct PrefetchedListing {
+  std::optional<Listing> listing;
+  ReadAheadReservation reservation;
+};
+
+struct ReadDemand {
+  // Only the coordinator changes these flags; workers poll around the VFS call.
+  // They do not publish data: result handoff uses RunPromise completion instead.
+  std::atomic<bool> required = false;
+  std::atomic<bool> canceled = false;
+};
+
+class PrefetchedRead final {
+ public:
+  PrefetchedRead() = default;
+
+  PrefetchedRead(RunTask<PrefetchedListing> task, std::shared_ptr<ReadDemand> demand)
+      : task_(std::move(task)), demand_(std::move(demand)) {}
+
+  ~PrefetchedRead() {
+    if (demand_) {
+      demand_->canceled.store(true, std::memory_order_relaxed);
+    }
+  }
+
+  PrefetchedRead(const PrefetchedRead&) = delete;
+  PrefetchedRead& operator=(const PrefetchedRead&) = delete;
+  PrefetchedRead(PrefetchedRead&&) = default;
+  PrefetchedRead& operator=(PrefetchedRead&&) = delete;
+
+  bool Valid() const { return task_.Valid(); }
+
+  PrefetchedListing Get() {
+    // Only the coordinator can require a listing, immediately before waiting for
+    // it. That one result belongs to ordinary traversal working memory, not cache.
+    demand_->required.store(true, std::memory_order_relaxed);
+    return task_.Get();
+  }
+
+ private:
+  RunTask<PrefetchedListing> task_;
+  std::shared_ptr<ReadDemand> demand_;
+};
+
+std::size_t AddBytes(std::size_t lhs, std::size_t rhs) {
+  const auto limit = std::numeric_limits<std::size_t>::max();
+  return rhs > limit - lhs ? limit : lhs + rhs;
+}
+
+std::size_t StatusBytes(absl::Status status) {
+  std::size_t bytes = status.message().size();
+  status.ForEachPayload([&](const std::string_view key, const absl::Cord& payload) {
+    bytes = AddBytes(bytes, AddBytes(key.size(), payload.EstimatedMemoryUsage()));
+  });
+  return bytes;
+}
+
+// Conservative storage charges, not RSS: inline string capacity and shared status
+// payloads can be counted twice. Allocator overhead and the VFS's working memory
+// are not represented. Saturation rejects unrepresentable charges safely.
+std::size_t ListingBytes(const Listing& listing) {
+  std::size_t bytes = sizeof(Listing);
+  if (!listing.ok()) {
+    return AddBytes(bytes, StatusBytes(listing.status()));
+  }
+  bytes = AddBytes(bytes, listing->capacity() * sizeof(Stated));
+  for (const Stated& child : *listing) {
+    bytes = AddBytes(bytes, AddBytes(child.path.capacity(), 1));
+    bytes = AddBytes(bytes, AddBytes(child.name.capacity(), 1));
+    bytes = AddBytes(bytes, StatusBytes(child.status));
+  }
+  return bytes;
+}
+
 // Creating and synchronizing the directory-read pool has a fixed cost. A small sibling fan-out
 // cannot repay it on native memory-backed fixtures; wait for enough independent directory reads
 // to keep the workers useful. This is a work-unit threshold rather than a file-count threshold,
 // so layout shape remains part of the decision and narrow/deep walks stay serial.
 inline constexpr std::size_t kMinParallelDirectoryReads = 64;
+
+// A conservative bookkeeping charge for each queued or completed request, excluding
+// its path and listing. This is charged before dispatch, even if its result is discarded.
+// The allowance is a charged-storage limit, not an allocator/RSS measurement.
+inline constexpr std::size_t kReadAheadRequestBytes = 512;
 
 class Walker {
  public:
@@ -307,6 +390,149 @@ class Walker {
     return children;
   }
 
+  // A bounded ordered window. Requests share command-wide reservations, including
+  // across nested walkers. Each executor job performs one leaf directory read, so
+  // it yields before another directory and can be skipped when this window closes.
+  class ReadFrontier final {
+   public:
+    ReadFrontier(
+        Walker& walker,
+        const std::vector<Stated>& children,
+        int depth,
+        mbo::types::OptionalRef<const std::vector<bool>> pruned = std::nullopt)
+        : walker_(walker), children_(children), depth_(depth), pruned_(pruned) {
+      if (walker_.options_.workers <= 1) {
+        return;
+      }
+      std::size_t directories = 0;
+      std::size_t minimum_bytes = std::numeric_limits<std::size_t>::max();
+      // The index aligns the optional prune decisions with their child records.
+      for (std::size_t index = 0; index < children_.size(); ++index) {
+        if (Eligible(index)) {
+          ++directories;
+          minimum_bytes = std::min(minimum_bytes, RequestBytes(index));
+        }
+      }
+      if (directories < kMinParallelDirectoryReads) {
+        return;
+      }
+      const auto capacity = walker_.executor_.ReadAheadLimit() / minimum_bytes;
+      if (capacity == 0) {
+        return;
+      }
+      walker_.executor_.Start(std::min({directories, capacity, walker_.options_.workers - 1}));
+      window_ = 2 * std::min(walker_.options_.workers - 1, walker_.executor_.worker_count());
+      canceled_ = std::make_shared<std::atomic<bool>>(false);
+      requests_.emplace();
+      Fill();
+    }
+
+    ~ReadFrontier() {
+      if (canceled_) {
+        canceled_->store(true, std::memory_order_relaxed);
+      }
+    }
+
+    ReadFrontier(const ReadFrontier&) = delete;
+    ReadFrontier& operator=(const ReadFrontier&) = delete;
+    ReadFrontier(ReadFrontier&&) = delete;
+    ReadFrontier& operator=(ReadFrontier&&) = delete;
+
+    PrefetchedRead Take(std::size_t index) {
+      if (!requests_) {
+        return {};
+      }
+      auto& requests = requests_.value();
+      while (!requests.empty() && requests.front().index < index) {
+        requests.pop_front();
+      }
+      next_ = std::max(next_, index);
+      Fill();
+      if (requests.empty() || requests.front().index != index) {
+        return {};
+      }
+      auto task = std::move(requests.front().task);
+      requests.pop_front();
+      // Do not refill before descent. The consumed slot becomes available to the
+      // deeper frontier; older siblings cannot repeatedly take it ahead of that work.
+      return task;
+    }
+
+   private:
+    struct Request {
+      std::size_t index;
+      PrefetchedRead task;
+    };
+
+    bool Eligible(std::size_t index) const {
+      return (!pruned_ || !pruned_->at(index)) && walker_.Descendable(children_.at(index), depth_);
+    }
+
+    std::size_t RequestBytes(std::size_t index) const {
+      return AddBytes(kReadAheadRequestBytes, AddBytes(children_.at(index).path.size(), 1));
+    }
+
+    void Fill() {
+      if (!requests_) {
+        return;
+      }
+      auto& requests = requests_.value();
+      std::erase_if(walker_.drain_tasks_, [](const RunTask<void>& task) { return task.Ready(); });
+      while (requests.size() < window_ && next_ < children_.size()) {
+        if (!Eligible(next_)) {
+          ++next_;
+          continue;
+        }
+        const auto request_bytes = RequestBytes(next_);
+        auto reservation = walker_.executor_.ReserveReadAhead(request_bytes);
+        if (!reservation) {
+          return;
+        }
+        RunPromise<PrefetchedListing> promise;
+        auto task = promise.Task();
+        const auto demand = std::make_shared<ReadDemand>();
+        walker_.drain_tasks_.push_back(walker_.executor_.Submit(
+            [&walker = walker_, canceled = canceled_, demand, request_bytes, path = children_.at(next_).path,
+             promise = std::move(promise), reservation = std::move(*reservation)] mutable {
+              std::optional<Listing> listing;
+              if (!canceled->load(std::memory_order_relaxed) && !demand->canceled.load(std::memory_order_relaxed)) {
+                auto read = walker.ReadDir(path);
+                if (!canceled->load(std::memory_order_relaxed) && !demand->canceled.load(std::memory_order_relaxed)
+                    && (demand->required.load(std::memory_order_relaxed)
+                        || reservation.Retain(AddBytes(request_bytes, ListingBytes(read))))) {
+                  listing.emplace(std::move(read));
+                }
+              }
+              reservation.Finish();
+              // Release the producer handle before the executor signals this job's
+              // completion. Otherwise an unobserved result can keep its credit alive
+              // briefly after Walk has joined the job and inspected the shared budget.
+              auto completed = std::move(promise);
+              completed.SetValue({
+                  .listing = std::move(listing),
+                  .reservation = std::move(reservation),
+              });
+            },
+            RunTaskClass::kReadAhead));
+        requests.push_back({
+            .index = next_,
+            .task = PrefetchedRead(std::move(task), demand),
+        });
+        ++next_;
+      }
+    }
+
+    Walker& walker_;
+    const std::vector<Stated>& children_;
+    const int depth_;
+    const mbo::types::OptionalRef<const std::vector<bool>> pruned_;
+    std::size_t next_ = 0;
+    std::size_t window_ = 0;
+    std::shared_ptr<std::atomic<bool>> canceled_;
+    // No deque allocation in inline walks or below the admission threshold.
+    std::optional<std::deque<Request>> requests_;
+  };
+
   bool Descendable(const Stated& stated, int depth) const {
     const bool is_dir = stated.ok && stated.metadata.type == vfs::FileType::kDirectory;
     const bool within_depth = options_.max_depth < 0 || depth < options_.max_depth;
@@ -368,8 +594,8 @@ class Walker {
   // Visits `stated` and, if it is a descendable directory, descends into it.
   // Pre-order by default; post-order (`-depth`) descends first, then visits, and
   // `-prune` has no effect (matching find). `prefetched` is the directory's
-  // already-submitted listing read (from the parent's batch), or empty to read now.
-  void VisitSubtree(const Stated& stated, int depth, mbo::types::OptionalRef<RunTask<Listing>> prefetched) {
+  // already-submitted listing read (from the parent's window), or empty to read now.
+  void VisitSubtree(const Stated& stated, int depth, mbo::types::OptionalRef<PrefetchedRead> prefetched) {
     if (stopped_) {
       return;
     }
@@ -411,13 +637,23 @@ class Walker {
 
   // Reads `dir` (from its prefetched result, or now) and recurses its children,
   // guarding against filesystem loops (only possible when following symlinks).
-  void Descend(const Stated& dir, int depth, mbo::types::OptionalRef<RunTask<Listing>> prefetched) {
+  void Descend(const Stated& dir, int depth, mbo::types::OptionalRef<PrefetchedRead> prefetched) {
     const std::pair<std::uint64_t, std::uint64_t> id{dir.metadata.dev, dir.metadata.ino};
     if (!ancestors_.insert(id).second) {
       on_error_(dir.path, absl::FailedPreconditionError("filesystem loop detected"));
       return;
     }
-    Listing listing = prefetched.has_value() ? prefetched->Get() : ReadNow(dir.path);
+    // Required listings and in-flight VFS reads are not speculative storage. An
+    // oversized speculative result was discarded and is read on demand here.
+    Listing listing = [&] -> Listing {
+      if (prefetched) {
+        auto result = prefetched->Get();
+        if (result.listing) {
+          return std::move(*result.listing);
+        }
+      }
+      return ReadNow(dir.path);
+    }();
     if (!listing.ok()) {
       // A directory that vanished before we could read it is the same readdir race.
       if (!(options_.ignore_readdir_race && absl::IsNotFound(listing.status()))) {
@@ -434,22 +670,23 @@ class Walker {
   }
 
   // Recurses a directory's (already sorted) children. The sort modes differ only
-  // in how a subdirectory's entry is grouped relative to its subtree. Reads for
-  // the descendable subdirectories are submitted as a batch up front so the pool
-  // overlaps their IO while the coordinator visits in order.
+  // in how a subdirectory's entry is grouped relative to its subtree. Read-ahead
+  // for a bounded window of descendable subdirectories overlaps their IO while the
+  // coordinator visits in order. Nested windows share execution and byte limits.
   // NOLINTNEXTLINE(readability-function-cognitive-complexity): dispatching the ordering modes is cohesive.
   void HandleChildren(const std::vector<Stated>& children, int depth) {
     // Inline DFS at each entry's position. kTree emits a subtree in its sorted
     // place; post-order (`-depth`) always uses this shape (descend then visit).
     if (options_.sort == SortOrder::kTree || options_.sort == SortOrder::kGlobal || options_.post_order) {
-      std::vector<RunTask<Listing>> reads = SubmitSubdirReads(children, depth);
+      ReadFrontier reads(*this, children, depth);
       for (std::size_t i = 0; i < children.size(); ++i) {
         if (stopped_) {
           return;
         }
+        auto read = reads.Take(i);
         VisitSubtree(
             children[i], depth,
-            reads[i].Valid() ? mbo::types::OptionalRef{reads[i]} : mbo::types::OptionalRef<RunTask<Listing>>{});
+            read.Valid() ? mbo::types::OptionalRef{read} : mbo::types::OptionalRef<PrefetchedRead>{});
       }
       return;
     }
@@ -465,15 +702,16 @@ class Walker {
           VisitOne(children[i], depth, options_.mount_before_visit && dived[i]);
         }
       }
-      std::vector<RunTask<Listing>> reads = SubmitSubdirReads(children, depth);
+      ReadFrontier reads(*this, children, depth);
       for (std::size_t i = 0; i < children.size(); ++i) {
         if (stopped_) {
           return;
         }
         if (IsDir(children[i])) {
+          auto read = reads.Take(i);
           VisitSubtree(
               children[i], depth,
-              reads[i].Valid() ? mbo::types::OptionalRef{reads[i]} : mbo::types::OptionalRef<RunTask<Listing>>{});
+              read.Valid() ? mbo::types::OptionalRef{read} : mbo::types::OptionalRef<PrefetchedRead>{});
         } else if (dived[i]) {
           // A container groups its members like a directory, so under kSubtree it belongs in the
           // subtree block rather than the flat block its own entry was emitted in.
@@ -493,7 +731,7 @@ class Walker {
       dived[i] = WillDive(children[i], depth);
       pruned[i] = VisitOne(children[i], depth, options_.mount_before_visit && dived[i]) == WalkAction::kPrune;
     }
-    std::vector<RunTask<Listing>> reads = SubmitSubdirReads(children, depth, pruned);
+    ReadFrontier reads(*this, children, depth, pruned);
     for (std::size_t i = 0; i < children.size(); ++i) {
       if (stopped_) {
         return;
@@ -502,71 +740,17 @@ class Walker {
         continue;
       }
       if (Descendable(children[i], depth)) {
+        auto read = reads.Take(i);
         Descend(
             children[i], depth,
-            reads[i].Valid() ? mbo::types::OptionalRef{reads[i]}
-                             : mbo::types::OptionalRef<RunTask<Listing>>{});  // entry already visited above
+            read.Valid() ? mbo::types::OptionalRef{read}
+                         : mbo::types::OptionalRef<PrefetchedRead>{});  // entry already visited above
       } else if (dived[i]) {
         // `--archive=all`: a container met mid-walk descends exactly where a directory would, and
         // after its own visit, so a prune on the container still skips its members.
         DescendContainer(children[i], depth);
       }
     }
-  }
-
-  // Makes every descendable subdirectory in `children` available to a bounded set
-  // of drain jobs, returning a vector aligned with `children` (an invalid task
-  // where there is no read). Each drain performs many reads when the batch is
-  // large, so executor synchronization is paid per worker rather than per
-  // directory. The sequential walk reads lazily at descend time instead, so it
-  // never pre-reads siblings it might not reach.
-  std::vector<RunTask<Listing>> SubmitSubdirReads(
-      const std::vector<Stated>& children,
-      int depth,
-      const std::vector<bool>& pruned = {}) {
-    std::vector<RunTask<Listing>> reads(children.size());
-    if (options_.workers <= 1) {
-      return reads;
-    }
-    std::vector<std::size_t> directories;
-    for (std::size_t index = 0; index < children.size(); ++index) {
-      if ((pruned.empty() || !pruned[index]) && Descendable(children[index], depth)) {
-        directories.push_back(index);
-      }
-    }
-    if (directories.size() < kMinParallelDirectoryReads) {
-      return reads;
-    }
-    std::erase_if(drain_tasks_, [](RunTask<void>& drain) { return drain.Ready(); });
-    executor_.Start(std::min(directories.size(), options_.workers - 1));
-
-    struct ReadBatch final {
-      std::vector<std::string> paths;
-      std::vector<RunPromise<Listing>> promises;
-      std::atomic<std::size_t> next = 0;
-    };
-
-    const auto batch = std::make_shared<ReadBatch>();
-    batch->paths.reserve(directories.size());
-    batch->promises.resize(directories.size());
-    for (std::size_t batch_index = 0; batch_index < directories.size(); ++batch_index) {
-      const std::size_t child_index = directories[batch_index];
-      batch->paths.push_back(children[child_index].path);
-      reads[child_index] = batch->promises[batch_index].Task();
-    }
-    const std::size_t drains = std::min({executor_.worker_count(), directories.size(), options_.workers - 1});
-    for (std::size_t worker = 0; worker < drains; ++worker) {
-      drain_tasks_.push_back(executor_.Submit([this, batch] {
-        for (;;) {
-          const std::size_t index = batch->next.fetch_add(1, std::memory_order_relaxed);
-          if (index >= batch->paths.size()) {
-            return;
-          }
-          batch->promises[index].SetValue(ReadDir(batch->paths[index]));
-        }
-      }));
-    }
-    return reads;
   }
 
   const vfs::FileSystem& fs_;

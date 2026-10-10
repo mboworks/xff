@@ -319,6 +319,39 @@ The interrupted `/tmp/xff-perf-shared-executor-v2` run is diagnostic only:
 correctness builds overlapped its measurements, and its measured source predates
 the final scheduling changes. It supplies no acceptance timing evidence.
 
+### Bounded directory-frontier experiment
+
+The command-ownership follow-up is draft [PR #996](https://github.com/mboworks/xff/pull/996).
+A separate candidate based on that branch replaces whole-sibling directory drain
+jobs with an ordered read-ahead window. Its persistent command executor dispatches
+one leaf directory read per speculative task and alternates speculative and
+foreground queues when both contain work. This is nonpreemptive job-boundary
+fairness, not a guarantee against long foreground drains or blocking VFS calls.
+
+Nested and mounted-filesystem walks share at most twice the started background
+worker count in unfinished reads and a provisional 8 MiB charged-storage allowance.
+Pending requests charge bookkeeping/path storage before dispatch; completed
+speculative listings add vector, string and status charges. Finished listings
+release execution slots while keeping byte charges until consumed or destroyed.
+This distinction permits deeper reads while older sibling listings remain cached.
+Required listings, retained ancestor listings, in-flight VFS storage and allocator
+overhead are excluded: the allowance is not a total-memory or RSS bound.
+
+Per-request and frontier cancellation skip unneeded queued reads after pruning or
+termination. Already-running VFS calls finish, and the walker still joins its jobs
+before borrowed state is destroyed. Oversized completed speculative listings are
+discarded and read on demand; a listing already required by the caller belongs to
+ordinary traversal working memory and can be transferred without a duplicate read.
+
+In-memory controls cover shared slot/byte admission, concurrent retention,
+reservation ownership, queue-class fairness, pruning before filesystem access,
+early-stop read counts, and nested progress while parent siblings remain cached.
+The inherited directory/stat/content admission policies are deliberately unchanged
+in this experiment. In particular, accumulated completed content work is still
+not valid evidence of sufficient remaining work. The bookkeeping estimate, retained
+byte policy and task granularity need allocation profiles and repeated native
+measurements. No timing, total-memory improvement or macOS acceptance is claimed.
+
 ### Memory-accounting finding and remaining acceptance work
 
 Direct `/usr/bin/time -v` runs show approximately 5.3-5.4 MiB peak RSS for a small
@@ -330,8 +363,11 @@ arena sizes. This is separate from the worker scheduler experiment.
 
 The complete audit remains open. Final shared-executor timing must be collected
 after every build has finished, using the complete prepared grid. Repeated
-controls must cover content, eager metadata and slow storage. Native allocation
-profiles and the separate 20k/50k/100k single-worker slope investigation still
-need completion. Hosted macOS checks provide portability evidence for PR #991;
+controls must cover content, eager metadata and slow storage. Separate evidence
+in [PR #995](https://github.com/mboworks/xff/pull/995) now retains the exact-source
+Linux baseline, enumeration-only allocation profiles and coarse counters/stacks
+for 20k/50k/100k single-worker workloads. Those baseline diagnostics do not complete
+precise phase-level attribution or allocation controls for the other workloads,
+platforms or new scheduler candidates. Hosted macOS checks provide portability evidence for PR #991;
 they do not replace the specified native M5 Pro A/B and sampling controls for
 the shared-executor experiment.
