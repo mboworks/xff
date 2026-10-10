@@ -231,7 +231,7 @@ WalkAction Continue(const Visit& /*visit*/) {
 }
 
 struct DirectoryReadAdmissionTest : ::testing::Test {
-  void ExpectDirectoryReads(std::size_t directory_count, std::size_t workers, bool background_reads) const {
+  static void ExpectDirectoryReads(std::size_t directory_count, std::size_t workers, bool background_reads) {
     ReadThreadFs filesystem;
     std::vector<vfs::Entry> children;
     std::vector<std::pair<std::string, int>> expected{{"root", 0}};
