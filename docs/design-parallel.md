@@ -170,6 +170,68 @@ design-config.md):
 - `-j N` overrides the worker count in every style; `--sort=...` overrides the
   default ordering in every style.
 
+## Follow-up insight: stage-specific concurrency controls
+
+Status: design insight and open work, not implemented flags or a change to the
+bounded-frontier experiment in PR #997. Track the work under
+[Stage-specific concurrency and execution scheduling](../TODO.md#stage-specific-concurrency-and-execution-scheduling).
+
+One worker number cannot express all useful combinations. A user may want concurrent
+directory discovery while running external commands one at a time, or many independent
+commands while keeping directory I/O deliberately narrow. Directory reads, eager metadata,
+content evaluation, file comparison and external processes have different costs and
+dependencies; scheduling should distinguish these roles rather than conflate their limits.
+
+Directory concurrency is also a filesystem/hardware policy, not simply the detected CPU
+count. High-latency network storage can benefit from tens of concurrent directory operations;
+the motivating user report described roughly 50 busy cores in a datacenter. A laptop or PC
+may reach diminishing returns with only a few readers, with roughly three suggested as a
+starting point for measurement, not a universal limit. Neither example supplies a default
+or a measured XFF acceptance result. Explicit I/O concurrency must not be silently clamped
+to the logical CPU count, and an automatic policy needs native evidence across storage types.
+
+Explore a `--jobs-*` family for separate stage limits, retaining `--jobs` as the convenient
+existing control. Illustrative spellings are `--jobs-walk`, `--jobs-match`, `--jobs-compare`
+and `--jobs-exec`; these are not accepted CLI options. Decide where eager metadata belongs,
+whether `--jobs` becomes a fallback or remains an aggregate ceiling when overrides are
+present, what counts as a participant, and how `all`, defaults, repeated options and INI
+configuration interact. Preserve existing behavior when no new control is requested.
+Do not ship provisional spellings as stable flags: unsettled spellings require the
+repository's `--unstable=NAME` gate and complete registry-driven documentation when implemented.
+
+Serial external execution and synchronous expression evaluation are different contracts:
+
+- A bounded ordered execution queue with one persistent runner can serialize external
+  commands while independent directory discovery continues. More runners or outstanding
+  children can serve explicitly parallel execution. Queue depth, retained bytes, running
+  child processes and runner threads need distinct accounting and backpressure.
+- Strict synchronous `-exec ... ;` evaluation must wait for the child's exit status before
+  evaluating a dependent expression continuation. A serial queue alone does not restore
+  that truth value. Preserve `-a`/`-o` short-circuiting, chained actions and conditional output;
+  never silently substitute the existing parallel mode's success-on-launch semantics.
+- Prune, quit, post-order, stateful reductions, captures and filesystem-changing actions
+  introduce barriers. Apply each required decision before releasing dependent traversal or
+  effects. Safe directory read-ahead need not disable all concurrency, but speculative
+  reads must not become visits or actions in a pruned subtree. Arbitrary child commands
+  cannot be assumed pure or independent of later filesystem observations.
+
+Full multithreading should mean an explicitly bounded pipeline of independent work, not
+unbounded recursive walks or a new thread for each entry. Evaluate one command-owned executor
+with role-aware admission versus coordinated persistent stage pools. In either design, record
+aggregate resource bounds, retain worker-private evaluation state, keep ordered publication and
+borrowed-state lifetimes safe, and prevent blocked I/O from consuming every execution/CPU slot.
+Workers must not submit work to their own bounded pool and then wait for it. Concurrent process
+management must reap its own child identities rather than let a generic reaper consume children
+owned by captures or another runner.
+
+Qualification must cover the useful mixed cases: narrow local discovery with parallel CPU work,
+high-concurrency network discovery, serial commands with concurrent discovery, strict
+exit-status-dependent execution, and explicitly parallel commands. Verify actual thread/child
+counts, ordering, exactly-once effects, cancellation, failure propagation and queue/storage
+limits. Measure cold startup, steady-state reuse, task size, throughput, first output and peak
+memory on native Linux and macOS, including slow/network storage. More threads or hosted CI
+success alone cannot establish a performance improvement or a portable default.
+
 ## Concurrency correctness
 
 - **`-prune`** - the coordinator evaluates the entry and suppresses descent when

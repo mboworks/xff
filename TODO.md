@@ -73,6 +73,43 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
 - [ ] EP-S02: Revisit experimental MBO interning for dynamic names only when a concrete consumer and
       measurements justify a dependency update; prefer existing strong IDs and indexed execution slots.
 
+## Stage-specific concurrency and execution scheduling
+
+New insight from the PR #997 review, recorded without changing that PR's bounded-frontier
+scope or declaring new flags implemented. See
+[the parallel design follow-up](docs/design-parallel.md#follow-up-insight-stage-specific-concurrency-controls).
+
+- [ ] JC01: Design a `--jobs-*` family separating directory I/O, matching/comparison and external
+      execution. Decide eager-metadata ownership, caller-inclusive counts, role versus aggregate
+      ceilings, `--jobs` fallback/override precedence, `all`, defaults and INI/repeated-option behavior.
+      Preserve existing commands without new controls; illustrative spellings are not stable APIs.
+      Use an `--unstable=NAME` gate if implementation begins before spelling is settled, and add
+      registry/help/man/reference documentation and parsing/configuration tests in the same change.
+- [ ] JC02: Separate one-at-a-time queued command execution from strict synchronous expression
+      evaluation. Permit independent directory discovery alongside a single persistent execution
+      runner; retain child-exit-status gating, short-circuiting, chained actions and conditional
+      output when synchronous semantics are requested. Define explicitly parallel execution without
+      silently adopting success-on-launch semantics or changing `-exec ... +` batching.
+- [ ] JC03: Audit traversal/effect dependencies before enabling a fully concurrent pipeline.
+      Preserve prune/quit/depth, captures, reductions, mutations and ordered output; distinguish
+      speculative reads from visits/actions and never assume arbitrary external commands are pure.
+      Define cancellation/draining and failure propagation with exactly-once effect controls.
+- [ ] JC04: Compare role-aware shared execution with coordinated persistent stage pools. Reuse threads,
+      reserve useful CPU/execution capacity despite blocked directory I/O, forbid nested pool waits,
+      and bound queued work, retained results and execution arguments with backpressure. Track threads,
+      participants and outstanding children separately; concurrent runners/captures must reap only
+      their own child identities. Verify ownership and concurrency limits with sanitizer controls.
+- [ ] JC05: Qualify filesystem/hardware-dependent directory concurrency rather than use CPU count
+      or a universal small-reader cap as a proxy. Test few-reader local laptop/PC cases and tens-of-reader
+      network cases, including the user's roughly three-versus-50 concurrency examples as hypotheses,
+      not measured XFF defaults. Allow explicit I/O limits beyond detected cores; evaluate adaptive
+      admission from remaining work, observed latency and queue pressure with bounded probing.
+- [ ] JC06: Measure the mixed-stage configurations on native Linux and macOS with local, slow and
+      network storage. Preserve raw output/provenance and compare startup, reused-worker scheduling,
+      useful task size, throughput, first output, memory and actual thread/child counts. Include serial
+      command/concurrent-discovery, strict dependent expressions and parallel command controls.
+      Do not accept a default or performance claim from hosted correctness checks alone.
+
 ## Pages deployment size
 
 - [x] Redirect byte-identical stable coverage HTML to preserved run archives in all publishers;
