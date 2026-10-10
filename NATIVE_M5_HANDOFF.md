@@ -72,6 +72,10 @@ The exact source controls are:
 Each executable uses its historical `clang_release` configuration. Source trees,
 configuration hashes, executable hashes, launcher identity and driver hashes are
 checked and retained. New Mac builds do not verify historical Linux executables.
+Also save `compiler-info.txt` with the actual compiler and linker paths, versions
+and SHA-256 hashes, Bazel version, Xcode/SDK version and relevant release flags.
+Resolve the compiler selected for each historical build rather than substituting
+the shell's ambient `clang`; retain any differences between the three builds.
 
 Each session uses both complete prepared v2 layouts and all thirteen file counts:
 `10 20 50 100 200 500 1000 2000 5000 10000 20000 50000 100000`, with worker
@@ -162,7 +166,8 @@ native profiles and a concise findings file. Include failed/partial directories
 as separate runs. At minimum retain:
 
 1. `prepare.log`, `collect.log`, `fixture-df.txt`, `host-mounts.txt`,
-   `fixture-diskutil.plist` and its diagnostics, plus the exact handoff commit.
+   `fixture-diskutil.plist` and its diagnostics, `compiler-info.txt`, plus the
+   exact handoff commit.
 2. `run/build-state.json`, `run/helper-build.log` and `run/resource-launcher`.
 3. All three `run/{baseline,parent,candidate}/binaries/COMMIT/` directories,
    including the actual `xff`, `build.json` and `build.log`. Do not send only a
@@ -211,7 +216,8 @@ with no profiling/build overlap and no grid/worker/sample reductions. Then gathe
 native CPU/allocation profiles, independent RSS, boundary/heterogeneous/quit/prune
 controls, affected correctness/sanitizer results, and identified slow-storage A/B
 where available. Keep engine merges and benchmark publication outside this task;
-never weaken correctness checks, alter host security/settings or infer missing evidence. Keep
+never weaken correctness checks, alter host security/settings or infer missing
+evidence. Keep
 all raw samples, outputs, binaries, manifests, profiles, logs and failed runs.
 Return the complete archive(s), SHA-256 hashes and findings.md exactly as requested
 by the handoff. Report unavailable gates honestly and ask before actions requiring
