@@ -26,6 +26,7 @@ import benchmark_layouts
 import benchmark_matrix
 import benchmark_overview
 import benchmark_shards
+import process_resources
 
 DEFAULT_FILE_COUNTS = (10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000)
 
@@ -38,55 +39,17 @@ def digest(path):
 
 
 def measure(spec):
-    """Fresh worker; account for each direct pipeline process, without a shell."""
+    """Fresh worker; fork measured commands after leaving Python's address space."""
     if sys.platform not in {"darwin", "linux"}:
         raise ValueError("resource accounting supports macOS and Linux only")
     if spec.get("cpu_affinity") is not None:
         os.sched_setaffinity(0, spec["cpu_affinity"])
-    children = []
-    chunks = []
-    first = None
-    with tempfile.TemporaryFile() as errors, open(spec["stdin"], "rb") as source:
-        started = time.monotonic()
-        try:
-            for command in spec["pipeline"]:
-                child = subprocess.Popen(command, stdin=source if not children else children[-1].stdout,
-                                         stdout=subprocess.PIPE, stderr=errors, env=spec["environment"], cwd=spec.get("cwd"))
-                if children:
-                    children[-1].stdout.close()
-                children.append(child)
-            stream = children[-1].stdout
-            byte = stream.read(1)
-            if byte:
-                first = time.monotonic() - started
-                chunks.append(byte)
-            while chunk := stream.read(65536):
-                chunks.append(chunk)
-            usages, codes = [], []
-            for child in children:
-                _, status, usage = os.wait4(child.pid, 0)
-                child.returncode = os.waitstatus_to_exitcode(status)
-                codes.append(child.returncode)
-                usages.append(usage)
-            elapsed = time.monotonic() - started
-            stream.close()
-        finally:
-            for child in children:
-                if child.returncode is None:
-                    child.kill()
-                    child.wait()
-                if child.stdout and not child.stdout.closed:
-                    child.stdout.close()
-        errors.seek(0)
-        stderr = errors.read().decode("utf-8", errors="replace")
-    output = b"".join(chunks)
-    rss = [usage.ru_maxrss * (1 if sys.platform == "darwin" else 1024) for usage in usages]
-    return {"elapsed_seconds": elapsed, "first_stdout_seconds": first,
-            "user_cpu_seconds": sum(usage.ru_utime for usage in usages),
-            "system_cpu_seconds": sum(usage.ru_stime for usage in usages),
-            "peak_child_rss_bytes": rss[0] if len(rss) == 1 else None,
-            "sum_child_peak_rss_bytes": sum(rss), "stdout_bytes": len(output),
-            "exit_codes": codes, "stderr": stderr, "output": base64.b64encode(output).decode()}
+    with open(spec["stdin"], "rb") as source:
+        sample = process_resources.measure_pipeline(
+            spec["pipeline"], source=source, cwd=spec.get("cwd"), environment=spec["environment"],
+            launcher=spec.get("resource_launcher"))
+    sample["output"] = base64.b64encode(sample["output"]).decode()
+    return sample
 
 
 def invoke(spec, worker):
@@ -232,7 +195,7 @@ def cpu_allocation(cpus, require_cpu_affinity=False):
 
 def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_tools=False,
             fixture_parent=None, require_memory=False, cpus=1, require_cpu_affinity=False, keep=None, fixtures=None, progress=None,
-            shapes=("broad", "deep"), round_offset=0, prepared_fixtures=None):
+            shapes=("broad", "deep"), round_offset=0, prepared_fixtures=None, resource_launcher=None):
     progress = progress or MeasurementProgress()
     keep = min(7, repetitions) if keep is None else keep
     if not 1 <= keep <= repetitions:
@@ -243,14 +206,16 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
              for name in ("xff", "find", "rg", "fzf")}
     if require_tools and any(tool["status"] != "available" for tool in tools.values()):
         raise ValueError("comparison tools are required: " + json.dumps(tools))
+    accounting = process_resources.launcher_identity(resource_launcher)
     worker = worker or [sys.executable, str(Path(__file__).resolve())]
-    report = {"schema": 1, "tools": tools, "contract": {
+    report = {"schema": 1, "tools": tools, "resource_launcher": accounting, "contract": {
         "files": files, "file_counts": [files], "cpu_counts": [cpus], "depth": depth, "storage": storage, "repetitions": repetitions, "fixture_version": 2, "retained": keep, "estimator": "mean-fastest",
         "platform": platform.platform(), "machine": platform.machine(), "cpu_count": os.cpu_count(), "requested_cpus": cpus, "cpu_affinity": affinity,
         "order": "rotate starting participant by task and round", "warmup_rounds": 1,
         "cache": "just written, then reused; no flush; discarded correctness-checked warmup round",
         "output": "NUL paths, unordered multiset; drained pipe; validation after timing",
         "memory": "single-process peak RSS; pipeline sum of individual peaks is an upper bound, not simultaneous peak",
+        "resource_accounting": {key: value for key, value in accounting.items() if key != "path"},
         "scope": "batch discovery versus separate precomputed-list filtering; no interactive/ranking equivalence",
         "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
         "children": "direct leaf commands only; no shell or unaccounted subprocess trees"}, "tasks": []}
@@ -318,7 +283,9 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
                         phase = 'warm-up' if repetition == 0 else f'sample: {repetition}/{repetitions}'
                         progress(f'Workers: {cpus} Files: {files:,} Run: {completed + 1}/{total}; '
                                  f'{shape}/{name}; {label}; {phase}')
-                        sample = invoke({"pipeline": entry["pipeline"], "stdin": entry["stdin"], "cwd": entry["cwd"], "environment": environment, "cpu_affinity": affinity}, worker)
+                        sample = invoke({"pipeline": entry["pipeline"], "stdin": entry["stdin"], "cwd": entry["cwd"],
+                                         "environment": environment, "cpu_affinity": affinity,
+                                         "resource_launcher": accounting["path"]}, worker)
                         validate_output(sample, expected, entry["pipeline"])
                         completed += 1
                         if repetition:
@@ -327,12 +294,14 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
     for tool in tools.values():
         if tool["status"] == "available" and digest(tool["path"]) != tool["sha256"]:
             raise ValueError("tool binary changed during measurement")
+    if process_resources.launcher_identity(accounting["path"]) != accounting:
+        raise ValueError("native resource launcher changed during measurement")
     return report
 
 
 def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=False,
                    fixture_parent=None, require_memory=False, cpu_counts=(1, 4), require_cpu_affinity=False, keep=None, fixtures=None,
-                   shard_plan=None, shard_index=0, progress=None, layouts=None):
+                   shard_plan=None, shard_index=0, progress=None, layouts=None, resource_launcher=None):
     """Retain independent scales without mixing sample populations or tool identities."""
     if not file_counts or len(set(file_counts)) != len(file_counts) or min(file_counts) < 1 or depth < 1:
         raise ValueError("file counts must be unique and positive; depth must be positive")
@@ -391,7 +360,8 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
                              require_cpu_affinity=require_cpu_affinity, keep=keep, progress=progress, shapes=shapes,
                              round_offset=shard_index * sampling[0] if sampling else 0,
                              fixtures={shape: value for (shape, count), value in fixtures.items() if count == files}
-                             if fixtures is not None else None, prepared_fixtures=prepared_fixtures)
+                             if fixtures is not None else None, prepared_fixtures=prepared_fixtures,
+                             resource_launcher=resource_launcher)
             completed_scales += 1
             progress(f'Workers: {cpus} Files: {files:,} Completed scale: {completed_scales}/{total_scales}', force=True)
             for task in report["tasks"]:
@@ -410,6 +380,8 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
             else:
                 if report["tools"] != combined["tools"]:
                     raise ValueError("tool identity changed between fixture scales")
+                if report.get("resource_launcher") != combined.get("resource_launcher"):
+                    raise ValueError("native resource launcher changed between fixture scales")
                 combined["contract"]["affinity_by_cpu_count"][str(cpus)] = report["contract"].get("cpu_affinity")
                 combined["tasks"].extend(report["tasks"])
     finally:
@@ -433,6 +405,9 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
 def render(report):
     if report["schema"] != 1:
         raise ValueError("unsupported comparison schema")
+    accounting = report.get("resource_launcher")
+    method = report["contract"].get("resource_accounting")
+    process_resources.validate_accounting_contract(accounting, method)
     if report["contract"]["repetitions"] < 1 or not report["tasks"]:
         raise ValueError("empty comparison report")
     rows = []
@@ -464,6 +439,15 @@ def render(report):
             if len(entry["samples"]) != report["contract"]["repetitions"]:
                 raise ValueError("missing tool comparison samples")
             for sample in entry["samples"]:
+                if accounting is not None:
+                    process_resources.validate_usage(
+                        {"rss_bytes": sample.get("child_peak_rss_bytes"), "exit_codes": sample["exit_codes"],
+                         "user_cpu_seconds": sample["user_cpu_seconds"],
+                         "system_cpu_seconds": sample["system_cpu_seconds"]}, len(entry["pipeline"]))
+                    rss = sample["child_peak_rss_bytes"]
+                    expected_peak = rss[0] if len(rss) == 1 else None
+                    if sample["peak_child_rss_bytes"] != expected_peak or sample["sum_child_peak_rss_bytes"] != sum(rss):
+                        raise ValueError("native process peaks do not match aggregate memory metrics")
                 if sample["stderr"] or any(code not in (0, 1) for code in sample["exit_codes"]):
                     raise ValueError("failed comparison sample")
                 if any(value is not None and (not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0)
@@ -497,7 +481,13 @@ def render(report):
             rows.append(skipped)
             overview.append(skipped.replace('colspan="6"', 'colspan="7"'))
     layout_text = ('<p><strong>Layouts:</strong> ' + html.escape(layout_labels) + '</p>' if layout_labels else '')
+    accounting_note = (
+        'Native resource accounting: ' + accounting['memory_method'] + '. ' + accounting['wall_method'] +
+        '. Launcher SHA-256: ' + accounting['sha256'] + '.' if accounting is not None else
+        'Legacy Python-launcher RSS can include its pre-exec footprint, confirmed by native Linux controls. '
+        'Do not interpret the small-command floor as tool allocation or mix accounting methods.')
     return (benchmark_overview.render_html(report) + layout_text +
+            '<p><strong>Resource accounting:</strong> ' + html.escape(accounting_note) + '</p>' +
             '<h2>Tool comparisons</h2><p>Correctness-checked batch tasks; no ranking or interactive comparison. '
             'Overview: selected averages in ms and MiB (legacy reports use medians); raw-sample details: seconds and bytes. Pipeline memory is a sum of process high-water marks, '
             'not simultaneous peak memory. No cross-scope ratios.</p><details><summary>Tools and contract</summary><pre>' +
@@ -533,6 +523,8 @@ def main():
     parser.add_argument('--shard-plan', type=Path, help='Use a shared fixture or sample shard plan')
     parser.add_argument('--shard-index', type=int, help='Zero-based shard index; requires --shard-plan')
     parser.add_argument('--worker', type=Path)
+    parser.add_argument('--resource-launcher', type=Path,
+                        help='Explicit prebuilt native accounting binary for direct script use')
     parser.add_argument('--binary', type=Path)
     parser.add_argument('--report', type=Path, help='Existing history report to extend')
     parser.add_argument('--files', type=int, action='append', help='Repeat for each scale; default: 1-2-5 progression from 10 through 10000')
@@ -593,7 +585,7 @@ def main():
     record = json.loads(args.report.read_text()) if args.report.exists() else {"head": args.head}
     record['tool_comparisons'] = collect_scales(
         args.binary, file_counts, args.depth, args.repetitions, require_tools=args.require_tools,
-        fixture_parent=args.fixture_parent, require_memory=args.require_memory,
+        fixture_parent=args.fixture_parent, require_memory=args.require_memory, resource_launcher=args.resource_launcher,
         cpu_counts=cpu_counts, require_cpu_affinity=args.require_cpu_affinity, keep=args.keep, fixtures=fixtures,
         shard_plan=shard_plan, shard_index=args.shard_index or 0)
     report = record["tool_comparisons"]

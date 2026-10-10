@@ -40,8 +40,13 @@ Run all tooling suites with `bazel test //tools:python_tests`; they also run und
 The benchmark integration is `//xff/engine:read_benchmark_test`. Run the measurement commands with
 `bazel run //tools:measure_resources -- -- COMMAND...` or
 `bazel run //tools:benchmark_resources -- XFF --output=REPORT.json`.
-The benchmark driver declares its measurement executable and runs each measurement in a fresh
-process, preserving per-invocation peak-memory accounting. Direct script invocation remains available.
+The benchmark driver declares its measurement executable and a small native pipeline launcher.
+Each measurement uses a fresh process, and the native launcher accounts for individual commands
+after leaving Python's address space. RSS remains a kernel high-water mark with the native
+pre-exec footprint included; pipeline peak sums are not simultaneous peaks. Accounting methods
+are recorded separately so they cannot share incompatible timing baselines. Direct script
+invocation remains available with a prebuilt `--resource-launcher`; see
+[native process accounting](docs/benchmark-comparisons.md#native-process-accounting).
 
 Pre-commit owns changed-file formatting and policy checks, plus fast, narrowly triggered checker
 self-tests. Its Python hooks use the managed Python 3.13 environment. Process-measurement and fuzz

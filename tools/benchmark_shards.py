@@ -11,6 +11,7 @@ from pathlib import Path
 
 import benchmark_matrix
 import benchmark_records
+import process_resources
 
 
 def fixture_key(task):
@@ -158,6 +159,8 @@ def merge_reports(records, baseline_root=None, baseline_revisions=None, *, allow
     task_names = set(plan['task_names'])
     provenance = []
     for record, report in zip(records, reports, strict=True):
+        process_resources.validate_accounting_contract(report.get('resource_launcher'),
+                                                       report['contract'].get('resource_accounting'))
         if 'baseline' in report:
             raise ValueError('attach historical baselines after merging shards')
         current = copy.deepcopy(report['contract'])
@@ -208,6 +211,8 @@ def merge_reports(records, baseline_root=None, baseline_revisions=None, *, allow
                 raise ValueError('incomplete task set')
         provenance.append({'index': index, 'contract': report['contract'], 'tools': report['tools'],
                            'host_id': report.get('host_id')})
+        if 'resource_launcher' in report:
+            provenance[-1]['resource_launcher'] = dict(report['resource_launcher'])
     if (not allow_sample_subset and indices != set(range(len(plan['shards'])))):
         raise ValueError('missing shard index')
     combined['contract'] = dict(contract, affinity_by_cpu_count=affinity)

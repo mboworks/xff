@@ -75,6 +75,8 @@ def build_catalog(root):
                       cpu_count=report['contract'].get('cpu_count'),
                       affinity=report['contract'].get('affinity_by_cpu_count'),
                       storage=report['contract'].get('storage'))
+        if 'resource_accounting' in report['contract']:
+            method['resource_accounting'] = report['contract']['resource_accounting']
         method_id = identity(method)
         dataset['methods'][method_id] = method
         dataset['observations'].append(dict(commit=commit, date=records.reference_time(record),

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Complete-revision campaigns, atomic promotion and preserved historical provenance."""
 
+import copy
 import json
 from pathlib import Path
 import tempfile
@@ -95,6 +96,35 @@ def write_artifacts(root, selected=None):
 
 
 class BenchmarkCampaignTest(unittest.TestCase):
+    def test_native_measurements_freeze_launcher_identity_and_validate_individual_process_peaks(self):
+        selected = plan()
+        job = selected['jobs'][0]
+        batch, record = job_data(selected, job)
+        resources = campaign.backfill.process_resources
+        identity = dict(path='/launcher', sha256='a' * 64,
+                        memory_method=resources.MEMORY_METHOD, wall_method=resources.WALL_METHOD)
+        batch['contract']['environment']['resource_launcher'] = identity
+        batch['identity'] = campaign.identity(batch['contract'])
+        record['batch'] = batch['identity']
+        report = record['tool_comparisons']
+        report['contract']['batch'] = batch['identity']
+        report['resource_launcher'] = dict(identity)
+        report['contract']['resource_accounting'] = {key: value for key, value in identity.items() if key != 'path'}
+        for task in report['tasks']:
+            for entry in task['participants'].values():
+                for sample in entry['samples']:
+                    sample.update(child_peak_rss_bytes=[100], peak_child_rss_bytes=100, sum_child_peak_rss_bytes=100)
+        campaign.validate_report(record, batch, job, selected)
+        for change in (lambda value: value.pop('resource_launcher'),
+                       lambda value: value['resource_launcher'].update(sha256='b' * 64),
+                       lambda value: value['contract']['resource_accounting'].update(wall_method='old boundary'),
+                       lambda value: value['tasks'][0]['participants']['xff']['samples'][0].update(
+                           sum_child_peak_rss_bytes=200)):
+            changed = copy.deepcopy(record)
+            change(changed['tool_comparisons'])
+            with self.subTest(change=change), self.assertRaisesRegex(ValueError, 'resource launcher|resource accounting|native process peaks'):
+                campaign.validate_report(changed, batch, job, selected)
+
     def test_planner_freezes_each_complete_revision_once_per_platform(self):
         revisions = [plan()['jobs'][0]['revision'], dict(plan()['jobs'][0]['revision'], sha='e' * 40)]
         with mock.patch.object(campaign.backfill, 'revisions', return_value=revisions), \
