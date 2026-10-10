@@ -430,7 +430,7 @@ from benchmark_landscape import publish
 from benchmark_landscape_test import report, preview_report
 from benchmark_provenance import verify_retention
 root = Path(sys.argv[3])
-(root / 'index.html').write_text('<h1>History</h1><table><tr><td>Original</td></tr></table>')
+(root / 'index.html').write_text('<h1>Benchmark history</h1><table><tr><td>Original</td></tr></table>')
 (root / 'version-links.json').write_text(json.dumps({'a' * 40: [dict(label='PR #12', href='https://github.com/owner/project/pull/12')], 'b' * 40: [dict(label='Release v1.0.0', href='https://github.com/owner/project/releases/tag/v1.0.0')]}))
 for run, platform, commit in [(1, 'linux', 'a'), (2, 'linux', 'b'), (3, 'macos', 'a')]:
     folder = root / 'runs' / str(run) / '1' / platform
@@ -501,6 +501,37 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
       await route.continue();
     });
     await page.goto(`http://127.0.0.1:${server.address().port}/`);
+    const foldControl = page.locator("h1 [data-history-chart-toggle]");
+    assert.equal(await foldControl.count(), 1);
+    assert.equal(await foldControl.getAttribute("aria-expanded"), "true");
+    assert.equal(await foldControl.textContent(), "Hide chart");
+    assert.equal(
+      await page
+        .getByText("Comparison landscape history", { exact: true })
+        .count(),
+      0,
+    );
+    assert.equal(
+      await page
+        .getByText("3D comparison chart (show/hide)", { exact: true })
+        .count(),
+      0,
+    );
+    const titleBox = await page.locator("h1").boundingBox();
+    const foldBox = await foldControl.boundingBox();
+    assert.ok(foldBox.x > titleBox.x + titleBox.width / 2);
+    await foldControl.focus();
+    await page.keyboard.press("Enter");
+    assert.equal(await foldControl.getAttribute("aria-expanded"), "false");
+    assert.equal(await foldControl.textContent(), "Show chart");
+    assert.equal(await page.locator("[data-chart]").isVisible(), false);
+    assert.equal(
+      await page.getByText("Original", { exact: true }).isVisible(),
+      true,
+    );
+    await page.keyboard.press("Space");
+    assert.equal(await foldControl.getAttribute("aria-expanded"), "true");
+    assert.equal(await page.locator("[data-chart]").isVisible(), true);
     assert.equal(
       await page
         .locator("[data-chart]")

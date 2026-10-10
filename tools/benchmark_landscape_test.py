@@ -407,6 +407,32 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                 'Local / zen5 / x86_64 / broad/v2 + deep/v2',
             })
 
+    def test_history_has_no_duplicate_chart_heading(self):
+        for catalog in ([], [dict(label='Measured dataset')]):
+            with self.subTest(catalog=catalog):
+                text = landscape.history_panel(catalog)
+                self.assertIn('<details id="benchmark-history-chart" open>', text)
+                self.assertIn('<summary hidden>3D comparison chart</summary>', text)
+                self.assertNotIn('3D comparison chart (show/hide)', text)
+                self.assertNotIn('Comparison landscape history', text)
+
+    def test_history_fold_control_is_in_page_title_and_publication_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            page = root / 'index.html'
+            page.write_text('<h1>Benchmark history</h1><table>Retained history</table>')
+            landscape.publish_history(root, [])
+            first = page.read_text()
+            title = first.split('<h1>', 1)[1].split('</h1>', 1)[0]
+            self.assertIn('Benchmark history', title)
+            self.assertIn('data-history-chart-toggle', title)
+            self.assertIn('aria-controls="benchmark-history-chart"', title)
+            self.assertIn('aria-expanded="true"', title)
+            self.assertEqual(first.count('data-history-chart-toggle'), 1)
+            self.assertTrue(first.endswith('<table>Retained history</table>'))
+            landscape.publish_history(root, [])
+            self.assertEqual(page.read_text(), first)
+
     def test_history_catalog_escapes_script_content_and_handles_empty_data(self):
         text = landscape.history_panel([dict(label='</script><script>alert(1)</script>')])
         self.assertNotIn('</script><script>alert', text)

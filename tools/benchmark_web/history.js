@@ -4,6 +4,21 @@ import { chartSidebar, panelStyle, reserveChart, viewOptions } from "./view.js";
 import { renderOverview } from "./overview.js";
 
 window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
+  const chartPanel = root.querySelector("#benchmark-history-chart");
+  const foldControl = root.ownerDocument.querySelector(
+    "[data-history-chart-toggle]",
+  );
+  function syncFoldControl() {
+    if (!foldControl || !chartPanel) return;
+    foldControl.setAttribute("aria-expanded", String(chartPanel.open));
+    foldControl.textContent = chartPanel.open ? "Hide chart" : "Show chart";
+  }
+  foldControl?.addEventListener("click", () => {
+    chartPanel.open = !chartPanel.open;
+    syncFoldControl();
+  });
+  chartPanel?.addEventListener("toggle", syncFoldControl);
+  syncFoldControl();
   const platform = root.querySelector('[data-control="platform"]');
   const source = root.querySelector('[data-control="source"]');
   const version = root.querySelector('[data-control="version"]');
