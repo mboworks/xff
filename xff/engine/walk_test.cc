@@ -16,6 +16,7 @@
 #include "xff/engine/walk.h"
 
 #include <array>
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
@@ -33,8 +34,10 @@
 #include "absl/functional/function_ref.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/cord.h"
 #include "absl/strings/str_cat.h"
 #include "absl/synchronization/notification.h"
+#include "absl/time/time.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
@@ -46,7 +49,6 @@
 namespace xff::engine {
 namespace {
 
-using ::testing::IsTrue;
 // gtest struct-fixture idioms suppressed file-wide: SetUp/TearDown are public overrides of the
 // base's protected hooks; fixture state carries the private-style `_` suffix; and the data-heavy
 // TEST_F bodies plus trivial local names (a one-line path lambda) trip cognitive-complexity and
@@ -55,9 +57,14 @@ using ::testing::IsTrue;
 
 namespace fs = ::std::filesystem;
 using ::mbo::testing::IsOk;
+using ::mbo::testing::StatusIs;
 using ::testing::ElementsAre;
 using ::testing::Eq;
+using ::testing::Gt;
+using ::testing::HasSubstr;
 using ::testing::IsEmpty;
+using ::testing::IsTrue;
+using ::testing::Le;
 using ::testing::Lt;
 using ::testing::Not;
 using ::testing::Pair;
@@ -483,6 +490,249 @@ TEST_F(WalkFakeFsTest, StopWaitsForUnusedPrefetchBeforeReturningToSharedExecutor
   EXPECT_THAT(walk.get(), IsOk());
   EXPECT_THAT(executor.worker_count(), Eq(2));  // The walk's three participants include its caller.
   EXPECT_THAT(executor.Submit([] { return 42; }).Get(), Eq(42));
+}
+
+class CountingReadFs final : public FakeFs {
+ public:
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view dir) const override {
+    if (dir != "/r") {
+      reads.fetch_add(1, std::memory_order_relaxed);
+    }
+    if (dir == "/r/d0") {
+      pruned_reads.fetch_add(1, std::memory_order_relaxed);
+    }
+    if (dir.starts_with("/r/d0/")) {
+      nested_reads.fetch_add(1, std::memory_order_relaxed);
+    }
+    return FakeFs::ReadDir(dir);
+  }
+
+  mutable std::atomic<std::size_t> reads = 0;
+  mutable std::atomic<std::size_t> pruned_reads = 0;
+  mutable std::atomic<std::size_t> nested_reads = 0;
+};
+
+TEST_F(WalkFakeFsTest, PruningCancelsAReadThatHasNotReachedTheFilesystem) {
+  CountingReadFs fs;
+  std::vector<vfs::Entry> siblings;
+  for (std::size_t index = 0; index < 65; ++index) {
+    const std::string name = absl::StrCat("d", index);
+    const std::string path = absl::StrCat("/r/", name);
+    siblings.push_back(DirEntry(path, name));
+    fs.AddDir(path, 1, {});
+  }
+  fs.AddDir("/r", 1, std::move(siblings));
+  RunExecutor executor(1);
+  executor.Start(1);
+  absl::Notification started;
+  absl::Notification release;
+  absl::Notification passed_pruned;
+  auto occupied = executor.Submit([&] {
+    started.Notify();
+    release.WaitForNotification();
+  });
+  const bool running = started.WaitForNotificationWithTimeout(absl::Seconds(5));
+  auto walk = std::async(std::launch::async, [&] {
+    return Walk(
+        fs, {"/r"}, {.sort = SortOrder::kTree, .workers = 2}, executor,
+        [&](const Visit& visit) {
+          if (visit.path == "/r/d0") {
+            return WalkAction::kPrune;
+          }
+          if (visit.path == "/r/d1") {
+            // The d0 request has been destroyed before the next visit starts.
+            passed_pruned.Notify();
+          }
+          return WalkAction::kContinue;
+        },
+        [](std::string_view, absl::Status) {});
+  });
+  const bool pruned = passed_pruned.WaitForNotificationWithTimeout(absl::Seconds(5));
+  release.Notify();
+  occupied.Get();
+  EXPECT_THAT(walk.get(), IsOk());
+  EXPECT_THAT(running, IsTrue());
+  EXPECT_THAT(pruned, IsTrue());
+  EXPECT_THAT(fs.pruned_reads.load(), Eq(0));
+  EXPECT_THAT(executor.ReadAheadUsage().in_use, Eq(0));
+}
+
+TEST_F(WalkFakeFsTest, EarlyStopDoesNotDrainTheWholeSpeculativeSiblingBatch) {
+  CountingReadFs fs;
+  std::vector<vfs::Entry> siblings;
+  for (std::size_t index = 0; index < 1'000; ++index) {
+    const std::string name = absl::StrCat("d", index);
+    const std::string path = absl::StrCat("/r/", name);
+    siblings.push_back(DirEntry(path, name));
+    fs.AddDir(path, 1, {});
+  }
+  fs.AddDir("/r", 1, std::move(siblings));
+  RunExecutor executor(2);
+  EXPECT_THAT(
+      Walk(
+          fs, {"/r"}, {.sort = SortOrder::kTree, .workers = 3}, executor,
+          [](const Visit& visit) { return visit.depth == 1 ? WalkAction::kStop : WalkAction::kContinue; },
+          [](std::string_view, absl::Status) {}),
+      IsOk());
+  EXPECT_THAT(fs.reads.load(), Le(4));
+  EXPECT_THAT(executor.ReadAheadUsage().in_use, Eq(0));
+  EXPECT_THAT(executor.ReadAheadUsage().retained_bytes, Eq(0));
+  EXPECT_THAT(executor.ReadAheadUsage().peak_in_use, Le(4));
+  EXPECT_THAT(executor.Submit([] { return 42; }).Get(), Eq(42));
+}
+
+TEST_F(WalkFakeFsTest, NestedReadAheadSharesSlotsAndRejectsOversizedSpeculativeResults) {
+  std::vector<vfs::Entry> siblings;
+  std::vector<vfs::Entry> nested;
+  for (std::size_t index = 0; index < 65; ++index) {
+    const std::string name = absl::StrCat("d", index);
+    const std::string path = absl::StrCat("/r/", name);
+    siblings.push_back(DirEntry(path, name));
+    fs_.AddDir(path, 1, {});
+    const std::string inner = absl::StrCat("/r/d0/", name);
+    nested.push_back(DirEntry(inner, name));
+    const auto file = absl::StrCat(inner, "/", std::string(200, 'f'));
+    fs_.AddDir(inner, 1, {FileEntry(file, std::string(200, 'f'))});
+    fs_.AddFile(file, 1);
+  }
+  fs_.AddDir("/r", 1, std::move(siblings));
+  fs_.AddDir("/r/d0", 1, std::move(nested));
+  static constexpr std::array kSortOrders = std::to_array<SortOrder>({
+      SortOrder::kDir,
+      SortOrder::kGlobal,
+      SortOrder::kNone,
+      SortOrder::kRoots,
+      SortOrder::kSubtree,
+      SortOrder::kTree,
+  });
+  for (const SortOrder sort : kSortOrders) {
+    SCOPED_TRACE(static_cast<int>(sort));
+    for (const bool post_order : {false, true}) {
+      SCOPED_TRACE(post_order);
+      const auto expected = Seen({.post_order = post_order, .sort = sort, .workers = 1});
+      for (const std::size_t budget : {0, 128, 1'024, 8'192, 1'048'576}) {
+        SCOPED_TRACE(budget);
+        RunExecutor executor(2, budget);
+        std::vector<std::string> visits;
+        std::vector<absl::Status> errors;
+        EXPECT_THAT(
+            Walk(
+                fs_, {"/r"}, {.post_order = post_order, .sort = sort, .workers = 3}, executor,
+                [&](const Visit& visit) {
+                  visits.emplace_back(visit.path);
+                  return WalkAction::kContinue;
+                },
+                [&](std::string_view, absl::Status status) { errors.push_back(std::move(status)); }),
+            IsOk());
+        EXPECT_THAT(visits, Eq(expected));
+        EXPECT_THAT(errors, IsEmpty());
+        const auto usage = executor.ReadAheadUsage();
+        EXPECT_THAT(usage.peak_in_use, Le(4));
+        EXPECT_THAT(usage.peak_retained_bytes, Le(budget));
+        EXPECT_THAT(usage.in_use, Eq(0));
+        EXPECT_THAT(usage.retained_bytes, Eq(0));
+      }
+    }
+  }
+}
+
+TEST_F(WalkFakeFsTest, CachedParentSiblingsDoNotStarveNestedReadAhead) {
+  CountingReadFs fs;
+  std::vector<vfs::Entry> siblings;
+  std::vector<vfs::Entry> nested;
+  siblings.reserve(65);
+  nested.reserve(65);
+  for (std::size_t index = 0; index < 65; ++index) {
+    const std::string name = absl::StrCat("d", index);
+    const std::string outer = absl::StrCat("/r/", name);
+    siblings.push_back(DirEntry(outer, name));
+    fs.AddDir(outer, 1, {});
+    const std::string inner = absl::StrCat("/r/d0/", name);
+    nested.push_back(DirEntry(inner, name));
+    fs.AddDir(inner, 1, {});
+  }
+  fs.AddDir("/r", 1, std::move(siblings));
+  fs.AddDir("/r/d0", 1, std::move(nested));
+  RunExecutor executor(1);
+  bool reached_nested = false;
+  EXPECT_THAT(
+      Walk(
+          fs, {"/r"}, {.sort = SortOrder::kTree, .workers = 2}, executor,
+          [&](const Visit& visit) {
+            if (visit.path == "/r/d0" || visit.path == "/r/d0/d0") {
+              // With one worker, this read-ahead FIFO marker proves that all
+              // previously queued directory jobs have published their results.
+              executor.Submit([] {}, RunTaskClass::kReadAhead).Get();
+              EXPECT_THAT(executor.ReadAheadUsage().in_use, Eq(0));
+              EXPECT_THAT(executor.ReadAheadUsage().retained_bytes, Gt(0));
+            }
+            if (visit.path == "/r/d0/d0") {
+              reached_nested = true;
+              // Both nested slots are usable although the parent's next sibling
+              // is still cached. No nested listing has been consumed yet.
+              EXPECT_THAT(fs.nested_reads.load(), Eq(2));
+              return WalkAction::kStop;
+            }
+            return WalkAction::kContinue;
+          },
+          [](std::string_view, absl::Status) {}),
+      IsOk());
+  EXPECT_THAT(reached_nested, IsTrue());
+  EXPECT_THAT(fs.reads.load(), Eq(4));
+  EXPECT_THAT(executor.ReadAheadUsage().in_use, Eq(0));
+  EXPECT_THAT(executor.ReadAheadUsage().retained_bytes, Eq(0));
+}
+
+class FailedListingFs final : public FakeFs {
+ public:
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view dir) const override {
+    if (dir == "/r/d1") {
+      failed_reads.fetch_add(1, std::memory_order_relaxed);
+      absl::Status failure = absl::PermissionDeniedError("unreadable directory");
+      failure.SetPayload("test-detail", absl::Cord(std::string(16'384, 'x')));
+      return failure;
+    }
+    return FakeFs::ReadDir(dir);
+  }
+
+  mutable std::atomic<std::size_t> failed_reads = 0;
+};
+
+TEST_F(WalkFakeFsTest, OversizedSpeculativeErrorIsRereadAndReportedOnceWhenRequired) {
+  FailedListingFs fs;
+  std::vector<vfs::Entry> siblings;
+  siblings.reserve(65);
+  for (std::size_t index = 0; index < 65; ++index) {
+    const std::string name = absl::StrCat("d", index);
+    const std::string path = absl::StrCat("/r/", name);
+    siblings.push_back(DirEntry(path, name));
+    fs.AddDir(path, 1, {});
+  }
+  fs.AddDir("/r", 1, std::move(siblings));
+  RunExecutor executor(1, 8'192);
+  std::vector<absl::Status> errors;
+  EXPECT_THAT(
+      Walk(
+          fs, {"/r"}, {.sort = SortOrder::kTree, .workers = 2}, executor,
+          [&](const Visit& visit) {
+            if (visit.path == "/r/d0") {
+              // The error result is larger than the entire speculative allowance
+              // and finishes before the coordinator requires that directory.
+              executor.Submit([] {}, RunTaskClass::kReadAhead).Get();
+              EXPECT_THAT(fs.failed_reads.load(), Eq(1));
+            }
+            return WalkAction::kContinue;
+          },
+          [&](std::string_view path, absl::Status status) {
+            EXPECT_THAT(path, Eq("/r/d1"));
+            errors.push_back(std::move(status));
+          }),
+      IsOk());
+  EXPECT_THAT(errors, ElementsAre(StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("unreadable"))));
+  EXPECT_THAT(fs.failed_reads.load(), Eq(2));
+  EXPECT_THAT(executor.ReadAheadUsage().peak_retained_bytes, Le(8'192));
+  EXPECT_THAT(executor.ReadAheadUsage().in_use, Eq(0));
+  EXPECT_THAT(executor.ReadAheadUsage().retained_bytes, Eq(0));
 }
 
 TEST_F(WalkFakeFsTest, XdevStopsAtDeviceBoundary) {
