@@ -64,7 +64,7 @@ class CommandFs final : public vfs::FileSystem {
       }
       return entries;
     }
-    Record(path.starts_with("left/") ? 0 : 1, participants_ > 1 ? participants_ - 1 : 1);
+    Record(path.starts_with("left/") ? 0 : 1, participants_);
     return std::vector<vfs::Entry>{
         {
             .path = std::string(path) + "/file",
@@ -133,7 +133,8 @@ class CommandFs final : public vfs::FileSystem {
   void CheckWalkReuse() const {
     const absl::MutexLock lock(mutex_);
     EXPECT_THAT(phase_readers_.at(0), Eq(phase_readers_.at(1)));
-    EXPECT_THAT(phase_readers_.at(0), SizeIs(participants_ > 1 ? participants_ - 1 : 1));
+    EXPECT_THAT(phase_readers_.at(0), SizeIs(participants_));
+    EXPECT_THAT(phase_readers_.at(0), Contains(coordinator_));
   }
 
  private:

@@ -352,6 +352,33 @@ not valid evidence of sufficient remaining work. The bookkeeping estimate, retai
 byte policy and task granularity need allocation profiles and repeated native
 measurements. No timing, total-memory improvement or macOS acceptance is claimed.
 
+### Caller-participation control
+
+A deterministic 65-sibling in-memory control identified a separate gap in the
+bounded-frontier candidate: with `--jobs=2`, only one background reader touched
+child directories, peak concurrent reads were one, and the two-directory
+rendezvous timed out. The caller never read a child directory. With larger
+budgets, the observed reader identities likewise excluded the caller. Ordered
+output, exact-once reads and the thread cap still passed; those properties alone
+did not demonstrate useful caller participation.
+
+The follow-up reserves the first uncached required directory for the caller and
+queues later siblings. A required queued read is represented by move-only work
+that either the caller or worker can claim once. An already-claimed read still
+requires waiting for its result; no arbitrary unrelated job is run on that wait.
+The command budget remains caller-inclusive, with at most `N-1` background
+threads, reused across both comparison inventories and pair comparisons.
+
+Controls verify caller/worker overlap for budgets 2/3/10, serial-equivalent
+ordered visits and exactly one read per child. An occupied-worker control forces
+the caller to read its required queued directory before releasing that worker.
+Executor controls cover queued claims, already-running claims and simultaneous
+caller/worker claims, including move-only producer ownership. Cancellation,
+shared byte/slot accounting, error reporting and borrowed-state lifetime remain
+part of the required validation. The extra claim state and callback allocation
+need native allocation and timing evidence. Remaining-cost admission and useful
+task size are unchanged; no performance or native macOS acceptance is claimed.
+
 ### Memory-accounting finding and remaining acceptance work
 
 Direct `/usr/bin/time -v` runs show approximately 5.3-5.4 MiB peak RSS for a small

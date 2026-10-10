@@ -22,6 +22,20 @@ struct ReadAheadBudget final {
 };
 }  // namespace executor_detail
 
+RunWork::RunWork(absl::AnyInvocable<void()> work) : work_(std::move(work)) {}
+
+absl::AnyInvocable<void()> RunWork::Take() {
+  const absl::MutexLock lock(mutex_);
+  return std::exchange(work_, absl::AnyInvocable<void()>{});
+}
+
+void RunWork::Run() {
+  auto work = Take();
+  if (work) {
+    work();
+  }
+}
+
 struct ReadAheadReservation::Impl final {
   Impl(std::shared_ptr<executor_detail::ReadAheadBudget> state, std::size_t initial_bytes)
       : budget(std::move(state)), minimum_bytes(initial_bytes), bytes(initial_bytes) {}
