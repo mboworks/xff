@@ -4,6 +4,7 @@
 #include "xff/engine/parallel_match.h"
 
 #include <algorithm>
+#include <chrono>
 #include <optional>
 #include <string_view>
 #include <utility>
@@ -12,6 +13,29 @@
 #include "xff/registry/descriptor.h"
 
 namespace xff::engine {
+namespace {
+
+// A cold executor has a fixed creation and teardown cost. Accumulate enough matcher work to
+// repay it; once another run phase has started the executor, ordinary per-batch admission applies.
+inline constexpr std::size_t kMinColdParallelEntries = 8'192;
+inline constexpr std::size_t kColdProbeEntries = 16;
+inline constexpr auto kSlowColdProbe = std::chrono::microseconds(500);
+
+}  // namespace
+
+struct ParallelMatch::WorkerState {
+  explicit WorkerState(const ParallelMatch& owner)
+      : output(owner.output_ ? std::optional(ForkMatchOutput(owner.output_->output)) : std::nullopt),
+        evaluator(owner.execution_ ? std::optional(owner.execution_->MakeWorker()) : std::nullopt) {
+    if (owner.expression_ && (!owner.execution_ || !owner.execution_->UsesIndexedMatchers())) {
+      matchers.Bind(*owner.expression_);
+    }
+  }
+
+  std::optional<absl::StatusOr<MatchOutput>> output;
+  WorkerMatchers matchers;
+  std::optional<ExpressionExecution::Worker> evaluator;
+};
 
 bool CanParallelMatch(const parser::Expr& expression) {
   if (expression.kind == parser::Expr::Kind::kPredicate) {
@@ -34,92 +58,89 @@ bool HasContentMatch(const parser::Expr& expression) {
 ParallelMatch::ParallelMatch(
     mbo::types::OptionalRef<const parser::Expr> expression,
     std::size_t workers,
+    RunExecutor& executor,
     bool scores,
     std::optional<ParallelContentOutput> output,
     mbo::types::OptionalRef<const ExpressionExecution> execution)
     : expression_(expression),
       workers_(std::max(workers, std::size_t{1})),
+      executor_(executor),
       scores_(scores),
       output_(std::move(output)),
       execution_(execution) {}
 
-ParallelMatch::~ParallelMatch() {
-  {
-    const absl::MutexLock lock(mutex_);
-    stop_ = true;
-  }
-  for (auto& thread : threads_) {
-    thread.join();
-  }
-}
-
-bool ParallelMatch::Ready(std::size_t generation) const {
-  return stop_ || generation_ != generation;
-}
-
-bool ParallelMatch::Finished() const {
-  return remaining_ == 0;
-}
+ParallelMatch::~ParallelMatch() = default;
 
 const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEntry> entries) {
-  const absl::MutexLock lock(mutex_);
   entries_ = std::move(entries);
   results_.clear();
   results_.resize(entries_.size());
   next_.store(0, std::memory_order_relaxed);
-  // Very small batches cannot amortize waking the pool.
-  if (workers_ == 1 || entries_.size() < 16 || (threads_.empty() && entries_.size() < 64)) {
+  const bool cold = executor_.worker_count() == 0;
+  const auto ensure_coordinator = [&] {
     if (execution_ && !coordinator_) {
       coordinator_.emplace(execution_->MakeWorker(ExpressionWorkerRole::kCoordinator));
     }
+  };
+  const auto evaluate_coordinator = [&] {
     EvaluateEntries(
         {}, {},
         coordinator_ ? mbo::types::OptionalRef<const ExpressionExecution::Worker>{*coordinator_}
                      : mbo::types::OptionalRef<const ExpressionExecution::Worker>{});
+  };
+  // Very small batches cannot amortize waking the executor.
+  if (workers_ == 1 || entries_.size() < 16) {
+    ensure_coordinator();
+    evaluate_coordinator();
+    serial_entries_ += entries_.size();
     return results_;
   }
-  const std::size_t count = std::min(workers_, (entries_.size() + 15) / 16);
-  // An early partial batch must not permanently cap the pool for later full batches.
-  if (threads_.size() < count) {
-    threads_.reserve(count);
-    for (std::size_t index = threads_.size(); index < count; ++index) {
-      threads_.emplace_back([this] { Run(); });
+  std::size_t parallel_entries = entries_.size();
+  if (cold && serial_entries_ + entries_.size() < kMinColdParallelEntries) {
+    // A count threshold protects fast local storage, but must not suppress useful concurrency on
+    // slow filesystems. Measure a small prefix, then either parallelize the rest of this batch or
+    // finish inline and retain the evidence for later bounded batches.
+    ensure_coordinator();
+    const std::size_t probe = std::min(kColdProbeEntries, entries_.size());
+    const auto started = std::chrono::steady_clock::now();
+    for (std::size_t index = 0; index < probe; ++index) {
+      results_.at(index) = EvaluateEntry(
+          entries_.at(index).AsVisit(), {}, {},
+          coordinator_ ? mbo::types::OptionalRef<const ExpressionExecution::Worker>{*coordinator_}
+                       : mbo::types::OptionalRef<const ExpressionExecution::Worker>{});
     }
+    next_.store(probe, std::memory_order_relaxed);
+    if (std::chrono::steady_clock::now() - started < kSlowColdProbe) {
+      evaluate_coordinator();
+      serial_entries_ += entries_.size();
+      return results_;
+    }
+    parallel_entries -= probe;
   }
-  remaining_ = threads_.size();
-  ++generation_;
-  mutex_.Await(absl::Condition(this, &ParallelMatch::Finished));
+  const std::size_t count = std::min(workers_, (parallel_entries + 15) / 16);
+  executor_.Start(count);
+  while (worker_states_.size() < count) {
+    worker_states_.push_back(std::make_unique<WorkerState>(*this));
+  }
+  std::vector<RunTask<void>> tasks;
+  tasks.reserve(count);
+  for (std::size_t worker = 0; worker < count; ++worker) {
+    tasks.push_back(executor_.Submit([this, worker] { EvaluateWorker(worker); }));
+  }
+  for (RunTask<void>& task : tasks) {
+    task.Get();
+  }
   return results_;
 }
 
-void ParallelMatch::Run() {
-  const auto local = output_ ? std::optional(ForkMatchOutput(output_->output)) : std::nullopt;
-  WorkerMatchers matchers;
-  if (expression_ && (!execution_ || !execution_->UsesIndexedMatchers())) {
-    matchers.Bind(*expression_);
-  }
-  const auto evaluator = execution_ ? std::optional(execution_->MakeWorker()) : std::nullopt;
-  std::size_t generation = 0;
-  for (;;) {
-    {
-      const auto ready = [&] ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return Ready(generation); };
-      const absl::MutexLock lock(mutex_, absl::Condition(&ready));
-      if (stop_) {
-        return;
-      }
-      generation = generation_;
-    }
-    EvaluateEntries(
-        local ? mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{*local}
-              : mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{},
-        matchers,
-        evaluator ? mbo::types::OptionalRef<const ExpressionExecution::Worker>{*evaluator}
-                  : mbo::types::OptionalRef<const ExpressionExecution::Worker>{});
-    {
-      const absl::MutexLock lock(mutex_);
-      --remaining_;
-    }
-  }
+void ParallelMatch::EvaluateWorker(std::size_t worker) {
+  const WorkerState& state = *worker_states_.at(worker);
+  EvaluateEntries(
+      state.output ? mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{*state.output}
+                   : mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{},
+      state.matchers,
+      state.evaluator ? mbo::types::OptionalRef<const ExpressionExecution::Worker>{*state.evaluator}
+                      : mbo::types::OptionalRef<const ExpressionExecution::Worker>{});
 }
 
 void ParallelMatch::EvaluateEntries(

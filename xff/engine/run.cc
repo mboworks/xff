@@ -5885,6 +5885,7 @@ RunResult RunFindCore(
       serial_execution ? std::optional(serial_execution->MakeWorker(ExpressionWorkerRole::kCoordinator)) : std::nullopt;
   const auto output_evaluator =
       output_execution ? std::optional(output_execution->MakeWorker(ExpressionWorkerRole::kCoordinator)) : std::nullopt;
+  RunExecutor run_executor(options.workers > 1 ? options.workers : std::size_t{0});
   std::optional<ParallelMatch> parallel_match;
   if (use_match_pool) {
     std::optional<ParallelContentOutput> content_output;
@@ -5907,13 +5908,14 @@ RunResult RunFindCore(
       }
     }
     parallel_match.emplace(
-        parallel_expression, options.workers, full_metadata || rank_by_score, std::move(content_output),
+        parallel_expression, options.workers, run_executor, full_metadata || rank_by_score, std::move(content_output),
         executions->Parallel());
   }
   std::vector<CollectedEntry> pending_matches;
-  // Decision-only batches retain no file bytes or rendered line records. Give them more work
-  // between coordinator barriers; keep content-output batches smaller because a line is unbounded.
-  const std::size_t match_batch_size = rg_output || match_output ? 256 : 1'024;
+  // Decision-only batches retain no file bytes or rendered line records. A cold matcher needs one
+  // substantial batch to repay executor startup; keep content-output batches smaller because a
+  // rendered line is unbounded. Slow bounded-output storage is admitted adaptively by ParallelMatch.
+  const std::size_t match_batch_size = rg_output || match_output ? 256 : 8'192;
   const auto flush_matches = [&] {
     if (pending_matches.empty()) {
       return;
@@ -5949,7 +5951,7 @@ RunResult RunFindCore(
     }
   };
   const absl::Status status = Walk(
-      walk_fs, roots, options,
+      walk_fs, roots, options, run_executor,
       // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch
       [&](const Visit& visit) {
         const auto rg_included = [&] { return command.rg && rg_glob_decision(visit) == ignore::Decision::kInclude; };

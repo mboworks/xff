@@ -112,8 +112,9 @@ retrofit the binary identity of a historical measurement.
 
 Regular CI retains report artifacts for 30 days and executable build artifacts for three days;
 hosted backfill artifacts omit executables. Preserve available original binaries, build manifests
-and logs before cleanup or artifact expiry. Linux executable verification remains outstanding;
-the 72 checked Mac binaries do not verify the Linux measurements.
+and logs before cleanup or artifact expiry. The initial Mac audit left Linux executable
+verification outstanding; the native Linux follow-up below now covers the available local
+Linux artifacts. The 72 checked Mac binaries do not verify the Linux measurements.
 
 On Linux, verify each retained executable against its original report with the PR's
 `tools/benchmark_provenance.py --report=... --binary=... --retention-reference=...` command.
@@ -244,3 +245,76 @@ metadata and slow-storage controls on both platforms. Run affected correctness/c
 and appropriate sanitizers. Report absolute XFF time, reference time and same-run ratio together.
 The current evidence supports investigating specific costs; it does not establish that XFF
 will beat every reference tool on every workload.
+
+## Native Linux follow-up (2026-10-09)
+
+The native session uses merged audit driver commit
+`4ea895f63106f05df7c90b629d20433ae1e03016`. The original engine baseline remains
+`772994ab7905be77915978f06ea90ae5934aaeef`; both source revisions produce the same
+retained executable SHA-256,
+`f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106`.
+Baseline builds use `clang_release`, with the historical ICU 70 build-library
+path supplied explicitly. Complete prepared-grid runs retain nine raw samples
+per cell, use the fastest seven estimator and store fixtures on verified tmpfs.
+
+### Retained Linux executables
+
+All 142 completed reports under the local Linux benchmark batch inventory match
+their original retained executables and their original build manifests. They
+cover 72 distinct commits and 38 distinct executable hashes; no mismatches were
+found. Verification uses `benchmark_provenance.verify_retention`, checks the
+standalone manifest against the report's embedded build record, and records a
+measurement-bound proof for each report. Historical observations are unchanged.
+
+The original reports and binaries remain under `/home/marcus/xff-benchmarks/batches`.
+The native proof inventory is retained at
+`/tmp/xff-linux-retention-verification/summary.json`, with per-report
+`binary-verification.json` files below that directory. These checks verify the
+available local Linux artifacts; they do not verify expired hosted artifacts.
+
+### Worker scheduling experiment
+
+Linux `kernel.perf_event_paranoid` is now `0`, and native `perf` hardware counters
+are available. Startup-boundary profiles identify worker creation and teardown,
+Abseil mutex slow paths and scheduling overhead. Keeping directory reads serial
+removes the small-work cliff but loses useful concurrency on large broad trees.
+[PR #991](https://github.com/mboworks/xff/pull/991) admits directory reads only
+when at least 64 independent sibling directories are available. Its hosted Linux
+and macOS tests, sanitizers, all three benchmark shards on each platform and
+combined benchmark comparison pass.
+
+The next experiment shares one run-owned executor across directory read-ahead,
+eager stat work and eligible content matching. Each admitted batch submits at
+most one drain job per useful worker. Directory jobs repeatedly claim independent
+listing reads; stat jobs claim 128-entry chunks; matcher jobs claim entry chunks.
+Only the coordinator recurses, evaluates traversal controls and consumes ordered
+results. Threads remain bounded and are reused until command completion.
+
+Correctness checks include nested read-ahead above the admission threshold,
+partial stat chunks with missing entries, repeated matcher transitions and
+executor reuse. An early-stop test deliberately holds a prefetched sibling read
+open while the coordinator quits: `Walk` must wait before destroying the walker,
+even though its executor survives for another phase. Explicit Abseil completion
+signals replaced the experiment's standard-library futures after expanded TSan
+coverage reported a shared-state completion/deallocation race.
+
+The interrupted `/tmp/xff-perf-shared-executor-v2` run is diagnostic only:
+correctness builds overlapped its measurements, and its measured source predates
+the final scheduling changes. It supplies no acceptance timing evidence.
+
+### Memory-accounting finding and remaining acceptance work
+
+Direct `/usr/bin/time -v` runs show approximately 5.3-5.4 MiB peak RSS for a small
+XFF invocation, while the Python comparison worker reports approximately
+22-23 MiB for the same command. A trivial native command also reproduces the
+Python worker's high floor. The forked launcher's inherited high-water mark must
+be corrected or explicitly excluded before using those reported peaks to choose
+arena sizes. This is separate from the worker scheduler experiment.
+
+The complete audit remains open. Final shared-executor timing must be collected
+after every build has finished, using the complete prepared grid. Repeated
+controls must cover content, eager metadata and slow storage. Native allocation
+profiles and the separate 20k/50k/100k single-worker slope investigation still
+need completion. Hosted macOS checks provide portability evidence for PR #991;
+they do not replace the specified native M5 Pro A/B and sampling controls for
+the shared-executor experiment.

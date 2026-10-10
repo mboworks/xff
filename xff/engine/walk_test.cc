@@ -16,10 +16,12 @@
 #include "xff/engine/walk.h"
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <future>
 #include <map>
 #include <memory>
 #include <string>
@@ -32,9 +34,11 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/synchronization/notification.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
+#include "xff/engine/run_executor.h"
 #include "xff/vfs/entry.h"
 #include "xff/vfs/filesystem.h"
 #include "xff/vfs/local_fs.h"
@@ -52,6 +56,7 @@ using ::testing::IsTrue;
 namespace fs = ::std::filesystem;
 using ::mbo::testing::IsOk;
 using ::testing::ElementsAre;
+using ::testing::Eq;
 using ::testing::IsEmpty;
 using ::testing::Lt;
 using ::testing::Not;
@@ -384,6 +389,101 @@ struct WalkFakeFsTest : ::testing::Test {
   FakeFs fs_;
   int errors_ = 0;
 };
+
+TEST_F(WalkFakeFsTest, ParallelNestedBatchesPreserveOrderingAndPostOrder) {
+  std::vector<vfs::Entry> siblings;
+  std::vector<vfs::Entry> nested;
+  for (std::size_t index = 0; index < 65; ++index) {
+    const std::string name = absl::StrCat("d", index);
+    const std::string path = absl::StrCat("/r/", name);
+    siblings.push_back(DirEntry(path, name));
+    fs_.AddDir(path, 1, {});
+    const std::string inner_path = absl::StrCat("/r/d0/", name);
+    nested.push_back(DirEntry(inner_path, name));
+    fs_.AddDir(inner_path, 1, {FileEntry(absl::StrCat(inner_path, "/f"), "f")});
+    fs_.AddFile(absl::StrCat(inner_path, "/f"), 1);
+  }
+  fs_.AddDir("/r", 1, std::move(siblings));
+  fs_.AddDir("/r/d0", 1, std::move(nested));
+  for (const SortOrder sort : {SortOrder::kTree, SortOrder::kDir, SortOrder::kSubtree, SortOrder::kGlobal}) {
+    for (const bool post_order : {false, true}) {
+      const auto serial = Seen(WalkOptions{.post_order = post_order, .sort = sort, .workers = 1});
+      EXPECT_THAT(errors_, Eq(0));
+      EXPECT_THAT(Seen(WalkOptions{.post_order = post_order, .sort = sort, .workers = 3}), Eq(serial));
+      EXPECT_THAT(errors_, Eq(0));
+    }
+  }
+}
+
+TEST_F(WalkFakeFsTest, ParallelStatDrainsPreservePartialChunkAndErrorOrder) {
+  std::vector<vfs::Entry> files;
+  for (std::size_t index = 0; index < 513; ++index) {
+    const std::string name = absl::StrCat("f", index);
+    const std::string path = absl::StrCat("/r/", name);
+    files.push_back(FileEntry(path, name));
+    // Retain a missing entry at the final partial chunk boundary.
+    if (index < 512) {
+      fs_.AddFile(path, 1);
+    }
+  }
+  fs_.AddDir("/r", 1, std::move(files));
+  const auto serial = Seen(WalkOptions{.sort = SortOrder::kTree, .workers = 1});
+  EXPECT_THAT(errors_, Eq(1));
+  EXPECT_THAT(Seen(WalkOptions{.sort = SortOrder::kTree, .workers = 3}), Eq(serial));
+  EXPECT_THAT(errors_, Eq(1));
+}
+
+// Hold one sibling read open across the coordinator's stop action. This tests
+// walker lifetime independently of executor lifetime: the executor is reused
+// after Walk returns, and cannot protect a destroyed walker by joining at exit.
+class BlockingReadFs final : public FakeFs {
+ public:
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view dir) const override {
+    if (dir == "/r/d0") {
+      started.Notify();
+      release.WaitForNotification();
+    }
+    return FakeFs::ReadDir(dir);
+  }
+
+  mutable absl::Notification started;
+  mutable absl::Notification release;
+};
+
+TEST_F(WalkFakeFsTest, StopWaitsForUnusedPrefetchBeforeReturningToSharedExecutor) {
+  BlockingReadFs blocking_fs;
+  std::vector<vfs::Entry> siblings;
+  for (std::size_t index = 0; index < 65; ++index) {
+    const std::string name = absl::StrCat("d", index);
+    const std::string path = absl::StrCat("/r/", name);
+    siblings.push_back(DirEntry(path, name));
+    blocking_fs.AddDir(path, 1, {});
+  }
+  blocking_fs.AddDir("/r", 1, std::move(siblings));
+  RunExecutor executor(3);
+  absl::Notification stopping;
+  auto walk = std::async(std::launch::async, [&] {
+    return Walk(
+        blocking_fs, {"/r"}, WalkOptions{.sort = SortOrder::kTree, .workers = 3}, executor,
+        [&](const Visit& visit) {
+          if (visit.depth == 1) {
+            blocking_fs.started.WaitForNotification();
+            stopping.Notify();
+            return WalkAction::kStop;
+          }
+          return WalkAction::kContinue;
+        },
+        [](std::string_view, absl::Status) {});
+  });
+  stopping.WaitForNotification();
+  const auto while_blocked = walk.wait_for(std::chrono::milliseconds(100));
+  // Release before asserting so a failed assertion cannot strand a worker.
+  blocking_fs.release.Notify();
+  EXPECT_THAT(while_blocked, Eq(std::future_status::timeout));
+  EXPECT_THAT(walk.get(), IsOk());
+  EXPECT_THAT(executor.worker_count(), Eq(3));
+  EXPECT_THAT(executor.Submit([] { return 42; }).Get(), Eq(42));
+}
 
 TEST_F(WalkFakeFsTest, XdevStopsAtDeviceBoundary) {
   // /r (dev 1) holds a.txt (dev 1) and the mount point mnt (dev 2), whose child

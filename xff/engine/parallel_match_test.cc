@@ -24,6 +24,7 @@ namespace {
 using ::testing::Eq;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
+using ::testing::Le;
 using ::testing::SizeIs;
 
 struct ParallelMatchTest : ::testing::Test {
@@ -48,7 +49,8 @@ TEST_F(ParallelMatchTest, RepeatedBatchesRetainEntryOrderAndDoNotReuseOldResults
   MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-type", "f"}));
   EXPECT_THAT(CanParallelMatch(*command.expression), IsTrue());
   EXPECT_THAT(HasContentMatch(*command.expression), IsFalse());
-  ParallelMatch matcher(*command.expression, 4, false);
+  RunExecutor executor(4);
+  ParallelMatch matcher(*command.expression, 4, executor, false);
   for (const std::size_t count : {10, 1'000, 100, 10, 10'000}) {
     const auto& results = matcher.Match(Entries(count));
     EXPECT_THAT(results, SizeIs(count));
@@ -62,8 +64,10 @@ TEST_F(ParallelMatchTest, RepeatedBatchesRetainEntryOrderAndDoNotReuseOldResults
 
 TEST_F(ParallelMatchTest, ZeroWorkersIsClampedAndUnusedPoolStartsNoWork) {
   MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-true"}));
-  const ParallelMatch unused(*command.expression, 4, false);
-  ParallelMatch matcher(*command.expression, 0, true);
+  RunExecutor unused_executor(4);
+  const ParallelMatch unused(*command.expression, 4, unused_executor, false);
+  RunExecutor executor(0);
+  ParallelMatch matcher(*command.expression, 0, executor, true);
   EXPECT_THAT(matcher.Match(Entries(100)), SizeIs(100));
   EXPECT_THAT(matcher.Match(Entries(0)), SizeIs(0));
 }
@@ -74,7 +78,8 @@ TEST_F(ParallelMatchTest, NativeRegexBindingsPreserveOperatorsCaseAndRepeatedBat
       parser::Parse({"root", "(", "-iregex", "[02468]", "-o", "-regex", "1[0-9]", ")", "!", "-regex", "12"}));
   parser::BindMatchers(command, regex::Grammar::kRe2, parser::CaseMode::kSensitive);
   ASSERT_THAT(CanParallelMatch(*command.expression), IsTrue());
-  ParallelMatch matcher(*command.expression, 4, false);
+  RunExecutor executor(4);
+  ParallelMatch matcher(*command.expression, 4, executor, false);
   for (const std::size_t count : {10, 1'000, 100, 10}) {
     const auto& results = matcher.Match(Entries(count));
     for (std::size_t index = 0; index < count; ++index) {
@@ -87,7 +92,8 @@ TEST_F(ParallelMatchTest, NativeRegexBindingsPreserveOperatorsCaseAndRepeatedBat
 
 TEST_F(ParallelMatchTest, UnboundRegexIsANonMatchInWorkers) {
   MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-regex", "foo"}));
-  ParallelMatch matcher(*command.expression, 4, false);
+  RunExecutor executor(4);
+  ParallelMatch matcher(*command.expression, 4, executor, false);
   for (const auto& result : matcher.Match(Entries(100))) {
     EXPECT_THAT(result.evaluation.matched, IsFalse());
   }
@@ -97,10 +103,11 @@ TEST_F(ParallelMatchTest, PreparedCoordinatorAndWorkersRetainRegexStateAcrossPoo
   ASSERT_OK_AND_ASSIGN(auto command, parser::Parse({"root", "-regex", "[02468]+"}));
   parser::BindMatchers(command, regex::Grammar::kRe2, parser::CaseMode::kSensitive);
   ASSERT_OK_AND_ASSIGN(const auto execution, PrepareExpressionExecution(*command.expression));
-  ParallelMatch matcher(*command.expression, 4, false, std::nullopt, execution);
+  RunExecutor executor_pool(4);
+  ParallelMatch matcher(*command.expression, 4, executor_pool, false, std::nullopt, execution);
   // Small batches run on the coordinator, large batches activate private worker state;
   // returning to the coordinator must not reuse a worker's previous match or scratch.
-  for (const std::size_t count : {1, 128, 7, 512, 0, 10}) {
+  for (const std::size_t count : {1, 128, 7, 512, 8'192, 10}) {
     const auto& results = matcher.Match(Entries(count));
     ASSERT_THAT(results, SizeIs(count));
     for (std::size_t index = 0; index < count; ++index) {
@@ -108,6 +115,21 @@ TEST_F(ParallelMatchTest, PreparedCoordinatorAndWorkersRetainRegexStateAcrossPoo
       EXPECT_THAT(results.at(index).evaluation.matched, Eq(path.find_first_of("13579") == std::string::npos));
     }
   }
+  EXPECT_THAT(executor_pool.worker_count(), Eq(4));
+}
+
+TEST_F(ParallelMatchTest, AccumulatedWorkStartsWorkersWithinBudget) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-true"}));
+  RunExecutor executor(4);
+  ParallelMatch matcher(*command.expression, 4, executor, false);
+  for (int batch = 0; batch < 7; ++batch) {
+    EXPECT_THAT(matcher.Match(Entries(1'024)), SizeIs(1'024));
+    // A slow prefix can activate workers before the accumulated-entry threshold.
+    // Sanitizer overhead and scheduling can trigger that path even for -true.
+    EXPECT_THAT(executor.worker_count(), Le(4));
+  }
+  EXPECT_THAT(matcher.Match(Entries(1'024)), SizeIs(1'024));
+  EXPECT_THAT(executor.worker_count(), Eq(4));
 }
 
 TEST_F(ParallelMatchTest, StatefulMetadataAndActionExpressionsCannotEnterWorkers) {
