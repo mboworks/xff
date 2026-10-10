@@ -423,8 +423,10 @@ after every build has finished, using the complete prepared grid. Repeated
 controls must cover content, eager metadata and slow storage. Separate evidence
 in [PR #995](https://github.com/mboworks/xff/pull/995) now retains the exact-source
 Linux baseline, enumeration-only allocation profiles and coarse counters/stacks
-for 20k/50k/100k single-worker workloads. Those baseline diagnostics do not complete
-precise phase-level attribution or allocation controls for the other workloads,
-platforms or new scheduler candidates. Hosted macOS checks provide portability evidence for PR #991;
+for 20k/50k/100k single-worker workloads. Its later allocation controls also cover
+tree output, collection, lazy/eager metadata and content matching for both layouts
+at those sizes, with separate native RSS and exact-output checks. Those baseline
+diagnostics do not complete precise phase-level attribution, multiworker/candidate
+allocation controls or native cross-platform acceptance. Hosted macOS checks provide portability evidence for PR #991;
 they do not replace the specified native M5 Pro A/B and sampling controls for
 the shared-executor experiment.
