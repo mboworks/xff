@@ -702,11 +702,86 @@ The initial local analysis is superseded because it classified functions by
 argument types and did not distinguish kernel-context IPs; the index identifies
 both the superseded and corrected analyses without changing raw observations.
 
+### Workload allocation controls (2026-10-10)
+
+The exact initial-source executable `772994ab7905be77915978f06ea90ae5934aaeef`
+(`f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106`) now has
+allocation profiles for five additional workloads at 20k/50k/100k files on both
+full-grid v2 layouts: tree sorting, explicit collection, lazy stat, eager stat
+and content-needle matching. Thirty Heaptrack profiles and thirty separate
+uninstrumented native-resource controls complete successfully. Every output
+matches its fixture oracle; tree sorting additionally preserves hierarchical
+path order. Native RSS excludes profiler overhead. All invocations use one
+verified physical CPU and `--jobs=1`; these are not multiworker timing controls.
+
+Lazy metadata uses `-type f -size +0 -print0`; eager metadata uses
+`-size +0 -type f -print0`. The latter starts with an unconditional metadata
+consumer, matching `ExpressionMetadata`'s eager-demand rule. Size oracles are
+derived from actual fixture-model byte lengths; content oracles from those
+bytes' needle membership. Complete maximum-tree hashes and retained
+executable/helper/driver identities match before and after collection. The
+independent verifier regenerates all thirty oracles, checks sixty raw outputs
+and recomputes every allocation/free event and native-resource relationship.
+
+Selected 100k results are below. Byte counts are exact observations, not pooled
+or repeated estimates. Requested intercepted live heap and RSS remain distinct.
+
+| Layout | Workload       | Allocation calls | Peak tracked heap bytes | Native RSS bytes |
+| :----- | :------------- | ---------------: | ----------------------: | ---------------: |
+| broad  | tree sorting   |           220752 |                  330395 |          5976064 |
+| broad  | collection     |           325620 |                26862227 |         32243712 |
+| broad  | lazy stat      |           323947 |                  326963 |          5795840 |
+| broad  | eager stat     |           323949 |                  326963 |          5812224 |
+| broad  | content needle |           357227 |                  327171 |          5799936 |
+| deep   | tree sorting   |           210808 |                35643867 |         41926656 |
+| deep   | collection     |           312881 |                72085451 |         78327808 |
+| deep   | lazy stat      |           310705 |                35658483 |         42143744 |
+| deep   | eager stat     |           310707 |                35659475 |         42049536 |
+| deep   | content needle |           339423 |                35658691 |         41889792 |
+
+The collapsed stack weights sum exactly to every profile's event-count and
+global-peak totals. Exclusive classification tests `EvalCollect` first, then
+`ReadDir::JoinPath`, then `StatEntries` plus `reserve`, then stat path-copy
+helpers, with all remaining weight retained as other. These are stack groups,
+not precise isolated phases or CPU shares. At deep 100k collection's global
+peak, stacks containing `EvalCollect` account for 36,456,976 bytes, directory
+path construction for 25,475,264 and listing reserves for 9,618,816. Broad
+collection stacks account for 26,701,744 of its 26,862,227-byte peak. The deep
+listing/path lifetime finding therefore remains relevant while explicit
+collection adds separate retained records. This does not identify all
+collection bytes as arena storage or justify changing an arena reserve.
+
+Lazy/eager metadata adds allocation calls without a comparable peak increase;
+symbolized stacks include transient `StatFields` string copies. Content also
+adds calls while retaining a similar peak on these fixtures. Neither observation
+establishes CPU cost, storage latency, useful parallelism or remaining-work
+admission. Collection also changes eager metadata demand, so its difference
+cannot be attributed to allocation alone. Warm tmpfs is not slow storage.
+
+The [workload allocation index](benchmarks/native-workload-allocation-controls.json)
+retains all thirty results, full raw-file inventory, compressed/original
+SHA-256 and byte counts, exact source/tree, full grid, command/allocation/helper
+identities and reassembly instructions. Its thirty-five archives preserve all
+360 original per-cell files, including zstd profiles, complete allocation/peak
+stacks, analyzer output, native resources and both raw stdout streams. Identical
+streams are stored once with byte-exact reconstruction references; larger JSON
+payloads use ordered gzip byte chunks under the unchanged 500 KB file-size
+policy. No samples, profile bytes or output records are discarded.
+
+The provenance archive includes frozen driver sources, collection/verification
+logs, independent oracle/event verifier, stack analyzer and lossless export
+verifier. Every reconstructed file matches the original bytes. Native original
+artifacts remain at `/tmp/xff-native-workload-allocation-session1`; executable,
+helper and profiler executable bytes are excluded from the review archives,
+with their retained identities/package provenance recorded. No runtime,
+toolchain, macOS configuration or host security setting changes are included.
+
 The complete audit remains open. Final shared-executor timing must be collected
 after every build has finished, using the complete prepared grid. Repeated
 controls must cover content, eager metadata and slow storage. The six enumeration
-allocation diagnostics and 24 CPU diagnostic cells do not complete precise
-phase-level CPU/slope attribution or allocation controls for other workloads/platforms.
+and thirty additional workload allocation cells plus 24 CPU diagnostic cells
+do not complete precise phase-level CPU/slope attribution, candidate-scheduler
+allocation controls, slow storage or native macOS validation.
 Hosted macOS checks provide portability evidence for PR #991;
 they do not replace the specified native M5 Pro A/B and sampling controls for
 the shared-executor experiment.
