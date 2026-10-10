@@ -16,6 +16,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -42,12 +43,17 @@ using ::testing::SizeIs;
 
 // Each side has 64 independent sibling directories, enough to exercise read-ahead,
 // followed by 64 large files that qualify for the comparison and content workers.
-// No host filesystem or timing-based admission assumption enters these controls.
+// No host filesystem enters these controls. The matcher control supplies uniform
+// simulated latency and keeps its rendezvous outside the caller's admission sample.
 class CommandFs final : public vfs::FileSystem {
  public:
-  explicit CommandFs(std::size_t participants, std::size_t content_participants = 0)
+  explicit CommandFs(
+      std::size_t participants,
+      std::size_t content_participants = 0,
+      absl::Duration content_delay = absl::ZeroDuration())
       : participants_(participants),
-        content_participants_(content_participants == 0 ? participants : content_participants) {}
+        content_participants_(content_participants == 0 ? participants : content_participants),
+        content_delay_(content_delay) {}
 
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override {
     if (!IsDirectory(path)) {
@@ -96,6 +102,7 @@ class CommandFs final : public vfs::FileSystem {
       return absl::NotFoundError(path);
     }
     Record(2, content_participants_);
+    absl::SleepFor(content_delay_);
     return vfs::MemoryReadSource(bytes_);
   }
 
@@ -128,6 +135,9 @@ class CommandFs final : public vfs::FileSystem {
     EXPECT_THAT(synchronized_, IsTrue());
     EXPECT_THAT(phase_readers_.at(2), SizeIs(Ge(content_participants_)));
     EXPECT_THAT(phase_readers_.at(2), Contains(coordinator_));
+    if (content_delay_ > absl::ZeroDuration()) {
+      EXPECT_THAT(content_reads_, Eq(64));
+    }
   }
 
   void CheckWalkReuse() const {
@@ -150,7 +160,12 @@ class CommandFs final : public vfs::FileSystem {
 
   void Record(std::size_t phase, std::size_t expected) const ABSL_LOCKS_EXCLUDED(mutex_) {
     const absl::MutexLock lock(mutex_);
-    if (!phase_readers_.at(phase).insert(std::this_thread::get_id()).second) {
+    const bool first = phase_readers_.at(phase).insert(std::this_thread::get_id()).second;
+    const bool sampled_content = phase == 2 && content_delay_ > absl::ZeroDuration();
+    if (sampled_content && ++content_reads_ <= 16) {
+      return;  // Sampling cannot rendezvous with workers not yet admitted.
+    }
+    if (!first && !sampled_content) {
       return;
     }
     // First calls rendezvous so one fast worker cannot drain the whole fixture before
@@ -164,13 +179,16 @@ class CommandFs final : public vfs::FileSystem {
 
   const std::size_t participants_;
   const std::size_t content_participants_;
+  const absl::Duration content_delay_;
   const std::thread::id coordinator_ = std::this_thread::get_id();
   const std::string bytes_ = std::string(262'144, 'a') + "needle\n";
-  // The mutex guards reader identities and rendezvous outcomes. Filesystem data is immutable.
+  // Guards reader identities, content observation count and rendezvous outcomes.
+  // Filesystem data/configuration is immutable; no lock spans simulated latency.
   mutable absl::Mutex mutex_;
   mutable std::set<std::thread::id> root_readers_ ABSL_GUARDED_BY(mutex_);
   mutable std::array<std::set<std::thread::id>, 3> phase_readers_ ABSL_GUARDED_BY(mutex_);
   mutable bool synchronized_ ABSL_GUARDED_BY(mutex_) = true;
+  mutable std::size_t content_reads_ ABSL_GUARDED_BY(mutex_) = 0;
 };
 
 struct CommandWorkersTest : ::testing::Test {
@@ -219,7 +237,7 @@ TEST_F(CommandWorkersTest, ContentMatchingIncludesTheCallingCoordinatorInTheAllo
     SCOPED_TRACE(participants);
     // Matching sees directories as well as files. Force caller/worker overlap without
     // assuming that every admitted logical worker reaches a file in this small tail.
-    const CommandFs fs(participants, std::min(participants, std::size_t{2}));
+    const CommandFs fs(participants, std::min(participants, std::size_t{2}), absl::Milliseconds(2));
     ASSERT_OK_AND_ASSIGN(
         const auto output,
         Run({"--jobs=" + std::to_string(participants), "--sort=tree", "left", "-content", "needle"}, fs));

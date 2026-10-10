@@ -4,6 +4,7 @@
 #include "xff/engine/parallel_match.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <optional>
 #include <string_view>
@@ -15,11 +16,9 @@
 namespace xff::engine {
 namespace {
 
-// A cold executor has a fixed creation and teardown cost. Accumulate enough matcher work to
-// repay it; once another run phase has started the executor, ordinary per-batch admission applies.
-inline constexpr std::size_t kMinColdParallelEntries = 8'192;
-inline constexpr std::size_t kColdProbeEntries = 16;
-inline constexpr auto kSlowColdProbe = std::chrono::microseconds(500);
+inline constexpr std::size_t kProbeChunks = 4;
+inline constexpr std::size_t kProbeChunkEntries = 4;
+inline constexpr std::size_t kMinRemainingEntries = 2;
 
 }  // namespace
 
@@ -61,13 +60,15 @@ ParallelMatch::ParallelMatch(
     RunExecutor& executor,
     bool scores,
     std::optional<ParallelContentOutput> output,
-    mbo::types::OptionalRef<const ExpressionExecution> execution)
+    mbo::types::OptionalRef<const ExpressionExecution> execution,
+    MatchWorkCosts costs)
     : expression_(expression),
       workers_(std::max(workers, std::size_t{1})),
       executor_(executor),
       scores_(scores),
       output_(std::move(output)),
-      execution_(execution) {}
+      execution_(execution),
+      costs_(costs) {}
 
 ParallelMatch::~ParallelMatch() = default;
 
@@ -76,7 +77,7 @@ const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEnt
   results_.clear();
   results_.resize(entries_.size());
   next_.store(0, std::memory_order_relaxed);
-  const bool cold = executor_.worker_count() == 0;
+  grain_ = 4;
   const auto ensure_coordinator = [&] {
     if (execution_ && !coordinator_) {
       coordinator_.emplace(execution_->MakeWorker(ExpressionWorkerRole::kCoordinator));
@@ -89,42 +90,42 @@ const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEnt
                      : mbo::types::OptionalRef<const ExpressionExecution::Worker>{});
   };
   // Very small batches cannot amortize waking the executor.
-  if (workers_ == 1 || entries_.size() < 16) {
+  if (workers_ == 1 || entries_.size() < kProbeChunks + kMinRemainingEntries) {
     ensure_coordinator();
     evaluate_coordinator();
-    serial_entries_ += entries_.size();
     return results_;
   }
-  std::size_t parallel_entries = entries_.size();
-  if (cold && serial_entries_ + entries_.size() < kMinColdParallelEntries) {
-    // A count threshold protects fast local storage, but must not suppress useful concurrency on
-    // slow filesystems. Measure a small prefix, then either parallelize the rest of this batch or
-    // finish inline and retain the evidence for later bounded batches.
-    ensure_coordinator();
-    const std::size_t probe = std::min(kColdProbeEntries, entries_.size());
+  ensure_coordinator();
+  // Observe this batch, even with an already warm executor. Discard the fastest
+  // and slowest of four timed chunks so one cold/outlier entry does not by itself
+  // justify dispatching a cheap tail. Every sampled result is retained exactly once.
+  std::array<std::chrono::nanoseconds, kProbeChunks> timings{};
+  const std::size_t chunk_entries =
+      std::min(kProbeChunkEntries, (entries_.size() - kMinRemainingEntries) / kProbeChunks);
+  const std::size_t probe_entries = kProbeChunks * chunk_entries;
+  for (std::size_t chunk = 0; chunk < kProbeChunks; ++chunk) {
     const auto started = std::chrono::steady_clock::now();
-    for (std::size_t index = 0; index < probe; ++index) {
+    const std::size_t first = chunk * chunk_entries;
+    for (std::size_t index = first; index < first + chunk_entries; ++index) {
       results_.at(index) = EvaluateEntry(
           entries_.at(index).AsVisit(), {}, {},
           coordinator_ ? mbo::types::OptionalRef<const ExpressionExecution::Worker>{*coordinator_}
                        : mbo::types::OptionalRef<const ExpressionExecution::Worker>{});
     }
-    next_.store(probe, std::memory_order_relaxed);
-    if (std::chrono::steady_clock::now() - started < kSlowColdProbe) {
-      evaluate_coordinator();
-      serial_entries_ += entries_.size();
-      return results_;
-    }
-    parallel_entries -= probe;
+    timings.at(chunk) =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - started);
   }
-  const std::size_t participants = std::min(workers_, (parallel_entries + 15) / 16);
-  if (participants <= 1) {
-    ensure_coordinator();
+  next_.store(probe_entries, std::memory_order_relaxed);
+  const auto plan = PlanMatchWork(
+      entries_.size() - probe_entries, workers_, executor_.worker_count(), EstimateMatchWork(timings, chunk_entries),
+      costs_);
+  if (plan.participants == 1) {
     evaluate_coordinator();
     return results_;
   }
-  executor_.Start(participants - 1);
-  const std::size_t count = std::min(participants - 1, executor_.worker_count());
+  grain_ = plan.grain;
+  executor_.Start(plan.participants - 1);
+  const std::size_t count = std::min(plan.participants - 1, executor_.worker_count());
   while (worker_states_.size() < count) {
     worker_states_.push_back(std::make_unique<WorkerState>(*this));
   }
@@ -157,14 +158,13 @@ void ParallelMatch::EvaluateEntries(
     mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
     mbo::types::OptionalRef<const WorkerMatchers> matchers,
     mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator) {
-  // Small chunks spread clustered expensive entries while amortizing atomic scheduling.
-  constexpr std::size_t kChunk = 4;
+  // Planned chunks amortize atomic scheduling while retaining multiple balancing waves.
   for (;;) {
-    const std::size_t first = next_.fetch_add(kChunk, std::memory_order_relaxed);
+    const std::size_t first = next_.fetch_add(grain_, std::memory_order_relaxed);
     if (first >= entries_.size()) {
       return;
     }
-    const std::size_t end = std::min(first + kChunk, entries_.size());
+    const std::size_t end = std::min(first + grain_, entries_.size());
     for (std::size_t index = first; index < end; ++index) {
       results_.at(index) = EvaluateEntry(entries_.at(index).AsVisit(), output, matchers, evaluator);
     }

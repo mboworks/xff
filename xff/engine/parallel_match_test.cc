@@ -3,12 +3,19 @@
 
 #include "xff/engine/parallel_match.h"
 
+#include <array>
 #include <cstddef>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
+#include <thread>
 #include <vector>
 
+#include "absl/base/thread_annotations.h"
+#include "absl/synchronization/mutex.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
@@ -21,11 +28,66 @@
 namespace xff::engine {
 namespace {
 
+using ::testing::Contains;
+using ::testing::Each;
 using ::testing::Eq;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
-using ::testing::Le;
 using ::testing::SizeIs;
+
+struct EvaluationTrace {
+  struct Snapshot {
+    std::vector<std::size_t> counts;
+    std::set<std::thread::id> contributors;
+  };
+
+  explicit EvaluationTrace(std::size_t entries) : counts_(entries) {}
+
+  EvaluationResult Evaluate(EvalContext& context) ABSL_LOCKS_EXCLUDED(mutex_) {
+    const std::size_t index = context.visit.metadata.size;
+    {
+      const absl::MutexLock lock(mutex_);
+      ++counts_.at(index);
+      contributors_.insert(std::this_thread::get_id());
+    }
+    // A controlled slow evaluator, not a claim about physical storage latency.
+    absl::SleepFor(absl::Milliseconds(2));
+    return {.matched = index % 2 == 0};
+  }
+
+  Snapshot Read() const ABSL_LOCKS_EXCLUDED(mutex_) {
+    const absl::MutexLock lock(mutex_);
+    return {.counts = counts_, .contributors = contributors_};
+  }
+
+ private:
+  // Guards only count and contributor observations; no lock spans the delay.
+  mutable absl::Mutex mutex_;
+  std::vector<std::size_t> counts_ ABSL_GUARDED_BY(mutex_);
+  std::set<std::thread::id> contributors_ ABSL_GUARDED_BY(mutex_);
+};
+
+struct TracedWorker final : ExpressionExecution::Worker::State {
+  explicit TracedWorker(EvaluationTrace& trace) : trace_(trace) {}
+
+  EvaluationResult Evaluate(EvalContext& context) const override { return trace_.Evaluate(context); }
+
+ private:
+  EvaluationTrace& trace_;
+};
+
+struct TracedPlan final : ExpressionExecution::Plan {
+  explicit TracedPlan(EvaluationTrace& trace) : trace_(trace) {}
+
+  ExpressionExecution::Worker MakeWorker(ExpressionWorkerRole) const override {
+    return ExpressionExecution::Worker(std::make_unique<TracedWorker>(trace_));
+  }
+
+  bool UsesIndexedMatchers() const override { return true; }
+
+ private:
+  EvaluationTrace& trace_;
+};
 
 struct ParallelMatchTest : ::testing::Test {
   // Type-only expressions never call this backend. No real paths are visited.
@@ -37,7 +99,7 @@ struct ParallelMatchTest : ::testing::Test {
     for (std::size_t index = 0; index < count; ++index) {
       entries.push_back({
           .path = std::to_string(index),
-          .metadata = {.type = index % 2 == 0 ? vfs::FileType::kRegular : vfs::FileType::kDirectory},
+          .metadata = {.type = index % 2 == 0 ? vfs::FileType::kRegular : vfs::FileType::kDirectory, .size = index},
           .fs = fs,
       });
     }
@@ -104,10 +166,17 @@ TEST_F(ParallelMatchTest, PreparedCoordinatorAndWorkersRetainRegexStateAcrossPoo
   parser::BindMatchers(command, regex::Grammar::kRe2, parser::CaseMode::kSensitive);
   ASSERT_OK_AND_ASSIGN(const auto execution, PrepareExpressionExecution(*command.expression));
   RunExecutor executor_pool(4);
-  ParallelMatch matcher(*command.expression, 4, executor_pool, false, std::nullopt, execution);
+  const MatchWorkCosts free_dispatch{
+      .cold_start = {},
+      .worker_start = {},
+      .dispatch = {},
+      .minimum_saving = {},
+  };
+  ParallelMatch matcher(*command.expression, 4, executor_pool, false, std::nullopt, execution, free_dispatch);
   // Small batches run on the coordinator, large batches activate private worker state;
   // returning to the coordinator must not reuse a worker's previous match or scratch.
-  for (const std::size_t count : {1, 128, 7, 512, 8'192, 10}) {
+  constexpr std::array kBatches{1UZ, 128UZ, 5UZ, 512UZ, 8'192UZ, 5UZ};
+  for (const std::size_t count : kBatches) {
     const auto& results = matcher.Match(Entries(count));
     ASSERT_THAT(results, SizeIs(count));
     for (std::size_t index = 0; index < count; ++index) {
@@ -118,18 +187,56 @@ TEST_F(ParallelMatchTest, PreparedCoordinatorAndWorkersRetainRegexStateAcrossPoo
   EXPECT_THAT(executor_pool.worker_count(), Eq(3));
 }
 
-TEST_F(ParallelMatchTest, ColdExecutorWaitsForAccumulatedWork) {
+TEST_F(ParallelMatchTest, RepeatedAdmittedBatchesKeepCallerInclusiveBudget) {
   MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-true"}));
   RunExecutor executor(4);
-  ParallelMatch matcher(*command.expression, 4, executor, false);
+  const MatchWorkCosts free_dispatch{
+      .cold_start = {},
+      .worker_start = {},
+      .dispatch = {},
+      .minimum_saving = {},
+  };
+  ParallelMatch matcher(*command.expression, 4, executor, false, std::nullopt, {}, free_dispatch);
   for (int batch = 0; batch < 7; ++batch) {
     EXPECT_THAT(matcher.Match(Entries(1'024)), SizeIs(1'024));
-    // Instrumented builds can make a probe expensive enough to admit workers.
-    // Thread budgeting must hold regardless of that timing-dependent decision.
-    EXPECT_THAT(executor.worker_count(), Le(3));
+    EXPECT_THAT(executor.worker_count(), Eq(3));
   }
   EXPECT_THAT(matcher.Match(Entries(1'024)), SizeIs(1'024));
   EXPECT_THAT(executor.worker_count(), Eq(3));
+}
+
+TEST_F(ParallelMatchTest, CompletedSmallBatchesDoNotAdmitSmallTail) {
+  ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-true"}));
+  RunExecutor executor(9);
+  ParallelMatch matcher(*command.expression, 10, executor, false);
+  constexpr std::size_t kHistoryBatches = 512;
+  for (std::size_t batch = 0; batch < kHistoryBatches; ++batch) {
+    EXPECT_THAT(matcher.Match(Entries(16)), SizeIs(16));
+  }
+  EXPECT_THAT(matcher.Match(Entries(32)), SizeIs(32));
+  EXPECT_THAT(executor.worker_count(), Eq(0));
+}
+
+TEST_F(ParallelMatchTest, SlowRemainingWorkUsesCallerAndReusesBoundedWorkers) {
+  ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-true"}));
+  constexpr std::size_t kEntries = 64;
+  EvaluationTrace trace(kEntries);
+  const ExpressionExecution execution(std::make_unique<TracedPlan>(trace));
+  RunExecutor executor(2);
+  ParallelMatch matcher(*command.expression, 3, executor, false, std::nullopt, execution);
+  constexpr std::size_t kBatches = 2;
+  for (std::size_t batch = 0; batch < kBatches; ++batch) {
+    const auto& results = matcher.Match(Entries(kEntries));
+    ASSERT_THAT(results, SizeIs(kEntries));
+    for (std::size_t index = 0; index < kEntries; ++index) {
+      EXPECT_THAT(results.at(index).evaluation.matched, Eq(index % 2 == 0));
+    }
+    EXPECT_THAT(executor.worker_count(), Eq(2));
+    const auto observed = trace.Read();
+    EXPECT_THAT(observed.counts, Each(Eq(batch + 1)));
+    EXPECT_THAT(observed.contributors, SizeIs(3));
+    EXPECT_THAT(observed.contributors, Contains(std::this_thread::get_id()));
+  }
 }
 
 TEST_F(ParallelMatchTest, StatefulMetadataAndActionExpressionsCannotEnterWorkers) {

@@ -15,12 +15,9 @@
 
 #include <array>
 #include <atomic>
-#include <chrono>
-#include <condition_variable>
 #include <functional>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <set>
 #include <string>
 #include <string_view>
@@ -28,7 +25,11 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/thread_annotations.h"
 #include "absl/status/status.h"
+#include "absl/synchronization/mutex.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
@@ -96,20 +97,39 @@ struct SearchFs final : vfs::FileSystem {
   vfs::SharedReadSource source_override;
   bool track_threads = false;
   std::size_t expected_threads = 2;
-  mutable std::mutex read_mutex;
-  mutable std::condition_variable read_condition;
-  mutable std::set<std::thread::id> read_threads;
+  absl::Duration read_delay = absl::ZeroDuration();
+  // Do not make the admission sample wait for workers that have not been admitted yet.
+  std::size_t rendezvous_after_reads = 16;
+  // Guards only observed reader identities/counts; fixture configuration stays
+  // immutable during a run, and no lock spans the simulated per-read latency.
+  mutable absl::Mutex read_mutex;
+  mutable std::set<std::thread::id> read_threads ABSL_GUARDED_BY(read_mutex);
+  mutable std::size_t observed_reads ABSL_GUARDED_BY(read_mutex) = 0;
 
-  void TrackRead() const {
+  bool ReadersReady() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(read_mutex) {
+    return read_threads.size() >= expected_threads;
+  }
+
+  std::set<std::thread::id> ReadThreads() const ABSL_LOCKS_EXCLUDED(read_mutex) {
+    const absl::MutexLock lock(read_mutex);
+    return read_threads;
+  }
+
+  void ClearReadThreads() ABSL_LOCKS_EXCLUDED(read_mutex) {
+    const absl::MutexLock lock(read_mutex);
+    read_threads.clear();
+    observed_reads = 0;
+  }
+
+  void TrackRead() const ABSL_LOCKS_EXCLUDED(read_mutex) {
     if (!track_threads) {
       return;
     }
-    std::unique_lock lock(read_mutex);
-    if (read_threads.insert(std::this_thread::get_id()).second) {
-      read_condition.notify_all();
-      // Force overlap on the first read without hanging if scheduling regresses to serial.
-      read_condition.wait_for(
-          lock, std::chrono::seconds(2), [this] { return read_threads.size() >= expected_threads; });
+    const absl::MutexLock lock(read_mutex);
+    read_threads.insert(std::this_thread::get_id());
+    if (++observed_reads > rendezvous_after_reads) {
+      // Bound the wait so failed scheduling produces an assertion rather than a hang.
+      read_mutex.AwaitWithTimeout(absl::Condition(this, &SearchFs::ReadersReady), absl::Seconds(2));
     }
   }
 
@@ -188,6 +208,7 @@ struct SearchFs final : vfs::FileSystem {
 
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override {
     TrackRead();
+    absl::SleepFor(read_delay);
     reads.fetch_add(1, std::memory_order_relaxed);
     if (read_error || path == read_error_path) {
       return absl::PermissionDeniedError("denied content");
@@ -289,12 +310,13 @@ TEST_F(RgEngineTest, NativeDecisionBatchesPreserveOutputAndErrorsAcrossLargeBoun
   const auto expected_errors = errors;
   fs.reads = 0;
   fs.track_threads = true;
+  fs.read_delay = absl::Milliseconds(2);
   args.front() = "--jobs=4";
   EXPECT_THAT(Run(args, false).errors, Eq(1));
   EXPECT_THAT(output, EqualsText(expected));
   EXPECT_THAT(errors, Eq(expected_errors));
   EXPECT_THAT(fs.reads.load(), Eq(1'099));
-  EXPECT_THAT(fs.read_threads.size(), Gt(1));
+  EXPECT_THAT(fs.ReadThreads(), SizeIs(Gt(1)));
 }
 
 TEST_F(RgEngineTest, RgFiltersAndLineSelectionReuseTheSameContent) {
@@ -430,14 +452,15 @@ TEST_F(RgEngineTest, OrdinaryRgSearchUsesContentWorkersWithoutNativeExpression) 
     fs.files.emplace("tree/" + std::to_string(index), "hit " + std::to_string(index) + "\n");
   }
   fs.track_threads = true;
+  fs.read_delay = absl::Milliseconds(2);
   EXPECT_THAT(Run({"-j4", "--archive=none", "hit", "tree"}).errors, 0);
-  EXPECT_THAT(fs.read_threads.size(), Gt(1));
+  EXPECT_THAT(fs.ReadThreads(), SizeIs(Gt(1)));
   EXPECT_THAT(fs.reads.load(), 300);
   EXPECT_THAT(output, HasSubstr("tree/0:hit 0\n"));
   EXPECT_THAT(output, HasSubstr("tree/299:hit 299\n"));
 }
 
-TEST_F(RgEngineTest, SlowProbeThatCompletesTheBatchDoesNotStartIdleWorkers) {
+TEST_F(RgEngineTest, SmallSlowBatchCanUseRemainingWork) {
   fs.files.clear();
   std::vector<CollectedEntry> entries;
   for (std::size_t index = 0; index < 16; ++index) {
@@ -445,11 +468,12 @@ TEST_F(RgEngineTest, SlowProbeThatCompletesTheBatchDoesNotStartIdleWorkers) {
     fs.files.emplace(path, "hit\n");
     entries.push_back({.path = path, .metadata = {.type = vfs::FileType::kRegular}, .fs = fs});
   }
-  // The fixture's first-read rendezvous times out after two seconds without a peer,
-  // making the coordinator prefix deliberately expensive. All 16 entries belong to
-  // that prefix: no remaining work may justify starting even one background worker.
+  // Four three-entry observations leave four independent slow files. Their
+  // remaining cost can repay startup even though the whole batch has only 16 entries.
   fs.track_threads = true;
+  fs.read_delay = absl::Milliseconds(2);
   fs.expected_threads = 2;
+  fs.rendezvous_after_reads = 12;
   ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
   RunExecutor executor(3);
   ParallelMatch matcher(*command.expression, 4, executor, false);
@@ -458,8 +482,34 @@ TEST_F(RgEngineTest, SlowProbeThatCompletesTheBatchDoesNotStartIdleWorkers) {
   for (const auto& result : results) {
     EXPECT_THAT(result.evaluation.matched, IsTrue());
   }
+  EXPECT_THAT(executor.worker_count(), Eq(3));
+  EXPECT_THAT(fs.reads.load(), Eq(16));
+  EXPECT_THAT(fs.ReadThreads(), SizeIs(Gt(1)));
+}
+
+TEST_F(RgEngineTest, TinySlowBatchDoesNotStartIdleWorkers) {
+  fs.files.clear();
+  std::vector<CollectedEntry> entries;
+  constexpr std::size_t kEntries = 5;
+  for (std::size_t index = 0; index < kEntries; ++index) {
+    const auto path = "tree/" + std::to_string(index);
+    fs.files.emplace(path, "hit\n");
+    entries.push_back({.path = path, .metadata = {.type = vfs::FileType::kRegular}, .fs = fs});
+  }
+  fs.track_threads = true;
+  fs.read_delay = absl::Milliseconds(2);
+  fs.expected_threads = 1;
+  ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
+  RunExecutor executor(3);
+  ParallelMatch matcher(*command.expression, 4, executor, false);
+  const auto& results = matcher.Match(std::move(entries));
+  EXPECT_THAT(results, SizeIs(kEntries));
+  for (const auto& result : results) {
+    EXPECT_THAT(result.evaluation.matched, IsTrue());
+  }
   EXPECT_THAT(executor.worker_count(), Eq(0));
-  EXPECT_THAT(fs.read_threads, ElementsAre(std::this_thread::get_id()));
+  EXPECT_THAT(fs.reads.load(), Eq(kEntries));
+  EXPECT_THAT(fs.ReadThreads(), ElementsAre(std::this_thread::get_id()));
 }
 
 TEST_F(RgEngineTest, MatcherPoolGrowsForLaterBatchesAndRunsShortTailsInline) {
@@ -480,21 +530,23 @@ TEST_F(RgEngineTest, MatcherPoolGrowsForLaterBatchesAndRunsShortTailsInline) {
     return result;
   };
   MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
-  RunExecutor executor(12);
-  executor.Start(12);
+  RunExecutor executor(11);
+  executor.Start(11);
   ParallelMatch matcher(*command.expression, 12, executor, false);
   fs.track_threads = true;
-  for (const auto& [count, workers] : {std::pair{64UZ, 4UZ}, {256UZ, 12UZ}, {8UZ, 1UZ}}) {
+  fs.read_delay = absl::Milliseconds(2);
+  constexpr std::array kBatches{std::pair{20UZ, 4UZ}, std::pair{256UZ, 12UZ}, std::pair{5UZ, 1UZ}};
+  for (const auto& [count, workers] : kBatches) {
     fs.expected_threads = workers;
-    fs.read_threads.clear();
+    fs.ClearReadThreads();
     const auto& results = matcher.Match(entries(count));
-    EXPECT_THAT(results.size(), Eq(count));
-    EXPECT_THAT(fs.read_threads.size(), Eq(workers));
+    EXPECT_THAT(results, SizeIs(count));
+    EXPECT_THAT(fs.ReadThreads(), SizeIs(workers));
     for (const auto& result : results) {
       EXPECT_THAT(result.evaluation.matched, IsTrue());
     }
   }
-  EXPECT_THAT(fs.read_threads, ElementsAre(std::this_thread::get_id()));
+  EXPECT_THAT(fs.ReadThreads(), ElementsAre(std::this_thread::get_id()));
 }
 
 TEST_F(RgEngineTest, ArchiveMembersKeepTheirSerialReadAdmissionWithMultipleWorkers) {
@@ -509,7 +561,7 @@ TEST_F(RgEngineTest, ArchiveMembersKeepTheirSerialReadAdmissionWithMultipleWorke
   fs.expected_threads = 1;
   EXPECT_THAT(Run({"-j4", "--archive=none", "hit", "tree"}).errors, Eq(0));
   EXPECT_THAT(output, EqualsText(expected));
-  EXPECT_THAT(fs.read_threads, ElementsAre(std::this_thread::get_id()));
+  EXPECT_THAT(fs.ReadThreads(), ElementsAre(std::this_thread::get_id()));
 }
 
 TEST_F(RgEngineTest, ParallelRgMatchesSerialRecordsAcrossBatchesAndOutputModes) {
@@ -562,8 +614,8 @@ TEST_F(RgEngineTest, ParallelNativeFilterAndRgSelectionShareEachRead) {
 TEST_F(RgEngineTest, MetadataConsumersKeepParallelFilteringAndOrderedResults) {
   // This controls filter eligibility with metadata consumers, not cold admission.
   // Eager metadata for at least 512 entries warms the shared executor before matching;
-  // the first-read rendezvous then forces real overlap in the content batch. With a
-  // smaller cold batch, its serial probe can use up that rendezvous before dispatch.
+  // Uniform per-read latency supplies meaningful remaining content work. The
+  // rendezvous starts after sampling, so the sample never waits for unadmitted workers.
   constexpr std::size_t kFiles = 600;
   fs.files.clear();
   for (std::size_t index = 0; index < kFiles; ++index) {
@@ -590,14 +642,16 @@ TEST_F(RgEngineTest, MetadataConsumersKeepParallelFilteringAndOrderedResults) {
       EXPECT_THAT(Run(args, rg).errors, Eq(0));
       const std::string expected = output;
       fs.reads = 0;
-      fs.read_threads.clear();
+      fs.ClearReadThreads();
       fs.track_threads = true;
+      fs.read_delay = absl::Milliseconds(2);
       args.front() = "--jobs=4";
       EXPECT_THAT(Run(args, rg).errors, Eq(0));
       fs.track_threads = false;
+      fs.read_delay = absl::ZeroDuration();
       EXPECT_THAT(output, EqualsText(expected));
       EXPECT_THAT(fs.reads.load(), Eq(kFiles));
-      EXPECT_THAT(fs.read_threads, SizeIs(Gt(1)));
+      EXPECT_THAT(fs.ReadThreads(), SizeIs(Gt(1)));
     }
   }
 }

@@ -272,6 +272,22 @@ cc_fuzz_test(
     ],
 )
 
+cc_library(
+    name = "match_work_cc",
+    srcs = ["match_work.cc"],
+    hdrs = ["match_work.h"],
+)
+
+cc_test(
+    name = "match_work_test",
+    size = "small",
+    srcs = ["match_work_test.cc"],
+    deps = [
+        ":match_work_cc",
+        "@googletest//:gtest_main",
+    ],
+)
+
 # Drives one find run: walk the roots, evaluate the expression, (implicit) print.
 cc_library(
     name = "parallel_match_cc",
@@ -281,6 +297,7 @@ cc_library(
         ":collect_cc",
         ":evaluate_cc",
         ":expression_execution_cc",
+        ":match_work_cc",
         ":run_executor_cc",
         "//xff/parser:parser_cc",
         "//xff/registry:registry_cc",
@@ -299,10 +316,14 @@ cc_test(
     deps = [
         ":evaluate_cc",
         ":expression_execution_cc",
+        ":match_work_cc",
         ":parallel_match_cc",
         "//xff/matching/regex:regex_cc",
         "//xff/parser:parser_cc",
         "//xff/vfs:local_fs_cc",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:status_cc",
     ],
@@ -600,7 +621,10 @@ cc_test(
         "//xff/parser:parser_cc",
         "//xff/vfs:local_fs_cc",
         "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:matchers_cc",
