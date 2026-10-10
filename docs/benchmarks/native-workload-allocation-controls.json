@@ -1,0 +1,2748 @@
+{
+  "purpose": "exact-baseline workload allocation diagnostic; not timing or native macOS acceptance",
+  "source_revision": "772994ab7905be77915978f06ea90ae5934aaeef",
+  "source_tree": "8f797cae4320ba5cb497d580eb4b158f5eaf007b",
+  "binary_sha256": "f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106",
+  "verified_cases": 30,
+  "verified_outputs": 60,
+  "started_at": "2026-10-10T06:51:17.092549+00:00",
+  "completed_at": "2026-10-10T06:52:51.218964+00:00",
+  "helper": {
+    "path": "/tmp/xff-perf-baseline-exact772-native-session1/resource-launcher",
+    "sha256": "60bcb395bb3d0eccccd0a3d0cb2407538b1f96c45d5e1e156a0bd4522f93328e",
+    "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+    "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+  },
+  "complete_grid": [
+    10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000
+  ],
+  "actual_cpu_ids": [0],
+  "summary_rows": [
+    {
+      "dataset": "broad",
+      "files": 20000,
+      "task": "files-tree",
+      "label": "broad-20000-jobs1-files-tree",
+      "allocation_calls": 45426,
+      "peak_tracked_heap_bytes": 186707,
+      "native_peak_rss_bytes": 5730304,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 20181,
+          "listing_reserve": 340,
+          "stat_path_copy": 180,
+          "other": 24725
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 1584,
+          "listing_reserve": 30528,
+          "stat_path_copy": 0,
+          "other": 154595
+        }
+      }
+    },
+    {
+      "dataset": "broad",
+      "files": 20000,
+      "task": "files-collect",
+      "label": "broad-20000-jobs1-files-collect",
+      "allocation_calls": 66461,
+      "peak_tracked_heap_bytes": 5514851,
+      "native_peak_rss_bytes": 10924032,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 345,
+          "directory_path": 20181,
+          "listing_reserve": 340,
+          "stat_path_copy": 20182,
+          "other": 25413
+        },
+        "peak": {
+          "collection": 5356400,
+          "directory_path": 3312,
+          "listing_reserve": 4800,
+          "stat_path_copy": 0,
+          "other": 150339
+        }
+      }
+    },
+    {
+      "dataset": "broad",
+      "files": 20000,
+      "task": "files-stat-lazy",
+      "label": "broad-20000-jobs1-files-stat-lazy",
+      "allocation_calls": 66111,
+      "peak_tracked_heap_bytes": 187419,
+      "native_peak_rss_bytes": 5447680,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 20181,
+          "listing_reserve": 340,
+          "stat_path_copy": 20180,
+          "other": 25410
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 1584,
+          "listing_reserve": 30528,
+          "stat_path_copy": 0,
+          "other": 155307
+        }
+      }
+    },
+    {
+      "dataset": "broad",
+      "files": 20000,
+      "task": "files-stat-eager",
+      "label": "broad-20000-jobs1-files-stat-eager",
+      "allocation_calls": 66113,
+      "peak_tracked_heap_bytes": 187419,
+      "native_peak_rss_bytes": 5464064,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 20181,
+          "listing_reserve": 340,
+          "stat_path_copy": 20182,
+          "other": 25410
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 1584,
+          "listing_reserve": 30528,
+          "stat_path_copy": 0,
+          "other": 155307
+        }
+      }
+    },
+    {
+      "dataset": "broad",
+      "files": 20000,
+      "task": "content-needle",
+      "label": "broad-20000-jobs1-content-needle",
+      "allocation_calls": 72482,
+      "peak_tracked_heap_bytes": 187627,
+      "native_peak_rss_bytes": 5640192,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 20181,
+          "listing_reserve": 340,
+          "stat_path_copy": 180,
+          "other": 51781
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 1584,
+          "listing_reserve": 30528,
+          "stat_path_copy": 0,
+          "other": 155515
+        }
+      }
+    },
+    {
+      "dataset": "broad",
+      "files": 50000,
+      "task": "files-tree",
+      "label": "broad-50000-jobs1-files-tree",
+      "allocation_calls": 110672,
+      "peak_tracked_heap_bytes": 249107,
+      "native_peak_rss_bytes": 5853184,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 50340,
+          "listing_reserve": 811,
+          "stat_path_copy": 339,
+          "other": 59182
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 1584,
+          "listing_reserve": 90432,
+          "stat_path_copy": 0,
+          "other": 157091
+        }
+      }
+    },
+    {
+      "dataset": "broad",
+      "files": 50000,
+      "task": "files-collect",
+      "label": "broad-50000-jobs1-files-collect",
+      "allocation_calls": 163145,
+      "peak_tracked_heap_bytes": 13482227,
+      "native_peak_rss_bytes": 18792448,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 841,
+          "directory_path": 50340,
+          "listing_reserve": 811,
+          "stat_path_copy": 50341,
+          "other": 60812
+        },
+        "peak": {
+          "collection": 13322768,
+          "directory_path": 3840,
+          "listing_reserve": 5184,
+          "stat_path_copy": 0,
+          "other": 150435
+        }
+      }
+    },
+    {
+      "dataset": "broad",
+      "files": 50000,
+      "task": "files-stat-lazy",
+      "label": "broad-50000-jobs1-files-stat-lazy",
+      "allocation_calls": 162299,
+      "peak_tracked_heap_bytes": 249899,
+      "native_peak_rss_bytes": 5775360,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 50340,
+          "listing_reserve": 811,
+          "stat_path_copy": 50339,
+          "other": 60809
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 1584,
+          "listing_reserve": 90432,
+          "stat_path_copy": 0,
+          "other": 157883
+        }
+      }
+    },
+    {
+      "dataset": "broad",
+      "files": 50000,
+      "task": "files-stat-eager",
+      "label": "broad-50000-jobs1-files-stat-eager",
+      "allocation_calls": 162301,
+      "peak_tracked_heap_bytes": 249899,
+      "native_peak_rss_bytes": 5484544,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 50340,
+          "listing_reserve": 811,
+          "stat_path_copy": 50341,
+          "other": 60809
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 1584,
+          "listing_reserve": 90432,
+          "stat_path_copy": 0,
+          "other": 157883
+        }
+      }
+    },
+    {
+      "dataset": "broad",
+      "files": 50000,
+      "task": "content-needle",
+      "label": "broad-50000-jobs1-content-needle",
+      "allocation_calls": 178943,
+      "peak_tracked_heap_bytes": 250107,
+      "native_peak_rss_bytes": 5668864,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 50340,
+          "listing_reserve": 811,
+          "stat_path_copy": 339,
+          "other": 127453
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 1584,
+          "listing_reserve": 90432,
+          "stat_path_copy": 0,
+          "other": 158091
+        }
+      }
+    },
+    {
+      "dataset": "broad",
+      "files": 100000,
+      "task": "files-tree",
+      "label": "broad-100000-jobs1-files-tree",
+      "allocation_calls": 220752,
+      "peak_tracked_heap_bytes": 330395,
+      "native_peak_rss_bytes": 5976064,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 100811,
+          "listing_reserve": 1595,
+          "stat_path_copy": 810,
+          "other": 117536
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 0,
+          "listing_reserve": 150528,
+          "stat_path_copy": 0,
+          "other": 179867
+        }
+      }
+    },
+    {
+      "dataset": "broad",
+      "files": 100000,
+      "task": "files-collect",
+      "label": "broad-100000-jobs1-files-collect",
+      "allocation_calls": 325620,
+      "peak_tracked_heap_bytes": 26862227,
+      "native_peak_rss_bytes": 32243712,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 1668,
+          "directory_path": 100811,
+          "listing_reserve": 1595,
+          "stat_path_copy": 100812,
+          "other": 120734
+        },
+        "peak": {
+          "collection": 26701744,
+          "directory_path": 4384,
+          "listing_reserve": 5568,
+          "stat_path_copy": 0,
+          "other": 150531
+        }
+      }
+    },
+    {
+      "dataset": "broad",
+      "files": 100000,
+      "task": "files-stat-lazy",
+      "label": "broad-100000-jobs1-files-stat-lazy",
+      "allocation_calls": 323947,
+      "peak_tracked_heap_bytes": 326963,
+      "native_peak_rss_bytes": 5795840,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 100811,
+          "listing_reserve": 1595,
+          "stat_path_copy": 100810,
+          "other": 120731
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 0,
+          "listing_reserve": 150528,
+          "stat_path_copy": 0,
+          "other": 176435
+        }
+      }
+    },
+    {
+      "dataset": "broad",
+      "files": 100000,
+      "task": "files-stat-eager",
+      "label": "broad-100000-jobs1-files-stat-eager",
+      "allocation_calls": 323949,
+      "peak_tracked_heap_bytes": 326963,
+      "native_peak_rss_bytes": 5812224,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 100811,
+          "listing_reserve": 1595,
+          "stat_path_copy": 100812,
+          "other": 120731
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 0,
+          "listing_reserve": 150528,
+          "stat_path_copy": 0,
+          "other": 176435
+        }
+      }
+    },
+    {
+      "dataset": "broad",
+      "files": 100000,
+      "task": "content-needle",
+      "label": "broad-100000-jobs1-content-needle",
+      "allocation_calls": 357227,
+      "peak_tracked_heap_bytes": 327171,
+      "native_peak_rss_bytes": 5799936,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 100811,
+          "listing_reserve": 1595,
+          "stat_path_copy": 810,
+          "other": 254011
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 0,
+          "listing_reserve": 150528,
+          "stat_path_copy": 0,
+          "other": 176643
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 20000,
+      "task": "files-tree",
+      "label": "deep-20000-jobs1-files-tree",
+      "allocation_calls": 41800,
+      "peak_tracked_heap_bytes": 3325867,
+      "native_peak_rss_bytes": 9023488,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 19531,
+          "listing_reserve": 45,
+          "stat_path_copy": 42,
+          "other": 22182
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 1176096,
+          "listing_reserve": 1923840,
+          "stat_path_copy": 0,
+          "other": 225931
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 20000,
+      "task": "files-collect",
+      "label": "deep-20000-jobs1-files-collect",
+      "allocation_calls": 61748,
+      "peak_tracked_heap_bytes": 7268939,
+      "native_peak_rss_bytes": 13021184,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 360,
+          "directory_path": 19531,
+          "listing_reserve": 45,
+          "stat_path_copy": 19532,
+          "other": 22280
+        },
+        "peak": {
+          "collection": 6339440,
+          "directory_path": 168384,
+          "listing_reserve": 585984,
+          "stat_path_copy": 0,
+          "other": 175131
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 20000,
+      "task": "files-stat-lazy",
+      "label": "deep-20000-jobs1-files-stat-lazy",
+      "allocation_calls": 61383,
+      "peak_tracked_heap_bytes": 3329251,
+      "native_peak_rss_bytes": 8781824,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 19531,
+          "listing_reserve": 45,
+          "stat_path_copy": 19530,
+          "other": 22277
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 1176096,
+          "listing_reserve": 1923840,
+          "stat_path_copy": 0,
+          "other": 229315
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 20000,
+      "task": "files-stat-eager",
+      "label": "deep-20000-jobs1-files-stat-eager",
+      "allocation_calls": 61385,
+      "peak_tracked_heap_bytes": 3329475,
+      "native_peak_rss_bytes": 8962048,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 19531,
+          "listing_reserve": 45,
+          "stat_path_copy": 19532,
+          "other": 22277
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 1176096,
+          "listing_reserve": 1923840,
+          "stat_path_copy": 224,
+          "other": 229315
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 20000,
+      "task": "content-needle",
+      "label": "deep-20000-jobs1-content-needle",
+      "allocation_calls": 67554,
+      "peak_tracked_heap_bytes": 3329459,
+      "native_peak_rss_bytes": 8835072,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 19531,
+          "listing_reserve": 45,
+          "stat_path_copy": 42,
+          "other": 47936
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 1176096,
+          "listing_reserve": 1923840,
+          "stat_path_copy": 0,
+          "other": 229523
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 50000,
+      "task": "files-tree",
+      "label": "deep-50000-jobs1-files-tree",
+      "allocation_calls": 106357,
+      "peak_tracked_heap_bytes": 15571683,
+      "native_peak_rss_bytes": 21364736,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 49590,
+          "listing_reserve": 104,
+          "stat_path_copy": 101,
+          "other": 56562
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 9412496,
+          "listing_reserve": 5771328,
+          "stat_path_copy": 0,
+          "other": 387859
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 50000,
+      "task": "files-collect",
+      "label": "deep-50000-jobs1-files-collect",
+      "allocation_calls": 157045,
+      "peak_tracked_heap_bytes": 31508147,
+      "native_peak_rss_bytes": 37400576,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 982,
+          "directory_path": 49590,
+          "listing_reserve": 104,
+          "stat_path_copy": 49591,
+          "other": 56778
+        },
+        "peak": {
+          "collection": 15957744,
+          "directory_path": 9412496,
+          "listing_reserve": 5771328,
+          "stat_path_copy": 0,
+          "other": 366579
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 50000,
+      "task": "files-stat-lazy",
+      "label": "deep-50000-jobs1-files-stat-lazy",
+      "allocation_calls": 156058,
+      "peak_tracked_heap_bytes": 15580683,
+      "native_peak_rss_bytes": 21544960,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 49590,
+          "listing_reserve": 104,
+          "stat_path_copy": 49589,
+          "other": 56775
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 9412496,
+          "listing_reserve": 5771328,
+          "stat_path_copy": 0,
+          "other": 396859
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 50000,
+      "task": "files-stat-eager",
+      "label": "deep-50000-jobs1-files-stat-eager",
+      "allocation_calls": 156060,
+      "peak_tracked_heap_bytes": 15581291,
+      "native_peak_rss_bytes": 21340160,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 49590,
+          "listing_reserve": 104,
+          "stat_path_copy": 49591,
+          "other": 56775
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 9412496,
+          "listing_reserve": 5771328,
+          "stat_path_copy": 608,
+          "other": 396859
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 50000,
+      "task": "content-needle",
+      "label": "deep-50000-jobs1-content-needle",
+      "allocation_calls": 169901,
+      "peak_tracked_heap_bytes": 15580891,
+      "native_peak_rss_bytes": 21688320,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 49590,
+          "listing_reserve": 104,
+          "stat_path_copy": 101,
+          "other": 120106
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 9412496,
+          "listing_reserve": 5771328,
+          "stat_path_copy": 0,
+          "other": 397067
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 100000,
+      "task": "files-tree",
+      "label": "deep-100000-jobs1-files-tree",
+      "allocation_calls": 210808,
+      "peak_tracked_heap_bytes": 35643867,
+      "native_peak_rss_bytes": 41926656,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 99688,
+          "listing_reserve": 202,
+          "stat_path_copy": 199,
+          "other": 110719
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 25475264,
+          "listing_reserve": 9618816,
+          "stat_path_copy": 0,
+          "other": 549787
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 100000,
+      "task": "files-collect",
+      "label": "deep-100000-jobs1-files-collect",
+      "allocation_calls": 312881,
+      "peak_tracked_heap_bytes": 72085451,
+      "native_peak_rss_bytes": 78327808,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 2171,
+          "directory_path": 99688,
+          "listing_reserve": 202,
+          "stat_path_copy": 99689,
+          "other": 111131
+        },
+        "peak": {
+          "collection": 36456976,
+          "directory_path": 25475264,
+          "listing_reserve": 9618816,
+          "stat_path_copy": 0,
+          "other": 534395
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 100000,
+      "task": "files-stat-lazy",
+      "label": "deep-100000-jobs1-files-stat-lazy",
+      "allocation_calls": 310705,
+      "peak_tracked_heap_bytes": 35658483,
+      "native_peak_rss_bytes": 42143744,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 99688,
+          "listing_reserve": 202,
+          "stat_path_copy": 99687,
+          "other": 111128
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 25475264,
+          "listing_reserve": 9618816,
+          "stat_path_copy": 0,
+          "other": 564403
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 100000,
+      "task": "files-stat-eager",
+      "label": "deep-100000-jobs1-files-stat-eager",
+      "allocation_calls": 310707,
+      "peak_tracked_heap_bytes": 35659475,
+      "native_peak_rss_bytes": 42049536,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 99688,
+          "listing_reserve": 202,
+          "stat_path_copy": 99689,
+          "other": 111128
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 25475264,
+          "listing_reserve": 9618816,
+          "stat_path_copy": 992,
+          "other": 564403
+        }
+      }
+    },
+    {
+      "dataset": "deep",
+      "files": 100000,
+      "task": "content-needle",
+      "label": "deep-100000-jobs1-content-needle",
+      "allocation_calls": 339423,
+      "peak_tracked_heap_bytes": 35658691,
+      "native_peak_rss_bytes": 41889792,
+      "exclusive_groups": {
+        "allocations": {
+          "collection": 0,
+          "directory_path": 99688,
+          "listing_reserve": 202,
+          "stat_path_copy": 199,
+          "other": 239334
+        },
+        "peak": {
+          "collection": 0,
+          "directory_path": 25475264,
+          "listing_reserve": 9618816,
+          "stat_path_copy": 0,
+          "other": 564611
+        }
+      }
+    }
+  ],
+  "original_files": {
+    "broad-20000-jobs1-files-tree": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 541889,
+        "sha256": "c54cea8ee14b402e788fa8b26fef8c9a75848b2b4348820b46afaf4064d89565"
+      },
+      "allocations.stacks": {
+        "bytes": 474714,
+        "sha256": "fd28abc8ad92e6dfc70ca77f67529de22b20f7854cc0074a293f7acc4bb6c0cc"
+      },
+      "case.json": {
+        "bytes": 2906,
+        "sha256": "bc75383e406f949d0a1e9a46f2276fac0884ee8e6493de3165125fe1ba397d3d"
+      },
+      "heaptrack.stderr": {
+        "bytes": 104,
+        "sha256": "d87236f3402bb30f486fc656b002898bffe15b49a9a21d7fe6df2679dbdc884b"
+      },
+      "heaptrack.stdout": {
+        "bytes": 861393,
+        "sha256": "73b5d478f0e335541ba9effe6f77941f385455cfb46194ba6259f756c2e93388"
+      },
+      "heaptrack.zst": {
+        "bytes": 32414,
+        "sha256": "39667e768411bf71988d9e3cb1123bce49f06dc8cc9095af0942c2dea1d85df6"
+      },
+      "native-resources.json": {
+        "bytes": 458,
+        "sha256": "681a3663ca6a18709ba83e81a5aacc795acde5d73e9c92d5c493bc21da121796"
+      },
+      "native.stdout": {
+        "bytes": 861036,
+        "sha256": "59fff61261bc37d4bce7f28f1211b6b231c5ab91a77c02ba4c99f665e126b41a"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 541889,
+        "sha256": "c54cea8ee14b402e788fa8b26fef8c9a75848b2b4348820b46afaf4064d89565"
+      },
+      "peak.stacks": {
+        "bytes": 474760,
+        "sha256": "02ea3f039288636d52bbc4b99fc55bee92c5536e620637daa3cfc9e639abd4f9"
+      }
+    },
+    "broad-20000-jobs1-files-collect": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 616472,
+        "sha256": "1c77475cfab3786af5cd3816e174407feba2a55838b5188edce62606964a7b4a"
+      },
+      "allocations.stacks": {
+        "bytes": 532788,
+        "sha256": "d112c52b831b44b5bacb8bce557bb416831ff7c6da2c2cce17b45f0b3e79c826"
+      },
+      "case.json": {
+        "bytes": 2990,
+        "sha256": "80b47c0c2dc0520e5dfab4abba3406b5ddea95c41f96a4f4e6dd1944e842aea6"
+      },
+      "heaptrack.stderr": {
+        "bytes": 104,
+        "sha256": "8046f80463a6cbd81e178eccc6507e18727175b7f9d6eae167c305b1b0404dd7"
+      },
+      "heaptrack.stdout": {
+        "bytes": 861399,
+        "sha256": "e9cfeb7ef6c7fe9e2a6a8c617f357469dbd7999a2e527fa7211d70ec005899fb"
+      },
+      "heaptrack.zst": {
+        "bytes": 42262,
+        "sha256": "a3b291551e2dd73cc7d49b5d775d418ca44e7fdf342f50ab3f6bd5424cda8920"
+      },
+      "native-resources.json": {
+        "bytes": 460,
+        "sha256": "b6fb9bb48e0fdce0b44dd376843506d491a95ffcf0d6b9b6f21f31ae66e67081"
+      },
+      "native.stdout": {
+        "bytes": 861036,
+        "sha256": "74d1291817226d16cb720ce0d5d6524defaacb657a94b54c30c65b3c6d1136dd"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 616472,
+        "sha256": "1c77475cfab3786af5cd3816e174407feba2a55838b5188edce62606964a7b4a"
+      },
+      "peak.stacks": {
+        "bytes": 532940,
+        "sha256": "e49078730e0e8aca5614e2879cec74f4c688d4a1a50ee0348980fb0785f81cff"
+      }
+    },
+    "broad-20000-jobs1-files-stat-lazy": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 557137,
+        "sha256": "88cebe42e9ebaf7ed5f8176869f04bcf02552316d0ef7223f3169c5c96dc8573"
+      },
+      "allocations.stacks": {
+        "bytes": 523059,
+        "sha256": "e060d3a2ad7f22512d6e4412e3da696876c9dcf26152ca18b61ea752cb17548e"
+      },
+      "case.json": {
+        "bytes": 3001,
+        "sha256": "6593d80227c8f7b3ef156c491fdaf749ee17262d288e4b3e0607b8e10fc8aa4b"
+      },
+      "heaptrack.stderr": {
+        "bytes": 104,
+        "sha256": "0cfb40a1c6b4970fb898daf33413edfa8bff02849d1822665ffda0c7b9608c7b"
+      },
+      "heaptrack.stdout": {
+        "bytes": 861403,
+        "sha256": "c23a4777670578c4f13980a13a36965879a9db17fc94af74d35806c179d9c766"
+      },
+      "heaptrack.zst": {
+        "bytes": 35567,
+        "sha256": "0eaf14c278a32469e5024ab140e60a6a6ae405638d94a101cc198930a12ca83a"
+      },
+      "native-resources.json": {
+        "bytes": 458,
+        "sha256": "97b3aea2be5c22a068b95b35f7f95102d12bbddd9d7b3ed54d7e1aedf3630b2b"
+      },
+      "native.stdout": {
+        "bytes": 861036,
+        "sha256": "74d1291817226d16cb720ce0d5d6524defaacb657a94b54c30c65b3c6d1136dd"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 557137,
+        "sha256": "88cebe42e9ebaf7ed5f8176869f04bcf02552316d0ef7223f3169c5c96dc8573"
+      },
+      "peak.stacks": {
+        "bytes": 523075,
+        "sha256": "14f203c34fed0ff7a7054a90baf21aca8207b84c769bee3c94ad2dbc24ffe2d2"
+      }
+    },
+    "broad-20000-jobs1-files-stat-eager": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 506930,
+        "sha256": "aea483fc8fdc55821e68d72ea93268c3f0b25e74536bde07e0a229d02eee5fce"
+      },
+      "allocations.stacks": {
+        "bytes": 492411,
+        "sha256": "7c4202e3a5698a1743ca12f1586be69912b1ef846179cbdd3f1b66e733d6eeee"
+      },
+      "case.json": {
+        "bytes": 3006,
+        "sha256": "ff6e585482ab17c72b3b7968ebe742afa70ebfc15cdf5e1b132d4cd9b7f2bd9f"
+      },
+      "heaptrack.stderr": {
+        "bytes": 104,
+        "sha256": "d142d4e3504b157ba408ee7c2e73a7dc98702fe0a966d7e084f88181fd1aff5c"
+      },
+      "heaptrack.stdout": {
+        "bytes": 861405,
+        "sha256": "356867c032bffd740d79cafa022b780ad8c16bd78af4d103fe9a667ea5403470"
+      },
+      "heaptrack.zst": {
+        "bytes": 38947,
+        "sha256": "e51f76a27d26d4febea535fa54195458238db211378fd409baee2129bcb98fda"
+      },
+      "native-resources.json": {
+        "bytes": 459,
+        "sha256": "6385bf3ef7463f24c5dc8eefd08351fdcc1b3a2f67daa4e30d6143ae230af451"
+      },
+      "native.stdout": {
+        "bytes": 861036,
+        "sha256": "74d1291817226d16cb720ce0d5d6524defaacb657a94b54c30c65b3c6d1136dd"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 506930,
+        "sha256": "aea483fc8fdc55821e68d72ea93268c3f0b25e74536bde07e0a229d02eee5fce"
+      },
+      "peak.stacks": {
+        "bytes": 492431,
+        "sha256": "4318f40283c58374d917df28619c884103aa935fad5a8e3825de82e3368dccfb"
+      }
+    },
+    "broad-20000-jobs1-content-needle": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 508900,
+        "sha256": "1072b91c34e29ca6d27353c951c42bbe1c8cac1c81d989a9078f8c99fd898b35"
+      },
+      "allocations.stacks": {
+        "bytes": 540175,
+        "sha256": "4ac0ccefd53a74aaeb307795d616322c5d499055d659989f554a4badb6cdc8e9"
+      },
+      "case.json": {
+        "bytes": 3079,
+        "sha256": "a037081315495ff933fce996e59831bd354446e1195bbc47b250da71a4815d79"
+      },
+      "heaptrack.stderr": {
+        "bytes": 103,
+        "sha256": "07e072f79026b5b632d45a3dce137a1d59bad626db4189520ae317e0bd2beaae"
+      },
+      "heaptrack.stdout": {
+        "bytes": 287303,
+        "sha256": "dd3a4d6a7889c15a8b55299a2709839f4e69f66bc654dd43ef238098a25667b9"
+      },
+      "heaptrack.zst": {
+        "bytes": 43082,
+        "sha256": "96b4188eccfb6db61c37dff852f13a5fc454390ffd012d9cc07f8b92359ee64c"
+      },
+      "native-resources.json": {
+        "bytes": 459,
+        "sha256": "8ec8721c0a94ffda258e36dd73d5cb2e92cdb3fac2c20b0c52fc7bec88611c92"
+      },
+      "native.stdout": {
+        "bytes": 286938,
+        "sha256": "d7b3adf21e0ad48fde9997ba8560d3b511d523e588190749911571827d50b903"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 508900,
+        "sha256": "1072b91c34e29ca6d27353c951c42bbe1c8cac1c81d989a9078f8c99fd898b35"
+      },
+      "peak.stacks": {
+        "bytes": 540174,
+        "sha256": "626b21680b3bff630bb035de6588d9399ae2c8c7c13358285d75675ebe043f71"
+      }
+    },
+    "broad-50000-jobs1-files-tree": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 551957,
+        "sha256": "3ad278152bc99abb3f10171b35648283bec0968821bef365e283b1090e8f74b6"
+      },
+      "allocations.stacks": {
+        "bytes": 495216,
+        "sha256": "05e215c6e355a46db0c4a0a577a51ccc9dc180e566b3cf2e4e7f80bab57c351d"
+      },
+      "case.json": {
+        "bytes": 2894,
+        "sha256": "785c2da913de1b567aa2b1eec922f694cbeb5145eff72d3f771f034ca4bec1f6"
+      },
+      "heaptrack.stderr": {
+        "bytes": 105,
+        "sha256": "3f127a45a443649fbd27a540e608fe447458c131963422deced9d216a1220b99"
+      },
+      "heaptrack.stdout": {
+        "bytes": 2059574,
+        "sha256": "ff59d1db8830cc19d3a240b892e84cf7b5da173f2260eaebaf7ce0436b0e228d"
+      },
+      "heaptrack.zst": {
+        "bytes": 33707,
+        "sha256": "ef1116cb56adf5859151c35d310fbc2d1eebabbb91067bb02dc4a4a73e5fc6b6"
+      },
+      "native-resources.json": {
+        "bytes": 460,
+        "sha256": "9826d9314418ed98fa2d22104cb8fdf18a858d9395efc9688befe23a2b5db681"
+      },
+      "native.stdout": {
+        "bytes": 2059217,
+        "sha256": "c6870839baf1794ede7af79b8faffcd9c627774a71d3afd80732891a949e5f55"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 551957,
+        "sha256": "3ad278152bc99abb3f10171b35648283bec0968821bef365e283b1090e8f74b6"
+      },
+      "peak.stacks": {
+        "bytes": 495240,
+        "sha256": "6f0015818732aed912e37af0c980d6e06cb2955ae0a300aeb0e9e23219634e57"
+      }
+    },
+    "broad-50000-jobs1-files-collect": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 644570,
+        "sha256": "1a55f46e0edc587e9fb5cfbb8f1bef9069c6d51451d8d6c7fd2afe7bf8de1a33"
+      },
+      "allocations.stacks": {
+        "bytes": 560984,
+        "sha256": "febc6dd6c7729d0f0a4c9466df4d9a13ceb292e65bdb460c87d47e5758fefd28"
+      },
+      "case.json": {
+        "bytes": 2979,
+        "sha256": "59171b868ed61681c6745e721a3c64a3df1394036d60b8c0403b42ff44dd9e5a"
+      },
+      "heaptrack.stderr": {
+        "bytes": 106,
+        "sha256": "61a03c513f0e64fdc5118be4aa0a409255f3a5fd2822664c6ffefb74180efdf2"
+      },
+      "heaptrack.stdout": {
+        "bytes": 2059580,
+        "sha256": "ce6530362d2d3eed2ba1669c295e8ff07f5691838e8bff0eb48f8b0e6fb33d3b"
+      },
+      "heaptrack.zst": {
+        "bytes": 48584,
+        "sha256": "298f6ff381c76231cfb3dee926c25d4357572f51e348c18daac61379d49e6f63"
+      },
+      "native-resources.json": {
+        "bytes": 461,
+        "sha256": "f89f76626e31679b9666faed787c4dba6ee531d4897a4a93fb06e66e5ec8ab49"
+      },
+      "native.stdout": {
+        "bytes": 2059217,
+        "sha256": "a33628d8b7d263539f5f28553f87c378feac852a97e72993a5047442c10407c0"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 644570,
+        "sha256": "1a55f46e0edc587e9fb5cfbb8f1bef9069c6d51451d8d6c7fd2afe7bf8de1a33"
+      },
+      "peak.stacks": {
+        "bytes": 561129,
+        "sha256": "92cdea1d14389b22c45c5c9f3f105b33c2ec5dff500525d881916ebc0dfddb5a"
+      }
+    },
+    "broad-50000-jobs1-files-stat-lazy": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 566169,
+        "sha256": "d71a87577bad8d855c3c61912f6f3153d2526ec1cd0a42861cefb2636f83f22c"
+      },
+      "allocations.stacks": {
+        "bytes": 547027,
+        "sha256": "4cd8e2a6aea54979369225e1f40a439f2a1807c27cfd8e815a80f770419efa8c"
+      },
+      "case.json": {
+        "bytes": 2989,
+        "sha256": "202c691b3ed9e6f5cb1b39edc8b6879232c06bbef2e35839aac387b297a20ef4"
+      },
+      "heaptrack.stderr": {
+        "bytes": 106,
+        "sha256": "4b52ce271f83124e116c100c68c6cd5492c22c86ccb73669a5e97426d956a609"
+      },
+      "heaptrack.stdout": {
+        "bytes": 2059584,
+        "sha256": "f2f94ec453a308485420801170e460fa1145c29c4515cd82a9dd2699ced1804b"
+      },
+      "heaptrack.zst": {
+        "bytes": 47139,
+        "sha256": "9f0420c778dade877d919aec996231b80c8d0d3f19ef46a277c0b5be31a982a9"
+      },
+      "native-resources.json": {
+        "bytes": 458,
+        "sha256": "b657cb730d4941106129bceee9856c1e5e45f026f2992bc14601a87a96e21720"
+      },
+      "native.stdout": {
+        "bytes": 2059217,
+        "sha256": "a33628d8b7d263539f5f28553f87c378feac852a97e72993a5047442c10407c0"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 566169,
+        "sha256": "d71a87577bad8d855c3c61912f6f3153d2526ec1cd0a42861cefb2636f83f22c"
+      },
+      "peak.stacks": {
+        "bytes": 547013,
+        "sha256": "c555584a84f451a2b644a395fcddba04a84b4ab74f486573e31554897638c43e"
+      }
+    },
+    "broad-50000-jobs1-files-stat-eager": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 528355,
+        "sha256": "fb8ad71e07817835c936b71b210339fd7428620ac62d8665daf59f96b6f15f85"
+      },
+      "allocations.stacks": {
+        "bytes": 513182,
+        "sha256": "e8eb0d3e094a3264912db6139e372601ab4f041505663540e81bb67b1b8b0c8f"
+      },
+      "case.json": {
+        "bytes": 2994,
+        "sha256": "da3266771bec992b99403bbdb25001d84f3969492634bc2ad95440f7387ab6c7"
+      },
+      "heaptrack.stderr": {
+        "bytes": 106,
+        "sha256": "382f099a547460f50c3cd99194cc450abe9cc2ac8c0c42686c6310571dbb9050"
+      },
+      "heaptrack.stdout": {
+        "bytes": 2059586,
+        "sha256": "241ce3828d2f9b7ea0120149d0b9a37db0ab45ba9002fa39cab9a2b7a3311acd"
+      },
+      "heaptrack.zst": {
+        "bytes": 43658,
+        "sha256": "a9c6260756c8bbd66f67fe965d3aa64441d96766565d1530bf4c303890bfdfe9"
+      },
+      "native-resources.json": {
+        "bytes": 458,
+        "sha256": "87ae04f196c6c70aabdba5c58e793c5ba853c701c0bbd2e90ef0d2350f85fbff"
+      },
+      "native.stdout": {
+        "bytes": 2059217,
+        "sha256": "a33628d8b7d263539f5f28553f87c378feac852a97e72993a5047442c10407c0"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 528355,
+        "sha256": "fb8ad71e07817835c936b71b210339fd7428620ac62d8665daf59f96b6f15f85"
+      },
+      "peak.stacks": {
+        "bytes": 513174,
+        "sha256": "058dcfed08fe950164e1e1cd8644cab8b5afbb3f5d9071579f868f9c787c83de"
+      }
+    },
+    "broad-50000-jobs1-content-needle": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 501595,
+        "sha256": "45600c3727a968881ed89f49fb7c3b5cc5ded3f8852cba0474bb8fe110f70161"
+      },
+      "allocations.stacks": {
+        "bytes": 565720,
+        "sha256": "9b9aa6a8b15633d84fc69f098bf7825831bf3f6ebd01cf166ce3aaa19b65c6c9"
+      },
+      "case.json": {
+        "bytes": 3069,
+        "sha256": "c3f1d0e18cb8cb524ce0fab840bc5764c4a42536333313b29eedbc2f8bcf7820"
+      },
+      "heaptrack.stderr": {
+        "bytes": 105,
+        "sha256": "5f95c3612792db1f636b056cc5a36e7cc1f5f278443e8712165bbf9d4d048a42"
+      },
+      "heaptrack.stdout": {
+        "bytes": 686688,
+        "sha256": "c2bd92443f70b82c71f24dd64540e87a4749afdbef9c514b038e300de0b34c8a"
+      },
+      "heaptrack.zst": {
+        "bytes": 53746,
+        "sha256": "66b1a3725543329d5ac098a4556471a164447d979629d37e1f53a84a73066a78"
+      },
+      "native-resources.json": {
+        "bytes": 457,
+        "sha256": "214ee8fd6abeffa20bf0cc0d729ccfc9ac82650a43865da3b24640a403ef46ec"
+      },
+      "native.stdout": {
+        "bytes": 686323,
+        "sha256": "bb20bfb508e8b513ebdea9f70996e577663291a98e45c19887cb4e941c8050da"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 501595,
+        "sha256": "45600c3727a968881ed89f49fb7c3b5cc5ded3f8852cba0474bb8fe110f70161"
+      },
+      "peak.stacks": {
+        "bytes": 565685,
+        "sha256": "f6d197cf40d114146c4f7fad1bef97b018ce6b6efde1fb44bfe8d923d56db413"
+      }
+    },
+    "broad-100000-jobs1-files-tree": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 577245,
+        "sha256": "3c46d6030f66cc64a035eeef893468fe4f48836cc20ed4fc3ef4e0ef160bf297"
+      },
+      "allocations.stacks": {
+        "bytes": 516393,
+        "sha256": "e99a0f9d11187eae696a358a749aa8f26c41496406ebb90b9417d0a45769d48d"
+      },
+      "case.json": {
+        "bytes": 2887,
+        "sha256": "6c1f189288c575d7c1b384beedd9d8ca46f8253db307abd8ec98a335a8c5c9e3"
+      },
+      "heaptrack.stderr": {
+        "bytes": 106,
+        "sha256": "4925e70744d563c63a83eb8c92b66d8f63a9390fd9d7f9b88eafb40ecc5bed8a"
+      },
+      "heaptrack.stdout": {
+        "bytes": 4273211,
+        "sha256": "8d1416c8c89163e67570c812192e3fda129c183edeb18dddb5c0327fcf776bf9"
+      },
+      "heaptrack.zst": {
+        "bytes": 35247,
+        "sha256": "52e11190a8b88ad7ceade451a9d2b8aac08ffbba36394c8ef8f1041fcead1b58"
+      },
+      "native-resources.json": {
+        "bytes": 458,
+        "sha256": "7536f640ab18a5f1045f65b0eabbca0e4b5f215547a7a1ab98733f68a8179483"
+      },
+      "native.stdout": {
+        "bytes": 4272852,
+        "sha256": "dcc930e6739351be869a4c39e29c56b090e413a94b77d4d4114d78c020ea0370"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 577245,
+        "sha256": "3c46d6030f66cc64a035eeef893468fe4f48836cc20ed4fc3ef4e0ef160bf297"
+      },
+      "peak.stacks": {
+        "bytes": 516385,
+        "sha256": "763718d6fc904a4b13a9cd1875158ebdf23d17a951745848357b4aad6ddd7a97"
+      }
+    },
+    "broad-100000-jobs1-files-collect": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 649897,
+        "sha256": "053044f52ebbbb78dc610d05e29e64ab57321a580ccecdc117a75d6c2d42f200"
+      },
+      "allocations.stacks": {
+        "bytes": 584505,
+        "sha256": "33517314baf03d8c28861ba57440f3122f09cb60d52e5ab7efe8b7fd728c6c53"
+      },
+      "case.json": {
+        "bytes": 2973,
+        "sha256": "19361e438e5fba3df3fe28163252b6f2cf707bbb7f9fae3a7b03b10c2d696d14"
+      },
+      "heaptrack.stderr": {
+        "bytes": 106,
+        "sha256": "0a63d10713904f0958a7fa4ac584383f9de4add65eb9526dc6bfd3bfe686be42"
+      },
+      "heaptrack.stdout": {
+        "bytes": 4273217,
+        "sha256": "cbaf40d7ef3af4d63d7949969eb83e0f6e68da997cc3050f4f814cd7be8b00e3"
+      },
+      "heaptrack.zst": {
+        "bytes": 58350,
+        "sha256": "7ff493c29754a16cbf8364df64d730172e78058e15bf5613e919dc4781f4e143"
+      },
+      "native-resources.json": {
+        "bytes": 461,
+        "sha256": "d21be18daf56bd1c69324148656e65d06f670e59df961ace1e813e5a42c082de"
+      },
+      "native.stdout": {
+        "bytes": 4272852,
+        "sha256": "ef33c1db88a657d138688478ceb8190f06c4608172a1b7f6b40907457b199b6c"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 649897,
+        "sha256": "053044f52ebbbb78dc610d05e29e64ab57321a580ccecdc117a75d6c2d42f200"
+      },
+      "peak.stacks": {
+        "bytes": 584632,
+        "sha256": "94063d764f63c62f5ae8fd6e35f72cf05c10f93f44347072f701914a5e6c10fa"
+      }
+    },
+    "broad-100000-jobs1-files-stat-lazy": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 562983,
+        "sha256": "a0ec47f2a44131c4c210c3dbf3a9bd199db0198d9f9fa3e57840f294228bbc8a"
+      },
+      "allocations.stacks": {
+        "bytes": 571598,
+        "sha256": "5244b5f32dcaad4e9f97b47fdff63317339b417a96051c22a93b4dd9a6288265"
+      },
+      "case.json": {
+        "bytes": 2983,
+        "sha256": "8ec0ec701260d360e6dbc5d10a5611dc7ed10230ae0fcfeab0139409a9e21cf8"
+      },
+      "heaptrack.stderr": {
+        "bytes": 106,
+        "sha256": "d1660a434916f3876a895af5e88f037a8c42b74313f58b4ff4fae6ba73c898e4"
+      },
+      "heaptrack.stdout": {
+        "bytes": 4273221,
+        "sha256": "f08d0dac9736aaae662786e8be3ca394f38000b264b941c6301f4ec36069df68"
+      },
+      "heaptrack.zst": {
+        "bytes": 56034,
+        "sha256": "f74ede08ccd6ad98c1e40e7177d63f542bc2b8f042710fc7337a6c18d6df80e5"
+      },
+      "native-resources.json": {
+        "bytes": 458,
+        "sha256": "ac97cd5a0c5bd59b8841e70a258ad0765b8868f484eeed31c4a0599131bc0466"
+      },
+      "native.stdout": {
+        "bytes": 4272852,
+        "sha256": "ef33c1db88a657d138688478ceb8190f06c4608172a1b7f6b40907457b199b6c"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 562983,
+        "sha256": "a0ec47f2a44131c4c210c3dbf3a9bd199db0198d9f9fa3e57840f294228bbc8a"
+      },
+      "peak.stacks": {
+        "bytes": 571539,
+        "sha256": "6ab424f2303f53d66365ddc779803f163fd0ed74fd9541e421a96a2db8e32b2d"
+      }
+    },
+    "broad-100000-jobs1-files-stat-eager": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 521401,
+        "sha256": "5fff5b836d730a9f96d737c7f7a11a97b4c120a75875fcd8608048e14ef4da5e"
+      },
+      "allocations.stacks": {
+        "bytes": 534513,
+        "sha256": "6d22f011370f05ed4d3c174932a9d8a53251dc2cdc514274f184efddf4e0a61e"
+      },
+      "case.json": {
+        "bytes": 2988,
+        "sha256": "b73fd44e6dfd3819f0ff583151fcb06e617b20ad1cb9bc92e8788d393f28e1d1"
+      },
+      "heaptrack.stderr": {
+        "bytes": 106,
+        "sha256": "57aec4753e513fe6af6300336b61ce51dc2c0acd2771bb199f7f66cca560c1f5"
+      },
+      "heaptrack.stdout": {
+        "bytes": 4273223,
+        "sha256": "b17f20c25e3badd04bd2e54bd13b87ab9b6b573b03c971cff786487c4ed3e9f7"
+      },
+      "heaptrack.zst": {
+        "bytes": 60428,
+        "sha256": "70f26819942d8fa224b4c006496c5a6265fc18399c1bb3e1164d53c7d9761a52"
+      },
+      "native-resources.json": {
+        "bytes": 459,
+        "sha256": "d6f33eb7ee67e7bb4bbd54d72dbb47aa776b78a5f5585cceaabb41e3ad28c5b6"
+      },
+      "native.stdout": {
+        "bytes": 4272852,
+        "sha256": "ef33c1db88a657d138688478ceb8190f06c4608172a1b7f6b40907457b199b6c"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 521401,
+        "sha256": "5fff5b836d730a9f96d737c7f7a11a97b4c120a75875fcd8608048e14ef4da5e"
+      },
+      "peak.stacks": {
+        "bytes": 534462,
+        "sha256": "0ce110e0806a88694e0fe4ff6d80cde456d390d4a60e9a6a1c8a813fa3e510b0"
+      }
+    },
+    "broad-100000-jobs1-content-needle": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 501887,
+        "sha256": "91b4d61db00a54957e5303977a3d72c2f79c4a8a241540fee4e020e3e632aac2"
+      },
+      "allocations.stacks": {
+        "bytes": 591911,
+        "sha256": "6084daac681a37e0a730842e52d0351040d89a50e52eea125330b13a02635648"
+      },
+      "case.json": {
+        "bytes": 3061,
+        "sha256": "702539e145452e0c05e1afb19abaf88db608faa97aed83163a0a03a835f97ea2"
+      },
+      "heaptrack.stderr": {
+        "bytes": 105,
+        "sha256": "9612449ad90eeeb292ea0e23d4346ef5cda429df201de7882b6c6790a9a73a4d"
+      },
+      "heaptrack.stdout": {
+        "bytes": 1424570,
+        "sha256": "f6d5e228b96b3f79a275d38136b5a888b97e5e06e865d72e26d0f361f0ff34f5"
+      },
+      "heaptrack.zst": {
+        "bytes": 62436,
+        "sha256": "503c6e89f62a913d84e16a82b12f4359557dc61020b5ba8ae58da2355a6fc3f3"
+      },
+      "native-resources.json": {
+        "bytes": 457,
+        "sha256": "0d8e5dd36550278e3f6461b3178f3831f290fd71e74a1ca7af591c91e9c6b38a"
+      },
+      "native.stdout": {
+        "bytes": 1424203,
+        "sha256": "e0920c149fff1b7a2ce8360cbc87e69e32cf5a67fa0ee6a3af9dd6716b2e7321"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 501887,
+        "sha256": "91b4d61db00a54957e5303977a3d72c2f79c4a8a241540fee4e020e3e632aac2"
+      },
+      "peak.stacks": {
+        "bytes": 591827,
+        "sha256": "27b915d740f5551211de7e59e13f058730be839b894997fe5758662f076557bc"
+      }
+    },
+    "deep-20000-jobs1-files-tree": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 872774,
+        "sha256": "f01ab869fc187bb92bad78ed287e4e2f1583ecc607bfa1cbf2a059675cf0a5c5"
+      },
+      "allocations.stacks": {
+        "bytes": 626604,
+        "sha256": "06235d95e6e983dd62df28195e33d945a3086fff8b7fed28a3f8be3be92ddacf"
+      },
+      "case.json": {
+        "bytes": 2901,
+        "sha256": "5a73cb71796dbbcec1729c874117f59c89fbc347e513adbb7ba008a0e0725690"
+      },
+      "heaptrack.stderr": {
+        "bytes": 104,
+        "sha256": "6195350a378c5334ce3aa1da85f801eb7d8f13af36395cded4f36090c13a47ea"
+      },
+      "heaptrack.stdout": {
+        "bytes": 1826284,
+        "sha256": "d9f0dab3c4d704f29dcb72cefcd8bf483d16f171114634f407547400be80af30"
+      },
+      "heaptrack.zst": {
+        "bytes": 38641,
+        "sha256": "2a9ea7b04a44cbfa5c3b73bedc57d7d3f1cc2f840d31a72c012974c57236fa2a"
+      },
+      "native-resources.json": {
+        "bytes": 460,
+        "sha256": "4d9becc7954fe81652ce561d953cede8bc677f842228e3832c5915df97d5f0fa"
+      },
+      "native.stdout": {
+        "bytes": 1825929,
+        "sha256": "1758da82afd2eec14e5c482319f06bb1d5e870fc340fc5b4adb280e329d7a1d4"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 872774,
+        "sha256": "f01ab869fc187bb92bad78ed287e4e2f1583ecc607bfa1cbf2a059675cf0a5c5"
+      },
+      "peak.stacks": {
+        "bytes": 626839,
+        "sha256": "8beae3e1bd66f7a450af3bc8ba93645a64604d18d1a46e834ea00ea027282c76"
+      }
+    },
+    "deep-20000-jobs1-files-collect": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 761895,
+        "sha256": "1041eb7731dd99964bcc57622ced48e8420938dfd5443d723864f21bda68e47c"
+      },
+      "allocations.stacks": {
+        "bytes": 765798,
+        "sha256": "44b07f044c5315165ce52144d1d7eef1333be28cfcb9702b6502c2e3bf18c1ad"
+      },
+      "case.json": {
+        "bytes": 2984,
+        "sha256": "604a5f756c7c3561880e626558621e5d405c85f76700b35d38093708a14b6a62"
+      },
+      "heaptrack.stderr": {
+        "bytes": 104,
+        "sha256": "0d0a000250e1b218955a50eb03871be3db795b5f0ea4e2cf1be8ebef2d0885a3"
+      },
+      "heaptrack.stdout": {
+        "bytes": 1826290,
+        "sha256": "593fdca8b334f035be67d482ae18a88904729350004771d9bd94b3adc5d19e78"
+      },
+      "heaptrack.zst": {
+        "bytes": 45238,
+        "sha256": "7ef0720606f53ca6111a368298f466638ed4fdefb91ce40fbe7412f000e01909"
+      },
+      "native-resources.json": {
+        "bytes": 461,
+        "sha256": "453237785d02cd70715832df0c69e6d38f92a55ac12747c1583a90a7e5a17c08"
+      },
+      "native.stdout": {
+        "bytes": 1825929,
+        "sha256": "e7af2163393ab9ee3a25dedadb5b628e5487faad336847f68d3b5ecd45858d18"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 761895,
+        "sha256": "1041eb7731dd99964bcc57622ced48e8420938dfd5443d723864f21bda68e47c"
+      },
+      "peak.stacks": {
+        "bytes": 766081,
+        "sha256": "bb50e3bf5be99993d4a00aa0bf5bf647fe067c673d3224a7b216fc451809c8b7"
+      }
+    },
+    "deep-20000-jobs1-files-stat-lazy": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 810192,
+        "sha256": "02a193036ac69c6858ee17686994924d3b38423f0f98eaf46fad3bd2ccf879e5"
+      },
+      "allocations.stacks": {
+        "bytes": 713035,
+        "sha256": "55c0647d613c4c68534ceda3da7bc159aecec88f4fe9cd4c7ffc2fa8454b78f1"
+      },
+      "case.json": {
+        "bytes": 2996,
+        "sha256": "6d2b455781145f193fd283f638c233b2b3bf62e5f6d6a891ffbffb04df69ba2d"
+      },
+      "heaptrack.stderr": {
+        "bytes": 104,
+        "sha256": "3284e32d7bc0876a652445e17712335d55b29d39bb4ea326352c0b5ae0595413"
+      },
+      "heaptrack.stdout": {
+        "bytes": 1826294,
+        "sha256": "be3c2ca13a0ff2ba852ded68b6ab1010b3831d58d5b5f63cbccfc62d0d565081"
+      },
+      "heaptrack.zst": {
+        "bytes": 40625,
+        "sha256": "c450e7c878b053d87d8c86f4bc2a05f3c1704a9e3c8008bef5a05606cf3a0b97"
+      },
+      "native-resources.json": {
+        "bytes": 459,
+        "sha256": "b731745ace3cf2156b2276ab8ab3dfb5ddc5bf424a8c7b7b46ab645edcfab1e1"
+      },
+      "native.stdout": {
+        "bytes": 1825929,
+        "sha256": "e7af2163393ab9ee3a25dedadb5b628e5487faad336847f68d3b5ecd45858d18"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 810192,
+        "sha256": "02a193036ac69c6858ee17686994924d3b38423f0f98eaf46fad3bd2ccf879e5"
+      },
+      "peak.stacks": {
+        "bytes": 713260,
+        "sha256": "3d4c838beea017ee6bd7e279e4ca003da429366922ff8d55a885d3369aca0bc5"
+      }
+    },
+    "deep-20000-jobs1-files-stat-eager": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 728946,
+        "sha256": "8e04ceddc418ad7a5c97d213ccaa68b36b2234728426403021296c55bf4897f6"
+      },
+      "allocations.stacks": {
+        "bytes": 656401,
+        "sha256": "d6236966c01258538690b45dc374df99a890d9cae602e02eff5c6d97f8e9b4c8"
+      },
+      "case.json": {
+        "bytes": 3001,
+        "sha256": "a27faf7f8e599c7634d4d67253aaff75542cb5c57ecbca6edf2de9843944b8a0"
+      },
+      "heaptrack.stderr": {
+        "bytes": 104,
+        "sha256": "d850c68d41369051226adcfec771e66787385223da61e3f5801fd2882aea5c70"
+      },
+      "heaptrack.stdout": {
+        "bytes": 1826296,
+        "sha256": "045771c38a8cef6e9fc5055adb3422df1712308d0cdb39359407d698dfcc7179"
+      },
+      "heaptrack.zst": {
+        "bytes": 41509,
+        "sha256": "f8e60a4d388cc1000cc6436355d79020fe077c8ad1915204c752834f8f6280a1"
+      },
+      "native-resources.json": {
+        "bytes": 458,
+        "sha256": "4f5ae5ee4c040c0465eb45ec68f76c78ea152fe92fc0757e0e91c1fbdb1e8123"
+      },
+      "native.stdout": {
+        "bytes": 1825929,
+        "sha256": "e7af2163393ab9ee3a25dedadb5b628e5487faad336847f68d3b5ecd45858d18"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 728946,
+        "sha256": "8e04ceddc418ad7a5c97d213ccaa68b36b2234728426403021296c55bf4897f6"
+      },
+      "peak.stacks": {
+        "bytes": 656628,
+        "sha256": "fa030dcfc0f3e1e775faeea2f14e282c9d27a7762a1260895d740e764c1c3a78"
+      }
+    },
+    "deep-20000-jobs1-content-needle": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 723825,
+        "sha256": "df656df53c54beff366b9f9f2c35624bd0cd9f8d35693be2792d6c574dc23794"
+      },
+      "allocations.stacks": {
+        "bytes": 744371,
+        "sha256": "220afe54a902f1c8610b5456a5b08949a55f6f5bf9494b1e3c8a9724cf203606"
+      },
+      "case.json": {
+        "bytes": 3074,
+        "sha256": "21264ae3d10b6ad326a0c4981d2f8420c3aa8b4a025ec7c1a20461c1976fb0e3"
+      },
+      "heaptrack.stderr": {
+        "bytes": 103,
+        "sha256": "cf13c0d440f2fc2801723fce69bb7242abe7d90a7920175f20a68a6efb606900"
+      },
+      "heaptrack.stdout": {
+        "bytes": 608973,
+        "sha256": "16244c4575d6445a9ced7424d1f6298aee7451c1d2542d2e34c579359ee8750b"
+      },
+      "heaptrack.zst": {
+        "bytes": 42373,
+        "sha256": "6a190d847ac463daa68c056567a472d445597ee253adf64142f579569d00e6df"
+      },
+      "native-resources.json": {
+        "bytes": 458,
+        "sha256": "a9123ff4306d2a7cc3c6242c7ff86aa62d64aa65536db69018970020b6792442"
+      },
+      "native.stdout": {
+        "bytes": 608610,
+        "sha256": "b80b0f93f8574b1b274151bf8ed6d573f34dd42cb3f7dbe9c30838c189fa3b31"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 723825,
+        "sha256": "df656df53c54beff366b9f9f2c35624bd0cd9f8d35693be2792d6c574dc23794"
+      },
+      "peak.stacks": {
+        "bytes": 744559,
+        "sha256": "ad8edf8466789cc4e3b6b427108b789629cc9be59e14d4db827f3f4b17cd1fa8"
+      }
+    },
+    "deep-50000-jobs1-files-tree": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 915026,
+        "sha256": "cd709aaeeb6b856378530a55b6589f438e668f4d90fcb6ed86bf128d9642a7e6"
+      },
+      "allocations.stacks": {
+        "bytes": 635202,
+        "sha256": "fb9507a4d3cf28a1eb97c366be3ce1ffb1a19ad3839b5db5ae6ca75f617fa778"
+      },
+      "case.json": {
+        "bytes": 2891,
+        "sha256": "c4f15764cf00df7219405e09cb5ed266b10f5f690309e7025addcac08bd4fa9e"
+      },
+      "heaptrack.stderr": {
+        "bytes": 105,
+        "sha256": "2e4951df6395ae8a8548e8e425e5a0d44c8a9cf497bc4a225fbf2ecc94bd0548"
+      },
+      "heaptrack.stdout": {
+        "bytes": 11274145,
+        "sha256": "537fb1fcf463482c6f9ec24079e2ec8e663b52a219637177b94f37c674e31ed9"
+      },
+      "heaptrack.zst": {
+        "bytes": 51570,
+        "sha256": "5815c16a114b1edb7e6c7aee57828081cfa8c054817af7ca0560e37b06727552"
+      },
+      "native-resources.json": {
+        "bytes": 463,
+        "sha256": "07486b14055bcf75795d289176ce741c25fd91706a6152f9d006d1fd0ce9bced"
+      },
+      "native.stdout": {
+        "bytes": 11273790,
+        "sha256": "68bd55974f651f4e9745bd9c99342fcaa144e51a08c76b7274be793a355ae64f"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 915026,
+        "sha256": "cd709aaeeb6b856378530a55b6589f438e668f4d90fcb6ed86bf128d9642a7e6"
+      },
+      "peak.stacks": {
+        "bytes": 635417,
+        "sha256": "f563e325b31f8df16b44c903f0d03fb9d6373ee490dc10a9a0a59cf2858ee9bf"
+      }
+    },
+    "deep-50000-jobs1-files-collect": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 892358,
+        "sha256": "d2ba5813b07373d08614a507a81c5c59a113a159f348c4e4924c343efb3364e3"
+      },
+      "allocations.stacks": {
+        "bytes": 1057121,
+        "sha256": "e5642228e73c2fef08968b3d7e3bd0205dc0693492e730730c7351b5f059966a"
+      },
+      "case.json": {
+        "bytes": 2973,
+        "sha256": "bbb0436346937fcd2788725ae2aece09e409f4870967868daeb49cb256592be9"
+      },
+      "heaptrack.stderr": {
+        "bytes": 105,
+        "sha256": "21723c59e3eb1818dea807ff2293f3942bb85cd9996c1475a5e6803ce84af05a"
+      },
+      "heaptrack.stdout": {
+        "bytes": 11274151,
+        "sha256": "d03201b43ab19423b9400e94df6e38ae495efb208e491e6ee8352aeb7dd96984"
+      },
+      "heaptrack.zst": {
+        "bytes": 69389,
+        "sha256": "4c9e5a0432601fef45be11d85f54991770a4a841bed4b381f940c53a2bb43434"
+      },
+      "native-resources.json": {
+        "bytes": 462,
+        "sha256": "4ac2801e015f1bd3b1c5147f8ef10f000971ff8ae2ffde927b61b236be7dc5cc"
+      },
+      "native.stdout": {
+        "bytes": 11273790,
+        "sha256": "5fd5fed65ab6b765d1e879018e97c69565c6707d8b9e61fbf45c697670487de2"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 892358,
+        "sha256": "d2ba5813b07373d08614a507a81c5c59a113a159f348c4e4924c343efb3364e3"
+      },
+      "peak.stacks": {
+        "bytes": 1057617,
+        "sha256": "47a36a2997e0dff917e3673f4bbac35f22c916440a709d1f30b7f9a8be24d185"
+      }
+    },
+    "deep-50000-jobs1-files-stat-lazy": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 939472,
+        "sha256": "8e86a35300933252f5be3a682cae6d338eb76950bad36c03b50a46b8478f105a"
+      },
+      "allocations.stacks": {
+        "bytes": 988624,
+        "sha256": "1deba19f4ca462796467a570868e42556c044979ab6b24679500ae5f9fcf38ac"
+      },
+      "case.json": {
+        "bytes": 2986,
+        "sha256": "93cdefab989f706f36b9b72298fb63c58b58e70f7d26c410fdb9c4ab30134216"
+      },
+      "heaptrack.stderr": {
+        "bytes": 105,
+        "sha256": "d305c7a5baaa054539fb6f8686f521ac7f4ce4957c092121c5e93ccbabf565d2"
+      },
+      "heaptrack.stdout": {
+        "bytes": 11274155,
+        "sha256": "7a70a5f764b8797e14ddb028f9c2eb27c0953b37dd8a29dadd9c67650c3b84f4"
+      },
+      "heaptrack.zst": {
+        "bytes": 62301,
+        "sha256": "cc98f5ebfa119874599df0d1069971e7fed7b8bba5dd22538461da191f2e1b65"
+      },
+      "native-resources.json": {
+        "bytes": 462,
+        "sha256": "52c4c21f6e1461d37ed63364e1befe74b1e62539781705e2b5dc9fcf38e266ec"
+      },
+      "native.stdout": {
+        "bytes": 11273790,
+        "sha256": "5fd5fed65ab6b765d1e879018e97c69565c6707d8b9e61fbf45c697670487de2"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 939472,
+        "sha256": "8e86a35300933252f5be3a682cae6d338eb76950bad36c03b50a46b8478f105a"
+      },
+      "peak.stacks": {
+        "bytes": 988909,
+        "sha256": "3f9140dd64c9a2bcfa6f90edf1d5820c9bf6f50160adaf36ec58bc016e45aa9e"
+      }
+    },
+    "deep-50000-jobs1-files-stat-eager": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 834960,
+        "sha256": "e6568bea2496486571e69dab4b47ffc1f36c620fac0e8267598924dc70b62181"
+      },
+      "allocations.stacks": {
+        "bytes": 908592,
+        "sha256": "496a947a4f025877515e410955adee4c0eb1b5b5ffc4c4085a49af28a4de5eae"
+      },
+      "case.json": {
+        "bytes": 2991,
+        "sha256": "8b3fe05e5dedda210f8fd3e9e1f833ccb2c0a08bc7ceaf396c7e9020d977f8df"
+      },
+      "heaptrack.stderr": {
+        "bytes": 105,
+        "sha256": "35dafa0b4f27be4c5c654cf1726e58e07ee71c8a7d413681f0744150b391d7bd"
+      },
+      "heaptrack.stdout": {
+        "bytes": 11274157,
+        "sha256": "1be070f220586c6e0c66153a9193bc27e512a1de08660250622ae1c0d1d1e51e"
+      },
+      "heaptrack.zst": {
+        "bytes": 65085,
+        "sha256": "032a7b5f70a0bf161289b9e39a63177149511f923f867353f6e46ec202bd72bd"
+      },
+      "native-resources.json": {
+        "bytes": 462,
+        "sha256": "a3578da889222b94f2beb7453c292730a05956301ece92e90cc78420fd5ec8fc"
+      },
+      "native.stdout": {
+        "bytes": 11273790,
+        "sha256": "5fd5fed65ab6b765d1e879018e97c69565c6707d8b9e61fbf45c697670487de2"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 834960,
+        "sha256": "e6568bea2496486571e69dab4b47ffc1f36c620fac0e8267598924dc70b62181"
+      },
+      "peak.stacks": {
+        "bytes": 908874,
+        "sha256": "5eeeac00a194e4b7b124d4bc081563d95e6ed612290526fcf1217896c4e44c2d"
+      }
+    },
+    "deep-50000-jobs1-content-needle": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 930059,
+        "sha256": "f81819ab44a3db0f1d2a5acc789853214efd59d1ba2dfea0faddeea490c1c464"
+      },
+      "allocations.stacks": {
+        "bytes": 1025242,
+        "sha256": "e699fff352508779fbf94ac89556706cd7eb7a771cb14308b8e59d6048b7a519"
+      },
+      "case.json": {
+        "bytes": 3066,
+        "sha256": "e0152d4b72ab13d377951b1d8f1ddcbd623b47b24a3a53e607f2c1891da56e68"
+      },
+      "heaptrack.stderr": {
+        "bytes": 105,
+        "sha256": "5fa024d749d0b6b12c1d300b91fa4d3e0eb903d6c2db6162b86cf590146a8d33"
+      },
+      "heaptrack.stdout": {
+        "bytes": 3758248,
+        "sha256": "dd19a72706827e9fe98a719bb560fe8083c2d3eaacb99c40cbdb49fdf53d3998"
+      },
+      "heaptrack.zst": {
+        "bytes": 60633,
+        "sha256": "a7bde7a13bdfbe10341bebf4a886c3918c89431d508d2391196408acea23ce6a"
+      },
+      "native-resources.json": {
+        "bytes": 460,
+        "sha256": "6702b04ec2978b1ba19d9cbd07e3a9414f7ec68ea8ad15d8f162c38f7c77fb3f"
+      },
+      "native.stdout": {
+        "bytes": 3757885,
+        "sha256": "a4f2aa2517854f324c5d676d94df2606812becf677f7efbfecbf1d3d1e30a456"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 930059,
+        "sha256": "f81819ab44a3db0f1d2a5acc789853214efd59d1ba2dfea0faddeea490c1c464"
+      },
+      "peak.stacks": {
+        "bytes": 1025480,
+        "sha256": "52e220927d3b9f5654e927d990c1af543c203db4c235bb2c6913a3936b7a45c5"
+      }
+    },
+    "deep-100000-jobs1-files-tree": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 925237,
+        "sha256": "40169f5872751e5c11415fb58aa099a61f8faa79dcf64b82c7d2e38c390cc391"
+      },
+      "allocations.stacks": {
+        "bytes": 636924,
+        "sha256": "a6e5d621f7c42539522f93b5ec0ccc7ae3a91a03d81222988957016887dd3af6"
+      },
+      "case.json": {
+        "bytes": 2885,
+        "sha256": "654b2b9ad2bb8f43e14be295cd5894f511131a40f87e96223238e63394aa2a65"
+      },
+      "heaptrack.stderr": {
+        "bytes": 105,
+        "sha256": "8ba3bf5c5c443a1c3439135199d1b7a80abcf077875cfcf7fbe467d5208322be"
+      },
+      "heaptrack.stdout": {
+        "bytes": 37002422,
+        "sha256": "5044b80ee54a9e181a5536681e0b6d634b5ecb74671ae9845afb684f3cbfde05"
+      },
+      "heaptrack.zst": {
+        "bytes": 75915,
+        "sha256": "f239e34eeb18c3763d35d979b030206fdbd906507a429cabf24f7bd1adc6de98"
+      },
+      "native-resources.json": {
+        "bytes": 462,
+        "sha256": "6c718d38453fcd2a8e100344e29ed70ade137525af15bcb3a4f0cf1b8f188883"
+      },
+      "native.stdout": {
+        "bytes": 37002065,
+        "sha256": "1a7725a1b5eb8597c478ebe040a3fd7eb9ffbdf6ea7849f1678a491ba835b273"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 925237,
+        "sha256": "40169f5872751e5c11415fb58aa099a61f8faa79dcf64b82c7d2e38c390cc391"
+      },
+      "peak.stacks": {
+        "bytes": 637133,
+        "sha256": "8b01c115584e14a7c9ba945eadd3eda21cd0ab0534b698191bf2c8f09a8574ef"
+      }
+    },
+    "deep-100000-jobs1-files-collect": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 902010,
+        "sha256": "d054e7371b478abd1cebefa302efa28dfe44c11554f70042a0056512daae7333"
+      },
+      "allocations.stacks": {
+        "bytes": 1058400,
+        "sha256": "bbdd33ded399d1187d6971b73857e69c23c85ce12eeaa50ebbe70b6155310bae"
+      },
+      "case.json": {
+        "bytes": 2967,
+        "sha256": "cbf3c4b31ea2549446e6ed72f102b4b187300c11520baa164e5f514c6a6e0872"
+      },
+      "heaptrack.stderr": {
+        "bytes": 106,
+        "sha256": "1d633b077afe58b2f9b76a65d0015c0d890575f549c3c93a1a18d57159a379df"
+      },
+      "heaptrack.stdout": {
+        "bytes": 37002428,
+        "sha256": "dbed5a853255dffe825f5275b34b8081c255f658b29be471f35ca6844a2508ea"
+      },
+      "heaptrack.zst": {
+        "bytes": 101515,
+        "sha256": "84b77734927b6c45b0a66697d3e7d01c90161b8326f5b19f6ed0bff6dba6cfe1"
+      },
+      "native-resources.json": {
+        "bytes": 461,
+        "sha256": "5229d74f9b29f62ad58839896b92e3fbc7c5162a0bdc978025186047eb6e6f7f"
+      },
+      "native.stdout": {
+        "bytes": 37002065,
+        "sha256": "37a2b0ca8f9415ef8b2820b6b8c3df074878529f5d87835138f9a94c939e3deb"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 902010,
+        "sha256": "d054e7371b478abd1cebefa302efa28dfe44c11554f70042a0056512daae7333"
+      },
+      "peak.stacks": {
+        "bytes": 1058866,
+        "sha256": "9c4655a751247472be8fa18105fc4310fc429b80e5ee61577aed4b0c882d6477"
+      }
+    },
+    "deep-100000-jobs1-files-stat-lazy": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 947779,
+        "sha256": "7b3676beb5cae182433efa1db2bd0c471aa5394e9b82f43bc3bce76b5daf36a2"
+      },
+      "allocations.stacks": {
+        "bytes": 990182,
+        "sha256": "772f452bdc6ec6a2072578b945b6c6f089ea1992a1125de6ed1cceb186cd2e1c"
+      },
+      "case.json": {
+        "bytes": 2980,
+        "sha256": "4f9c5edb717c8711158c4b91b20c9086939b6ad181776bb86b920e906efaabc0"
+      },
+      "heaptrack.stderr": {
+        "bytes": 106,
+        "sha256": "8bb9c2f74e709cceeea75be9391511260cd464755b34bd2f59be1f1e7ca70921"
+      },
+      "heaptrack.stdout": {
+        "bytes": 37002432,
+        "sha256": "be7d6c6f47a02cca6ece059f2d752c56b8e256404f465e636211f0faabbab581"
+      },
+      "heaptrack.zst": {
+        "bytes": 90741,
+        "sha256": "90567f25311a1cccbb2cc77d96e21ab464c1e96085aaa7e5813c8c5a4ef0f87b"
+      },
+      "native-resources.json": {
+        "bytes": 461,
+        "sha256": "45fad0d408e0c946b71b81bfce2f1638feb39c7f82169f82474bd0a965e3b73b"
+      },
+      "native.stdout": {
+        "bytes": 37002065,
+        "sha256": "37a2b0ca8f9415ef8b2820b6b8c3df074878529f5d87835138f9a94c939e3deb"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 947779,
+        "sha256": "7b3676beb5cae182433efa1db2bd0c471aa5394e9b82f43bc3bce76b5daf36a2"
+      },
+      "peak.stacks": {
+        "bytes": 990441,
+        "sha256": "3ee9db3d9086897ea7d50d24a8b8ed73bc2adf22c0902eda8d0f96f145e448ac"
+      }
+    },
+    "deep-100000-jobs1-files-stat-eager": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 878746,
+        "sha256": "5e3acdb3b93a0a1bcb5b0245a3e5214ab751d4f09b0b4ca1e15384b092d25aa1"
+      },
+      "allocations.stacks": {
+        "bytes": 910152,
+        "sha256": "e23aa42adc775bfb4203aaae5a79588e5646f7ab1ba76b8d78d300e1a36f03d6"
+      },
+      "case.json": {
+        "bytes": 2985,
+        "sha256": "9420e39753e93a9cecd77e2ec66c00e3d277790d1d6442e4d28a32f6062156ee"
+      },
+      "heaptrack.stderr": {
+        "bytes": 106,
+        "sha256": "1902f5cc484df26c8a9e02138e592b2e78a51bab139f5cc9f086941f5c8547e9"
+      },
+      "heaptrack.stdout": {
+        "bytes": 37002434,
+        "sha256": "e182dd889057b9bcec61538892adf728281cd5ecb3774e85c7fd4358eed1d1a9"
+      },
+      "heaptrack.zst": {
+        "bytes": 91473,
+        "sha256": "964e68785dd0875e950a772d90ef09b85352af9b923f5c6e7816614322fe5d76"
+      },
+      "native-resources.json": {
+        "bytes": 461,
+        "sha256": "2f79a73028f9a004657aa1292609d1692b7e974fd3f0762d7f8ba80b6bb3fa44"
+      },
+      "native.stdout": {
+        "bytes": 37002065,
+        "sha256": "37a2b0ca8f9415ef8b2820b6b8c3df074878529f5d87835138f9a94c939e3deb"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 878746,
+        "sha256": "5e3acdb3b93a0a1bcb5b0245a3e5214ab751d4f09b0b4ca1e15384b092d25aa1"
+      },
+      "peak.stacks": {
+        "bytes": 910406,
+        "sha256": "8aef501300eaf73f4f3ff0d0a083c5c59ffacb15ddf0e1fc2a2c48d7f6814c66"
+      }
+    },
+    "deep-100000-jobs1-content-needle": {
+      "allocations.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "allocations.analysis.txt": {
+        "bytes": 918128,
+        "sha256": "9c51ac95338b8dce8ced0ac26e9099cfcfa88294cea6ead098c0a4f937c74cf1"
+      },
+      "allocations.stacks": {
+        "bytes": 1026801,
+        "sha256": "6954f83c312e704515b54c108e68c7c1dcd1ed7ae9d925f1732934004cc1564b"
+      },
+      "case.json": {
+        "bytes": 3058,
+        "sha256": "40934bbef52fd82766e002d628aed671894f23219afcd0be86fdef2c64f90ad5"
+      },
+      "heaptrack.stderr": {
+        "bytes": 105,
+        "sha256": "d643ea1b982853dbb91c6a6c97428299bf1dc4b2d88d0ced5438ccf6238ddac5"
+      },
+      "heaptrack.stdout": {
+        "bytes": 12334659,
+        "sha256": "48eeb18065ddb80f53579aa8315e48e96b5cad9530a08d200fb5418e0ccf8cda"
+      },
+      "heaptrack.zst": {
+        "bytes": 83154,
+        "sha256": "271d615f628f3d4b05bca79e23e4e4a3aea6bf5bab6fa997d8261587c523fa01"
+      },
+      "native-resources.json": {
+        "bytes": 461,
+        "sha256": "05f1ddb67119362ee1b2fa7c1e0cc0d3b0e4e609013d5ac6774cfb8a171688bc"
+      },
+      "native.stdout": {
+        "bytes": 12334294,
+        "sha256": "cee863afd2528d2f4fa553fffdd3851849bae73434ac393ad8fee1fb8fd69ef6"
+      },
+      "peak.analysis.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "peak.analysis.txt": {
+        "bytes": 918128,
+        "sha256": "9c51ac95338b8dce8ced0ac26e9099cfcfa88294cea6ead098c0a4f937c74cf1"
+      },
+      "peak.stacks": {
+        "bytes": 1027012,
+        "sha256": "5edd8b9182121371550dcf8638d22dd2f6aaac73e539261d20b6646aff5e2b4a"
+      }
+    }
+  },
+  "archives": {
+    "broad-20000-jobs1-files-tree": {
+      "bytes": 2513031,
+      "sha256": "17d92d8a407d95c97fe98a38bdc01e5ec17b937c4cd2cbb85a3eb4822931b494",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-20000-jobs1-files-tree.json.gz",
+          "offset": 0,
+          "bytes": 138665,
+          "sha256": "c13a9d7caf844500822144ef5c5e9115122738382a0d1acfd45170bf12842a2d",
+          "raw_bytes": 2513031,
+          "raw_sha256": "17d92d8a407d95c97fe98a38bdc01e5ec17b937c4cd2cbb85a3eb4822931b494"
+        }
+      ]
+    },
+    "broad-20000-jobs1-files-collect": {
+      "bytes": 2718512,
+      "sha256": "66661c56d93c95eb8631079d836ec912f34f093d87160ea3744ce002d88b3359",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-20000-jobs1-files-collect.json.gz",
+          "offset": 0,
+          "bytes": 151110,
+          "sha256": "8fb4fa65be01658cb911f8138cdcfa6306cd528098134bb4a3638f47e2ee3bef",
+          "raw_bytes": 2718512,
+          "raw_sha256": "66661c56d93c95eb8631079d836ec912f34f093d87160ea3744ce002d88b3359"
+        }
+      ]
+    },
+    "broad-20000-jobs1-files-stat-lazy": {
+      "bytes": 2629591,
+      "sha256": "35159068d3472c21e249d7b9470e1f3bc7c86e4a752a18efa445556d18476c1a",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-20000-jobs1-files-stat-lazy.json.gz",
+          "offset": 0,
+          "bytes": 140254,
+          "sha256": "11872f9c36f89333a0828d2ae26f8f47d708673303f78eb34a9138d5d27ad0c2",
+          "raw_bytes": 2629591,
+          "raw_sha256": "35159068d3472c21e249d7b9470e1f3bc7c86e4a752a18efa445556d18476c1a"
+        }
+      ]
+    },
+    "broad-20000-jobs1-files-stat-eager": {
+      "bytes": 2521780,
+      "sha256": "40ebb8744df873b4f857ef95a7a5a6155bcbd7f4cc93206e0ad0c2ee95e1d721",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-20000-jobs1-files-stat-eager.json.gz",
+          "offset": 0,
+          "bytes": 141558,
+          "sha256": "aa80839216920dc6316b5a18827ae09de018e898ed1870a405a7b89b2ca0ea67",
+          "raw_bytes": 2521780,
+          "raw_sha256": "40ebb8744df873b4f857ef95a7a5a6155bcbd7f4cc93206e0ad0c2ee95e1d721"
+        }
+      ]
+    },
+    "broad-20000-jobs1-content-needle": {
+      "bytes": 1984306,
+      "sha256": "a5d7f90f44f7e30bc7a9da0433f97e96fdf5ae43a32de5abb86766ac9304c058",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-20000-jobs1-content-needle.json.gz",
+          "offset": 0,
+          "bytes": 119611,
+          "sha256": "97735ff0c95a47b4b14793729449540847fb841f9e86bdda66f0f94a3b05d820",
+          "raw_bytes": 1984306,
+          "raw_sha256": "a5d7f90f44f7e30bc7a9da0433f97e96fdf5ae43a32de5abb86766ac9304c058"
+        }
+      ]
+    },
+    "broad-50000-jobs1-files-tree": {
+      "bytes": 3914124,
+      "sha256": "d957eedbb6e6921e5eab22068254ef4415bf94e6d25b7677244fd2cae3835c19",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-50000-jobs1-files-tree.json.gz",
+          "offset": 0,
+          "bytes": 217136,
+          "sha256": "46a7895e0f10aadd68f5ec6a3d48d72ea227394bd03f4891388a43e21ad0406d",
+          "raw_bytes": 3914124,
+          "raw_sha256": "d957eedbb6e6921e5eab22068254ef4415bf94e6d25b7677244fd2cae3835c19"
+        }
+      ]
+    },
+    "broad-50000-jobs1-files-collect": {
+      "bytes": 4160099,
+      "sha256": "43cd18c38c387f2a0cb675775104c7eb115c367cd60d5754bcf59a1b3e55e9f0",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-50000-jobs1-files-collect.json.gz",
+          "offset": 0,
+          "bytes": 231490,
+          "sha256": "03eb46661da32f072d597951181abe097b63fc7dfa532aa76847b293be1c31af",
+          "raw_bytes": 4160099,
+          "raw_sha256": "43cd18c38c387f2a0cb675775104c7eb115c367cd60d5754bcf59a1b3e55e9f0"
+        }
+      ]
+    },
+    "broad-50000-jobs1-files-stat-lazy": {
+      "bytes": 4050237,
+      "sha256": "c5fec115db999381207c25781fe8bc674749deeea130aca58045ac319bbb1a5f",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-50000-jobs1-files-stat-lazy.json.gz",
+          "offset": 0,
+          "bytes": 225928,
+          "sha256": "f72dd0f619dcfd882bf5f2e4b6193f177d9a243e2a496fe1b727c9f00cc01fd6",
+          "raw_bytes": 4050237,
+          "raw_sha256": "c5fec115db999381207c25781fe8bc674749deeea130aca58045ac319bbb1a5f"
+        }
+      ]
+    },
+    "broad-50000-jobs1-files-stat-eager": {
+      "bytes": 3939466,
+      "sha256": "1577429e5f55aab653ec18ba1fcbeec0a0d4f07e241fdf7f2a4b77fe97f7898e",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-50000-jobs1-files-stat-eager.json.gz",
+          "offset": 0,
+          "bytes": 220501,
+          "sha256": "4a5303888fd2f5ce49520370357530ba848e75755cbebf206b19a60ec9d55972",
+          "raw_bytes": 3939466,
+          "raw_sha256": "1577429e5f55aab653ec18ba1fcbeec0a0d4f07e241fdf7f2a4b77fe97f7898e"
+        }
+      ]
+    },
+    "broad-50000-jobs1-content-needle": {
+      "bytes": 2491573,
+      "sha256": "ee7be940640df673a602595b3810894ac334d42a9c597f1a1fd47a122df484e0",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-50000-jobs1-content-needle.json.gz",
+          "offset": 0,
+          "bytes": 162673,
+          "sha256": "b936df057fc836a89bbd18fc4ded7822d3a5e28db3bdf7d5e22a2d9c13cf911b",
+          "raw_bytes": 2491573,
+          "raw_sha256": "ee7be940640df673a602595b3810894ac334d42a9c597f1a1fd47a122df484e0"
+        }
+      ]
+    },
+    "broad-100000-jobs1-files-tree": {
+      "bytes": 6447818,
+      "sha256": "ea310794a3bbfa3102ac568d5fc1b75a5a41098e51dfcd7bbe2926a4d0c585dc",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-100000-jobs1-files-tree.json.gz",
+          "offset": 0,
+          "bytes": 345149,
+          "sha256": "e32ca3718c1b468226c5eff67c1a3aede711beb58d4288163326fe7c2561931d",
+          "raw_bytes": 6447818,
+          "raw_sha256": "ea310794a3bbfa3102ac568d5fc1b75a5a41098e51dfcd7bbe2926a4d0c585dc"
+        }
+      ]
+    },
+    "broad-100000-jobs1-files-collect": {
+      "bytes": 6689223,
+      "sha256": "f6a214f4548470b4552ed8406ba428c99aaea4b19e0d7b43dbf5fd8cb0064a13",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-100000-jobs1-files-collect.json.gz",
+          "offset": 0,
+          "bytes": 363551,
+          "sha256": "cf3ec72fb8331cda694e841d3e97acb4107288fcd220136717ed1605718af88a",
+          "raw_bytes": 6689223,
+          "raw_sha256": "f6a214f4548470b4552ed8406ba428c99aaea4b19e0d7b43dbf5fd8cb0064a13"
+        }
+      ]
+    },
+    "broad-100000-jobs1-files-stat-lazy": {
+      "bytes": 6571634,
+      "sha256": "3174f89b40bf980de76eb36cd644b7fa815c3290a922058eb2144171f289a973",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-100000-jobs1-files-stat-lazy.json.gz",
+          "offset": 0,
+          "bytes": 354297,
+          "sha256": "5981efa640770c5654c7c9d14dac7a60e8737838ba818a647c623145ce45223a",
+          "raw_bytes": 6571634,
+          "raw_sha256": "3174f89b40bf980de76eb36cd644b7fa815c3290a922058eb2144171f289a973"
+        }
+      ]
+    },
+    "broad-100000-jobs1-files-stat-eager": {
+      "bytes": 6461053,
+      "sha256": "2c561882a004abd03214a1a43c8c663756db05c61e641fd7a84278cd5cd93002",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-100000-jobs1-files-stat-eager.json.gz",
+          "offset": 0,
+          "bytes": 355657,
+          "sha256": "e0d5c3f0319f696a7dedc8c0bf0eba181a0181b610a1bda6e96f4de90dc7517f",
+          "raw_bytes": 6461053,
+          "raw_sha256": "2c561882a004abd03214a1a43c8c663756db05c61e641fd7a84278cd5cd93002"
+        }
+      ]
+    },
+    "broad-100000-jobs1-content-needle": {
+      "bytes": 3377020,
+      "sha256": "726ee29e6e3658c29224a17928db68dd92bc652615977c3972aff6de3b15cee2",
+      "parts": [
+        {
+          "name": "native-workload-allocation-broad-100000-jobs1-content-needle.json.gz",
+          "offset": 0,
+          "bytes": 221684,
+          "sha256": "6c61fd5b463dfada77f190aa5a5f8acb13cbfca5abff0e1f93499751d2c72d71",
+          "raw_bytes": 3377020,
+          "raw_sha256": "726ee29e6e3658c29224a17928db68dd92bc652615977c3972aff6de3b15cee2"
+        }
+      ]
+    },
+    "deep-20000-jobs1-files-tree": {
+      "bytes": 4126202,
+      "sha256": "d4b6d35fa551826b3fb3029d3e12acea793f8f57c293590c1fc8f0e7b467544e",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-20000-jobs1-files-tree.json.gz",
+          "offset": 0,
+          "bytes": 159633,
+          "sha256": "5cbbc613f801d2cab4be5a1b96e735896b45540b168841f12c8104c1f8da189e",
+          "raw_bytes": 4126202,
+          "raw_sha256": "d4b6d35fa551826b3fb3029d3e12acea793f8f57c293590c1fc8f0e7b467544e"
+        }
+      ]
+    },
+    "deep-20000-jobs1-files-collect": {
+      "bytes": 4301521,
+      "sha256": "3f6118d8ceb3e116851662460daf78c9393a6307a6cd8043bb97af38d374fb2e",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-20000-jobs1-files-collect.json.gz",
+          "offset": 0,
+          "bytes": 173858,
+          "sha256": "62af81eedb2d5a78d1ea463e345118c3c9e4aa9cff1d42a745df34a06ddab1ba",
+          "raw_bytes": 4301521,
+          "raw_sha256": "3f6118d8ceb3e116851662460daf78c9393a6307a6cd8043bb97af38d374fb2e"
+        }
+      ]
+    },
+    "deep-20000-jobs1-files-stat-lazy": {
+      "bytes": 4238436,
+      "sha256": "ef5891f0d71fd00b6cc31b3c372911bb6c280e80bef2cbcb9935fcc05fa14823",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-20000-jobs1-files-stat-lazy.json.gz",
+          "offset": 0,
+          "bytes": 164450,
+          "sha256": "ec6666a2e9e1a756a9bd06c341b7e8cb081c3a1c18a0c726f7b14c0c62edb029",
+          "raw_bytes": 4238436,
+          "raw_sha256": "ef5891f0d71fd00b6cc31b3c372911bb6c280e80bef2cbcb9935fcc05fa14823"
+        }
+      ]
+    },
+    "deep-20000-jobs1-files-stat-eager": {
+      "bytes": 4043741,
+      "sha256": "79a536ea2b7b1cb3dc0855e232812571c513cdd7409f8b92583c2e143f550504",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-20000-jobs1-files-stat-eager.json.gz",
+          "offset": 0,
+          "bytes": 161993,
+          "sha256": "61d656148cf607794d76545d8141e05990db2ee75f6fa1afb3519f95d6abc6d5",
+          "raw_bytes": 4043741,
+          "raw_sha256": "79a536ea2b7b1cb3dc0855e232812571c513cdd7409f8b92583c2e143f550504"
+        }
+      ]
+    },
+    "deep-20000-jobs1-content-needle": {
+      "bytes": 2932093,
+      "sha256": "4633a04c531d487487d2f3fe41823ef52e18f8e0e9afa81c5e3799016397280d",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-20000-jobs1-content-needle.json.gz",
+          "offset": 0,
+          "bytes": 124305,
+          "sha256": "0619358162df56ab3f825386516b2af0805265af9bd35eef6a777153a6a16777",
+          "raw_bytes": 2932093,
+          "raw_sha256": "4633a04c531d487487d2f3fe41823ef52e18f8e0e9afa81c5e3799016397280d"
+        }
+      ]
+    },
+    "deep-50000-jobs1-files-tree": {
+      "bytes": 13801436,
+      "sha256": "40321423853cbf9ea1ad0db4ccdf60239e4deeba8cb730f5d9b21a911a5da29c",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-50000-jobs1-files-tree.json.gz",
+          "offset": 0,
+          "bytes": 291577,
+          "sha256": "8126763b311cfc0fa3965d196b3dc53bc40ad3b5a72fab1b966e864d5c55e74d",
+          "raw_bytes": 13801436,
+          "raw_sha256": "40321423853cbf9ea1ad0db4ccdf60239e4deeba8cb730f5d9b21a911a5da29c"
+        }
+      ]
+    },
+    "deep-50000-jobs1-files-collect": {
+      "bytes": 14647027,
+      "sha256": "d0c6c10528721330ad6512d5078ca0150a75d8fa776386019e2fc9958d556063",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-50000-jobs1-files-collect.json.gz",
+          "offset": 0,
+          "bytes": 328686,
+          "sha256": "31160ed70e59f1707b1ea2624aff26ba092b963bd42a9aefcce789d4404e538b",
+          "raw_bytes": 14647027,
+          "raw_sha256": "d0c6c10528721330ad6512d5078ca0150a75d8fa776386019e2fc9958d556063"
+        }
+      ]
+    },
+    "deep-50000-jobs1-files-stat-lazy": {
+      "bytes": 14548019,
+      "sha256": "b528922425be87bb20a52d71392972a6dc1f644111556b8332d12051043d9b03",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-50000-jobs1-files-stat-lazy.json.gz",
+          "offset": 0,
+          "bytes": 311934,
+          "sha256": "c00f5fec72e25a4b5403c34590b54357fa1c9f8ff7ecdf6ec6af132ac748a358",
+          "raw_bytes": 14548019,
+          "raw_sha256": "b528922425be87bb20a52d71392972a6dc1f644111556b8332d12051043d9b03"
+        }
+      ]
+    },
+    "deep-50000-jobs1-files-stat-eager": {
+      "bytes": 14285394,
+      "sha256": "3b4ebe432bcffd82252b857802b90ae5599abe2155f6db6cea65730229629a9d",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-50000-jobs1-files-stat-eager.json.gz",
+          "offset": 0,
+          "bytes": 308201,
+          "sha256": "85830a0773d1b6071b6292e810401706f65d801103f7daa0438291b16e18e0fe",
+          "raw_bytes": 14285394,
+          "raw_sha256": "3b4ebe432bcffd82252b857802b90ae5599abe2155f6db6cea65730229629a9d"
+        }
+      ]
+    },
+    "deep-50000-jobs1-content-needle": {
+      "bytes": 6927216,
+      "sha256": "5dbb293252864609ac2dd726ec96c9185d6091de73aeced9e162177e0a128403",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-50000-jobs1-content-needle.json.gz",
+          "offset": 0,
+          "bytes": 192402,
+          "sha256": "1e22a7f089902f7bb7a97df61f0452b8f934c72b93f6fd40b39f7393745dbf6c",
+          "raw_bytes": 6927216,
+          "raw_sha256": "5dbb293252864609ac2dd726ec96c9185d6091de73aeced9e162177e0a128403"
+        }
+      ]
+    },
+    "deep-100000-jobs1-files-tree": {
+      "bytes": 39825982,
+      "sha256": "ecad19b40c84775eaf967cef1963207287321272d521b6d1ed4ba5e1e2438689",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-100000-jobs1-files-tree-bytes-1.gz",
+          "offset": 0,
+          "bytes": 374075,
+          "sha256": "4f919eda0b2779cfd5c24b75ddfd88586326e2a6f7211c4567a2568acc2f2d90",
+          "raw_bytes": 19912991,
+          "raw_sha256": "f910f9b08580d355faa8a527d2a0e4a3fba899d369cf09313a8c80c8af2e7f38"
+        },
+        {
+          "name": "native-workload-allocation-deep-100000-jobs1-files-tree-bytes-2.gz",
+          "offset": 19912991,
+          "bytes": 174423,
+          "sha256": "451560a4eea0c0296c9ee25e5c9745d9b4e90c5ba6addb3fbf958050b62d5c5a",
+          "raw_bytes": 19912991,
+          "raw_sha256": "c2c41bbb829574297937f775fc8be9cf5a3f30468a4ece5e83ce5e880b5219d5"
+        }
+      ]
+    },
+    "deep-100000-jobs1-files-collect": {
+      "bytes": 40680473,
+      "sha256": "ba9feaadc562b62a661fe32eb691a56cfbd1e2deb67897d37ef39c9c87fd6eee",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-100000-jobs1-files-collect-bytes-1.gz",
+          "offset": 0,
+          "bytes": 326184,
+          "sha256": "735b3253de9b11d9e760915486631d2d55185545ad5222475b88bc06386c06f4",
+          "raw_bytes": 20340236,
+          "raw_sha256": "7efcec6b064cbee4249549326b358a09930dc4692f260c7cafeeb652b4a9e238"
+        },
+        {
+          "name": "native-workload-allocation-deep-100000-jobs1-files-collect-bytes-2.gz",
+          "offset": 20340236,
+          "bytes": 273480,
+          "sha256": "ac7a2d6e46fbbbf2cb54b739643e52f6878ed79ab950fc84b02c56829771dddf",
+          "raw_bytes": 20340237,
+          "raw_sha256": "a44dd80f24fe185924b2862cc36e1f021e9458660f76467e4098b3022e2e7988"
+        }
+      ]
+    },
+    "deep-100000-jobs1-files-stat-lazy": {
+      "bytes": 40575761,
+      "sha256": "3438b26a5c1c944cff66f5507c8bd1a750314e99d795ef3af5e1f119488933b4",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-100000-jobs1-files-stat-lazy-bytes-1.gz",
+          "offset": 0,
+          "bytes": 304563,
+          "sha256": "11e5ffc87560754f6c261d796a012497f7a4d04e36abe527effa65301fcdb495",
+          "raw_bytes": 20287880,
+          "raw_sha256": "0f4d533b6457799d71c2f06b36cbcffb4c1252779a6793045bb7ac4054885518"
+        },
+        {
+          "name": "native-workload-allocation-deep-100000-jobs1-files-stat-lazy-bytes-2.gz",
+          "offset": 20287880,
+          "bytes": 270363,
+          "sha256": "7966460eb48830de3fe5ad4d133f2f2514f85743362bbeda0cb1381a6780f0f6",
+          "raw_bytes": 20287881,
+          "raw_sha256": "62a2f97187f37d77653945216ae5a116ea6af494a0eae009ac104d1b17b5709c"
+        }
+      ]
+    },
+    "deep-100000-jobs1-files-stat-eager": {
+      "bytes": 40346449,
+      "sha256": "7d8b90ae3c9dbfe01d21511b38129ba768a57da329175feced43dd78c8a07449",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-100000-jobs1-files-stat-eager-bytes-1.gz",
+          "offset": 0,
+          "bytes": 305672,
+          "sha256": "7eae07a2598ecde63a83ec61efe7012f8d2e513855cf7970a76e9b7a3c61b68e",
+          "raw_bytes": 20173224,
+          "raw_sha256": "2bd59b50da6ce5b2fa9941eb57e529c6be85ab05ca9ae272d90ad6b5b45301ae"
+        },
+        {
+          "name": "native-workload-allocation-deep-100000-jobs1-files-stat-eager-bytes-2.gz",
+          "offset": 20173224,
+          "bytes": 270685,
+          "sha256": "1005d6e2b58340aa9777cb44b1e7b45ed9b440611f60fdda6f11bb594398ebb4",
+          "raw_bytes": 20173225,
+          "raw_sha256": "309251cc9577aa70366aa7bfa0dd9a9c4435dd1b451e499ac0cd3e03d0d48a12"
+        }
+      ]
+    },
+    "deep-100000-jobs1-content-needle": {
+      "bytes": 15607947,
+      "sha256": "65175c90222905d2a565c41bd9e46017e1c6c27f18f8bc4f069e960a442e875e",
+      "parts": [
+        {
+          "name": "native-workload-allocation-deep-100000-jobs1-content-needle.json.gz",
+          "offset": 0,
+          "bytes": 302996,
+          "sha256": "743b5678eee576db6413cceefeee748c38032beaa0cbeac8bf33fa17c72a31c1",
+          "raw_bytes": 15607947,
+          "raw_sha256": "65175c90222905d2a565c41bd9e46017e1c6c27f18f8bc4f069e960a442e875e"
+        }
+      ]
+    },
+    "provenance": {
+      "bytes": 277926,
+      "sha256": "4a0de2cfce3f87041da6a4564eb633735034c988a8a1d6bc3b2a1a7a7a262f7f",
+      "parts": [
+        {
+          "name": "native-workload-allocation-provenance.json.gz",
+          "offset": 0,
+          "bytes": 58738,
+          "sha256": "b860d2b92e44fffe1599155dd389ae4968e24085cb0a8eecfe0a264853e8366d",
+          "raw_bytes": 277926,
+          "raw_sha256": "4a0de2cfce3f87041da6a4564eb633735034c988a8a1d6bc3b2a1a7a7a262f7f"
+        }
+      ]
+    }
+  },
+  "reassembly": "decompress parts and concatenate by ascending byte offset; decode reconstructed JSON; reuse references preserve exact original file bytes",
+  "exclusions": [
+    "Original executable/helper and profiler executable bytes remain at indexed local paths; their hashes/source/package provenance are retained.",
+    "Single observations on warm tmpfs do not establish slow-storage or multiworker admission policy.",
+    "No precise phase CPU attribution, repeated A/B or native M5 Pro acceptance is claimed."
+  ]
+}

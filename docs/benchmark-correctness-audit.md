@@ -112,8 +112,9 @@ retrofit the binary identity of a historical measurement.
 
 Regular CI retains report artifacts for 30 days and executable build artifacts for three days;
 hosted backfill artifacts omit executables. Preserve available original binaries, build manifests
-and logs before cleanup or artifact expiry. Linux executable verification remains outstanding;
-the 72 checked Mac binaries do not verify the Linux measurements.
+and logs before cleanup or artifact expiry. The initial Mac audit left Linux executable
+verification outstanding; the native Linux follow-up below now covers the available local
+Linux artifacts. The 72 checked Mac binaries do not verify the Linux measurements.
 
 On Linux, verify each retained executable against its original report with the PR's
 `tools/benchmark_provenance.py --report=... --binary=... --retention-reference=...` command.
@@ -257,8 +258,10 @@ prepare it before hosted backfill freezes a batch. Regression tests check those
 workflow boundaries and forbid Bazel builds in the shard action. After the
 independent clock-control measurement session and diagnostic profiles finished,
 all 57 tooling suites, the repository-wide tooling check and enforcing helper
-clang-tidy passed with these fixes. Native macOS compilation/accounting and
-successful hosted shard collection still require the follow-up CI run.
+clang-tidy passed with these fixes. Follow-up hosted run `38011945259` passes
+full Linux/macOS tests and all three measurement shards on each platform,
+including actual native-helper execution on macOS. Independent native Mac
+accounting calibration and scheduler performance controls remain open.
 
 The optimized helper after the Darwin macro fix has SHA-256
 `60bcb395bb3d0eccccd0a3d0cb2407538b1f96c45d5e1e156a0bd4522f93328e`.
@@ -299,7 +302,7 @@ memory measurements cannot be retrofitted to an old observation.
 
 Run the same fixtures and experimental commits on the M5 Pro. Profile thread creation,
 coordinator work and allocation with native sampling/Instruments. Record performance/efficiency
-core scheduling limits; a worker count is not Linux-style verified physical-core affinity.
+core scheduling limits; a worker count alone does not prove physical-core affinity.
 
 Accept an engine change only after repeated A/B measurements preserve result hashes and improve
 the targeted cells, with no material regressions in single-worker, large-grid, deep, content,
@@ -307,3 +310,564 @@ metadata and slow-storage controls on both platforms. Run affected correctness/c
 and appropriate sanitizers. Report absolute XFF time, reference time and same-run ratio together.
 The current evidence supports investigating specific costs; it does not establish that XFF
 will beat every reference tool on every workload.
+
+## Native Linux follow-up (2026-10-09)
+
+The native session uses merged audit driver commit
+`4ea895f63106f05df7c90b629d20433ae1e03016`. The original engine baseline remains
+`772994ab7905be77915978f06ea90ae5934aaeef`. The retained original baseline and
+the fresh merged-driver build agree on executable SHA-256,
+`f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106`.
+Their engine and tracked build-configuration sources are identical. The clock
+controls below use the merged-driver revision; they do not substitute for the
+requested fresh exact-revision baseline control on both native platforms.
+Baseline builds use `clang_release`, with the historical ICU 70 build-library
+path supplied explicitly. Complete prepared-grid runs retain nine raw samples
+per cell, use the fastest seven estimator and store fixtures on verified tmpfs.
+
+### Host topology and storage limitations
+
+A read-only observation at `2026-10-10T09:36:42+00:00` identifies this Linux
+environment as a KVM guest with ten allocated CPUs. Guest topology and affinity
+are observable, but do not independently prove ten dedicated host physical
+cores or host-side pinning. The workspace is ext4 on an exposed QEMU virtual
+disk; its physical backing and storage latency are not established. Both
+`/tmp` and `/dev/shm` are tmpfs, so a fixture under `/tmp` is not a disk or
+slow-storage control.
+
+This observation postdates the earlier collections and is not proof of their
+historical hypervisor state. Original reports, manifests and retained bytes
+remain unchanged, including fields named `physical_cpu_ids`: interpret those
+as recorded topology/affinity evidence, not independent host-pinning proof.
+The guest observations support descriptive within-environment comparisons and
+correctness controls, not bare-metal, physical-storage or slow-filesystem
+acceptance. The [host-context evidence](benchmarks/native-linux-host-context.json)
+preserves all eight original observation outputs and their hashes. Its original
+source manifest is `/tmp/xff-scheduler-host-context.json`, SHA-256
+`175eec896d2bbe4812a33e296a24e6a2dce153430582502a124126f7c512163b`.
+
+### Retained Linux executables
+
+All 142 completed reports under the local Linux benchmark batch inventory match
+their original retained executables and their original build manifests. They
+cover 72 distinct commits and 38 distinct executable hashes; no mismatches were
+found. Verification uses `benchmark_provenance.verify_retention`, checks the
+standalone manifest against the report's embedded build record, and records a
+measurement-bound proof for each report. Historical observations are unchanged.
+
+The original reports and binaries remain under `/home/marcus/xff-benchmarks/batches`.
+The native proof inventory is retained at
+`/tmp/xff-linux-retention-verification/summary.json`, with per-report
+`binary-verification.json` files below that directory. These checks verify the
+available local Linux artifacts; they do not verify expired hosted artifacts.
+
+### Worker scheduling experiment
+
+Linux `kernel.perf_event_paranoid` is now `0`, and native `perf` hardware counters
+are available. Startup-boundary profiles include worker creation and teardown,
+Abseil mutex slow paths and scheduling overhead; those observations alone do not
+attribute the startup cost to pthread creation. Keeping directory reads serial
+removes the small-work cliff but loses useful concurrency on large broad trees.
+[PR #991](https://github.com/mboworks/xff/pull/991) admits directory reads only
+when at least 64 independent sibling directories are available. Its hosted Linux
+and macOS tests, sanitizers, all three benchmark shards on each platform and
+combined benchmark comparison pass.
+
+The next experiment shares one traversal-owned executor across directory read-ahead,
+eager stat work and eligible content matching. Each admitted batch submits at
+most one drain job per useful worker. Directory jobs repeatedly claim independent
+listing reads; stat jobs claim 128-entry chunks; matcher jobs claim entry chunks.
+Only the coordinator recurses, evaluates traversal controls and consumes ordered
+results. Background workers remain bounded by the per-traversal allowance and
+are reused until traversal completion; the coordinator is additional. Comparison
+still has separate traversal/comparison ownership, as detailed below.
+
+Reuse alone does not establish efficient scheduling. Directory drain jobs currently
+run until their sibling batch is exhausted, so they can occupy all workers while
+the coordinator waits for a queued content or eager-stat batch. Controls must
+check foreground progress and pool contention, not just thread creation counts.
+The candidate in the current clean collection also counts previously processed
+entries for cold matcher admission; that count is not evidence that enough work
+remains to amortize startup, especially for a small rendered-content batch near
+the end of a run. Hosted benchmark alarms also contradict accepting that policy:
+on macOS, broad content-needle at 5,000 files and three workers measures 64.02 ms
+versus main's 33.45 ms, while rg measures 57.29 ms versus 60.31 ms. Linux reports
+content alarms at 2,000 and 5,000 files as well. The benchmark check is
+non-blocking; its green conclusion is not evidence that these controls passed.
+These hosted reports use the legacy prepared grid, not the native v2 fixtures,
+so they are portability warning evidence, not a substitute for the native audit.
+
+A local follow-up removes the accumulated count and fixed 8,192-entry startup
+gate. It estimates pending work from a 16-entry prefix, excluding that completed
+prefix and all past batches. Useful worker count is capped by remaining entries,
+the configured allowance and estimated work per worker (experimental budgets:
+500 microseconds cold, 50 microseconds warm). At least two workers and 16 pending
+entries per worker are required. Pure policy tests cover count/time boundaries
+without asserting that instrumented or descheduled execution is fast. The
+follow-up passes seven affected normal suites (including generated-reference
+validation) and six affected suites under MSan, TSan and ASan/UBSan. It has not
+been measured and is not the frozen candidate in the completed collection.
+Estimator representativeness, admission budgets and queue fairness remain
+experimental pending controls.
+
+### Isolated mutex-clock startup finding
+
+The completed native profiling session retains 36 cells: broad 10/20 and deep
+1,000/2,000, workers 1/3/10, and unchanged baseline, #991 and frozen #992 binaries.
+Each cell includes nine fresh-process `perf stat` observations, 200 fresh-process
+invocations under `perf record`, one discarded correctness-checked warmup and one
+syscall trace. All 7,596 fresh invocations passed the fixture output oracle.
+The complete 13-size grid defines both prepared maximum trees; materialized
+trees, anchor hashes and retained original binaries were checked before and
+after profiling. These instrumented observations are diagnostic, not acceptance
+timings. Raw evidence is retained at `/tmp/xff-native-startup-profile-session1`.
+
+Eight additional `strace -k` sleep-stack controls identify a specific Linux/x86
+startup mechanism. The baseline parallel boundary requests 1 ms and 2 ms sleeps
+inside Abseil's `MeasureTscFrequencyWithSleep`. Symbolized frames lead from
+`ReadPool::Run` through the mutex wait-queue `Enqueue` operation and
+`CycleClock::Frequency` to this one-time calibration. The baseline single-worker
+controls and #991's inline directory controls do not request these calibration
+sleeps. Raw sleep-stack controls are retained at
+`/tmp/xff-native-calibration-trace-session1`; ELF trace offsets must be mapped
+through the executable LOAD segment before symbolization.
+
+The pinned Abseil 20260817.0 source uses the sysfs TSC frequency when available.
+This host lacks `/sys/devices/system/cpu/cpu0/tsc_freq_khz`, so its x86 fallback
+starts at a 1 ms sleep and doubles until consecutive estimates agree within 1%.
+Other threads can spin or back off while that initialization completes. This
+is an associated mutex initialization cost, not a per-thread creation cost, and
+invalidates treating the provisional 500-microsecond cold-worker budget as a
+measured startup model.
+
+An isolated unchanged-baseline build disables Abseil's optional unscaled cycle
+clock with `--copt=-DABSL_USE_UNSCALED_CYCLECLOCK=0` and the matching
+`--host_copt`, retaining all other historical release options. It uses the steady
+clock with a fixed nanosecond frequency instead of TSC calibration. The four
+affected walk/matcher/run/rg suites pass. Its retained build is
+`/tmp/xff-absl-clock-control-build`, executable SHA-256
+`978f67355a6ebcd7362db1a995e70c143b3abca4de1014daa5d8d003d13c5909`.
+Three independent ascending, descending and seeded-shuffle timing sessions
+completed at `/tmp/xff-clock-control-repeated-session1`. Each creates fresh full
+prepared maximum trees using all 13 grid sizes, with workers 1/3/10 and recorded
+ten-CPU guest allocation. Enumeration runs at every anchor; content-needle
+and absent-content controls run at 5k/20k/50k/100k. The three participants are
+unchanged baseline, the same-source clock-only build and rg. Their order rotates
+between rounds. Every cell has one discarded warmup and nine retained samples,
+with fastest seven calculated independently. The 378 cells retain 10,206 samples;
+all 11,340 invocations, including warmups, passed the output oracle. Materialized
+fixture trees and executables were verified before and after collection.
+
+The following times are medians of the three independent session estimates.
+Changes are medians of same-session clock/baseline ratios, not ratios of the
+separate medians. Raw samples are not pooled across sessions.
+
+| Layout | Files | Workers | Baseline ms | Clock-only ms | rg ms | Paired change |
+| :----- | ----: | ------: | ----------: | ------------: | ----: | ------------: |
+| broad  |    20 |       3 |       5.258 |         2.069 | 3.232 |        -60.3% |
+| deep   |  2000 |       3 |       5.939 |         2.946 | 4.251 |        -51.0% |
+| broad  |    10 |       1 |       1.762 |         1.796 | 1.565 |         +3.2% |
+
+The tiny single-worker regression occurs in all three sessions, ranging from
+1.94% to 4.14%; it must not be discarded as an unchanged control. Both variants
+use the same native accounting helper, including helper startup in wall time.
+Their absolute times must not be pooled with historical Python-launch timings.
+
+A separate completed native control profiles baseline and clock-only builds at
+broad 20/deep 2k with workers 1/3/10: twelve cells, nine fresh `perf stat`
+observations plus a warmup and a symbolized syscall trace per cell. All 132
+invocations pass the oracle. At the parallel boundary both builds still create
+exactly two workers; only the baseline requests the 1 ms and 2 ms calibration
+sleeps. Single-worker controls request neither. These counters and trace
+durations are diagnostic and are not included in the uninstrumented timings.
+No default build setting has changed. Apple already disables the optional clock
+in this Abseil version; that source fact is not macOS performance validation.
+
+#### Retained clock-control review artifacts
+
+The [machine-readable index and complete cell summaries](benchmarks/native-clock-startup-controls.json)
+record commands, build and binary identities, fixture hashes, sampling policy,
+allocation, all per-session estimates, native mechanism controls and archive
+SHA-256 values. Download the four gzip-compressed JSON archives for raw evidence:
+
+- [Native profiles, calibration stacks and reproduction scripts](benchmarks/native-clock-startup-profiles.json.gz).
+- [Ascending timing session](benchmarks/native-clock-startup-timings-1.json.gz).
+- [Descending timing session](benchmarks/native-clock-startup-timings-2.json.gz).
+- [Seeded-shuffle timing session](benchmarks/native-clock-startup-timings-3.json.gz).
+
+The profiles archive retains the 36-cell startup counters/traces, eight
+symbolized calibration calls, the twelve clock-only mechanism controls, build
+and measurement manifests, analyses and exact reproduction scripts. Each timing
+archive preserves its full report, including all samples and correctness
+observations. Verify compressed and decompressed hashes against the index before
+analysis. Original executables and large `perf.data` recordings remain at their
+recorded local retention paths; the review artifacts include their hashes, not
+their bytes. The historical native accounting helper is separately retained and
+hash-verified so later helper builds do not invalidate these observations.
+
+These completed controls isolate a Linux startup mechanism. They do not establish
+acceptance of #991's directory threshold, #992's executor policy, or a default
+clock configuration. Eager metadata, slow-storage and native macOS controls
+remain open, as do allocation and large-grid slope investigations.
+
+### Shared-executor correctness coverage
+
+Correctness checks include nested read-ahead above the admission threshold,
+partial stat chunks with missing entries, repeated matcher transitions and
+executor reuse. An early-stop test deliberately holds a prefetched sibling read
+open while the coordinator quits: `Walk` must wait before destroying the walker,
+even though its executor survives for another phase. Explicit Abseil completion
+signals replaced the experiment's standard-library futures after expanded TSan
+coverage reported a shared-state completion/deallocation race.
+
+The interrupted `/tmp/xff-perf-shared-executor-v2` run is diagnostic only:
+correctness builds overlapped its measurements, and its measured source predates
+the final scheduling changes. It supplies no acceptance timing evidence.
+
+### Command-wide scheduling gap
+
+The frozen #992 executor is owned by one `RunFindCore` traversal, not by the
+complete command. Comparison starts the left traversal with unconditional
+`std::async` and runs the right traversal on the calling thread. Each traversal
+creates its own executor with the configured worker allowance. Consequently,
+comparison can have two coordinators and two independent worker pools; even
+`--jobs=1` still starts the extra comparison coordinator. After both traversals
+finish, `ParallelCompare` creates another pool for eligible file pairs rather
+than reusing their workers. The concurrent comparison coordinators predate #992;
+the draft does not fix that existing command-wide ownership gap.
+
+Directory drain jobs also consume their entire sibling batch before returning
+to the common queue. Giving each worker a long-lived drain amortizes dispatch,
+but can delay queued content and metadata work. Read-ahead retains complete
+listings without a command-wide byte budget, and quit waits for already queued
+reads rather than canceling unnecessary work. A bounded pool alone does not
+prove a bounded frontier, fair scheduling or enough useful remaining work.
+
+The next scheduler design must define whether the coordinator counts toward
+the command's concurrency allowance, share that allowance across comparison
+sides and phases, bound pending work and retained bytes, and balance substantial
+batches without starving another stage. Workers must not wait on child tasks in
+their own executor. Do not simply pass the current executor to two concurrent
+coordinators: its startup and worker-count interface assumes one coordinator.
+Thread reuse and count-based admission are not acceptance evidence for these
+requirements; native Linux and M5 Pro controls remain necessary.
+
+### Memory-accounting finding and remaining acceptance work
+
+Direct `/usr/bin/time -v` runs show approximately 5.3-5.4 MiB peak RSS for a small
+XFF invocation, while the Python comparison worker reports approximately
+22-23 MiB for the same command. A trivial native command also reproduces the
+Python worker's high floor. The forked launcher's inherited high-water mark must
+be corrected or explicitly excluded before using those reported peaks to choose
+arena sizes. This is separate from the worker scheduler experiment.
+
+The clean full-grid collection at `/tmp/xff-perf-shared-executor-clean-v2`
+completed before later correctness builds. Its three independently verified
+binaries have identical fixture, oracle, allocation and reference identities
+across all 858 task cells. It reproduces the baseline small-work cliff, but also
+shows content regressions in the frozen #992 candidate; it is one sequential
+session, not repeated/reordered acceptance. The local cost-aware follow-up has
+not been measured by that collection.
+
+### Fresh exact-source full-grid Linux baseline (2026-10-10)
+
+The exact initially requested source, `772994ab7905be77915978f06ea90ae5934aaeef`,
+has now been freshly built with its historical `clang_release` configuration.
+Clean source/HEAD/tree checks pass; the saved executable SHA-256 is
+`f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106`,
+matching the original retained baseline bytes. Its tracked build-configuration
+hashes match that exact source, not an inferred equivalent revision.
+
+The accounting driver is frozen at `0e296e40ca6bf523215d80d1dc02deb3503b796c`,
+including the additional #994 driver fixes beyond original #990. The batch
+records every driver-module hash and the retained native helper/method identity;
+do not claim this is the original #990 driver or combine its absolute timings
+with historical Python launching. All compilation finished before measurement.
+
+The complete 13-anchor grid, broad/v2 and deep/v2, workers 1/3/10, recorded
+ten-CPU guest allowance, tmpfs, one discarded warmup and nine samples/fastest
+seven completed in batch
+`f586e579b2d57d0f9afa24e6d06849d6bc1df4d96654e5bcb349e77d8c6a9d1d`.
+All 858 task cells, 14,040 retained samples and 1,560 discarded warmups pass the
+collection oracle: 15,600 correct fresh participant invocations. A separate
+post-run verifier checks the original binary, standalone/embedded manifests,
+historical tracked configuration, frozen driver/helper, all task keys,
+fixture/anchor/oracle identities, affinity, sample validity/output lengths,
+native resource accounting and independently recomputed fastest-seven estimates.
+
+The small-work cliff is reproduced in this exact-source baseline:
+
+| Layout | Workers | Files | XFF ms | rg ms | XFF/rg |
+| :----- | ------: | ----: | -----: | ----: | -----: |
+| broad  |       1 |    10 |  1.894 | 1.653 |  1.146 |
+| broad  |       1 |    20 |  1.823 | 1.663 |  1.096 |
+| broad  |       3 |    10 |  1.842 | 3.103 |  0.594 |
+| broad  |       3 |    20 |  5.241 | 3.230 |  1.623 |
+| deep   |       1 |  1000 |  2.308 | 2.021 |  1.142 |
+| deep   |       1 |  2000 |  2.849 | 2.494 |  1.142 |
+| deep   |       3 |  1000 |  2.386 | 3.223 |  0.740 |
+| deep   |       3 |  2000 |  6.151 | 3.923 |  1.568 |
+
+Ten-worker controls likewise measure 5.232 ms at broad 20 and 6.121 ms at deep
+2k. The [baseline index](benchmarks/native-exact-baseline-controls.json) retains
+all selected enumeration rows, commands/contracts, checksums and limitations.
+The [complete derived analysis](benchmarks/native-exact-baseline-analysis.json.gz)
+contains every task's raw sample arrays, absolute estimates and same-run ratios.
+[Provenance and reproduction scripts](benchmarks/native-exact-baseline-provenance.json.gz)
+retain the frozen batch, original build log, both retention proofs, driver
+sources, executed-command handoff and verification/export code.
+
+The original report's exact JSON bytes are preserved in eleven lossless gzip
+byte chunks under the existing file-size policy:
+[1](benchmarks/native-exact-baseline-report-bytes-1.gz),
+[2](benchmarks/native-exact-baseline-report-bytes-2.gz),
+[3](benchmarks/native-exact-baseline-report-bytes-3.gz),
+[4](benchmarks/native-exact-baseline-report-bytes-4.gz),
+[5](benchmarks/native-exact-baseline-report-bytes-5.gz),
+[6](benchmarks/native-exact-baseline-report-bytes-6.gz),
+[7](benchmarks/native-exact-baseline-report-bytes-7.gz),
+[8](benchmarks/native-exact-baseline-report-bytes-8.gz),
+[9](benchmarks/native-exact-baseline-report-bytes-9.gz),
+[10](benchmarks/native-exact-baseline-report-bytes-10.gz), and
+[11](benchmarks/native-exact-baseline-report-bytes-11.gz).
+Decompress and concatenate in ascending index-recorded offset order; individual
+and reassembled SHA-256 checks verify the exact original bytes. The complete
+report/analysis, original binary/helper and build artifacts remain at
+`/tmp/xff-perf-baseline-exact772-native-session1`; review archives do not include
+the executable bytes themselves.
+
+Retained samples record output lengths rather than full stdout; collection
+checks the actual output oracle before retaining each sample. Post-run
+fixture/oracle regeneration reuses the pinned definitions, checking internal
+consistency rather than a separate implementation of the workload specification.
+Generated/ignored `MODULE.bazel.lock` cannot be compared to a tracked Git blob.
+This is one ordered Linux baseline session, not repeated/reordered engine A/B
+acceptance or native Mac evidence. The provenance archive also includes a
+same-driver/exact-source M5 Pro baseline handoff script, syntax-checked only on
+Linux. It retains the helper before historical compilation and records hardware,
+P/E-core keys and storage without claiming Linux affinity or verified RAM-disk
+storage; it has not run on macOS. Native Mac accounting, Instruments, allocation
+and repeated/reordered acceptance remain required.
+
+### Large single-worker allocation diagnostics (2026-10-10)
+
+A user-local Heaptrack 1.5.0 bundle was extracted under `/tmp`; all five Ubuntu
+package archives match their repository SHA-256 values. No system package or
+security setting changed. A known malloc/realloc control verifies three explicit
+allocation calls and a 6 MiB live allocation peak, plus the independently
+identified runtime allocation. Periodic short-process snapshots miss that peak;
+the following heap values instead come from every allocation/free event.
+
+The unchanged retained baseline was profiled once at 20k/50k/100k files with one
+worker on each full-grid v2 layout. Each cell also runs once without Heaptrack
+through the native resource launcher for independent RSS. Both commands pass the
+same original output oracle; complete materialized maximum trees and executable
+identities match before/after. These are twelve correct diagnostic invocations,
+not repeated timing controls. Tracked requested heap bytes and native RSS are
+different metrics; non-interposed allocation mechanisms are outside Heaptrack's
+coverage, and profiler overhead is excluded from the separate RSS control.
+
+| Layout |  Files | Allocation calls | Peak tracked heap MiB | Native RSS MiB |
+| :----- | -----: | ---------------: | --------------------: | -------------: |
+| broad  |  20000 |            46106 |                 0.178 |          5.191 |
+| broad  |  50000 |           112294 |                 0.238 |          5.281 |
+| broad  | 100000 |           223942 |                 0.311 |          5.531 |
+| deep   |  20000 |            41890 |                 3.174 |          8.469 |
+| deep   |  50000 |           106565 |                14.858 |         20.500 |
+| deep   | 100000 |           211212 |                34.006 |         40.191 |
+
+Deep traversal retains much more live heap despite similar allocation counts.
+At its 100k global peak, summing stack weights containing `ReadDir::JoinPath`
+accounts for about 24.3 MiB; stacks containing `StatEntries` and `reserve`
+account for about 9.2 MiB. Source inspection shows each recursive `Descend`
+retains its parent listing while `HandleChildren` descends further; those
+listings hold full path strings and entry vectors. This is evidence for examining
+listing/path lifetime and depth-dependent path length, not for increasing an
+arena reserve. It does not establish the CPU-time contribution or validate a
+lifetime optimization.
+
+The [allocation index](benchmarks/native-large-allocation-controls.json)
+retains package/control provenance, build and helper identities, all six cells,
+raw-profile hashes, independent RSS observations and archive checksums. Download
+the per-cell archives for original zstd Heaptrack bytes, complete allocation and
+global-peak stacks, analyzer output, command stdout/stderr and reproduction scripts:
+
+- [Broad 20k](benchmarks/native-large-allocation-profiles-broad-20000-jobs1-files.json.gz),
+  [50k](benchmarks/native-large-allocation-profiles-broad-50000-jobs1-files.json.gz),
+  [100k](benchmarks/native-large-allocation-profiles-broad-100000-jobs1-files.json.gz).
+- [Deep 20k](benchmarks/native-large-allocation-profiles-deep-20000-jobs1-files.json.gz),
+  [50k](benchmarks/native-large-allocation-profiles-deep-50000-jobs1-files.json.gz),
+  [100k](benchmarks/native-large-allocation-profiles-deep-100000-jobs1-files.json.gz).
+
+Deep 100k's complete raw stdout is split into three lossless gzip byte chunks:
+[part 1](benchmarks/native-large-allocation-deep-100000-stdout-1.gz),
+[part 2](benchmarks/native-large-allocation-deep-100000-stdout-2.gz), and
+[part 3](benchmarks/native-large-allocation-deep-100000-stdout-3.gz).
+The index records their byte offsets and compressed/decompressed hashes; the
+cell archive records the reassembled stream hash. Decompress and concatenate in
+ascending offset order. All allocation-event totals are recomputed, and the
+complete allocation/global-peak stack weights independently sum to those totals.
+Original native artifacts remain at `/tmp/xff-native-large-allocation-profile-session1`.
+
+### Large single-worker CPU diagnostics (2026-10-10)
+
+The unchanged retained baseline executable was profiled on freshly materialized
+full-grid v2 broad/deep trees at 20k/50k/100k files, pinned to one allocated guest
+CPU with `--jobs=1`. Four workloads per anchor cover plain enumeration,
+`--sort=tree` enumeration, enumeration with `-collect:audit`, and content-needle
+matching. These are real CLI workloads, not isolated per-phase benchmarks.
+Fixture and executable identities match before/after. Each of the 24 cells has
+one warmup, nine direct `perf stat` observations and fifty fresh invocations
+under `perf record`: all 1,440 invocations pass the original oracle. Tree-sort
+controls additionally check hierarchical path order. No builds or acceptance
+timings overlap this diagnostic collection; no lost samples are reported.
+
+Plain enumeration's counter medians are:
+
+| Layout |  Files | Task-clock ms | User instructions/file |
+| :----- | -----: | ------------: | ---------------------: |
+| broad  |  20000 |          9.39 |                2556.65 |
+| broad  |  50000 |         27.08 |                2527.67 |
+| broad  | 100000 |         53.39 |                2513.26 |
+| deep   |  20000 |          9.95 |                2547.55 |
+| deep   |  50000 |         27.08 |                2567.81 |
+| deep   | 100000 |         62.65 |                2608.06 |
+
+User instructions per input file stay within approximately 2.5k-2.6k despite
+deep traversal's much larger live heap. That separates the allocation-lifetime
+finding from a claim of an equally large instruction-count discontinuity;
+it does not explain all elapsed-time scaling. At 100k, collection increases
+user instructions from 251.3 to 376.1 million on broad and from 260.8 to 390.0
+million on deep. Tree sorting gives 288.7/366.9 million and content matching
+707.5/730.1 million respectively. These workload differences are not independent
+causal phase costs, nor repeated engine/reference A/B acceptance.
+
+The recording includes its Python repetition driver. Although reports filter
+the `xff` command, their initial printed percentages still use all recorded
+event periods as the denominator. The retained analysis instead sums XFF's
+own leaf periods, including unknown locations, and recomputes all shares.
+Coarse exclusive labels use the named function, not types appearing only in its
+argument list. Directory/metadata, evaluation, allocator, string/memory and
+coordinator helpers all contribute; these sampled labels are not precise wall
+time for traversal, evaluation, collection or output phases.
+
+Raw records contain kernel-context sample IPs even though the recorded event
+attributes say `exclude_kernel=1`. An independent `perf script` check verifies
+all 24 raw sample counts/period sums against the XFF-filtered self histograms;
+kernel-context periods remain explicitly unattributed. Ordinary sampling allows
+location skid, a possible explanation rather than an isolated host diagnosis.
+Counter exclusion and sampled CPU mode have different meanings; see
+[`perf_event_open` semantics](https://man7.org/linux/man-pages/man2/perf_event_open.2.html).
+A `cycles:up` capability probe fails with "No supported events found" on this
+host. No security setting was weakened to obtain symbols. Do not present these
+unattributed samples as kernel CPU time or claim precise per-phase attribution.
+
+The [CPU diagnostic index](benchmarks/native-large-cpu-controls.json) retains
+all cell summaries, executable/fixture identities, recording commands, raw
+counter medians, filtered sample accounting, context checks and limitations.
+The following archives retain all raw counter text, self reports, callgraphs,
+sample-context records, event attributes and reproduction scripts:
+
+- [Broad 20k](benchmarks/native-large-cpu-profiles-broad-20000.json.gz),
+  [50k](benchmarks/native-large-cpu-profiles-broad-50000.json.gz),
+  [100k](benchmarks/native-large-cpu-profiles-broad-100000.json.gz).
+- [Deep 20k](benchmarks/native-large-cpu-profiles-deep-20000.json.gz),
+  [50k](benchmarks/native-large-cpu-profiles-deep-50000.json.gz).
+- Deep 100k: [enumeration](benchmarks/native-large-cpu-profiles-deep-100000-files.json.gz),
+  [tree sorting](benchmarks/native-large-cpu-profiles-deep-100000-files-tree.json.gz),
+  [collection](benchmarks/native-large-cpu-profiles-deep-100000-files-collect.json.gz),
+  [content](benchmarks/native-large-cpu-profiles-deep-100000-content-needle.json.gz).
+
+Deep 100k is partitioned by workload to meet the existing file-size policy
+without discarding report text. All nine archive checksums, raw counter medians,
+sample period/context sums and embedded scripts verify against original artifacts.
+Original `perf.data` and complete base64 oracle arrays remain locally at
+`/tmp/xff-native-large-cpu-profile-session1`; they are not included in the review
+archives. Their hashes and reconstruction commands are retained explicitly.
+The initial local analysis is superseded because it classified functions by
+argument types and did not distinguish kernel-context IPs; the index identifies
+both the superseded and corrected analyses without changing raw observations.
+
+### Workload allocation controls (2026-10-10)
+
+The exact initial-source executable `772994ab7905be77915978f06ea90ae5934aaeef`
+(`f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106`) now has
+allocation profiles for five additional workloads at 20k/50k/100k files on both
+full-grid v2 layouts: tree sorting, explicit collection, lazy stat, eager stat
+and content-needle matching. Thirty Heaptrack profiles and thirty separate
+uninstrumented native-resource controls complete successfully. Every output
+matches its fixture oracle; tree sorting additionally preserves hierarchical
+path order. Native RSS excludes profiler overhead. All invocations use one
+allocated guest CPU and `--jobs=1`; these are not multiworker timing controls.
+
+Lazy metadata uses `-type f -size +0 -print0`; eager metadata uses
+`-size +0 -type f -print0`. The latter starts with an unconditional metadata
+consumer, matching `ExpressionMetadata`'s eager-demand rule. Size oracles are
+derived from actual fixture-model byte lengths; content oracles from those
+bytes' needle membership. Complete maximum-tree hashes and retained
+executable/helper/driver identities match before and after collection. The
+independent verifier regenerates all thirty oracles, checks sixty raw outputs
+and recomputes every allocation/free event and native-resource relationship.
+
+Selected 100k results are below. Byte counts are exact observations, not pooled
+or repeated estimates. Requested intercepted live heap and RSS remain distinct.
+
+| Layout | Workload       | Allocation calls | Peak tracked heap bytes | Native RSS bytes |
+| :----- | :------------- | ---------------: | ----------------------: | ---------------: |
+| broad  | tree sorting   |           220752 |                  330395 |          5976064 |
+| broad  | collection     |           325620 |                26862227 |         32243712 |
+| broad  | lazy stat      |           323947 |                  326963 |          5795840 |
+| broad  | eager stat     |           323949 |                  326963 |          5812224 |
+| broad  | content needle |           357227 |                  327171 |          5799936 |
+| deep   | tree sorting   |           210808 |                35643867 |         41926656 |
+| deep   | collection     |           312881 |                72085451 |         78327808 |
+| deep   | lazy stat      |           310705 |                35658483 |         42143744 |
+| deep   | eager stat     |           310707 |                35659475 |         42049536 |
+| deep   | content needle |           339423 |                35658691 |         41889792 |
+
+The collapsed stack weights sum exactly to every profile's event-count and
+global-peak totals. Exclusive classification tests `EvalCollect` first, then
+`ReadDir::JoinPath`, then `StatEntries` plus `reserve`, then stat path-copy
+helpers, with all remaining weight retained as other. These are stack groups,
+not precise isolated phases or CPU shares. At deep 100k collection's global
+peak, stacks containing `EvalCollect` account for 36,456,976 bytes, directory
+path construction for 25,475,264 and listing reserves for 9,618,816. Broad
+collection stacks account for 26,701,744 of its 26,862,227-byte peak. The deep
+listing/path lifetime finding therefore remains relevant while explicit
+collection adds separate retained records. This does not identify all
+collection bytes as arena storage or justify changing an arena reserve.
+
+Lazy/eager metadata adds allocation calls without a comparable peak increase;
+symbolized stacks include transient `StatFields` string copies. Content also
+adds calls while retaining a similar peak on these fixtures. Neither observation
+establishes CPU cost, storage latency, useful parallelism or remaining-work
+admission. Collection also changes eager metadata demand, so its difference
+cannot be attributed to allocation alone. Warm tmpfs is not slow storage.
+
+The [workload allocation index](benchmarks/native-workload-allocation-controls.json)
+retains all thirty results, full raw-file inventory, compressed/original
+SHA-256 and byte counts, exact source/tree, full grid, command/allocation/helper
+identities and reassembly instructions. Its thirty-five archives preserve all
+360 original per-cell files, including zstd profiles, complete allocation/peak
+stacks, analyzer output, native resources and both raw stdout streams. Identical
+streams are stored once with byte-exact reconstruction references; larger JSON
+payloads use ordered gzip byte chunks under the unchanged 500 KB file-size
+policy. No samples, profile bytes or output records are discarded.
+
+The provenance archive includes frozen driver sources, collection/verification
+logs, independent oracle/event verifier, stack analyzer and lossless export
+verifier. Every reconstructed file matches the original bytes. Native original
+artifacts remain at `/tmp/xff-native-workload-allocation-session1`; executable,
+helper and profiler executable bytes are excluded from the review archives,
+with their retained identities/package provenance recorded. No runtime,
+toolchain, macOS configuration or host security setting changes are included.
+
+The complete audit remains open. Final shared-executor timing must be collected
+after every build has finished, using the complete prepared grid. Repeated
+controls must cover content, eager metadata and slow storage. The six enumeration
+and thirty additional workload allocation cells plus 24 CPU diagnostic cells
+do not complete precise phase-level CPU/slope attribution, candidate-scheduler
+allocation controls, slow storage or native macOS validation.
+Hosted macOS checks provide portability evidence for PR #991;
+they do not replace the specified native M5 Pro A/B and sampling controls for
+the shared-executor experiment.
