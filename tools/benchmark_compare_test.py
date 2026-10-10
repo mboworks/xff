@@ -219,6 +219,12 @@ class BenchmarkCompareTest(unittest.TestCase):
         with mock.patch.object(compare, 'collect', side_effect=[first, second]):
             with self.assertRaisesRegex(ValueError, 'identity changed'):
                 compare.collect_scales(Path('/xff'), [10, 100], depth=2, cpu_counts=(1,))
+        first, second = report(None, 10, 2, 1), report(None, 100, 2, 1)
+        first['resource_launcher'] = {'sha256': 'a' * 64}
+        second['resource_launcher'] = {'sha256': 'b' * 64}
+        with mock.patch.object(compare, 'collect', side_effect=[first, second]):
+            with self.assertRaisesRegex(ValueError, 'resource launcher changed'):
+                compare.collect_scales(Path('/xff'), [10, 100], depth=2, cpu_counts=(1,))
         for counts in ([], [0], [10, 10]):
             with self.subTest(counts=counts), self.assertRaises(ValueError):
                 compare.collect_scales(Path('/xff'), counts, depth=2)
@@ -416,12 +422,39 @@ class BenchmarkCompareTest(unittest.TestCase):
         self.assertTrue(all(task['skips'] for task in result['tasks'] if task['name'] != 'files-safe'))
         self.assertTrue(all(not task['skips'] for task in result['tasks'] if task['name'] == 'files-safe'))
         page = compare.render(result)
+        self.assertEqual(result['contract']['resource_accounting'],
+                         {key: value for key, value in result['resource_launcher'].items() if key != 'path'})
         self.assertIn('Tool comparisons', page)
         self.assertIn('Input files/s', page)
         self.assertIn('Skipped:', page)
+        self.assertIn('Native resource accounting:', page)
+        self.assertIn(result['resource_launcher']['memory_method'], page)
+        self.assertIn(result['resource_launcher']['wall_method'], page)
+        self.assertIn('Launcher SHA-256: ' + result['resource_launcher']['sha256'], page)
+        legacy = copy.deepcopy(result)
+        del legacy['resource_launcher']
+        del legacy['contract']['resource_accounting']
+        legacy_page = compare.render(legacy)
+        self.assertIn('Legacy Python-launcher RSS can include its pre-exec footprint', legacy_page)
+        self.assertNotIn('Native resource accounting:', legacy_page)
+        escaped = copy.deepcopy(result)
+        untrusted_method = '<script>accounting</script>'
+        escaped['resource_launcher']['memory_method'] = untrusted_method
+        escaped['contract']['resource_accounting']['memory_method'] = untrusted_method
+        escaped_page = compare.render(escaped)
+        self.assertIn('&lt;script&gt;accounting&lt;/script&gt;', escaped_page)
+        self.assertNotIn(untrusted_method, escaped_page)
         broken = copy.deepcopy(result)
         broken['tasks'][0]['participants']['xff']['samples'] = []
         with self.assertRaisesRegex(ValueError, 'missing'):
+            compare.render(broken)
+        broken = copy.deepcopy(result)
+        broken['resource_launcher']['sha256'] = '0' * 64
+        with self.assertRaisesRegex(ValueError, 'accounting contract'):
+            compare.render(broken)
+        broken = copy.deepcopy(result)
+        broken['tasks'][0]['participants']['xff']['samples'][0]['sum_child_peak_rss_bytes'] += 1
+        with self.assertRaisesRegex(ValueError, 'aggregate memory'):
             compare.render(broken)
 
 

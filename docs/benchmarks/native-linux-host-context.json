@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "status": "post-start measurement-environment observation; not historical host pinning proof",
+  "observed_at": "2026-10-10T09:36:42+00:00",
+  "source_manifest_sha256": "175eec896d2bbe4812a33e296a24e6a2dce153430582502a124126f7c512163b",
+  "limitations": [
+    "Observation postdates earlier collections; it is not historical host-state proof.",
+    "Guest CPU topology and affinity do not establish host physical-core pinning.",
+    "QEMU disk backing and physical-storage latency are not established.",
+    "Both /tmp and /dev/shm are tmpfs; neither supplies a slow-storage control.",
+    "Original reports and their field names remain unchanged."
+  ],
+  "source_manifest": {
+    "status": "post-start measurement-environment observation; not historical host pinning proof",
+    "observed_at": "2026-10-10T09:36:42+00:00",
+    "sources": {
+      "observed_at": {
+        "path": "/tmp/xff-scheduler-host-context-observed-at.txt",
+        "sha256": "ca377dbfc10823cc81358a42378f08ea63fe3d2b5509bee6fc9970e52272eff0"
+      },
+      "lscpu": {
+        "path": "/tmp/xff-scheduler-host-lscpu.json",
+        "sha256": "56f9949339746e00e0b655e96d0acaf2748052517a35f670f3556c5da6a4df97"
+      },
+      "core_topology": {
+        "path": "/tmp/xff-scheduler-host-core-topology.json",
+        "sha256": "70da0bc6cc8ce561b46af772450e3bba4a653851116c86926e4b703b681d27ad"
+      },
+      "virtualization": {
+        "path": "/tmp/xff-scheduler-host-virtualization.txt",
+        "sha256": "3b691b22d6a04e2c63061f30b8d26048dc13d891ab7a9633a212a327b25c72fc"
+      },
+      "workspace_mount": {
+        "path": "/tmp/xff-scheduler-host-workspace-mount.json",
+        "sha256": "4937daab90907774e964c43b540d05af7f6fe775ade3b79e9fd8497c642094a4"
+      },
+      "tmp_mount": {
+        "path": "/tmp/xff-scheduler-host-tmp-mount.json",
+        "sha256": "871dd82b3aa5bc0e0d821992a9044f48790d00e0846d146cd9a99b6d866581bd"
+      },
+      "shm_mount": {
+        "path": "/tmp/xff-scheduler-host-shm-mount.json",
+        "sha256": "6dc12c4272076d009c12a7ecb7a8370fd0ca77bf39fbbfc1aedb543072a85dbd"
+      },
+      "block_devices": {
+        "path": "/tmp/xff-scheduler-host-block-devices.json",
+        "sha256": "d3146ad6efdce85ed1bb7c80a6aab387f46cf8c92bf6ec16093b15855358109b"
+      }
+    }
+  },
+  "observations": {
+    "observed_at": {
+      "sha256": "ca377dbfc10823cc81358a42378f08ea63fe3d2b5509bee6fc9970e52272eff0",
+      "stdout": "2026-10-10T09:36:42+00:00\n"
+    },
+    "lscpu": {
+      "sha256": "56f9949339746e00e0b655e96d0acaf2748052517a35f670f3556c5da6a4df97",
+      "stdout": "{\n   \"lscpu\": [\n      {\n         \"field\": \"Architecture:\",\n         \"data\": \"x86_64\"\n      },{\n         \"field\": \"CPU op-mode(s):\",\n         \"data\": \"32-bit, 64-bit\"\n      },{\n         \"field\": \"Address sizes:\",\n         \"data\": \"48 bits physical, 48 bits virtual\"\n      },{\n         \"field\": \"Byte Order:\",\n         \"data\": \"Little Endian\"\n      },{\n         \"field\": \"CPU(s):\",\n         \"data\": \"10\"\n      },{\n         \"field\": \"On-line CPU(s) list:\",\n         \"data\": \"0-9\"\n      },{\n         \"field\": \"Vendor ID:\",\n         \"data\": \"AuthenticAMD\"\n      },{\n         \"field\": \"Model name:\",\n         \"data\": \"AMD Ryzen 9 9950X 16-Core Processor\"\n      },{\n         \"field\": \"CPU family:\",\n         \"data\": \"26\"\n      },{\n         \"field\": \"Model:\",\n         \"data\": \"68\"\n      },{\n         \"field\": \"Thread(s) per core:\",\n         \"data\": \"1\"\n      },{\n         \"field\": \"Core(s) per socket:\",\n         \"data\": \"10\"\n      },{\n         \"field\": \"Socket(s):\",\n         \"data\": \"1\"\n      },{\n         \"field\": \"Stepping:\",\n         \"data\": \"0\"\n      },{\n         \"field\": \"BogoMIPS:\",\n         \"data\": \"8583.90\"\n      },{\n         \"field\": \"Flags:\",\n         \"data\": \"fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm rep_good nopl xtopology cpuid extd_apicid tsc_known_freq pni pclmulqdq ssse3 fma cx16 sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw perfctr_core ssbd perfmon_v2 ibrs ibpb stibp ibrs_enhanced vmmcall fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves user_shstk avx_vnni avx512_bf16 clzero xsaveerptr wbnoinvd arat npt lbrv nrip_save tsc_scale vmcb_clean flushbyasid pausefilter pfthreshold v_vmsave_vmload vgif vnmi avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid movdiri movdir64b overflow_recov succor fsrm avx512_vp2intersect flush_l1d\"\n      },{\n         \"field\": \"Virtualization:\",\n         \"data\": \"AMD-V\"\n      },{\n         \"field\": \"Hypervisor vendor:\",\n         \"data\": \"KVM\"\n      },{\n         \"field\": \"Virtualization type:\",\n         \"data\": \"full\"\n      },{\n         \"field\": \"L1d cache:\",\n         \"data\": \"640 KiB (10 instances)\"\n      },{\n         \"field\": \"L1i cache:\",\n         \"data\": \"640 KiB (10 instances)\"\n      },{\n         \"field\": \"L2 cache:\",\n         \"data\": \"5 MiB (10 instances)\"\n      },{\n         \"field\": \"L3 cache:\",\n         \"data\": \"160 MiB (10 instances)\"\n      },{\n         \"field\": \"NUMA node(s):\",\n         \"data\": \"1\"\n      },{\n         \"field\": \"NUMA node0 CPU(s):\",\n         \"data\": \"0-9\"\n      },{\n         \"field\": \"Vulnerability Gather data sampling:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Ghostwrite:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Indirect target selection:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Itlb multihit:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability L1tf:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Mds:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Meltdown:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Mmio stale data:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Old microcode:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Reg file data sampling:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Retbleed:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Spec rstack overflow:\",\n         \"data\": \"Mitigation; IBPB on VMEXIT only\"\n      },{\n         \"field\": \"Vulnerability Spec store bypass:\",\n         \"data\": \"Mitigation; Speculative Store Bypass disabled via prctl\"\n      },{\n         \"field\": \"Vulnerability Spectre v1:\",\n         \"data\": \"Mitigation; usercopy/swapgs barriers and __user pointer sanitization\"\n      },{\n         \"field\": \"Vulnerability Spectre v2:\",\n         \"data\": \"Mitigation; Enhanced / Automatic IBRS; IBPB conditional; STIBP disabled; PBRSB-eIBRS Not affected; BHI Not affected\"\n      },{\n         \"field\": \"Vulnerability Srbds:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Tsa:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Tsx async abort:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Vmscape:\",\n         \"data\": \"Not affected\"\n      }\n   ]\n}\n"
+    },
+    "core_topology": {
+      "sha256": "70da0bc6cc8ce561b46af772450e3bba4a653851116c86926e4b703b681d27ad",
+      "stdout": "{\n   \"cpus\": [\n      {\n         \"cpu\": 0,\n         \"socket\": 0,\n         \"core\": 0,\n         \"online\": true\n      },{\n         \"cpu\": 1,\n         \"socket\": 0,\n         \"core\": 1,\n         \"online\": true\n      },{\n         \"cpu\": 2,\n         \"socket\": 0,\n         \"core\": 2,\n         \"online\": true\n      },{\n         \"cpu\": 3,\n         \"socket\": 0,\n         \"core\": 3,\n         \"online\": true\n      },{\n         \"cpu\": 4,\n         \"socket\": 0,\n         \"core\": 4,\n         \"online\": true\n      },{\n         \"cpu\": 5,\n         \"socket\": 0,\n         \"core\": 5,\n         \"online\": true\n      },{\n         \"cpu\": 6,\n         \"socket\": 0,\n         \"core\": 6,\n         \"online\": true\n      },{\n         \"cpu\": 7,\n         \"socket\": 0,\n         \"core\": 7,\n         \"online\": true\n      },{\n         \"cpu\": 8,\n         \"socket\": 0,\n         \"core\": 8,\n         \"online\": true\n      },{\n         \"cpu\": 9,\n         \"socket\": 0,\n         \"core\": 9,\n         \"online\": true\n      }\n   ]\n}\n"
+    },
+    "virtualization": {
+      "sha256": "3b691b22d6a04e2c63061f30b8d26048dc13d891ab7a9633a212a327b25c72fc",
+      "stdout": "kvm\n"
+    },
+    "workspace_mount": {
+      "sha256": "4937daab90907774e964c43b540d05af7f6fe775ade3b79e9fd8497c642094a4",
+      "stdout": "{\n   \"filesystems\": [\n      {\n         \"target\": \"/\",\n         \"source\": \"/dev/sda2\",\n         \"fstype\": \"ext4\",\n         \"options\": \"rw,relatime\"\n      }\n   ]\n}\n"
+    },
+    "tmp_mount": {
+      "sha256": "871dd82b3aa5bc0e0d821992a9044f48790d00e0846d146cd9a99b6d866581bd",
+      "stdout": "{\n   \"filesystems\": [\n      {\n         \"target\": \"/tmp\",\n         \"source\": \"tmpfs\",\n         \"fstype\": \"tmpfs\",\n         \"options\": \"rw,nosuid,nodev,size=31622124k,nr_inodes=1048576,inode64,usrquota\"\n      }\n   ]\n}\n"
+    },
+    "shm_mount": {
+      "sha256": "6dc12c4272076d009c12a7ecb7a8370fd0ca77bf39fbbfc1aedb543072a85dbd",
+      "stdout": "{\n   \"filesystems\": [\n      {\n         \"target\": \"/dev/shm\",\n         \"source\": \"tmpfs\",\n         \"fstype\": \"tmpfs\",\n         \"options\": \"rw,nosuid,nodev,inode64,usrquota\"\n      }\n   ]\n}\n"
+    },
+    "block_devices": {
+      "sha256": "d3146ad6efdce85ed1bb7c80a6aab387f46cf8c92bf6ec16093b15855358109b",
+      "stdout": "{\n   \"blockdevices\": [\n      {\n         \"name\": \"loop0\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop1\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop2\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop3\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop4\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop5\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop6\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop8\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop9\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop10\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop11\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop12\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop13\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop14\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop15\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop16\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop17\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop18\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop20\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop21\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop22\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop23\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop24\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop25\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop26\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"loop27\",\n         \"type\": \"loop\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": null\n      },{\n         \"name\": \"sda\",\n         \"type\": \"disk\",\n         \"rota\": true,\n         \"tran\": null,\n         \"model\": \"QEMU HARDDISK\"\n      },{\n         \"name\": \"sr0\",\n         \"type\": \"rom\",\n         \"rota\": true,\n         \"tran\": \"ata\",\n         \"model\": \"QEMU DVD-ROM\"\n      }\n   ]\n}\n"
+    }
+  }
+}

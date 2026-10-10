@@ -20,6 +20,21 @@ import benchmark_backfill as backfill
 
 
 class BenchmarkBackfillTest(unittest.TestCase):
+    def test_resource_launcher_is_frozen_in_the_environment_and_hash_drift_stops_resume(self):
+        identity = {'path': '/native-launcher', 'sha256': 'a' * 64,
+                    'memory_method': 'native fork/wait4 v1', 'wall_method': 'native boundary included'}
+        with mock.patch.object(backfill.compare, 'tool_info', return_value={'status': 'available'}), \
+                mock.patch.object(backfill.process_resources, 'launcher_identity', return_value=identity) as launcher:
+            expected = backfill.environment(Path('/native-launcher'))
+        launcher.assert_called_once_with(Path('/native-launcher'))
+        self.assertEqual(expected['resource_launcher'], identity)
+        changed = copy.deepcopy(expected)
+        changed['resource_launcher']['sha256'] = 'b' * 64
+        with mock.patch.object(backfill, 'environment', return_value=changed) as environment:
+            with self.assertRaisesRegex(ValueError, r'resource_launcher.sha256'):
+                backfill.check_environment(expected)
+        environment.assert_called_once_with('/native-launcher')
+
     def test_progress_uses_local_time_at_emission_and_revision_position(self):
         output = io.StringIO()
         with mock.patch.object(backfill, 'datetime') as clock, contextlib.redirect_stderr(output):

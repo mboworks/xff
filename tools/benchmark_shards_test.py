@@ -43,6 +43,36 @@ def records(cpus=(1, 4), count=3, partition='balanced', repetitions=9, keep=7, *
 
 
 class BenchmarkShardsTest(unittest.TestCase):
+    def native_records(self):
+        inputs = records(partition='samples')
+        for index, record in enumerate(inputs):
+            report = record['tool_comparisons']
+            report['resource_launcher'] = dict(
+                path=f'/host-{index}/native-launcher', sha256='a' * 64,
+                memory_method=shards.process_resources.MEMORY_METHOD,
+                wall_method=shards.process_resources.WALL_METHOD)
+            report['contract']['resource_accounting'] = {
+                key: value for key, value in report['resource_launcher'].items() if key != 'path'}
+        return inputs
+
+    def test_native_shards_retain_each_host_launcher_path_without_splitting_the_method(self):
+        inputs = self.native_records()
+        result = shards.merge_reports(inputs)
+        self.assertEqual([shard['resource_launcher']['path'] for shard in result['measurement_shards']],
+                         [f'/host-{index}/native-launcher' for index in range(3)])
+        self.assertEqual(inputs, self.native_records())
+
+    def test_each_native_shard_must_match_its_frozen_accounting_contract(self):
+        for change in (
+                lambda report: report.pop('resource_launcher'),
+                lambda report: report['resource_launcher'].update(sha256='b' * 64),
+                lambda report: report['contract']['resource_accounting'].update(memory_method='different'),
+                lambda report: report['resource_launcher'].update(path='')):
+            inputs = self.native_records()
+            change(inputs[1]['tool_comparisons'])
+            with self.subTest(change=change), self.assertRaisesRegex(ValueError, 'resource accounting|resource launcher'):
+                shards.merge_reports(inputs)
+
     def test_sample_shards_each_own_the_entire_matrix(self):
         plan = shards.make_plan([10, 100, 1000], [1, 3], 3, task_names=['files'], partition='samples')
         expected = {(files, cpu, shape) for files in (10, 100, 1000) for cpu in (1, 3) for shape in ('broad', 'deep')}

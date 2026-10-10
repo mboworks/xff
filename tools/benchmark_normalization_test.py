@@ -64,6 +64,8 @@ class BenchmarkNormalizationTest(unittest.TestCase):
                 lambda report: report['contract'].update(runner_class='different-host'),
                 lambda report: report['contract'].update(storage={'filesystem': 'disk'}),
                 lambda report: report['contract'].update(affinity_by_cpu_count={'1': None}),
+                lambda report: report['contract'].update(resource_accounting={
+                    'sha256': 'a' * 64, 'memory_method': 'native fork/wait4 v1', 'wall_method': 'native boundary included'}),
                 lambda report: report['tasks'][0]['participants']['rg'].update(pipeline=[['rg', '--different']])):
             with self.subTest(change=change):
                 inputs = records(6)

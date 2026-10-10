@@ -63,6 +63,9 @@ jobs:
             --disk_cache="${HOME}/.cache/bazel-disk"
           cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-head"
           cp bazel-bin/xff/engine/read_benchmark "${RUNNER_TEMP}/benchmark-head-reads"
+          launcher="$(bazel cquery //tools:process_resources_native --config=clang_release \
+            --output=starlark --starlark:expr='target.files_to_run.executable.path')"
+          cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"
           driver="$(pwd)/$(bazel cquery //tools:benchmark_resources --config=clang_release \
             --output=starlark --starlark:expr='target.files_to_run.executable.path')"
           (
@@ -141,7 +144,7 @@ jobs:
           python3 tools/benchmark_shards.py --plan --adaptive --count=5 "${scales[@]}" \
             --partition=samples --repetitions=15 --keep=15 \
             --cpus=1 --cpus=${{ matrix.cpus }} --output=benchmark-plan.json
-          tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" benchmark-head
+          tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" benchmark-head benchmark-resource-launcher
       - uses: actions/upload-artifact@v7
         with:
           name: benchmark-build-${{ matrix.platform }}

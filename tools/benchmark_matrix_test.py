@@ -25,6 +25,21 @@ def report(times=(1, 2, 3, 4, 5, 6, 7, 80, 100), keep=7):
 
 
 class BenchmarkMatrixTest(unittest.TestCase):
+    def test_resource_accounting_methods_never_share_a_main_baseline(self):
+        native = {"sha256": "a" * 64, "memory_method": "native fork/wait4 v1", "wall_method": "native boundary included"}
+        for previous_method in (None, dict(native, sha256="b" * 64),
+                                dict(native, wall_method="native boundary excluded"), native):
+            with self.subTest(method=previous_method), tempfile.TemporaryDirectory() as temporary:
+                previous, current = report(), report()
+                if previous_method is not None:
+                    previous['contract']['resource_accounting'] = previous_method
+                current['contract']['resource_accounting'] = native
+                root = Path(temporary)
+                self.retain(root, previous)
+                matrix.attach_baseline(current, root)
+                expected = 'available' if previous_method == native else 'unavailable'
+                self.assertEqual(current['baseline']['status'], expected)
+
     def test_platform_title_uses_recorded_identity(self):
         data = report()
         data['contract'].update(platform='macOS-26.6-arm64', machine='arm64')

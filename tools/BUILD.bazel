@@ -390,6 +390,37 @@ py_library(
         ".",
         "..",
     ],
+    deps = [":process_resources_lib"],
+)
+
+# A small process/pipe adapter. It never opens writable host handles or launches a shell.
+cc_binary(
+    name = "process_resources_native",
+    srcs = ["process_resources_native.cc"],
+    deps = [
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+    ],
+)
+
+py_library(
+    name = "process_resources_lib",
+    srcs = ["process_resources.py"],
+    data = [
+        "process_resources_native.cc",
+        ":process_resources_native",
+    ],
+    imports = ["."],
+    deps = ["@rules_python//python/runfiles"],
+)
+
+py_test(
+    name = "process_resources_test",
+    size = "small",
+    srcs = ["process_resources_test.py"],
+    deps = [":process_resources_lib"],
 )
 
 py_library(
@@ -687,6 +718,7 @@ py_test(
 py_binary(
     name = "measure_resources",
     srcs = ["measure_resources.py"],
+    deps = [":process_resources_lib"],
 )
 
 py_library(
@@ -813,6 +845,7 @@ test_suite(
         ":fuzz_targets_test",
         ":generate_mime_db_test",
         ":measure_resources_test",
+        ":process_resources_test",
         ":release_notes_test",
         ":release_site_test",
         ":site_artwork_test",
@@ -969,6 +1002,7 @@ py_library(
         ":benchmark_provenance_lib",
         ":benchmark_records_lib",
         ":benchmark_shards_lib",
+        ":process_resources_lib",
     ],
 )
 
@@ -983,6 +1017,7 @@ py_binary(
         ":benchmark_provenance_lib",
         ":benchmark_records_lib",
         ":benchmark_shards_lib",
+        ":process_resources_lib",
     ],
 )
 
@@ -1003,6 +1038,7 @@ py_library(
         ":benchmark_matrix_lib",
         ":benchmark_overview_lib",
         ":benchmark_shards_lib",
+        ":process_resources_lib",
     ],
 )
 
@@ -1015,6 +1051,7 @@ py_binary(
         ":benchmark_matrix_lib",
         ":benchmark_overview_lib",
         ":benchmark_shards_lib",
+        ":process_resources_lib",
     ],
 )
 
@@ -1127,6 +1164,7 @@ py_library(
     deps = [
         ":benchmark_matrix_lib",
         ":benchmark_records_lib",
+        ":process_resources_lib",
     ],
 )
 
@@ -1137,6 +1175,7 @@ py_binary(
         ":benchmark_compare_lib",
         ":benchmark_matrix_lib",
         ":benchmark_records_lib",
+        ":process_resources_lib",
     ],
 )
 

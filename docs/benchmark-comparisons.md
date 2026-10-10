@@ -172,6 +172,57 @@ downloaded, and hosted CI remains unchanged until the local measurements support
 
 ## Tasks and equivalence
 
+### Native process accounting
+
+New collections use a small native pipeline launcher after the fresh Python
+worker. The native process forks the measured commands only after exec has
+discarded Python's address space; its own `wait4` usage is not reported as a tool
+measurement. Each direct command has an individual RSS high-water mark. Pipeline
+memory remains the sum of those individual peaks, an upper bound rather than a
+simultaneous peak. The kernel can still include the smaller native child's
+pre-exec footprint, so very small-command RSS needs a native control before
+attributing it to the command's allocations.
+
+The extra native launch boundary is deliberately included in elapsed and
+first-output wall time. CPU usage and peaks account for the measured commands,
+including their native pre-exec setup, not the accounting parent. New reports
+record the launcher binary hash and the
+memory/wall-time method in `contract.resource_accounting`; the full executable
+path is retained separately in `resource_launcher`, and merged shard provenance
+preserves each host's launcher identity. Different accounting methods
+or launcher hashes cannot share main baselines or normalization windows. Older
+reports remain unchanged and renderable, and dataset catalogs retain both methods
+and their observations under the same workload recipe. Do not infer an engine
+speedup from an old-method/new-method timing comparison.
+
+Bazel declares and builds the launcher before executing measurement tools. Direct
+script use requires an explicit prebuilt binary; measurement never triggers a
+build. For example, prepare it before any timing session:
+
+```sh
+bazel build //tools:process_resources_native --config=clang_release
+launcher=$(bazel cquery //tools:process_resources_native --config=clang_release --output=files)
+python3.13 tools/benchmark_compare.py --resource-launcher="$PWD/$launcher" \
+  --binary=/path/to/optimized/xff --report=/tmp/native-comparison.json --cpus=1
+```
+
+The PR and main CI build jobs retain the optimized accounting helper alongside
+XFF in `benchmark-build.tar`. Every measurement shard consumes that same
+prebuilt helper through `--resource-launcher`; it does not run Bazel. Hosted
+historical backfill builds and copies the current helper before freezing its
+batch and building historical XFF revisions. This separates the accounting
+adapter's identity from the measured source revision and keeps compilation
+outside the measurement phase on both Linux and macOS.
+
+The standalone resource tool, backfill driver and local benchmark command also
+accept `--resource-launcher`. Frozen backfill contracts include the actual
+launcher identity and both accounting source files. Changing either the driver
+or launcher requires a new batch; it cannot retrofit memory measurements in an
+existing batch. The launcher inherits the fresh worker's affinity and process
+group, so the comparison timeout still terminates the complete pipeline.
+
+### Task populations and output
+
 | Task                   | Participants           | Contract                                              |
 | ---------------------- | ---------------------- | ----------------------------------------------------- |
 | File enumeration       | xff, find, rg          | All regular files, including hidden and ignored names |
