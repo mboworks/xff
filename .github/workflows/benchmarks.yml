@@ -59,11 +59,12 @@ jobs:
           head_sha="$(git rev-parse HEAD)"
           base_sha="$(git rev-parse HEAD^1)"
           git worktree add --detach "${RUNNER_TEMP}/benchmark-base" "${base_sha}"
-          bazel build //xff/cli:xff //xff/engine:read_benchmark //tools:benchmark_resources //xff/engine:expression_benchmark //xff/engine:expression_run_benchmark --config=clang_release \
+          # Python runfiles may build a transitioned helper, not the target copied below.
+          bazel build //xff/cli:xff //xff/engine:read_benchmark //tools:benchmark_resources //tools:process_resources_native //xff/engine:expression_benchmark //xff/engine:expression_run_benchmark --config=clang_release \
             --disk_cache="${HOME}/.cache/bazel-disk"
           cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-head"
           cp bazel-bin/xff/engine/read_benchmark "${RUNNER_TEMP}/benchmark-head-reads"
-          launcher="$(bazel cquery //tools:process_resources_native --config=clang_release \
+          launcher="$(bazel cquery 'config(//tools:process_resources_native, target)' --config=clang_release \
             --output=starlark --starlark:expr='target.files_to_run.executable.path')"
           cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"
           driver="$(pwd)/$(bazel cquery //tools:benchmark_resources --config=clang_release \

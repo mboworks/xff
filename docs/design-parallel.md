@@ -199,6 +199,39 @@ configuration interact. Preserve existing behavior when no new control is reques
 Do not ship provisional spellings as stable flags: unsettled spellings require the
 repository's `--unstable=NAME` gate and complete registry-driven documentation when implemented.
 
+Worker limits and admission thresholds need separate tuning. PR #991's fixed 64-sibling
+gate is an experimental policy, not a filesystem-independent optimum: a small slow frontier
+may justify concurrency while a larger cached frontier does not. Explore jobs-family controls
+for explicit serial directory operation and minimum independent work or estimated cost,
+accounting separately for cold worker creation and warm dispatch. Overrides must preserve
+effect dependencies, bounded queue/storage ownership and command-wide resource limits.
+Do not settle a CLI spelling or a default from the current memory-backed Linux pilot alone.
+
+Tuning needs scheduling evidence without becoming a separate intrusive workload. The target
+is opt-in, super-low-overhead analysis, selected once during command setup so disabled runs
+keep their normal inner loops: no diagnostic flag checks, timers, counters, extra atomics
+or diagnostic allocations per entry. Prefer a separate instrumented execution path or another
+design that demonstrably preserves that property; a disabled boolean tested on every entry
+does not meet it. No zero-cost claim follows merely from making the option default-off.
+
+When enabled, collect bounded worker-local or per-role aggregates from information already
+available: directory fan-out, remaining useful work, admission/refusal reasons, cold versus
+reused workers, queue depth/pressure and caller participation. Distinguish measured quantities
+from cost-model predictions. Coarse phase boundaries or explicitly sampled timing can explain
+waiting and utilization, but per-file timers and shared hot counters need measured justification.
+Do not add filesystem reads/metadata probes, start workers solely for diagnostics, reorder
+execution, or retain an unbounded list of paths or events. Preserve ordinary stdout and its
+ordering; define a separate diagnostic destination and bounded output contract. Consider
+extending an existing explain/summary interface rather than inventing a namespace of flags.
+
+Qualify analysis as a feature in its own right: output identity, effects, concurrency and
+cancellation must match with diagnostics off/on. Inspect disabled compiled hot paths and
+compare disabled execution against an uninstrumented baseline; separately measure enabled/off
+overhead with retained raw samples on native Linux and macOS and local, slow and network
+storage. Declare the sampling and overhead budget before acceptance, and report any remaining
+perturbation. Super-low overhead is sufficient for tuning; an unverified "non-intrusive" label
+or instrumented timings pooled into clean acceptance measurements are not.
+
 Serial external execution and synchronous expression evaluation are different contracts:
 
 - A bounded ordered execution queue with one persistent runner can serialize external

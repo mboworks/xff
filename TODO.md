@@ -109,6 +109,22 @@ scope or declaring new flags implemented. See
       useful task size, throughput, first output, memory and actual thread/child counts. Include serial
       command/concurrent-discovery, strict dependent expressions and parallel command controls.
       Do not accept a default or performance claim from hosted correctness checks alone.
+- [ ] JC07: Separate directory-admission tuning from worker-budget tuning. PR #991's experimental
+      64-sibling gate is not an optimum across storage types. Design explicit serial operation and
+      minimum independent-work/cost controls in the jobs family, preserving semantic/safety barriers
+      and command resource bounds. Distinguish cold start from warm dispatch, and qualify settings
+      on small slow frontiers as well as broad memory-backed workloads before choosing defaults.
+      Keep spellings unsettled until designed; follow JC01's unstable gate and self-documentation.
+- [ ] JC08: Add opt-in, super-low-overhead scheduling analysis for admission tuning. Select diagnostics
+      once at command setup; keep disabled inner loops free of diagnostic checks, timers, counters,
+      atomics and allocations. Use bounded per-role/worker aggregates from existing observations:
+      fan-out, useful work, admission/refusal reasons, cold/warm worker use, queue pressure and caller
+      participation. Add only coarse or sampled timing where needed; never add filesystem probes,
+      force worker creation, reorder work or retain unbounded per-path traces for analysis.
+      Report actual versus estimated quantities separately, preserve normal output, and prefer an
+      existing explain/summary interface where it fits. Prove correctness and inspect disabled code
+      paths; measure both disabled/off-baseline cost and enabled/off overhead on native Linux/macOS
+      and representative storage. Super-low overhead is an acceptance target, not a zero-effect claim.
 
 ## Pages deployment size
 
