@@ -486,6 +486,8 @@ def parser_for_cli():
         sub.add_argument('--disk-cache', type=Path, default=Path.home() / '.cache/bazel-disk', help='Bazel action cache')
         sub.add_argument('--build-library-path', type=Path,
                          help='runtime libraries for historical build tools; passed to Bazel build actions')
+        sub.add_argument('--resource-launcher', type=Path,
+                         help='explicit prebuilt native accounting binary for direct script use')
         sub.add_argument('--full', action='store_true', help='show every revision instead of compact history ranges')
         if command == 'backfill':
             sub.add_argument('-Y', '--yes', action='store_true', help='answer the execution confirmation with yes')

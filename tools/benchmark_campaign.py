@@ -73,7 +73,7 @@ def validate_plan(plan):
     require({job['platform'] for job in plan['jobs']} == set(PLATFORMS), 'both CI platforms are required')
 
 
-def run_job(plan, job_id, repo, output, disk_cache, fixture_parent):
+def run_job(plan, job_id, repo, output, disk_cache, fixture_parent, resource_launcher=None):
     validate_plan(plan)
     require(backfill.git(repo, 'rev-parse', 'HEAD') == plan['source_head'], 'campaign driver checkout changed')
     require(backfill.driver_identity() == plan['contract']['driver'], 'campaign driver files changed')
@@ -88,7 +88,7 @@ def run_job(plan, job_id, repo, output, disk_cache, fixture_parent):
         files=contract['files'], cpus=contract['cpus'], depth=contract['depth'],
         repetitions=contract['repetitions'], keep=contract['retained'],
         require_cpu_affinity=job['platform'] == 'linux', require_memory=job['platform'] == 'linux',
-        fixture_parent=fixture_parent, disk_cache=disk_cache)
+        fixture_parent=fixture_parent, disk_cache=disk_cache, resource_launcher=resource_launcher)
     collection = {'id': int(os.environ['GITHUB_RUN_ID']), 'run_attempt': int(os.environ['GITHUB_RUN_ATTEMPT']),
                   'head_sha': os.environ['GITHUB_SHA']}
     require(collection['head_sha'] == plan['source_head'], 'campaign source workflow changed')
@@ -135,6 +135,8 @@ def validate_measurements(record, batch, revision, tasks):
                        'build_identity': json.dumps(record['build']['configuration'], sort_keys=True)}.items():
         require(actual[key] == value, 'measurement contract mismatch: ' + key)
     environment, allocation = contract['environment'], contract['allocation']
+    require(report.get('resource_launcher') == environment.get('resource_launcher'),
+            'native resource launcher missing or changed')
     require(environment['cpu_count'] >= max(expected['cpus']),
             'insufficient or different measurement host')
     require(actual['platform'] == environment['platform'] and actual['cpu_count'] == environment['cpu_count'],
@@ -239,6 +241,8 @@ def main():
         run.add_argument('--' + name, type=Path, required=True)
     run.add_argument('--job', required=True)
     run.add_argument('--disk-cache', type=Path)
+    run.add_argument('--resource-launcher', type=Path,
+                     help='Explicit prebuilt native accounting binary for direct script use')
     publish = modes.add_parser('publish')
     for name in ('root', 'artifacts', 'source'):
         publish.add_argument('--' + name, type=Path, required=True)
@@ -251,7 +255,7 @@ def main():
                                      for job in result['jobs']]}))
     elif args.mode == 'run':
         return run_job(json.loads(args.plan.read_text()), args.job, args.repo.resolve(), args.output.resolve(),
-                       args.disk_cache, args.fixture_parent)
+                       args.disk_cache, args.fixture_parent, args.resource_launcher)
     else:
         print(retain(args.root, args.artifacts, json.loads(args.source.read_text()), args.repository))
     return 0

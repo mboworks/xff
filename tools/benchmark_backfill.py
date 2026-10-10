@@ -26,6 +26,7 @@ import benchmark_layouts
 import benchmark_matrix
 import benchmark_provenance
 import benchmark_shards
+import process_resources
 
 
 def now():
@@ -125,7 +126,7 @@ def revisions(repo, references, history_root=None, history_platform='macos'):
     return sorted(selected.values(), key=lambda entry: (datetime.fromisoformat(entry['date']), entry['sha']))
 
 
-def environment():
+def environment(resource_launcher=None):
     tools = {name: compare.tool_info(name, shutil.which(name)) for name in ('find', 'rg', 'fzf')}
     if any(tool['status'] != 'available' for tool in tools.values()):
         raise ValueError('backfill requires find, rg and fzf')
@@ -134,17 +135,22 @@ def environment():
         'platform': platform.platform(), 'machine': platform.machine(), 'cpu_count': os.cpu_count(),
         'allowed_cpus': sorted(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else None,
         'python': sys.version, 'tools': tools,
+        'resource_launcher': process_resources.launcher_identity(resource_launcher),
     }
 
 
 def driver_identity():
-    return {Path(module.__file__).name: compare.digest(module.__file__)
+    result = {Path(module.__file__).name: compare.digest(module.__file__)
             for module in (sys.modules[__name__], compare, benchmark_fixture, benchmark_layouts,
-                           benchmark_matrix, benchmark_shards, benchmark_provenance)}
+                           benchmark_matrix, benchmark_shards, benchmark_provenance, process_resources)}
+    source = Path(process_resources.__file__).with_name('process_resources_native.cc')
+    result[source.name] = compare.digest(source)
+    return result
 
 
 def check_environment(expected):
-    difference = benchmark_shards.identity_difference(expected, environment())
+    launcher = expected.get('resource_launcher', {}).get('path')
+    difference = benchmark_shards.identity_difference(expected, environment(launcher))
     if difference:
         raise ValueError('backfill environment changed: ' + difference)
 
@@ -185,7 +191,7 @@ def make_contract(args, *, campaign=None, collection=None):
         'schema': 1, 'series': args.series, 'revisions': selected,
         'platform': system, 'purpose': args.purpose, 'allocation': allocation,
         'replacement_target': f'github-ci-{system}' if args.purpose == 'ci-replacement' else None,
-        'environment': environment(), 'driver': driver_identity(),
+        'environment': environment(getattr(args, 'resource_launcher', None)), 'driver': driver_identity(),
         'files': counts, 'cpus': cpus, 'depth': args.depth,
         'repetitions': args.repetitions, 'retained': args.keep,
         'require_cpu_affinity': allocation['required'],
@@ -389,7 +395,8 @@ def run(args, batch):
                         keep=contract['retained'], cpu_counts=contract['cpus'], require_tools=True,
                         fixture_parent=contract['storage']['parent'], require_memory=contract['storage']['memory_required'],
                         require_cpu_affinity=contract['require_cpu_affinity'], progress=progress,
-                        layouts=contract.get('layouts') or None)
+                        layouts=contract.get('layouts') or None,
+                        resource_launcher=contract['environment'].get('resource_launcher', {}).get('path'))
                 check_environment(contract['environment'])
                 if report['tools']['xff']['sha256'] != build_record['sha256']:
                     raise ValueError('measured binary does not match build: ' + sha)
@@ -451,6 +458,8 @@ def main():
     parser.add_argument('--disk-cache', type=Path)
     parser.add_argument('--build-library-path', type=Path,
                         help='runtime libraries for historical build tools; passed to Bazel build actions')
+    parser.add_argument('--resource-launcher', type=Path,
+                        help='Explicit prebuilt native accounting binary for direct script use')
     parser.add_argument('--run', action='store_true', help='Build and measure; otherwise only write/validate the batch plan')
     args = parser.parse_args()
     args.layouts = ([] if args.purpose == 'ci-replacement' or args.layout_revision == 'legacy'

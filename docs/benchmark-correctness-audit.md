@@ -233,8 +233,47 @@ Profiling must not compete with accepted timing collection.
 
 Linux reported RSS needs an independent check: small XFF, find and rg runs all show a similar
 roughly 25 MB floor. The forked Python launcher may contribute a pre-exec high-water mark to
-`wait4` RSS. This is a hypothesis, not an established defect. Compare a direct native launcher
+`wait4` RSS. This was the initial hypothesis; the native controls below establish the Linux
+defect. Compare a direct native launcher
 and `/usr/bin/time -v` against the Python worker before using this metric to diagnose arenas.
+
+A native pipeline accounting follow-up is separate from engine changes. It
+forks measured commands after leaving Python's address space and records a
+distinct wall-time/memory method and launcher hash. Ten affected tool suites pass
+on native Linux, including an inflated Python parent, actual child allocations,
+individual pipeline peaks, output, affinity, closed stdin, termination cleanup
+and direct-script runfiles resolution. Frozen batches and every incoming shard
+validate the launcher method/hash; merged provenance retains each host's path.
+All 57 Python tooling suites and the repository-wide tooling check pass on
+Linux. Reports display the accounting boundary and launcher hash, or warn
+about the legacy Python floor, without modifying historical observations.
+
+A real backfill pilot built and verified the unchanged #990 executable, measured
+both v2 layouts and then reused the verified build and completed report on an
+identical resume. Its batch freezes the native launcher and both new driver
+source hashes; its report records the same launcher/method contract. Artifacts
+are retained at `/tmp/xff-native-accounting-backfill-final-pilot`, batch
+`dbd9ca40a57b277e4d55a21d894927d66caf4bf53be138082086eaf1b02dcf4a`.
+The 10-file, one-worker, one-sample pilot is a workflow/correctness check, not
+the complete prepared-grid performance workload or acceptance evidence.
+
+Five independent 20-file controls per tool compare the optimized native launcher,
+the original fresh Python worker and `/usr/bin/time` against the same commands
+and correctness oracle. XFF is about 5.2 MiB under both native methods versus
+about 24 MiB with Python. `true` is about 1.5 MiB with both native methods versus
+about 24 MiB with Python; find and rg likewise lose that Python floor. This
+establishes the Linux accounting defect, not an engine allocation improvement.
+Retained commands, executable hashes and all raw peaks are in
+[the independent accounting controls](benchmarks/native-resource-accounting-controls.json);
+the final local artifact is `/tmp/xff-resource-accounting-final-controls.json`.
+Launcher SHA-256 is
+`e6766cea6431e91b5a5c1d16746079d59ed0e70bb13bce220e9796d23a09fb89`.
+
+The new boundary includes launcher startup/teardown in wall time and still
+permits native pre-exec footprint in kernel high-water accounting. Native macOS
+controls and the 20k/50k/100k allocation investigation remain pending. Historical
+reports remain intact and cannot normalize against the new method; corrected
+memory measurements cannot be retrofitted to an old observation.
 
 ### macOS control and acceptance
 

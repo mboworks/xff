@@ -45,6 +45,28 @@ def observations(root):
 
 
 class BenchmarkDatasetsTest(unittest.TestCase):
+    def test_native_accounting_adds_a_method_without_hiding_historical_observations(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            observations(root)
+            original = datasets.build_catalog(root)['datasets'][0]
+            path = root / ('local/mac/batch/' + 'b' * 40 + '/report.json')
+            record = json.loads(path.read_text())
+            accounting = {'sha256': 'a' * 64, 'memory_method': 'native fork/wait4 v1',
+                          'wall_method': 'native boundary included'}
+            record['tool_comparisons']['contract']['resource_accounting'] = accounting
+            path.write_text(json.dumps(record))
+            catalog = datasets.build_catalog(root)
+            self.assertEqual(len(catalog['datasets']), 1)
+            current = catalog['datasets'][0]
+            self.assertEqual(current['id'], original['id'])
+            self.assertEqual(current['recipe'], original['recipe'])
+            self.assertEqual(len(current['observations']), 2)
+            self.assertEqual(len(current['methods']), 2)
+            methods = {item['commit']: current['methods'][item['method']] for item in current['observations']}
+            self.assertNotIn('resource_accounting', methods['a' * 40])
+            self.assertEqual(methods['b' * 40]['resource_accounting'], accounting)
+
     def test_publish_groups_workloads_preserves_methods_and_survives_compaction(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

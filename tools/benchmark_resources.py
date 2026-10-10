@@ -64,6 +64,8 @@ def main() -> int:
     parser.add_argument("--repetitions", type=positive, default=3)
     parser.add_argument("--jobs", type=positive, default=1)
     parser.add_argument("--build-label", default="unspecified", help="Source revision and build configuration")
+    parser.add_argument("--resource-launcher", type=Path,
+                        help="Explicit prebuilt native accounting binary for direct script use")
     args = parser.parse_args()
     if args.depth > args.files:
         parser.error("--depth must not exceed --files")
@@ -91,6 +93,8 @@ def main() -> int:
         harness = [runfiles.Create().Rlocation("_main/tools/measure_resources")]
     else:
         harness = [sys.executable, str(Path(__file__).with_name("measure_resources.py"))]
+    if args.resource_launcher is not None:
+        harness += ["--resource-launcher", str(args.resource_launcher.resolve(strict=True))]
     with tempfile.TemporaryDirectory(prefix="xff-resources-", dir=args.directory) as temporary:
         base = Path(temporary).resolve()
         report["fixture"]["directory"] = str(base)

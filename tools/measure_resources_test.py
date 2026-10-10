@@ -10,6 +10,8 @@ import subprocess
 import sys
 import unittest
 
+import measure_resources
+
 
 @unittest.skipUnless(sys.platform in {"darwin", "linux"}, "resource units are platform-specific")
 class MeasureResourcesTest(unittest.TestCase):
@@ -35,6 +37,15 @@ class MeasureResourcesTest(unittest.TestCase):
         self.assertGreaterEqual(result["first_stdout_seconds"], 0)
         self.assertLessEqual(result["first_stdout_seconds"], result["elapsed_seconds"])
         self.assertGreater(result["peak_child_rss_bytes"], 0)
+        self.assertEqual(len(result["resource_launcher"]["sha256"]), 64)
+        self.assertIn("native pipeline fork/wait4", result["resource_launcher"]["memory_method"])
+
+    def test_imported_calls_do_not_reuse_an_earlier_child_peak(self):
+        large = measure_resources.measure([sys.executable, "-c",
+            "block = bytearray(64 * 1024 * 1024); "
+            "block[::4096] = b'x' * (len(block) // 4096); print(block[0])"])
+        small = measure_resources.measure([sys.executable, "-c", "pass"])
+        self.assertLess(small["peak_child_rss_bytes"], large["peak_child_rss_bytes"])
 
     def test_empty_stdout_is_not_zero_latency(self):
         status, result = self.run_measurement("pass")
