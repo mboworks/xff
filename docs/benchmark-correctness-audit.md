@@ -388,13 +388,45 @@ Python worker's high floor. The forked launcher's inherited high-water mark must
 be corrected or explicitly excluded before using those reported peaks to choose
 arena sizes. This is separate from the worker scheduler experiment.
 
+### Remaining matcher-work experiment
+
+A regression against the caller-participation candidate processes 8,192 entries
+in sixteen-entry batches, then a 32-entry tail. The unchanged matcher starts one
+worker for that tail because already-completed work bypasses its cold probe.
+The regression fails before the change and passes after it; completed work cannot
+repay the new worker's cost on that tail.
+
+The separate follow-up removes the completed-entry counter. Four timed chunks
+evaluate up to sixteen entries exactly once; the middle two observations estimate
+only the remaining owned batch. A pure cost planner includes cold startup,
+dispatch, pool growth and minimum saving, retains caller-inclusive budgeting,
+and limits participants by both cost and independent remaining entries. Warm
+reuse is not automatically beneficial. Adaptive atomic-claim grain aims to
+amortize scheduling while retaining several balancing waves. Workers remain
+leaves, ordered results and private evaluator state remain unchanged, and tiny
+batches never require a timing observation or background dispatch.
+
+The allowances are experimental, not portable measured constants: 3.5 ms cold,
+50 us per added worker/dispatch, 100 us saving and a 32 us chunk target. The
+default Linux/x86 executor diagnostic in PR #1000 informs the cold cliff and
+the need to distinguish cold/warm/grain; it is not a file-cost calibration or
+native M5 Pro validation. Controlled slow evaluator tests exercise actual caller
+participation, exact-once results and worker reuse without touching a filesystem;
+they are not physical slow-storage acceptance. A trimmed small prefix still
+cannot prove uniform costs in an arbitrary batch. Directory/stat policies,
+candidate allocation profiles, repeated/reordered actual-workload timing and
+native cross-platform controls remain required. No performance acceptance is
+claimed by this implementation or its correctness tests.
+
 The complete audit remains open. Final shared-executor timing must be collected
 after every build has finished, using the complete prepared grid. Repeated
 controls must cover content, eager metadata and slow storage. Separate evidence
 in [PR #995](https://github.com/mboworks/xff/pull/995) now retains the exact-source
 Linux baseline, enumeration-only allocation profiles and coarse counters/stacks
-for 20k/50k/100k single-worker workloads. Those baseline diagnostics do not complete
-precise phase-level attribution or allocation controls for the other workloads,
-platforms or new scheduler candidates. Hosted macOS checks provide portability evidence for PR #991;
+for 20k/50k/100k single-worker workloads. Its later allocation controls also cover
+tree output, collection, lazy/eager metadata and content matching for both layouts
+at those sizes, with separate native RSS and exact-output checks. Those baseline
+diagnostics do not complete precise phase-level attribution, multiworker/candidate
+allocation controls or native cross-platform acceptance. Hosted macOS checks provide portability evidence for PR #991;
 they do not replace the specified native M5 Pro A/B and sampling controls for
 the shared-executor experiment.

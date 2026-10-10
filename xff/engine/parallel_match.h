@@ -17,6 +17,7 @@
 #include "xff/engine/collect.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/expression_execution.h"
+#include "xff/engine/match_work.h"
 #include "xff/engine/run_executor.h"
 #include "xff/parser/ast.h"
 
@@ -57,7 +58,8 @@ class ParallelMatch final {
       RunExecutor& executor,
       bool scores,
       std::optional<ParallelContentOutput> output = std::nullopt,
-      mbo::types::OptionalRef<const ExpressionExecution> execution = {});
+      mbo::types::OptionalRef<const ExpressionExecution> execution = {},
+      MatchWorkCosts costs = {});
   ~ParallelMatch();
   ParallelMatch(const ParallelMatch&) = delete;
   ParallelMatch& operator=(const ParallelMatch&) = delete;
@@ -89,12 +91,14 @@ class ParallelMatch final {
   const bool scores_;
   const std::optional<ParallelContentOutput> output_;
   const mbo::types::OptionalRef<const ExpressionExecution> execution_;
+  const MatchWorkCosts costs_;
   std::optional<ExpressionExecution::Worker> coordinator_;
   std::vector<std::unique_ptr<WorkerState>> worker_states_;
   std::vector<CollectedEntry> entries_;
   std::vector<ParallelResult> results_;
   std::atomic<std::size_t> next_ = 0;
-  std::size_t serial_entries_ = 0;
+  // Published before dispatch and unchanged until all jobs join.
+  std::size_t grain_ = 4;
 };
 
 }  // namespace xff::engine

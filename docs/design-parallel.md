@@ -56,10 +56,10 @@ background workers under `--jobs=N`:
 - The coordinator applies traversal controls and writes the output sink in traversal order.
   Independent content predicates and rg content searches reuse that executor, with the caller also
   claiming chunks; all stateful expressions, mutations and execution actions retain the coordinator evaluator.
-- Content matching schedules chunks of four owned entries, so clustered expensive files can use
+- Content matching schedules adaptive chunks of owned entries, so clustered expensive files can use
   several workers. Decision-only batches hold at most 8,192 entries; matching-line output retains
   the smaller 256-entry bound. Cold admission is described under Parallelism control; tails below
-  16 run inline even after workers exist. Later larger batches can grow the executor up to the background-worker
+  six run inline even after workers exist. Later sufficiently costly batches can grow the executor up to the background-worker
   allowance. Completed results return in input order, including a trailing path-only print action.
   Cheap name/type matching stays inline to avoid scheduling overhead.
 - Eligibility comes from audited descriptor capabilities, not names: only independent tests
@@ -212,12 +212,51 @@ disappears, leaving the executor reusable by the next phase.
 Content matching retains private evaluator and regex state for each logical
 worker. Decision-only matching collects up to 8,192 entries before flushing;
 rendered-content batches remain bounded at 256 entries because their output can
-be large. A cold executor keeps cheap small batches on the coordinator until
-8,192 entries have accumulated. A timed 16-entry prefix admits slower work
-earlier when that prefix takes at least 500 microseconds. Once traversal or
-matching has started the executor, batches of at least 16 entries may reuse it.
-Each submitted matcher job drains entry chunks, and results are consumed in
-original entry order.
+be large. Matcher admission now estimates only the owned batch's remaining
+work; completed batches do not justify starting workers for a small tail.
+Batches below six entries stay on the caller. Larger batches evaluate up to sixteen
+entries as four timed chunks of one to four entries, retain those results once, and use
+the middle two elapsed observations for a remaining-work estimate. Discarding
+the fastest/slowest chunk reduces sensitivity to one already-paid cold/outlier
+entry; it does not prove that the rest of a heterogeneous batch has equal cost.
+
+The pure planner compares remaining serial cost against predicted caller-inclusive
+parallel cost. It accounts separately for cold startup, waking the executor,
+new worker creation and a minimum saving allowance. Already-started workers are
+reused, but cheap warm batches may still remain serial. Worker growth must improve
+the estimate; the full requested budget is not automatically activated. The count
+of independent remaining items limits participants, but even a few expensive
+items may repay dispatch; there is no minimum of sixteen items per worker. A convex
+cost model permits checking only boundaries and the two integers around its
+continuous minimum, avoiding a linear search over a large requested worker count.
+
+The experimental default allowances are 3.5 ms cold startup, 50 us per added
+background worker, 50 us dispatch and 100 us minimum predicted saving. These are
+planning allowances, not portable measurements or worst-case guarantees. The cold
+allowance includes the separately observed default Linux/x86 Abseil calibration
+cliff; native M5 Pro and actual matcher setup/dispatch need independent validation.
+No runtime flag selects these testable internal policies, and neither synthetic
+executor controls nor controlled slow evaluators constitute storage acceptance.
+
+After admission, each background worker gets one drain and the caller also drains.
+Atomic-claim grain targets 32 us of estimated useful work, capped at 128 entries
+and, where possible, at a quarter of each participant's average share to retain balancing waves.
+Slow entries reduce the grain toward one. Workers never recursively submit or
+wait on their own executor; results are still consumed in original entry order.
+These drains are bounded by the matcher batch, not an entire tree. They do not
+make queue fairness preemptive or interrupt a running filesystem call. Directory
+and eager-stat admission remain separate inherited policies, requiring their own
+remaining-cost, metadata and slow-storage controls before acceptance.
+
+This candidate forecasts only the owned matcher batch. It does not establish
+eligible work in an unvisited frontier or credit future batches merely because
+earlier ones were expensive. Cheap bounded batches can therefore stay serial
+even when a larger command has more work ahead. Command-wide known-frontier cost
+planning and heterogeneous/cached workload controls remain part of the audit;
+this matcher experiment is not a completed adaptive command scheduler.
+Private matcher/evaluator setup and contention with other phases are not
+individually calibrated by this cost model; a warm shared executor does not imply
+that a newly encountered matcher's private state is already prepared.
 
 Under `-j > 1` the serial `-exec ... ;` / `-execdir ... ;` form launches its child
 on a bounded runner (at most `N` outstanding) instead of running it synchronously.
