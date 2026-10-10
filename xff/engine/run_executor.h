@@ -92,7 +92,9 @@ class RunPromise final {
   std::shared_ptr<executor_detail::TaskState<Result>> state_ = std::make_shared<executor_detail::TaskState<Result>>();
 };
 
-// One lazily started worker executor shared by all parallel phases of a run.
+// One lazily started worker executor shared by all parallel phases of a command.
+// max_workers counts background threads; command owners reserve one participant
+// for the calling coordinator and therefore pass N-1 for a --jobs=N allowance.
 // Start grows the pool but never shrinks it; destruction joins the workers once.
 // Start, Submit and worker_count are called only by the coordinator. Jobs stay
 // leaves and must not submit or wait on work in this executor.

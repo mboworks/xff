@@ -10,13 +10,11 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <thread>
 #include <vector>
 
-#include "absl/base/thread_annotations.h"
 #include "absl/status/statusor.h"
-#include "absl/synchronization/mutex.h"
 #include "mbo/types/optional_ref.h"
+#include "xff/engine/run_executor.h"
 #include "xff/vfs/filesystem.h"
 
 namespace xff::engine {
@@ -49,12 +47,14 @@ struct ComparisonResult {
 // must outlive Compare and consumption of the returned results/Inputs. Owned archive sources stay serial.
 // Callers submit at most kBatchSize pairs.
 // Workers publish values only; errors, patches and summaries are emitted by the coordinator.
+// workers includes the calling coordinator. The caller owns and outlives the shared executor;
+// Compare completes all its leaf jobs before returning and never creates a separate thread pool.
 class ParallelCompare final {
  public:
   static constexpr std::size_t kBatchSize = 64;
   static constexpr std::size_t kRetainedFileBytes = 65'536;
 
-  explicit ParallelCompare(std::size_t workers, bool retain_patch_inputs = false);
+  ParallelCompare(std::size_t workers, RunExecutor& executor, bool retain_patch_inputs = false);
   ~ParallelCompare();
   ParallelCompare(const ParallelCompare&) = delete;
   ParallelCompare& operator=(const ParallelCompare&) = delete;
@@ -67,18 +67,13 @@ class ParallelCompare final {
 
  private:
   bool UseWorkers() const;
-  bool Ready(std::size_t generation) const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  bool Finished() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  void Run();
   void EvaluateEntries();
 
   const std::size_t workers_;
+  RunExecutor& executor_;
   const bool retain_patch_inputs_;
-  std::vector<std::thread> threads_;
-  absl::Mutex mutex_;
-  bool stop_ ABSL_GUARDED_BY(mutex_) = false;
-  std::size_t generation_ ABSL_GUARDED_BY(mutex_) = 0;
-  std::size_t remaining_ ABSL_GUARDED_BY(mutex_) = 0;
+  // The coordinator owns batches. Atomic next_ gives each participant distinct result
+  // elements; all submitted leaf jobs complete before Compare returns or inputs change.
   std::vector<ComparisonPair> inputs_;
   std::vector<absl::StatusOr<ComparisonResult>> results_;
   std::atomic<std::size_t> next_ = 0;

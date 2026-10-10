@@ -94,10 +94,16 @@ class Walker {
     // A stop action may leave prefetched siblings unconsumed. Their drain jobs
     // still reference this walker, so join those jobs before its state is torn
     // down. Normal walks reach already-completed jobs here.
-    for (RunTask<void>& drain : drain_tasks_) {
+    for (const RunTask<void>& drain : drain_tasks_) {
       drain.Wait();
     }
   }
+
+  // Leaf jobs capture this walker, so its identity must remain stable until drained.
+  Walker(const Walker&) = delete;
+  Walker& operator=(const Walker&) = delete;
+  Walker(Walker&&) = delete;
+  Walker& operator=(Walker&&) = delete;
 
   // Whether `stated` is a FILE this walk should try to open as a container. `kRoots` offers only the
   // paths named on the command line (depth 0), `kAll` offers every file met; `kNone` never asks.
@@ -272,27 +278,29 @@ class Walker {
       return StatEntries(absl::MakeSpan(entries));
     }
     const auto chunks = (entries.size() + kChunk - 1) / kChunk;
-    const auto pending = std::min(chunks, options_.workers);
-    executor_.Start(pending);
+    executor_.Start(std::min(chunks - 1, options_.workers - 1));
+    const auto pending = std::min({chunks - 1, executor_.worker_count(), options_.workers - 1});
     std::atomic<std::size_t> next = 0;
     std::vector<Stated> children(entries.size());
     std::vector<RunTask<void>> reads;
     reads.reserve(pending);
-    for (std::size_t worker = 0; worker < pending; ++worker) {
-      reads.push_back(executor_.Submit([&] {
-        for (;;) {
-          const std::size_t index = next.fetch_add(1, std::memory_order_relaxed);
-          if (index >= chunks) {
-            return;
-          }
-          const std::size_t first = index * kChunk;
-          const std::size_t end = std::min(first + kChunk, entries.size());
-          for (std::size_t entry_index = first; entry_index < end; ++entry_index) {
-            children[entry_index] = StatEntry(std::move(entries[entry_index]));
-          }
+    const auto drain = [&] {
+      for (;;) {
+        const std::size_t index = next.fetch_add(1, std::memory_order_relaxed);
+        if (index >= chunks) {
+          return;
         }
-      }));
+        const std::size_t first = index * kChunk;
+        const std::size_t end = std::min(first + kChunk, entries.size());
+        for (std::size_t entry_index = first; entry_index < end; ++entry_index) {
+          children[entry_index] = StatEntry(std::move(entries[entry_index]));
+        }
+      }
+    };
+    for (std::size_t worker = 0; worker < pending; ++worker) {
+      reads.push_back(executor_.Submit(drain));
     }
+    drain();
     for (RunTask<void>& read : reads) {
       read.Get();
     }
@@ -530,7 +538,7 @@ class Walker {
       return reads;
     }
     std::erase_if(drain_tasks_, [](RunTask<void>& drain) { return drain.Ready(); });
-    executor_.Start(directories.size());
+    executor_.Start(std::min(directories.size(), options_.workers - 1));
 
     struct ReadBatch final {
       std::vector<std::string> paths;
@@ -538,7 +546,7 @@ class Walker {
       std::atomic<std::size_t> next = 0;
     };
 
-    auto batch = std::make_shared<ReadBatch>();
+    const auto batch = std::make_shared<ReadBatch>();
     batch->paths.reserve(directories.size());
     batch->promises.resize(directories.size());
     for (std::size_t batch_index = 0; batch_index < directories.size(); ++batch_index) {
@@ -546,7 +554,7 @@ class Walker {
       batch->paths.push_back(children[child_index].path);
       reads[child_index] = batch->promises[batch_index].Task();
     }
-    const std::size_t drains = std::min(executor_.worker_count(), directories.size());
+    const std::size_t drains = std::min({executor_.worker_count(), directories.size(), options_.workers - 1});
     for (std::size_t worker = 0; worker < drains; ++worker) {
       drain_tasks_.push_back(executor_.Submit([this, batch] {
         for (;;) {
@@ -590,7 +598,7 @@ absl::Status Walk(
     const WalkOptions& options,
     Visitor visit,
     WalkErrorFn on_error) {
-  RunExecutor executor(options.workers > 1 ? options.workers : std::size_t{0});
+  RunExecutor executor(options.workers > 1 ? options.workers - 1 : std::size_t{0});
   return Walk(fs, roots, options, executor, visit, on_error);
 }
 
@@ -613,7 +621,7 @@ absl::Status Walk(
     Visitor visit,
     WalkErrorFn on_error,
     ContainerMounter mount_container) {
-  RunExecutor executor(options.workers > 1 ? options.workers : std::size_t{0});
+  RunExecutor executor(options.workers > 1 ? options.workers - 1 : std::size_t{0});
   return Walk(fs, roots, options, executor, visit, on_error, mount_container);
 }
 

@@ -117,8 +117,14 @@ const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEnt
     }
     parallel_entries -= probe;
   }
-  const std::size_t count = std::min(workers_, (parallel_entries + 15) / 16);
-  executor_.Start(count);
+  const std::size_t participants = std::min(workers_, (parallel_entries + 15) / 16);
+  if (participants <= 1) {
+    ensure_coordinator();
+    evaluate_coordinator();
+    return results_;
+  }
+  executor_.Start(participants - 1);
+  const std::size_t count = std::min(participants - 1, executor_.worker_count());
   while (worker_states_.size() < count) {
     worker_states_.push_back(std::make_unique<WorkerState>(*this));
   }
@@ -127,6 +133,10 @@ const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEnt
   for (std::size_t worker = 0; worker < count; ++worker) {
     tasks.push_back(executor_.Submit([this, worker] { EvaluateWorker(worker); }));
   }
+  // The caller is part of the allowance, not an extra idle coordinator. Its private
+  // evaluator competes for the same independent chunks without touching worker state.
+  ensure_coordinator();
+  evaluate_coordinator();
   for (RunTask<void>& task : tasks) {
     task.Get();
   }

@@ -54,6 +54,7 @@ using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::Not;
+using ::testing::SizeIs;
 
 // A restarted cursor reports a failure after an otherwise selected line.
 class FailingSource final : public vfs::ReadSource {
@@ -436,6 +437,31 @@ TEST_F(RgEngineTest, OrdinaryRgSearchUsesContentWorkersWithoutNativeExpression) 
   EXPECT_THAT(output, HasSubstr("tree/299:hit 299\n"));
 }
 
+TEST_F(RgEngineTest, SlowProbeThatCompletesTheBatchDoesNotStartIdleWorkers) {
+  fs.files.clear();
+  std::vector<CollectedEntry> entries;
+  for (std::size_t index = 0; index < 16; ++index) {
+    const auto path = "tree/" + std::to_string(index);
+    fs.files.emplace(path, "hit\n");
+    entries.push_back({.path = path, .metadata = {.type = vfs::FileType::kRegular}, .fs = fs});
+  }
+  // The fixture's first-read rendezvous times out after two seconds without a peer,
+  // making the coordinator prefix deliberately expensive. All 16 entries belong to
+  // that prefix: no remaining work may justify starting even one background worker.
+  fs.track_threads = true;
+  fs.expected_threads = 2;
+  ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
+  RunExecutor executor(3);
+  ParallelMatch matcher(*command.expression, 4, executor, false);
+  const auto& results = matcher.Match(std::move(entries));
+  EXPECT_THAT(results, SizeIs(16));
+  for (const auto& result : results) {
+    EXPECT_THAT(result.evaluation.matched, IsTrue());
+  }
+  EXPECT_THAT(executor.worker_count(), Eq(0));
+  EXPECT_THAT(fs.read_threads, ElementsAre(std::this_thread::get_id()));
+}
+
 TEST_F(RgEngineTest, MatcherPoolGrowsForLaterBatchesAndRunsShortTailsInline) {
   fs.files.clear();
   for (std::size_t index = 0; index < 256; ++index) {
@@ -534,8 +560,13 @@ TEST_F(RgEngineTest, ParallelNativeFilterAndRgSelectionShareEachRead) {
 }
 
 TEST_F(RgEngineTest, MetadataConsumersKeepParallelFilteringAndOrderedResults) {
+  // This controls filter eligibility with metadata consumers, not cold admission.
+  // Eager metadata for at least 512 entries warms the shared executor before matching;
+  // the first-read rendezvous then forces real overlap in the content batch. With a
+  // smaller cold batch, its serial probe can use up that rendezvous before dispatch.
+  constexpr std::size_t kFiles = 600;
   fs.files.clear();
-  for (std::size_t index = 0; index < 300; ++index) {
+  for (std::size_t index = 0; index < kFiles; ++index) {
     fs.files.emplace("tree/" + std::to_string(index) + ".txt", index % 2 == 0 ? "hit\n" : "miss\n");
   }
   const std::vector<std::vector<std::string>> consumers{
@@ -546,7 +577,9 @@ TEST_F(RgEngineTest, MetadataConsumersKeepParallelFilteringAndOrderedResults) {
       {"--no-match-output", "--color=always"},
   };
   for (const auto& consumer : consumers) {
+    SCOPED_TRACE(consumer.front());
     for (const bool rg : {false, true}) {
+      SCOPED_TRACE(rg);
       auto args = consumer;
       args.insert(args.begin(), {"--jobs=1", "--archive=none", "--sort=none"});
       if (rg) {
@@ -563,8 +596,8 @@ TEST_F(RgEngineTest, MetadataConsumersKeepParallelFilteringAndOrderedResults) {
       EXPECT_THAT(Run(args, rg).errors, Eq(0));
       fs.track_threads = false;
       EXPECT_THAT(output, EqualsText(expected));
-      EXPECT_THAT(fs.reads.load(), Eq(300));
-      EXPECT_THAT(fs.read_threads.size(), Gt(1));
+      EXPECT_THAT(fs.reads.load(), Eq(kFiles));
+      EXPECT_THAT(fs.read_threads, SizeIs(Gt(1)));
     }
   }
 }

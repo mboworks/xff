@@ -7,10 +7,11 @@
 
 ## Purpose
 
-The directory walk is the hot path and it is IO-bound: most time is spent
-blocked in `readdir`/`lstat`, not in CPU. Running it across several workers
-hides that latency and is the single biggest performance lever for xff,
-especially on deep trees and high-latency (network) filesystems.
+Directory enumeration and metadata lookup are hot paths. Parallel reads can
+hide I/O latency, especially on high-latency filesystems. Small or memory-backed
+workloads can instead be dominated by startup, dispatch and per-entry CPU work;
+admitting workers must be justified by useful remaining work, not file count
+alone. Worker reuse removes repeated creation, but does not make dispatch free.
 
 Parallelism must not cost correctness. Three things are trivially correct in the
 current sequential walk and must stay correct under concurrency: deterministic
@@ -40,22 +41,24 @@ of the design below; each has a noted follow-up:
 
 ## Architecture
 
-A bounded directory-read worker pool with a single coordinator:
+A command-owned executor with one calling coordinator and at most `N-1`
+background workers under `--jobs=N`:
 
 - Workers perform only `ReadDir` plus metadata lookup and return complete listings.
   The coordinator submits sibling-directory reads ahead, then consumes their
-  futures in the order required by `--sort`. Directory workers start only when at least
-  two sibling directories provide independent work. For a coordinator-read directory with at least
-  512 children and eagerly required metadata, 128-entry stat chunks use the same pool. At most one
-  chunk per worker is pending; worker jobs never wait on nested jobs. Metadata-free, lazy and
+  result handles in the order required by `--sort`. Directory workers start only when at least
+  64 sibling directories provide independent work. For a coordinator-read directory with at least
+  512 children and eagerly required metadata, 128-entry stat chunks use the same executor. The
+  coordinator also claims stat chunks. At most one drain job per background worker is queued for
+  each batch; worker jobs never wait on nested jobs. Metadata-free, lazy and
   owned/archive-source listings keep their serial per-directory path.
 - The coordinator applies traversal controls and writes the output sink in traversal order.
-  Independent content predicates and rg content searches can evaluate in a separate bounded worker
-  pool; all stateful expressions, mutations and execution actions retain the coordinator evaluator.
+  Independent content predicates and rg content searches reuse that executor, with the caller also
+  claiming chunks; all stateful expressions, mutations and execution actions retain the coordinator evaluator.
 - Content matching schedules chunks of four owned entries, so clustered expensive files can use
-  several workers. Decision-only batches hold at most 1,024 entries; matching-line output retains
-  the smaller 256-entry bound. Fewer than 64 entries avoid initial thread startup, and tails below
-  16 run inline even after a pool exists. Later larger batches can grow the pool up to the worker
+  several workers. Decision-only batches hold at most 8,192 entries; matching-line output retains
+  the smaller 256-entry bound. Cold admission is described under Parallelism control; tails below
+  16 run inline even after workers exist. Later larger batches can grow the executor up to the background-worker
   allowance. Completed results return in input order, including a trailing path-only print action.
   Cheap name/type matching stays inline to avoid scheduling overhead.
 - Eligibility comes from audited descriptor capabilities, not names: only independent tests
@@ -77,8 +80,10 @@ A bounded directory-read worker pool with a single coordinator:
 - A listing future may retain a completed directory read until the coordinator
   reaches it. No worker emits a match and no traversal sort collects all matches.
 
-Comparison evaluates eligible large regular-file pairs in batches of at most 64 after collecting
-both trees. Each pair owns persistent read cursors; small patch inputs can be retained up to 64 KiB
+Comparison collects both trees sequentially on the same calling coordinator, reusing the
+command's executor across the two walks. It then evaluates eligible large regular-file pairs
+in batches of at most 64 on that executor and the caller, without creating a comparison-only
+pool or asynchronous side coordinator. Each pair owns persistent read cursors; small patch inputs can be retained up to 64 KiB
 per side. The coordinator publishes sorted results, summaries and patches. Archive/owned-source
 pairs remain serial. This is not yet a completed-directory comparison pipeline.
 
@@ -132,8 +137,11 @@ actions still occur in traversal order.
 
 ## Parallelism control
 
-A single knob, `-j N` (long form `--jobs`), caps one run-owned executor at `N`
-workers for directory reads, eager stat batches and eligible content matching.
+A single knob, `-j N` (long form `--jobs`), caps discovery, eager stat, eligible
+content and file comparison at `N` participants for the entire command, including
+its calling coordinator. The command owns one executor with at most `N-1`
+background threads; standalone `Walk` calls likewise reserve one participant for
+their caller.
 The coordinator retains traversal and output ownership. The executor starts
 lazily, grows only as useful work becomes available, and reuses its threads
 across phases and mounted-filesystem walks until the command finishes.
@@ -142,6 +150,18 @@ processes; content matching does not run alongside execution actions in the same
 expression. `-j 1` makes each part synchronous. `-j all` (`--jobs=all`) uses every
 detected core (`hardware_concurrency()`) for these limits, regardless of the
 active mode's default.
+
+This ownership change remains an experiment, not an accepted performance result.
+The caller claims independent stat, content and comparison chunks rather than
+waiting idle while `N` additional workers run. Sequential comparison inventories
+remove the second coordinator, but may reduce overlap when each tree has a
+narrow frontier on slow storage; native A/B controls must quantify that tradeoff.
+The executor still uses FIFO batch-drain jobs. A directory drain can occupy a
+worker until its entire batch is exhausted, and completed read-ahead listings are
+not bounded by a command-wide byte budget. Fair scheduling, bounded read-ahead,
+cancellation, and useful-work admission based only on remaining work are still
+required; a thread-count limit alone does not solve those problems. The cold
+matcher policy below is inherited for isolation, not endorsed by this change.
 
 The coordinator admits directory read-ahead when at least 64 independent sibling
 reads are available. It submits at most one drain job per worker; each job claims

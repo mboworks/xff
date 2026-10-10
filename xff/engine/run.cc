@@ -25,11 +25,9 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
-#include <future>
 #include <iostream>
 #include <limits>
 #include <map>
-#include <mutex>
 #include <optional>
 #include <ranges>
 #include <set>
@@ -256,7 +254,7 @@ bool ResolveRankByScore(const std::vector<std::string>& globals) {
   return rank;
 }
 
-// xff -j N / -j=N / --jobs=N: worker threads for the parallel directory read-ahead (see
+// xff -j N / -j=N / --jobs=N: command participants, including the calling coordinator (see
 // docs/design-parallel.md). When absent, the count is style-scoped (DefaultWorkers).
 // Last occurrence wins; a non-positive or unparseable value is a usage error.
 absl::StatusOr<std::size_t> ResolveJobs(const std::vector<std::string>& globals, std::optional<registry::Style> style) {
@@ -4175,6 +4173,7 @@ RunResult RunFindCore(
     std::optional<registry::Style> style,
     mbo::types::OptionalRef<const MatchedEntryFn> matched_entry,
     bool compare_listing,
+    RunExecutor& run_executor,
     ExpressionFactory executor,
     mbo::types::OptionalRef<SummaryAccumulator> comparison_summaries = std::nullopt,
     std::size_t root_offset = 0);
@@ -4358,6 +4357,7 @@ RunResult RunTreeCompare(
     WalkErrorFn on_error,
     std::optional<registry::Style> style,
     std::size_t table_width,
+    RunExecutor& run_executor,
     ExpressionFactory executor) {
   if (command.roots.size() != 2) {
     on_error("--compare", absl::InvalidArgumentError("requires exactly two roots"));
@@ -4417,7 +4417,6 @@ RunResult RunTreeCompare(
   std::array<SummaryAccumulator, 2> side_summaries;
   std::map<std::string, std::string> categories;
   std::array<TreeCompareEntries, 2> entries;
-  std::mutex callback_mutex;
   std::set<std::string> reported_errors;
   const auto run_side = [&](std::size_t side) {
     const auto collect_callback = [&](const Visit& visit) {
@@ -4431,26 +4430,21 @@ RunResult RunTreeCompare(
               .fs_owner = visit.fs_owner,
           });
     };
-    const auto emit_callback = [&](std::string_view text) {
-      const std::scoped_lock lock(callback_mutex);
-      emit(text);
-    };
     const auto error_callback = [&](std::string_view path, absl::Status status) {
-      const std::scoped_lock lock(callback_mutex);
       if (reported_errors.emplace(absl::StrCat(path, "\n", status.ToString())).second) {
         on_error(path, std::move(status));
       }
     };
     const MatchedEntryFn collect = collect_callback;
-    const EmitFn synchronized_emit = emit_callback;
-    const WalkErrorFn synchronized_error = error_callback;
+    const WalkErrorFn deduplicated_error = error_callback;
     return RunFindCore(
-        command, histograms, absl::MakeConstSpan(command.roots).subspan(side, 1), fs, synchronized_emit,
-        synchronized_error, style, collect, /*compare_listing=*/true, executor, side_summaries.at(side), side);
+        command, histograms, absl::MakeConstSpan(command.roots).subspan(side, 1), fs, emit, deduplicated_error, style,
+        collect, /*compare_listing=*/true, run_executor, executor, side_summaries.at(side), side);
   };
-  std::future<RunResult> left_result = std::async(std::launch::async, run_side, 0);
+  // One coordinator owns both listings. Their read-ahead and matching reuse the command's
+  // executor; starting a second coordinator would exceed the allowance even under --jobs=1.
+  const RunResult left_run_result = run_side(0);
   const RunResult right_result = run_side(1);
-  const RunResult left_run_result = left_result.get();
   if (left_run_result.errors != 0 || right_result.errors != 0) {
     return RunResult{.errors = std::max(left_run_result.errors, right_result.errors)};
   }
@@ -4474,7 +4468,8 @@ RunResult RunTreeCompare(
     }
   };
   ParallelCompare comparisons(
-      ResolveJobs(command.globals, style).value_or(1), output == TreeCompareOutput::kDiff && selection.different);
+      ResolveJobs(command.globals, style).value_or(1), run_executor,
+      output == TreeCompareOutput::kDiff && selection.different);
   const auto selected = std::array{selection.left_only, selection.right_only, selection.different, selection.identical};
   auto left = entries[0].begin();
   auto right = entries[1].begin();
@@ -4661,6 +4656,7 @@ RunResult RunFindCore(
     std::optional<registry::Style> style,
     mbo::types::OptionalRef<const MatchedEntryFn> matched_entry,
     bool compare_listing,
+    RunExecutor& run_executor,
     ExpressionFactory executor,
     mbo::types::OptionalRef<SummaryAccumulator> comparison_summaries,
     std::size_t root_offset) {
@@ -5885,7 +5881,6 @@ RunResult RunFindCore(
       serial_execution ? std::optional(serial_execution->MakeWorker(ExpressionWorkerRole::kCoordinator)) : std::nullopt;
   const auto output_evaluator =
       output_execution ? std::optional(output_execution->MakeWorker(ExpressionWorkerRole::kCoordinator)) : std::nullopt;
-  RunExecutor run_executor(options.workers > 1 ? options.workers : std::size_t{0});
   std::optional<ParallelMatch> parallel_match;
   if (use_match_pool) {
     std::optional<ParallelContentOutput> content_output;
@@ -7172,9 +7167,10 @@ absl::StatusOr<std::string> ExplainResources(const parser::Command& command, std
   });
   std::string output = absl::StrCat(
       "\n# execution resources: static inspection, not measured usage\n", "walks\t", compare ? 2 : 1, "\n",
-      "directory-workers-per-walk\t", workers, "\n", "eligible-command-workers-per-walk\t", workers,
+      "execution-participants-per-command\t", workers, "\n", "background-workers-per-command\t",
+      workers > 1 ? workers - 1 : 0, "\n", "eligible-command-children\t", workers,
       " (independent semicolon-form child pool)\n",
-      "evaluation\tordered coordinator; eligible content uses independent workers\n",
+      "evaluation\tordered coordinator; eligible content and comparison share command workers\n",
       "traversal-state\tdirectory listings, read-ahead, and traversal stack\n", "content-field-occurrences\t",
       resources.content_fields, " (hash/lines segments, not predicted read calls)\n", "line-histogram-consumers\t",
       line_histograms, "\n", "expensive-primaries\t",
@@ -7262,12 +7258,20 @@ RunResult RunFind(
     on_error("--summary-scope", status);
     return RunResult{.errors = 2};
   }
+  const auto workers = ResolveJobs(command.globals, style);
+  if (!workers.ok()) {
+    on_error("--jobs", workers.status());
+    return RunResult{.errors = 2};
+  }
+  // The calling coordinator is one participant. All discovery, stat, content and comparison
+  // phases reuse at most N-1 background workers until this command returns.
+  RunExecutor run_executor(*workers > 1 ? *workers - 1 : std::size_t{0});
   if (compare) {
-    return RunTreeCompare(command, histograms, fs, emit, on_error, style, table_width, executor);
+    return RunTreeCompare(command, histograms, fs, emit, on_error, style, table_width, run_executor, executor);
   }
   return RunFindCore(
       command, histograms, command.roots, fs, emit, on_error, style, mbo::types::OptionalRef<const MatchedEntryFn>{},
-      /*compare_listing=*/false, executor);
+      /*compare_listing=*/false, run_executor, executor);
 }
 
 namespace {

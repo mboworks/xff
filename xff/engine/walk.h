@@ -84,8 +84,9 @@ struct WalkOptions {
   SymlinkMode symlinks = SymlinkMode::kNever;
   // Sibling ordering within each directory (xff `--sort`); kNone is readdir order.
   SortOrder sort = SortOrder::kNone;
-  // Worker threads for directory read-ahead and broad eager-stat batches; `1` is the sequential
-  // walk. The visitor always runs on a single coordinator thread. A caller may
+  // Participants for directory read-ahead and broad eager-stat batches, including the calling
+  // coordinator; standalone walks start at most workers-1 background threads. `1` is sequential.
+  // The visitor always runs on the calling coordinator thread. A caller may
   // offload independent matching, but traversal controls and visitor ordering stay serial.
   std::size_t workers = 1;
   // Keep complete metadata by default for arbitrary visitors. A metadata-free visitor may

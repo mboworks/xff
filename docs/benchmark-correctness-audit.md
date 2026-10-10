@@ -275,20 +275,37 @@ available local Linux artifacts; they do not verify expired hosted artifacts.
 ### Worker scheduling experiment
 
 Linux `kernel.perf_event_paranoid` is now `0`, and native `perf` hardware counters
-are available. Startup-boundary profiles identify worker creation and teardown,
-Abseil mutex slow paths and scheduling overhead. Keeping directory reads serial
+are available. Startup-boundary profiles include worker creation and teardown,
+Abseil mutex slow paths and scheduling overhead. The later symbolized controls
+retained in [PR #995](https://github.com/mboworks/xff/pull/995) identify the
+Linux/x86 one-time Abseil TSC frequency calibration (1 ms and 2 ms sleeps) on
+the first queue mutex path as the dominant fixed cliff. They do not attribute
+those sleeps to each thread's creation. Keeping directory reads serial
 removes the small-work cliff but loses useful concurrency on large broad trees.
 [PR #991](https://github.com/mboworks/xff/pull/991) admits directory reads only
 when at least 64 independent sibling directories are available. Its hosted Linux
 and macOS tests, sanitizers, all three benchmark shards on each platform and
 combined benchmark comparison pass.
 
-The next experiment shares one run-owned executor across directory read-ahead,
+The initial shared-executor experiment shares one traversal-owned executor across directory read-ahead,
 eager stat work and eligible content matching. Each admitted batch submits at
 most one drain job per useful worker. Directory jobs repeatedly claim independent
 listing reads; stat jobs claim 128-entry chunks; matcher jobs claim entry chunks.
 Only the coordinator recurses, evaluates traversal controls and consumes ordered
-results. Threads remain bounded and are reused until command completion.
+results. Its pools are traversal-owned, so two comparison-side coordinators can
+still create separate executors before a later comparison-only pool starts.
+
+A separate command-ownership follow-up removes that gap: `RunFind` owns one
+executor, each comparison side walks on the calling coordinator, and eligible
+file pairs reuse the same executor after both inventories are collected. The
+`--jobs=N` participant budget includes the caller, leaving at most `N-1`
+background workers. The caller also claims independent stat, content and
+comparison chunks. This is a concurrency experiment, not a performance
+acceptance claim. Directory drain fairness, bounded read-ahead, cancellation,
+remaining-work admission, slow-storage controls and native M5 Pro validation
+remain outstanding. The fresh native accounting and exact-source baseline
+evidence live separately in PRs #994 and #995; this branch does not mix their
+measurement artifacts into a new engine result.
 
 Correctness checks include nested read-ahead above the admission threshold,
 partial stat chunks with missing entries, repeated matcher transitions and

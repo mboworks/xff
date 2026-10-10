@@ -26,10 +26,12 @@
 namespace xff::engine {
 namespace {
 using ::mbo::testing::IsOk;
+using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Gt;
 using ::testing::IsEmpty;
+using ::testing::Le;
 using ::testing::SizeIs;
 
 struct StatTrace {
@@ -124,6 +126,21 @@ WalkLog Record(const WideFs& fs, const WalkOptions& options) {
 }
 
 struct WalkParallelTest : ::testing::Test {};
+
+TEST_F(WalkParallelTest, EagerStatBudgetIncludesTheCallingCoordinator) {
+  const WideFs serial;
+  const auto expected = Record(serial, {.workers = 1});
+  for (const std::size_t participants : {1, 2, 3, 10}) {
+    SCOPED_TRACE(participants);
+    const WideFs fs;
+    fs.trace->await_peer = participants > 1;
+    const auto actual = Record(fs, {.workers = participants});
+    EXPECT_THAT(actual.visits, Eq(expected.visits));
+    EXPECT_THAT(actual.errors, IsEmpty());
+    EXPECT_THAT(fs.trace->threads, SizeIs(Le(participants)));
+    EXPECT_THAT(fs.trace->threads, Contains(std::this_thread::get_id()));
+  }
+}
 
 TEST_F(WalkParallelTest, EagerStatsOverlapAndKeepCoordinatorVisitOrderAndFields) {
   constexpr auto kFields = std::to_array({vfs::MetadataFields::kBasic, vfs::MetadataFields::kBirthTime});

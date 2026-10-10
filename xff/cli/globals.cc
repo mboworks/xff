@@ -900,25 +900,28 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "scheduling",
         .header = "Concurrency and ordering",
         .summary = "directory-read, eligible content-match, comparison and -exec workers",
-        .details = "`N` is a positive integer; use `-j 4`, `-j=4`, or `--jobs=4`. The conventional attached "
-                   "short form `-j4` is also accepted. Every form accepts `all` in place of `N`. `-j 1` makes "
-                   "directory reads and `-exec ... ;` synchronous. At larger values, xff reads directories "
-                   "using one lazily started pool of up to `N` worker threads, reused for directory reads, "
-                   "required eager metadata and eligible content matching. Workers drain batches of independent "
-                   "work; small workloads stay on the coordinator. Lazy and metadata-free listings do not start "
-                   "stat workers. Independent content predicates and rg searches match in bounded parallel batches, "
-                   "with output kept in traversal order. Small initial batches, archive members, stateful expressions "
-                   "stay on the coordinator. Metadata-consuming output does not itself prevent eligible content "
-                   "filters from running in workers; reductions and rendering remain serial. Independent "
-                   "regular-file comparison pairs can also use bounded workers, preserving relative-path output "
-                   "order. Batches of only small or metadata-only comparisons stay inline; archive and owned "
-                   "filesystem sources stay serial. "
-                   "Xff may independently keep up to `N` semicolon-form `-exec` / "
-                   "`-execdir` children outstanding. Reads and children can overlap; `N` is not one shared "
-                   "operation budget. The children's truth value is therefore success on launch. The "
-                   "`... +` batch forms still run once after the walk and propagate a failing exit status. With "
-                   "no flag, xff uses one fewer than the detected cores, capped at 15 and floored at 1; find and "
-                   "rg modes use every detected core. `all` always means every detected core.",
+        .details =
+            "`N` is a positive integer; use `-j 4`, `-j=4`, or `--jobs=4`. The conventional attached "
+            "short form `-j4` is also accepted. Every form accepts `all` in place of `N`. `-j 1` makes "
+            "directory reads and `-exec ... ;` synchronous. At larger values, xff reads directories "
+            "using one command-owned, lazily started pool of up to `N-1` background workers plus the calling "
+            "coordinator, reused for directory reads, required eager metadata, eligible content matching "
+            "and file comparison. Comparison trees are coordinated sequentially within that same budget. "
+            "The caller participates in eligible content and comparison work. Workers drain batches of independent "
+            "work; small workloads stay on the coordinator. Lazy and metadata-free listings do not start "
+            "stat workers. Independent content predicates and rg searches match in bounded parallel batches, "
+            "with output kept in traversal order. Small initial batches, archive members, stateful expressions "
+            "stay on the coordinator. Metadata-consuming output does not itself prevent eligible content "
+            "filters from running in workers; reductions and rendering remain serial. Independent "
+            "regular-file comparison pairs can also use bounded workers, preserving relative-path output "
+            "order. Batches of only small or metadata-only comparisons stay inline; archive and owned "
+            "filesystem sources stay serial. "
+            "Xff may independently keep up to `N` semicolon-form `-exec` / "
+            "`-execdir` children outstanding. Reads and children can overlap; `N` is not one shared "
+            "operation budget. The children's truth value is therefore success on launch. The "
+            "`... +` batch forms still run once after the walk and propagate a failing exit status. With "
+            "no flag, xff uses one fewer than the detected cores, capped at 15 and floored at 1; find and "
+            "rg modes use every detected core. `all` always means every detected core.",
         .see_also = "output,stats",
         .alias_modes = registry::Modes::kNative,
         .alias_argument = "N",
