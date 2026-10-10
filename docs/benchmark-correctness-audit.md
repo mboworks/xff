@@ -287,12 +287,14 @@ when at least 64 independent sibling directories are available. Its hosted Linux
 and macOS tests, sanitizers, all three benchmark shards on each platform and
 combined benchmark comparison pass.
 
-The next experiment shares one run-owned executor across directory read-ahead,
+The next experiment shares one traversal-owned executor across directory read-ahead,
 eager stat work and eligible content matching. Each admitted batch submits at
 most one drain job per useful worker. Directory jobs repeatedly claim independent
 listing reads; stat jobs claim 128-entry chunks; matcher jobs claim entry chunks.
 Only the coordinator recurses, evaluates traversal controls and consumes ordered
-results. Threads remain bounded and are reused until command completion.
+results. Background workers remain bounded by the per-traversal allowance and
+are reused until traversal completion; the coordinator is additional. Comparison
+still has separate traversal/comparison ownership, as detailed below.
 
 Reuse alone does not establish efficient scheduling. Directory drain jobs currently
 run until their sibling batch is exhausted, so they can occupy all workers while
@@ -480,6 +482,86 @@ across all 858 task cells. It reproduces the baseline small-work cliff, but also
 shows content regressions in the frozen #992 candidate; it is one sequential
 session, not repeated/reordered acceptance. The local cost-aware follow-up has
 not been measured by that collection.
+
+### Fresh exact-source full-grid Linux baseline (2026-10-10)
+
+The exact initially requested source, `772994ab7905be77915978f06ea90ae5934aaeef`,
+has now been freshly built with its historical `clang_release` configuration.
+Clean source/HEAD/tree checks pass; the saved executable SHA-256 is
+`f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106`,
+matching the original retained baseline bytes. Its tracked build-configuration
+hashes match that exact source, not an inferred equivalent revision.
+
+The accounting driver is frozen at `0e296e40ca6bf523215d80d1dc02deb3503b796c`,
+including the additional #994 driver fixes beyond original #990. The batch
+records every driver-module hash and the retained native helper/method identity;
+do not claim this is the original #990 driver or combine its absolute timings
+with historical Python launching. All compilation finished before measurement.
+
+The complete 13-anchor grid, broad/v2 and deep/v2, workers 1/3/10, verified
+ten-physical-core allowance, tmpfs, one discarded warmup and nine samples/fastest
+seven completed in batch
+`f586e579b2d57d0f9afa24e6d06849d6bc1df4d96654e5bcb349e77d8c6a9d1d`.
+All 858 task cells, 14,040 retained samples and 1,560 discarded warmups pass the
+collection oracle: 15,600 correct fresh participant invocations. A separate
+post-run verifier checks the original binary, standalone/embedded manifests,
+historical tracked configuration, frozen driver/helper, all task keys,
+fixture/anchor/oracle identities, affinity, sample validity/output lengths,
+native resource accounting and independently recomputed fastest-seven estimates.
+
+The small-work cliff is reproduced in this exact-source baseline:
+
+| Layout | Workers | Files | XFF ms | rg ms | XFF/rg |
+| :----- | ------: | ----: | -----: | ----: | -----: |
+| broad  |       1 |    10 |  1.894 | 1.653 |  1.146 |
+| broad  |       1 |    20 |  1.823 | 1.663 |  1.096 |
+| broad  |       3 |    10 |  1.842 | 3.103 |  0.594 |
+| broad  |       3 |    20 |  5.241 | 3.230 |  1.623 |
+| deep   |       1 |  1000 |  2.308 | 2.021 |  1.142 |
+| deep   |       1 |  2000 |  2.849 | 2.494 |  1.142 |
+| deep   |       3 |  1000 |  2.386 | 3.223 |  0.740 |
+| deep   |       3 |  2000 |  6.151 | 3.923 |  1.568 |
+
+Ten-worker controls likewise measure 5.232 ms at broad 20 and 6.121 ms at deep
+2k. The [baseline index](benchmarks/native-exact-baseline-controls.json) retains
+all selected enumeration rows, commands/contracts, checksums and limitations.
+The [complete derived analysis](benchmarks/native-exact-baseline-analysis.json.gz)
+contains every task's raw sample arrays, absolute estimates and same-run ratios.
+[Provenance and reproduction scripts](benchmarks/native-exact-baseline-provenance.json.gz)
+retain the frozen batch, original build log, both retention proofs, driver
+sources, executed-command handoff and verification/export code.
+
+The original report's exact JSON bytes are preserved in eleven lossless gzip
+byte chunks under the existing file-size policy:
+[1](benchmarks/native-exact-baseline-report-bytes-1.gz),
+[2](benchmarks/native-exact-baseline-report-bytes-2.gz),
+[3](benchmarks/native-exact-baseline-report-bytes-3.gz),
+[4](benchmarks/native-exact-baseline-report-bytes-4.gz),
+[5](benchmarks/native-exact-baseline-report-bytes-5.gz),
+[6](benchmarks/native-exact-baseline-report-bytes-6.gz),
+[7](benchmarks/native-exact-baseline-report-bytes-7.gz),
+[8](benchmarks/native-exact-baseline-report-bytes-8.gz),
+[9](benchmarks/native-exact-baseline-report-bytes-9.gz),
+[10](benchmarks/native-exact-baseline-report-bytes-10.gz), and
+[11](benchmarks/native-exact-baseline-report-bytes-11.gz).
+Decompress and concatenate in ascending index-recorded offset order; individual
+and reassembled SHA-256 checks verify the exact original bytes. The complete
+report/analysis, original binary/helper and build artifacts remain at
+`/tmp/xff-perf-baseline-exact772-native-session1`; review archives do not include
+the executable bytes themselves.
+
+Retained samples record output lengths rather than full stdout; collection
+checks the actual output oracle before retaining each sample. Post-run
+fixture/oracle regeneration reuses the pinned definitions, checking internal
+consistency rather than a separate implementation of the workload specification.
+Generated/ignored `MODULE.bazel.lock` cannot be compared to a tracked Git blob.
+This is one ordered Linux baseline session, not repeated/reordered engine A/B
+acceptance or native Mac evidence. The provenance archive also includes a
+same-driver/exact-source M5 Pro baseline handoff script, syntax-checked only on
+Linux. It retains the helper before historical compilation and records hardware,
+P/E-core keys and storage without claiming Linux affinity or verified RAM-disk
+storage; it has not run on macOS. Native Mac accounting, Instruments, allocation
+and repeated/reordered acceptance remain required.
 
 ### Large single-worker allocation diagnostics (2026-10-10)
 
