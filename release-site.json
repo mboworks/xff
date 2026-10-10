@@ -48,6 +48,7 @@
     "docs/benchmark-comparisons.md": "docs/benchmark-comparisons.html",
     "docs/benchmark-backfill.md": "docs/benchmark-backfill.html",
     "docs/benchmark-correctness-audit.md": "docs/benchmark-correctness-audit.html",
+    "docs/native-profiling.md": "docs/native-profiling.html",
     "NOTICE.md": "NOTICE.html",
     "NOTICE.lean.md": "NOTICE.lean.html",
     "docs/performance-analysis.md": "docs/performance-analysis.html",
