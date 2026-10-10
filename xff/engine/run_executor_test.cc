@@ -3,6 +3,7 @@
 
 #include "xff/engine/run_executor.h"
 
+#include <atomic>
 #include <limits>
 #include <memory>
 #include <set>
@@ -81,6 +82,112 @@ TEST_F(RunExecutorTest, SupportsMoveOnlyJobsAndResults) {
   EXPECT_THAT(*result, Eq(42));
   EXPECT_THAT(RunTask<void>{}.Valid(), IsFalse());
   executor.Submit([] {}).Get();
+}
+
+TEST_F(RunExecutorTest, CallerClaimsRequiredWorkWhileItsQueuedWrapperWaits) {
+  RunExecutor executor(1);
+  executor.Start(1);
+  absl::Notification started;
+  absl::Notification release;
+  auto occupied = executor.Submit([&] {
+    started.Notify();
+    release.WaitForNotification();
+  });
+  const bool running = started.WaitForNotificationWithTimeout(absl::Seconds(5));
+  std::size_t calls = 0;
+  RunPromise<int> promise;
+  auto result = promise.Task();
+  const auto work =
+      std::make_shared<RunWork>([&calls, value = std::make_unique<int>(42), promise = std::move(promise)] mutable {
+        ++calls;
+        promise.SetValue(*value);
+      });
+  auto queued = executor.Submit([work] { work->Run(); }, RunTaskClass::kReadAhead);
+  work->Run();
+  const bool ready_before_release = result.Ready();
+  release.Notify();
+  occupied.Get();
+  queued.Get();
+  work->Run();
+  EXPECT_THAT(running, IsTrue());
+  EXPECT_THAT(ready_before_release, IsTrue());
+  EXPECT_THAT(result.Get(), Eq(42));
+  EXPECT_THAT(calls, Eq(1));
+}
+
+TEST_F(RunExecutorTest, CallerDoesNotDuplicateOrWaitInsideWorkerClaimedWork) {
+  RunExecutor executor(1);
+  executor.Start(1);
+  absl::Notification started;
+  absl::Notification release;
+  std::atomic<int> calls = 0;
+  RunPromise<int> promise;
+  auto result = promise.Task();
+  const auto work = std::make_shared<RunWork>([&calls, &started, &release, promise = std::move(promise)] mutable {
+    calls.fetch_add(1);
+    started.Notify();
+    // Bound a broken claim implementation so it reports failure rather than hanging.
+    promise.SetValue(release.WaitForNotificationWithTimeout(absl::Seconds(5)) ? 42 : 0);
+  });
+  auto dispatched = executor.Submit([work] { work->Run(); });
+  const bool running = started.WaitForNotificationWithTimeout(absl::Seconds(5));
+  work->Run();
+  const bool ready_before_release = result.Ready();
+  release.Notify();
+  dispatched.Get();
+  EXPECT_THAT(running, IsTrue());
+  EXPECT_THAT(ready_before_release, IsFalse());
+  EXPECT_THAT(result.Get(), Eq(42));
+  EXPECT_THAT(calls.load(), Eq(1));
+}
+
+TEST_F(RunExecutorTest, SimultaneousCallerAndWorkerClaimsExecuteMoveOnlyWorkOnce) {
+  RunExecutor executor(2);
+  executor.Start(2);
+  absl::Barrier ready(3);
+  std::atomic<int> calls = 0;
+  RunPromise<int> promise;
+  auto result = promise.Task();
+  const auto work =
+      std::make_shared<RunWork>([&calls, value = std::make_unique<int>(42), promise = std::move(promise)] mutable {
+        calls.fetch_add(1);
+        promise.SetValue(*value);
+      });
+  const auto claim = [&] {
+    ready.Block();
+    work->Run();
+  };
+  auto first = executor.Submit(claim);
+  auto second = executor.Submit(claim);
+  claim();
+  first.Get();
+  second.Get();
+  EXPECT_THAT(result.Get(), Eq(42));
+  EXPECT_THAT(calls.load(), Eq(1));
+}
+
+TEST_F(RunExecutorTest, WorkerWrapperDoesNotWaitForCallerClaimedWork) {
+  RunExecutor executor(1);
+  executor.Start(1);
+  absl::Notification started;
+  absl::Notification release;
+  RunPromise<int> promise;
+  auto result = promise.Task();
+  const auto work = std::make_shared<RunWork>([&started, &release, promise = std::move(promise)] mutable {
+    started.Notify();
+    // A queued wrapper may finish while its caller-owned read is still running.
+    // The coordinator owns that inline lifetime, not the wrapper's completion.
+    promise.SetValue(release.WaitForNotificationWithTimeout(absl::Seconds(5)) ? 42 : 0);
+  });
+  auto wrapper = executor.Submit([&started, &release, work] {
+    const bool caller_started = started.WaitForNotificationWithTimeout(absl::Seconds(5));
+    work->Run();
+    release.Notify();
+    return caller_started;
+  });
+  work->Run();
+  EXPECT_THAT(wrapper.Get(), IsTrue());
+  EXPECT_THAT(result.Get(), Eq(42));
 }
 
 TEST_F(RunExecutorTest, ReadAheadSlotsAndBytesAreSharedAndReleasedByTheirOwner) {

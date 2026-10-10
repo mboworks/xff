@@ -15,6 +15,7 @@
 
 #include "xff/engine/walk.h"
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <chrono>
@@ -25,17 +26,21 @@
 #include <future>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <thread>
 #include <utility>
 #include <vector>
 
+#include "absl/base/thread_annotations.h"
 #include "absl/functional/function_ref.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/cord.h"
 #include "absl/strings/str_cat.h"
+#include "absl/synchronization/mutex.h"
 #include "absl/synchronization/notification.h"
 #include "absl/time/time.h"
 #include "gmock/gmock.h"
@@ -58,6 +63,9 @@ namespace {
 namespace fs = ::std::filesystem;
 using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
+using ::testing::_;
+using ::testing::Contains;
+using ::testing::Each;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Gt;
@@ -68,6 +76,7 @@ using ::testing::Le;
 using ::testing::Lt;
 using ::testing::Not;
 using ::testing::Pair;
+using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
 // In-memory FileSystem for tests that need metadata the real filesystem won't
@@ -446,7 +455,7 @@ TEST_F(WalkFakeFsTest, ParallelStatDrainsPreservePartialChunkAndErrorOrder) {
 class BlockingReadFs final : public FakeFs {
  public:
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view dir) const override {
-    if (dir == "/r/d0") {
+    if (dir == "/r/d1") {
       started.Notify();
       release.WaitForNotification();
     }
@@ -498,7 +507,7 @@ class CountingReadFs final : public FakeFs {
     if (dir != "/r") {
       reads.fetch_add(1, std::memory_order_relaxed);
     }
-    if (dir == "/r/d0") {
+    if (dir == "/r/d1") {
       pruned_reads.fetch_add(1, std::memory_order_relaxed);
     }
     if (dir.starts_with("/r/d0/")) {
@@ -511,6 +520,148 @@ class CountingReadFs final : public FakeFs {
   mutable std::atomic<std::size_t> pruned_reads = 0;
   mutable std::atomic<std::size_t> nested_reads = 0;
 };
+
+class DirectoryReaderFs final : public FakeFs {
+ public:
+  struct Trace {
+    std::map<std::string, std::size_t> reads;
+    std::set<std::thread::id> threads;
+    std::size_t peak_active = 0;
+    bool rendezvous_ok = true;
+  };
+
+  explicit DirectoryReaderFs(bool rendezvous) : rendezvous_(rendezvous) {
+    std::vector<vfs::Entry> siblings;
+    siblings.reserve(65);
+    for (std::size_t index = 0; index < 65; ++index) {
+      const std::string name = absl::StrCat("d", index);
+      const std::string path = absl::StrCat("/r/", name);
+      siblings.push_back(DirEntry(path, name));
+      const std::string file = absl::StrCat(path, "/file");
+      AddDir(path, 1, {FileEntry(file, "file")});
+      AddFile(file, 1);
+    }
+    AddDir("/r", 1, std::move(siblings));
+  }
+
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view dir) const override {
+    if (dir == "/r") {
+      return FakeFs::ReadDir(dir);
+    }
+    {
+      const absl::MutexLock lock(mutex_);
+      ++trace_.reads[std::string(dir)];
+      trace_.threads.insert(std::this_thread::get_id());
+      ++active_;
+      trace_.peak_active = std::max(trace_.peak_active, active_);
+    }
+    bool overlap = true;
+    if (rendezvous_ && dir == "/r/d0") {
+      first_.Notify();
+      overlap = second_.WaitForNotificationWithTimeout(absl::Seconds(5));
+    } else if (rendezvous_ && dir == "/r/d1") {
+      second_.Notify();
+      overlap = first_.WaitForNotificationWithTimeout(absl::Seconds(5));
+    }
+    auto result = FakeFs::ReadDir(dir);
+    {
+      const absl::MutexLock lock(mutex_);
+      trace_.rendezvous_ok = trace_.rendezvous_ok && overlap;
+      --active_;
+    }
+    return result;
+  }
+
+  Trace Snapshot() const {
+    const absl::MutexLock lock(mutex_);
+    return trace_;
+  }
+
+ private:
+  const bool rendezvous_;
+  // This mutex guards trace_ and active_. Immutable FakeFs data is read-only
+  // after construction; the two notifications independently publish arrivals.
+  mutable absl::Mutex mutex_;
+  mutable Trace trace_ ABSL_GUARDED_BY(mutex_);
+  mutable std::size_t active_ ABSL_GUARDED_BY(mutex_) = 0;
+  mutable absl::Notification first_;
+  mutable absl::Notification second_;
+};
+
+TEST_F(WalkFakeFsTest, CoordinatorReadsDirectoriesAlongsideItsBoundedWorkers) {
+  const auto record = [](const DirectoryReaderFs& fs, std::size_t workers) {
+    std::vector<std::string> visits;
+    EXPECT_THAT(
+        Walk(
+            fs, {"/r"}, {.sort = SortOrder::kTree, .workers = workers},
+            [&](const Visit& visit) {
+              visits.emplace_back(visit.path);
+              return WalkAction::kContinue;
+            },
+            [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }),
+        IsOk());
+    return visits;
+  };
+  const DirectoryReaderFs serial(false);
+  const auto expected = record(serial, 1);
+  for (const std::size_t workers : {1, 2, 3, 10}) {
+    SCOPED_TRACE(workers);
+    const DirectoryReaderFs fs(workers > 1);
+    EXPECT_THAT(record(fs, workers), Eq(expected));
+    const auto trace = fs.Snapshot();
+    EXPECT_THAT(trace.reads, SizeIs(65));
+    EXPECT_THAT(trace.reads, Each(Pair(_, 1)));
+    EXPECT_THAT(trace.threads, Contains(std::this_thread::get_id()));
+    EXPECT_THAT(trace.threads, SizeIs(Le(workers)));
+    EXPECT_THAT(trace.rendezvous_ok, IsTrue());
+    if (workers > 1) {
+      EXPECT_THAT(trace.threads, SizeIs(Gt(1)));
+      EXPECT_THAT(trace.peak_active, Gt(1));
+    }
+    EXPECT_THAT(trace.peak_active, Le(workers));
+  }
+}
+
+TEST_F(WalkFakeFsTest, CallerReadsItsQueuedDirectoryBeforeAnOccupiedWorkerIsReleased) {
+  const DirectoryReaderFs fs(false);
+  RunExecutor executor(1);
+  executor.Start(1);
+  absl::Notification started;
+  absl::Notification release;
+  auto occupied = executor.Submit([&] {
+    started.Notify();
+    return release.WaitForNotificationWithTimeout(absl::Seconds(5));
+  });
+  const bool running = started.WaitForNotificationWithTimeout(absl::Seconds(5));
+  bool required_file_visited = false;
+  EXPECT_THAT(
+      Walk(
+          fs, {"/r"}, {.sort = SortOrder::kTree, .workers = 2}, executor,
+          [&](const Visit& visit) {
+            if (visit.path == "/r/d1/file") {
+              // d1 was queued after the caller's initial d0 read. It must be
+              // claimed by the caller while the sole worker is still occupied.
+              const auto trace = fs.Snapshot();
+              EXPECT_THAT(trace.reads, UnorderedElementsAre(Pair("/r/d0", 1), Pair("/r/d1", 1)));
+              EXPECT_THAT(trace.threads, ElementsAre(std::this_thread::get_id()));
+              required_file_visited = true;
+              release.Notify();
+              return WalkAction::kStop;
+            }
+            return WalkAction::kContinue;
+          },
+          [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }),
+      IsOk());
+  if (!release.HasBeenNotified()) {
+    release.Notify();
+  }
+  EXPECT_THAT(running, IsTrue());
+  EXPECT_THAT(required_file_visited, IsTrue());
+  EXPECT_THAT(occupied.Get(), IsTrue());
+  EXPECT_THAT(executor.ReadAheadUsage().in_use, Eq(0));
+  EXPECT_THAT(executor.ReadAheadUsage().retained_bytes, Eq(0));
+  EXPECT_THAT(executor.Submit([] { return 42; }).Get(), Eq(42));
+}
 
 TEST_F(WalkFakeFsTest, PruningCancelsAReadThatHasNotReachedTheFilesystem) {
   CountingReadFs fs;
@@ -536,11 +687,11 @@ TEST_F(WalkFakeFsTest, PruningCancelsAReadThatHasNotReachedTheFilesystem) {
     return Walk(
         fs, {"/r"}, {.sort = SortOrder::kTree, .workers = 2}, executor,
         [&](const Visit& visit) {
-          if (visit.path == "/r/d0") {
+          if (visit.path == "/r/d1") {
             return WalkAction::kPrune;
           }
-          if (visit.path == "/r/d1") {
-            // The d0 request has been destroyed before the next visit starts.
+          if (visit.path == "/r/d10") {
+            // The queued d1 request has been destroyed before the next visit starts.
             passed_pruned.Notify();
           }
           return WalkAction::kContinue;
@@ -678,7 +829,8 @@ TEST_F(WalkFakeFsTest, CachedParentSiblingsDoNotStarveNestedReadAhead) {
           [](std::string_view, absl::Status) {}),
       IsOk());
   EXPECT_THAT(reached_nested, IsTrue());
-  EXPECT_THAT(fs.reads.load(), Eq(4));
+  // Two cached parent reads, the caller's d0, and two cached nested reads.
+  EXPECT_THAT(fs.reads.load(), Eq(5));
   EXPECT_THAT(executor.ReadAheadUsage().in_use, Eq(0));
   EXPECT_THAT(executor.ReadAheadUsage().retained_bytes, Eq(0));
 }

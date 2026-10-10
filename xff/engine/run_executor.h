@@ -34,6 +34,30 @@ struct TaskState final {
 
 enum class RunTaskClass { kForeground, kReadAhead };
 
+// A leaf job claimable by its coordinator or a dispatched worker. Exactly one
+// Run call executes the owned job, outside its mutex; other calls return without
+// waiting. Result publication, if needed, remains the job's responsibility.
+// Use shared ownership while both caller and queued worker can access the job.
+class RunWork final {
+ public:
+  explicit RunWork(absl::AnyInvocable<void()> work);
+
+  RunWork(const RunWork&) = delete;
+  RunWork& operator=(const RunWork&) = delete;
+  RunWork(RunWork&&) = delete;
+  RunWork& operator=(RunWork&&) = delete;
+
+  void Run() ABSL_LOCKS_EXCLUDED(mutex_);
+
+ private:
+  absl::AnyInvocable<void()> Take() ABSL_LOCKS_EXCLUDED(mutex_);
+
+  // This mutex guards ownership of work_ only and is released before invoking
+  // the job. It is never held with an executor dispatch or read-budget mutex.
+  absl::Mutex mutex_;
+  absl::AnyInvocable<void()> work_ ABSL_GUARDED_BY(mutex_);
+};
+
 struct ReadAheadStats {
   // Unfinished reads. Completed results keep their byte charge, not an execution slot.
   std::size_t in_use = 0;

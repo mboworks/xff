@@ -159,6 +159,14 @@ The caller claims independent stat, content and comparison chunks rather than
 waiting idle while `N` additional workers run. Sequential comparison inventories
 remove the second coordinator, but may reduce overlap when each tree has a
 narrow frontier on slow storage; native A/B controls must quantify that tradeoff.
+For directory reads, the first uncached required directory stays on the caller,
+while the bounded frontier queues later siblings for background workers. A queued
+read that becomes required can be claimed by its caller or its dispatched worker,
+exactly once. The claim mutex protects callback ownership only; filesystem access
+and result publication happen after unlocking. If a worker already owns that
+required read, the caller waits for its result. It does not execute an unrelated
+slow sibling merely to help the queue. This improves available participation, not
+a guarantee of full utilization or sufficient useful work for each dispatch.
 The bounded-frontier follow-up separates foreground stat/content/comparison jobs
 from speculative directory reads. When both queues contain work, dispatch
 alternates their classes, retaining FIFO order within each class. This is fairness
