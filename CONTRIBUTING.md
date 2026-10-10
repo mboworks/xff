@@ -100,6 +100,12 @@ the local hook reports a skip; the dedicated CI job supplies both and enforces t
 source missing from an existing database fails with a refresh instruction instead of silently
 omitting that file.
 
+Expected-source queries fail closed: a Bazel query error is reported with its
+package pattern and stops indexing before the database can claim completeness.
+A successful headers-only query may be empty. The source collector publishes no
+partial expected-source list when any query fails; `//tools:collect_compile_sources_test`
+checks both cases without invoking a real build.
+
 Check selected files, including previously committed files that failed CI:
 
 ```sh

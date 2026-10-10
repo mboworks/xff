@@ -752,7 +752,7 @@ jobs:
         run: |
           bazel build //xff/cli:xff //tools:process_resources_native //xff/engine:expression_benchmark //xff/engine:expression_run_benchmark --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
           cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-head"
-          launcher="$(bazel cquery //tools:process_resources_native --config=clang_release \
+          launcher="$(bazel cquery 'config(//tools:process_resources_native, target)' --config=clang_release \
             --output=starlark --starlark:expr='target.files_to_run.executable.path')"
           cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"
           tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" benchmark-head benchmark-resource-launcher

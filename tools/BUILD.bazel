@@ -53,6 +53,15 @@ bashtest(
     ],
 )
 
+bashtest(
+    name = "collect_compile_sources_test",
+    srcs = ["collect_compile_sources_test.sh"],
+    data = [
+        "collect_compile_sources.sh",
+        "collect_compile_sources_fake.sh",
+    ],
+)
+
 # The MSan RUNTIME suppression file, exposed so xff/cc.bzl's cc_binary / cc_test wrappers can put it
 # in each executable's `data` (runfiles) under --config=msan. MSan reads it at process start, so a
 # runfile is exactly the right shape: declared, cache-correct, and inside the sandbox. Public because

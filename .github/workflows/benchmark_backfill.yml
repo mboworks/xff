@@ -95,7 +95,7 @@ jobs:
           # Build the current accounting adapter before the driver freezes the batch.
           bazel build //tools:process_resources_native --config=clang_release \
             --disk_cache="${HOME}/.cache/bazel-disk"
-          launcher="$(bazel cquery //tools:process_resources_native --config=clang_release \
+          launcher="$(bazel cquery 'config(//tools:process_resources_native, target)' --config=clang_release \
             --output=starlark --starlark:expr='target.files_to_run.executable.path')"
           cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"
           fixture_parent="${RUNNER_TEMP}"

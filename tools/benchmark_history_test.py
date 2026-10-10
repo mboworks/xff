@@ -233,23 +233,36 @@ class BenchmarkHistoryTest(unittest.TestCase):
             with self.subTest(workflow=workflow):
                 source = repository_file(workflow).read_text().split('\n  ' + job + ':', 1)[1]
                 source = re.split(r'\n  [a-z][a-z-]*:', source, maxsplit=1)[0]
-                self.assertIn('bazel cquery //tools:process_resources_native --config=clang_release', source)
+                self.assertIn("bazel cquery 'config(//tools:process_resources_native, target)' "
+                              "--config=clang_release", source)
                 self.assertIn('cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"', source)
                 self.assertIn('tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" '
                               'benchmark-head benchmark-resource-launcher', source)
-                # The paired main driver already builds the helper through its data dependency.
-                self.assertIn('//tools:benchmark_resources' if job == 'build'
-                              else '//tools:process_resources_native', source)
+                # A Python driver's data dependency can use a transitioned configuration.
+                # Build the exact target configuration queried and copied below.
+                head_build = source.split('bazel build ', 1)[1].split('\n', 1)[0].split()
+                self.assertIn('//tools:process_resources_native', head_build)
+                self.assertIn('--config=clang_release', head_build)
+                self.assertLess(source.index('bazel build '),
+                                source.index('bazel cquery '))
         action = repository_file('.github/actions/benchmark-measure/action.yml').read_text()
         self.assertIn('test -x "${RUNNER_TEMP}/benchmark-resource-launcher"', action)
         self.assertIn('--resource-launcher="${RUNNER_TEMP}/benchmark-resource-launcher"', action)
         self.assertNotIn('bazel build', action)
         self.assertNotIn('bazel run', action)
 
+    def test_native_launcher_queries_select_only_the_built_target_configuration(self):
+        for workflow in ('.github/workflows/main.yml', '.github/workflows/benchmarks.yml',
+                         '.github/workflows/benchmark_backfill.yml'):
+            with self.subTest(workflow=workflow):
+                source = repository_file(workflow).read_text()
+                query = source.split('launcher="$(bazel cquery ', 1)[1].split('cp "${launcher}"', 1)[0]
+                self.assertIn("'config(//tools:process_resources_native, target)' --config=clang_release", query)
+
     def test_ci_backfill_builds_native_launcher_before_freezing_and_measuring(self):
         source = repository_file('.github/workflows/benchmark_backfill.yml').read_text()
         build = source.index('bazel build //tools:process_resources_native --config=clang_release')
-        query = source.index('bazel cquery //tools:process_resources_native --config=clang_release')
+        query = source.index("bazel cquery 'config(//tools:process_resources_native, target)' --config=clang_release")
         copy = source.index('cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"')
         run = source.index('python3 tools/benchmark_campaign.py run')
         self.assertLess(build, query)
