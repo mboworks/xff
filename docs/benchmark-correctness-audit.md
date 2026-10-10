@@ -453,10 +453,70 @@ shows content regressions in the frozen #992 candidate; it is one sequential
 session, not repeated/reordered acceptance. The local cost-aware follow-up has
 not been measured by that collection.
 
+### Large single-worker allocation diagnostics (2026-10-10)
+
+A user-local Heaptrack 1.5.0 bundle was extracted under `/tmp`; all five Ubuntu
+package archives match their repository SHA-256 values. No system package or
+security setting changed. A known malloc/realloc control verifies three explicit
+allocation calls and a 6 MiB live allocation peak, plus the independently
+identified runtime allocation. Periodic short-process snapshots miss that peak;
+the following heap values instead come from every allocation/free event.
+
+The unchanged retained baseline was profiled once at 20k/50k/100k files with one
+worker on each full-grid v2 layout. Each cell also runs once without Heaptrack
+through the native resource launcher for independent RSS. Both commands pass the
+same original output oracle; complete materialized maximum trees and executable
+identities match before/after. These are twelve correct diagnostic invocations,
+not repeated timing controls. Tracked requested heap bytes and native RSS are
+different metrics; non-interposed allocation mechanisms are outside Heaptrack's
+coverage, and profiler overhead is excluded from the separate RSS control.
+
+| Layout |  Files | Allocation calls | Peak tracked heap MiB | Native RSS MiB |
+| :----- | -----: | ---------------: | --------------------: | -------------: |
+| broad  |  20000 |            46106 |                 0.178 |          5.191 |
+| broad  |  50000 |           112294 |                 0.238 |          5.281 |
+| broad  | 100000 |           223942 |                 0.311 |          5.531 |
+| deep   |  20000 |            41890 |                 3.174 |          8.469 |
+| deep   |  50000 |           106565 |                14.858 |         20.500 |
+| deep   | 100000 |           211212 |                34.006 |         40.191 |
+
+Deep traversal retains much more live heap despite similar allocation counts.
+At its 100k global peak, summing stack weights containing `ReadDir::JoinPath`
+accounts for about 24.3 MiB; stacks containing `StatEntries` and `reserve`
+account for about 9.2 MiB. Source inspection shows each recursive `Descend`
+retains its parent listing while `HandleChildren` descends further; those
+listings hold full path strings and entry vectors. This is evidence for examining
+listing/path lifetime and depth-dependent path length, not for increasing an
+arena reserve. It does not establish the CPU-time contribution or validate a
+lifetime optimization.
+
+The [allocation index](benchmarks/native-large-allocation-controls.json)
+retains package/control provenance, build and helper identities, all six cells,
+raw-profile hashes, independent RSS observations and archive checksums. Download
+the per-cell archives for original zstd Heaptrack bytes, complete allocation and
+global-peak stacks, analyzer output, command stdout/stderr and reproduction scripts:
+
+- [Broad 20k](benchmarks/native-large-allocation-profiles-broad-20000-jobs1-files.json.gz),
+  [50k](benchmarks/native-large-allocation-profiles-broad-50000-jobs1-files.json.gz),
+  [100k](benchmarks/native-large-allocation-profiles-broad-100000-jobs1-files.json.gz).
+- [Deep 20k](benchmarks/native-large-allocation-profiles-deep-20000-jobs1-files.json.gz),
+  [50k](benchmarks/native-large-allocation-profiles-deep-50000-jobs1-files.json.gz),
+  [100k](benchmarks/native-large-allocation-profiles-deep-100000-jobs1-files.json.gz).
+
+Deep 100k's complete raw stdout is split into three lossless gzip byte chunks:
+[part 1](benchmarks/native-large-allocation-deep-100000-stdout-1.gz),
+[part 2](benchmarks/native-large-allocation-deep-100000-stdout-2.gz), and
+[part 3](benchmarks/native-large-allocation-deep-100000-stdout-3.gz).
+The index records their byte offsets and compressed/decompressed hashes; the
+cell archive records the reassembled stream hash. Decompress and concatenate in
+ascending offset order. All allocation-event totals are recomputed, and the
+complete allocation/global-peak stack weights independently sum to those totals.
+Original native artifacts remain at `/tmp/xff-native-large-allocation-profile-session1`.
+
 The complete audit remains open. Final shared-executor timing must be collected
 after every build has finished, using the complete prepared grid. Repeated
-controls must cover content, eager metadata and slow storage. Native allocation
-profiles and the separate 20k/50k/100k single-worker slope investigation still
-need completion. Hosted macOS checks provide portability evidence for PR #991;
+controls must cover content, eager metadata and slow storage. The six enumeration
+allocation diagnostics do not complete the phase-level CPU/slope investigation
+or allocation controls for other workloads/platforms. Hosted macOS checks provide portability evidence for PR #991;
 they do not replace the specified native M5 Pro A/B and sampling controls for
 the shared-executor experiment.

@@ -1,0 +1,842 @@
+{
+  "status": "verified six-cell large allocation diagnostic; full audit remains open",
+  "summary": {
+    "status": "large allocation diagnostic, not performance acceptance",
+    "started_at": "2026-10-10T01:20:02.425823+00:00",
+    "revision": "4ea895f63106f05df7c90b629d20433ae1e03016",
+    "build": {
+      "sha256": "f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106",
+      "revision": "4ea895f63106f05df7c90b629d20433ae1e03016",
+      "command": [
+        "/usr/bin/bazelisk",
+        "--nosystem_rc",
+        "--nohome_rc",
+        "build",
+        "--config=clang_release",
+        "--action_env=LD_LIBRARY_PATH=/tmp/xff-icu70/usr/lib/x86_64-linux-gnu",
+        "//xff/cli:xff"
+      ],
+      "source": {
+        "revision": "4ea895f63106f05df7c90b629d20433ae1e03016",
+        "tree": "a56a093c3fdcb1af6c93fa4cb805cdad724b1707",
+        "clean": true
+      },
+      "artifact": "bazel-out/k8-opt/bin/xff/cli/xff",
+      "configuration": {
+        ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+        ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+        "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+        "MODULE.bazel.lock": "e3bef3a20dd7cbe58bd25db54c8ae44398da99034b8d376a92e1c926781e0437",
+        "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+      }
+    },
+    "binary_verification": {
+      "schema": 1,
+      "method": "sha256-retained-executable",
+      "sha256": "f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106",
+      "measurement_identity": "2f381eb5e5194ae5779dd285a48dccc88d3d2842a8472007fdca6ce85c8cb3fe",
+      "retention_reference": "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+      "verified_at": "2026-10-10T01:20:02.397586+00:00"
+    },
+    "complete_grid": [
+      10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000
+    ],
+    "allocation": {
+      "kind": "physical-cores",
+      "cpu_ids": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      "required": true
+    },
+    "actual_cpu_ids": [0],
+    "workers": 1,
+    "helper": {
+      "path": "/home/marcus/.cache/bazel/_bazel_marcus/903d84883bded70e9e5965dd7aeb82fa/execroot/_main/bazel-out/k8-opt/bin/tools/process_resources_native",
+      "sha256": "60bcb395bb3d0eccccd0a3d0cb2407538b1f96c45d5e1e156a0bd4522f93328e",
+      "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+      "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+    },
+    "profiler_bundle": {
+      "purpose": "allocation profiling prerequisite; no performance acceptance",
+      "prepared_at": "2026-10-10T01:15:57.698186+00:00",
+      "root": "/tmp/xff-heaptrack-audit-o8wn542g/root",
+      "system_packages_changed": false,
+      "packages": [
+        {
+          "package": "heaptrack",
+          "version": "1.5.0+dfsg1-6ubuntu1",
+          "metadata": "Package: heaptrack\nPriority: optional\nSection: universe/devel\nInstalled-Size: 370\nMaintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>\nArchitecture: amd64\nVersion: 1.5.0+dfsg1-6ubuntu1\nDepends: libboost-filesystem1.90.0 (>= 1.90.0), libboost-iostreams1.90.0 (>= 1.90.0), libboost-program-options1.90.0 (>= 1.90.0), libc6 (>= 2.34), libgcc-s1 (>= 3.3.1), libstdc++6 (>= 13.1), libheaptrack (= 1.5.0+dfsg1-6ubuntu1)\nFilename: pool/universe/h/heaptrack/heaptrack_1.5.0+dfsg1-6ubuntu1_amd64.deb\nSize: 122656\nMD5sum: 8b202949c78781e41fb420cdcdec521f\nSHA1: 7ce140a220835aed36b20e941b1e308b12406ea3\nSHA256: 16acd77342c449c41ea01feba00780a2438284e75660d29db6f005ff81aec0da\nSHA512: ae6c6914b8c15970901ca9555aa87b44018ab5ad63e9f6e2b78da76fd4639ed214b22877db5b1db544a7c5ebca32b04375f3caa5b8a35695ee8aeecc84ce4058\nHomepage: https://github.com/KDE/heaptrack\nDescription-en: heap memory profiler for Linux\n Heap memory usage profiler. It uses LD_PRELOAD to track all calls\n to the core memory allocation functions and logs these occurrences.\n Additionally, backtraces are obtained and logged. It can also\n generate a historigram of allocation sizes over the number of\n calls. Heaptrack measures the following:\n .\n * Heap memory consumption (like Massif).\n * Number of calls to allocation functions (like callgrind).\n * Total amount of memory allocated, ignoring deallocations.\n * Leaked memory (like memcheck).\n .\n Heaptrack is notable for its ability to attach to running processes,\n for consuming substantially less memory than Valgrind, and for not\n reducing an application's interactivity as much as Valgrind does.\n Heaptrack is useful for debugging memory leaks and memory ballooning.\n .\n The package contains the command line tools.\nDescription-md5: 28555fe7b14b1f0c2fa6813126159c7e\nOriginal-Maintainer: Debian Science Maintainers <debian-science-maintainers@lists.alioth.debian.org>\nOrigin: Ubuntu\nBugs: https://bugs.launchpad.net/ubuntu/+filebug\n\n",
+          "download_command": [
+            "apt-get",
+            "download",
+            "heaptrack=1.5.0+dfsg1-6ubuntu1"
+          ],
+          "path": "/tmp/xff-heaptrack-audit-o8wn542g/packages/heaptrack_1.5.0+dfsg1-6ubuntu1_amd64.deb",
+          "sha256": "16acd77342c449c41ea01feba00780a2438284e75660d29db6f005ff81aec0da"
+        },
+        {
+          "package": "libheaptrack",
+          "version": "1.5.0+dfsg1-6ubuntu1",
+          "metadata": "Package: libheaptrack\nSource: heaptrack\nPriority: optional\nSection: universe/devel\nInstalled-Size: 259\nMaintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>\nArchitecture: amd64\nVersion: 1.5.0+dfsg1-6ubuntu1\nDepends: libc6 (>= 2.38), libdw1t64 (>= 0.158), libgcc-s1 (>= 3.3.1), libstdc++6 (>= 14), libunwind8\nFilename: pool/universe/h/heaptrack/libheaptrack_1.5.0+dfsg1-6ubuntu1_amd64.deb\nSize: 83440\nMD5sum: 76f7b35b0e22485deae34ea9c6b99ebf\nSHA1: 405e5fc337e02d8227a7aa97ad2544e0eea8fe2c\nSHA256: e3c85fb87a9e71bb981fc81d6fc59dad316f8af41e713d42c6e990f48e68c28f\nSHA512: 393ab7a4cb84e7a4c858fb3636c314c9b933ddae50dfe3941baedda300d45cec91cc16da7b9bd40ca8bf8d23aea3908bd37d139829733f64037c9e5ca581a03b\nHomepage: https://github.com/KDE/heaptrack\nDescription-en: heap memory profiler for Linux\n Heap memory usage profiler. It uses LD_PRELOAD to track all calls\n to the core memory allocation functions and logs these occurrences.\n Additionally, backtraces are obtained and logged. It can also\n generate a historigram of allocation sizes over the number of\n calls. Heaptrack measures the following:\n .\n * Heap memory consumption (like Massif).\n * Number of calls to allocation functions (like callgrind).\n * Total amount of memory allocated, ignoring deallocations.\n * Leaked memory (like memcheck).\n .\n Heaptrack is notable for its ability to attach to running processes,\n for consuming substantially less memory than Valgrind, and for not\n reducing an application's interactivity as much as Valgrind does.\n Heaptrack is useful for debugging memory leaks and memory ballooning.\n .\n The package contains the shared libraries.\nDescription-md5: 4ec238360e0c529449af4ecf1315fe84\nOriginal-Maintainer: Debian Science Maintainers <debian-science-maintainers@lists.alioth.debian.org>\nOrigin: Ubuntu\nBugs: https://bugs.launchpad.net/ubuntu/+filebug\n\n",
+          "download_command": [
+            "apt-get",
+            "download",
+            "libheaptrack=1.5.0+dfsg1-6ubuntu1"
+          ],
+          "path": "/tmp/xff-heaptrack-audit-o8wn542g/packages/libheaptrack_1.5.0+dfsg1-6ubuntu1_amd64.deb",
+          "sha256": "e3c85fb87a9e71bb981fc81d6fc59dad316f8af41e713d42c6e990f48e68c28f"
+        },
+        {
+          "package": "libboost-filesystem1.90.0",
+          "version": "1.90.0-6ubuntu1",
+          "metadata": "Package: libboost-filesystem1.90.0\nSource: boost1.90\nPriority: optional\nSection: libs\nInstalled-Size: 2230\nMaintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>\nArchitecture: amd64\nVersion: 1.90.0-6ubuntu1\nDepends: libc6 (>= 2.38), libgcc-s1 (>= 3.3.1), libstdc++6 (>= 5.2)\nFilename: pool/main/b/boost1.90/libboost-filesystem1.90.0_1.90.0-6ubuntu1_amd64.deb\nSize: 282578\nMD5sum: 1fcd4b29e81bc84adeaf3221c1f9d185\nSHA1: acfa0305ec48f5836b1cab0b9aec81a16f637e8d\nSHA256: 3f78b71bf3bcaf465ee3010a7fd09e0374a1e3be040b4520a71466788f1fa93b\nSHA512: 937a4613099cc92daccda9a19c708a6f3f4d14da69721e5aee05570f45028d2e58833e45d07cbda0445791f6660c5bd31484ab86a131d710f50b70da945d9e0a\nHomepage: http://boost.org/libs/filesystem/\nDescription-en: filesystem operations (portable paths, iteration over directories, etc) in C++\n This package forms part of the Boost C++ Libraries collection.\n .\n The Boost Filesystem Library provides portable facilities to query and\n manipulate paths, files, and directories.  The goal is to\n facilitate portable script-like operations from within C++ programs.\nDescription-md5: 2491b00e1306a35046eca365dc71ba1d\nOriginal-Maintainer: Debian Boost Team <team+boost@tracker.debian.org>\nMulti-Arch: same\nOrigin: Ubuntu\nBugs: https://bugs.launchpad.net/ubuntu/+filebug\nTask: kubuntu-desktop, kubuntu-full, ubuntustudio-desktop, ubuntustudio-desktop-core, edubuntu-desktop-gnome, edubuntu-desktop-gnome-raspi\n\n",
+          "download_command": [
+            "apt-get",
+            "download",
+            "libboost-filesystem1.90.0=1.90.0-6ubuntu1"
+          ],
+          "path": "/tmp/xff-heaptrack-audit-o8wn542g/packages/libboost-filesystem1.90.0_1.90.0-6ubuntu1_amd64.deb",
+          "sha256": "3f78b71bf3bcaf465ee3010a7fd09e0374a1e3be040b4520a71466788f1fa93b"
+        },
+        {
+          "package": "libboost-iostreams1.90.0",
+          "version": "1.90.0-6ubuntu1",
+          "metadata": "Package: libboost-iostreams1.90.0\nSource: boost1.90\nPriority: optional\nSection: libs\nInstalled-Size: 2166\nMaintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>\nArchitecture: amd64\nVersion: 1.90.0-6ubuntu1\nDepends: libbz2-1.0, libc6 (>= 2.34), libgcc-s1 (>= 3.3.1), liblzma5 (>= 5.2.2), libstdc++6 (>= 5.2), libzstd1 (>= 1.5.5), zlib1g (>= 1:1.1.4)\nFilename: pool/main/b/boost1.90/libboost-iostreams1.90.0_1.90.0-6ubuntu1_amd64.deb\nSize: 252674\nMD5sum: 779f0c83eb34f874b65ca2b422e32b0b\nSHA1: 5c9db7d0e22ce6012ff3bf51fa55aa2182cdcc01\nSHA256: f2b4576e6b61d636874c09e6e84bcc3632fdde9eef808ca9eff5d5904dee2948\nSHA512: 61b6498d1caf4644ae0fd141dc9794bbd1ff3fa77f8b88326a93a3a367d27b1e6c6e0f1255509b1e0ebe36a08c71f26b8e0c909623e9f35cfa01c732b09988a5\nHomepage: http://www.boost.org/libs/iostreams/\nDescription-en: Boost.Iostreams Library\n This package forms part of the Boost C++ Libraries collection.\n .\n Boost.Iostreams are a collection of concepts and a set of templates\n which turn models of these concepts into C++ standard library streams\n and stream buffers.\nDescription-md5: 3c388d3a296c3c5ceb93d6073902d96e\nOriginal-Maintainer: Debian Boost Team <team+boost@tracker.debian.org>\nMulti-Arch: same\nOrigin: Ubuntu\nBugs: https://bugs.launchpad.net/ubuntu/+filebug\nTask: ubuntu-desktop, ubuntu-desktop-default-languages, ubuntu-desktop-default-languages, ubuntu-desktop-default-languages, ubuntu-desktop-default-languages, ubuntu-desktop-default-languages, ubuntu-desktop-default-languages, ubuntu-desktop-default-languages, ubuntu-desktop-default-languages, kubuntu-desktop, kubuntu-full, xubuntu-desktop, lubuntu-desktop-minimal, lubuntu-desktop, ubuntustudio-desktop, ubuntukylin-desktop, ubuntukylin-desktop, ubuntukylin-desktop-minimal, ubuntu-mate-core, ubuntu-mate-desktop, ubuntu-budgie-desktop, ubuntu-budgie-desktop-default-languages, ubuntu-budgie-desktop-raspi, ubuntu-unity-desktop, edubuntu-desktop-gnome, edubuntu-desktop-gnome-raspi, ubuntucinnamon-desktop-minimal, ubuntucinnamon-desktop, ubuntucinnamon-desktop, ubuntucinnamon-desktop-raspi\n\n",
+          "download_command": [
+            "apt-get",
+            "download",
+            "libboost-iostreams1.90.0=1.90.0-6ubuntu1"
+          ],
+          "path": "/tmp/xff-heaptrack-audit-o8wn542g/packages/libboost-iostreams1.90.0_1.90.0-6ubuntu1_amd64.deb",
+          "sha256": "f2b4576e6b61d636874c09e6e84bcc3632fdde9eef808ca9eff5d5904dee2948"
+        },
+        {
+          "package": "libboost-program-options1.90.0",
+          "version": "1.90.0-6ubuntu1",
+          "metadata": "Package: libboost-program-options1.90.0\nSource: boost1.90\nPriority: optional\nSection: libs\nInstalled-Size: 2342\nMaintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>\nArchitecture: amd64\nVersion: 1.90.0-6ubuntu1\nDepends: libc6 (>= 2.14), libgcc-s1 (>= 3.3.1), libstdc++6 (>= 13.1)\nFilename: pool/main/b/boost1.90/libboost-program-options1.90.0_1.90.0-6ubuntu1_amd64.deb\nSize: 315412\nMD5sum: 3b2012b925c36e6ecc425fc64bb45208\nSHA1: f9419a4a5638a8e82a5515a5747d7241aa87ae56\nSHA256: 552699d9211d5e9bc6c2ff97c412a901b431ba61eb7d93c8c139c3d20f45104e\nSHA512: 20b4e187af1f4aa2442f00dbc0097e7cdddca0127b02801b884412786798e2cd21deeff34c510979cc4b2c481f0194ff26d68118e9344a27bac2701e293add39\nHomepage: http://www.boost.org/libs/program_options/\nDescription-en: program options library for C++\n This package forms part of the Boost C++ Libraries collection.\n .\n Library to let program developers obtain program options, that is\n (name, value) pairs from the user, via conventional methods such as\n command line and config file.\nDescription-md5: 9ab9e15257fa51221c16c7f0a9e40597\nOriginal-Maintainer: Debian Boost Team <team+boost@tracker.debian.org>\nMulti-Arch: same\nOrigin: Ubuntu\nBugs: https://bugs.launchpad.net/ubuntu/+filebug\nTask: kubuntu-desktop, kubuntu-full, ubuntustudio-desktop, ubuntustudio-desktop-core\n\n",
+          "download_command": [
+            "apt-get",
+            "download",
+            "libboost-program-options1.90.0=1.90.0-6ubuntu1"
+          ],
+          "path": "/tmp/xff-heaptrack-audit-o8wn542g/packages/libboost-program-options1.90.0_1.90.0-6ubuntu1_amd64.deb",
+          "sha256": "552699d9211d5e9bc6c2ff97c412a901b431ba61eb7d93c8c139c3d20f45104e"
+        }
+      ],
+      "script_sha256": "c9d7fb63d750738d5fe56994705108217f5044bd3112d4053f0bd95b46850ba8"
+    },
+    "profiler_control": {
+      "status": "verified allocation-interposition prerequisite, not xff performance acceptance",
+      "verified_at": "2026-10-10T01:17:55.092781+00:00",
+      "command": [
+        "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/bin/heaptrack",
+        "--record-only",
+        "--output",
+        "/tmp/xff-heaptrack-audit-o8wn542g/allocation-control-verified",
+        "/tmp/xff-heaptrack-audit-o8wn542g/allocation-control"
+      ],
+      "analysis_command": [
+        "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/bin/heaptrack_print",
+        "--file",
+        "/tmp/xff-heaptrack-audit-o8wn542g/allocation-control-verified.zst",
+        "--merge-backtraces=0",
+        "--print-flamegraph",
+        "/tmp/xff-heaptrack-audit-o8wn542g/allocation-control-verified.allocations.stacks",
+        "--flamegraph-cost-type",
+        "allocations"
+      ],
+      "environment_overrides": {
+        "LD_LIBRARY_PATH": "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/lib/x86_64-linux-gnu"
+      },
+      "correctness_stdout": "allocation-control-ok",
+      "allocation_calls": 5,
+      "controlled_allocation_calls": 3,
+      "tracked_peak_heap_bytes": 6365184,
+      "controlled_peak_heap_bytes": 6291456,
+      "known_runtime_startup_bytes": 73728,
+      "allocation_sizes": [73728, 1048576, 2097152, 4194304, 4096],
+      "remaining_stdout_buffer_bytes": 4096,
+      "source_sha256": "1a239e55666c88ba40166a029463e144c98cd10b94f3b5ccb1fcbd1b53b50c2d",
+      "binary_sha256": "d6a6c52c5e8eb9b144abd2899dd9c5d9d4725401c311b241506190893418af8e",
+      "profile": "/tmp/xff-heaptrack-audit-o8wn542g/allocation-control-verified.zst",
+      "profile_sha256": "4d26c2a91738b72279a9b5d6b0176ba5a5772058ca2eb9d47b107154b37a578d",
+      "cautions": [
+        "Instrumented wall times are not accepted benchmark timings.",
+        "Tracked requested heap bytes differ from RSS and exclude non-intercepted allocation mechanisms.",
+        "Short-process periodic RSS/Massif snapshots can miss the actual allocation peak; use event accounting.",
+        "Xff 20k/50k/100k allocation and slope profiles have not yet been collected."
+      ]
+    },
+    "driver_sha256": "eb9e27b292a5da92669519cbcac653716518b8912dfdfde2ee8f766c0d0e8b52",
+    "driver_sources": {
+      "/tmp/xff-native-startup-profiles.py": "fd0fbd1ee46b4bf5ec51969052c4a86202525d7d93d31cfb91964246464b3e77",
+      "/tmp/xff-shared-run-executor/tools/benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+      "/tmp/xff-shared-run-executor/tools/benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+      "/tmp/xff-shared-run-executor/tools/benchmark_compare.py": "5a55fbc8d0955e701fd4314441e345a2edd49b9eb4f7f3d3963055e6380f233b",
+      "/tmp/xff-shared-run-executor/tools/benchmark_provenance.py": "5cfe87906f4ead07ca8cf00857ed751393cd8d4c8ce0f672bae7ad32f51c96cc",
+      "/tmp/xff-native-resource-accounting/tools/process_resources.py": "8a39146449514c519921ee153f1301621555694b3cf5a64b16edcd6538f5ac16"
+    },
+    "scope": "enumeration only; 20k/50k/100k, both full-grid v2 layouts; one profile and native RSS control per cell",
+    "cautions": [
+      "No instrumented elapsed time is acceptance evidence.",
+      "Tracked heap excludes non-interposed allocation mechanisms and is not RSS.",
+      "Peak RSS is obtained independently without heaptrack; one observation is diagnostic.",
+      "Content, metadata, slow-storage and native macOS allocation controls remain open."
+    ],
+    "fixtures": {
+      "broad": {
+        "root": "/dev/shm/xff-large-heap-mmlv901_/broad",
+        "tree_sha256": "92a3036334b0182ecbb49f691f859a89c86e3f082a6362e5da210693ecdc6acf",
+        "definition": {
+          "name": "broad",
+          "revision": 2,
+          "fixture_revision": 3,
+          "topology": "shallow fan-out",
+          "files_per_directory": 64,
+          "anchor_prefix": "anchor-",
+          "counts": [
+            10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000,
+            100000
+          ],
+          "anchor_policy": "nested ascending exact-count roots",
+          "special_entries": "one .gitignore and two symlinks in the smallest anchor"
+        },
+        "storage": "verified tmpfs",
+        "initial_verified": true,
+        "final_verified": true
+      },
+      "deep": {
+        "root": "/dev/shm/xff-large-heap-mmlv901_/deep",
+        "tree_sha256": "b068114a81a0192d86f848afe5948606ef435f1cf800d5eb982f89695e3ac83e",
+        "definition": {
+          "name": "deep",
+          "revision": 2,
+          "fixture_revision": 3,
+          "topology": "narrow chained groups",
+          "files_per_directory": 512,
+          "anchor_prefix": "anchor-",
+          "counts": [
+            10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000,
+            100000
+          ],
+          "anchor_policy": "nested ascending exact-count roots",
+          "special_entries": "one .gitignore and two symlinks in the smallest anchor"
+        },
+        "storage": "verified tmpfs",
+        "initial_verified": true,
+        "final_verified": true
+      }
+    },
+    "cases": [
+      {
+        "label": "broad-20000-jobs1-files",
+        "dataset": "broad",
+        "files": 20000,
+        "workers": 1,
+        "task": "files",
+        "command": [
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "native_command": [
+          "taskset",
+          "-c",
+          "0",
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "heap_command": [
+          "taskset",
+          "-c",
+          "0",
+          "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/bin/heaptrack",
+          "--record-only",
+          "--output",
+          "/tmp/xff-native-large-allocation-profile-session1/broad-20000-jobs1-files/heaptrack",
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "analysis_command": [
+          "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/bin/heaptrack_print",
+          "--file",
+          "/tmp/xff-native-large-allocation-profile-session1/broad-20000-jobs1-files/heaptrack.zst",
+          "--merge-backtraces=0",
+          "--peak-limit=30",
+          "--sub-peak-limit=8"
+        ],
+        "cwd": "/dev/shm/xff-large-heap-mmlv901_/broad/anchor-100000/anchor-50000/anchor-20000",
+        "anchor_sha256": "4af5b9398e25934ff8efa18903f03fda48bef41592320bdc38b1c1b2a6eb5a64",
+        "expected_sha256": "60e992f27972b47895db5df165a2d7c7806cabad3556b05c6776bb18d38104a6",
+        "expected_count": 20000,
+        "output_sha256": "74d1291817226d16cb720ce0d5d6524defaacb657a94b54c30c65b3c6d1136dd",
+        "profile": "/tmp/xff-native-large-allocation-profile-session1/broad-20000-jobs1-files/heaptrack.zst",
+        "profile_sha256": "c82fc66ad735a4262a74d7bb0ce448e9d21fac6a0394ed267f52d4d968f5dff5",
+        "native_resources_sha256": "d7a35165b8b3223c36f224e09d1fcb14a00534d926395a9598ed6656d4c936c0",
+        "native_peak_rss_bytes": 5443584,
+        "allocations": {
+          "allocation_calls": 46106,
+          "total_requested_bytes": 20219973,
+          "peak_tracked_heap_bytes": 186771,
+          "remaining_tracked_heap_bytes": 16043,
+          "remaining_allocations": 86
+        },
+        "correctness_verified": true
+      },
+      {
+        "label": "broad-50000-jobs1-files",
+        "dataset": "broad",
+        "files": 50000,
+        "workers": 1,
+        "task": "files",
+        "command": [
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "native_command": [
+          "taskset",
+          "-c",
+          "0",
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "heap_command": [
+          "taskset",
+          "-c",
+          "0",
+          "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/bin/heaptrack",
+          "--record-only",
+          "--output",
+          "/tmp/xff-native-large-allocation-profile-session1/broad-50000-jobs1-files/heaptrack",
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "analysis_command": [
+          "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/bin/heaptrack_print",
+          "--file",
+          "/tmp/xff-native-large-allocation-profile-session1/broad-50000-jobs1-files/heaptrack.zst",
+          "--merge-backtraces=0",
+          "--peak-limit=30",
+          "--sub-peak-limit=8"
+        ],
+        "cwd": "/dev/shm/xff-large-heap-mmlv901_/broad/anchor-100000/anchor-50000",
+        "anchor_sha256": "a36187f596d499ceef4a2f7eca3041d964a70bd7f3ca822609b60b3995338636",
+        "expected_sha256": "6f485ee6a10dec0df3fa5abb0b260c3cb48d9bcfbd15c7b371da19c0be1b626e",
+        "expected_count": 50000,
+        "output_sha256": "a33628d8b7d263539f5f28553f87c378feac852a97e72993a5047442c10407c0",
+        "profile": "/tmp/xff-native-large-allocation-profile-session1/broad-50000-jobs1-files/heaptrack.zst",
+        "profile_sha256": "b8eb7985e99d0f49735f995f16d16a016dede86c4e937c1624db0786b26fa761",
+        "native_resources_sha256": "b09684c0a11716cbef5c9e5b7ffcc3e8e1fae412c62ed7cd605c419afc19f4a3",
+        "native_peak_rss_bytes": 5537792,
+        "allocations": {
+          "allocation_calls": 112294,
+          "total_requested_bytes": 48545501,
+          "peak_tracked_heap_bytes": 249251,
+          "remaining_tracked_heap_bytes": 16043,
+          "remaining_allocations": 86
+        },
+        "correctness_verified": true
+      },
+      {
+        "label": "broad-100000-jobs1-files",
+        "dataset": "broad",
+        "files": 100000,
+        "workers": 1,
+        "task": "files",
+        "command": [
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "native_command": [
+          "taskset",
+          "-c",
+          "0",
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "heap_command": [
+          "taskset",
+          "-c",
+          "0",
+          "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/bin/heaptrack",
+          "--record-only",
+          "--output",
+          "/tmp/xff-native-large-allocation-profile-session1/broad-100000-jobs1-files/heaptrack",
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "analysis_command": [
+          "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/bin/heaptrack_print",
+          "--file",
+          "/tmp/xff-native-large-allocation-profile-session1/broad-100000-jobs1-files/heaptrack.zst",
+          "--merge-backtraces=0",
+          "--peak-limit=30",
+          "--sub-peak-limit=8"
+        ],
+        "cwd": "/dev/shm/xff-large-heap-mmlv901_/broad/anchor-100000",
+        "anchor_sha256": "e50f2d1ecfadf23c81f155c001fbb43d3c5f22389c9af63ae5402f768227365f",
+        "expected_sha256": "8e517c9cdc1c6dac93a94497d779e30cc8d05dfedb410f3156cebae5b1fb7572",
+        "expected_count": 100000,
+        "output_sha256": "ef33c1db88a657d138688478ceb8190f06c4608172a1b7f6b40907457b199b6c",
+        "profile": "/tmp/xff-native-large-allocation-profile-session1/broad-100000-jobs1-files/heaptrack.zst",
+        "profile_sha256": "7bf5ccaceb5cafc45ef3b4ee675dd66eefde7baf34fe1fede9d1c5b1777c9601",
+        "native_resources_sha256": "f1d2c8cbeece3019014c808b3300d4ed0c1318636c170f73510b05f47982772c",
+        "native_peak_rss_bytes": 5799936,
+        "allocations": {
+          "allocation_calls": 223942,
+          "total_requested_bytes": 96158269,
+          "peak_tracked_heap_bytes": 326315,
+          "remaining_tracked_heap_bytes": 16043,
+          "remaining_allocations": 86
+        },
+        "correctness_verified": true
+      },
+      {
+        "label": "deep-20000-jobs1-files",
+        "dataset": "deep",
+        "files": 20000,
+        "workers": 1,
+        "task": "files",
+        "command": [
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "native_command": [
+          "taskset",
+          "-c",
+          "0",
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "heap_command": [
+          "taskset",
+          "-c",
+          "0",
+          "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/bin/heaptrack",
+          "--record-only",
+          "--output",
+          "/tmp/xff-native-large-allocation-profile-session1/deep-20000-jobs1-files/heaptrack",
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "analysis_command": [
+          "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/bin/heaptrack_print",
+          "--file",
+          "/tmp/xff-native-large-allocation-profile-session1/deep-20000-jobs1-files/heaptrack.zst",
+          "--merge-backtraces=0",
+          "--peak-limit=30",
+          "--sub-peak-limit=8"
+        ],
+        "cwd": "/dev/shm/xff-large-heap-mmlv901_/deep/anchor-100000/anchor-50000/anchor-20000",
+        "anchor_sha256": "7dfe78812e61fb287bd83317434581888c523dad6728a1f9663b5b01d8ee4f18",
+        "expected_sha256": "78e5f22c540cd84820dae932fcda1449c38d0307ea47a6fc2cb3425e551f033f",
+        "expected_count": 20000,
+        "output_sha256": "e7af2163393ab9ee3a25dedadb5b628e5487faad336847f68d3b5ecd45858d18",
+        "profile": "/tmp/xff-native-large-allocation-profile-session1/deep-20000-jobs1-files/heaptrack.zst",
+        "profile_sha256": "530ec42809c9cebd3bac73a4bb902f80c551aa68d6ecf3152e3d5a69765582bf",
+        "native_resources_sha256": "96bfdfafbad7099f0b1f7501aca0f92c9082ed6c7fe48c70a209d3f4d82d9e66",
+        "native_peak_rss_bytes": 8880128,
+        "allocations": {
+          "allocation_calls": 41890,
+          "total_requested_bytes": 14824797,
+          "peak_tracked_heap_bytes": 3328603,
+          "remaining_tracked_heap_bytes": 16043,
+          "remaining_allocations": 86
+        },
+        "correctness_verified": true
+      },
+      {
+        "label": "deep-50000-jobs1-files",
+        "dataset": "deep",
+        "files": 50000,
+        "workers": 1,
+        "task": "files",
+        "command": [
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "native_command": [
+          "taskset",
+          "-c",
+          "0",
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "heap_command": [
+          "taskset",
+          "-c",
+          "0",
+          "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/bin/heaptrack",
+          "--record-only",
+          "--output",
+          "/tmp/xff-native-large-allocation-profile-session1/deep-50000-jobs1-files/heaptrack",
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "analysis_command": [
+          "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/bin/heaptrack_print",
+          "--file",
+          "/tmp/xff-native-large-allocation-profile-session1/deep-50000-jobs1-files/heaptrack.zst",
+          "--merge-backtraces=0",
+          "--peak-limit=30",
+          "--sub-peak-limit=8"
+        ],
+        "cwd": "/dev/shm/xff-large-heap-mmlv901_/deep/anchor-100000/anchor-50000",
+        "anchor_sha256": "eb9860bebd0a48e0f9d2a1e2fc434dc9e15367b20287d2fb35553e9d9761d5de",
+        "expected_sha256": "7646f70f0012f70f1d45bd70a1c0a48313d57516d3d204dc581275363cbf97de",
+        "expected_count": 50000,
+        "output_sha256": "5fd5fed65ab6b765d1e879018e97c69565c6707d8b9e61fbf45c697670487de2",
+        "profile": "/tmp/xff-native-large-allocation-profile-session1/deep-50000-jobs1-files/heaptrack.zst",
+        "profile_sha256": "e26a88654f3b12565449c2092a9156c3486a864e5b1ac0e3230e1602e4b6e621",
+        "native_resources_sha256": "85f204743dfde702a0bac1ba1327fbf50b74d233a10aa336850f07146202efa6",
+        "native_peak_rss_bytes": 21495808,
+        "allocations": {
+          "allocation_calls": 106565,
+          "total_requested_bytes": 51665861,
+          "peak_tracked_heap_bytes": 15580035,
+          "remaining_tracked_heap_bytes": 16043,
+          "remaining_allocations": 86
+        },
+        "correctness_verified": true
+      },
+      {
+        "label": "deep-100000-jobs1-files",
+        "dataset": "deep",
+        "files": 100000,
+        "workers": 1,
+        "task": "files",
+        "command": [
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "native_command": [
+          "taskset",
+          "-c",
+          "0",
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "heap_command": [
+          "taskset",
+          "-c",
+          "0",
+          "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/bin/heaptrack",
+          "--record-only",
+          "--output",
+          "/tmp/xff-native-large-allocation-profile-session1/deep-100000-jobs1-files/heaptrack",
+          "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+          "--no-config",
+          "--no-pager",
+          "--color=never",
+          "--jobs=1",
+          "--sort=none",
+          "--exact",
+          "--case=sensitive",
+          "--gitignore=off",
+          "--hidden",
+          ".",
+          "-type",
+          "f",
+          "-print0"
+        ],
+        "analysis_command": [
+          "/tmp/xff-heaptrack-audit-o8wn542g/root/usr/bin/heaptrack_print",
+          "--file",
+          "/tmp/xff-native-large-allocation-profile-session1/deep-100000-jobs1-files/heaptrack.zst",
+          "--merge-backtraces=0",
+          "--peak-limit=30",
+          "--sub-peak-limit=8"
+        ],
+        "cwd": "/dev/shm/xff-large-heap-mmlv901_/deep/anchor-100000",
+        "anchor_sha256": "9731240885346bcb0713350db55c1eda635a814bd55e23a8fead2a0a2697b450",
+        "expected_sha256": "66d17f76a793e2bbfa0637ad5e25f3598417adfc19e6e0d358afdb3c5e12f1b9",
+        "expected_count": 100000,
+        "output_sha256": "37a2b0ca8f9415ef8b2820b6b8c3df074878529f5d87835138f9a94c939e3deb",
+        "profile": "/tmp/xff-native-large-allocation-profile-session1/deep-100000-jobs1-files/heaptrack.zst",
+        "profile_sha256": "9b0e9779a40fdfb28404dacce524cce613fbb3a73a867d46d7a896713eb63d47",
+        "native_resources_sha256": "9d084bf95acf3df9f1e688ff106830504e7acb6af506178ffed00079cae5455f",
+        "native_peak_rss_bytes": 42143744,
+        "allocations": {
+          "allocation_calls": 211212,
+          "total_requested_bytes": 134006661,
+          "peak_tracked_heap_bytes": 35657835,
+          "remaining_tracked_heap_bytes": 16043,
+          "remaining_allocations": 86
+        },
+        "correctness_verified": true
+      }
+    ],
+    "completed_at": "2026-10-10T01:20:55.133987+00:00"
+  },
+  "raw_archives": [
+    {
+      "name": "native-large-allocation-profiles-broad-20000-jobs1-files.json.gz",
+      "bytes": 169124,
+      "sha256": "c3e1e36122df54087b7a82824d3fa323c89f352b02253342be1885e1c9bc4043",
+      "raw_json_sha256": "64a82ef1f06fc5753cf333e9caaeffe93853ee8dcf53764d836b347cbd8a0d53"
+    },
+    {
+      "name": "native-large-allocation-profiles-broad-50000-jobs1-files.json.gz",
+      "bytes": 242771,
+      "sha256": "6608ddf0d0c666cbd03513b789128f8faf334874a024a5125d03c2f3b75284d6",
+      "raw_json_sha256": "243b8d751dbfdf8be17909a68460f54265b54c21e94bdaa9a7f1b80da774d636"
+    },
+    {
+      "name": "native-large-allocation-profiles-broad-100000-jobs1-files.json.gz",
+      "bytes": 367135,
+      "sha256": "e0e67e4d8f4b6ebf021ceccbea2b850dc7b6d52c52606cb15d1ea653a387b44d",
+      "raw_json_sha256": "a0946611e878451c171c525c8fa742e08b8b2d75f1e2743f4542cf315c372a2e"
+    },
+    {
+      "name": "native-large-allocation-profiles-deep-20000-jobs1-files.json.gz",
+      "bytes": 185836,
+      "sha256": "a51891a1f826f85d5a6f6792f54cd9504eee3f082ad343dedeb5e1955451a781",
+      "raw_json_sha256": "6effadad653f95b83050750638d6fb4f44fa55206cdb740f8aa516dacf454827"
+    },
+    {
+      "name": "native-large-allocation-profiles-deep-50000-jobs1-files.json.gz",
+      "bytes": 329532,
+      "sha256": "9ce52501c22f7eac7e210bb76071fd97218efc2e634ca6614e10617fb1f7b80a",
+      "raw_json_sha256": "5abec0a73ebe82917ac3f02ae20b191a9ad25193b603297e4764177cbebd464d"
+    },
+    {
+      "name": "native-large-allocation-deep-100000-stdout-1.gz",
+      "offset": 0,
+      "raw_bytes": 12582912,
+      "bytes": 150690,
+      "sha256": "e07df55f11cc1f8e2dd33bcec04211a1f74d1c2ffc2808ed4a2ae4b0052efa30",
+      "raw_sha256": "68674804b98a5e5181957aad27aa78afb54f32531b39643692dfdec4ef57231f"
+    },
+    {
+      "name": "native-large-allocation-deep-100000-stdout-2.gz",
+      "offset": 12582912,
+      "raw_bytes": 12582912,
+      "bytes": 103220,
+      "sha256": "dbb77ea125a86211400d42535cfb171056cf44822b366680663378f305d7e251",
+      "raw_sha256": "a79ef7d39b7e2bae01a48843406f9741a9cbfade656893d0229c5e60404f129d"
+    },
+    {
+      "name": "native-large-allocation-deep-100000-stdout-3.gz",
+      "offset": 25165824,
+      "raw_bytes": 11836598,
+      "bytes": 185295,
+      "sha256": "f3d727cf0bcae525df70b4f2680360b0977ea6b0e59cf45a6f217d327f0fc808",
+      "raw_sha256": "62d800c452917be0c75e44a861094b8e839a3ec7bad0f20f3eb866249b8dc0c0"
+    },
+    {
+      "name": "native-large-allocation-profiles-deep-100000-jobs1-files.json.gz",
+      "bytes": 149394,
+      "sha256": "b825a6e7d7f7e31d66c62eaece89db9bbde835f12a2986a72f32f2034b73ea85",
+      "raw_json_sha256": "ecbdd6db3052e438db8fa82cabce914105d7779fdf88270cd1f7c5a5a158defe"
+    }
+  ],
+  "verifications": [
+    "original raw profile hashes",
+    "native RSS control hashes",
+    "allocation events recomputed",
+    "all allocation flamegraph weights",
+    "all global-peak flamegraph weights"
+  ],
+  "export_driver_sha256": "62ef44894c1e7366b287b73547f4e0cb53689d60102e0c01f283c46cda3bc958"
+}
