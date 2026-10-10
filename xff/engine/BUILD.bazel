@@ -44,6 +44,45 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "executor_measurement_cc",
+    srcs = ["executor_measurement.cc"],
+    hdrs = ["executor_measurement.h"],
+    deps = [
+        ":run_executor_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_test(
+    name = "executor_measurement_test",
+    size = "small",
+    srcs = ["executor_measurement_test.cc"],
+    deps = [
+        ":executor_measurement_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+# Fresh-process lifecycle / warmed-dispatch diagnostic, not runtime admission.
+cc_binary(
+    name = "executor_benchmark",
+    srcs = ["executor_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        ":executor_measurement_cc",
+        "@abseil-cpp//absl/strings",
+        "@nlohmann_json//:json",
+    ],
+)
+
 # Directory traversal over a vfs::FileSystem: a worker pool reads (readdir+lstat)
 # in parallel while a single coordinator thread visits in --sort order.
 cc_library(
