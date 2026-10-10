@@ -227,6 +227,36 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn("platform: linux\n            os: ubuntu-latest", main)
         self.assertIn("platform: macos\n            os: macos-latest", main)
 
+    def test_ci_shards_receive_the_prebuilt_native_resource_launcher(self):
+        for workflow, job in (('.github/workflows/main.yml', 'benchmark-build'),
+                              ('.github/workflows/benchmarks.yml', 'build')):
+            with self.subTest(workflow=workflow):
+                source = repository_file(workflow).read_text().split('\n  ' + job + ':', 1)[1]
+                source = re.split(r'\n  [a-z][a-z-]*:', source, maxsplit=1)[0]
+                self.assertIn('bazel cquery //tools:process_resources_native --config=clang_release', source)
+                self.assertIn('cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"', source)
+                self.assertIn('tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" '
+                              'benchmark-head benchmark-resource-launcher', source)
+                # The paired main driver already builds the helper through its data dependency.
+                self.assertIn('//tools:benchmark_resources' if job == 'build'
+                              else '//tools:process_resources_native', source)
+        action = repository_file('.github/actions/benchmark-measure/action.yml').read_text()
+        self.assertIn('test -x "${RUNNER_TEMP}/benchmark-resource-launcher"', action)
+        self.assertIn('--resource-launcher="${RUNNER_TEMP}/benchmark-resource-launcher"', action)
+        self.assertNotIn('bazel build', action)
+        self.assertNotIn('bazel run', action)
+
+    def test_ci_backfill_builds_native_launcher_before_freezing_and_measuring(self):
+        source = repository_file('.github/workflows/benchmark_backfill.yml').read_text()
+        build = source.index('bazel build //tools:process_resources_native --config=clang_release')
+        query = source.index('bazel cquery //tools:process_resources_native --config=clang_release')
+        copy = source.index('cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"')
+        run = source.index('python3 tools/benchmark_campaign.py run')
+        self.assertLess(build, query)
+        self.assertLess(query, copy)
+        self.assertLess(copy, run)
+        self.assertIn('--resource-launcher="${RUNNER_TEMP}/benchmark-resource-launcher"', source[run:])
+
     def test_pr_and_main_aggregation_attach_only_earlier_main_baselines(self):
         for workflow, job in (('.github/workflows/benchmarks.yml', 'aggregate'),
                               ('.github/workflows/main.yml', 'benchmark-aggregate')):

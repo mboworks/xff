@@ -1,0 +1,346 @@
+{
+  "status": "RSS diagnostic controls; wall times are not performance acceptance evidence",
+  "resource_launcher": {
+    "path": "/home/marcus/.cache/bazel/_bazel_marcus/903d84883bded70e9e5965dd7aeb82fa/execroot/_main/bazel-out/k8-opt/bin/tools/process_resources_native",
+    "sha256": "60bcb395bb3d0eccccd0a3d0cb2407538b1f96c45d5e1e156a0bd4522f93328e",
+    "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+    "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+  },
+  "tools": {
+    "xff": {
+      "status": "available",
+      "path": "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+      "version": "xff 0.0.0",
+      "sha256": "f97833a8eb45f49b596665b47911c2df9a2558619778512fd31d1b38f2e56106"
+    },
+    "find": {
+      "status": "available",
+      "path": "/usr/bin/find",
+      "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+      "sha256": "efe4843f166525b02f328f0c456a884d6a597f32d2c78cd615b6be0b64279bcf"
+    },
+    "rg": {
+      "status": "available",
+      "path": "/home/marcus/.codex/packages/standalone/releases/0.162.0-x86_64-unknown-linux-musl/codex-path/rg",
+      "version": "ripgrep 15.2.0 (rev e89fff89ac)\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.45 is available (JIT is available)",
+      "sha256": "e62198eb19b136b88c330af83647b5a962cb99b6b1f066758568f12de1974849"
+    },
+    "true": {
+      "status": "available",
+      "path": "/usr/bin/gnutrue",
+      "version": "true (GNU coreutils) 9.7\nPackaged by Ubuntu (9.7-3ubuntu2.1)\nCopyright (C) 2025 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Jim Meyering.",
+      "sha256": "913a39cd38f353497086bcf317b12f91f93c23b51869cea763b8340b4f84cfd3"
+    }
+  },
+  "fixture_files": 20,
+  "expected_paths": [
+    "./.gitignore",
+    "./.hidden_00000.log",
+    "./.hidden_00011.txt",
+    "./item_00001.txt",
+    "./item_00002.log",
+    "./item_00003.txt",
+    "./item_00004.log",
+    "./item_00005.txt",
+    "./item_00006.log",
+    "./item_00007.txt",
+    "./item_00008.log",
+    "./item_00009.txt",
+    "./item_00010.log",
+    "./item_00012.log",
+    "./item_00013.txt",
+    "./item_00014.log",
+    "./item_00015.txt",
+    "./item_00016.log",
+    "./item_00017.txt",
+    "./item_00018.log"
+  ],
+  "expected_sha256": "a08e011d2c445f401a7e3849d42c2d38d703efb9b3286892a44f26cb67ec49d8",
+  "samples": [
+    {
+      "tool": "xff",
+      "repetition": 1,
+      "command": [
+        "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+        "--no-config",
+        "--no-pager",
+        "--color=never",
+        "--jobs=1",
+        "--sort=none",
+        "--exact",
+        "--case=sensitive",
+        "--gitignore=off",
+        "--hidden",
+        ".",
+        "-type",
+        "f",
+        "-print0"
+      ],
+      "native_peak_bytes": 5292032,
+      "python_peak_bytes": 25214976,
+      "time_peak_bytes": 5386240
+    },
+    {
+      "tool": "xff",
+      "repetition": 2,
+      "command": [
+        "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+        "--no-config",
+        "--no-pager",
+        "--color=never",
+        "--jobs=1",
+        "--sort=none",
+        "--exact",
+        "--case=sensitive",
+        "--gitignore=off",
+        "--hidden",
+        ".",
+        "-type",
+        "f",
+        "-print0"
+      ],
+      "native_peak_bytes": 5468160,
+      "python_peak_bytes": 24997888,
+      "time_peak_bytes": 5545984
+    },
+    {
+      "tool": "xff",
+      "repetition": 3,
+      "command": [
+        "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+        "--no-config",
+        "--no-pager",
+        "--color=never",
+        "--jobs=1",
+        "--sort=none",
+        "--exact",
+        "--case=sensitive",
+        "--gitignore=off",
+        "--hidden",
+        ".",
+        "-type",
+        "f",
+        "-print0"
+      ],
+      "native_peak_bytes": 5337088,
+      "python_peak_bytes": 25169920,
+      "time_peak_bytes": 5324800
+    },
+    {
+      "tool": "xff",
+      "repetition": 4,
+      "command": [
+        "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+        "--no-config",
+        "--no-pager",
+        "--color=never",
+        "--jobs=1",
+        "--sort=none",
+        "--exact",
+        "--case=sensitive",
+        "--gitignore=off",
+        "--hidden",
+        ".",
+        "-type",
+        "f",
+        "-print0"
+      ],
+      "native_peak_bytes": 5459968,
+      "python_peak_bytes": 25067520,
+      "time_peak_bytes": 5365760
+    },
+    {
+      "tool": "xff",
+      "repetition": 5,
+      "command": [
+        "/tmp/xff-perf-shared-executor-clean-v2/binaries/4ea895f63106f05df7c90b629d20433ae1e03016/xff",
+        "--no-config",
+        "--no-pager",
+        "--color=never",
+        "--jobs=1",
+        "--sort=none",
+        "--exact",
+        "--case=sensitive",
+        "--gitignore=off",
+        "--hidden",
+        ".",
+        "-type",
+        "f",
+        "-print0"
+      ],
+      "native_peak_bytes": 5414912,
+      "python_peak_bytes": 25206784,
+      "time_peak_bytes": 5316608
+    },
+    {
+      "tool": "find",
+      "repetition": 1,
+      "command": ["/usr/bin/find", "-P", ".", "-type", "f", "-print0"],
+      "native_peak_bytes": 3338240,
+      "python_peak_bytes": 25006080,
+      "time_peak_bytes": 3219456
+    },
+    {
+      "tool": "find",
+      "repetition": 2,
+      "command": ["/usr/bin/find", "-P", ".", "-type", "f", "-print0"],
+      "native_peak_bytes": 3153920,
+      "python_peak_bytes": 25169920,
+      "time_peak_bytes": 3219456
+    },
+    {
+      "tool": "find",
+      "repetition": 3,
+      "command": ["/usr/bin/find", "-P", ".", "-type", "f", "-print0"],
+      "native_peak_bytes": 3252224,
+      "python_peak_bytes": 25128960,
+      "time_peak_bytes": 3309568
+    },
+    {
+      "tool": "find",
+      "repetition": 4,
+      "command": ["/usr/bin/find", "-P", ".", "-type", "f", "-print0"],
+      "native_peak_bytes": 3395584,
+      "python_peak_bytes": 25006080,
+      "time_peak_bytes": 3219456
+    },
+    {
+      "tool": "find",
+      "repetition": 5,
+      "command": ["/usr/bin/find", "-P", ".", "-type", "f", "-print0"],
+      "native_peak_bytes": 3252224,
+      "python_peak_bytes": 25018368,
+      "time_peak_bytes": 3227648
+    },
+    {
+      "tool": "rg",
+      "repetition": 1,
+      "command": [
+        "/home/marcus/.codex/packages/standalone/releases/0.162.0-x86_64-unknown-linux-musl/codex-path/rg",
+        "--no-config",
+        "--hidden",
+        "--no-ignore",
+        "--threads=1",
+        "--color=never",
+        "--files",
+        "-0",
+        "."
+      ],
+      "native_peak_bytes": 3612672,
+      "python_peak_bytes": 25071616,
+      "time_peak_bytes": 3612672
+    },
+    {
+      "tool": "rg",
+      "repetition": 2,
+      "command": [
+        "/home/marcus/.codex/packages/standalone/releases/0.162.0-x86_64-unknown-linux-musl/codex-path/rg",
+        "--no-config",
+        "--hidden",
+        "--no-ignore",
+        "--threads=1",
+        "--color=never",
+        "--files",
+        "-0",
+        "."
+      ],
+      "native_peak_bytes": 3612672,
+      "python_peak_bytes": 25206784,
+      "time_peak_bytes": 3612672
+    },
+    {
+      "tool": "rg",
+      "repetition": 3,
+      "command": [
+        "/home/marcus/.codex/packages/standalone/releases/0.162.0-x86_64-unknown-linux-musl/codex-path/rg",
+        "--no-config",
+        "--hidden",
+        "--no-ignore",
+        "--threads=1",
+        "--color=never",
+        "--files",
+        "-0",
+        "."
+      ],
+      "native_peak_bytes": 3612672,
+      "python_peak_bytes": 25067520,
+      "time_peak_bytes": 3612672
+    },
+    {
+      "tool": "rg",
+      "repetition": 4,
+      "command": [
+        "/home/marcus/.codex/packages/standalone/releases/0.162.0-x86_64-unknown-linux-musl/codex-path/rg",
+        "--no-config",
+        "--hidden",
+        "--no-ignore",
+        "--threads=1",
+        "--color=never",
+        "--files",
+        "-0",
+        "."
+      ],
+      "native_peak_bytes": 3612672,
+      "python_peak_bytes": 25149440,
+      "time_peak_bytes": 3612672
+    },
+    {
+      "tool": "rg",
+      "repetition": 5,
+      "command": [
+        "/home/marcus/.codex/packages/standalone/releases/0.162.0-x86_64-unknown-linux-musl/codex-path/rg",
+        "--no-config",
+        "--hidden",
+        "--no-ignore",
+        "--threads=1",
+        "--color=never",
+        "--files",
+        "-0",
+        "."
+      ],
+      "native_peak_bytes": 3612672,
+      "python_peak_bytes": 25038848,
+      "time_peak_bytes": 3612672
+    },
+    {
+      "tool": "true",
+      "repetition": 1,
+      "command": ["/usr/bin/true"],
+      "native_peak_bytes": 1581056,
+      "python_peak_bytes": 25075712,
+      "time_peak_bytes": 1581056
+    },
+    {
+      "tool": "true",
+      "repetition": 2,
+      "command": ["/usr/bin/true"],
+      "native_peak_bytes": 1581056,
+      "python_peak_bytes": 25079808,
+      "time_peak_bytes": 1581056
+    },
+    {
+      "tool": "true",
+      "repetition": 3,
+      "command": ["/usr/bin/true"],
+      "native_peak_bytes": 1581056,
+      "python_peak_bytes": 25075712,
+      "time_peak_bytes": 1581056
+    },
+    {
+      "tool": "true",
+      "repetition": 4,
+      "command": ["/usr/bin/true"],
+      "native_peak_bytes": 1581056,
+      "python_peak_bytes": 24997888,
+      "time_peak_bytes": 1581056
+    },
+    {
+      "tool": "true",
+      "repetition": 5,
+      "command": ["/usr/bin/true"],
+      "native_peak_bytes": 1581056,
+      "python_peak_bytes": 25088000,
+      "time_peak_bytes": 1581056
+    }
+  ]
+}

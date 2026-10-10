@@ -248,6 +248,26 @@ All 57 Python tooling suites and the repository-wide tooling check pass on
 Linux. Reports display the accounting boundary and launcher hash, or warn
 about the legacy Python floor, without modifying historical observations.
 
+Hosted validation found two follow-up integration issues. Darwin defines
+`sigemptyset` as a function-like macro, so the helper must invoke it without a
+namespace qualifier. The direct-Python benchmark shards also need the prebuilt
+helper in their shared artifact, not just XFF. Local fixes stage the helper in
+PR/main build archives, pass its explicit path to the measurement action, and
+prepare it before hosted backfill freezes a batch. Regression tests check those
+workflow boundaries and forbid Bazel builds in the shard action. After the
+independent clock-control measurement session and diagnostic profiles finished,
+all 57 tooling suites, the repository-wide tooling check and enforcing helper
+clang-tidy passed with these fixes. Native macOS compilation/accounting and
+successful hosted shard collection still require the follow-up CI run.
+
+The optimized helper after the Darwin macro fix has SHA-256
+`60bcb395bb3d0eccccd0a3d0cb2407538b1f96c45d5e1e156a0bd4522f93328e`.
+Five additional native/Python/time controls per tool pass the same output oracle
+and reproduce the accounting-floor finding. Their raw observations are retained
+in [the portability follow-up controls](benchmarks/native-resource-accounting-portability-controls.json).
+The original control artifact remains unchanged; the earlier helper executable
+is also retained independently with the clock-control measurement evidence.
+
 A real backfill pilot built and verified the unchanged #990 executable, measured
 both v2 layouts and then reused the verified build and completed report on an
 identical resume. Its batch freezes the native launcher and both new driver
@@ -266,7 +286,7 @@ establishes the Linux accounting defect, not an engine allocation improvement.
 Retained commands, executable hashes and all raw peaks are in
 [the independent accounting controls](benchmarks/native-resource-accounting-controls.json);
 the final local artifact is `/tmp/xff-resource-accounting-final-controls.json`.
-Launcher SHA-256 is
+Launcher SHA-256 for the original controls is
 `e6766cea6431e91b5a5c1d16746079d59ed0e70bb13bce220e9796d23a09fb89`.
 
 The new boundary includes launcher startup/teardown in wall time and still

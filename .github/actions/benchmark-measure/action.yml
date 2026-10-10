@@ -50,6 +50,7 @@ runs:
       run: |
         set -euo pipefail
         tar -xf benchmark-build.tar -C "${RUNNER_TEMP}"
+        test -x "${RUNNER_TEMP}/benchmark-resource-launcher"
         storage=(--fixture-parent="${RUNNER_TEMP}")
         if [[ "${RUNNER_OS}" == Linux ]]; then
           storage=(--fixture-parent=/dev/shm --require-memory --require-cpu-affinity)
@@ -59,6 +60,7 @@ runs:
           cp "benchmark-report-${platform}.json" benchmark-shard.json
         fi
         python3 tools/benchmark_compare.py --binary="${RUNNER_TEMP}/benchmark-head" \
+          --resource-launcher="${RUNNER_TEMP}/benchmark-resource-launcher" \
           --report=benchmark-shard.json --head="${BENCHMARK_HEAD}" \
           --shard-plan=benchmark-plan.json --shard-index="${BENCHMARK_SHARD}" \
           --cpus=1 --cpus=3 --repetitions=3 --keep=3 --require-tools "${storage[@]}" \

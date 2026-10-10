@@ -206,6 +206,14 @@ python3.13 tools/benchmark_compare.py --resource-launcher="$PWD/$launcher" \
   --binary=/path/to/optimized/xff --report=/tmp/native-comparison.json --cpus=1
 ```
 
+The PR and main CI build jobs retain the optimized accounting helper alongside
+XFF in `benchmark-build.tar`. Every measurement shard consumes that same
+prebuilt helper through `--resource-launcher`; it does not run Bazel. Hosted
+historical backfill builds and copies the current helper before freezing its
+batch and building historical XFF revisions. This separates the accounting
+adapter's identity from the measured source revision and keeps compilation
+outside the measurement phase on both Linux and macOS.
+
 The standalone resource tool, backfill driver and local benchmark command also
 accept `--resource-launcher`. Frozen backfill contracts include the actual
 launcher identity and both accounting source files. Changing either the driver
