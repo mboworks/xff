@@ -47,6 +47,7 @@ TEST_F(RunExecutorTest, ReusesTheSameBoundedThreadsAcrossPhases) {
   const auto phase = [&] {
     absl::Barrier started(3);
     std::vector<RunTask<std::thread::id>> tasks;
+    tasks.reserve(3);
     for (int worker = 0; worker < 3; ++worker) {
       tasks.push_back(executor.Submit([&] {
         started.Block();
@@ -68,8 +69,8 @@ TEST_F(RunExecutorTest, ReusesTheSameBoundedThreadsAcrossPhases) {
 TEST_F(RunExecutorTest, SupportsMoveOnlyJobsAndResults) {
   RunExecutor executor(1);
   executor.Start(1);
-  auto task = executor.Submit([value = std::make_unique<int>(42)]() mutable { return std::move(value); });
-  auto result = task.Get();
+  auto task = executor.Submit([value = std::make_unique<int>(42)] mutable { return std::move(value); });
+  const auto result = task.Get();
   EXPECT_THAT(*result, Eq(42));
   EXPECT_THAT(RunTask<void>{}.Valid(), IsFalse());
   executor.Submit([] {}).Get();

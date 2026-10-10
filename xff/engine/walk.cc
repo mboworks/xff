@@ -90,11 +90,17 @@ class Walker {
         follow_children_(options.symlinks == SymlinkMode::kAll),
         executor_(executor) {}
 
+  // Leaf jobs capture this walker, so its identity must remain stable until drained.
+  Walker(const Walker&) = delete;
+  Walker& operator=(const Walker&) = delete;
+  Walker(Walker&&) = delete;
+  Walker& operator=(Walker&&) = delete;
+
   ~Walker() {
     // A stop action may leave prefetched siblings unconsumed. Their drain jobs
     // still reference this walker, so join those jobs before its state is torn
     // down. Normal walks reach already-completed jobs here.
-    for (RunTask<void>& drain : drain_tasks_) {
+    for (const RunTask<void>& drain : drain_tasks_) {
       drain.Wait();
     }
   }
@@ -538,7 +544,7 @@ class Walker {
       std::atomic<std::size_t> next = 0;
     };
 
-    auto batch = std::make_shared<ReadBatch>();
+    const auto batch = std::make_shared<ReadBatch>();
     batch->paths.reserve(directories.size());
     batch->promises.resize(directories.size());
     for (std::size_t batch_index = 0; batch_index < directories.size(); ++batch_index) {
