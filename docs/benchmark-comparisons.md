@@ -455,6 +455,8 @@ contract; their scheduling is separate from these ordinary PR and main workflows
 `tools/benchmark_landscape.py` renders existing comparison JSON as a standalone interactive
 HTML landscape. It requires no remeasurement. The 3D chart is open by default; its
 show/hide disclosure collapses the chart, controls and explanation without hiding the tables.
+On the history page, a keyboard-accessible Show/Hide chart button sits on the right of the
+Benchmark history title instead of separate chart headings; the history tables remain visible.
 Reopening resizes the chart to the available width. Absolute measurements are collapsed by default;
 the comparison table stays visible below the plot. Benchmark publication inserts the landscape above all tables on retained reports with the
 one-worker/one-larger-allocation matrix, including both hosted platforms' 1/3 groups and historical 1/4 groups.

@@ -309,8 +309,8 @@ def view_controls(attribute):
 def history_panel(catalog):
     """A bounded catalog; only the selected report's six views are downloaded."""
     data = json.dumps(catalog, allow_nan=False).replace('<', '\\u003c')
-    return ('<section id="benchmark-explorer"><h2>Comparison landscape history</h2>'
-            '<details open><summary>3D comparison chart (show/hide)</summary>'
+    return ('<section id="benchmark-explorer">'
+            '<details id="benchmark-history-chart" open><summary hidden>3D comparison chart</summary>'
             '<details data-help-panel class="landscape-card">'
             '<summary><strong>Help</strong></summary><div class="landscape-help-body">'
             '<p>Select a measured dataset and version. Oldest is left; newest is right. '
@@ -383,6 +383,13 @@ def publish_history(root, catalog):
         if not separator:
             raise ValueError('incomplete benchmark explorer section')
         text = before + after
+    toggle_start, toggle_end = '<!-- benchmark-chart-toggle:start -->', '<!-- benchmark-chart-toggle:end -->'
+    if toggle_start in text:
+        before, _, rest = text.partition(toggle_start)
+        _, separator, after = rest.partition(toggle_end)
+        if not separator:
+            raise ValueError('incomplete benchmark chart toggle')
+        text = before + after
     selected = {}
     for item in catalog:
         record_path = root / item['report'] / 'report.json'
@@ -399,6 +406,11 @@ def publish_history(root, catalog):
             report_path = root / item['report'] / 'report.json'
             if benchmark_records.exists(report_path):
                 entries[index] = dict(item, **dataset_metadata(benchmark_records.read(report_path)))
+    heading_end = text.index('</h1>')
+    toggle = (toggle_start + '<button type="button" data-history-chart-toggle '
+              'aria-controls="benchmark-history-chart" aria-expanded="true" '
+              'style="float:right;font-size:1rem">Hide chart</button>' + toggle_end)
+    text = text[:heading_end] + toggle + text[heading_end:]
     insertion = text.index('</h1>') + len('</h1>')
     page.write_text(text[:insertion] + start + history_panel(entries) + end + text[insertion:], encoding='utf-8')
 

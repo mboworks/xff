@@ -552,6 +552,20 @@ coordinators: its startup and worker-count interface assumes one coordinator.
 Thread reuse and count-based admission are not acceptance evidence for these
 requirements; native Linux and M5 Pro controls remain necessary.
 
+### Executor dispatch evidence independent of engine adoption
+
+The retained [executor lifecycle/task-grain probe](benchmarks/executor-dispatch-probe.md)
+separates fresh-process cold startup from warmed leaf/claimable/drain sweeps,
+with independently checkable counts and unsigned checksums. Its nine lossless
+archives preserve 4,860 checked invocations in three independent orders, raw
+samples/resources, source identities and an offline verification script.
+This evidence is extracted from [PR #1000](https://github.com/mboworks/xff/pull/1000)
+without its C++ probe or unmerged executor dependency. Rebuilding the probe
+requires its exact measured source, not main. Guest-visible topology is not
+independent verification of physical-host affinity. The results do not establish
+VFS/storage performance, a production admission threshold or native M5 Pro
+acceptance; the engine experiments and the complete audit remain open.
+
 ### Memory-accounting finding and remaining acceptance work
 
 Direct `/usr/bin/time -v` runs show approximately 5.3-5.4 MiB peak RSS for a small
