@@ -168,10 +168,14 @@ bazel run --config=clang-tidy //:refresh_compile_commands -- --config=clang-tidy
 # `extra_modules/archive/...`).
 EXPECTED_SOURCES="$(mktemp)"
 trap 'rm -f "${EXPECTED_SOURCES}"' EXIT
-for pattern in "//xff/..." $(python3 tools/extras.py --wildcards) "@xff_extras_api//..."; do
-  bazel query "filter(\"\\.cc$\", kind(\"source file\", deps(kind(\"cc_.* rule\", ${pattern}))))" 2>/dev/null \
-    | grep -E '^@@(//|xff_)' >>"${EXPECTED_SOURCES}" || true
+declare -a SOURCE_QUERY_PATTERNS=()
+EXTRA_SOURCE_QUERY_PATTERNS="$(python3 tools/extras.py --wildcards)" \
+  || die "loading expected-source package patterns failed"
+for pattern in "//xff/..." ${EXTRA_SOURCE_QUERY_PATTERNS} "@xff_extras_api//..."; do
+  SOURCE_QUERY_PATTERNS+=("${pattern}")
 done
+tools/collect_compile_sources.sh "${SOURCE_QUERY_PATTERNS[@]}" >"${EXPECTED_SOURCES}" \
+  || die "collecting expected compile sources failed"
 
 python3 tools/fix_compile_commands.py compile_commands.json MODULE.bazel bazelmod/extras.MODULE.bazel \
   --system="$(uname -s)" \
