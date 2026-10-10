@@ -271,7 +271,8 @@ absl::Status Run(const std::vector<std::string>& arguments) {
   }
   struct sigaction action{};
   action.sa_handler = Interrupt;
-  ::sigemptyset(&action.sa_mask);
+  // Darwin exposes sigemptyset as a function-like macro, so it cannot be qualified.
+  sigemptyset(&action.sa_mask);
   if (::sigaction(SIGTERM, &action, nullptr) != 0 || ::sigaction(SIGINT, &action, nullptr) != 0) {
     return LastError("sigaction");
   }
