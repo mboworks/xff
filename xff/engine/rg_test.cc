@@ -54,6 +54,7 @@ using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::Not;
+using ::testing::SizeIs;
 
 // A restarted cursor reports a failure after an otherwise selected line.
 class FailingSource final : public vfs::ReadSource {
@@ -434,6 +435,31 @@ TEST_F(RgEngineTest, OrdinaryRgSearchUsesContentWorkersWithoutNativeExpression) 
   EXPECT_THAT(fs.reads.load(), 300);
   EXPECT_THAT(output, HasSubstr("tree/0:hit 0\n"));
   EXPECT_THAT(output, HasSubstr("tree/299:hit 299\n"));
+}
+
+TEST_F(RgEngineTest, SlowProbeThatCompletesTheBatchDoesNotStartIdleWorkers) {
+  fs.files.clear();
+  std::vector<CollectedEntry> entries;
+  for (std::size_t index = 0; index < 16; ++index) {
+    const auto path = "tree/" + std::to_string(index);
+    fs.files.emplace(path, "hit\n");
+    entries.push_back({.path = path, .metadata = {.type = vfs::FileType::kRegular}, .fs = fs});
+  }
+  // The fixture's first-read rendezvous times out after two seconds without a peer,
+  // making the coordinator prefix deliberately expensive. All 16 entries belong to
+  // that prefix: no remaining work may justify starting even one background worker.
+  fs.track_threads = true;
+  fs.expected_threads = 2;
+  ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
+  RunExecutor executor(3);
+  ParallelMatch matcher(*command.expression, 4, executor, false);
+  const auto& results = matcher.Match(std::move(entries));
+  EXPECT_THAT(results, SizeIs(16));
+  for (const auto& result : results) {
+    EXPECT_THAT(result.evaluation.matched, IsTrue());
+  }
+  EXPECT_THAT(executor.worker_count(), Eq(0));
+  EXPECT_THAT(fs.read_threads, ElementsAre(std::this_thread::get_id()));
 }
 
 TEST_F(RgEngineTest, MatcherPoolGrowsForLaterBatchesAndRunsShortTailsInline) {

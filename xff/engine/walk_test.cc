@@ -481,7 +481,7 @@ TEST_F(WalkFakeFsTest, StopWaitsForUnusedPrefetchBeforeReturningToSharedExecutor
   blocking_fs.release.Notify();
   EXPECT_THAT(while_blocked, Eq(std::future_status::timeout));
   EXPECT_THAT(walk.get(), IsOk());
-  EXPECT_THAT(executor.worker_count(), Eq(3));
+  EXPECT_THAT(executor.worker_count(), Eq(2));  // The walk's three participants include its caller.
   EXPECT_THAT(executor.Submit([] { return 42; }).Get(), Eq(42));
 }
 

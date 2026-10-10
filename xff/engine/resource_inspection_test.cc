@@ -29,8 +29,9 @@ struct ResourceInspectionTest : ::testing::Test {
 
 TEST_F(ResourceInspectionTest, InspectsAbsentRootsWithoutTraversal) {
   ASSERT_OK_AND_ASSIGN(const auto output, Inspect({"--jobs=3", "/absent-resource-fixture", "-type", "f"}));
-  EXPECT_THAT(output, HasSubstr("directory-workers-per-walk\t3"));
-  EXPECT_THAT(output, HasSubstr("eligible-command-workers-per-walk\t3 (independent"));
+  EXPECT_THAT(output, HasSubstr("execution-participants-per-command\t3"));
+  EXPECT_THAT(output, HasSubstr("background-workers-per-command\t2"));
+  EXPECT_THAT(output, HasSubstr("eligible-command-children\t3 (independent"));
   EXPECT_THAT(output, HasSubstr("content-field-occurrences\t0"));
   EXPECT_THAT(output, Not(HasSubstr("column-buffer\t")));
   EXPECT_THAT(output, HasSubstr("static inspection, not measured usage"));
@@ -67,7 +68,8 @@ TEST_F(ResourceInspectionTest, ComparisonInventoriesAreIndependentOfColumnBuffer
       const auto output,
       Inspect({"/left", "/right", "--compare=summary", "--summary=ext", "--buffer=off", "--jobs=2"}));
   EXPECT_THAT(output, HasSubstr("walks\t2"));
-  EXPECT_THAT(output, HasSubstr("directory-workers-per-walk\t2"));
+  EXPECT_THAT(output, HasSubstr("execution-participants-per-command\t2"));
+  EXPECT_THAT(output, HasSubstr("background-workers-per-command\t1"));
   EXPECT_THAT(output, HasSubstr("comparison-state\tboth matched inventories"));
   EXPECT_THAT(output, HasSubstr("comparison-summary-state\tper-entry contributions"));
   EXPECT_THAT(output, HasSubstr("--buffer is not a process-memory cap or a comparison-inventory bound"));

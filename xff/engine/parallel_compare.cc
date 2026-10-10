@@ -111,18 +111,10 @@ absl::StatusOr<ComparisonResult> ComparePair(const ComparisonPair& pair, bool re
 
 }  // namespace
 
-ParallelCompare::ParallelCompare(std::size_t workers, bool retain_patch_inputs)
-    : workers_(std::max(workers, std::size_t{1})), retain_patch_inputs_(retain_patch_inputs) {}
+ParallelCompare::ParallelCompare(std::size_t workers, RunExecutor& executor, bool retain_patch_inputs)
+    : workers_(std::max(workers, std::size_t{1})), executor_(executor), retain_patch_inputs_(retain_patch_inputs) {}
 
-ParallelCompare::~ParallelCompare() {
-  {
-    const absl::MutexLock lock(mutex_);
-    stop_ = true;
-  }
-  for (auto& thread : threads_) {
-    thread.join();
-  }
-}
+ParallelCompare::~ParallelCompare() = default;
 
 bool ParallelCompare::UseWorkers() const {
   std::size_t reads = 0;
@@ -143,16 +135,7 @@ bool ParallelCompare::UseWorkers() const {
   return workers_ > 1 && reads > 1 && bytes >= 4 * kRetainedFileBytes;
 }
 
-bool ParallelCompare::Ready(std::size_t generation) const {
-  return stop_ || generation_ != generation;
-}
-
-bool ParallelCompare::Finished() const {
-  return remaining_ == 0;
-}
-
 const std::vector<absl::StatusOr<ComparisonResult>>& ParallelCompare::Compare(std::vector<ComparisonPair> inputs) {
-  const absl::MutexLock lock(mutex_);
   inputs_ = std::move(inputs);
   results_.clear();
   results_.resize(inputs_.size());
@@ -161,34 +144,19 @@ const std::vector<absl::StatusOr<ComparisonResult>>& ParallelCompare::Compare(st
     EvaluateEntries();
     return results_;
   }
-  const auto count = std::min(workers_, inputs_.size());
-  threads_.reserve(count);
-  while (threads_.size() < count) {
-    threads_.emplace_back([this] { Run(); });
+  const auto participants = std::min(workers_, inputs_.size());
+  executor_.Start(participants - 1);
+  const auto count = std::min(participants - 1, executor_.worker_count());
+  std::vector<RunTask<void>> tasks;
+  tasks.reserve(count);
+  for (std::size_t worker = 0; worker < count; ++worker) {
+    tasks.push_back(executor_.Submit([this] { EvaluateEntries(); }));
   }
-  remaining_ = threads_.size();
-  ++generation_;
-  mutex_.Await(absl::Condition(this, &ParallelCompare::Finished));
+  EvaluateEntries();
+  for (RunTask<void>& task : tasks) {
+    task.Get();
+  }
   return results_;
-}
-
-void ParallelCompare::Run() {
-  std::size_t generation = 0;
-  for (;;) {
-    {
-      const auto ready = [&] ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return Ready(generation); };
-      const absl::MutexLock lock(mutex_, absl::Condition(&ready));
-      if (stop_) {
-        return;
-      }
-      generation = generation_;
-    }
-    EvaluateEntries();
-    {
-      const absl::MutexLock lock(mutex_);
-      --remaining_;
-    }
-  }
 }
 
 void ParallelCompare::EvaluateEntries() {

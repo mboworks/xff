@@ -140,13 +140,14 @@ struct CompareFs final : vfs::FileSystem {
 };
 
 struct ParallelCompareTest : ::testing::Test {
+  RunExecutor executor{3};
   CompareFs fs;
   TreeCompareEntry left{.path = "left", .metadata = {.type = vfs::FileType::kRegular, .size = 4}, .fs = fs};
   TreeCompareEntry right{.path = "right", .metadata = {.type = vfs::FileType::kRegular, .size = 4}, .fs = fs};
 };
 
 TEST_F(ParallelCompareTest, RetainsOnlyCompleteSmallDifferingInputs) {
-  ParallelCompare compare(1, true);
+  ParallelCompare compare(1, executor, true);
   ASSERT_OK_AND_ASSIGN(const auto result, compare.Compare({{.path = "file", .left = left, .right = right}}).front());
   EXPECT_THAT(result.same, IsFalse());
   EXPECT_THAT(result.bytes, Optional(Field(&ComparisonBytes::left, EqualsText("left"))));
@@ -164,7 +165,7 @@ TEST_F(ParallelCompareTest, LargeComparisonsOpenEachSourceOnceAndKeepNoPatchByte
   fs.files.at("right") = fs.files.at("left");
   left.metadata.size = 200'000;
   right.metadata.size = 200'000;
-  ParallelCompare compare(1, true);
+  ParallelCompare compare(1, executor, true);
   EXPECT_THAT(
       compare.Compare({{.left = left, .right = right}}).front(),
       IsOkAndHolds(Field(&ComparisonResult::same, IsTrue())));
@@ -177,7 +178,7 @@ TEST_F(ParallelCompareTest, LargeComparisonsOpenEachSourceOnceAndKeepNoPatchByte
 }
 
 TEST_F(ParallelCompareTest, RepeatedBatchesKeepInputOrderAcrossWorkersAndErrors) {
-  ParallelCompare compare(4);
+  ParallelCompare compare(4, executor);
   fs.track_threads = true;
   left.metadata.size = right.metadata.size = 262'144;
   const TreeCompareEntry missing{.path = "missing", .metadata = left.metadata, .fs = fs};
@@ -197,7 +198,7 @@ TEST_F(ParallelCompareTest, ShortReadsAndEarlyEofPreserveRangeSemantics) {
   const auto source = std::make_shared<ShortSource>();
   fs.source_override = source;
   left.metadata.size = right.metadata.size = 100;
-  ParallelCompare compare(1, true);
+  ParallelCompare compare(1, executor, true);
   EXPECT_THAT(
       compare.Compare({{.left = left, .right = right}}).front(),
       IsOkAndHolds(Field(&ComparisonResult::same, IsTrue())));
@@ -218,7 +219,7 @@ TEST_F(ParallelCompareTest, CursorFailuresRemainErrors) {
   fs.source_override = source;
   source->fail_open = true;
   left.metadata.size = right.metadata.size = 262'144;
-  ParallelCompare compare(1, true);
+  ParallelCompare compare(1, executor, true);
   EXPECT_THAT(compare.Compare({{.left = left, .right = right}}).front(), StatusIs(absl::StatusCode::kPermissionDenied));
   source->fail_open = false;
   source->fail_at = 2;
@@ -227,7 +228,7 @@ TEST_F(ParallelCompareTest, CursorFailuresRemainErrors) {
 
 TEST_F(ParallelCompareTest, EmptyFilesNeedNoCursorAndOwnedSourcesStaySerial) {
   left.metadata.size = right.metadata.size = 0;
-  ParallelCompare compare(4);
+  ParallelCompare compare(4, executor);
   EXPECT_THAT(
       compare.Compare({{.left = left, .right = right}}).front(),
       IsOkAndHolds(Field(&ComparisonResult::same, IsTrue())));
@@ -254,7 +255,7 @@ TEST_F(ParallelCompareTest, EmptyFilesNeedNoCursorAndOwnedSourcesStaySerial) {
 }
 
 TEST_F(ParallelCompareTest, CheapKindsAndSizesDoNotReadContent) {
-  ParallelCompare compare(4);
+  ParallelCompare compare(4, executor);
   EXPECT_THAT(compare.Compare({{.left = left}}).front(), IsOkAndHolds(Field(&ComparisonResult::same, IsFalse())));
   EXPECT_THAT(compare.Compare({{.right = right}}).front(), IsOkAndHolds(Field(&ComparisonResult::same, IsFalse())));
   right.metadata.size = 5;
@@ -284,7 +285,7 @@ TEST_F(ParallelCompareTest, LeftFailurePrecedesRightOpenAndReadErrors) {
   fs.source_override = source;
   source->fail_at = 0;
   left.metadata.size = right.metadata.size = 262'144;
-  ParallelCompare compare(1);
+  ParallelCompare compare(1, executor);
   EXPECT_THAT(compare.Compare({{.left = left, .right = right}}).front(), StatusIs(absl::StatusCode::kDataLoss));
   EXPECT_THAT(right_fs.sources.load(), Eq(0));
   source->fail_at = 100;
@@ -304,7 +305,7 @@ TEST_F(ParallelCompareTest, PatchRetentionRequiresSuccessfulEofProbesOnBothSides
   source->bytes = "abcd";
   source->fail_at = 4;
   fs.source_override = source;
-  ParallelCompare compare(1, true);
+  ParallelCompare compare(1, executor, true);
   EXPECT_THAT(compare.Compare({{.left = left, .right = right}}).front(), StatusIs(absl::StatusCode::kDataLoss));
   source->fail_at = 100;
   const auto right_source = std::make_shared<ShortSource>();
@@ -327,7 +328,7 @@ TEST_F(ParallelCompareTest, CursorBuffersRespectAndReleaseSourceBudget) {
   left.metadata.size = right.metadata.size = 262'144;
   const auto budget = std::make_shared<vfs::ReadBudget>(ParallelCompare::kRetainedFileBytes);
   fs.source_override = vfs::MemoryReadSource("short", budget);
-  ParallelCompare compare(1);
+  ParallelCompare compare(1, executor);
   EXPECT_THAT(
       compare.Compare({{.left = left, .right = right}}).front(), StatusIs(absl::StatusCode::kResourceExhausted));
   EXPECT_THAT(budget->MemoryUsed(), Eq(0));
@@ -341,7 +342,7 @@ TEST_F(ParallelCompareTest, CursorBuffersRespectAndReleaseSourceBudget) {
 
 TEST_F(ParallelCompareTest, SymlinkErrorsRemainErrors) {
   left.metadata.type = right.metadata.type = vfs::FileType::kSymlink;
-  ParallelCompare compare(1);
+  ParallelCompare compare(1, executor);
   left.path = "missing";
   EXPECT_THAT(compare.Compare({{.left = left, .right = right}}).front(), StatusIs(absl::StatusCode::kNotFound));
   left.path = "left";

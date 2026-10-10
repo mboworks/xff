@@ -398,8 +398,11 @@ test::bad_flags_are_hard_errors_even_with_help() {
 test::meta_spelling_inside_exec_stays_a_child_argument() {
   # Meta recognition follows parser boundaries. A child command is an opaque
   # argument run, so its `--help` must not turn xff itself into the usage page.
+  # Use the POSIX shell builtin: external printf implementations can interpret
+  # --help specially even after a format argument (including local uutils 0.10.0).
   local out
-  out="$("$(_xff_bin)" --allow-exec . -maxdepth 0 -exec printf 'child:%s\n' --help ';' 2>&1)"
+  # shellcheck disable=SC2016 # The child shell expands its argument, not this test's shell.
+  out="$("$(_xff_bin)" --allow-exec . -maxdepth 0 -exec sh -c 'printf "child:%s\n" "$1"' sh --help ';' 2>&1)"
   expect_output_contains 'child:--help' "${out}"
   expect_output_not_contains 'eXtended File Find' "${out}"
 }

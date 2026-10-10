@@ -375,6 +375,26 @@ cc_test(
 )
 
 cc_test(
+    name = "command_workers_test",
+    size = "small",
+    srcs = ["command_workers_test.cc"],
+    deps = [
+        ":run_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_test(
     name = "metadata_test",
     size = "small",
     srcs = ["metadata_test.cc"],
@@ -627,6 +647,7 @@ cc_library(
     srcs = ["parallel_compare.cc"],
     hdrs = ["parallel_compare.h"],
     deps = [
+        ":run_executor_cc",
         "//xff/vfs:vfs_cc",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/status:statusor",

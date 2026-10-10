@@ -83,6 +83,8 @@ struct RunResult {
 // The default factory prepares bound callbacks and typed operands once per run expression.
 // A null executor preserves the original tree directly for differential qualification.
 // Qualification factories are test-only and cannot be linked into the CLI.
+// One command-owned executor serves traversal, eligible matching and file comparison. The resolved
+// --jobs=N allowance includes the caller, so at most N-1 background workers are started lazily.
 RunResult RunFind(
     const parser::Command& command,
     const vfs::FileSystem& fs,
