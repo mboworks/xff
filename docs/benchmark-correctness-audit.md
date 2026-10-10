@@ -206,6 +206,10 @@ including rejected ones, rather than screenshots alone.
 
 ### Linux priority
 
+For counter-enabled Google Benchmark builds, external `perf` capability checks
+and fresh-process profile commands, see [Native Linux performance profiling](native-profiling.md).
+Profiling must not compete with accepted timing collection.
+
 1. Reproduce the broad 10-to-20 and deep 1k-to-2k jumps with the unchanged binary and complete
    prepared layout grid. Repeat independent sessions and inspect all nine samples. Reorder
    measurement cells in a controlled harness while preserving fixtures and warm-up policy to
