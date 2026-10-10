@@ -69,6 +69,21 @@ class RepositoryToolingTest(unittest.TestCase):
                           retired + "?download=1", canonical.removeprefix("https://")):
             self.assertIsNone(re.fullmatch(pattern, unrelated))
 
+    def test_unconfigured_queries_repair_libpfm_without_enabling_counters(self):
+        commands = [shlex.split(line, comments=True)
+                    for line in (self.workspace / ".bazelrc").read_text().splitlines()]
+        commands = [command for command in commands if command]
+        download_settings = [command for command in commands
+                             if any(option.startswith("--downloader_config=") for option in command[1:])]
+        self.assertEqual(download_settings, [
+            ["common:linux_perf", "--downloader_config=bazelmod/linux_perf_downloader.cfg"],
+            ["query", "--downloader_config=bazelmod/linux_perf_downloader.cfg"],
+        ])
+        query_settings = [option for command in commands if command[0] == "query"
+                          for option in command[1:]]
+        self.assertNotIn("--define=pfm=1", query_settings)
+        self.assertNotIn("--config=linux_perf", query_settings)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
