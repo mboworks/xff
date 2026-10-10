@@ -258,6 +258,26 @@ Private matcher/evaluator setup and contention with other phases are not
 individually calibrated by this cost model; a warm shared executor does not imply
 that a newly encountered matcher's private state is already prepared.
 
+Experimental matcher, comparison, eager-stat and directory-read completion paths use opt-in coordinator-claimable leaf tasks.
+After the caller drains remaining chunks, it may execute only its own still-queued drain
+callbacks; it must join drains already claimed by workers. It never pumps unrelated queued
+directory I/O. Callback captures are destroyed before signaling result completion, so a
+completed handle cannot later revisit destroyed or reused matcher/evaluator, comparison or listing state. Claimed
+queue wrappers are reclaimed on new claimable admission to bound retention across repeated
+caller-completed batches while other workers remain blocked. Ordinary jobs retain their
+worker-only result handles and foreground/read-ahead alternation.
+
+This fixes reproduced caller-progress boundaries, not the complete scheduler's performance
+acceptance. Queue representation, claim overhead, private worker setup and shared dispatch
+contention require repeated native A/B and memory controls. Each role has its own occupied-pool
+completion/lifetime control; matcher coverage alone does not qualify other roles. Directory
+read-ahead retains its demand/cancellation and byte/slot reservations, but required consumption
+and Walker teardown join the same claimable result, not a separately queued wrapper. Only the
+required consumer moves the listing; teardown shares the handle only to wait for completion.
+Queued canceled reads skip the filesystem, while already-running reads must finish before
+Walker destruction. Occupied-pool full-walk and stop controls cover caller progress and queued
+wrapper retention; they do not replace allocation/RSS or slow-filesystem qualification.
+
 Under `-j > 1` the serial `-exec ... ;` / `-execdir ... ;` form launches its child
 on a bounded runner (at most `N` outstanding) instead of running it synchronously.
 Because the child's exit status is not yet known when the action returns, the action

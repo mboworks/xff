@@ -76,6 +76,8 @@ struct PrefetchedListing {
   ReadAheadReservation reservation;
 };
 
+using PrefetchedTask = RunClaimableTask<PrefetchedListing>;
+
 struct ReadDemand {
   // Only the coordinator changes these flags; workers poll around the VFS call.
   // They do not publish data: result handoff uses RunPromise completion instead.
@@ -87,8 +89,8 @@ class PrefetchedRead final {
  public:
   PrefetchedRead() = default;
 
-  PrefetchedRead(RunTask<PrefetchedListing> task, std::shared_ptr<ReadDemand> demand, std::shared_ptr<RunWork> work)
-      : task_(std::move(task)), demand_(std::move(demand)), work_(std::move(work)) {}
+  PrefetchedRead(std::shared_ptr<PrefetchedTask> task, std::shared_ptr<ReadDemand> demand)
+      : task_(std::move(task)), demand_(std::move(demand)) {}
 
   ~PrefetchedRead() {
     if (demand_) {
@@ -101,7 +103,7 @@ class PrefetchedRead final {
   PrefetchedRead(PrefetchedRead&&) = default;
   PrefetchedRead& operator=(PrefetchedRead&&) = delete;
 
-  bool Valid() const { return task_.Valid(); }
+  bool Valid() const { return task_ != nullptr; }
 
   PrefetchedListing Get() {
     // Only the coordinator can require a listing, immediately before waiting for
@@ -109,14 +111,14 @@ class PrefetchedRead final {
     demand_->required.store(true, std::memory_order_relaxed);
     // Claim only this required read if the worker has not already claimed it.
     // Do not execute an unrelated slow sibling while waiting for this result.
-    work_->Run();
-    return task_.Get();
+    return task_->Get();
   }
 
  private:
-  RunTask<PrefetchedListing> task_;
+  // Only this required read consumes the result. Walker shares the handle only
+  // to join/cancel outstanding leaves before destroying their borrowed state.
+  std::shared_ptr<PrefetchedTask> task_;
   std::shared_ptr<ReadDemand> demand_;
-  std::shared_ptr<RunWork> work_;
 };
 
 std::size_t AddBytes(std::size_t lhs, std::size_t rhs) {
@@ -180,10 +182,10 @@ class Walker {
   ~Walker() {
     // A stop action may leave prefetched siblings unconsumed. Their drain jobs
     // still reference this walker, so join those jobs before its state is torn
-    // down. Caller-claimed reads finish inline before traversal can return, even
-    // if their queued no-op wrappers have already completed on a worker.
-    for (const RunTask<void>& drain : drain_tasks_) {
-      drain.Wait();
+    // down. Wait claims only canceled/required leaves that no worker claimed;
+    // worker-owned reads still finish before their borrowed state is destroyed.
+    for (const auto& drain : drain_tasks_) {
+      drain->Wait();
     }
   }
 
@@ -370,7 +372,7 @@ class Walker {
     const auto pending = std::min({chunks - 1, executor_.worker_count(), options_.workers - 1});
     std::atomic<std::size_t> next = 0;
     std::vector<Stated> children(entries.size());
-    std::vector<RunTask<void>> reads;
+    std::vector<RunClaimableTask<void>> reads;
     reads.reserve(pending);
     const auto drain = [&] {
       for (;;) {
@@ -386,10 +388,10 @@ class Walker {
       }
     };
     for (std::size_t worker = 0; worker < pending; ++worker) {
-      reads.push_back(executor_.Submit(drain));
+      reads.push_back(executor_.SubmitClaimable(drain));
     }
     drain();
-    for (RunTask<void>& read : reads) {
+    for (RunClaimableTask<void>& read : reads) {
       read.Get();
     }
     return children;
@@ -483,7 +485,7 @@ class Walker {
         return;
       }
       auto& requests = requests_.value();
-      std::erase_if(walker_.drain_tasks_, [](const RunTask<void>& task) { return task.Ready(); });
+      std::erase_if(walker_.drain_tasks_, [](const auto& task) { return task->Ready(); });
       while (requests.size() < window_ && next_ < children_.size()) {
         if (!Eligible(next_)) {
           ++next_;
@@ -494,35 +496,33 @@ class Walker {
         if (!reservation) {
           return;
         }
-        RunPromise<PrefetchedListing> promise;
-        auto task = promise.Task();
         const auto demand = std::make_shared<ReadDemand>();
-        const auto work = std::make_shared<RunWork>([&walker = walker_, canceled = canceled_, demand, request_bytes,
-                                                     path = children_.at(next_).path, promise = std::move(promise),
-                                                     reservation = std::move(*reservation)] mutable {
-          std::optional<Listing> listing;
-          if (!canceled->load(std::memory_order_relaxed) && !demand->canceled.load(std::memory_order_relaxed)) {
-            auto read = walker.ReadDir(path);
-            if (!canceled->load(std::memory_order_relaxed) && !demand->canceled.load(std::memory_order_relaxed)
-                && (demand->required.load(std::memory_order_relaxed)
-                    || reservation.Retain(AddBytes(request_bytes, ListingBytes(read))))) {
-              listing.emplace(std::move(read));
-            }
-          }
-          reservation.Finish();
-          // Release the producer at publication: worker-owned callbacks drop it
-          // before their wrapper completes; caller-owned callbacks finish inline
-          // before Get returns or traversal can inspect the released budget.
-          auto completed = std::move(promise);
-          completed.SetValue({
-              .listing = std::move(listing),
-              .reservation = std::move(reservation),
-          });
-        });
-        walker_.drain_tasks_.push_back(walker_.executor_.Submit([work] { work->Run(); }, RunTaskClass::kReadAhead));
+        auto task = std::make_shared<PrefetchedTask>(walker_.executor_.SubmitClaimable(
+            [&walker = walker_, canceled = canceled_, demand, request_bytes, path = children_.at(next_).path,
+             reservation = std::move(*reservation)] mutable {
+              std::optional<Listing> listing;
+              if (!canceled->load(std::memory_order_relaxed) && !demand->canceled.load(std::memory_order_relaxed)) {
+                auto read = walker.ReadDir(path);
+                if (!canceled->load(std::memory_order_relaxed) && !demand->canceled.load(std::memory_order_relaxed)
+                    && (demand->required.load(std::memory_order_relaxed)
+                        || reservation.Retain(AddBytes(request_bytes, ListingBytes(read))))) {
+                  listing.emplace(std::move(read));
+                }
+              }
+              reservation.Finish();
+              // SubmitClaimable releases callback captures before publishing this
+              // result. Required consumption and teardown join the same leaf,
+              // with no separate queued wrapper completion to strand the caller.
+              return PrefetchedListing{
+                  .listing = std::move(listing),
+                  .reservation = std::move(reservation),
+              };
+            },
+            RunTaskClass::kReadAhead));
+        walker_.drain_tasks_.push_back(task);
         requests.push_back({
             .index = next_,
-            .task = PrefetchedRead(std::move(task), demand, work),
+            .task = PrefetchedRead(std::move(task), demand),
         });
         ++next_;
       }
@@ -777,7 +777,7 @@ class Walker {
   std::size_t current_root_index_ = 0;
   std::set<std::pair<std::uint64_t, std::uint64_t>> ancestors_;
   RunExecutor& executor_;
-  std::vector<RunTask<void>> drain_tasks_;
+  std::vector<std::shared_ptr<PrefetchedTask>> drain_tasks_;
 };
 
 }  // namespace

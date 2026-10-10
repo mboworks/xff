@@ -27,6 +27,7 @@ cc_library(
     deps = [
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/functional:any_invocable",
+        "@abseil-cpp//absl/log:absl_check",
         "@abseil-cpp//absl/synchronization",
     ],
 )
@@ -692,8 +693,11 @@ cc_test(
     srcs = ["parallel_compare_test.cc"],
     deps = [
         ":parallel_compare_cc",
+        ":run_executor_cc",
         "//xff/vfs:vfs_cc",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/status:status_macros_cc",
         "@mboworks_mbo//mbo/testing:matchers_cc",
@@ -723,9 +727,12 @@ cc_test(
     size = "small",
     srcs = ["walk_parallel_test.cc"],
     deps = [
+        ":run_executor_cc",
         ":walk_cc",
         "//xff/vfs:vfs_cc",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:status_cc",
     ],

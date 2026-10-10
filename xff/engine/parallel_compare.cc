@@ -147,13 +147,13 @@ const std::vector<absl::StatusOr<ComparisonResult>>& ParallelCompare::Compare(st
   const auto participants = std::min(workers_, inputs_.size());
   executor_.Start(participants - 1);
   const auto count = std::min(participants - 1, executor_.worker_count());
-  std::vector<RunTask<void>> tasks;
+  std::vector<RunClaimableTask<void>> tasks;
   tasks.reserve(count);
   for (std::size_t worker = 0; worker < count; ++worker) {
-    tasks.push_back(executor_.Submit([this] { EvaluateEntries(); }));
+    tasks.push_back(executor_.SubmitClaimable([this] { EvaluateEntries(); }));
   }
   EvaluateEntries();
-  for (RunTask<void>& task : tasks) {
+  for (RunClaimableTask<void>& task : tasks) {
     task.Get();
   }
   return results_;

@@ -18,11 +18,14 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/synchronization/notification.h"
+#include "absl/time/time.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/status/status_macros.h"
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
+#include "xff/engine/run_executor.h"
 #include "xff/vfs/read_source.h"
 
 namespace xff::engine {
@@ -192,6 +195,59 @@ TEST_F(ParallelCompareTest, RepeatedBatchesKeepInputOrderAcrossWorkersAndErrors)
     EXPECT_THAT(results.back(), IsOkAndHolds(Field(&ComparisonResult::same, IsFalse())));
     EXPECT_THAT(fs.threads.size(), Gt(1));
   }
+}
+
+TEST_F(ParallelCompareTest, CallerCompletesAndDestroysComparisonWhilePoolIsOccupied) {
+  RunExecutor shared_executor(2);
+  shared_executor.Start(2);
+  absl::Notification first_started;
+  absl::Notification second_started;
+  absl::Notification release;
+  auto first = shared_executor.Submit([&] {
+    first_started.Notify();
+    return release.WaitForNotificationWithTimeout(absl::Seconds(10));
+  });
+  auto second = shared_executor.Submit([&] {
+    second_started.Notify();
+    return release.WaitForNotificationWithTimeout(absl::Seconds(10));
+  });
+  const bool first_running = first_started.WaitForNotificationWithTimeout(absl::Seconds(5));
+  const bool second_running = second_started.WaitForNotificationWithTimeout(absl::Seconds(5));
+  fs.track_threads = true;
+  fs.wait_for_peer = false;
+  left.metadata.size = 262'144;
+  right.metadata.size = 262'144;
+  absl::Notification finished;
+  bool returned_before_release = false;
+  std::thread observer([&] {
+    returned_before_release = finished.WaitForNotificationWithTimeout(absl::Seconds(5));
+    release.Notify();
+  });
+  constexpr std::size_t kPairs = 64;
+  constexpr std::size_t kTail = 3;
+  {
+    ParallelCompare compare(3, shared_executor);
+    const auto& results = compare.Compare(std::vector<ComparisonPair>(kPairs, {.left = left, .right = right}));
+    EXPECT_THAT(results, SizeIs(kPairs));
+    for (const auto& result : results) {
+      EXPECT_THAT(result, IsOkAndHolds(Field(&ComparisonResult::same, IsFalse())));
+    }
+    EXPECT_THAT(compare.Compare(std::vector<ComparisonPair>(kTail, {.left = left, .right = right})), SizeIs(kTail));
+  }
+  // Compare borrows fixture state. Destroy it before releasing unrelated work;
+  // queued no-op drain callbacks must not revisit a destroyed comparison.
+  finished.Notify();
+  observer.join();
+  EXPECT_THAT(first_running, IsTrue());
+  EXPECT_THAT(second_running, IsTrue());
+  EXPECT_THAT(returned_before_release, IsTrue());
+  EXPECT_THAT(first.Get(), IsTrue());
+  EXPECT_THAT(second.Get(), IsTrue());
+  EXPECT_THAT(fs.sources.load(), Eq(2 * (kPairs + kTail)));
+  EXPECT_THAT(fs.full_reads.load(), Eq(0));
+  EXPECT_THAT(fs.threads, ElementsAre(std::this_thread::get_id()));
+  EXPECT_THAT(shared_executor.worker_count(), Eq(2));
+  EXPECT_THAT(shared_executor.Submit([] { return 42; }).Get(), Eq(42));
 }
 
 TEST_F(ParallelCompareTest, ShortReadsAndEarlyEofPreserveRangeSemantics) {

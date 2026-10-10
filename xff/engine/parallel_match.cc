@@ -129,16 +129,16 @@ const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEnt
   while (worker_states_.size() < count) {
     worker_states_.push_back(std::make_unique<WorkerState>(*this));
   }
-  std::vector<RunTask<void>> tasks;
+  std::vector<RunClaimableTask<void>> tasks;
   tasks.reserve(count);
   for (std::size_t worker = 0; worker < count; ++worker) {
-    tasks.push_back(executor_.Submit([this, worker] { EvaluateWorker(worker); }));
+    tasks.push_back(executor_.SubmitClaimable([this, worker] { EvaluateWorker(worker); }));
   }
   // The caller is part of the allowance, not an extra idle coordinator. Its private
   // evaluator competes for the same independent chunks without touching worker state.
   ensure_coordinator();
   evaluate_coordinator();
-  for (RunTask<void>& task : tasks) {
+  for (RunClaimableTask<void>& task : tasks) {
     task.Get();
   }
   return results_;

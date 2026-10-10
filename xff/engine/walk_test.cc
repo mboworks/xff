@@ -663,6 +663,92 @@ TEST_F(WalkFakeFsTest, CallerReadsItsQueuedDirectoryBeforeAnOccupiedWorkerIsRele
   EXPECT_THAT(executor.Submit([] { return 42; }).Get(), Eq(42));
 }
 
+TEST_F(WalkFakeFsTest, CallerCompletesDirectoryWalkAndTeardownWhileWorkerIsOccupied) {
+  const DirectoryReaderFs fs(false);
+  RunExecutor executor(1);
+  executor.Start(1);
+  absl::Notification started;
+  absl::Notification release;
+  auto occupied = executor.Submit([&] {
+    started.Notify();
+    return release.WaitForNotificationWithTimeout(absl::Seconds(10));
+  });
+  const bool running = started.WaitForNotificationWithTimeout(absl::Seconds(5));
+  absl::Notification finished;
+  bool returned_before_release = false;
+  std::thread observer([&] {
+    returned_before_release = finished.WaitForNotificationWithTimeout(absl::Seconds(5));
+    release.Notify();
+  });
+  std::size_t visits = 0;
+  std::size_t peak_queued = 0;
+  EXPECT_THAT(
+      Walk(
+          fs, {"/r"}, {.sort = SortOrder::kTree, .workers = 2}, executor,
+          [&](const Visit&) {
+            ++visits;
+            peak_queued = std::max(peak_queued, executor.QueuedTaskCount());
+            return WalkAction::kContinue;
+          },
+          [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }),
+      IsOk());
+  // The Walker and its borrowed request state must be gone before releasing
+  // unrelated work. Required reads must not leave an unbounded no-op backlog.
+  finished.Notify();
+  observer.join();
+  EXPECT_THAT(running, IsTrue());
+  EXPECT_THAT(returned_before_release, IsTrue());
+  EXPECT_THAT(occupied.Get(), IsTrue());
+  EXPECT_THAT(visits, Eq(131));
+  EXPECT_THAT(peak_queued, Le(3));
+  const auto trace = fs.Snapshot();
+  EXPECT_THAT(trace.reads, SizeIs(65));
+  EXPECT_THAT(trace.reads, Each(Pair(_, 1)));
+  EXPECT_THAT(trace.threads, ElementsAre(std::this_thread::get_id()));
+  EXPECT_THAT(executor.ReadAheadUsage().in_use, Eq(0));
+  EXPECT_THAT(executor.ReadAheadUsage().retained_bytes, Eq(0));
+  EXPECT_THAT(executor.Submit([] { return 42; }).Get(), Eq(42));
+}
+
+TEST_F(WalkFakeFsTest, StopCancelsQueuedDirectoryReadsWithoutWaitingForUnrelatedWork) {
+  const DirectoryReaderFs fs(false);
+  RunExecutor executor(1);
+  executor.Start(1);
+  absl::Notification started;
+  absl::Notification release;
+  auto occupied = executor.Submit([&] {
+    started.Notify();
+    return release.WaitForNotificationWithTimeout(absl::Seconds(10));
+  });
+  const bool running = started.WaitForNotificationWithTimeout(absl::Seconds(5));
+  absl::Notification finished;
+  bool returned_before_release = false;
+  std::thread observer([&] {
+    returned_before_release = finished.WaitForNotificationWithTimeout(absl::Seconds(5));
+    release.Notify();
+  });
+  std::vector<std::string> visits;
+  EXPECT_THAT(
+      Walk(
+          fs, {"/r"}, {.sort = SortOrder::kTree, .workers = 2}, executor,
+          [&](const Visit& visit) {
+            visits.emplace_back(visit.path);
+            return visit.depth == 1 ? WalkAction::kStop : WalkAction::kContinue;
+          },
+          [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }),
+      IsOk());
+  finished.Notify();
+  observer.join();
+  EXPECT_THAT(running, IsTrue());
+  EXPECT_THAT(returned_before_release, IsTrue());
+  EXPECT_THAT(occupied.Get(), IsTrue());
+  EXPECT_THAT(visits, ElementsAre("/r", "/r/d0"));
+  EXPECT_THAT(fs.Snapshot().reads, IsEmpty());
+  EXPECT_THAT(executor.ReadAheadUsage().in_use, Eq(0));
+  EXPECT_THAT(executor.ReadAheadUsage().retained_bytes, Eq(0));
+  EXPECT_THAT(executor.Submit([] { return 42; }).Get(), Eq(42));
+}
+
 TEST_F(WalkFakeFsTest, PruningCancelsAReadThatHasNotReachedTheFilesystem) {
   CountingReadFs fs;
   std::vector<vfs::Entry> siblings;

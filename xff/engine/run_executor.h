@@ -4,10 +4,11 @@
 #ifndef XFF_ENGINE_RUN_EXECUTOR_H_
 #define XFF_ENGINE_RUN_EXECUTOR_H_
 
+#include <atomic>
 #include <cstddef>
+#include <deque>
 #include <memory>
 #include <optional>
-#include <queue>
 #include <thread>
 #include <type_traits>
 #include <utility>
@@ -49,6 +50,10 @@ class RunWork final {
 
   void Run() ABSL_LOCKS_EXCLUDED(mutex_);
 
+  // Monotonic queue-reclamation hint only, not result publication or completion.
+  // Once true, work_ is empty and an owner holds the moved-out callback.
+  bool Claimed() const { return claimed_.load(std::memory_order_relaxed); }
+
  private:
   absl::AnyInvocable<void()> Take() ABSL_LOCKS_EXCLUDED(mutex_);
 
@@ -56,6 +61,7 @@ class RunWork final {
   // the job. It is never held with an executor dispatch or read-budget mutex.
   absl::Mutex mutex_;
   absl::AnyInvocable<void()> work_ ABSL_GUARDED_BY(mutex_);
+  std::atomic<bool> claimed_ = false;
 };
 
 struct ReadAheadStats {
@@ -128,7 +134,7 @@ class RunTask final {
 };
 
 // The producer side of a RunTask, used when a drain job produces indexed results.
-// Obtain one Task and call SetValue exactly once before releasing the producer.
+// Obtain one Task and call SetValue or SetFrom exactly once before releasing the producer.
 template<typename Result>
 class RunPromise final {
  public:
@@ -149,8 +155,54 @@ class RunPromise final {
     state_->completed.Notify();
   }
 
+  // Execute one owned callback and release all its captures before publication.
+  // A waiting owner may destroy borrowed state immediately after completion.
+  void SetFrom(absl::AnyInvocable<Result()> job) {
+    if constexpr (std::is_void_v<Result>) {
+      job();
+    } else {
+      state_->result.emplace(job());
+    }
+    job = nullptr;
+    state_->completed.Notify();
+  }
+
  private:
   std::shared_ptr<executor_detail::TaskState<Result>> state_ = std::make_shared<executor_detail::TaskState<Result>>();
+};
+
+// An opt-in coordinator-owned leaf result. Wait/Get may execute this task's own
+// callback if no worker claimed it; they never run unrelated queued work. A task
+// already claimed by a worker is joined through its ordinary completion signal.
+// This handle is single-consumer and may outlive the executor, like RunTask.
+template<typename Result>
+class RunClaimableTask final {
+ public:
+  RunClaimableTask(RunClaimableTask&&) = default;
+  RunClaimableTask& operator=(RunClaimableTask&&) = default;
+  RunClaimableTask(const RunClaimableTask&) = delete;
+  RunClaimableTask& operator=(const RunClaimableTask&) = delete;
+
+  bool Ready() const { return task_.Ready(); }
+
+  void Wait() const {
+    work_->Run();
+    task_.Wait();
+  }
+
+  Result Get() {
+    Wait();
+    return task_.Get();
+  }
+
+ private:
+  friend class RunExecutor;
+
+  RunClaimableTask(RunTask<Result> task, std::shared_ptr<RunWork> work)
+      : task_(std::move(task)), work_(std::move(work)) {}
+
+  RunTask<Result> task_;
+  std::shared_ptr<RunWork> work_;
 };
 
 // One lazily started worker executor shared by all parallel phases of a command.
@@ -160,6 +212,8 @@ class RunPromise final {
 // Start, Submit and worker_count are called only by the coordinator. Jobs stay
 // leaves and must not submit or wait on work in this executor.
 class RunExecutor final {
+  using QueuedJob = std::variant<absl::AnyInvocable<void()>, std::shared_ptr<RunWork>>;
+
  public:
   static constexpr std::size_t kReadAheadBytes = 8 * 1'024 * 1'024;
 
@@ -200,25 +254,45 @@ class RunExecutor final {
       task();
       return result;
     }
-    const absl::MutexLock lock(mutex_);
-    auto& queues = queues_.value();
-    if (task_class == RunTaskClass::kReadAhead) {
-      queues.read_ahead.emplace(std::move(task));
-    } else {
-      queues.foreground.emplace(std::move(task));
-    }
+    Enqueue(std::move(task), task_class);
     return result;
+  }
+
+  // Opt in only for coordinator-safe leaves: the caller must own the callback's
+  // execution lifetime and be allowed to perform its work. Admission remains
+  // coordinator-only. Completed/claimed queue wrappers are reclaimed on admission
+  // so repeated caller-completed batches cannot build an unbounded no-op backlog.
+  template<typename Job>
+  auto SubmitClaimable(Job job, RunTaskClass task_class = RunTaskClass::kForeground) ABSL_LOCKS_EXCLUDED(mutex_) {
+    using Result = std::invoke_result_t<Job>;
+    RunPromise<Result> promise;
+    auto result = promise.Task();
+    auto work = std::make_shared<RunWork>(
+        [promise = std::move(promise), job = absl::AnyInvocable<Result()>(std::move(job))] mutable {
+          promise.SetFrom(std::move(job));
+        });
+    if (threads_.empty()) {
+      work->Run();
+    } else {
+      Enqueue(work, task_class);
+    }
+    return RunClaimableTask<Result>(std::move(result), std::move(work));
   }
 
   std::size_t worker_count() const { return threads_.size(); }
 
+  // A synchronized snapshot, excluding jobs already popped by workers. Useful
+  // for observing queue retention; this is not a completion or admission gate.
+  std::size_t QueuedTaskCount() const ABSL_LOCKS_EXCLUDED(mutex_);
+
  private:
   bool Pending() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void Enqueue(QueuedJob job, RunTaskClass task_class) ABSL_LOCKS_EXCLUDED(mutex_);
   void Run() ABSL_LOCKS_EXCLUDED(mutex_);
 
   struct DispatchQueues {
-    std::queue<absl::AnyInvocable<void()>> foreground;
-    std::queue<absl::AnyInvocable<void()>> read_ahead;
+    std::deque<QueuedJob> foreground;
+    std::deque<QueuedJob> read_ahead;
     bool prefer_read_ahead = false;
   };
 
@@ -231,7 +305,7 @@ class RunExecutor final {
   // the coordinator alone grows threads_ and inspects their count. Dispatch and
   // shared-budget mutexes are never held simultaneously by this implementation.
   mutable absl::Mutex mutex_;
-  // std::queue's default deque allocates even while empty. Inline commands never
+  // Empty deques can allocate. Inline commands never
   // construct these queues; Start initializes them before publishing any worker.
   std::optional<DispatchQueues> queues_ ABSL_GUARDED_BY(mutex_);
   bool stop_ ABSL_GUARDED_BY(mutex_) = false;

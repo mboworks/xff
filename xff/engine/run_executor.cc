@@ -8,6 +8,8 @@
 #include <memory>
 #include <utility>
 
+#include "absl/log/absl_check.h"
+
 namespace xff::engine {
 
 namespace executor_detail {
@@ -26,7 +28,9 @@ RunWork::RunWork(absl::AnyInvocable<void()> work) : work_(std::move(work)) {}
 
 absl::AnyInvocable<void()> RunWork::Take() {
   const absl::MutexLock lock(mutex_);
-  return std::exchange(work_, absl::AnyInvocable<void()>{});
+  auto work = std::exchange(work_, absl::AnyInvocable<void()>{});
+  claimed_.store(true, std::memory_order_relaxed);
+  return work;
 }
 
 void RunWork::Run() {
@@ -118,6 +122,33 @@ bool RunExecutor::Pending() const {
   return stop_ || (queues_ && (!queues_->foreground.empty() || !queues_->read_ahead.empty()));
 }
 
+void RunExecutor::Enqueue(QueuedJob job, RunTaskClass task_class) {
+  const absl::MutexLock lock(mutex_);
+  // Start initializes queues before publishing workers; Submit handles the
+  // no-worker case inline. Make that private helper precondition explicit.
+  ABSL_CHECK(queues_.has_value());
+  auto& queues = queues_.value();
+  if (std::holds_alternative<std::shared_ptr<RunWork>>(job)) {
+    // Reclaim only claimable wrappers. Their callback has already moved into an
+    // executing owner's lifetime, so removing the shared queue reference cannot
+    // destroy borrowed captures or publish completion. No work mutex is taken
+    // under the dispatch mutex; Claimed is only a monotonic atomic queue hint.
+    const auto claimed = [](const QueuedJob& queued) {
+      return std::holds_alternative<std::shared_ptr<RunWork>>(queued)
+             && std::get<std::shared_ptr<RunWork>>(queued)->Claimed();
+    };
+    std::erase_if(queues.foreground, claimed);
+    std::erase_if(queues.read_ahead, claimed);
+  }
+  auto& queue = task_class == RunTaskClass::kReadAhead ? queues.read_ahead : queues.foreground;
+  queue.emplace_back(std::move(job));
+}
+
+std::size_t RunExecutor::QueuedTaskCount() const {
+  const absl::MutexLock lock(mutex_);
+  return queues_ ? queues_->foreground.size() + queues_->read_ahead.size() : 0;
+}
+
 std::optional<ReadAheadReservation> RunExecutor::ReserveReadAhead(std::size_t initial_bytes) {
   if (threads_.empty()) {
     return std::nullopt;
@@ -151,7 +182,7 @@ ReadAheadStats RunExecutor::ReadAheadUsage() const {
 
 void RunExecutor::Run() {
   for (;;) {
-    absl::AnyInvocable<void()> job;
+    QueuedJob job;
     {
       const absl::MutexLock lock(mutex_, absl::Condition(this, &RunExecutor::Pending));
       if (!queues_) {
@@ -166,10 +197,14 @@ void RunExecutor::Run() {
       const bool read_ahead = !queues.read_ahead.empty() && (queues.foreground.empty() || queues.prefer_read_ahead);
       auto& queue = read_ahead ? queues.read_ahead : queues.foreground;
       job = std::move(queue.front());
-      queue.pop();
+      queue.pop_front();
       queues.prefer_read_ahead = !read_ahead;
     }
-    job();
+    if (std::holds_alternative<std::shared_ptr<RunWork>>(job)) {
+      std::get<std::shared_ptr<RunWork>>(job)->Run();
+    } else {
+      std::get<absl::AnyInvocable<void()>>(job)();
+    }
   }
 }
 

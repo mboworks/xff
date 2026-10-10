@@ -14,6 +14,7 @@
 
 #include "absl/base/thread_annotations.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/synchronization/notification.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "gmock/gmock.h"
@@ -237,6 +238,68 @@ TEST_F(ParallelMatchTest, SlowRemainingWorkUsesCallerAndReusesBoundedWorkers) {
     EXPECT_THAT(observed.contributors, SizeIs(3));
     EXPECT_THAT(observed.contributors, Contains(std::this_thread::get_id()));
   }
+}
+
+TEST_F(ParallelMatchTest, CallerCompletesAndDestroysMatcherWhilePoolIsOccupied) {
+  ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-true"}));
+  constexpr std::size_t kEntries = 64;
+  constexpr std::size_t kTailEntries = 5;
+  EvaluationTrace trace(kEntries);
+  RunExecutor executor(2);
+  executor.Start(2);
+  absl::Notification first_started;
+  absl::Notification second_started;
+  absl::Notification release;
+  auto first = executor.Submit([&] {
+    first_started.Notify();
+    return release.WaitForNotificationWithTimeout(absl::Seconds(10));
+  });
+  auto second = executor.Submit([&] {
+    second_started.Notify();
+    return release.WaitForNotificationWithTimeout(absl::Seconds(10));
+  });
+  const bool first_running = first_started.WaitForNotificationWithTimeout(absl::Seconds(5));
+  const bool second_running = second_started.WaitForNotificationWithTimeout(absl::Seconds(5));
+  absl::Notification finished;
+  // The observer releases unrelated occupied jobs only after matcher destruction.
+  // A bounded fallback makes a broken completion path fail instead of hanging.
+  // Only this observer writes returned_before_release; join publishes it to the caller.
+  bool returned_before_release = false;
+  std::thread observer([&] {
+    returned_before_release = finished.WaitForNotificationWithTimeout(absl::Seconds(5));
+    release.Notify();
+  });
+  {
+    const ExpressionExecution execution(std::make_unique<TracedPlan>(trace));
+    ParallelMatch matcher(*command.expression, 3, executor, false, std::nullopt, execution);
+    const auto& results = matcher.Match(Entries(kEntries));
+    EXPECT_THAT(results, SizeIs(kEntries));
+    // The result index supplies the expected alternating match value.
+    for (std::size_t index = 0; index < results.size(); ++index) {
+      EXPECT_THAT(results.at(index).evaluation.matched, Eq(index % 2 == 0));
+    }
+    // Reuse and then destroy borrowed matcher/evaluator state before the queued
+    // callbacks can run. A completed callback must not retain access to this state.
+    EXPECT_THAT(matcher.Match(Entries(kTailEntries)), SizeIs(kTailEntries));
+  }
+  finished.Notify();
+  observer.join();
+  EXPECT_THAT(first_running, IsTrue());
+  EXPECT_THAT(second_running, IsTrue());
+  EXPECT_THAT(returned_before_release, IsTrue());
+  EXPECT_THAT(first.Get(), IsTrue());
+  EXPECT_THAT(second.Get(), IsTrue());
+  EXPECT_THAT(executor.worker_count(), Eq(2));
+  const auto observed = trace.Read();
+  std::vector<std::size_t> expected(kEntries, 1);
+  // The tail repeats the first five original entries.
+  for (std::size_t index = 0; index < kTailEntries; ++index) {
+    ++expected.at(index);
+  }
+  EXPECT_THAT(observed.counts, Eq(expected));
+  EXPECT_THAT(observed.contributors, SizeIs(1));
+  EXPECT_THAT(observed.contributors, Contains(std::this_thread::get_id()));
+  EXPECT_THAT(executor.Submit([] { return 42; }).Get(), Eq(42));
 }
 
 TEST_F(ParallelMatchTest, StatefulMetadataAndActionExpressionsCannotEnterWorkers) {

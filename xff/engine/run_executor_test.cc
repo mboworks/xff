@@ -32,6 +32,24 @@ using ::testing::SizeIs;
 
 struct RunExecutorTest : ::testing::Test {};
 
+struct BlockingCapture final {
+  BlockingCapture(absl::Notification& destruction_started, absl::Notification& release)
+      : destruction_started(destruction_started), release(release) {}
+
+  BlockingCapture(const BlockingCapture&) = delete;
+  BlockingCapture& operator=(const BlockingCapture&) = delete;
+  BlockingCapture(BlockingCapture&&) = delete;
+  BlockingCapture& operator=(BlockingCapture&&) = delete;
+
+  absl::Notification& destruction_started;
+  absl::Notification& release;
+
+  ~BlockingCapture() {
+    destruction_started.Notify();
+    release.WaitForNotificationWithTimeout(absl::Seconds(5));
+  }
+};
+
 TEST_F(RunExecutorTest, RunsInlineUntilStartedAndRetainsWorkers) {
   RunExecutor executor(3);
   const std::thread::id coordinator = std::this_thread::get_id();
@@ -82,6 +100,162 @@ TEST_F(RunExecutorTest, SupportsMoveOnlyJobsAndResults) {
   EXPECT_THAT(*result, Eq(42));
   EXPECT_THAT(RunTask<void>{}.Valid(), IsFalse());
   executor.Submit([] {}).Get();
+}
+
+TEST_F(RunExecutorTest, ClaimableTasksRunInlineAndSupportMoveOnlyResults) {
+  RunExecutor executor(1);
+  const auto coordinator = std::this_thread::get_id();
+  auto task = executor.SubmitClaimable([value = std::make_unique<int>(42)] mutable { return std::move(value); });
+  EXPECT_THAT(task.Ready(), IsTrue());
+  const auto result = task.Get();
+  EXPECT_THAT(*result, Eq(42));
+  EXPECT_THAT(executor.SubmitClaimable([] { return std::this_thread::get_id(); }).Get(), Eq(coordinator));
+  executor.SubmitClaimable([] {}).Wait();
+  EXPECT_THAT(executor.worker_count(), Eq(0));
+  EXPECT_THAT(executor.QueuedTaskCount(), Eq(0));
+}
+
+TEST_F(RunExecutorTest, ClaimableCompletionWaitsForCallbackCaptureDestruction) {
+  RunExecutor executor(1);
+  executor.Start(1);
+  absl::Notification destruction_started;
+  absl::Notification release;
+  // Construct in place: a temporary guard would notify during its own destruction.
+  auto guard = std::make_unique<BlockingCapture>(destruction_started, release);
+  auto task = executor.SubmitClaimable([guard = std::move(guard)] { return guard ? 42 : 0; });
+  const bool destroying = destruction_started.WaitForNotificationWithTimeout(absl::Seconds(5));
+  const bool published_before_destruction = task.Ready();
+  release.Notify();
+  EXPECT_THAT(task.Get(), Eq(42));
+  EXPECT_THAT(destroying, IsTrue());
+  EXPECT_THAT(published_before_destruction, IsFalse());
+}
+
+TEST_F(RunExecutorTest, CallerClaimedBatchesBoundQueueRetentionAndLeaveUnrelatedWorkQueued) {
+  RunExecutor executor(1);
+  executor.Start(1);
+  absl::Notification started;
+  absl::Notification release;
+  auto occupied = executor.Submit([&] {
+    started.Notify();
+    return release.WaitForNotificationWithTimeout(absl::Seconds(10));
+  });
+  const bool running = started.WaitForNotificationWithTimeout(absl::Seconds(5));
+  std::atomic<int> unrelated_calls = 0;
+  auto unrelated = executor.Submit([&] { unrelated_calls.fetch_add(1); });
+  std::size_t own_calls = 0;
+  const auto coordinator = std::this_thread::get_id();
+  for (std::size_t batch = 0; batch < 1'024; ++batch) {
+    SCOPED_TRACE(batch);
+    const auto task_class = batch % 2 == 0 ? RunTaskClass::kForeground : RunTaskClass::kReadAhead;
+    auto task = executor.SubmitClaimable(
+        [&] {
+          ++own_calls;
+          return std::this_thread::get_id();
+        },
+        task_class);
+    EXPECT_THAT(task.Get(), Eq(coordinator));
+    EXPECT_THAT(task.Ready(), IsTrue());
+    // The single unrelated ordinary job plus this batch's claimed wrapper.
+    EXPECT_THAT(executor.QueuedTaskCount(), Le(2));
+  }
+  const int unrelated_before_release = unrelated_calls.load();
+  release.Notify();
+  EXPECT_THAT(occupied.Get(), IsTrue());
+  unrelated.Get();
+  EXPECT_THAT(running, IsTrue());
+  EXPECT_THAT(own_calls, Eq(1'024));
+  EXPECT_THAT(unrelated_before_release, Eq(0));
+  EXPECT_THAT(unrelated_calls.load(), Eq(1));
+  EXPECT_THAT(executor.Submit([] { return 42; }).Get(), Eq(42));
+}
+
+TEST_F(RunExecutorTest, AWorkerClaimedTaskIsJoinedAndNeverExecutedTwice) {
+  RunExecutor executor(1);
+  executor.Start(1);
+  absl::Notification started;
+  absl::Notification release;
+  std::atomic<int> calls = 0;
+  auto task = executor.SubmitClaimable([&] {
+    calls.fetch_add(1);
+    started.Notify();
+    return release.WaitForNotificationWithTimeout(absl::Seconds(5)) ? 42 : 0;
+  });
+  const bool running = started.WaitForNotificationWithTimeout(absl::Seconds(5));
+  const bool ready_while_worker_runs = task.Ready();
+  release.Notify();
+  task.Wait();
+  EXPECT_THAT(task.Get(), Eq(42));
+  EXPECT_THAT(running, IsTrue());
+  EXPECT_THAT(ready_while_worker_runs, IsFalse());
+  EXPECT_THAT(calls.load(), Eq(1));
+}
+
+TEST_F(RunExecutorTest, ClaimableResultsCanOutliveTheExecutor) {
+  auto task = [] {
+    RunExecutor executor(1);
+    executor.Start(1);
+    return executor.SubmitClaimable([] { return std::make_unique<int>(42); });
+  }();
+  EXPECT_THAT(task.Ready(), IsTrue());
+  const auto result = task.Get();
+  EXPECT_THAT(*result, Eq(42));
+}
+
+TEST_F(RunExecutorTest, RacingTypedCallerAndWorkerClaimsPublishMoveOnlyResultsOnce) {
+  RunExecutor executor(1);
+  executor.Start(1);
+  std::atomic<std::size_t> calls = 0;
+  for (std::size_t round = 0; round < 128; ++round) {
+    SCOPED_TRACE(round);
+    absl::Barrier released(2);
+    auto occupied = executor.Submit([&] { released.Block(); });
+    auto task = executor.SubmitClaimable([&] {
+      calls.fetch_add(1);
+      return std::make_unique<std::size_t>(round);
+    });
+    // Release the worker and claim the queued typed result concurrently. Separate
+    // controls force worker-owned and coordinator-owned execution deterministically.
+    released.Block();
+    const auto result = task.Get();
+    occupied.Get();
+    EXPECT_THAT(*result, Eq(round));
+    EXPECT_THAT(calls.load(), Eq(round + 1));
+  }
+}
+
+TEST_F(RunExecutorTest, WorkerDispatchedClaimableQueuesPreserveClassAlternation) {
+  RunExecutor executor(1);
+  executor.Start(1);
+  absl::Notification started;
+  absl::Notification release;
+  std::vector<int> order;
+  auto initial = executor.Submit(
+      [&] {
+        started.Notify();
+        release.WaitForNotificationWithTimeout(absl::Seconds(5));
+        order.push_back(0);
+      },
+      RunTaskClass::kReadAhead);
+  const bool running = started.WaitForNotificationWithTimeout(absl::Seconds(5));
+  std::vector<RunClaimableTask<void>> tasks;
+  tasks.reserve(5);
+  tasks.push_back(executor.SubmitClaimable([&] { order.push_back(1); }, RunTaskClass::kReadAhead));
+  tasks.push_back(executor.SubmitClaimable([&] { order.push_back(2); }, RunTaskClass::kReadAhead));
+  tasks.push_back(executor.SubmitClaimable([&] { order.push_back(3); }));
+  tasks.push_back(executor.SubmitClaimable([&] { order.push_back(4); }));
+  tasks.push_back(executor.SubmitClaimable([&] { order.push_back(5); }));
+  auto finished = executor.Submit([&] { order.push_back(6); });
+  release.Notify();
+  initial.Get();
+  // Wait for the trailing ordinary marker before invoking typed Get: this verifies
+  // actual worker dispatch order, not coordinator pumping or caller claim order.
+  finished.Get();
+  for (auto& task : tasks) {
+    task.Get();
+  }
+  EXPECT_THAT(running, IsTrue());
+  EXPECT_THAT(order, ElementsAre(0, 3, 1, 4, 2, 5, 6));
 }
 
 TEST_F(RunExecutorTest, CallerClaimsRequiredWorkWhileItsQueuedWrapperWaits) {
