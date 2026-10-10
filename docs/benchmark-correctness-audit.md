@@ -436,6 +436,34 @@ The interrupted `/tmp/xff-perf-shared-executor-v2` run is diagnostic only:
 correctness builds overlapped its measurements, and its measured source predates
 the final scheduling changes. It supplies no acceptance timing evidence.
 
+### Command-wide scheduling gap
+
+The frozen #992 executor is owned by one `RunFindCore` traversal, not by the
+complete command. Comparison starts the left traversal with unconditional
+`std::async` and runs the right traversal on the calling thread. Each traversal
+creates its own executor with the configured worker allowance. Consequently,
+comparison can have two coordinators and two independent worker pools; even
+`--jobs=1` still starts the extra comparison coordinator. After both traversals
+finish, `ParallelCompare` creates another pool for eligible file pairs rather
+than reusing their workers. The concurrent comparison coordinators predate #992;
+the draft does not fix that existing command-wide ownership gap.
+
+Directory drain jobs also consume their entire sibling batch before returning
+to the common queue. Giving each worker a long-lived drain amortizes dispatch,
+but can delay queued content and metadata work. Read-ahead retains complete
+listings without a command-wide byte budget, and quit waits for already queued
+reads rather than canceling unnecessary work. A bounded pool alone does not
+prove a bounded frontier, fair scheduling or enough useful remaining work.
+
+The next scheduler design must define whether the coordinator counts toward
+the command's concurrency allowance, share that allowance across comparison
+sides and phases, bound pending work and retained bytes, and balance substantial
+batches without starving another stage. Workers must not wait on child tasks in
+their own executor. Do not simply pass the current executor to two concurrent
+coordinators: its startup and worker-count interface assumes one coordinator.
+Thread reuse and count-based admission are not acceptance evidence for these
+requirements; native Linux and M5 Pro controls remain necessary.
+
 ### Memory-accounting finding and remaining acceptance work
 
 Direct `/usr/bin/time -v` runs show approximately 5.3-5.4 MiB peak RSS for a small
@@ -513,10 +541,90 @@ ascending offset order. All allocation-event totals are recomputed, and the
 complete allocation/global-peak stack weights independently sum to those totals.
 Original native artifacts remain at `/tmp/xff-native-large-allocation-profile-session1`.
 
+### Large single-worker CPU diagnostics (2026-10-10)
+
+The unchanged retained baseline executable was profiled on freshly materialized
+full-grid v2 broad/deep trees at 20k/50k/100k files, pinned to one verified physical
+CPU with `--jobs=1`. Four workloads per anchor cover plain enumeration,
+`--sort=tree` enumeration, enumeration with `-collect:audit`, and content-needle
+matching. These are real CLI workloads, not isolated per-phase benchmarks.
+Fixture and executable identities match before/after. Each of the 24 cells has
+one warmup, nine direct `perf stat` observations and fifty fresh invocations
+under `perf record`: all 1,440 invocations pass the original oracle. Tree-sort
+controls additionally check hierarchical path order. No builds or acceptance
+timings overlap this diagnostic collection; no lost samples are reported.
+
+Plain enumeration's counter medians are:
+
+| Layout |  Files | Task-clock ms | User instructions/file |
+| :----- | -----: | ------------: | ---------------------: |
+| broad  |  20000 |          9.39 |                2556.65 |
+| broad  |  50000 |         27.08 |                2527.67 |
+| broad  | 100000 |         53.39 |                2513.26 |
+| deep   |  20000 |          9.95 |                2547.55 |
+| deep   |  50000 |         27.08 |                2567.81 |
+| deep   | 100000 |         62.65 |                2608.06 |
+
+User instructions per input file stay within approximately 2.5k-2.6k despite
+deep traversal's much larger live heap. That separates the allocation-lifetime
+finding from a claim of an equally large instruction-count discontinuity;
+it does not explain all elapsed-time scaling. At 100k, collection increases
+user instructions from 251.3 to 376.1 million on broad and from 260.8 to 390.0
+million on deep. Tree sorting gives 288.7/366.9 million and content matching
+707.5/730.1 million respectively. These workload differences are not independent
+causal phase costs, nor repeated engine/reference A/B acceptance.
+
+The recording includes its Python repetition driver. Although reports filter
+the `xff` command, their initial printed percentages still use all recorded
+event periods as the denominator. The retained analysis instead sums XFF's
+own leaf periods, including unknown locations, and recomputes all shares.
+Coarse exclusive labels use the named function, not types appearing only in its
+argument list. Directory/metadata, evaluation, allocator, string/memory and
+coordinator helpers all contribute; these sampled labels are not precise wall
+time for traversal, evaluation, collection or output phases.
+
+Raw records contain kernel-context sample IPs even though the recorded event
+attributes say `exclude_kernel=1`. An independent `perf script` check verifies
+all 24 raw sample counts/period sums against the XFF-filtered self histograms;
+kernel-context periods remain explicitly unattributed. Ordinary sampling allows
+location skid, a possible explanation rather than an isolated host diagnosis.
+Counter exclusion and sampled CPU mode have different meanings; see
+[`perf_event_open` semantics](https://man7.org/linux/man-pages/man2/perf_event_open.2.html).
+A `cycles:up` capability probe fails with "No supported events found" on this
+host. No security setting was weakened to obtain symbols. Do not present these
+unattributed samples as kernel CPU time or claim precise per-phase attribution.
+
+The [CPU diagnostic index](benchmarks/native-large-cpu-controls.json) retains
+all cell summaries, executable/fixture identities, recording commands, raw
+counter medians, filtered sample accounting, context checks and limitations.
+The following archives retain all raw counter text, self reports, callgraphs,
+sample-context records, event attributes and reproduction scripts:
+
+- [Broad 20k](benchmarks/native-large-cpu-profiles-broad-20000.json.gz),
+  [50k](benchmarks/native-large-cpu-profiles-broad-50000.json.gz),
+  [100k](benchmarks/native-large-cpu-profiles-broad-100000.json.gz).
+- [Deep 20k](benchmarks/native-large-cpu-profiles-deep-20000.json.gz),
+  [50k](benchmarks/native-large-cpu-profiles-deep-50000.json.gz).
+- Deep 100k: [enumeration](benchmarks/native-large-cpu-profiles-deep-100000-files.json.gz),
+  [tree sorting](benchmarks/native-large-cpu-profiles-deep-100000-files-tree.json.gz),
+  [collection](benchmarks/native-large-cpu-profiles-deep-100000-files-collect.json.gz),
+  [content](benchmarks/native-large-cpu-profiles-deep-100000-content-needle.json.gz).
+
+Deep 100k is partitioned by workload to meet the existing file-size policy
+without discarding report text. All nine archive checksums, raw counter medians,
+sample period/context sums and embedded scripts verify against original artifacts.
+Original `perf.data` and complete base64 oracle arrays remain locally at
+`/tmp/xff-native-large-cpu-profile-session1`; they are not included in the review
+archives. Their hashes and reconstruction commands are retained explicitly.
+The initial local analysis is superseded because it classified functions by
+argument types and did not distinguish kernel-context IPs; the index identifies
+both the superseded and corrected analyses without changing raw observations.
+
 The complete audit remains open. Final shared-executor timing must be collected
 after every build has finished, using the complete prepared grid. Repeated
 controls must cover content, eager metadata and slow storage. The six enumeration
-allocation diagnostics do not complete the phase-level CPU/slope investigation
-or allocation controls for other workloads/platforms. Hosted macOS checks provide portability evidence for PR #991;
+allocation diagnostics and 24 CPU diagnostic cells do not complete precise
+phase-level CPU/slope attribution or allocation controls for other workloads/platforms.
+Hosted macOS checks provide portability evidence for PR #991;
 they do not replace the specified native M5 Pro A/B and sampling controls for
 the shared-executor experiment.
