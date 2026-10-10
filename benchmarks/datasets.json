@@ -1469,6 +1469,52 @@
             "memory_required": true,
             "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
           }
+        },
+        "64610635ada0f78382ade775d772c934a03a1b5677b0f1721ae36284be3909b1": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.44.1 (debian)",
+              "sha256": "f0949769ebc72cd1f8c30d91a84e1d2f1ecaa935b9a43adb68575a5a6bf78dba"
+            }
+          },
+          "build": "a44acce7a845b9dc496c37d33d3e2efdac19a9789d73dd5d563849df6bb39c47",
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+          "cpu_count": 4,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          },
+          "resource_accounting": {
+            "sha256": "38e3d03c70a8155a7238b5ab293b5d950d8bd36c47344b4d6c56993eb6e36137",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+          }
         }
       },
       "observations": [
@@ -2051,6 +2097,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "4fa6fff65108a3bfa977f2236e6dae9aaecf4b8a1df594ac0d0a00cafc8decf1"
+        },
+        {
+          "commit": "bbc0bf9376c7fc41fe75094998c3c7e74bd02e94",
+          "date": "2026-10-10T12:42:01Z",
+          "measured": "2026-10-10T12:42:05Z",
+          "report": "runs/38052921577/1/linux/report.json",
+          "report_identity": "4a23bf1dbe1fb10a5b6fb902122915be0c116d5fa7a7215b7bede17094a83fc2",
+          "batch": null,
+          "batch_identity": null,
+          "method": "64610635ada0f78382ade775d772c934a03a1b5677b0f1721ae36284be3909b1"
         }
       ]
     },
@@ -3927,6 +3983,46 @@
             "memory_required": false,
             "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
           }
+        },
+        "3f641bb4ea536128da84d9e6d99fbeacf65a66b63dcd553d96e74146e8b08ac1": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6.2-arm64-arm-64bit-Mach-O",
+              "sha256": "9cd3b4bbb80ac290fd188172e5fcbc48a6fe10ff3374313e4f01efea0101be1b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.3 (Homebrew)",
+              "sha256": "b611fe1eb0217ba0546383944de9073427c2b49517949bbac4eb659a8acac5e1"
+            }
+          },
+          "build": "a44acce7a845b9dc496c37d33d3e2efdac19a9789d73dd5d563849df6bb39c47",
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": 3,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "parent": "/Users/runner/work/_temp",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          },
+          "resource_accounting": {
+            "sha256": "e7934b14c337c11d9a4ea99201448c0f87fbef020c122bc3cb51fa0c358d16b8",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+          }
         }
       },
       "observations": [
@@ -4509,6 +4605,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "bd197bc252114e784da80fed5dec71c8a4d17ca87253d1b95ba9e2c88465b373"
+        },
+        {
+          "commit": "bbc0bf9376c7fc41fe75094998c3c7e74bd02e94",
+          "date": "2026-10-10T12:42:01Z",
+          "measured": "2026-10-10T12:42:05Z",
+          "report": "runs/38052921577/1/macos/report.json",
+          "report_identity": "9bdfc4f75ef410a11009e87a330a9251904d828825db80c9d4b4172aad8ca37e",
+          "batch": null,
+          "batch_identity": null,
+          "method": "3f641bb4ea536128da84d9e6d99fbeacf65a66b63dcd553d96e74146e8b08ac1"
         }
       ]
     },
