@@ -3,10 +3,10 @@
   "target": "pr/1007",
   "source": {
     "created_at": "2026-10-14T22:00:32Z",
-    "started_at": "2026-10-14T22:00:32Z",
-    "completed_at": "2026-10-14T23:08:18Z",
+    "started_at": "2026-10-14T23:11:16Z",
+    "completed_at": "2026-10-14T23:14:36Z",
     "run_id": 38644550327,
-    "run_attempt": 1,
+    "run_attempt": 2,
     "head_sha": "c9634967d8369401443003916c08e29c14b11850"
   },
   "coverage": {
