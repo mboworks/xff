@@ -3,31 +3,31 @@
     "number": 1008,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": "deb3d7db34edc7d4910bc64250d550764ac7d45d"
+    "merge_commit_sha": "6a6b28359b8aa0c7dec94de738b932578c09fdf7"
   },
   {
     "number": 1007,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": "60557ae4f69eea83fb982943b63854ad78707431"
+    "merge_commit_sha": "5f9b4c42c1a0fbe8aa478d4c1cca042a707b8ad6"
   },
   {
     "number": 1006,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": "738e86ce6d848e0a0dcc2c148022681b3e296860"
+    "merge_commit_sha": "04717955ebd98df50984463738e3c0238b8d0d6b"
   },
   {
     "number": 1005,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": "82c96f00c439d4eec23442dd857ede577f8cf5c6"
+    "merge_commit_sha": "facba2da6c2ce7b48f29e9411a430ed32ccfb9de"
   },
   {
     "number": 1004,
-    "state": "open",
-    "merged_at": null,
-    "merge_commit_sha": "a4c2883e966c40c7625911b5f30ae67a561fc811"
+    "state": "closed",
+    "merged_at": "2026-10-14T20:35:20Z",
+    "merge_commit_sha": "d73eea93ac97f401fe12ba2ba139eb6b8601ec19"
   },
   {
     "number": 1003,
