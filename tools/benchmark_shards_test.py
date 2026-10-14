@@ -202,6 +202,21 @@ class BenchmarkShardsTest(unittest.TestCase):
         self.assertFalse(shards.adaptive_decisions(candidates([3, 5, 3, 3]), 'fourth')['linux'])
         self.assertTrue(shards.adaptive_decisions(candidates([3, 5, 3, 5]), 'fourth')['linux'])
 
+    def test_adaptive_candidates_with_different_contracts_request_replacements(self):
+        values = records(count=5, partition='samples', repetitions=15, keep=15, adaptive=True,
+                         host_cpu_count=3)
+        values[1]['tool_comparisons']['tools']['fzf'] = {'version': '0.74.5', 'sha256': 'different-fzf'}
+        candidates = {'linux': {index: values[index] for index in range(3)}, 'macos': {}}
+
+        self.assertTrue(shards.adaptive_decisions(candidates, 'initial')['linux'])
+
+        candidates['linux'][3] = records(count=5, partition='samples', repetitions=15, keep=15,
+                                         adaptive=True, host_cpu_count=3)[3]
+        self.assertFalse(shards.adaptive_decisions(candidates, 'fourth')['linux'])
+        selected = shards.select_adaptive_reports(candidates, 'linux')
+        self.assertEqual([record['tool_comparisons']['contract']['shard']['index'] for record in selected],
+                         [0, 2, 3])
+
     def test_adaptive_merge_pools_only_three_matching_candidates(self):
         values = records(count=5, partition='samples', repetitions=15, keep=15, adaptive=True,
                          host_cpu_count=3)
@@ -221,7 +236,7 @@ class BenchmarkShardsTest(unittest.TestCase):
         candidates = records(count=5, partition='samples', repetitions=15, keep=15, adaptive=True,
                              host_cpu_count=3)
         by_platform = {'linux': {0: candidates[0], 1: candidates[1]}, 'macos': {}}
-        with self.assertRaisesRegex(ValueError, 'no three-shard CPU-count agreement'):
+        with self.assertRaisesRegex(ValueError, 'no three-shard compatible CPU-count agreement'):
             shards.select_adaptive_reports(by_platform, 'linux')
         by_platform['linux'][2] = records(count=5, partition='samples', repetitions=15, keep=15,
                                           adaptive=True, host_cpu_count=5)[2]
@@ -230,8 +245,8 @@ class BenchmarkShardsTest(unittest.TestCase):
         by_platform['linux'][4] = records(count=5, partition='samples', repetitions=15, keep=15,
                                           adaptive=True, host_cpu_count=5)[4]
         by_platform['linux'][1]['tool_comparisons']['tools']['xff']['sha256'] = 'different-binary'
-        # A matching CPU count cannot hide a different binary from the final aggregator.
-        with self.assertRaisesRegex(ValueError, 'incompatible non-CPU benchmark contracts'):
+        # A matching CPU count cannot hide a different binary when it leaves no compatible quorum.
+        with self.assertRaisesRegex(ValueError, 'no three-shard compatible CPU-count agreement'):
             shards.merge_reports(shards.select_adaptive_reports(by_platform, 'linux'), allow_sample_subset=True)
 
     def test_every_fixture_has_one_owner(self):
