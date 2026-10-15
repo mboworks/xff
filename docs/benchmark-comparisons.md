@@ -402,13 +402,16 @@ averages shard summaries or discards a shard's slow rounds before pooling. All m
 same selected observations as elapsed time. The raw JSON retains every measured observation,
 its shard and round number, the shard's hashed host identity, and the original invocation paths.
 
-If all three initial runners report the same host CPU count, the workflow stops measuring and
-aggregates those three. If they disagree, it schedules a fourth candidate for that platform; if
-four do not contain a three-candidate majority, it schedules a fifth. Linux and macOS vote
-independently, since their runner contracts are not comparable. The final aggregator runs once and
-selects exactly three reports with the same CPU count for each platform. If five candidates cannot
-produce that quorum, aggregation fails rather than mixing them. A missing report can use the next
-candidate slot, but a runner cancellation can still make the workflow fail and require a CI retry.
+The workflow counts agreement only among candidates with the same non-CPU benchmark identity and
+the same host CPU count. If three initial candidates do not form a quorum, it schedules a fourth
+candidate for that platform; if four still do not contain three matching candidates, it schedules a
+fifth. This also handles runner image drift, such as Homebrew updating `fzf` while macOS shards are
+starting: candidates using different tool versions form separate groups and are never pooled. Linux
+and macOS vote independently, since their runner contracts are not comparable. The final aggregator
+runs once and selects exactly three reports from a matching group for each platform. If five
+candidates cannot produce that quorum, aggregation fails rather than mixing unlike measurements. A
+missing report can use the next candidate slot, but a runner cancellation can still make the workflow
+fail and require a CI retry.
 
 Repeating the same matrix on all three selected runners gives approximately equal expected work and avoids
 assigning one tree shape or worker count to a consistently faster host. It does not make hosts
@@ -426,12 +429,11 @@ limit the end-to-end gain.
 Aggregation requires the complete planned matrix on each selected sample shard, exactly three raw
 rounds per selected shard, matching source, binary, reference tools, fixture contents, expected
 outputs and commands, compatible CPU affinity, equal host CPU counts and identical sampling
-contracts. Each merged report retains the selected candidates' original shard indexes and host
-provenance. An identity mismatch reports its shard, field and differing values, such as
-`incompatible shard 1: contract.cpu_count: expected 5, got 3`. The adaptive jobs run inside the same
-workflow attempt, so a provider-canceled candidate does not require a workflow rerun or a queued
-GitHub cancellation command. Ordinary measurement errors remain visible; later candidates are not
-used to conceal a malformed or incompatible report.
+contracts within the selected group. Each merged report retains the selected candidates' original
+shard indexes and host provenance. Contract differences split candidates into separate groups; an
+invalid candidate or a failure to obtain a three-candidate group remains an error. The adaptive jobs
+run inside the same workflow attempt, so a provider-canceled candidate does not require a workflow
+rerun or a queued GitHub cancellation command.
 Both PR and merged-main aggregation load retained main reports before rendering the overview.
 Only first-parent main revisions preceding the measured commit are eligible (for a PR merge
 preview, this includes its main parent). The nearest compatible revision wins; later reruns of
