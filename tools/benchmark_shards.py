@@ -299,6 +299,20 @@ def validate_adaptive_candidate(record, index):
     return cpu_count
 
 
+def _adaptive_candidate_groups(reports, platform_name):
+    """Group validated candidates by their compatible contract and observed CPU count."""
+    groups = {}
+    plan = None
+    for index, record in sorted(reports.items()):
+        cpu_count = validate_adaptive_candidate(record, index)
+        current_plan = record['tool_comparisons']['contract']['shard']['plan']
+        if plan is not None and current_plan != plan:
+            raise ValueError(f'incompatible adaptive plans for {platform_name}')
+        plan = current_plan
+        groups.setdefault((_adaptive_identity(record), cpu_count), []).append((index, record))
+    return groups
+
+
 def adaptive_decisions(candidates, stage):
     """Return whether another candidate is needed for each platform."""
     if stage not in ('initial', 'fourth'):
@@ -306,46 +320,23 @@ def adaptive_decisions(candidates, stage):
     decisions = {}
     for platform_name in ('linux', 'macos'):
         reports = candidates.get(platform_name, {})
-        validated = {}
-        identity = None
-        plan = None
-        for index, record in sorted(reports.items()):
-            cpu_count = validate_adaptive_candidate(record, index)
-            current_plan = record['tool_comparisons']['contract']['shard']['plan']
-            if plan is not None and current_plan != plan:
-                raise ValueError(f'incompatible adaptive plans for {platform_name}')
-            if identity is not None and _adaptive_identity(record) != identity:
-                raise ValueError(f'incompatible non-CPU benchmark contracts for {platform_name}')
-            plan = current_plan
-            identity = _adaptive_identity(record)
-            validated[index] = cpu_count
-        largest_group = max((list(validated.values()).count(value) for value in set(validated.values())), default=0)
+        groups = _adaptive_candidate_groups(reports, platform_name)
+        largest_group = max((len(values) for values in groups.values()), default=0)
         decisions[platform_name] = largest_group < 3
-        if stage == 'fourth' and len(validated) < 4 and largest_group < 3:
-            decisions[platform_name] = True
     return decisions
 
 
 def select_adaptive_reports(candidates, platform_name):
     """Select exactly three agreeing reports; fail if no CPU-count quorum exists."""
     reports = candidates.get(platform_name, {})
-    groups = {}
-    identity = None
-    plan = None
-    for index, record in sorted(reports.items()):
-        cpu_count = validate_adaptive_candidate(record, index)
-        current_plan = record['tool_comparisons']['contract']['shard']['plan']
-        if plan is not None and current_plan != plan:
-            raise ValueError(f'incompatible adaptive plans for {platform_name}')
-        if identity is not None and _adaptive_identity(record) != identity:
-            raise ValueError(f'incompatible non-CPU benchmark contracts for {platform_name}')
-        plan = current_plan
-        identity = _adaptive_identity(record)
-        groups.setdefault(cpu_count, []).append((index, record))
+    groups = _adaptive_candidate_groups(reports, platform_name)
     eligible = [values for values in groups.values() if len(values) >= 3]
     if not eligible:
-        counts = {cpu: len(values) for cpu, values in groups.items()}
-        raise ValueError(f'{platform_name} has no three-shard CPU-count agreement: {counts}')
+        counts = {}
+        for (_, cpu_count), values in groups.items():
+            counts.setdefault(cpu_count, []).append(len(values))
+        counts = {cpu_count: sorted(sizes, reverse=True) for cpu_count, sizes in counts.items()}
+        raise ValueError(f'{platform_name} has no three-shard compatible CPU-count agreement: {counts}')
     winner = max(eligible, key=lambda values: (len(values), -values[0][0]))
     return [record for _, record in winner[:3]]
 
