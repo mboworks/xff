@@ -18,6 +18,7 @@ using ::testing::Ne;
 struct LicenseSectionTest : ::testing::Test {};
 
 TEST_F(LicenseSectionTest, NoticeTextSeparatesAnExtensionFromTheMainProgram) {
+  // Registration is process-global, so this check runs in its own test binary.
   Register({
       .section = "example",
       .component = "Example extension",
