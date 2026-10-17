@@ -16,7 +16,10 @@ collected="$(mktemp)"
 trap 'rm -f "${query_output}" "${collected}"' EXIT
 
 for pattern in "${@}"; do
-  if ! bazel query "filter(\"\\.cc$\", kind(\"source file\", deps(kind(\"cc_.* rule\", ${pattern}))))" >"${query_output}"; then
+  # Follow source providers (including filegroups and generated-source inputs),
+  # rather than C++ library dependencies. Unconfigured deps(cc_rule) follows every
+  # select branch, fetching even unused dependencies such as Benchmark's libpfm.
+  if ! bazel query "filter(\"\\.cc$\", kind(\"source file\", deps(labels(srcs, kind(\"cc_.* rule\", ${pattern})))))" >"${query_output}"; then
     printf '%s\n' "ERROR: source query failed for ${pattern}" >&2
     exit 1
   fi
