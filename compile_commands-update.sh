@@ -108,6 +108,7 @@ for TARGET in ${EXTRA_TARGETS}; do
 done
 PREPARATION_TARGETS+=("@xff_extras_api//...")
 echo "Building core, manual clang-tidy targets, and extras together in --config=clang-tidy ..." 1>&2
+printf '  %s\n' "${PREPARATION_TARGETS[@]}" >&2
 bazel build --config=clang-tidy "${PREPARATION_TARGETS[@]}" >/dev/null \
   || die "building compile-database prerequisites failed"
 
@@ -133,6 +134,7 @@ BCCE_ARGS+=("--bcce-compiler=${CLANG}")
 # //:refresh_compile_commands, not the extractor's stock :refresh_all - the latter covers `//...`
 # only, which silently omits every extras source file. See the target's comment in //BUILD.bazel.
 #
+echo "Extracting compile commands with //:refresh_compile_commands in --config=clang-tidy ..." >&2
 bazel run --config=clang-tidy //:refresh_compile_commands -- --config=clang-tidy "${BCCE_ARGS[@]}" \
   || die "refreshing compile_commands.json failed"
 
@@ -155,6 +157,8 @@ declare -a SOURCE_QUERY_PATTERNS=()
 for pattern in "//xff/..." ${EXTRA_TARGETS} "@xff_extras_api//..."; do
   SOURCE_QUERY_PATTERNS+=("${pattern}")
 done
+echo "Collecting expected compile sources from:" >&2
+printf '  %s\n' "${SOURCE_QUERY_PATTERNS[@]}" >&2
 tools/collect_compile_sources.sh "${SOURCE_QUERY_PATTERNS[@]}" >"${EXPECTED_SOURCES}" \
   || die "collecting expected compile sources failed"
 
