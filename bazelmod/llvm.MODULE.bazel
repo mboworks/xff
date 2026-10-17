@@ -15,8 +15,14 @@
 
 """LLVM 23 by default; LLVM 22 with its matching instrumented libc++ for MSan."""
 
-# The release provides feature-based linker selection and native macOS ThinLTO.
+# Replace this source pin with the release containing the shared version selectors:
+# https://github.com/bazel-contrib/toolchains_llvm/pull/909
 bazel_dep(name = "toolchains_llvm", version = "1.11.3")
+git_override(
+    module_name = "toolchains_llvm",
+    commit = "ac4055749414b749173bdfa820f5276d4c5714c8",
+    remote = "https://github.com/bazel-contrib/toolchains_llvm.git",
+)
 
 # The MemorySanitizer-instrumented libc++ (`--config=msan`, Linux only). MSan reports a
 # false positive for every read of memory written by code it did not instrument, and the
@@ -41,8 +47,10 @@ bazel_dep(name = "toolchains_llvm", version = "1.11.3")
 # Keep the MSan compiler and instrumented standard library on the same release.
 # The ordinary compiler can advance independently through the feature override below.
 MSAN_LIBCXX_URL = "https://github.com/RealtimeRoboticsGroup/toolchains/releases/download/{v}/libcxx-msan-{v}-x86_64-linux-gnu-ubuntu-22.04.tar.zst"
-LLVM_VERSION = "23.1.2"
-MSAN_LLVM_VERSION = "22.1.8"
+# Follow stable LLVM 23 releases from the pinned toolchains_llvm catalogue.
+# Major compiler and clang-tidy upgrades require an explicit policy change.
+LLVM_VERSION = "latest:major==23"
+LLVM_VERSION_MSAN = "22.1.8"
 
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
 llvm.toolchain(
@@ -77,9 +85,9 @@ llvm.feature_override(
     features = ["msan"],
     targets = ["linux-x86_64"],
     libcxx_sha256 = "fd1ac49eeda4edc6deeda2037998e558718a63a5054fff4fdace7751b270217a",
-    libcxx_url = MSAN_LIBCXX_URL.format(v = MSAN_LLVM_VERSION),
+    libcxx_url = MSAN_LIBCXX_URL.format(v = LLVM_VERSION_MSAN),
     linker = {"linux-x86_64": ""},
-    llvm_version = MSAN_LLVM_VERSION,
+    llvm_version = LLVM_VERSION_MSAN,
 )
 use_repo(llvm, "llvm_toolchain_llvm")
 
