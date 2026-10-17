@@ -19,8 +19,11 @@ load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library", "py_test")
 load("@mboworks_bashtest//bashtest:bashtest.bzl", "bashtest")
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 load("//xff:cc.bzl", "cc_binary")
+load(":compile_sources_test.bzl", "compile_sources_tests")
 
 package(default_visibility = ["//visibility:private"])
+
+compile_sources_tests()
 
 py_library(
     name = "package_init",

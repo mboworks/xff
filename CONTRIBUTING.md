@@ -121,14 +121,23 @@ pre-commit run clang-tidy --all-files --hook-stage manual
 As with other hooks, `pre-commit run -a` explicitly selects all files. Use `--files` for a focused
 verification; omit it to check staged changes.
 
-Generated dependency sources needed during compile-command extraction must be explicit build
-outputs in the owning extra. The PCRE2 extra exposes `chartables_source` for this purpose;
+Generated dependency sources needed during compile-command extraction must be materialized even
+when their compiled objects or libraries come from cache. The preparation build requests the
+`compile_sources` aspect's output group, which follows configured dependencies and explicitly
+requests generated C-family sources and headers, including exec and Starlark-transition copies.
+Generators must expose these artifacts through `DefaultInfo` or a source-provider target.
+The PCRE2 extra exposes `chartables_source` for materialization and its drift test;
 `@xff_pcre2//:chartables_test` compares it byte-for-byte with PCRE2's versioned
 `pcre2_chartables.c.dist`. The compile-database preparation builds core, manual lint targets, the
 shared extras API, and every extra's wildcard targets in one Bazel invocation, so the generated
 source is requested even when the compiled library is cached. Its source-coverage query follows
 C++ source providers rather than library dependencies, avoiding downloads from inactive dependency
 branches while preserving failures for incomplete queries.
+
+The extractor's internal action query disables `compiler_param_file`, `layering_check`, and
+`parse_headers` in target and exec configurations. Bazel's warning that `--features` and
+`--host_features` changed reports the resulting analysis-cache reset; it does not by itself mean
+compilation was repeated. Normal preparation builds retain both repository header checks.
 
 ## CI build caches
 

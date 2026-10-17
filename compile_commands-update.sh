@@ -109,7 +109,11 @@ done
 PREPARATION_TARGETS+=("@xff_extras_api//...")
 echo "Building core, manual clang-tidy targets, and extras together in --config=clang-tidy ..." 1>&2
 printf '  %s\n' "${PREPARATION_TARGETS[@]}" >&2
-bazel build --config=clang-tidy "${PREPARATION_TARGETS[@]}" >/dev/null \
+# Request generated inputs as outputs too: cached objects/libraries need not otherwise
+# materialize their source files, especially in exec and Starlark-transition configurations.
+bazel build --config=clang-tidy \
+  --aspects=//tools:compile_sources.bzl%compile_sources --output_groups=+compile_sources \
+  "${PREPARATION_TARGETS[@]}" >/dev/null \
   || die "building compile-database prerequisites failed"
 
 # Name the hermetic clang BINARY (not the toolchain's `cc_wrapper.sh`, which is
