@@ -60,27 +60,31 @@ _compile_sources_test = analysistest.make(
     extra_target_under_test_aspects = [compile_sources],
 )
 
-def compile_sources_tests():
-    """Exercise indirect source providers, exec edges, and a Starlark transition."""
-    _fixture_sources(name = "compile_sources_fixture", tags = ["manual"])
+def compile_sources_tests(name):
+    """Exercise indirect source providers, exec edges, and a Starlark transition.
+
+    Args:
+      name: Name of the analysis test and prefix for its private fixtures.
+    """
+    _fixture_sources(name = name + "_fixture", tags = ["manual"])
     native.filegroup(
-        name = "compile_sources_fixture_group",
-        srcs = [":compile_sources_fixture", "show_compiler.cc"],
+        name = name + "_fixture_group",
+        srcs = [":" + name + "_fixture", "show_compiler.cc"],
         tags = ["manual"],
     )
     native.alias(
-        name = "compile_sources_fixture_alias",
-        actual = ":compile_sources_fixture_group",
+        name = name + "_fixture_alias",
+        actual = ":" + name + "_fixture_group",
         tags = ["manual"],
     )
     _consumer(
-        name = "compile_sources_consumer",
-        deps = [":compile_sources_fixture_alias"],
-        tools = [":compile_sources_fixture_alias"],
-        transitioned = [":compile_sources_fixture_alias"],
+        name = name + "_consumer",
+        deps = [":" + name + "_fixture_alias"],
+        tools = [":" + name + "_fixture_alias"],
+        transitioned = [":" + name + "_fixture_alias"],
         tags = ["manual"],
     )
     _compile_sources_test(
-        name = "compile_sources_test",
-        target_under_test = ":compile_sources_consumer",
+        name = name,
+        target_under_test = ":" + name + "_consumer",
     )

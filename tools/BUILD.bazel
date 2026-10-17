@@ -23,7 +23,7 @@ load(":compile_sources_test.bzl", "compile_sources_tests")
 
 package(default_visibility = ["//visibility:private"])
 
-compile_sources_tests()
+compile_sources_tests(name = "compile_sources_test")
 
 py_library(
     name = "package_init",
