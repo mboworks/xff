@@ -68,12 +68,15 @@ No tests contact GitHub or recursively invoke Bazel; the separate site integrati
 
 ## Compiler and sanitizer versions
 
-`--config=clang` uses LLVM 23.1.2. The `msan` feature selects LLVM 22.1.8 and its matching
+`--config=clang` selects the newest stable LLVM 23 release available for the host from the pinned
+`toolchains_llvm` catalogue (`latest:major==23`). Updating that module can adopt LLVM 23 fixes
+without a separate compiler-version edit; LLVM 24 requires an explicit selector change. The
+`msan` feature selects LLVM 22.1.8 and its matching
 instrumented libc++ on Linux x86-64, independently of config flag order. ASan, TSan, coverage,
 fuzzing, releases, build tools, and clang-tidy use LLVM 23. The existing `--config=lto` selection
 continues to use native Apple ld on macOS and bundled LLD on Linux.
 
-Pre-commit and `tools/clang_format.sh` run clang-format from the same pinned LLVM 23 distribution.
+Pre-commit and `tools/clang_format.sh` run clang-format from the same selected LLVM 23 distribution.
 The first run fetches that distribution if needed; it does not compile XFF. CI runs clang-tidy
 across the complete indexed source set when the compiler or lint policy changes; ordinary source
 changes keep the affected-file scope.

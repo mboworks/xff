@@ -15,8 +15,23 @@
 
 """LLVM 23 by default; LLVM 22 with its matching instrumented libc++ for MSan."""
 
-# The release provides feature-based linker selection and native macOS ThinLTO.
+# Replace this source pin with the release containing the shared version selectors:
+# https://github.com/bazel-contrib/toolchains_llvm/pull/909
 bazel_dep(name = "toolchains_llvm", version = "1.11.3")
+git_override(
+    module_name = "toolchains_llvm",
+    commit = "195720770d169a5892ee92085e0b00be3fc97e81",
+    remote = "https://github.com/bazel-contrib/toolchains_llvm.git",
+)
+
+# Root overrides do not propagate from toolchains_llvm. Use the published archive
+# while its BCR entry awaits review: https://github.com/bazelbuild/bazel-central-registry/pull/11158
+archive_override(
+    module_name = "mboworks_bzl",
+    integrity = "sha256-sS12HYg9SX7MP15MAFoCsZtCVgax6t1RXRWD2KvpyhQ=",
+    strip_prefix = "bzl-0.7.0",
+    urls = ["https://github.com/mboworks/bzl/releases/download/0.7.0/bzl-0.7.0.tar.gz"],
+)
 
 # The MemorySanitizer-instrumented libc++ (`--config=msan`, Linux only). MSan reports a
 # false positive for every read of memory written by code it did not instrument, and the
@@ -41,7 +56,9 @@ bazel_dep(name = "toolchains_llvm", version = "1.11.3")
 # Keep the MSan compiler and instrumented standard library on the same release.
 # The ordinary compiler can advance independently through the feature override below.
 MSAN_LIBCXX_URL = "https://github.com/RealtimeRoboticsGroup/toolchains/releases/download/{v}/libcxx-msan-{v}-x86_64-linux-gnu-ubuntu-22.04.tar.zst"
-LLVM_VERSION = "23.1.2"
+# Follow stable LLVM 23 releases from the pinned toolchains_llvm catalogue.
+# Major compiler and clang-tidy upgrades require an explicit policy change.
+LLVM_VERSION = "latest:major==23"
 MSAN_LLVM_VERSION = "22.1.8"
 
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
