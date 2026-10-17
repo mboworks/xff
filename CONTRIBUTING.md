@@ -124,8 +124,11 @@ verification; omit it to check staged changes.
 Generated dependency sources needed during compile-command extraction must be explicit build
 outputs in the owning extra. The PCRE2 extra exposes `chartables_source` for this purpose;
 `@xff_pcre2//:chartables_test` compares it byte-for-byte with PCRE2's versioned
-`pcre2_chartables.c.dist`. The compile-database preparation builds the extra's wildcard targets,
-so the generated source is requested even when the compiled library is cached.
+`pcre2_chartables.c.dist`. The compile-database preparation builds core, manual lint targets, the
+shared extras API, and every extra's wildcard targets in one Bazel invocation, so the generated
+source is requested even when the compiled library is cached. Its source-coverage query follows
+C++ source providers rather than library dependencies, avoiding downloads from inactive dependency
+branches while preserving failures for incomplete queries.
 
 ## CI build caches
 

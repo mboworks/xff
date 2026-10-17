@@ -72,9 +72,8 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-# The smallest cc target there is: compile_commands-update.sh builds it under --config=clang to
-# materialize the hermetic LLVM toolchain on a fresh checkout (so the extractor can point the DB
-# at it). `manual` keeps it out of `//...`. Also prints the compiler, as a diagnostic.
+# Print the selected compiler for diagnostics. `manual` keeps this probe out of `//...`;
+# compile_commands-update.sh materializes LLVM through its combined preparation build.
 cc_binary(
     name = "show_compiler",
     srcs = ["show_compiler.cc"],

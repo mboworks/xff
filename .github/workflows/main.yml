@@ -681,8 +681,8 @@ jobs:
         if: env.CLANG_TIDY_ENABLED == 'true'
         # A gitignored local artifact, so build it here. The script extracts the DB in
         # --config=clang-tidy and names the hermetic clang driver, which is what makes the commands
-        # parseable by the matching clang-tidy. It also runs `bazel build --config=clang-tidy //...`
-        # first (the same config as its aquery) to materialize the generated / virtual-include
+        # parseable by the matching clang-tidy. It first builds core, manual lint targets, and all
+        # extras in one Bazel invocation (the same config as its aquery) to materialize virtual-include
         # headers the recorded commands reference - without which clang-tidy would abort on
         # `'xff/license/notice.h' file not found` on a fresh runner.
         run: ./compile_commands-update.sh

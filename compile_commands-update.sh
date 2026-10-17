@@ -27,7 +27,7 @@
 #
 # The outer `bazel run` and the extractor's internal `aquery` both use
 # `--config=clang-tidy`. The outer copy avoids rebuilding the extractor with the default toolchain
-# immediately after the clang-tidy probe builds; it does not propagate into the internal query, so
+# immediately after the clang-tidy preparation build; it does not propagate into the internal query, so
 # the runtime copy must remain after `--`. The tool forwards every non-`--bcce-*` runtime argument
 # to that query.
 
@@ -49,28 +49,6 @@ declare -a CLANG_LOCS=(
   "${OUTPUT_BASE}/external/llvm_toolchain_llvm/bin/clang"
 )
 
-CLANG=""
-function resolve_clang() {
-  for LOC in "${CLANG_LOCS[@]}"; do
-    if [ -x "${LOC}" ]; then
-      CLANG="${LOC}"
-      return
-    fi
-  done
-}
-
-resolve_clang
-if [ -z "${CLANG}" ]; then
-  # A fresh checkout (or CI runner) has not materialized the toolchain yet: it is
-  # only fetched once something is actually built with `--config=clang`. The header
-  # build below (also `--config=clang-tidy`) triggers that, so just build first.
-  echo "Hermetic clang not present; fetching the toolchain via a probe build ..." 1>&2
-  bazel build --config=clang-tidy //tools:show_compiler >/dev/null \
-    || die "probe build '//tools:show_compiler --config=clang-tidy' failed; cannot fetch the LLVM toolchain"
-  resolve_clang
-fi
-[ -n "${CLANG}" ] || die "Cannot find the hermetic clang even after a '--config=clang-tidy' build"
-
 # Sources reachable both normally and through a build-machine tool are compiled
 # twice (target + exec configuration), and both commands would be emitted. Keep
 # only the target-configuration one: clang-tidy works per entry, so the exec copy
@@ -84,17 +62,6 @@ declare -a BCCE_ARGS=(
   # Their source commands remain in the database and are still lintable.
   "--bcce-exclude-headers=external"
 )
-
-# Name the hermetic clang BINARY (not the toolchain's `cc_wrapper.sh`, which is
-# what the extracted command line starts with). clang-tidy runs its own clang to
-# parse, but reads this leading argument to derive the driver's target triple and
-# resource directory (its built-in headers). A shell-script "compiler" leaves it
-# with the wrong builtins, so the macOS SDK / libc++ headers fail to parse. Use the
-# language-neutral `clang` driver rather than `clang++`: source extensions and the
-# extracted `-std` flags still select the language, while third-party C translation
-# units remain C instead of being forced through the C++ driver. All OTHER flags
-# still come from `--config=clang-tidy`; only the compiler token is substituted.
-BCCE_ARGS+=("--bcce-compiler=${CLANG}")
 
 # The hermetic clang carries its own libc++ but no system C headers: without the
 # SDK sysroot its <locale> support headers fail on `'time.h' file not found`. The
@@ -115,21 +82,14 @@ fi
 # found`. Build them in the SAME config the aquery runs in (`--config=clang-tidy`),
 # so the forests land exactly where the DB points; a fresh checkout / CI runner also
 # fetches the hermetic toolchain here.
-echo "Building generated / virtual-include headers in --config=clang-tidy so the compile DB resolves ..." 1>&2
-bazel build --config=clang-tidy //... >/dev/null \
-  || die "'bazel build --config=clang-tidy //...' failed; cannot materialize the headers the compile DB references"
-
+#
 # Wildcards omit manual targets, but the compile database explicitly includes every manual target
 # tagged `clang-tidy` (enforced by the pre-commit hook). Build that same list so external and generated
 # headers exist before clang-tidy consumes their commands.
-declare -a CLANG_TIDY_MANUAL_TARGETS=()
+declare -a PREPARATION_TARGETS=("//...")
 while IFS= read -r TARGET; do
-  CLANG_TIDY_MANUAL_TARGETS+=("${TARGET}")
+  PREPARATION_TARGETS+=("${TARGET}")
 done < <(sed -n 's|^ *"\(//[^"]*\)",$|\1|p' bazelmod/clang_tidy_targets.bzl)
-if [ "${#CLANG_TIDY_MANUAL_TARGETS[@]}" -gt 0 ]; then
-  bazel build --config=clang-tidy "${CLANG_TIDY_MANUAL_TARGETS[@]}" >/dev/null \
-    || die "building manual clang-tidy targets failed"
-fi
 
 # The composable extras are separate modules, so `//...` does not reach them: without this build
 # their virtual-include forests are missing exactly as the core's would be, and clang-tidy cannot
@@ -141,11 +101,34 @@ fi
 # These wildcards also request explicit generated-source targets, such as PCRE2's
 # chartables_source. Keeping those as top-level outputs materializes them even when
 # compiled library outputs come from cache; their diff tests guard the upstream copies.
-for EXTRA_TARGETS in $(tools/extras.py --wildcards); do
-  echo "Building ${EXTRA_TARGETS} so the compile DB resolves its headers ..." 1>&2
-  bazel build --config=clang-tidy "${EXTRA_TARGETS}" >/dev/null \
-    || die "'bazel build --config=clang-tidy ${EXTRA_TARGETS}' failed"
+EXTRA_TARGETS="$(python3 tools/extras.py --wildcards)" \
+  || die "loading extra-module targets failed"
+for TARGET in ${EXTRA_TARGETS}; do
+  PREPARATION_TARGETS+=("${TARGET}")
 done
+PREPARATION_TARGETS+=("@xff_extras_api//...")
+echo "Building core, manual clang-tidy targets, and extras together in --config=clang-tidy ..." 1>&2
+bazel build --config=clang-tidy "${PREPARATION_TARGETS[@]}" >/dev/null \
+  || die "building compile-database prerequisites failed"
+
+# Name the hermetic clang BINARY (not the toolchain's `cc_wrapper.sh`, which is
+# what the extracted command line starts with). clang-tidy runs its own clang to
+# parse, but reads this leading argument to derive the driver's target triple and
+# resource directory (its built-in headers). A shell-script "compiler" leaves it
+# with the wrong builtins, so the macOS SDK / libc++ headers fail to parse. Use the
+# language-neutral `clang` driver rather than `clang++`: source extensions and the
+# extracted `-std` flags still select the language, while third-party C translation
+# units remain C instead of being forced through the C++ driver. All OTHER flags
+# still come from `--config=clang-tidy`; only the compiler token is substituted.
+CLANG=""
+for LOC in "${CLANG_LOCS[@]}"; do
+  if [ -x "${LOC}" ]; then
+    CLANG="${LOC}"
+    break
+  fi
+done
+[ -n "${CLANG}" ] || die "Cannot find the hermetic clang after the '--config=clang-tidy' build"
+BCCE_ARGS+=("--bcce-compiler=${CLANG}")
 
 # //:refresh_compile_commands, not the extractor's stock :refresh_all - the latter covers `//...`
 # only, which silently omits every extras source file. See the target's comment in //BUILD.bazel.
@@ -169,9 +152,7 @@ bazel run --config=clang-tidy //:refresh_compile_commands -- --config=clang-tidy
 EXPECTED_SOURCES="$(mktemp)"
 trap 'rm -f "${EXPECTED_SOURCES}"' EXIT
 declare -a SOURCE_QUERY_PATTERNS=()
-EXTRA_SOURCE_QUERY_PATTERNS="$(python3 tools/extras.py --wildcards)" \
-  || die "loading expected-source package patterns failed"
-for pattern in "//xff/..." ${EXTRA_SOURCE_QUERY_PATTERNS} "@xff_extras_api//..."; do
+for pattern in "//xff/..." ${EXTRA_TARGETS} "@xff_extras_api//..."; do
   SOURCE_QUERY_PATTERNS+=("${pattern}")
 done
 tools/collect_compile_sources.sh "${SOURCE_QUERY_PATTERNS[@]}" >"${EXPECTED_SOURCES}" \
