@@ -20,17 +20,8 @@
 bazel_dep(name = "toolchains_llvm", version = "1.11.3")
 git_override(
     module_name = "toolchains_llvm",
-    commit = "06afb306f0b38501212041421a894361cb921ff1",
+    commit = "ac4055749414b749173bdfa820f5276d4c5714c8",
     remote = "https://github.com/bazel-contrib/toolchains_llvm.git",
-)
-
-# Root overrides do not propagate from toolchains_llvm. Use the published archive
-# while its BCR entry awaits review: https://github.com/bazelbuild/bazel-central-registry/pull/11158
-archive_override(
-    module_name = "mboworks_bzl",
-    integrity = "sha256-sS12HYg9SX7MP15MAFoCsZtCVgax6t1RXRWD2KvpyhQ=",
-    strip_prefix = "bzl-0.7.0",
-    urls = ["https://github.com/mboworks/bzl/releases/download/0.7.0/bzl-0.7.0.tar.gz"],
 )
 
 # The MemorySanitizer-instrumented libc++ (`--config=msan`, Linux only). MSan reports a
