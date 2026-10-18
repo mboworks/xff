@@ -17,6 +17,7 @@
 # the find and the xff style and diffs stdout+stderr against a committed golden per mode.
 # See golden.bzl for the macro and testdata/README.md for regenerating goldens.
 
+load("@aspect_rules_py//py:defs.bzl", "py_test")
 load("//xff/golden:golden.bzl", "xff_golden")
 
 package(default_visibility = ["//visibility:private"])
@@ -98,4 +99,22 @@ xff_golden(
     find_golden = "testdata/printf_field.find.txt",
     setup = "testdata/basic_tree.sh",
     xff_golden = "testdata/printf_field.xff.txt",
+)
+
+# Exercise the actual driver with unrelated working directories and external runfiles keys.
+py_test(
+    name = "golden_driver_test",
+    size = "small",
+    srcs = ["golden_driver_test.py"],
+    args = [
+        "$(rlocationpath :golden_driver.sh)",
+        "$(rlocationpath @mboworks_bashtest//bashtest:bashtest_sh)",
+        "bazel_tools/tools/bash/runfiles/runfiles.bash",
+    ],
+    data = [
+        ":golden_driver.sh",
+        "@bazel_tools//tools/bash/runfiles",
+        "@mboworks_bashtest//bashtest:bashtest_sh",
+    ],
+    deps = ["@rules_python//python/runfiles"],
 )
