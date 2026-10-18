@@ -20,29 +20,32 @@
 
 set -euo pipefail
 
-# shellcheck disable=SC1090,SC1091,SC2154
-source "${mboworks_bashtest}"
+# --- begin runfiles.bash initialization v3 ---
+# Locate the Bash runfiles library in directory or manifest-only mode.
+f=bazel_tools/tools/bash/runfiles/runfiles.bash
+# shellcheck disable=SC1090
+[[ -f "${RUNFILES_DIR:-/dev/null}/$f" ]] && source "${RUNFILES_DIR}/$f" 2>/dev/null \
+  || source "$(grep -sm1 "^$f " "${RUNFILES_MANIFEST_FILE:-/dev/null}" | cut -f2- -d' ')" 2>/dev/null \
+  || source "$0.runfiles/$f" 2>/dev/null \
+  || source "$(grep -sm1 "^$f " "$0.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/null \
+  || source "$(grep -sm1 "^$f " "$0.exe.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/null \
+  || {
+    echo >&2 "ERROR: cannot find the bash runfiles library"
+    exit 1
+  }
+# --- end runfiles.bash initialization v3 ---
 
-# Absolute path of a data file from its workspace-relative rootpath.
-_rf() { echo "${TEST_SRCDIR}/${TEST_WORKSPACE}/$1"; }
-
-_xff_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff"
-  if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/testing/xff' 2>/dev/null | head -1)"
-  fi
-  echo "${bin}"
-}
-
-# Protocol from xff_golden: $1 setup  $2 find_golden  $3 xff_golden  $4 ordered(0/1)
-# $5 "--"  $6.. expr args.
-SETUP="$(_rf "$1")"
-FIND_GOLDEN="$(_rf "$2")"
-XFF_GOLDEN="$(_rf "$3")"
-ORDERED="$4"
-shift 5 # drop the four positionals and the "--"
+# Protocol: bashtest, setup, find golden, xff golden, executable (runfiles keys),
+# ordered(0/1), "--", then expression arguments. Resolve before entering the fixture.
+# shellcheck disable=SC1090,SC1091
+source "$(rlocation "$1")"
+SETUP="$(rlocation "$2")"
+FIND_GOLDEN="$(rlocation "$3")"
+XFF_GOLDEN="$(rlocation "$4")"
+XFF="$(rlocation "$5")"
+ORDERED="$6"
+shift 7
 EXPR_ARGS=("$@")
-XFF="$(_xff_bin)"
 
 # Fixture in a fresh temp tree; the setup script populates $PWD. Cleaned on exit.
 TREE="$(mktemp -d)"

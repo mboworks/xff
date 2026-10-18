@@ -22,6 +22,9 @@
   3. normalizes the output (the temp root -> `<ROOT>`; lines sorted unless `ordered`),
   4. compares each mode's output to its committed golden file.
 
+Inputs and the executable are passed as repository-qualified runfiles keys and resolved
+by the driver, supporting external files and manifest-only runfiles.
+
 This pins find-vs-xff behavior and catches drift a single-mode test would miss. Output
 with volatile per-run fields (`-ls` inode/date) is not golden-able yet; use stable
 output (`-print`/`-printf`/name listings, `--summary` counts) for now.
@@ -54,12 +57,15 @@ def xff_golden(name, setup, args, find_golden, xff_golden, ordered = False, size
         size = size,
         srcs = ["//xff/golden:golden_driver.sh"],
         args = [
-            "$(rootpath {})".format(setup),
-            "$(rootpath {})".format(find_golden),
-            "$(rootpath {})".format(xff_golden),
+            "$(rlocationpath @mboworks_bashtest//bashtest:bashtest_sh)",
+            "$(rlocationpath {})".format(setup),
+            "$(rlocationpath {})".format(find_golden),
+            "$(rlocationpath {})".format(xff_golden),
+            "$(rlocationpath //xff/cli/testing:xff)",
             "1" if ordered else "0",
             "--",
         ] + args,
+        deps = ["@bazel_tools//tools/bash/runfiles"],
         data = [
             setup,
             find_golden,
