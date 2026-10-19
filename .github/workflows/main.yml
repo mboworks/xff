@@ -30,7 +30,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - name: Check live repository tooling
         run: bazel run //tools:repository_tooling_test
       - uses: actions/setup-node@v7
@@ -83,7 +83,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       # bazelisk launches the Bazel release pinned in .bazelversion.
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       # PRs restore main's latest compiled outputs. Every main run saves a new bounded
       # generation; GitHub cache entries cannot be updated in place.
       - name: Restore Bazel compiled outputs
@@ -213,7 +213,7 @@ jobs:
           sudo update-alternatives --set gcc /usr/bin/gcc-15
           gcc --version
           g++ --version
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - name: Restore Bazel compiled outputs
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
@@ -248,7 +248,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
@@ -280,7 +280,7 @@ jobs:
       FUZZ_SECONDS_PER_TARGET: 60
     steps:
       - uses: actions/checkout@v7
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - name: Restore Bazel compiled outputs
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
@@ -338,7 +338,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       # Coverage instrumentation has distinct action keys, so keep its compiled outputs in a
       # dedicated cache rather than crowding out the ordinary Clang build. Prefix restoration lets a
       # later run reuse objects from the newest saved generation.
@@ -465,7 +465,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - name: Restore Bazel compiled outputs
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
@@ -510,7 +510,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - name: Restore Bazel compiled outputs
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
@@ -553,7 +553,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - name: Restore Bazel compiled outputs
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
@@ -595,7 +595,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - name: Restore Bazel compiled outputs
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
@@ -661,7 +661,7 @@ jobs:
             echo "CLANG_TIDY_SCOPE=none" >>"${GITHUB_ENV}"
             echo "No C++ source or header changed; clang-tidy is not required."
           fi
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
         if: env.CLANG_TIDY_ENABLED == 'true'
       - uses: actions/setup-python@v7
         if: env.CLANG_TIDY_ENABLED == 'true'
@@ -741,7 +741,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
