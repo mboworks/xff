@@ -15,12 +15,12 @@
 
 """LLVM 23 by default; LLVM 22 with its matching instrumented libc++ for MSan."""
 
-# Replace this source pin with the release containing the shared version selectors:
-# https://github.com/bazel-contrib/toolchains_llvm/pull/909
-bazel_dep(name = "toolchains_llvm", version = "1.11.3")
+# Pin the selector support merged after 1.12.0; use a release containing it when available.
+# https://github.com/bazel-contrib/toolchains_llvm/pull/911
+bazel_dep(name = "toolchains_llvm", version = "1.12.0")
 git_override(
     module_name = "toolchains_llvm",
-    commit = "ac4055749414b749173bdfa820f5276d4c5714c8",
+    commit = "b63941bcc533a52e1b81c81af5fe77d5a2b382f8",
     remote = "https://github.com/bazel-contrib/toolchains_llvm.git",
 )
 

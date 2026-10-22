@@ -81,6 +81,18 @@ The first run fetches that distribution if needed; it does not compile XFF. CI r
 across the complete indexed source set when the compiler or lint policy changes; ordinary source
 changes keep the affected-file scope.
 
+## Linux FUSE runtimes
+
+The FUSE extra loads either `libfuse3.so.4` (Ubuntu 26.04) or `libfuse3.so.3` (Ubuntu 24.04)
+at runtime. Install `fuse3`; its package dependency selects the matching runtime library without
+pinning a distribution-specific library package name. Both SONAMEs expose the FUSE3 API subset
+used by xff, including the four-argument `fuse_session_new` compatibility entry point. No libfuse
+headers or libraries are included in the build.
+
+Linux CI runs the real mount tests on Ubuntu 24.04 and `ubuntu-latest`, with
+`--config=xff_fuse_tests_required` so missing libraries or failed mounts fail the job. Hosts without
+a usable FUSE runtime retain the existing extraction fallback.
+
 ## Local clang-tidy scope
 
 The normal commit and push hooks run clang-tidy on their changed C++ files. Changed headers
