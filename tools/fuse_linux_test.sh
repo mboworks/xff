@@ -64,6 +64,8 @@ SETUP_EOF
 
 if [[ "${MODE}" == "msan" ]]; then
   script="${SETUP}
+# The LLVM 22.1.8 linker needs SONAME 2, available in this Ubuntu 24.04 image.
+apt-get install -y -qq libxml2 >/dev/null
 bazel --output_user_root=/bzcache test --config=xff_full @xff_fuse//... //xff/cli:full_extras_test \\
   --config=clang --config=msan --config=xff_fuse_tests_required \\
   --nocache_test_results --test_output=errors"
