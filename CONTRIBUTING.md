@@ -76,6 +76,12 @@ instrumented libc++ on Linux x86-64, independently of config flag order. ASan, T
 fuzzing, releases, build tools, and clang-tidy use LLVM 23. The existing `--config=lto` selection
 continues to use native Apple ld on macOS and bundled LLD on Linux.
 
+The official LLVM 22.1.8 LLD executable requires `libxml2.so.2`. The MSan CI job uses
+Ubuntu 24.04 and explicitly installs `libxml2`; Ubuntu 26.04 only packages `libxml2.so.16`,
+which cannot satisfy that dependency. Ordinary LLVM 23 builds and the other sanitizer jobs
+continue on `ubuntu-latest`. Moving MSan to that host requires a compatible compiler/runtime
+distribution; keep its compiler and instrumented libc++ versions matched.
+
 Pre-commit and `tools/clang_format.sh` run clang-format from the same selected LLVM 23 distribution.
 The first run fetches that distribution if needed; it does not compile XFF. CI runs clang-tidy
 across the complete indexed source set when the compiler or lint policy changes; ordinary source

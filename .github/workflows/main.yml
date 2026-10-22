@@ -512,7 +512,9 @@ jobs:
       contents: read
       actions: write # Retire replaced main cache generations after successful uploads.
     needs: [pre-commit, trunk]
-    runs-on: ubuntu-latest
+    # LLVM 22.1.8 LLD requires libxml2.so.2; Ubuntu 26.04 only packages SONAME 16.
+    # Keep the matching MSan compiler/libc++ pair on a host with compatible libraries.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: bazel-contrib/setup-bazel@0.19.1
@@ -520,10 +522,10 @@ jobs:
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
         with:
-          namespace: msan
+          namespace: msan-ubuntu24
           legacy-prefix: bazel-disk-msan-
-      - name: Install roff formatter (mandoc)
-        run: sudo apt-get install -y mandoc
+      - name: Install LLVM 22 runtime dependency and roff formatter
+        run: sudo apt-get install -y libxml2 mandoc
       # Installed for the same reason as the tsan cell, though every mounting test skips here: a
       # mount runs through the dlopened SYSTEM libfuse3, and MSan reports everything it did not
       # instrument as uninitialized. The skips key off --config=msan itself (the MEMORY_SANITIZER
