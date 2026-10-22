@@ -67,15 +67,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-24.04, ubuntu-latest, macos-latest]
         config:
           - name: default
             flags: "--config=clang_release"
           - name: asan
             flags: "--config=clang --config=asan"
         exclude:
-          # asan on Linux is enough; the macOS asan cell is redundant sanitizer coverage, so drop it.
-          # This leaves: ubuntu default, ubuntu asan, macos default.
+          # Exercise both Linux FUSE SONAMEs in default builds; one Linux asan cell is enough.
+          # This leaves: Ubuntu 24.04 default, latest default + asan, and macOS default.
+          - os: ubuntu-24.04
+            config:
+              name: asan
+              flags: "--config=clang --config=asan"
           - os: macos-latest
             config:
               name: asan
@@ -90,7 +94,7 @@ jobs:
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
         with:
-          namespace: ${{ matrix.config.name }}
+          namespace: ${{ matrix.os == 'ubuntu-24.04' && 'default-ubuntu24' || matrix.config.name }}
           legacy-prefix: bazel-disk-${{ matrix.os }}-${{ matrix.config.name }}-
       # Every matrix cell uses hermetic LLVM. Do not persist the repository cache: one LLVM archive
       # is ~4.4 GB and would consume almost half of GitHub's per-repository cache budget. Compiled
@@ -105,13 +109,14 @@ jobs:
           command -v mandoc
       # The FUSE server's integration test mounts a real filesystem through the kernel, which only
       # Linux runners can do (macOS has no fuse3; the test skips there by design). Install the
-      # runtime pieces the loader dlopens (libfuse3) and the unmount helper (fusermount3). The test
+      # fuse3 package, which pulls in the matching libfuse3 runtime (SONAME 3 on Ubuntu 24.04,
+      # SONAME 4 on Ubuntu 26.04) and the unmount helper (fusermount3). The test
       # command below opts Linux into the Bazel capability contract, so mounting failures cannot
       # silently become skips.
       - name: Enable FUSE integration coverage (Linux)
         run: |
           if [ "${RUNNER_OS}" = "Linux" ]; then
-            sudo apt-get install -y fuse3 libfuse3-3
+            sudo apt-get install -y fuse3
           fi
       # Every job builds with EVERY extra on (--config=xff_docs, which is --config=xff_full plus the
       # archive extra), so the composable extras get the SAME asan / tsan coverage as the core - our
@@ -355,7 +360,7 @@ jobs:
         run: |
           # Ubuntu's lcov package supplies the Perl dependencies, but its old genhtml ignores
           # metric-specific color thresholds. Install the pinned current release over it below.
-          sudo apt-get install -y lcov mandoc fuse3 libfuse3-3
+          sudo apt-get install -y lcov mandoc fuse3
           tools/install_lcov.sh "${RUNNER_TEMP}/lcov"
           echo "${RUNNER_TEMP}/lcov/bin" >>"${GITHUB_PATH}"
       - name: Collect and enforce coverage
@@ -477,7 +482,7 @@ jobs:
       # This runner promises a working mount path through the named Bazel config below.
       - name: Enable FUSE integration coverage
         run: |
-          sudo apt-get install -y fuse3 libfuse3-3
+          sudo apt-get install -y fuse3
       - name: bazel test
         run: |
           # shellcheck disable=SC2046  # deliberate word splitting: the tool prints bazel target patterns
@@ -525,7 +530,7 @@ jobs:
       # macro in C++, the XFF_MSAN env in the shell test), so they hold whether or not this is set.
       - name: Enable FUSE integration coverage
         run: |
-          sudo apt-get install -y fuse3 libfuse3-3
+          sudo apt-get install -y fuse3
       - name: bazel test
         run: |
           # shellcheck disable=SC2046  # deliberate word splitting: the tool prints bazel target patterns

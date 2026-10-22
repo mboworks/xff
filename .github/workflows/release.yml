@@ -65,7 +65,7 @@ jobs:
         run: |
           # Ubuntu's lcov package supplies the Perl dependencies, but its old genhtml ignores
           # metric-specific color thresholds. Install the pinned current release over it below.
-          sudo apt-get install -y lcov mandoc fuse3 libfuse3-3
+          sudo apt-get install -y lcov mandoc fuse3
           tools/install_lcov.sh "${RUNNER_TEMP}/lcov"
           echo "${RUNNER_TEMP}/lcov/bin" >>"${GITHUB_PATH}"
       - name: Check live repository tooling
