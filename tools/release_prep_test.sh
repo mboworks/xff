@@ -300,8 +300,8 @@ test_workflows_use_setup_bazel() {
     fi
     workflow_setup_count=$(count_lines_with 'uses: bazel-contrib/setup-bazel@' "${workflow}")
     setup_count=$((setup_count + workflow_setup_count))
-    if [ "${workflow_setup_count}" -ne "$(count_lines_with 'uses: bazel-contrib/setup-bazel@0.19.0' "${workflow}")" ]; then
-      fail "workflow $(basename "${workflow}"): every setup-bazel use must pin 0.19.0"
+    if [ "${workflow_setup_count}" -ne "$(count_lines_with 'uses: bazel-contrib/setup-bazel@0.19.1' "${workflow}")" ]; then
+      fail "workflow $(basename "${workflow}"): every setup-bazel use must pin 0.19.1"
     fi
   done
   if [ "${setup_count}" -eq 0 ]; then
