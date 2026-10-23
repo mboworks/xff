@@ -24,9 +24,10 @@
 // mount server needs is resolved then. One binary runs everywhere; where the library is absent,
 // `--archive-mount` degrades to extraction and this loader says why.
 //
-// Scope: the FUSE3 API only. macFUSE installations that ship only the legacy fuse2 library report
-// unavailable (with the library name in `error()`); supporting the fuse2 lowlevel API is a separate
-// decision to take when a real macFUSE user appears, not a default.
+// Scope: the FUSE3 API, including Linux SONAMEs 3 and 4. The ABI subset in fuse_abi.h
+// works with both; SONAME 4 is still the FUSE3 API. macFUSE installations that ship only the legacy fuse2 library
+// report unavailable (with the library name in `error()`); supporting the fuse2 lowlevel API is a separate decision to
+// take when a real macFUSE user appears, not a default.
 
 #include <string>
 #include <string_view>

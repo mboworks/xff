@@ -55,7 +55,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq >/dev/null
 # git is not optional: MODULE.bazel pulls toolchains_llvm and hedron_compile_commands through
 # git_repository, so a cold cache cannot even compute the repo mapping without it.
-apt-get install -y -qq curl git gcc g++ python3 unzip zip fuse3 libfuse3-3 >/dev/null
+apt-get install -y -qq curl git gcc g++ python3 unzip zip fuse3 >/dev/null
 arch="$(uname -m)"; [ "${arch}" = "aarch64" ] && arch=arm64 || arch=amd64
 curl -sSL -o /usr/local/bin/bazel "https://github.com/bazelbuild/bazelisk/releases/download/v1.20.0/bazelisk-linux-${arch}"
 chmod +x /usr/local/bin/bazel
@@ -64,6 +64,8 @@ SETUP_EOF
 
 if [[ "${MODE}" == "msan" ]]; then
   script="${SETUP}
+# The LLVM 22.1.8 linker needs SONAME 2, available in this Ubuntu 24.04 image.
+apt-get install -y -qq libxml2 >/dev/null
 bazel --output_user_root=/bzcache test --config=xff_full @xff_fuse//... //xff/cli:full_extras_test \\
   --config=clang --config=msan --config=xff_fuse_tests_required \\
   --nocache_test_results --test_output=errors"

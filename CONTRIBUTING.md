@@ -68,15 +68,36 @@ No tests contact GitHub or recursively invoke Bazel; the separate site integrati
 
 ## Compiler and sanitizer versions
 
-`--config=clang` uses LLVM 23.1.2. The `msan` feature selects LLVM 22.1.8 and its matching
+`--config=clang` selects the newest stable LLVM 23 release available for the host from the pinned
+`toolchains_llvm` catalogue (`latest:major==23`). Updating that module can adopt LLVM 23 fixes
+without a separate compiler-version edit; LLVM 24 requires an explicit selector change. The
+`msan` feature selects LLVM 22.1.8 and its matching
 instrumented libc++ on Linux x86-64, independently of config flag order. ASan, TSan, coverage,
 fuzzing, releases, build tools, and clang-tidy use LLVM 23. The existing `--config=lto` selection
 continues to use native Apple ld on macOS and bundled LLD on Linux.
 
-Pre-commit and `tools/clang_format.sh` run clang-format from the same pinned LLVM 23 distribution.
+The official LLVM 22.1.8 LLD executable requires `libxml2.so.2`. The MSan CI job uses
+Ubuntu 24.04 and explicitly installs `libxml2`; Ubuntu 26.04 only packages `libxml2.so.16`,
+which cannot satisfy that dependency. Ordinary LLVM 23 builds and the other sanitizer jobs
+continue on `ubuntu-latest`. Moving MSan to that host requires a compatible compiler/runtime
+distribution; keep its compiler and instrumented libc++ versions matched.
+
+Pre-commit and `tools/clang_format.sh` run clang-format from the same selected LLVM 23 distribution.
 The first run fetches that distribution if needed; it does not compile XFF. CI runs clang-tidy
 across the complete indexed source set when the compiler or lint policy changes; ordinary source
 changes keep the affected-file scope.
+
+## Linux FUSE runtimes
+
+The FUSE extra loads either `libfuse3.so.4` (Ubuntu 26.04) or `libfuse3.so.3` (Ubuntu 24.04)
+at runtime. Install `fuse3`; its package dependency selects the matching runtime library without
+pinning a distribution-specific library package name. Both SONAMEs expose the FUSE3 API subset
+used by xff, including the four-argument `fuse_session_new` compatibility entry point. No libfuse
+headers or libraries are included in the build.
+
+Linux CI runs the real mount tests on Ubuntu 24.04 and `ubuntu-latest`, with
+`--config=xff_fuse_tests_required` so missing libraries or failed mounts fail the job. Hosts without
+a usable FUSE runtime retain the existing extraction fallback.
 
 ## Local clang-tidy scope
 
