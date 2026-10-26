@@ -1,5 +1,14 @@
 # TODO
 
+## Diff direction and output path transformations
+
+Design: [`docs/design-diff-paths.md`](docs/design-diff-paths.md).
+
+- [x] Specify old/new direction, `-rdiff`, root-relative labels, and the eight global options.
+- [x] Implement shared compiled rewrite programs and strip/root/rewrite/prefix mapping.
+- [x] Render reverse Git creation/deletion patches and map action/comparison labels.
+- [x] Complete collision, integration, help, formatting, and full-suite verification.
+
 ## Prepared expression execution and optimizer
 
 Detailed scope, data-structure audit, benchmark matrix and decision gates:

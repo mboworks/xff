@@ -3,16 +3,16 @@
 ***************
 *** 1,2 ****
   alpha
-! beta
+! BETA
 --- 1,2 ----
   alpha
-! BETA
+! beta
 *** a/sub/two.txt
 --- b/sub/two.txt
 ***************
 *** 1,2 ****
   gamma
-! delta
+! DELTA
 --- 1,2 ----
   gamma
-! DELTA
+! delta

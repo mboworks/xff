@@ -100,6 +100,7 @@ TEST_F(RegistryTest, CompatibilitySpellingsAreDisjointFromNativePrimaries) {
 TEST_F(RegistryTest, OutputCapabilitiesDistinguishStdoutFromCapturedAndFileSinks) {
   static constexpr std::array kStdoutPrimaries = std::to_array<std::string_view>({
       "-diff",
+      "-rdiff",
       "-hash",
       "-ls",
       "-print",

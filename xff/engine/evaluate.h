@@ -42,6 +42,7 @@
 #include "xff/engine/walk.h"
 #include "xff/parser/ast.h"
 #include "xff/presentation/format/format.h"
+#include "xff/presentation/patch/patch.h"
 #include "xff/vfs/filesystem.h"
 #include "xff/vfs/mutations.h"
 
@@ -62,6 +63,7 @@ using EmitFn = absl::FunctionRef<void(std::string_view)>;
 // whether they are set.
 struct Control {
   absl::Status metadata_error;  // Failed lazy stat; stop this entry, never treat it as a false predicate.
+  absl::Status output_error;    // Invalid patch labels/collisions are always hard errors.
   absl::Status mutation_error;  // Never downgraded by --skip-unsupported.
   bool prune = false;
   bool quit = false;
@@ -116,6 +118,7 @@ struct EvaluationResult {
 
 using DeferredDecisions = std::map<ExprIdentity, bool>;
 using EvaluationMemo = std::map<ExprIdentity, EvaluationResult>;
+using PatchDestinations = std::map<ExprIdentity, patch::Destinations>;
 using FirstCounts = std::map<ExprIdentity, int>;
 using ExecBatches = std::map<ExprIdentity, std::map<std::string, std::vector<std::string>>>;
 
@@ -241,6 +244,8 @@ struct EvalContext {
   // --context feeds it only when before==after; --diff-context overrides --context. A per-action
   // -diff:uN overrides both. Resolved once before the walk; only -diff reads it.
   std::size_t diff_context = 3;
+  mbo::types::OptionalRef<const patch::Paths> diff_paths;
+  mbo::types::OptionalRef<PatchDestinations> diff_destinations;
   // --hash-algorithm=ALGO / --hash-encoding=hex|base64: the default digest for a bare -hash
   // action and a bare {hash} field (empty -> sha256 / hex). Validated once before the walk;
   // an explicit -hash:ALGO[/ENCODING] or {hash:...} qualifier overrides per node.

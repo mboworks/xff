@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "mbo/types/optional_ref.h"
@@ -38,6 +39,22 @@
 #include "xff/vfs/filesystem.h"
 
 namespace xff::fields {
+
+// An owned, compiled substitution chain using the field s/PAT/REPL/gi grammar.
+// Compile validates all commands and replacement references before any rendering.
+// Extraction commands are intentionally excluded. Copies share immutable programs.
+class RewriteProgram {
+ public:
+  static absl::StatusOr<RewriteProgram> Compile(std::string_view spec);
+  std::string Apply(std::string_view value) const;
+
+ private:
+  struct Impl;
+
+  explicit RewriteProgram(std::shared_ptr<const Impl> impl) : impl_(std::move(impl)) {}
+
+  std::shared_ptr<const Impl> impl_;
+};
 
 // The per-entry inputs a field renderer reads. Bundled into a context so new
 // fields can draw on more inputs without changing every renderer's signature.

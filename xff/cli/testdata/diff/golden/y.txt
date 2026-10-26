@@ -1,4 +1,4 @@
 alpha                                                             alpha
-beta                                                            | BETA
+BETA                                                            | beta
 gamma                                                             gamma
-delta                                                           | DELTA
+DELTA                                                           | delta

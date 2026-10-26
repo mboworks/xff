@@ -88,6 +88,7 @@
 #include "xff/presentation/color/color.h"
 #include "xff/presentation/fields/fields.h"
 #include "xff/presentation/format/format.h"
+#include "xff/presentation/patch/patch.h"
 #include "xff/presentation/render/render.h"
 #include "xff/presentation/render/scoped_table.h"
 #include "xff/presentation/render/summary_export.h"
@@ -4130,14 +4131,41 @@ absl::StatusOr<TreeCompareSelection> ResolveTreeCompareSelection(const std::vect
   return selection;
 }
 
+absl::StatusOr<patch::Names> TreePatchNames(
+    mbo::types::OptionalRef<const TreeCompareEntry> left,
+    mbo::types::OptionalRef<const TreeCompareEntry> right,
+    std::string_view relative_path,
+    const patch::Paths& paths) {
+  const auto logical = [relative_path](const TreeCompareEntry& entry) -> std::string_view {
+    if (relative_path != ".") {
+      return relative_path;
+    }
+    const std::string_view path = entry.path;
+    const auto slash = path.find_last_of('/');
+    return slash == std::string_view::npos ? path : path.substr(slash + 1);
+  };
+  patch::Names names{.left = "/dev/null", .right = "/dev/null"};
+  if (left) {
+    MBO_ASSIGN_OR_RETURN(names.left, paths.left.Map(logical(*left)));
+  }
+  if (right) {
+    MBO_ASSIGN_OR_RETURN(names.right, paths.right.Map(logical(*right)));
+  }
+  return names;
+}
+
 absl::StatusOr<std::string> TreeEntryPatch(
     mbo::types::OptionalRef<const TreeCompareEntry> left,
     mbo::types::OptionalRef<const TreeCompareEntry> right,
     std::string_view relative_path,
     const mbo::diff::DiffOptions& options,
+    const patch::Paths& paths,
+    patch::Destinations& destinations,
     mbo::types::OptionalRef<const ComparisonBytes> prepared) {
-  const std::string left_name = left.has_value() ? absl::StrCat("a/", relative_path) : "/dev/null";
-  const std::string right_name = right.has_value() ? absl::StrCat("b/", relative_path) : "/dev/null";
+  MBO_ASSIGN_OR_RETURN(const auto names, TreePatchNames(left, right, relative_path, paths));
+  MBO_RETURN_IF_ERROR(destinations.Claim(names, left ? left->path : "", right ? right->path : ""));
+  const std::string left_name = left ? patch::HeaderName(names.left) : names.left;
+  const std::string right_name = right ? patch::HeaderName(names.right) : names.right;
   const bool regular = (!left.has_value() || left->metadata.type == vfs::FileType::kRegular)
                        && (!right.has_value() || right->metadata.type == vfs::FileType::kRegular);
   if (!regular) {
@@ -4363,6 +4391,12 @@ RunResult RunTreeCompare(
     on_error("--compare", absl::InvalidArgumentError("requires exactly two roots"));
     return RunResult{.errors = 2};
   }
+  const auto diff_paths = patch::Paths::Resolve(command.globals);
+  if (!diff_paths.ok()) {
+    on_error("diff paths", diff_paths.status());
+    return RunResult{.errors = 2};
+  }
+  patch::Destinations diff_destinations;
   const TreeCompareOutput output = ResolveTreeCompareOutput(command.globals);
   const render::Renderer status_renderer(render::Format::kPlain, ResolvePathEncoding(command.globals));
   const absl::StatusOr<TreeCompareSelection> selection_result = ResolveTreeCompareSelection(command.globals);
@@ -4514,7 +4548,7 @@ RunResult RunTreeCompare(
         emit_status(category_name, pair.path);
       } else {
         const auto patch = TreeEntryPatch(
-            pair.left, pair.right, pair.path, diff_options,
+            pair.left, pair.right, pair.path, diff_options, *diff_paths, diff_destinations,
             result->bytes ? mbo::types::OptionalRef<const ComparisonBytes>{*result->bytes}
                           : mbo::types::OptionalRef<const ComparisonBytes>{});
         if (!patch.ok()) {
@@ -4997,6 +5031,13 @@ RunResult RunFindCore(
     return RunResult{.errors = 2};
   }
   const mbo::diff::DiffOptions::OutputFormat diff_format = *diff_format_result;
+  const auto diff_paths = patch::Paths::Resolve(command.globals);
+  if (!diff_paths.ok()) {
+    on_error("diff paths", diff_paths.status());
+    return RunResult{.errors = 2};
+  }
+  PatchDestinations diff_destinations;
+  bool diff_output_failed = false;
   // --diff-context=N (and --context=N when symmetric): the default -diff context size (built-in 3).
   // --context feeds diff only when before==after (a single symmetric value a diff can represent);
   // --diff-context overrides --context regardless of order; a per-action -diff:uN overrides both.
@@ -6070,6 +6111,8 @@ RunResult RunFindCore(
             .diff_ignore_matching = diff_ignore_matching,
             .diff_format = diff_format,
             .diff_context = diff_context,
+            .diff_paths = *diff_paths,
+            .diff_destinations = diff_destinations,
             .hash_algorithm = hash_algorithm,
             .hash_encoding = hash_encoding,
             .control = control,
@@ -6093,6 +6136,12 @@ RunResult RunFindCore(
         const EvaluationResult evaluated = serial_evaluator ? serial_evaluator->Evaluate(eval_context)
                                            : expression     ? EvaluateDeferred(*expression, eval_context)
                                                             : EvaluationResult{.matched = true};
+        if (!control.output_error.ok()) {
+          diff_output_failed = true;
+          ++errors;
+          on_error(visit.path, control.output_error);
+          return WalkAction::kStop;
+        }
         if (!control.metadata_error.ok()) {
           if (!(options.ignore_readdir_race && absl::IsNotFound(control.metadata_error))) {
             ++errors;
@@ -6156,6 +6205,9 @@ RunResult RunFindCore(
   }
 
   flush_matches();
+  if (diff_output_failed) {
+    return RunResult{.errors = errors, .any_match = any_match};
+  }
 
   // Resolve one deferred frontier at a time. A decision may expose another result-set predicate
   // farther right; replay stops there and the next round resolves that node's independent cohort.
@@ -6216,6 +6268,8 @@ RunResult RunFindCore(
           .diff_ignore_matching = diff_ignore_matching,
           .diff_format = diff_format,
           .diff_context = diff_context,
+          .diff_paths = *diff_paths,
+          .diff_destinations = diff_destinations,
           .hash_algorithm = hash_algorithm,
           .hash_encoding = hash_encoding,
           .control = control,
@@ -6238,6 +6292,11 @@ RunResult RunFindCore(
       };
       const EvaluationResult evaluated =
           serial_evaluator ? serial_evaluator->Evaluate(eval_context) : EvaluateDeferred(*expression, eval_context);
+      if (!control.output_error.ok()) {
+        ++errors;
+        on_error(visit.path, control.output_error);
+        return RunResult{.errors = errors, .any_match = any_match};
+      }
       if (evaluated.deferred) {
         candidate.waiting_at = evaluated.waiting_at.value();
         candidate.score = evaluated.fuzzy.value_or(0);
@@ -6733,6 +6792,9 @@ std::set<registry::ModifierConsumer> ExpressionConsumers(
     }
     if (consumer == ModifierConsumer::kFileDiff) {
       consumers.insert(ModifierConsumer::kDiffComputation);
+      if (expr.diff_style != "none") {
+        consumers.insert(ModifierConsumer::kDiffPaths);
+      }
       const DiffDefaultDependencies defaults = InspectDiffDefaults(expr.diff_style, diff_format);
       if (defaults.format) {
         consumers.insert(ModifierConsumer::kDefaultDiffFormat);
@@ -7092,6 +7154,7 @@ absl::StatusOr<std::set<registry::ModifierConsumer>> ActiveModifierConsumers(
   consumers.merge(OutputHashConsumers(command, summaries, listing));
   if (compare && ResolveTreeCompareOutput(command.globals) == TreeCompareOutput::kDiff) {
     consumers.insert(ModifierConsumer::kDiffComputation);
+    consumers.insert(ModifierConsumer::kDiffPaths);
     consumers.insert(ModifierConsumer::kDiffContext);
   }
   MBO_ASSIGN_OR_RETURN(const auto context, ResolveGrepContext(command.globals));

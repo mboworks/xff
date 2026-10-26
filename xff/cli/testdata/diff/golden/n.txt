@@ -1,8 +1,8 @@
 2c2
-< beta
+< BETA
 ---
-> BETA
+> beta
 2c2
-< delta
+< DELTA
 ---
-> DELTA
+> delta

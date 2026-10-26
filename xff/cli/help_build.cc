@@ -1308,6 +1308,29 @@ Section CompareSection(bool in_full) {
       "`--compare=diff` writes one unified patch for added, removed, and changed regular files. Text files get "
       "hunks; binary and non-regular differences get a diagnostic line. `--diff-algorithm` and `--diff-context` "
       "tune this mode. `identical` is rejected because an unchanged entry has no patch representation."));
+  patch.children.push_back(ProseOf(
+      "Left is old content and right is new content. `-diff [TARGET]` emits TARGET-to-found changes; "
+      "`-rdiff [TARGET]` emits found-to-TARGET changes. An omitted TARGET or `/dev/null` creates or deletes "
+      "the found entry respectively. Both use its root-relative name (a file root uses its basename); "
+      "TARGET selects bytes and may be a field template. Comparison accepts two file roots too, using "
+      "their respective basenames as patch names."));
+  patch.children.push_back(ProseOf(
+      "Patch paths have an output-only pipeline: `--diff-left-strip=N` / `--diff-right-strip=N` remove "
+      "leading logical components, `--diff-left-root=PATH` / `--diff-right-root=PATH` inject relative "
+      "directories, repeatable `--diff-left-rewrite=RULES` / `--diff-right-rewrite=RULES` apply ordered "
+      "field-style `s/PAT/REPL/gi` substitution chains, then `--diff-left-prefix=TEXT` / "
+      "`--diff-right-prefix=TEXT` prepend literal prefixes (defaults `a/` and `b/`; empty removes them). "
+      "Stages always run in that order. Root, strip and prefix values use the last occurrence; rewrite "
+      "flags accumulate. Rewrites use RE2 and capture references such as `\\1`. Patterns, replacements "
+      "and flags are validated before traversal. Strip counts must leave a filename; roots and final "
+      "paths must be relative without empty, `.`, `..`, or `.git` components. Prefixes add no separator. "
+      "`/dev/null` stays unchanged. These settings affect labels in both diff primaries and comparison "
+      "patches, including diagnostics, without changing reads, pairing, status records or summaries. "
+      "Different entries mapping to the same output destination on one side are errors. Earlier patches "
+      "may already have been emitted: check exit status before applying streamed output."));
+  patch.children.push_back(ExampleOf(
+      "xff --compare=diff old-tree new-tree --diff-left-root=project --diff-right-root=project\n"
+      "xff src -type f -rdiff --diff-left-prefix= --diff-right-prefix="));
   section.children.push_back(Content{.node = std::move(patch)});
 
   if (!in_full) {
@@ -2125,7 +2148,7 @@ Section UsageTasksSection() {
       {"Find entries", "`--help=expressions` for tests and actions; `--help=regex` for regular expressions"},
       {"Search contents", "`--help=content` for `-grep`, captures, and content matching"},
       {"Summarize", "`--help=summary` for counts, sizes, grouping, and comparison scopes"},
-      {"Compare trees", "`--help=compare` for differences and comparison summaries"},
+      {"Compare and patch", "`--help=compare` for two-root comparison, `-diff` / `-rdiff`, and patch paths"},
       {"Choose output", "`--help=output` for formats; `--help=fields` for template fields"},
       {"Configure safety", "`--help=config` for INI files; `--help=safety` for blocks, safe mode, and dry-run"},
       {"Use archives", "`--help=archive` for supported readers, writers, and archive traversal"},

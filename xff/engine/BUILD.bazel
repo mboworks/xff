@@ -306,6 +306,7 @@ cc_library(
         "//xff/presentation/color:color_cc",
         "//xff/presentation/fields:fields_cc",
         "//xff/presentation/format:format_cc",
+        "//xff/presentation/patch:patch_cc",
         "//xff/presentation/render:render_cc",
         "//xff/presentation/render:scoped_table_cc",
         "//xff/presentation/render:summary_export_cc",

@@ -3,6 +3,14 @@
 
 # 0.9.0
 
+- Make `-diff TARGET` emit TARGET-to-found changes and add `-rdiff [TARGET]` for the reverse.
+  Omitted TARGET creates or deletes files respectively, including binary files, empty files,
+  executable modes, and symlinks. Use `-rdiff TARGET` for the previous explicit `-diff` direction.
+
+- Add independent left/right patch path stripping, injected roots, ordered regex rewrites, and
+  literal prefixes to diff actions and comparison patches. Reject invalid destinations and path
+  collisions; show useful basenames when comparing two file roots.
+
 - Prepare expression callbacks and invariant operands once per run; reuse compiled coordinator
   matchers and initialize private worker matchers on demand. Report native preparation in `--explain`.
 

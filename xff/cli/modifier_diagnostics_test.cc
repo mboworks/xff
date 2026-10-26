@@ -63,6 +63,18 @@ struct ArchiveModifierDiagnosticsTest : ModifierDiagnosticsTest {
   void TearDown() override { archive::RegisterContainerReader("modifier-diagnostics", archive::ContainerOpener{}, {}); }
 };
 
+TEST_F(ModifierDiagnosticsTest, PatchPathsRequireAnOutputProducingDiffConsumer) {
+  EXPECT_THAT(Notes({".", "--diff-left-root=project", "-diff"}), IsOkAndHolds(Eq("")));
+  EXPECT_THAT(Notes({".", "--diff-right-rewrite=s|x|y|", "-rdiff"}), IsOkAndHolds(Eq("")));
+  EXPECT_THAT(Notes({"left", "right", "--compare=diff", "--diff-right-prefix="}), IsOkAndHolds(Eq("")));
+  EXPECT_THAT(
+      Notes({".", "--diff-left-root=project", "-rdiff:none"}),
+      IsOkAndHolds(HasSubstr("patch output from -diff, -rdiff, or --compare=diff")));
+  EXPECT_THAT(
+      Notes({"left", "right", "--compare=status", "--diff-left-strip=1"}),
+      IsOkAndHolds(HasSubstr("inactive-modifier")));
+}
+
 TEST_F(ModifierDiagnosticsTest, HashActionsConsumeOnlyUnspecifiedDefaults) {
   EXPECT_THAT(Notes({".", "--hash-algorithm=md5", "-hash"}), IsOkAndHolds(Eq("")));
   EXPECT_THAT(Notes({".", "--hash-encoding=base64", "-hasheq", "expected"}), IsOkAndHolds(Eq("")));
@@ -230,13 +242,14 @@ TEST_F(ModifierDiagnosticsTest, DiffDefaultsDistinguishActionsOverridesAndTreeOu
   EXPECT_THAT(
       Notes({"left", "right", "--compare", "--diff-algorithm=direct"}), IsOkAndHolds(HasSubstr("requires -diff or")));
   EXPECT_THAT(Notes({".", "--diff-ignore=ws", "-diff", "other"}), IsOkAndHolds(Eq("")));
-  EXPECT_THAT(Notes({".", "--diff-ignore-matching=x"}), IsOkAndHolds(HasSubstr("requires a -diff action")));
+  EXPECT_THAT(Notes({".", "--diff-ignore-matching=x"}), IsOkAndHolds(HasSubstr("requires a -diff or -rdiff action")));
 }
 
 TEST_F(ModifierDiagnosticsTest, SharedContextUsesTheActualDiffStyleAndSymmetry) {
   EXPECT_THAT(Notes({".", "--context-before=2", "--context-after=2", "-diff", "other"}), IsOkAndHolds(Eq("")));
   EXPECT_THAT(
-      Notes({".", "--context=2", "-diff:u4", "other"}), IsOkAndHolds(HasSubstr("symmetric default -diff context")));
+      Notes({".", "--context=2", "-diff:u4", "other"}),
+      IsOkAndHolds(HasSubstr("symmetric default -diff/-rdiff context")));
   EXPECT_THAT(
       Notes({".", "--context=2", "--diff-context=4", "-diff", "other"}),
       IsOkAndHolds(HasSubstr("inactive-modifier\t--context=2")));

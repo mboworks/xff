@@ -36,15 +36,17 @@ std::string_view ConsumerRequirement(registry::ModifierConsumer consumer) {
     case ModifierConsumer::kGrepLines:
       return "requires -grep or --match-output line output; --count suppresses line output";
     case ModifierConsumer::kSharedContext:
-      return "requires -grep or --match-output line output or symmetric default -diff context; --count suppresses grep "
+      return "requires -grep or --match-output line output or symmetric default -diff/-rdiff context; --count "
+             "suppresses grep "
              "lines";
-    case ModifierConsumer::kFileDiffContext: return "requires a -diff action using default context";
+    case ModifierConsumer::kFileDiffContext: return "requires a -diff or -rdiff action using default context";
     case ModifierConsumer::kDiffContext:
-      return "requires --compare=diff or -diff context output without an explicit per-action context count";
-    case ModifierConsumer::kFileDiff: return "requires a -diff action";
+      return "requires --compare=diff or -diff/-rdiff context output without an explicit per-action context count";
+    case ModifierConsumer::kFileDiff: return "requires a -diff or -rdiff action";
     case ModifierConsumer::kDefaultDiffFormat:
-      return "requires -diff without an attached style; tree diffs use unified output";
-    case ModifierConsumer::kDiffComputation: return "requires -diff or --compare=diff";
+      return "requires -diff or -rdiff without an attached style; tree diffs use unified output";
+    case ModifierConsumer::kDiffPaths: return "requires patch output from -diff, -rdiff, or --compare=diff";
+    case ModifierConsumer::kDiffComputation: return "requires -diff or -rdiff or --compare=diff";
     case ModifierConsumer::kShardStatus: return "requires -shard-status";
     case ModifierConsumer::kShardGrouping: return "requires ordinary --shards grouping or -shard-status";
     case ModifierConsumer::kShardListing:

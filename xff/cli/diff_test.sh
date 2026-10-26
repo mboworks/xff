@@ -52,7 +52,7 @@ test::diff_polarity_true_when_equal_false_when_different() {
   expect_output_not_contains 'a.txt' "${out}"
   # A valid --diff-algorithm is accepted and still produces the diff.
   out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --diff-algorithm=naive "${dir}" -name a.txt -diff "${dir}/b.txt" 2>&1)"
-  expect_output_contains '+TWO' "${out}"
+  expect_output_contains '+two' "${out}"
 }
 
 test::diff_ignore_normalizes_and_rejects_bad_values() {

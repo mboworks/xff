@@ -137,36 +137,35 @@ complete current vocabulary.
 macOS and Linux are tested in CI. Other platforms, additional backends, and proposed options remain
 roadmap work until implemented and self-documented.
 
-## Git creation patches
+## Diff patches and output paths
 
-`-diff [TARGET]` defaults to `/dev/null`. This form emits a Git creation patch for each
-matched regular file or symlink. Explicit `-diff /dev/null` is equivalent. Existing
-`-diff TARGET` comparisons retain their behavior. Both forms return false on a difference;
-creation of an empty file is still a difference. Directories emit nothing. Unsupported
-special entries and unreadable sources are reported through the existing unsupported-action
-policy (`--skip-unsupported` can skip them).
+[Diff direction and output paths](design-diff-paths.md) specifies the complete contract.
+`-diff [TARGET]` emits TARGET-to-found changes; `-rdiff [TARGET]` emits found-to-TARGET
+changes. Omitted TARGET or a template rendering to `/dev/null` emits a Git creation or
+deletion patch respectively, preserving empty files, executable bits, symlinks, binary
+literals, and final-newline state. Both actions return true on equality and false on
+differences. The explicit `-diff TARGET` direction intentionally changes; use `-rdiff`
+for its former direction. `--compare=diff LEFT RIGHT` retains old-left to new-right order
+and can compare file roots as well as directory trees.
 
-Patch names are relative to each traversal root; a file operand uses its basename. Use
-noncolliding root-relative paths when combining roots. Unsafe path components are rejected.
-Archive members retain their virtual path spelling relative to the root (including the
-archive separator); applying such a patch creates ordinary files with those names, not a rebuilt archive.
-A target starting with `-` must use a path such as `./-target`, since a flag or expression
-operator after `-diff` starts the next expression component instead of supplying TARGET.
-This grammar is shared by command lines and INI expressions.
+Output labels use root-relative logical names, with basenames for file roots. Both sides
+of a TARGET action use the found entry's logical name. Eight globals independently configure
+left/right component stripping, injected roots, ordered field-style regex rewrite chains,
+and literal prefixes. The fixed pipeline is strip, root injection, rewrite, prefix, then
+patch quoting. Prefixes default to `a/` and `b/`; empty values omit them. These settings
+never change VFS reads, traversal, compare pairing, status records, or summary scopes.
+Invalid rules fail before traversal. Invalid output paths and collisions are hard errors,
+even with `--skip-unsupported`; earlier complete patches can already have been streamed.
 
-Text patches preserve final-newline state. Git modes preserve executability and symlink
-identity; empty files have a creation header without a hunk. Binary patches contain a full
-Git literal with a SHA-1 blob identifier, zlib stored blocks and Git base85 encoding. Stored
-blocks avoid adding a compression dependency to the lean core, at the cost of larger patches.
-The action reads one complete entry and builds one patch in memory. It invokes no subprocess,
-performs no writes, and uses the visited filesystem for archive members as well as local files.
-The Git-format output does not use text comparison ignore/context settings; `:none` suppresses
-it. Other explicit styles do not change the creation format.
-
-For example, `xff src -type f -diff > additions.patch` can be applied in an empty destination
-with `git apply additions.patch`. Git is required to apply patches, not to generate them.
-The integration test applies patches and checks content, empty files, modes, symlinks, unusual
-filenames and binary data crossing the stored-block boundary.
+Absent-side actions read one complete entry and render a Git patch in memory, without
+subprocesses or filesystem mutations. Binary literals use SHA-1 blob IDs, zlib stored
+blocks, and Git base85. Directories emit nothing; unsupported special entries and read
+failures follow the existing unsupported-action policy. Comparison retains its regular
+text patches and binary/nonregular diagnostics. Archive members retain their logical VFS
+names; applying their patches creates ordinary destination files rather than rebuilding
+archives. Integration tests apply forward and reverse patches with Git and verify bytes,
+empty files, modes, symlinks, unusual filenames, path mappings, and binary stored-block
+boundaries. Git is required for these tests and patch application, not patch generation.
 
 Directory deletion follows [find's documented behavior](https://www.gnu.org/software/findutils/manual/html_node/find_html/Delete-Files.html):
 `-delete` implies `-depth`, removes only selected entries, and fails for a nonempty directory.
