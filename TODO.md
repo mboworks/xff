@@ -9,6 +9,14 @@ Design: [`docs/design-diff-paths.md`](docs/design-diff-paths.md).
 - [x] Render reverse Git creation/deletion patches and map action/comparison labels.
 - [x] Complete collision, integration, help, formatting, and full-suite verification.
 
+## Comparison ignore policy
+
+- [x] Add `--compare-ignore=none|left|right|respective|union` for auto-discovered ignore stacks.
+      `respective` preserves independent per-tree rules; `left` / `right` use one side's stack on both;
+      `union` excludes a relative path from both when either stack excludes it; `none` disables the
+      auto-discovered stack. Explicit `--ignore-file`, `--include`, and `--exclude` remain unchanged.
+      Full-stack root-relative matching, including nested files, is covered by comparison tests.
+
 ## Prepared expression execution and optimizer
 
 Detailed scope, data-structure audit, benchmark matrix and decision gates:

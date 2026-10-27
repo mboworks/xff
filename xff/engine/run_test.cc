@@ -623,6 +623,32 @@ TEST_F(RunTest, CompareUsesTheRequestedIgnorePolicyIndependentlyOnEachSide) {
   EXPECT_THAT(last_errors_, 0);
 
   EXPECT_THAT(
+      RunArgvRecords({"--compare", "--compare-ignore=left", left.string(), right.string()}),
+      ElementsAre(
+          "different\t.gitignore", "different\tchanged", "left-only\tleft-only", "right-only\tright-ignored",
+          "right-only\tright-only"));
+  EXPECT_THAT(last_errors_, 0);
+
+  EXPECT_THAT(
+      RunArgvRecords({"--compare", "--compare-ignore=right", left.string(), right.string()}),
+      ElementsAre(
+          "different\t.gitignore", "different\tchanged", "left-only\tleft-ignored", "left-only\tleft-only",
+          "right-only\tright-only"));
+  EXPECT_THAT(last_errors_, 0);
+
+  EXPECT_THAT(
+      RunArgvRecords({"--compare", "--compare-ignore=union", left.string(), right.string()}),
+      ElementsAre("different\t.gitignore", "different\tchanged", "left-only\tleft-only", "right-only\tright-only"));
+  EXPECT_THAT(last_errors_, 0);
+
+  EXPECT_THAT(
+      RunArgvRecords({"--compare", "--compare-ignore=none", left.string(), right.string()}),
+      ElementsAre(
+          "different\t.gitignore", "different\tchanged", "left-only\tleft-ignored", "left-only\tleft-only",
+          "right-only\tright-ignored", "right-only\tright-only"));
+  EXPECT_THAT(last_errors_, 0);
+
+  EXPECT_THAT(
       RunArgvRecords({"--compare=status", "--compare-select=identical", left.string(), right.string()}),
       ElementsAre("identical\t.", "identical\tnested", "identical\tsame"));
   EXPECT_THAT(last_errors_, 0);
@@ -811,6 +837,62 @@ TEST_F(RunTest, CompareAppliesExplicitAndGlobalIgnoreFiles) {
           {"--compare", "--gitignore=on", "--ignore-file=" + explicit_ignore.string(), left.string(), right.string()}),
       IsEmpty());
   EXPECT_THAT(last_errors_, 0);
+
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--compare", "--compare-ignore=none", "--gitignore=on", "--ignore-file=" + explicit_ignore.string(),
+           left.string(), right.string()}),
+      ElementsAre("different\tglobal"));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, CompareIgnoreRequiresTreeComparison) {
+  EXPECT_THAT(RunArgvRecords({"--compare-ignore=left", root_.string()}), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(2));
+}
+
+TEST_F(RunTest, CompareIgnorePoliciesMapNestedRulesByRelativePath) {
+  const fs::path left = root_ / "policy-left";
+  const fs::path right = root_ / "policy-right";
+  ASSERT_THAT(fs::create_directories(left / "nested"), IsTrue());
+  ASSERT_THAT(fs::create_directories(right / "nested"), IsTrue());
+  { std::ofstream(left / ".gitignore") << "left-only.dat\n"; }
+  { std::ofstream(right / ".gitignore") << "right-only.dat\n"; }
+  { std::ofstream(left / "nested/.gitignore") << "nested-left.dat\n"; }
+  { std::ofstream(right / "nested/.gitignore") << "nested-right.dat\n"; }
+  { std::ofstream(left / "shared.dat") << "same"; }
+  { std::ofstream(right / "shared.dat") << "same"; }
+  { std::ofstream(left / "left-only.dat") << "left"; }
+  { std::ofstream(right / "right-only.dat") << "right"; }
+  { std::ofstream(left / "nested/nested-left.dat") << "left"; }
+  { std::ofstream(right / "nested/nested-right.dat") << "right"; }
+
+  const auto compare = [&](std::string_view ignore_policy) {
+    return RunArgvRecords(
+        {"--compare", "--compare-select=all", "--gitignore=on", absl::StrCat("--compare-ignore=", ignore_policy),
+         left.string(), right.string(), "-type", "f", "-name", "*.dat"});
+  };
+  EXPECT_THAT(compare("respective"), ElementsAre("identical\tshared.dat"));
+  EXPECT_THAT(
+      compare("left"),
+      ElementsAre("right-only\tnested/nested-right.dat", "right-only\tright-only.dat", "identical\tshared.dat"));
+  EXPECT_THAT(
+      compare("right"),
+      ElementsAre("left-only\tleft-only.dat", "left-only\tnested/nested-left.dat", "identical\tshared.dat"));
+  EXPECT_THAT(compare("union"), ElementsAre("identical\tshared.dat"));
+  EXPECT_THAT(
+      compare("none"),
+      ElementsAre(
+          "left-only\tleft-only.dat", "left-only\tnested/nested-left.dat", "right-only\tnested/nested-right.dat",
+          "right-only\tright-only.dat", "identical\tshared.dat"));
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--compare", "--compare-select=all", "--gitignore=on", "--no-ignore", "--compare-ignore=left", left.string(),
+           right.string(), "-type", "f", "-name", "*.dat"}),
+      ElementsAre(
+          "left-only\tleft-only.dat", "left-only\tnested/nested-left.dat", "right-only\tnested/nested-right.dat",
+          "right-only\tright-only.dat", "identical\tshared.dat"));
+  EXPECT_THAT(last_errors_, Eq(0));
 }
 
 TEST_F(RunTest, CompareValidatesRootsSelectionsAndDiffOptions) {
