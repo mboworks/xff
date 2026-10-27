@@ -160,18 +160,26 @@ TEST_F(HelpTest, ContentTopicGathersTheTaggedFamilyFromBothSots) {
 TEST_F(HelpTest, CompareTopicExplainsSelectionAndEquality) {
   const std::string out = RenderTopicDoc("compare");
   EXPECT_THAT(
-      out, AllOf(
-               HasSubstr("--compare"), HasSubstr("--compare-select"), HasSubstr("exactly two roots"),
-               HasSubstr("Regular files are equal when their bytes are equal"),
-               HasSubstr("Metadata such as permissions, owner, timestamps, and inode numbers is not compared"),
-               HasSubstr("each retains its complete matched-entry inventory"), HasSubstr("--sort controls traversal"),
-               HasSubstr("their synchronized output may interleave"),
-               HasSubstr("does not cap the comparison inventories"), HasSubstr("Patch output")));
+      out,
+      AllOf(
+          HasSubstr("--compare"), HasSubstr("--compare-select"), HasSubstr("exactly two roots"),
+          HasSubstr("Regular files are equal when their bytes are equal"),
+          HasSubstr("Metadata such as permissions, owner, timestamps, and inode numbers is not compared"),
+          HasSubstr("each retains its complete matched-entry inventory"), HasSubstr("`--sort` controls traversal"),
+          HasSubstr("their synchronized output may interleave"), HasSubstr("does not cap the comparison inventories"),
+          HasSubstr("Patch output"), HasSubstr("`--help=-diff` / `--help=-rdiff`")));
   for (const GlobalFlag& flag : Globals()) {
     if (flag.topic == "compare") {
       EXPECT_THAT(out, HasSubstr(flag.name)) << flag.name;
     }
   }
+}
+
+TEST_F(HelpTest, DiffTopicPreservesInlineCodeAndPointsToFlagHelp) {
+  const std::string out = RenderTopicDoc("diff");
+  EXPECT_THAT(
+      out,
+      AllOf(HasSubstr("`-diff [TARGET]`"), HasSubstr("`--compare=diff LEFT RIGHT`"), HasSubstr("`--help=compare`")));
 }
 
 TEST_F(HelpTest, IgnoreTopicDoesNotInventComparisonDefaults) {
@@ -263,7 +271,7 @@ TEST_F(HelpTest, FullReferenceHasDetailsAllIndexIsSummariesOnly) {
   EXPECT_THAT(
       full, AllOf(
                 HasSubstr("--sort"), HasSubstr("-regex"), HasSubstr("A config style sets"),
-                HasSubstr("COMMAND STRUCTURE"), HasSubstr("implicit -a")));
+                HasSubstr("COMMAND STRUCTURE"), HasSubstr("implicit `-a`")));
   EXPECT_THAT(all, AllOf(HasSubstr("--sort"), HasSubstr("-regex")));
   EXPECT_THAT(all, Not(HasSubstr("A config style sets")));  // summaries only, no detail prose
   EXPECT_THAT(all, SizeIs(Lt(full.size())));                // strictly shorter than the full reference

@@ -63,8 +63,8 @@ TEST_F(PlainRefLocatorTest, ResolvesEachKindToItsPlainLocator) {
 
 struct RenderInlinesPlainTest : ::testing::Test {};
 
-TEST_F(RenderInlinesPlainTest, DropsEmphasisMarkupAndKeepsText) {
-  EXPECT_THAT(RenderInlinesPlain({Text("run "), Code("xff"), Text(" now")}), Eq("run xff now"));
+TEST_F(RenderInlinesPlainTest, PreservesInlineCodeAndDropsEmphasisMarkup) {
+  EXPECT_THAT(RenderInlinesPlain({Text("run "), Code("xff"), Text(" now")}), Eq("run `xff` now"));
 }
 
 TEST_F(RenderInlinesPlainTest, RefWithALabelShowsTheLabel) {

@@ -99,10 +99,12 @@ std::string PlainRefLocator(const RefTarget& target) {
 std::string RenderInlinesPlain(const Inlines& runs) {
   std::string out;
   for (const Inline& run : runs) {
-    // Free prose drops emphasis markup; a ref shows its label, or its plain locator
-    // when the label is empty. All other styles are literal text.
+    // Free prose drops emphasis markup but keeps code delimiters. A ref shows its
+    // label, or its plain locator when the label is empty.
     if (run.style == Inline::Style::kRef && run.text.empty() && run.target.has_value()) {
       absl::StrAppend(&out, PlainRefLocator(*run.target));
+    } else if (run.style == Inline::Style::kCode) {
+      absl::StrAppend(&out, "`", run.text, "`");
     } else {
       absl::StrAppend(&out, run.text);
     }

@@ -1356,6 +1356,7 @@ Section CompareSection(bool in_full) {
   links.items.push_back(ParseInline("`--summary-scope`: combined, per-root, or category statistics."));
   links.items.push_back(ParseInline("`--summary-precision`: decimal places in summary percentages."));
   links.items.push_back(ParseInline("`--format=jsonl`: machine-readable comparison summary rows."));
+  links.items.push_back(ParseInline("`--help=-diff` / `--help=-rdiff`: one-sided patch action details."));
   related.children.push_back(Content{.node = std::move(links)});
   section.children.push_back(Content{.node = std::move(related)});
 
