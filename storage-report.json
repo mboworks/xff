@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "total_bytes": 433731363,
+  "total_bytes": 435303899,
   "sections": {
     "root": {
       "files": 34,
       "bytes": 543463
     },
     "coverage": {
-      "files": 7386,
-      "bytes": 16242815
+      "files": 7400,
+      "bytes": 17122192
     },
     "bazelmod": {
       "files": 4,
@@ -39,8 +39,8 @@
       "bytes": 2147842
     },
     "releases": {
-      "files": 23,
-      "bytes": 4822748
+      "files": 25,
+      "bytes": 5515907
     },
     "extra_modules": {
       "files": 84,
