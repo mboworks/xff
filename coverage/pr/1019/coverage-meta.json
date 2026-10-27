@@ -26,7 +26,10 @@
       "percent": 92.02
     }
   },
-  "pull_state": "open",
-  "reference_time": null,
-  "history": null
+  "pull_state": "merged",
+  "reference_time": "2026-10-27T01:23:54Z",
+  "history": {
+    "commit": "8e95f5546187b2a6f4ec165af9cf794af18ac4a1",
+    "position": 968
+  }
 }
