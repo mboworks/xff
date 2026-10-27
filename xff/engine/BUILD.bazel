@@ -330,6 +330,23 @@ cc_library(
 )
 
 cc_test(
+    name = "diff_paths_test",
+    size = "small",
+    srcs = ["diff_paths_test.cc"],
+    deps = [
+        ":run_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_test(
     name = "run_test",
     size = "small",
     srcs = ["run_test.cc"],

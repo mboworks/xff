@@ -46,6 +46,23 @@ TEST_F(PatchTest, DefaultsAndLiteralPrefixes) {
   EXPECT_THAT(paths.left.Map("file"), IsOkAndHolds(Eq("literal-project/file")));
 }
 
+TEST_F(PatchTest, EmptyRootOverridesAnEarlierInjectionWithoutChangingTheOtherSide) {
+  ASSERT_OK_AND_ASSIGN(
+      const auto paths, Paths::Resolve({"--diff-left-root=project", "--diff-left-root=", "--diff-right-root=mirror"}));
+  EXPECT_THAT(paths.left.Map("file"), IsOkAndHolds(Eq("a/file")));
+  EXPECT_THAT(paths.right.Map("file"), IsOkAndHolds(Eq("b/mirror/file")));
+}
+
+TEST_F(PatchTest, ResolverRejectsMalformedPathOptionsAndIgnoresOtherGlobalFamilies) {
+  EXPECT_THAT(
+      Paths::Resolve({"--diff-left-root"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("missing value")));
+  EXPECT_THAT(
+      Paths::Resolve({"--diff-right-unknown=value"}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("unknown diff path option")));
+  ASSERT_OK_AND_ASSIGN(const auto paths, Paths::Resolve({"--diff-context=2", "--sort=name"}));
+  EXPECT_THAT(paths.left.Map("file"), IsOkAndHolds(Eq("a/file")));
+}
+
 TEST_F(PatchTest, ValidateOptionsBeforeAnyFilesAreMapped) {
   const auto invalid = std::to_array<std::string_view>({
       "--diff-left-strip=-1",
