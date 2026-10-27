@@ -1,6 +1,8 @@
 <!-- SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
+# 0.10.0
+
 # 0.9.1
 
 - Make `-diff TARGET` emit TARGET-to-found changes and add `-rdiff [TARGET]` for the reverse.
