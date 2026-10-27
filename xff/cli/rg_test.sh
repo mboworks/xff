@@ -44,7 +44,7 @@ test::rg_invocation_selects_short_options_help_and_errors() {
   expect_eq $'1:TODO\n3:TODO\n3:TODO' "${out}"
   out="$("${root}/rg" --help)"
   expect_output_contains 'RIPGREP-STYLE SEARCHES' "${out}"
-  expect_eq 'xff 0.0.0' "$("${root}/rg" -V)"
+  expect_eq "$("$(_bin)" --version)" "$("${root}/rg" -V)"
   out="$("${root}/rg" -e 2>&1)" && rc=0 || rc=$?
   expect_eq 2 "${rc}"
   expect_output_contains 'requires' "${out}"
