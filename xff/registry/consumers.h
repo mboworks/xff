@@ -21,6 +21,7 @@ enum class ModifierConsumer {
   kFileDiff,
   kDefaultDiffFormat,
   kDiffComputation,
+  kDiffPaths,
   kShardStatus,
   kShardGrouping,
   kShardListing,

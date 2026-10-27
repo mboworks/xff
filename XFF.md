@@ -851,8 +851,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `diff` - a unified tree diff suitable for saving as a patch
 
   Requires exactly two roots. `--compare=summary` expands at its position to `--compare=status --compare-select=none --summary=compare`; later flags may override its settings. Combining the shorthand with bare `--summary` emits the comparison summary once. With an explicit `--summary-scope`, bare `--summary` also adds scoped totals; explicit groupings such as `--summary=ext` add their own tables. Bare `--compare` and `--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or `different` records. With `--format=jsonl`, each status is a JSON object containing `record: comparison`, `status`, relative `path`, `left_root`, and `right_root`. `--compare=diff` emits one unified tree diff, suitable for redirecting to a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is an expression action comparing each match from one walk with a templated target and therefore cannot discover target-only paths, `--compare` walks both roots independently and pairs the matches by relative path. The ordinary expression, ignore, hidden-file, archive, traversal, and `-P` / `-H` / `-L` symlink rules apply unchanged to each side; comparison itself enables none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks are compared by target. Both walks complete before comparison records are emitted in bytewise relative-path order; `--sort` affects each walk, not that final order. In status mode, `--path-encoding=escape` makes control bytes in the relative path unambiguous. `--summary` / `--summary=compare` append results and combined bytes by entry type and status. Results count each pair once; bytes include both sides, including two copies of identical files. Directories and special entries are included; directory equality compares the entry kind, not its subtree. Ordinary summary groupings default to `--summary-scope=compare`: one table with left and right columns across all comparison categories. Explicit `--summary-scope=all` combines both sides; `--summary-scope=root` separates roots. `--compare` changes this default regardless of option order.
-  Affected by: --compare-select, --diff-algorithm, --diff-context, --summary-precision
-  See also: [Comparing trees](#topic-compare), [--compare-select](#flag-compare-select), [--diff-algorithm](#flag-diff-algorithm), [--diff-context](#flag-diff-context), [--summary-precision](#flag-summary-precision)
+  Affected by: --compare-select, --diff-algorithm, --diff-left-strip, --diff-left-root, --diff-left-prefix, --diff-left-rewrite, --diff-right-strip, --diff-right-root, --diff-right-prefix, --diff-right-rewrite, --diff-context, --summary-precision
+  See also: [Comparing trees](#topic-compare), [--compare-select](#flag-compare-select), [--diff-algorithm](#flag-diff-algorithm), [--diff-left-strip](#flag-diff-left-strip), [--diff-left-root](#flag-diff-left-root), [--diff-left-prefix](#flag-diff-left-prefix), [--diff-left-rewrite](#flag-diff-left-rewrite), [--diff-right-strip](#flag-diff-right-strip), [--diff-right-root](#flag-diff-right-root), [--diff-right-prefix](#flag-diff-right-prefix), [--diff-right-rewrite](#flag-diff-right-rewrite), [--diff-context](#flag-diff-context), [--summary-precision](#flag-summary-precision)
 
 <a id="flag-compare-select"></a>
 
@@ -863,33 +863,89 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 <a id="flag-diff-algorithm"></a>
 
-- `--diff-algorithm=naive|direct|myers` - diff engine for -diff and tree diffs: naive, direct, or myers (the default) _(global, find, xff, rg)_
+- `--diff-algorithm=naive|direct|myers` - engine for -diff, -rdiff and tree diffs: naive, direct, or myers (the default) _(global, find, xff, rg)_
   One of:
 
   - `myers` - minimal diff, as git computes it (the default)
   - `direct` - line-by-line, no alignment search
   - `naive` - the simple longest-common-subsequence walk
 
-  Affects: -diff, --compare
-  See also: [Comparing trees](#topic-compare), [-diff](#primary-diff), [--compare](#flag-compare)
+  Affects: -diff, -rdiff, --compare
+  See also: [Comparing trees](#topic-compare), [-diff](#primary-diff), [-rdiff](#primary-rdiff), [--compare](#flag-compare)
+
+<a id="flag-diff-left-strip"></a>
+
+- `--diff-left-strip=N` - remove leading left-side patch path components (default 0) _(global, find, xff, rg)_
+  Nonnegative decimal count; the last value wins. Stripping must leave a filename. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [Comparing trees](#topic-compare), [Fields](#topic-fields), [-diff](#primary-diff), [-rdiff](#primary-rdiff), [--compare](#flag-compare)
+
+<a id="flag-diff-left-root"></a>
+
+- `--diff-left-root=PATH` - inject a relative left-side patch root (default empty) _(global, find, xff, rg)_
+  Prepend a relative directory after stripping, joining with a slash. Empty disables injection; the last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [Comparing trees](#topic-compare), [Fields](#topic-fields), [-diff](#primary-diff), [-rdiff](#primary-rdiff), [--compare](#flag-compare)
+
+<a id="flag-diff-left-prefix"></a>
+
+- `--diff-left-prefix=TEXT` - literal left-side patch prefix (default a/) _(global, find, xff, rg)_
+  Prepend literal text after rewrites, with no automatic separator. Empty removes the prefix; the last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [Comparing trees](#topic-compare), [Fields](#topic-fields), [-diff](#primary-diff), [-rdiff](#primary-rdiff), [--compare](#flag-compare)
+
+<a id="flag-diff-left-rewrite"></a>
+
+- `--diff-left-rewrite=RULES` - rewrite left-side patch paths using ordered s/PAT/REPL/gi rules _(global, find, xff, rg)_
+  Repeatable; chains and repeated flags run in order. Uses the field RE2 substitution grammar, alternate punctuation delimiters, capture references, and `g`/`i` flags. Nonmatches leave paths unchanged. Invalid rules fail before traversal. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [Comparing trees](#topic-compare), [Fields](#topic-fields), [-diff](#primary-diff), [-rdiff](#primary-rdiff), [--compare](#flag-compare)
+
+<a id="flag-diff-right-strip"></a>
+
+- `--diff-right-strip=N` - remove leading right-side patch path components (default 0) _(global, find, xff, rg)_
+  Nonnegative decimal count; the last value wins. Stripping must leave a filename. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [Comparing trees](#topic-compare), [Fields](#topic-fields), [-diff](#primary-diff), [-rdiff](#primary-rdiff), [--compare](#flag-compare)
+
+<a id="flag-diff-right-root"></a>
+
+- `--diff-right-root=PATH` - inject a relative right-side patch root (default empty) _(global, find, xff, rg)_
+  Prepend a relative directory after stripping, joining with a slash. Empty disables injection; the last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [Comparing trees](#topic-compare), [Fields](#topic-fields), [-diff](#primary-diff), [-rdiff](#primary-rdiff), [--compare](#flag-compare)
+
+<a id="flag-diff-right-prefix"></a>
+
+- `--diff-right-prefix=TEXT` - literal right-side patch prefix (default b/) _(global, find, xff, rg)_
+  Prepend literal text after rewrites, with no automatic separator. Empty removes the prefix; the last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [Comparing trees](#topic-compare), [Fields](#topic-fields), [-diff](#primary-diff), [-rdiff](#primary-rdiff), [--compare](#flag-compare)
+
+<a id="flag-diff-right-rewrite"></a>
+
+- `--diff-right-rewrite=RULES` - rewrite right-side patch paths using ordered s/PAT/REPL/gi rules _(global, find, xff, rg)_
+  Repeatable; chains and repeated flags run in order. Uses the field RE2 substitution grammar, alternate punctuation delimiters, capture references, and `g`/`i` flags. Nonmatches leave paths unchanged. Invalid rules fail before traversal. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [Comparing trees](#topic-compare), [Fields](#topic-fields), [-diff](#primary-diff), [-rdiff](#primary-rdiff), [--compare](#flag-compare)
 
 <a id="flag-diff-ignore"></a>
 
-- `--diff-ignore=TOKEN,...` - normalize -diff comparison: ws, change, trail, blank, case, eofnl (comma-separated) _(global, find, xff, rg)_
-  Sets the normalization used by `-diff`; the last value wins. It may be saved in user config or an explicit `--xffrc=FILE`, and a command-line value overrides the configured value. An empty value disables configured normalization. Tokens are `ws`, `change`, `trail`, `blank`, `case`, and `eofnl`, comma-separated.
-  Affects: -diff
-  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [-diff](#primary-diff)
+- `--diff-ignore=TOKEN,...` - normalize diff actions: ws, change, trail, blank, case, eofnl (comma-separated) _(global, find, xff, rg)_
+  Sets the normalization used by `-diff` and `-rdiff`; the last value wins. It may be saved in user config or an explicit `--xffrc=FILE`, and a command-line value overrides the configured value. An empty value disables configured normalization. Tokens are `ws`, `change`, `trail`, `blank`, `case`, and `eofnl`, comma-separated.
+  Affects: -diff, -rdiff
+  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [-diff](#primary-diff), [-rdiff](#primary-rdiff)
 
 <a id="flag-diff-ignore-matching"></a>
 
-- `--diff-ignore-matching=REGEX` - -diff ignores lines matching this regex (RE2) _(global, find, xff, rg)_
-  Drops matching lines before `-diff` compares the two inputs. It may be saved in user config or an explicit `--xffrc=FILE`; the last value wins, so a command-line value overrides configuration. An empty value disables a configured expression. The expression uses RE2.
-  Affects: -diff
-  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [-diff](#primary-diff)
+- `--diff-ignore-matching=REGEX` - -diff / -rdiff ignore lines matching this regex (RE2) _(global, find, xff, rg)_
+  Drops matching lines before `-diff` or `-rdiff` compares the two inputs. It may be saved in user config or an explicit `--xffrc=FILE`; the last value wins, so a command-line value overrides configuration. An empty value disables a configured expression. The expression uses RE2.
+  Affects: -diff, -rdiff
+  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [-diff](#primary-diff), [-rdiff](#primary-rdiff)
 
 <a id="flag-diff-format"></a>
 
-- `--diff-format=u|c|n|y` - default -diff format: u/unified (default), c/context, n/normal, y/side-by-side _(global, find, xff, rg)_
+- `--diff-format=u|c|n|y` - default -diff / -rdiff format: u/unified (default), c/context, n/normal, y/side-by-side _(global, find, xff, rg)_
   One of:
 
   - `u` - unified, the diff -u shape (the default; also spelled unified)
@@ -897,15 +953,15 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `n` - normal, the plain diff shape (also normal)
   - `y` - side by side, the diff -y shape (also side-by-side)
 
-  Affects: -diff
-  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [-diff](#primary-diff)
+  Affects: -diff, -rdiff
+  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [-diff](#primary-diff), [-rdiff](#primary-rdiff)
 
 <a id="flag-diff-context"></a>
 
-- `--diff-context=N` - default -diff context lines (3); overrides --context for -diff, and -diff:uN overrides it _(global, find, xff, rg)_
-  Affects: -diff, --compare
+- `--diff-context=N` - default diff context lines (3); overrides --context; per-action :uN overrides it _(global, find, xff, rg)_
+  Affects: -diff, -rdiff, --compare
   Affected by: --context
-  See also: [Comparing trees](#topic-compare), [--context](#flag-context), [-diff](#primary-diff), [--compare](#flag-compare)
+  See also: [Comparing trees](#topic-compare), [--context](#flag-context), [-diff](#primary-diff), [-rdiff](#primary-rdiff), [--compare](#flag-compare)
 
 ### Output values and actions
 
@@ -2435,10 +2491,17 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 <a id="primary-diff"></a>
 
-- `-diff[:STYLE] [TARGET]` - diff against optional TARGET; defaults to a Git creation patch (xff) _(action, xff)_
-  Compares the matched file against TARGET - a {field} template evaluated per entry, so it can name a mirror path like `../b/{relpath}` - and is true when they are equal, false on a difference. The optional :STYLE picks the output: unified `u3` (default; 3 lines of context), context `c`, normal `n`, side-by-side `y`, or `none` for just the boolean. This is a one-sided expression action: it visits only the search roots, so it cannot report paths that exist only under TARGET. Use `--compare[=status|diff] LEFT RIGHT` to walk two roots with the same options and expression, then compare their matches symmetrically. An omitted TARGET defaults to `/dev/null`: emit a Git creation patch with root-relative paths (a file root uses its basename), including empty files, executable bits, symlinks and binary literals. Directories emit nothing; other special types are unsupported. Explicit `/dev/null` does the same. Creation patches are false (different), including empty files, and use Git format regardless of :STYLE except `none` (silent). Use `./-name` for targets starting with a dash. Avoid duplicate root-relative paths across roots. Reads each file into memory. Binary patches use uncompressed zlib blocks. Example: `xff src -type f -diff > additions.patch`; apply in an empty directory with `git apply additions.patch`.
-  Affected by: --diff-algorithm, --diff-ignore, --diff-ignore-matching, --diff-format, --diff-context, --context, --context-after, --context-before
-  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [--diff-algorithm](#flag-diff-algorithm), [--diff-ignore](#flag-diff-ignore), [--diff-ignore-matching](#flag-diff-ignore-matching), [--diff-format](#flag-diff-format), [--diff-context](#flag-diff-context), [--context](#flag-context), [--context-after](#flag-context-after), [--context-before](#flag-context-before)
+- `-diff[:STYLE] [TARGET]` - emit TARGET-to-found changes; omitted TARGET creates files (xff) _(action, xff)_
+  The matched entry is the new/right side and TARGET is the old/left side. TARGET is an optional {field} template evaluated per entry, for example `../old/{relpath}`. Equality is true and silent; differences are false. This one-sided action visits only the search roots; use `--compare=diff LEFT RIGHT` to discover paths on both sides. The `:STYLE` suffix selects unified `u3` (default), context `c`, normal `n`, side-by-side `y`, or silent `none`. Omitted TARGET or a TARGET rendering to `/dev/null` emits a Git creation/deletion patch, including empty files, executable bits, symlinks and binary literals. Directories emit nothing; other special types are unsupported. These patches use Git format except `none`, which stays silent. Both patch sides use the found entry's root-relative name; a file root uses its basename. The `--diff-left-*` and `--diff-right-*` globals strip components, inject roots, apply ordered `s/PAT/REPL/gi` rewrites, then prepend literal prefixes (defaults `a/` and `b/`). These affect output labels only. Invalid output paths and collisions are errors; check exit status before applying streamed output. Use `./-name` for a dash-leading TARGET. Reads files into memory and retains output/source names for collision detection. Binary creation/deletion patches use uncompressed zlib blocks.
+  Affected by: --diff-algorithm, --diff-left-strip, --diff-left-root, --diff-left-prefix, --diff-left-rewrite, --diff-right-strip, --diff-right-root, --diff-right-prefix, --diff-right-rewrite, --diff-ignore, --diff-ignore-matching, --diff-format, --diff-context, --context, --context-after, --context-before
+  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [--diff-algorithm](#flag-diff-algorithm), [--diff-left-strip](#flag-diff-left-strip), [--diff-left-root](#flag-diff-left-root), [--diff-left-prefix](#flag-diff-left-prefix), [--diff-left-rewrite](#flag-diff-left-rewrite), [--diff-right-strip](#flag-diff-right-strip), [--diff-right-root](#flag-diff-right-root), [--diff-right-prefix](#flag-diff-right-prefix), [--diff-right-rewrite](#flag-diff-right-rewrite), [--diff-ignore](#flag-diff-ignore), [--diff-ignore-matching](#flag-diff-ignore-matching), [--diff-format](#flag-diff-format), [--diff-context](#flag-diff-context), [--context](#flag-context), [--context-after](#flag-context-after), [--context-before](#flag-context-before)
+
+<a id="primary-rdiff"></a>
+
+- `-rdiff[:STYLE] [TARGET]` - emit found-to-TARGET changes; omitted TARGET deletes files (xff) _(action, xff)_
+  The matched entry is the old/left side and TARGET is the new/right side. This reverses `-diff`. TARGET is an optional {field} template evaluated per entry, for example `../old/{relpath}`. Equality is true and silent; differences are false. This one-sided action visits only the search roots; use `--compare=diff LEFT RIGHT` to discover paths on both sides. The `:STYLE` suffix selects unified `u3` (default), context `c`, normal `n`, side-by-side `y`, or silent `none`. Omitted TARGET or a TARGET rendering to `/dev/null` emits a Git creation/deletion patch, including empty files, executable bits, symlinks and binary literals. Directories emit nothing; other special types are unsupported. These patches use Git format except `none`, which stays silent. Both patch sides use the found entry's root-relative name; a file root uses its basename. The `--diff-left-*` and `--diff-right-*` globals strip components, inject roots, apply ordered `s/PAT/REPL/gi` rewrites, then prepend literal prefixes (defaults `a/` and `b/`). These affect output labels only. Invalid output paths and collisions are errors; check exit status before applying streamed output. Use `./-name` for a dash-leading TARGET. Reads files into memory and retains output/source names for collision detection. Binary creation/deletion patches use uncompressed zlib blocks.
+  Affected by: --diff-algorithm, --diff-left-strip, --diff-left-root, --diff-left-prefix, --diff-left-rewrite, --diff-right-strip, --diff-right-root, --diff-right-prefix, --diff-right-rewrite, --diff-ignore, --diff-ignore-matching, --diff-format, --diff-context
+  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [--diff-algorithm](#flag-diff-algorithm), [--diff-left-strip](#flag-diff-left-strip), [--diff-left-root](#flag-diff-left-root), [--diff-left-prefix](#flag-diff-left-prefix), [--diff-left-rewrite](#flag-diff-left-rewrite), [--diff-right-strip](#flag-diff-right-strip), [--diff-right-root](#flag-diff-right-root), [--diff-right-prefix](#flag-diff-right-prefix), [--diff-right-rewrite](#flag-diff-right-rewrite), [--diff-ignore](#flag-diff-ignore), [--diff-ignore-matching](#flag-diff-ignore-matching), [--diff-format](#flag-diff-format), [--diff-context](#flag-diff-context)
 
 <a id="primary-hash"></a>
 
@@ -3051,6 +3114,15 @@ Ordinary summary groupings default to `--summary-scope=compare` when `--compare`
 ### Patch output
 
 `--compare=diff` writes one unified patch for added, removed, and changed regular files. Text files get hunks; binary and non-regular differences get a diagnostic line. `--diff-algorithm` and `--diff-context` tune this mode. `identical` is rejected because an unchanged entry has no patch representation.
+
+Left is old content and right is new content. `-diff [TARGET]` emits TARGET-to-found changes; `-rdiff [TARGET]` emits found-to-TARGET changes. An omitted TARGET or `/dev/null` creates or deletes the found entry respectively. Both use its root-relative name (a file root uses its basename); TARGET selects bytes and may be a field template. Comparison accepts two file roots too, using their respective basenames as patch names.
+
+Patch paths have an output-only pipeline: `--diff-left-strip=N` / `--diff-right-strip=N` remove leading logical components, `--diff-left-root=PATH` / `--diff-right-root=PATH` inject relative directories, repeatable `--diff-left-rewrite=RULES` / `--diff-right-rewrite=RULES` apply ordered field-style `s/PAT/REPL/gi` substitution chains, then `--diff-left-prefix=TEXT` / `--diff-right-prefix=TEXT` prepend literal prefixes (defaults `a/` and `b/`; empty removes them). Stages always run in that order. Root, strip and prefix values use the last occurrence; rewrite flags accumulate. Rewrites use RE2 and capture references such as `\1`. Patterns, replacements and flags are validated before traversal. Strip counts must leave a filename; roots and final paths must be relative without empty, `.`, `..`, or `.git` components. Prefixes add no separator. `/dev/null` stays unchanged. These settings affect labels in both diff primaries and comparison patches, including diagnostics, without changing reads, pairing, status records or summaries. Different entries mapping to the same output destination on one side are errors. Earlier patches may already have been emitted: check exit status before applying streamed output.
+
+```
+xff --compare=diff old-tree new-tree --diff-left-root=project --diff-right-root=project
+xff src -type f -rdiff --diff-left-prefix= --diff-right-prefix=
+```
 
 ### See also
 

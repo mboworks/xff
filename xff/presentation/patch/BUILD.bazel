@@ -10,10 +10,13 @@ cc_library(
     hdrs = ["patch.h"],
     visibility = ["//xff/engine:__pkg__"],
     deps = [
+        "//xff/presentation/fields:fields_cc",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
         "@mboworks_mbo//mbo/digest:digest_cc",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
     ],
 )
 

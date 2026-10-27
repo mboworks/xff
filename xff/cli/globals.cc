@@ -1456,24 +1456,157 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--diff-algorithm=naive|direct|myers",
         .group = "diff",
         .header = "Tree comparison and diffs",
-        .summary = "diff engine for -diff and tree diffs: naive, direct, or myers (the default)",
+        .summary = "engine for -diff, -rdiff and tree diffs: naive, direct, or myers (the default)",
         .values = kDiffAlgorithmValues,
-        .affects = "-diff,--compare",
+        .affects = "-diff,-rdiff,--compare",
         .topic = "compare",
         .value_check = GlobalFlag::ValueCheck::kEnum,
         .required_consumer = registry::ModifierConsumer::kDiffComputation,
+    },
+    {
+        .name = "--diff-left-strip",
+        .display = "--diff-left-strip=N",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "remove leading left-side patch path components (default 0)",
+        .details =
+            "Nonnegative decimal count; the last value wins. Stripping must leave a filename. Left is old content and "
+            "right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, "
+            "regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are "
+            "errors; check exit status before applying streamed output. See `--help=compare` for examples.",
+        .affects = "-diff,-rdiff,--compare",
+        .topic = "compare",
+        .see_also = "fields",
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
+    },
+    {
+        .name = "--diff-left-root",
+        .display = "--diff-left-root=PATH",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "inject a relative left-side patch root (default empty)",
+        .details = "Prepend a relative directory after stripping, joining with a slash. Empty disables injection; the "
+                   "last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed "
+                   "output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` "
+                   "stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying "
+                   "streamed output. See `--help=compare` for examples.",
+        .affects = "-diff,-rdiff,--compare",
+        .topic = "compare",
+        .see_also = "fields",
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
+    },
+    {
+        .name = "--diff-left-prefix",
+        .display = "--diff-left-prefix=TEXT",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "literal left-side patch prefix (default a/)",
+        .details = "Prepend literal text after rewrites, with no automatic separator. Empty removes the prefix; the "
+                   "last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed "
+                   "output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` "
+                   "stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying "
+                   "streamed output. See `--help=compare` for examples.",
+        .affects = "-diff,-rdiff,--compare",
+        .topic = "compare",
+        .see_also = "fields",
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
+    },
+    {
+        .name = "--diff-left-rewrite",
+        .display = "--diff-left-rewrite=RULES",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "rewrite left-side patch paths using ordered s/PAT/REPL/gi rules",
+        .details = "Repeatable; chains and repeated flags run in order. Uses the field RE2 substitution grammar, "
+                   "alternate punctuation delimiters, capture references, and `g`/`i` flags. Nonmatches leave paths "
+                   "unchanged. Invalid rules fail before traversal. Left is old content and right is new content, "
+                   "including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, "
+                   "then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; "
+                   "check exit status before applying streamed output. See `--help=compare` for examples.",
+        .affects = "-diff,-rdiff,--compare",
+        .topic = "compare",
+        .see_also = "fields",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
+    },
+    {
+        .name = "--diff-right-strip",
+        .display = "--diff-right-strip=N",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "remove leading right-side patch path components (default 0)",
+        .details =
+            "Nonnegative decimal count; the last value wins. Stripping must leave a filename. Left is old content and "
+            "right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, "
+            "regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are "
+            "errors; check exit status before applying streamed output. See `--help=compare` for examples.",
+        .affects = "-diff,-rdiff,--compare",
+        .topic = "compare",
+        .see_also = "fields",
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
+    },
+    {
+        .name = "--diff-right-root",
+        .display = "--diff-right-root=PATH",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "inject a relative right-side patch root (default empty)",
+        .details = "Prepend a relative directory after stripping, joining with a slash. Empty disables injection; the "
+                   "last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed "
+                   "output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` "
+                   "stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying "
+                   "streamed output. See `--help=compare` for examples.",
+        .affects = "-diff,-rdiff,--compare",
+        .topic = "compare",
+        .see_also = "fields",
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
+    },
+    {
+        .name = "--diff-right-prefix",
+        .display = "--diff-right-prefix=TEXT",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "literal right-side patch prefix (default b/)",
+        .details = "Prepend literal text after rewrites, with no automatic separator. Empty removes the prefix; the "
+                   "last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed "
+                   "output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` "
+                   "stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying "
+                   "streamed output. See `--help=compare` for examples.",
+        .affects = "-diff,-rdiff,--compare",
+        .topic = "compare",
+        .see_also = "fields",
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
+    },
+    {
+        .name = "--diff-right-rewrite",
+        .display = "--diff-right-rewrite=RULES",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "rewrite right-side patch paths using ordered s/PAT/REPL/gi rules",
+        .details = "Repeatable; chains and repeated flags run in order. Uses the field RE2 substitution grammar, "
+                   "alternate punctuation delimiters, capture references, and `g`/`i` flags. Nonmatches leave paths "
+                   "unchanged. Invalid rules fail before traversal. Left is old content and right is new content, "
+                   "including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, "
+                   "then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; "
+                   "check exit status before applying streamed output. See `--help=compare` for examples.",
+        .affects = "-diff,-rdiff,--compare",
+        .topic = "compare",
+        .see_also = "fields",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
     },
     {
         .name = "--diff-ignore",
         .display = "--diff-ignore=TOKEN,...",
         .group = "diff",
         .header = "Tree comparison and diffs",
-        .summary = "normalize -diff comparison: ws, change, trail, blank, case, eofnl (comma-separated)",
-        .details = "Sets the normalization used by `-diff`; the last value wins. It may be saved in user config or an "
+        .summary = "normalize diff actions: ws, change, trail, blank, case, eofnl (comma-separated)",
+        .details = "Sets the normalization used by `-diff` and `-rdiff`; the last value wins. It may be saved in user "
+                   "config or an "
                    "explicit `--xffrc=FILE`, and a command-line value overrides the configured value. An empty value "
                    "disables configured normalization. Tokens are `ws`, `change`, `trail`, `blank`, `case`, and "
                    "`eofnl`, comma-separated.",
-        .affects = "-diff",
+        .affects = "-diff,-rdiff",
         .see_also = "compare,content",
         .required_consumer = registry::ModifierConsumer::kFileDiff,
     },
@@ -1482,11 +1615,12 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--diff-ignore-matching=REGEX",
         .group = "diff",
         .header = "Tree comparison and diffs",
-        .summary = "-diff ignores lines matching this regex (RE2)",
-        .details = "Drops matching lines before `-diff` compares the two inputs. It may be saved in user config or an "
+        .summary = "-diff / -rdiff ignore lines matching this regex (RE2)",
+        .details = "Drops matching lines before `-diff` or `-rdiff` compares the two inputs. It may be saved in user "
+                   "config or an "
                    "explicit `--xffrc=FILE`; the last value wins, so a command-line value overrides configuration. An "
                    "empty value disables a configured expression. The expression uses RE2.",
-        .affects = "-diff",
+        .affects = "-diff,-rdiff",
         .see_also = "compare,content",
         .required_consumer = registry::ModifierConsumer::kFileDiff,
     },
@@ -1495,9 +1629,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--diff-format=u|c|n|y",
         .group = "diff",
         .header = "Tree comparison and diffs",
-        .summary = "default -diff format: u/unified (default), c/context, n/normal, y/side-by-side",
+        .summary = "default -diff / -rdiff format: u/unified (default), c/context, n/normal, y/side-by-side",
         .values = kDiffFormatValues,
-        .affects = "-diff",
+        .affects = "-diff,-rdiff",
         .see_also = "compare,content",
         .value_check = GlobalFlag::ValueCheck::kEnum,
         .required_consumer = registry::ModifierConsumer::kDefaultDiffFormat,
@@ -1507,8 +1641,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--diff-context=N",
         .group = "diff",
         .header = "Tree comparison and diffs",
-        .summary = "default -diff context lines (3); overrides --context for -diff, and -diff:uN overrides it",
-        .affects = "-diff,--compare",
+        .summary = "default diff context lines (3); overrides --context; per-action :uN overrides it",
+        .affects = "-diff,-rdiff,--compare",
         .topic = "compare",
         .required_consumer = registry::ModifierConsumer::kDiffContext,
     },

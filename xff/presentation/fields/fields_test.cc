@@ -66,6 +66,36 @@ struct FieldsTest : ::testing::Test {
   }
 };
 
+TEST_F(FieldsTest, StandaloneRewriteOwnsProgramsAndUsesFieldSubstitutionSemantics) {
+  std::string spec = R"(s|([a-z]+)-([0-9]+)|\2_\1|gi;s|^|prefix/|)";
+  ASSERT_OK_AND_ASSIGN(auto original, RewriteProgram::Compile(spec));
+  spec.assign("discarded");
+  const auto copied = original;
+  const auto moved = std::move(original);
+  EXPECT_THAT(copied.Apply("ABC-12/def-34"), Eq("prefix/12_ABC/34_def"));
+  EXPECT_THAT(moved.Apply("ABC-12/def-34"), Eq("prefix/12_ABC/34_def"));
+  ASSERT_OK_AND_ASSIGN(const auto first, RewriteProgram::Compile("s|x|y|"));
+  EXPECT_THAT(first.Apply("xx"), Eq("yx"));
+  EXPECT_THAT(first.Apply("unchanged"), Eq("unchanged"));
+}
+
+TEST_F(FieldsTest, StandaloneRewriteRejectsMalformedRulesAndExtraction) {
+  const auto invalid = std::to_array<std::string_view>({
+      "",
+      "s|a|",
+      "s|[|x|",
+      R"(s|a|\1|)",
+      "s|a|b|z",
+      "s|a|b|;",
+      "m|a|b|",
+      "s|a|b|;m|b|c|",
+      "s|a|b|;join(,)",
+  });
+  for (const auto spec : invalid) {
+    EXPECT_THAT(RewriteProgram::Compile(spec), StatusIs(absl::StatusCode::kInvalidArgument)) << spec;
+  }
+}
+
 TEST_F(FieldsTest, BoundTransformOwnsItsProgramAcrossCopiesMovesAndSourceChanges) {
   std::string source = R"({name:s/(a)/<\1>/g}:{def.LINES:m/(a+)/[\1]/;join(,);s/\[/(/g;s/\]/)/g})";
   auto original = Template::Compile(source);

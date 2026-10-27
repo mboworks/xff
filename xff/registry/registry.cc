@@ -551,27 +551,55 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .topic = "content",
         .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate},
     },
-    // xff -diff[:STYLE]: emit a diff of each match against TARGET (a field template). An
-    // ACTION whose truth is TRUE = same (like cmp/diff): silent when equal, prints the diff
-    // and is false on a difference. STYLE (u3 default / c / n / y / none) picks the output.
     {
         .name = "-diff",
-        .summary = "diff against optional TARGET; defaults to a Git creation patch (xff)",
+        .summary = "emit TARGET-to-found changes; omitted TARGET creates files (xff)",
         .details =
-            "Compares the matched file against TARGET - a {field} template evaluated per entry, so it can name "
-            "a mirror path like `../b/{relpath}` - and is true when they are equal, false on a difference. The "
-            "optional :STYLE picks the output: unified `u3` (default; 3 lines of context), context `c`, "
-            "normal `n`, side-by-side `y`, or `none` for just the boolean. This is a one-sided expression "
-            "action: it visits only the search roots, so it cannot report paths that exist only under TARGET. "
-            "Use `--compare[=status|diff] LEFT RIGHT` to walk two roots with the same options and expression, "
-            "then compare their matches symmetrically. An omitted TARGET defaults to `/dev/null`: emit a Git "
-            "creation patch with root-relative paths (a file root uses its basename), including empty files, "
-            "executable bits, symlinks and binary literals. Directories emit nothing; other special types "
-            "are unsupported. Explicit `/dev/null` does the same. Creation patches are false (different), "
-            "including empty files, and use Git format regardless of :STYLE except `none` (silent). "
-            "Use `./-name` for targets starting with a dash. Avoid duplicate root-relative paths across roots. "
-            "Reads each file into memory. Binary patches use uncompressed zlib blocks. Example: "
-            "`xff src -type f -diff > additions.patch`; apply in an empty directory with `git apply additions.patch`.",
+            "The matched entry is the new/right side and TARGET is the old/left side. "
+            "TARGET is an optional {field} template evaluated per entry, for example `../old/{relpath}`. "
+            "Equality is true and silent; differences are false. This one-sided action visits only the search "
+            "roots; use `--compare=diff LEFT RIGHT` to discover paths on both sides. The `:STYLE` suffix selects "
+            "unified `u3` (default), context `c`, normal `n`, side-by-side `y`, or silent `none`. "
+            "Omitted TARGET or a TARGET rendering to `/dev/null` emits a Git creation/deletion patch, including "
+            "empty files, executable bits, symlinks and binary literals. Directories emit nothing; other special "
+            "types are unsupported. These patches use Git format except `none`, which stays silent. "
+            "Both patch sides use the found entry's root-relative name; a file root uses its basename. "
+            "The `--diff-left-*` and `--diff-right-*` globals strip components, inject roots, apply ordered "
+            "`s/PAT/REPL/gi` rewrites, then prepend literal prefixes (defaults `a/` and `b/`). These affect output "
+            "labels only. Invalid output paths and collisions are errors; check exit status before applying "
+            "streamed output. Use `./-name` for a dash-leading TARGET. Reads files into memory and retains "
+            "output/source names for collision detection. Binary creation/deletion patches use uncompressed zlib "
+            "blocks.",
+        .kind = Kind::kAction,
+        .stdout_output = true,
+        .arity = 1,
+        .default_argument = "/dev/null",
+        .binding = Binding::kStyle,
+        .modes = Modes::kXff,
+        .cost = Cost::kExpensive,
+        .see_also = "compare,content",
+        .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate},
+        .modifier_consumer = ModifierConsumer::kFileDiff,
+    },
+    {
+        .name = "-rdiff",
+        .summary = "emit found-to-TARGET changes; omitted TARGET deletes files (xff)",
+        .details =
+            "The matched entry is the old/left side and TARGET is the new/right side. This reverses `-diff`. "
+            "TARGET is an optional {field} template evaluated per entry, for example `../old/{relpath}`. "
+            "Equality is true and silent; differences are false. This one-sided action visits only the search "
+            "roots; use `--compare=diff LEFT RIGHT` to discover paths on both sides. The `:STYLE` suffix selects "
+            "unified `u3` (default), context `c`, normal `n`, side-by-side `y`, or silent `none`. "
+            "Omitted TARGET or a TARGET rendering to `/dev/null` emits a Git creation/deletion patch, including "
+            "empty files, executable bits, symlinks and binary literals. Directories emit nothing; other special "
+            "types are unsupported. These patches use Git format except `none`, which stays silent. "
+            "Both patch sides use the found entry's root-relative name; a file root uses its basename. "
+            "The `--diff-left-*` and `--diff-right-*` globals strip components, inject roots, apply ordered "
+            "`s/PAT/REPL/gi` rewrites, then prepend literal prefixes (defaults `a/` and `b/`). These affect output "
+            "labels only. Invalid output paths and collisions are errors; check exit status before applying "
+            "streamed output. Use `./-name` for a dash-leading TARGET. Reads files into memory and retains "
+            "output/source names for collision detection. Binary creation/deletion patches use uncompressed zlib "
+            "blocks.",
         .kind = Kind::kAction,
         .stdout_output = true,
         .arity = 1,

@@ -758,7 +758,8 @@ TEST_F(RunTest, CompareHandlesFileKindsAndTraversalOptions) {
       RunArgvRecords({"--compare", "--no-hidden", left.string(), right.string()}),
       ElementsAre("different\tlink", "different\tsize-change", "different\ttype-change"));
   EXPECT_THAT(
-      RunArgvRecords({"--compare=diff", "--compare-select=different", left.string(), right.string()}),
+      RunArgvRecords(
+          {"--compare=diff", "--compare-select=different", "--exclude=.git/", left.string(), right.string()}),
       Contains("Files a/link and b/link differ"));
   EXPECT_THAT(
       RunArgvRecords({"--compare", "--exclude=size-change", left.string(), right.string()}),
@@ -1664,7 +1665,7 @@ TEST_F(RunTest, DiffFormatAndContextGlobalsSetTheDefaults) {
   // --diff-format=normal switches to the `NcN` normal format (no unified `@@` hunk header).
   EXPECT_THAT(
       RunArgvRecords({"--diff-format=normal", root_.string(), "-name", "one.txt", "-diff", two}),
-      ElementsAre(AllOf(HasSubstr("4c4"), HasSubstr("< d"), HasSubstr("> X"), Not(HasSubstr("@@")))));
+      ElementsAre(AllOf(HasSubstr("4c4"), HasSubstr("< X"), HasSubstr("> d"), Not(HasSubstr("@@")))));
 }
 
 TEST_F(RunTest, ContextGlobalFeedsDiffContextWhenSymmetric) {

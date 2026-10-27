@@ -93,6 +93,18 @@ TEST_F(ParserTest, DiffTargetDefaultsWithoutConsumingOperatorsOrGlobals) {
   EXPECT_THAT(Parse({".", "-diff", ",", "-print"}), IsOk());
 }
 
+TEST_F(ParserTest, ReverseDiffHasTheSameOptionalTargetAndStyleGrammar) {
+  ASSERT_OK_AND_ASSIGN(const auto bare, Parse({".", "-rdiff"}));
+  EXPECT_THAT(bare.expression->args, ElementsAre("/dev/null"));
+  ASSERT_OK_AND_ASSIGN(const auto styled, Parse({".", "-rdiff:c5", "--diff-left-prefix="}));
+  EXPECT_THAT(styled.expression->diff_style, Eq("c5"));
+  EXPECT_THAT(styled.expression->args, ElementsAre("/dev/null"));
+  EXPECT_THAT(styled.globals, ElementsAre("--diff-left-prefix="));
+  EXPECT_THAT(Parse({".", "(", "-rdiff", ")", "-o", "-print"}), IsOk());
+  EXPECT_THAT(Parse({".", "-rdiff", ",", "-print"}), IsOk());
+  EXPECT_THAT(Parse({".", "-rdiff:bad"}), StatusIs(absl::StatusCode::kInvalidArgument));
+}
+
 TEST_F(ParserTest, NamedRootsPreserveOperandOrderAndDistinctIdentities) {
   ASSERT_OK_AND_ASSIGN(
       const Command command,

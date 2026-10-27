@@ -694,6 +694,7 @@ struct RewriteOp {
   std::string_view pattern;
   std::string_view replacement;
   std::string_view flags;
+  char command = 's';
 };
 
 // Splits a rewrite / extraction qualifier into its `;`-separated command chain. `spec` starts with
@@ -708,6 +709,7 @@ std::vector<RewriteOp> ParseRewriteChain(std::string_view spec) {
   std::size_t pos = 0;
   bool first = true;
   while (pos < spec.size()) {
+    const char command = spec[pos] == 'm' ? 'm' : 's';
     if (spec[pos] == 's' || spec[pos] == 'm') {
       ++pos;  // the mode letter (required on the first command, optional after `;`)
     } else if (first) {
@@ -744,7 +746,12 @@ std::vector<RewriteOp> ParseRewriteChain(std::string_view spec) {
     while (pos < spec.size() && spec[pos] != ';') {
       ++pos;
     }
-    ops.push_back({.pattern = pattern, .replacement = replacement, .flags = spec.substr(flags, pos - flags)});
+    ops.push_back({
+        .pattern = pattern,
+        .replacement = replacement,
+        .flags = spec.substr(flags, pos - flags),
+        .command = command,
+    });
     if (pos < spec.size() && spec[pos] == ';') {
       ++pos;  // consume the command separator
       if (pos == spec.size()) {
@@ -1013,50 +1020,76 @@ absl::Status ValidateNativeQualifier(FieldFn renderer, std::string_view qualifie
   return absl::InvalidArgumentError(absl::StrCat("unsupported field qualifier '", qualifier, "'"));
 }
 
+struct RewriteOperation {
+  regex::Matcher matcher;
+  std::string replacement;
+  bool global = false;
+};
+
+// Own every argument so a compiled template can outlive, move independently of, or be copied
+// separately from the source text. An invalid chain remains a whole no-op.
+std::vector<RewriteOperation> CompileChain(std::string_view spec) {
+  const auto ops = ParseRewriteChain(spec);
+  std::vector<RewriteOperation> result;
+  result.reserve(ops.size());
+  for (const auto& op : ops) {
+    auto matcher = regex::Matcher::Compile(op.pattern, absl::StrContains(op.flags, 'i'));
+    if (!matcher.ok()) {
+      return {};
+    }
+    result.push_back({
+        .matcher = *std::move(matcher),
+        .replacement = std::string(op.replacement),
+        .global = absl::StrContains(op.flags, 'g'),
+    });
+  }
+  return result;
+}
+
+std::string ApplyRewrite(std::string_view value, const std::vector<RewriteOperation>& ops) {
+  std::string out(value);
+  for (const auto& op : ops) {
+    out = op.matcher.Rewrite(out, op.replacement, op.global);
+  }
+  return out;
+}
+
 }  // namespace
+
+struct RewriteProgram::Impl {
+  std::vector<RewriteOperation> operations;
+};
+
+absl::StatusOr<RewriteProgram> RewriteProgram::Compile(std::string_view spec) {
+  if (!IsRewriteQualifier(spec)) {
+    return absl::InvalidArgumentError("expected an s/PATTERN/REPLACEMENT/ rewrite chain");
+  }
+  absl::Status status = ValidateRewriteChain(spec);
+  if (!status.ok()) {
+    return status;
+  }
+  for (const auto& op : ParseRewriteChain(spec)) {
+    if (op.command != 's') {
+      return absl::InvalidArgumentError("path rewrites accept substitution commands only");
+    }
+  }
+  return RewriteProgram(std::make_shared<const Impl>(Impl{.operations = CompileChain(spec)}));
+}
+
+std::string RewriteProgram::Apply(std::string_view value) const {
+  return ApplyRewrite(value, impl_->operations);
+}
 
 // Immutable programs are shared by copied templates. Rendering remains coordinator-owned;
 // regex backends retain their normal concurrent-call contract for other callers.
 struct Template::Transform {
-  struct Operation {
-    regex::Matcher matcher;
-    std::string replacement;
-    bool global = false;
-  };
+  using Operation = RewriteOperation;
 
   static std::shared_ptr<const Transform> Bind(std::string_view qualifier) {
     if (!IsRewriteQualifier(qualifier) && !IsExtractQualifier(qualifier)) {
       return {};
     }
     return std::make_shared<const Transform>(qualifier);
-  }
-
-  // Own every argument so a compiled template can outlive, move independently of, or be copied
-  // separately from the source text. An invalid chain remains a whole no-op.
-  static std::vector<Operation> CompileChain(std::string_view spec) {
-    const auto ops = ParseRewriteChain(spec);
-    std::vector<Operation> result;
-    result.reserve(ops.size());
-    for (const auto& op : ops) {
-      auto matcher = regex::Matcher::Compile(op.pattern, absl::StrContains(op.flags, 'i'));
-      if (!matcher.ok()) {
-        return {};
-      }
-      result.push_back({
-          .matcher = *std::move(matcher),
-          .replacement = std::string(op.replacement),
-          .global = absl::StrContains(op.flags, 'g'),
-      });
-    }
-    return result;
-  }
-
-  static std::string ApplyRewrite(std::string_view value, const std::vector<Operation>& ops) {
-    std::string out(value);
-    for (const auto& op : ops) {
-      out = op.matcher.Rewrite(out, op.replacement, op.global);
-    }
-    return out;
   }
 
   static std::vector<std::string> ExtractLines(std::string_view value, const std::vector<Operation>& ops) {
