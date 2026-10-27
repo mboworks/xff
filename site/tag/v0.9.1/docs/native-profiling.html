@@ -1,0 +1,89 @@
+<!doctype html><html lang="en">
+<!-- mboworks favicons -->
+<link rel="icon" href="../../../../favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../../favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../../../apple-touch-icon.png">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/native-profiling.md - xff v0.9.1</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.9.1/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.9.1">Release &amp; downloads</a><a href="/xff/releases/0.9.1/">CLI reference</a><a href="/xff/coverage/tag/0.9.1/">Coverage</a><a href="/xff/benchmarks/tag/0.9.1/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/1642f49d7b400596af3ed627f5b9f42cc24e4237">Source</a><a href="/xff/site/tag/v0.9.1/documents.html">Documentation</a></nav><p>xff v0.9.1</p><main><h1 dir="auto" id="native-linux-performance-profiling">Native Linux performance profiling</h1>
+<p dir="auto">Profiling is separate from accepted timing collection. Finish all builds before<br>
+measuring, and do not run profiling or compilation alongside a benchmark batch.<br>
+Use the same retained executable and prepared fixture roots as the uninstrumented<br>
+comparison. Preserve commands, CPU allocation, output hashes and profile artifacts.<br>
+See <a href="benchmark-correctness-audit.html">the native correctness audit</a> for the required<br>
+complete grid and Linux/macOS acceptance controls.</p>
+<h2 dir="auto" id="google-benchmark-hardware-counters">Google Benchmark hardware counters</h2>
+<p dir="auto">The opt-in <code class="notranslate">linux_perf</code> configuration enables the pinned Google Benchmark's<br>
+libpfm integration. Bazel builds libpfm from source; installing a system<br>
+<code class="notranslate">libpfm4-dev</code> package is not required. This is a native Linux configuration, not a<br>
+portable addition to the release or default build. Ordinary macOS builds are<br>
+unchanged; use native sampling/Instruments there instead.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">bazel run //xff/engine:collect_benchmark --config=clang_release --config=linux_perf -- \
+  --benchmark_filter=<span class="pl-s"><span class="pl-pds">'</span>^Collect/100/1/threads:1$<span class="pl-pds">'</span></span> \
+  --benchmark_min_time=0.01s --benchmark_perf_counters=cycles,instructions</pre></div>
+<p dir="auto">Check that the filter actually ran a benchmark and that its output contains<br>
+nonzero <code class="notranslate">cycles</code> and <code class="notranslate">instructions</code> counters. A successful build, a zero-match<br>
+filter, or timing columns alone do not establish working counters. Use<br>
+<code class="notranslate">--benchmark_list_tests=true</code> to find valid names for another benchmark target.<br>
+The short duration above is a capability probe, not performance evidence.</p>
+<p dir="auto">Google Benchmark 1.9.5 pins libpfm 4.11.0.bcr.1. That BCR source names the retired<br>
+<code class="notranslate">netcologne.dl.sourceforge.net</code> mirror. The opt-in downloader configuration<br>
+redirects exactly that archive to <code class="notranslate">downloads.sourceforge.net</code>, preserving the<br>
+pinned version, BCR patches and integrity check. No LLVM/toolchain dependency<br>
+changes are involved. It does not rewrite other archives or disable checksum<br>
+validation. If network access is unavailable, an independently verified copy of<br>
+<code class="notranslate">libpfm-4.11.0.tar.gz</code> can be supplied through Bazel's <code class="notranslate">--distdir=PATH</code>; do not<br>
+substitute an unverified system library.</p>
+<h2 dir="auto" id="kernel-and-external-perf-capability">Kernel and external perf capability</h2>
+<p dir="auto">The <code class="notranslate">perf</code> executable is a separate host profiling tool, not a libpfm dependency.<br>
+Install it using the host distribution's supported kernel-tools package if it<br>
+is absent. Check actual capability as the user who will collect the profiles:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate"><span class="pl-c1">command</span> -v perf
+sysctl kernel.perf_event_paranoid
+perf stat -e cycles:u,instructions:u -- /bin/true</pre></div>
+<p dir="auto">Inspect the exit status and event output. A sysctl value alone does not prove<br>
+hardware counters work: kernel support, available PMUs, capabilities and<br>
+container/security policy can also restrict access. Do not automatically change<br>
+the host's security policy or install persistent sysctl overrides. Arrange any<br>
+necessary permission change with the host administrator. Recheck the actual<br>
+events to be used; system-wide and kernel-inclusive monitoring can require more<br>
+permission than profiling one process's user-space work.</p>
+<h2 dir="auto" id="fresh-process-profiles">Fresh-process profiles</h2>
+<p dir="auto">Build or select the retained release executable before collecting profiles.<br>
+Choose the allowed physical-core IDs recorded by the audit's affinity probe;<br>
+do not assume that CPU IDs <code class="notranslate">0,1,2</code> are available on another host. For example,<br>
+replace <code class="notranslate">CPU_IDS</code>, <code class="notranslate">BINARY</code> and <code class="notranslate">ROOT</code> below with those recorded values:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">perf stat -r 50 \
+  -e task-clock,context-switches,cpu-migrations,page-faults,cycles:u,instructions:u -- \
+  taskset -c CPU_IDS BINARY ROOT --jobs=3 -type f
+perf record --call-graph dwarf -o /tmp/xff-walk-perf.data -- \
+  taskset -c CPU_IDS BINARY ROOT --jobs=3 -type f
+perf report --stdio -i /tmp/xff-walk-perf.data</pre></div>
+<p dir="auto">Repeat with workers <code class="notranslate">1</code>, <code class="notranslate">3</code> and <code class="notranslate">10</code> on exactly the same roots. The <code class="notranslate">stat -r</code><br>
+form launches a fresh command each time; preserve its variability rather than<br>
+treating it as the audit's fastest-seven-of-nine timing estimator. Keep output<br>
+handling identical between controls and verify correctness separately. A single<br>
+very short <code class="notranslate">record</code> can have too few samples to attribute cost: aggregate fresh<br>
+invocations in a controlled harness with correctness checks when necessary.<br>
+Retain absolute times and the raw counters alongside the stacks; fewer created<br>
+threads or fewer context switches alone do not establish higher throughput.</p>
+<h2 dir="auto" id="native-capability-validation">Native capability validation</h2>
+<p dir="auto">On 2026-10-10, a forced fetch with empty download and repository-content caches,<br>
+system/home RC files disabled and no <code class="notranslate">--distdir</code> fallback succeeded through this<br>
+configuration. The fetched archive retained the pinned SHA-256:<br>
+<code class="notranslate">5da5f8872bde14b3634c9688d980f68bda28b510268723cc12973eedbab9fecc</code>.<br>
+The <code class="notranslate">Collect/100/1/threads:1</code> capability probe actually ran 6,539 iterations and<br>
+reported nonzero cycles and instructions. External <code class="notranslate">perf stat</code> likewise recorded<br>
+both events for <code class="notranslate">true</code>, with <code class="notranslate">kernel.perf_event_paranoid=0</code>. The five repository<br>
+tooling tests pass, including the opt-in and exact-rewrite regressions.</p>
+<p dir="auto">These checks establish this Linux host's capability, not performance acceptance<br>
+or permission on another machine. No sysctl, persistent host setting, default<br>
+build configuration or macOS linker/toolchain dependency was changed.</p></main><footer>Release snapshot &middot; 1642f49d7b400596af3ed627f5b9f42cc24e4237</footer></body></html>

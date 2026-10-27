@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "total_bytes": 431106640,
+  "total_bytes": 433731363,
   "sections": {
     "root": {
       "files": 34,
@@ -47,8 +47,8 @@
       "bytes": 519549
     },
     "site": {
-      "files": 259,
-      "bytes": 9003788
+      "files": 320,
+      "bytes": 11628511
     },
     ".github": {
       "files": 2,
