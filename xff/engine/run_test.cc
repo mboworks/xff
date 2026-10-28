@@ -927,6 +927,34 @@ TEST_F(RunTest, CompareIgnoreFilesAccumulateInOrderBelowCliPatternsAndAboveDisco
   EXPECT_THAT(last_errors_, Eq(0));
 }
 
+TEST_F(RunTest, CompareIgnoreRelativeFilePathsUseWorkingDirectoryForEveryScope) {
+  const fs::path left = root_ / "relative-left";
+  const fs::path right = root_ / "relative-right";
+  const auto roots = std::to_array<fs::path>({left, right});
+  for (const fs::path& root : roots) {
+    ASSERT_THAT(fs::create_directories(root), IsTrue());
+    { std::ofstream(root / "keep.dat") << "same"; }
+    { std::ofstream(root / "skip.dat") << "same"; }
+  }
+  const fs::path rules = root_ / "outside.ignore";
+  { std::ofstream(rules) << "/skip.dat\n"; }
+  const fs::path relative = fs::relative(rules);
+  // The same argument cannot name a file relative to either root: this distinguishes the bases.
+  ASSERT_THAT(relative.is_absolute(), IsFalse());
+  ASSERT_THAT(fs::exists(left / relative), IsFalse());
+  ASSERT_THAT(fs::exists(right / relative), IsFalse());
+  const auto compare = [&](std::string_view flag) {
+    const auto records = RunArgvRecords(
+        {"--compare", "--compare-select=all", absl::StrCat(flag, "=", relative.string()), left.string(), right.string(),
+         "-type", "f"});
+    EXPECT_THAT(last_errors_, Eq(0));
+    return records;
+  };
+  EXPECT_THAT(compare("--compare-ignore-file"), ElementsAre("identical\tkeep.dat"));
+  EXPECT_THAT(compare("--compare-left-ignore-file"), ElementsAre("identical\tkeep.dat", "right-only\tskip.dat"));
+  EXPECT_THAT(compare("--compare-right-ignore-file"), ElementsAre("identical\tkeep.dat", "left-only\tskip.dat"));
+}
+
 TEST_F(RunTest, CompareSideIgnoreFilesAnchorAtTheirRootsAndExcludeOnlyTheirSide) {
   const fs::path left = root_ / "side-left";
   const fs::path right = root_ / "side-right";

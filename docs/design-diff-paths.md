@@ -230,8 +230,23 @@ Choose which roots receive each file's rules:
 | `--compare-left-ignore-file=PATH`  | Left root only             |
 | `--compare-right-ignore-file=PATH` | Right root only            |
 
-All three accept absolute paths or paths relative to the working directory. Shared and side-specific
-files accumulate in argument order. On each side, the last matching applicable rule wins; a
+For all three flags, distinguish the rule file's location from the patterns' scope:
+
+- **File location:** absolute, or relative to the process working directory. Comparison roots and
+  the INI file containing the option do not change that base.
+- **Pattern scope:** relative to both comparison roots, the left root, or the right root.
+
+For example, when run from a directory containing `old` and `new`:
+
+```sh
+xff --compare old new --compare-left-ignore-file=old/.gitignore
+```
+
+This reads `old/.gitignore` from the working directory. A `/build/` rule inside it excludes
+`old/build/`. A bare `.gitignore` file argument would instead read the working directory's
+`.gitignore`, regardless of which side receives its patterns.
+
+Shared and side-specific files accumulate in argument order. On each side, the last matching applicable rule wins; a
 side-specific file has no implicit priority over a shared file. For example:
 
 ```sh
