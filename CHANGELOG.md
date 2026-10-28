@@ -5,8 +5,9 @@
 
 # 0.9.1
 
-- Add repeatable `--compare-ignore-file=PATH` to apply explicit gitignore-format rules relative
-  to both comparison roots, independently of the rules file's location.
+- Add repeatable `--compare-ignore-file=PATH`, `--compare-left-ignore-file=PATH`, and
+  `--compare-right-ignore-file=PATH` to apply explicit gitignore-format rules relative to both
+  comparison roots or one side, independently of the rules file's location.
 
 - Make `-diff TARGET` emit TARGET-to-found changes and add `-rdiff [TARGET]` for the reverse.
   Omitted TARGET creates or deletes files respectively, including binary files, empty files,

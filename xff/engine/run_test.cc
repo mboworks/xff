@@ -927,6 +927,95 @@ TEST_F(RunTest, CompareIgnoreFilesAccumulateInOrderBelowCliPatternsAndAboveDisco
   EXPECT_THAT(last_errors_, Eq(0));
 }
 
+TEST_F(RunTest, CompareSideIgnoreFilesAnchorAtTheirRootsAndExcludeOnlyTheirSide) {
+  const fs::path left = root_ / "side-left";
+  const fs::path right = root_ / "side-right";
+  const auto roots = std::to_array<fs::path>({left, right});
+  constexpr auto names =
+      std::to_array<std::string_view>({"keep.dat", "left.dat", "right.dat", "drop.dat", "build/item.dat"});
+  for (const fs::path& root : roots) {
+    ASSERT_THAT(fs::create_directories(root / "build"), IsTrue());
+    for (const std::string_view name : names) {
+      {
+        std::ofstream(root / name) << "same";
+      }
+    }
+  }
+  const fs::path shared = root_ / "shared-side.ignore";
+  const fs::path left_rules = root_ / "left-side.ignore";
+  const fs::path right_rules = root_ / "right-side.ignore";
+  { std::ofstream(shared) << "drop.dat\n"; }
+  { std::ofstream(left_rules) << "/left.dat\n/build/\n"; }
+  { std::ofstream(right_rules) << "/right.dat\n"; }
+  const std::vector<std::string> args = {
+      "--compare",
+      "--compare-select=all",
+      "--compare-ignore=none",
+      "--compare-ignore-file=" + shared.string(),
+      "--compare-left-ignore-file=" + left_rules.string(),
+      "--compare-right-ignore-file=" + right_rules.string(),
+      left.string(),
+      right.string(),
+      "-type",
+      "f",
+  };
+  EXPECT_THAT(
+      RunArgvRecords(args),
+      ElementsAre("right-only\tbuild/item.dat", "identical\tkeep.dat", "right-only\tleft.dat", "left-only\tright.dat"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  auto disabled = args;
+  disabled.push_back("--no-ignore");
+  EXPECT_THAT(
+      RunArgvRecords(disabled), ElementsAre(
+                                    "identical\tbuild/item.dat", "identical\tdrop.dat", "identical\tkeep.dat",
+                                    "identical\tleft.dat", "identical\tright.dat"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  // Operand position, not root path equality, determines the side.
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--compare", "--compare-select=all", "--compare-left-ignore-file=" + left_rules.string(), left.string(),
+           left.string(), "-type", "f", "-name", "left.dat"}),
+      ElementsAre("right-only\tleft.dat"));
+  EXPECT_THAT(last_errors_, Eq(0));
+}
+
+TEST_F(RunTest, CompareSharedAndSideIgnoreFilesFollowArgumentOrderWithoutScopePriority) {
+  const fs::path left = root_ / "order-side-left";
+  const fs::path right = root_ / "order-side-right";
+  ASSERT_THAT(fs::create_directories(left), IsTrue());
+  ASSERT_THAT(fs::create_directories(right), IsTrue());
+  { std::ofstream(left / "keep.dat") << "same"; }
+  { std::ofstream(right / "keep.dat") << "same"; }
+  { std::ofstream(left / "drop.dat") << "same"; }
+  { std::ofstream(right / "drop.dat") << "same"; }
+  const fs::path deny = root_ / "side-deny.ignore";
+  const fs::path allow = root_ / "side-allow.ignore";
+  { std::ofstream(deny) << "*.dat\n"; }
+  { std::ofstream(allow) << "!keep.dat\n"; }
+  const auto check = [&](std::string_view side_flag, std::string_view expected, std::string_view excluded) {
+    EXPECT_THAT(
+        RunArgvRecords(
+            {"--compare", "--compare-ignore-file=" + deny.string(), absl::StrCat(side_flag, "=", allow.string()),
+             left.string(), right.string()}),
+        ElementsAre(expected));
+    EXPECT_THAT(last_errors_, Eq(0));
+    EXPECT_THAT(
+        RunArgvRecords(
+            {"--compare", absl::StrCat(side_flag, "=", allow.string()), "--compare-ignore-file=" + deny.string(),
+             left.string(), right.string()}),
+        IsEmpty());
+    EXPECT_THAT(last_errors_, Eq(0));
+    EXPECT_THAT(
+        RunArgvRecords(
+            {"--compare", absl::StrCat(side_flag, "=", deny.string()), absl::StrCat(side_flag, "=", allow.string()),
+             "--compare-select=all", left.string(), right.string(), "-name", "*.dat"}),
+        ElementsAre(excluded, "identical\tkeep.dat"));
+    EXPECT_THAT(last_errors_, Eq(0));
+  };
+  check("--compare-left-ignore-file", "left-only\tkeep.dat", "right-only\tdrop.dat");
+  check("--compare-right-ignore-file", "right-only\tkeep.dat", "left-only\tdrop.dat");
+}
+
 TEST_F(RunTest, CompareIgnoreFileRejectsInvalidRequestsBeforeWalking) {
   const auto check = [&](const std::vector<std::string>& args, std::string_view message) {
     MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse(args));
@@ -939,18 +1028,25 @@ TEST_F(RunTest, CompareIgnoreFileRejectsInvalidRequestsBeforeWalking) {
     EXPECT_THAT(result.errors, Eq(2));
     EXPECT_THAT(reported.message(), HasSubstr(message));
   };
-  check({"--compare-ignore-file=" + Path("missing.ignore"), root_.string()}, "requires --compare");
   const fs::path right = root_ / "errors-right";
   ASSERT_THAT(fs::create_directories(right), IsTrue());
-  check({"--compare", "--compare-ignore-file=", root_.string(), right.string()}, "non-empty path");
-  check({"--compare", "--compare-ignore-file", root_.string(), right.string()}, "non-empty path");
-  check(
-      {"--compare", "--compare-ignore-file=" + Path("missing.ignore"), root_.string(), right.string()},
-      "missing.ignore");
-  check(
-      {"--compare", "--no-ignore", "--compare-ignore-file=" + Path("missing.ignore"), root_.string(), right.string()},
-      "missing.ignore");
-  check({"--compare", "--compare-ignore-file=" + right.string(), root_.string(), right.string()}, right.string());
+  constexpr auto flags = std::to_array<std::string_view>({
+      "--compare-ignore-file",
+      "--compare-left-ignore-file",
+      "--compare-right-ignore-file",
+  });
+  for (const std::string_view flag : flags) {
+    check({absl::StrCat(flag, "=", Path("missing.ignore")), root_.string()}, "requires --compare");
+    check({"--compare", absl::StrCat(flag, "="), root_.string(), right.string()}, "non-empty path");
+    check({"--compare", std::string(flag), root_.string(), right.string()}, "non-empty path");
+    check(
+        {"--compare", absl::StrCat(flag, "=", Path("missing.ignore")), root_.string(), right.string()},
+        "missing.ignore");
+    check(
+        {"--compare", "--no-ignore", absl::StrCat(flag, "=", Path("missing.ignore")), root_.string(), right.string()},
+        "missing.ignore");
+    check({"--compare", absl::StrCat(flag, "=", right.string()), root_.string(), right.string()}, right.string());
+  }
 }
 
 TEST_F(RunTest, RootOnlyGitignoreDottedNameAllowlistKeepsUndottedDirectoriesTraversable) {

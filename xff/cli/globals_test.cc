@@ -280,11 +280,12 @@ TEST_F(GlobalsTest, NonOverridingGlobalsDeclareTheirRepetitionSemantics) {
     }
   }
   EXPECT_THAT(
-      names, ElementsAre(
-                 "--config", "--xffrc", "--exclude", "--include", "--file-type", "--file-type-not", "--type-add",
-                 "--type-clear", "--lang-db", "--mime-vocabulary", "--ignore-file", "--compare-ignore-file",
-                 "--diff-left-rewrite", "--diff-right-rewrite", "--root", "--pack-option", "--summary", "--histogram",
-                 "--shard-pattern", "--define"));
+      names,
+      ElementsAre(
+          "--config", "--xffrc", "--exclude", "--include", "--file-type", "--file-type-not", "--type-add",
+          "--type-clear", "--lang-db", "--mime-vocabulary", "--ignore-file", "--compare-ignore-file",
+          "--compare-left-ignore-file", "--compare-right-ignore-file", "--diff-left-rewrite", "--diff-right-rewrite",
+          "--root", "--pack-option", "--summary", "--histogram", "--shard-pattern", "--define"));
 }
 
 TEST_F(GlobalsTest, IsKnownGlobalAcceptsEveryTableNameAndAlias) {

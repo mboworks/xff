@@ -704,7 +704,8 @@ Section IgnoreSection(bool in_full) {
   Subsection precedence{.title = "Pattern precedence"};
   precedence.children.push_back(ProseOf(
       "For a path, command-line `--exclude` / `--include` patterns decide first, then `--compare-ignore-file` "
-      "sources in comparison mode, then ordinary `--ignore-file` sources, then per-directory files. Within a source, "
+      "and applicable side-specific sources in argument order, then ordinary `--ignore-file` sources, then "
+      "per-directory files. Within a source, "
       "gitignore last-match-wins "
       "semantics apply; a matched directory is pruned, so a later rule cannot recover descendants "
       "that were never visited."));
@@ -1225,7 +1226,11 @@ Section CompareSection(bool in_full) {
       "side's stack to both; `union` excludes a path from both if either stack excludes it; and `none` disables "
       "those stacks. `left`, `right`, and `union` enable the Git ignore layer; `--no-ignore` still disables all "
       "ignore-file sources. `--compare-ignore-file=PATH` reads an explicit gitignore-format file whose patterns "
-      "apply relative to both roots, even when the file is elsewhere. It supplements any `--compare-ignore` "
+      "apply relative to both roots, even when the file is elsewhere. `--compare-left-ignore-file=PATH` and "
+      "`--compare-right-ignore-file=PATH` restrict explicit rules to one side. Shared and side-specific files "
+      "apply in argument order; the last matching applicable rule wins, with no implicit priority for side-specific "
+      "files. Asymmetric exclusions can make an existing file appear left-only or right-only. Each supplements any "
+      "`--compare-ignore` "
       "policy, including `none`; a missing or unreadable explicit file is an error. The matched entries "
       "are paired by path relative to their respective roots, so the root directory names need not match."));
   section.children.push_back(ProseOf(
@@ -1427,7 +1432,8 @@ Section DiffSection(bool in_full) {
       "per-tree behavior. `left` or `right` instead uses the selected side's auto-discovered stack for both "
       "trees; `union` excludes a relative path from both when either stack excludes it. `none` disables the "
       "auto-discovered stack, while explicit `--ignore-file`, `--include`, and `--exclude` retain their normal "
-      "scope. `--compare-ignore-file=PATH` instead applies the named file relative to both comparison roots. "
+      "scope. `--compare-ignore-file=PATH` instead applies the named file relative to both comparison roots; "
+      "`--compare-left-ignore-file=PATH` and `--compare-right-ignore-file=PATH` apply only to the named side. "
       "For example, `xff -g+ --compare=diff LEFT RIGHT --compare-ignore-file=/path/to/rules.ignore` shares those "
       "explicit rules across the trees. `--skip-vcs` remains a separate traversal filter. "
       "These choices also cover `.ignore` / `.xffignore` when those files are enabled. See `--help=ignore` "

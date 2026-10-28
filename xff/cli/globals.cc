@@ -1600,7 +1600,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Requires `--compare`. Read a gitignore-format file from an absolute path or a path relative "
                    "to the working directory. Patterns apply relative to each comparison root, regardless of "
                    "the ignore file's location: `/build/` excludes each root's top-level `build` directory. "
-                   "Repeat in application order; the last matching rule wins, including `!` negations. "
+                   "Shared and side-specific files apply in argument order; the last matching applicable rule wins, "
+                   "including `!` negations. `--compare-left-ignore-file` and `--compare-right-ignore-file` restrict "
+                   "rules to one side, with no implicit extra priority. "
                    "Command-line `--include` / `--exclude` take precedence, followed by these files, ordinary "
                    "`--ignore-file` sources, and auto-discovered rules. Supplements every `--compare-ignore` "
                    "policy, including `none`, without enabling auto-discovery. `--no-ignore` disables application "
@@ -1608,6 +1610,41 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = kAffectsCompare,
         .topic = "compare",
         .repetition = GlobalFlag::Repetition::kAccumulate,
+        .compare_ignore_scope = GlobalFlag::CompareIgnoreScope::kBoth,
+    },
+    {
+        .name = "--compare-left-ignore-file",
+        .display = "--compare-left-ignore-file=PATH",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "apply an explicit ignore file only to the left comparison root (repeatable)",
+        .details = "Requires `--compare`. Like `--compare-ignore-file`, but patterns apply only to the left "
+                   "root. Accepts absolute paths or paths relative to the working directory; patterns anchor at "
+                   "the left comparison root. Shared and side-specific files apply in argument order; the last "
+                   "matching applicable rule wins. Side-specific files have no implicit extra priority. "
+                   "Asymmetric exclusions can make an existing file appear right-only. `--no-ignore` disables "
+                   "application; empty paths and missing or unreadable files remain errors.",
+        .affects = kAffectsCompare,
+        .topic = "compare",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+        .compare_ignore_scope = GlobalFlag::CompareIgnoreScope::kLeft,
+    },
+    {
+        .name = "--compare-right-ignore-file",
+        .display = "--compare-right-ignore-file=PATH",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "apply an explicit ignore file only to the right comparison root (repeatable)",
+        .details = "Requires `--compare`. Like `--compare-ignore-file`, but patterns apply only to the right "
+                   "root. Accepts absolute paths or paths relative to the working directory; patterns anchor at "
+                   "the right comparison root. Shared and side-specific files apply in argument order; the last "
+                   "matching applicable rule wins. Side-specific files have no implicit extra priority. "
+                   "Asymmetric exclusions can make an existing file appear left-only. `--no-ignore` disables "
+                   "application; empty paths and missing or unreadable files remain errors.",
+        .affects = kAffectsCompare,
+        .topic = "compare",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+        .compare_ignore_scope = GlobalFlag::CompareIgnoreScope::kRight,
     },
     {
         .name = "--diff-algorithm",

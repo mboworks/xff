@@ -208,7 +208,7 @@ executable files, symlinks, unusual names, and missing final newlines. Existing 
 parser, expression executor, help, and conformance suites must continue to pass with direction
 goldens updated intentionally. Run repository formatting/policy checks and the full Bazel suite.
 
-## Shared comparison ignore files
+## Explicit comparison ignore files
 
 `--compare-ignore-file=PATH` reads an explicit gitignore-format file for a two-root comparison.
 Absolute paths are accepted; relative file paths resolve from the working directory. Patterns
@@ -222,15 +222,35 @@ A `/build/` rule prunes the top-level `build` directory in both trees. Unanchore
 at any depth. Negations follow ordinary gitignore behavior: excluded directories are pruned,
 so including a child requires keeping its parents traversable.
 
-Repeated files accumulate in argument order; the last matching rule wins. Precedence is:
+Choose which roots receive each file's rules:
+
+| Flag                               | Apply patterns relative to |
+| ---------------------------------- | -------------------------- |
+| `--compare-ignore-file=PATH`       | Both roots                 |
+| `--compare-left-ignore-file=PATH`  | Left root only             |
+| `--compare-right-ignore-file=PATH` | Right root only            |
+
+All three accept absolute paths or paths relative to the working directory. Shared and side-specific
+files accumulate in argument order. On each side, the last matching applicable rule wins; a
+side-specific file has no implicit priority over a shared file. For example:
+
+```sh
+xff --compare LEFT RIGHT --compare-ignore-file=/rules/common.ignore \
+  --compare-left-ignore-file=/rules/left.ignore --compare-right-ignore-file=/rules/right.ignore
+```
+
+Shared files are the recommended default. Asymmetric exclusions can make an existing file appear
+left-only or right-only. These explicit scopes are independent of `--compare-ignore`: selecting
+`left`, `right`, or `union` for auto-discovered rules does not change an explicit file's chosen side.
+Precedence is:
 
 1. CLI `--include` / `--exclude` patterns.
-2. `--compare-ignore-file` patterns.
+2. Applicable shared and side-specific comparison ignore files, in argument order.
 3. Ordinary `--ignore-file` sources, still anchored at their own directory.
 4. Automatically discovered rules chosen by `--compare-ignore`.
 
-The new flag supplements every `--compare-ignore` policy, including `none`, and does not enable
-Git ignore discovery by itself. `--no-ignore` disables application of comparison ignore files.
+These flags supplement every `--compare-ignore` policy, including `none`, and do not enable
+Git ignore discovery by themselves. `--no-ignore` disables application of comparison ignore files.
 Explicit file requests are still validated: empty paths and missing or unreadable files are hard
-errors before traversal, including when `--no-ignore` is set. The option requires `--compare` and
+errors before traversal, including when `--no-ignore` is set. Each option requires `--compare` and
 works with status, summary, and patch output. It changes selection, not patch destination paths.
