@@ -190,6 +190,19 @@ TEST_F(PlainBackendTest, SeeAlsoUsesCopyableHelpCommands) {
   EXPECT_THAT(backend.Take(), HasSubstr("See also: --help=regex, --help=--summary, --help=-printf, find(1)"));
 }
 
+TEST_F(PlainBackendTest, SeeAlsoPreservesCustomExternalReferenceLabels) {
+  PlainTextBackend backend(HelpRenderContext{.width = 0});
+  backend.EmitSeeAlso({
+      .refs =
+          {
+              {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1", .label = "Find manual"},
+              {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference", .label = "External reference"},
+              {.kind = RefTarget::Kind::kAnchor, .id = "section", .label = "Local section"},
+          },
+  });
+  EXPECT_THAT(backend.Take(), EqualsText("Find manual, External reference, Local section\n"));
+}
+
 TEST_F(PlainBackendTest, RelatedCommandsRespectTheHelpWidth) {
   PlainTextBackend backend(HelpRenderContext{.width = 32});
   backend.EmitSeeAlso({
