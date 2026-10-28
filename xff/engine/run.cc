@@ -2097,6 +2097,30 @@ class RootedIgnoreFiles {
   std::vector<Source> sources_;
 };
 
+// Explicit comparison rules share a logical base: each comparison root, not the file's parent.
+absl::StatusOr<ignore::PatternList> ReadCompareIgnoreFiles(
+    const vfs::FileSystem& fs,
+    const std::vector<std::string>& globals) {
+  constexpr std::string_view kPrefix = "--compare-ignore-file=";
+  ignore::PatternList patterns;
+  for (const std::string& global : globals) {
+    if (!global.starts_with(kPrefix) && global != "--compare-ignore-file") {
+      continue;
+    }
+    const std::string_view path =
+        global.size() < kPrefix.size() ? std::string_view() : std::string_view(global).substr(kPrefix.size());
+    if (path.empty()) {
+      return absl::InvalidArgumentError("--compare-ignore-file requires a non-empty path");
+    }
+    const auto content = fs.ReadContent(path);
+    if (!content.ok()) {
+      return absl::Status(content.status().code(), absl::StrCat(path, ": ", content.status().message()));
+    }
+    patterns.AddPatterns(*content);
+  }
+  return patterns;
+}
+
 bool HasGlobal(const std::vector<std::string>& globals, std::string_view flag) {
   return absl::c_any_of(globals, [flag](std::string_view global) { return global == flag; });
 }
@@ -5503,6 +5527,12 @@ RunResult RunFindCore(
   // -g / --no-ignore (the user named these), consulted below CLI --exclude but above the auto
   // .gitignore stack (an explicitly named file outranks auto-discovery, below a direct glob).
   const RootedIgnoreFiles rooted_ignore_files = RootedIgnoreFiles::FromGlobals(walk_fs, command.globals);
+  const auto compare_ignore_files = ReadCompareIgnoreFiles(walk_fs, command.globals);
+  if (!compare_ignore_files.ok()) {
+    on_error("--compare-ignore-file", compare_ignore_files.status());
+    return RunResult{.errors = 2};
+  }
+  const bool compare_explicit_ignore = !no_ignore && !compare_ignore_files->empty();
 
   // -ok confirmation: prompt to stderr, read a line from stdin, affirmative on y/Y (like find).
   const auto confirm = [](std::string_view prompt) -> bool {
@@ -6064,17 +6094,20 @@ RunResult RunFindCore(
         // matched directory is pruned (its subtree is never walked, so this is also
         // the fast path); a matched file is simply skipped. The search root itself
         // (empty relative path) is never filtered -- the user named it. CLI
-        // --exclude/--include has highest precedence, then explicit --ignore-file sources
+        // --exclude/--include has highest precedence, then --compare-ignore-file sources, then --ignore-file sources
         // (rooted at the file's own dir), then the auto per-directory ignore-file stack
         // (--ignore-files / -g); each later layer decides only where the earlier ones are silent.
         const bool compare_auto_ignore =
             compare_listing && compare_ignore_policy != CompareIgnorePolicy::kNone && ignore_files.Active();
-        if (!ignore_patterns.empty() || rooted_ignore_files.Active() || compare_auto_ignore
+        if (!ignore_patterns.empty() || compare_explicit_ignore || rooted_ignore_files.Active() || compare_auto_ignore
             || (!compare_listing && ignore_files.Active())) {
           const bool is_dir = visit.metadata.type == vfs::FileType::kDirectory;
           const std::string_view rel = RelativeTo(visit.path, visit.root);
           if (!rel.empty()) {
             ignore::Decision decision = ignore_patterns.Match(rel, is_dir);
+            if (decision == ignore::Decision::kDefault && compare_explicit_ignore) {
+              decision = compare_ignore_files->Match(rel, is_dir);
+            }
             if (decision == ignore::Decision::kDefault && rooted_ignore_files.Active()) {
               decision = rooted_ignore_files.Decide(AbsoluteDir(visit.path), is_dir);
             }
@@ -6950,9 +6983,14 @@ absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, boo
 }
 
 absl::Status ValidateCompareIgnoreOption(const std::vector<std::string>& globals, bool compare) {
-  if (!compare
-      && absl::c_any_of(globals, [](std::string_view global) { return global.starts_with("--compare-ignore="); })) {
-    return absl::InvalidArgumentError("--compare-ignore requires --compare");
+  if (!compare) {
+    for (const std::string& global : globals) {
+      if (global.starts_with("--compare-ignore=") || global.starts_with("--compare-ignore-file=")
+          || global == "--compare-ignore-file") {
+        return absl::InvalidArgumentError(
+            absl::StrCat(std::string_view(global).substr(0, global.find('=')), " requires --compare"));
+      }
+    }
   }
   return absl::OkStatus();
 }

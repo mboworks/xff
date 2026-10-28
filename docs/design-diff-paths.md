@@ -207,3 +207,30 @@ Git application of creation/deletion patches containing text, empty files, binar
 executable files, symlinks, unusual names, and missing final newlines. Existing comparison,
 parser, expression executor, help, and conformance suites must continue to pass with direction
 goldens updated intentionally. Run repository formatting/policy checks and the full Bazel suite.
+
+## Shared comparison ignore files
+
+`--compare-ignore-file=PATH` reads an explicit gitignore-format file for a two-root comparison.
+Absolute paths are accepted; relative file paths resolve from the working directory. Patterns
+are anchored at each comparison root, not the rules file's directory. For example:
+
+```sh
+xff -g+ --compare=diff old-tree new-tree --compare-ignore-file=/path/to/shared.ignore
+```
+
+A `/build/` rule prunes the top-level `build` directory in both trees. Unanchored patterns match
+at any depth. Negations follow ordinary gitignore behavior: excluded directories are pruned,
+so including a child requires keeping its parents traversable.
+
+Repeated files accumulate in argument order; the last matching rule wins. Precedence is:
+
+1. CLI `--include` / `--exclude` patterns.
+2. `--compare-ignore-file` patterns.
+3. Ordinary `--ignore-file` sources, still anchored at their own directory.
+4. Automatically discovered rules chosen by `--compare-ignore`.
+
+The new flag supplements every `--compare-ignore` policy, including `none`, and does not enable
+Git ignore discovery by itself. `--no-ignore` disables application of comparison ignore files.
+Explicit file requests are still validated: empty paths and missing or unreadable files are hard
+errors before traversal, including when `--no-ignore` is set. The option requires `--compare` and
+works with status, summary, and patch output. It changes selection, not patch destination paths.

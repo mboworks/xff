@@ -11,6 +11,11 @@ Design: [`docs/design-diff-paths.md`](docs/design-diff-paths.md).
 
 ## Comparison ignore policy
 
+- [x] Add repeatable `--compare-ignore-file=PATH`: explicit files, including absolute paths outside
+      the compared trees, apply in order relative to both roots. CLI include/exclude rules take
+      precedence; explicit comparison rules outrank ordinary ignore files and auto-discovery.
+      Reject empty paths, missing/unreadable files, and use outside comparison mode.
+
 - [x] Add `--compare-ignore=none|left|right|respective|union` for auto-discovered ignore stacks.
       `respective` preserves independent per-tree rules; `left` / `right` use one side's stack on both;
       `union` excludes a relative path from both when either stack excludes it; `none` disables the

@@ -1592,6 +1592,24 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
+        .name = "--compare-ignore-file",
+        .display = "--compare-ignore-file=PATH",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "apply an explicit ignore file relative to both comparison roots (repeatable)",
+        .details = "Requires `--compare`. Read a gitignore-format file from an absolute path or a path relative "
+                   "to the working directory. Patterns apply relative to each comparison root, regardless of "
+                   "the ignore file's location: `/build/` excludes each root's top-level `build` directory. "
+                   "Repeat in application order; the last matching rule wins, including `!` negations. "
+                   "Command-line `--include` / `--exclude` take precedence, followed by these files, ordinary "
+                   "`--ignore-file` sources, and auto-discovered rules. Supplements every `--compare-ignore` "
+                   "policy, including `none`, without enabling auto-discovery. `--no-ignore` disables application "
+                   "of these rules. Empty paths and missing or unreadable files are errors, even with `--no-ignore`.",
+        .affects = kAffectsCompare,
+        .topic = "compare",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+    },
+    {
         .name = "--diff-algorithm",
         .display = "--diff-algorithm=naive|direct|myers",
         .group = "diff",
