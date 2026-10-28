@@ -179,15 +179,28 @@ TEST_F(PlainBackendTest, SeeAlsoUsesCopyableHelpCommands) {
   backend.EmitSeeAlso({
       .refs =
           {
-              {.kind = RefTarget::Kind::kTopic, .id = "regex"},
-              {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
-              {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
+              {.kind = RefTarget::Kind::kTopic, .id = "regex", .label = "Regex matching"},
+              {.kind = RefTarget::Kind::kFlag, .id = "--summary", .label = "Summary"},
+              {.kind = RefTarget::Kind::kPrimary, .id = "-printf", .label = "Formatted output"},
               {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
               {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference"},
               {.kind = RefTarget::Kind::kAnchor, .id = "section"},
           },
   });
   EXPECT_THAT(backend.Take(), HasSubstr("See also: --help=regex, --help=--summary, --help=-printf, find(1)"));
+}
+
+TEST_F(PlainBackendTest, SeeAlsoPreservesCustomExternalReferenceLabels) {
+  PlainTextBackend backend(HelpRenderContext{.width = 0});
+  backend.EmitSeeAlso({
+      .refs =
+          {
+              {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1", .label = "Find manual"},
+              {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference", .label = "External reference"},
+              {.kind = RefTarget::Kind::kAnchor, .id = "section", .label = "Local section"},
+          },
+  });
+  EXPECT_THAT(backend.Take(), EqualsText("Find manual, External reference, Local section\n"));
 }
 
 TEST_F(PlainBackendTest, RelatedCommandsRespectTheHelpWidth) {

@@ -538,7 +538,9 @@ test::focused_help_links_to_topics_and_related_controls() {
   expect_output_contains '--help=compare' "${out}"
   out="$("$(_xff_bin)" --help=-grep --width=0)"
   expect_output_contains '--help=content' "${out}"
-  expect_output_contains '--help=--context' "${out}"
+  expect_output_contains 'Affected by:' "${out}"
+  expect_output_contains '--context' "${out}"
+  expect_output_not_contains '--help=--context' "${out}"
   out="$("$(_xff_bin)" --help=-size --width=0)"
   expect_output_contains '--help=size' "${out}"
 }
@@ -568,11 +570,11 @@ test::focused_vocabulary_help_appends_the_shared_reference() {
 test::long_reference_pointers_follow_the_output_format() {
   local out
   out="$("$(_xff_bin)" --help=long --help-format=markdown)"
-  expect_output_contains '[Regex matching](#topic-regex)' "${out}"
+  expect_output_contains '[--help=regex](#topic-regex)' "${out}"
   out="$("$(_xff_bin)" --help=long --help-format=html)"
-  expect_output_contains 'href="#topic-regex">Regex matching</a>' "${out}"
+  expect_output_contains 'href="#topic-regex">--help=regex</a>' "${out}"
   out="$("$(_xff_bin)" --help=long --help-format=roff)"
-  expect_output_contains '.B Regex matching' "${out}"
+  expect_output_contains '.B \-\-help=regex' "${out}"
 }
 
 test::summary_scope_help_explains_conditional_defaults() {

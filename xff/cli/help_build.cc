@@ -29,7 +29,6 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/str_split.h"
 #include "absl/types/span.h"
 #include "xff/archive/archive_backend.h"
 #include "xff/cli/globals.h"
@@ -85,16 +84,19 @@ Content RowsOf(absl::Span<const DocPair> pairs) {
   return Content{.node = std::move(rows)};
 }
 
-// Related topics are registry metadata. Suppress repeats and keep the authored order.
-SeeAlso TopicLinks(std::string_view topic, std::string_view related) {
+// Related topics and flags are registry metadata. Keep the authored order without repeats.
+SeeAlso RelatedLinks(std::string_view topic, absl::Span<const std::string_view> related) {
   SeeAlso links;
   const auto add = [&](std::string_view name) {
     if (!name.empty() && !absl::c_any_of(links.refs, [&](const RefTarget& ref) { return ref.id == name; })) {
-      links.refs.push_back({.kind = RefTarget::Kind::kTopic, .id = std::string(name)});
+      const RefTarget::Kind kind = LookupGlobal(name).has_value()       ? RefTarget::Kind::kFlag
+                                   : registry::Lookup(name).has_value() ? RefTarget::Kind::kPrimary
+                                                                        : RefTarget::Kind::kTopic;
+      links.refs.push_back({.kind = kind, .id = std::string(name)});
     }
   };
   add(topic);
-  for (const std::string_view name : absl::StrSplit(related, ',', absl::SkipEmpty())) {
+  for (const std::string_view name : related) {
     add(name);
   }
   return links;
@@ -144,7 +146,7 @@ std::vector<std::string> PrimaryTags(const registry::Descriptor& descriptor) {
 std::vector<std::string_view> AffectedByFlags(std::string_view name) {
   std::vector<std::string_view> out;
   for (const GlobalFlag& flag : Globals()) {
-    for (const std::string_view token : absl::StrSplit(flag.affects, ',', absl::SkipEmpty())) {
+    for (const std::string_view token : flag.affects) {
       if (token == name) {
         out.push_back(flag.name);
         break;
@@ -154,31 +156,24 @@ std::vector<std::string_view> AffectedByFlags(std::string_view name) {
   return out;
 }
 
-// Related topics and controls, shared by focused help and full-reference pointers.
+// Navigation never repeats controls already described by the influence lines.
 template<typename Descriptor>
 SeeAlso EntryLinks(const Descriptor& entry) {
-  SeeAlso links = TopicLinks(entry.topic, entry.see_also);
-  const auto add_flag = [&](std::string_view name) {
-    if (!absl::c_any_of(links.refs, [&](const RefTarget& ref) { return ref.id == name; })) {
-      links.refs.push_back({
-          .kind = LookupGlobal(name).has_value() ? RefTarget::Kind::kFlag : RefTarget::Kind::kPrimary,
-          .id = std::string(name),
-      });
-    }
-  };
-  for (const std::string_view name : AffectedByFlags(entry.name)) {
-    add_flag(name);
-  }
+  SeeAlso links = RelatedLinks(entry.topic, entry.see_also);
+  std::vector<std::string_view> influences = AffectedByFlags(entry.name);
   if constexpr (std::is_same_v<Descriptor, GlobalFlag>) {
-    for (const std::string_view name : absl::StrSplit(entry.affects, ',', absl::SkipEmpty())) {
-      add_flag(name);
+    for (const std::string_view name : entry.affects) {
+      influences.push_back(name);
     }
   }
+  std::erase_if(links.refs, [&](const RefTarget& ref) {
+    return ref.kind != RefTarget::Kind::kTopic && absl::c_linear_search(influences, ref.id);
+  });
   return links;
 }
 
 // Appends an influence detail line ("Header: a, b, c") to `blocks` when non-empty.
-void AppendInfluence(Blocks& blocks, std::string_view header, const std::vector<std::string_view>& names) {
+void AppendInfluence(Blocks& blocks, std::string_view header, absl::Span<const std::string_view> names) {
   if (names.empty()) {
     return;
   }
@@ -241,7 +236,7 @@ Content FlagEntry(const GlobalFlag& flag, bool with_details = true, Audience aud
     for (Content& block : ParseBlocks(flag.details)) {
       details.push_back(std::move(block));
     }
-    AppendInfluence(details, "Affects:", absl::StrSplit(flag.affects, ',', absl::SkipEmpty()));
+    AppendInfluence(details, "Affects:", flag.affects);
     AppendInfluence(details, "Affected by:", AffectedByFlags(flag.name));
   }
   return Content{
@@ -520,7 +515,7 @@ Section GrammarsSection() {
 }
 
 bool IsRegexPrimary(const registry::Descriptor& descriptor) {
-  return descriptor.regex_argument || absl::c_linear_search(absl::StrSplit(descriptor.see_also, ','), "regex");
+  return descriptor.regex_argument || absl::c_linear_search(descriptor.see_also, "regex");
 }
 
 Section RegexSection(bool in_full) {
@@ -541,7 +536,7 @@ Section RegexSection(bool in_full) {
     Subsection flags{.title = "Related controls"};
     for (const GlobalFlag& flag : Globals()) {
       bool relevant = flag.topic == "regex";
-      for (const std::string_view affected : absl::StrSplit(flag.affects, ',')) {
+      for (const std::string_view affected : flag.affects) {
         const auto primary = registry::Lookup(affected);
         relevant = relevant || (primary.has_value() && IsRegexPrimary(*primary));
       }
@@ -1348,18 +1343,6 @@ Section CompareSection(bool in_full) {
     section.children.push_back(Content{.node = std::move(flags)});
   }
 
-  Subsection related{.title = "See also"};
-  Bullets links;
-  links.items.push_back(
-      ParseInline("`--summary=compare`: counts, percentages, and combined sizes for all comparison results."));
-  links.items.push_back(ParseInline("`--compare-select`: choose per-path records; `none` suppresses the listing."));
-  links.items.push_back(ParseInline("`--summary-scope`: combined, per-root, or category statistics."));
-  links.items.push_back(ParseInline("`--summary-precision`: decimal places in summary percentages."));
-  links.items.push_back(ParseInline("`--format=jsonl`: machine-readable comparison summary rows."));
-  links.items.push_back(ParseInline("`--help=-diff` / `--help=-rdiff`: one-sided patch action details."));
-  related.children.push_back(Content{.node = std::move(links)});
-  section.children.push_back(Content{.node = std::move(related)});
-
   Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   examples.children.push_back(ExampleOf("xff --compare=summary left-tree right-tree", "sh"));
   examples.children.push_back(ProseOf("show only comparison statistics, with no per-path records"));
@@ -1508,14 +1491,6 @@ Section DiffSection(bool in_full) {
     section.children.push_back(Content{.node = std::move(flags)});
   }
 
-  Subsection related{.title = "See also"};
-  Bullets links;
-  links.items.push_back(ParseInline("`--help=compare`: two-root comparison, selection, summaries, and patch mode."));
-  links.items.push_back(ParseInline("`-diff` / `-rdiff`: one-sided patch actions."));
-  links.items.push_back(ParseInline("`--help=fields`: field templates accepted by diff targets."));
-  links.items.push_back(ParseInline("`--help=ignore`: VCS ignore rules and explicit ignore files."));
-  related.children.push_back(Content{.node = std::move(links)});
-  section.children.push_back(Content{.node = std::move(related)});
   return section;
 }
 
@@ -2344,10 +2319,12 @@ Section GuideSection() {
       ProseOf(
           "Focused flag help expands its designated context topic, or its only related topic; "
           "other topics and flags stay in the See also list. Topic help never expands that list. "
+          "Flags already listed under Affects or Affected by are omitted from that entry's See also list. "
           "`--help=long` (also `--help=full`) includes each section once and never expands references. "
-          "HTML and Markdown show clickable related topic titles and flag names; man pages show "
-          "text references. Console long help omits those pointers, while focused console help "
-          "shows copyable `--help=NAME` commands."));
+          "Related topics and flags always use complete `--help=NAME` commands, including the flag's dashes "
+          "(for example, `--help=compare`, `--help=-diff`, and `--help=--summary`). "
+          "HTML and Markdown make these commands clickable; man pages show text references. "
+          "Console long help omits those pointers."));
   Subsection display{.title = "Display options (how help is shown)"};
   Rows display_rows;
   // The display-affecting globals, in the order the section presents them.
@@ -2388,7 +2365,7 @@ Document TopicNavigation(std::string_view name) {
     if (topic.name == name || absl::c_linear_search(topic.aliases, name)) {
       Document doc;
       Section section;
-      section.children.push_back(Content{.node = TopicLinks({}, topic.see_also)});
+      section.children.push_back(Content{.node = RelatedLinks({}, topic.see_also)});
       doc.sections.push_back(std::move(section));
       return doc;
     }

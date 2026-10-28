@@ -201,7 +201,7 @@ TEST_F(RoffBackendTest, CompleteReferencePointersUseTheFormatPresentation) {
       .refs = {{.kind = RefTarget::Kind::kTopic, .id = "regex", .label = "Regex matching"}},
       .in_document = true,
   });
-  EXPECT_THAT(backend.Take(), HasSubstr(".B Regex matching"));
+  EXPECT_THAT(backend.Take(), HasSubstr(".B \\-\\-help=regex"));
 }
 
 }  // namespace
