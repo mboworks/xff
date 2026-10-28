@@ -656,12 +656,12 @@ TEST_F(RunTest, CompareUsesTheRequestedIgnorePolicyIndependentlyOnEachSide) {
   const std::vector<std::string> patch =
       RunArgvRecords({"--compare=diff", "--compare-select=different", left.string(), right.string()});
   EXPECT_THAT(patch, Contains(HasSubstr("--- a/.gitignore\n+++ b/.gitignore")));
-  EXPECT_THAT(patch, Contains("Binary files a/changed and b/changed differ"));
+  EXPECT_THAT(patch, Contains(HasSubstr("GIT binary patch")));
   EXPECT_THAT(last_errors_, 0);
 
   const std::vector<std::string> complete_patch = RunArgvRecords({"--compare=diff", left.string(), right.string()});
-  EXPECT_THAT(complete_patch, Contains(HasSubstr("--- a/left-only\n+++ /dev/null")));
-  EXPECT_THAT(complete_patch, Contains(HasSubstr("--- /dev/null\n+++ b/right-only")));
+  EXPECT_THAT(complete_patch, Contains(HasSubstr("--- \"a/left-only\"\n+++ /dev/null")));
+  EXPECT_THAT(complete_patch, Contains(HasSubstr("--- /dev/null\n+++ \"b/right-only\"")));
   EXPECT_THAT(last_errors_, 0);
 }
 
@@ -786,7 +786,7 @@ TEST_F(RunTest, CompareHandlesFileKindsAndTraversalOptions) {
   EXPECT_THAT(
       RunArgvRecords(
           {"--compare=diff", "--compare-select=different", "--exclude=.git/", left.string(), right.string()}),
-      Contains("Files a/link and b/link differ"));
+      Contains(HasSubstr("-target-a\n")));
   EXPECT_THAT(
       RunArgvRecords({"--compare", "--exclude=size-change", left.string(), right.string()}),
       Not(Contains("different\tsize-change")));

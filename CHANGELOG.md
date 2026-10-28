@@ -5,6 +5,9 @@
 
 # 0.9.1
 
+- Emit Git-applicable comparison patches for empty files, binary updates, symlinks, executable-mode
+  changes, and type replacements. Include executable capability in comparison equality.
+
 - Add repeatable `--compare-ignore-file=PATH`, `--compare-left-ignore-file=PATH`, and
   `--compare-right-ignore-file=PATH` to apply explicit gitignore-format rules relative to both
   comparison roots or one side, independently of the rules file's location.

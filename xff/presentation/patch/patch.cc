@@ -14,7 +14,9 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
+#include "mbo/diff/diff.h"
 #include "mbo/digest/digest.h"
+#include "mbo/file/artefact.h"
 #include "mbo/status/status_macros.h"
 
 namespace xff::patch {
@@ -103,6 +105,20 @@ absl::Status CheckClaim(
     return absl::InvalidArgumentError(
         absl::StrCat(
             "diff output path collision at ", Quote(label), ": ", Quote(found->second), " and ", Quote(source)));
+  }
+  return absl::OkStatus();
+}
+
+std::string BlobId(std::string_view content) {
+  std::string blob = absl::StrCat("blob ", content.size());
+  blob.push_back('\0');
+  blob.append(content);
+  return mbo::digest::ToHexString(mbo::digest::sha1::Digest(blob));
+}
+
+absl::Status ValidateMode(std::string_view mode) {
+  if (mode != "100644" && mode != "100755" && mode != "120000") {
+    return absl::InvalidArgumentError("diff cannot represent this file mode");
   }
   return absl::OkStatus();
 }
@@ -234,13 +250,8 @@ absl::StatusOr<std::string> AbsentSide(
     bool reverse) {
   MBO_RETURN_IF_ERROR(ValidatePath(names.left));
   MBO_RETURN_IF_ERROR(ValidatePath(names.right));
-  if (mode != "100644" && mode != "100755" && mode != "120000") {
-    return absl::InvalidArgumentError("-diff cannot represent this file mode");
-  }
-  std::string blob = absl::StrCat("blob ", content.size());
-  blob.push_back('\0');
-  blob.append(content);
-  const std::string digest = mbo::digest::ToHexString(mbo::digest::sha1::Digest(blob));
+  MBO_RETURN_IF_ERROR(ValidateMode(mode));
+  const std::string digest = BlobId(content);
   const std::string before = Quote(names.left);
   const std::string after = Quote(names.right);
   std::string result = absl::StrCat(
@@ -269,6 +280,45 @@ absl::StatusOr<std::string> AbsentSide(
     }
     absl::StrAppend(&result, marker, content.substr(0, end + 1));
     content.remove_prefix(end + 1);
+  }
+  return result;
+}
+
+absl::StatusOr<std::string> Update(const Names& names, File left, File right, const mbo::diff::DiffOptions& options) {
+  MBO_RETURN_IF_ERROR(ValidatePath(names.left));
+  MBO_RETURN_IF_ERROR(ValidatePath(names.right));
+  MBO_RETURN_IF_ERROR(ValidateMode(left.mode));
+  MBO_RETURN_IF_ERROR(ValidateMode(right.mode));
+  if ((left.mode == "120000") != (right.mode == "120000")) {
+    MBO_ASSIGN_OR_RETURN(auto removed, AbsentSide(names, left.content, left.mode, true));
+    MBO_ASSIGN_OR_RETURN(const auto created, AbsentSide(names, right.content, right.mode, false));
+    removed.append(created);
+    return removed;
+  }
+  if (left.content == right.content && left.mode == right.mode) {
+    return std::string();
+  }
+  std::string result = absl::StrCat("diff --git ", Quote(names.left), " ", Quote(names.right), "\n");
+  if (left.mode != right.mode) {
+    absl::StrAppend(&result, "old mode ", left.mode, "\nnew mode ", right.mode, "\n");
+  }
+  if (left.content == right.content) {
+    return result;
+  }
+  absl::StrAppend(&result, "index ", BlobId(left.content), "..", BlobId(right.content));
+  if (left.mode == right.mode) {
+    absl::StrAppend(&result, " ", left.mode);
+  }
+  result.push_back('\n');
+  if (left.content.contains('\0') || right.content.contains('\0')) {
+    absl::StrAppend(&result, "GIT binary patch\n", Literal(right.content), Literal(left.content));
+  } else {
+    MBO_ASSIGN_OR_RETURN(
+        const auto diff,
+        mbo::diff::Diff::FileDiff(
+            mbo::file::Artefact{.data = std::string(left.content), .name = HeaderName(names.left)},
+            mbo::file::Artefact{.data = std::string(right.content), .name = HeaderName(names.right)}, options));
+    result.append(diff);
   }
   return result;
 }

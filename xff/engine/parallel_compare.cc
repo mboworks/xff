@@ -99,6 +99,9 @@ absl::StatusOr<ComparisonResult> ComparePair(const ComparisonPair& pair, bool re
     return ComparisonResult{};
   }
   if (pair.left->metadata.type == vfs::FileType::kRegular) {
+    if (((pair.left->metadata.mode & 0111U) != 0) != ((pair.right->metadata.mode & 0111U) != 0)) {
+      return ComparisonResult{};
+    }
     return CompareRegular(*pair.left, *pair.right, retain);
   }
   if (pair.left->metadata.type == vfs::FileType::kSymlink) {

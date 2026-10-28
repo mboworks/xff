@@ -163,8 +163,8 @@ TEST_F(HelpTest, CompareTopicExplainsSelectionAndEquality) {
       out,
       AllOf(
           HasSubstr("--compare"), HasSubstr("--compare-select"), HasSubstr("exactly two roots"),
-          HasSubstr("Regular files are equal when their bytes are equal"),
-          HasSubstr("Metadata such as permissions, owner, timestamps, and inode numbers is not compared"),
+          HasSubstr("Regular files are equal when their bytes and executable capability match"),
+          HasSubstr("Other permissions, owner, timestamps, and inode numbers are not compared"),
           HasSubstr("each retains its complete matched-entry inventory"), HasSubstr("`--sort` controls traversal"),
           HasSubstr("their synchronized output may interleave"), HasSubstr("does not cap the comparison inventories"),
           HasSubstr("Patch output"), HasSubstr("--help=-diff, --help=-rdiff")));

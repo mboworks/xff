@@ -37,11 +37,19 @@ a creation or deletion patch.
 This intentionally reverses the previous explicit `-diff TARGET` direction. Users needing
 that direction use `-rdiff TARGET`. Bare `-diff` continues to create files.
 
-Comparison retains its existing selection, statuses, summaries, exit behavior, and regular
-text patch output. Binary and nonregular comparisons retain their diagnostic representation.
-Empty-file additions/removals can have no textual hunk in comparison output; statuses and
-summaries still record those differences. The absent-side actions supply Git metadata for these
-cases. Exactly two roots are required. Two file roots pair directly even when their basenames differ;
+Comparison pairs regular files by bytes and executable capability (any execute bit set); all status,
+summary, and patch selections use this equality. Other permission bits, ownership and timestamps are
+not compared. Symlinks compare their targets without following them unless traversal requests it.
+
+Comparison patch output uses Git headers for additions, removals, text/binary changes, executable-mode
+changes and file/symlink replacements. Empty files use metadata-only creation/deletion headers.
+Binary changes carry forward and reverse literals with complete blob IDs. A directory-to-file or
+file-to-directory replacement combines the directory's child removals/additions with the file patch.
+Git cannot represent empty directories; those remain visible in statuses and summaries. Other special
+entry types report errors when selected for patch output. One-sided explicit TARGET actions retain
+their text formats and binary diagnostic behavior.
+
+Exactly two roots are required. Two file roots pair directly even when their basenames differ;
 their displayed paths use their respective basenames instead of `.`. Directory roots pair by
 their unmodified root-relative keys. Reverse a comparison by exchanging its root operands.
 
@@ -137,7 +145,7 @@ so they can modify injected roots without accidentally matching the synthetic `a
 ## Consistent labels and collisions
 
 Apply one resolved mapping to every corresponding filename: `diff --git`, `---` / `+++`,
-context headers, binary/nonregular diagnostics, and any future path-bearing metadata.
+context headers, Git binary headers, one-sided binary diagnostics, and other path-bearing metadata.
 Git creation/deletion headers retain both mapped names in `diff --git`, and use `/dev/null`
 only for the missing side of content headers. Preserve mode and blob identity information.
 
@@ -269,3 +277,13 @@ Git ignore discovery by themselves. `--no-ignore` disables application of compar
 Explicit file requests are still validated: empty paths and missing or unreadable files are hard
 errors before traversal, including when `--no-ignore` is set. Each option requires `--compare` and
 works with status, summary, and patch output. It changes selection, not patch destination paths.
+
+## Complete comparison patch verification
+
+A Git-application round trip compares file bytes, symlink targets and executable capability after
+forward and reverse application. The matrix includes empty and nonempty additions/removals,
+large multi-block binary literals, text/binary transitions, text without a final newline, unusual
+ASCII names, symlink updates, regular/symlink replacements, directory/file replacements, and mode-only
+or combined mode/content updates. It runs with one and four comparison workers, and also generates
+the inverse comparison by exchanging roots. Pure renderer tests validate paths, modes and unchanged
+inputs; worker tests distinguish executable capability from other permission bits.

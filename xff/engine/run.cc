@@ -4207,13 +4207,9 @@ absl::StatusOr<patch::Names> TreePatchNames(
     const auto slash = path.find_last_of('/');
     return slash == std::string_view::npos ? path : path.substr(slash + 1);
   };
-  patch::Names names{.left = "/dev/null", .right = "/dev/null"};
-  if (left) {
-    MBO_ASSIGN_OR_RETURN(names.left, paths.left.Map(logical(*left)));
-  }
-  if (right) {
-    MBO_ASSIGN_OR_RETURN(names.right, paths.right.Map(logical(*right)));
-  }
+  patch::Names names;
+  MBO_ASSIGN_OR_RETURN(names.left, paths.left.Map(logical(left ? *left : *right)));
+  MBO_ASSIGN_OR_RETURN(names.right, paths.right.Map(logical(right ? *right : *left)));
   return names;
 }
 
@@ -4225,33 +4221,46 @@ absl::StatusOr<std::string> TreeEntryPatch(
     const patch::Paths& paths,
     patch::Destinations& destinations,
     mbo::types::OptionalRef<const ComparisonBytes> prepared) {
+  const auto is_directory = [](mbo::types::OptionalRef<const TreeCompareEntry> entry) {
+    return entry && entry->metadata.type == vfs::FileType::kDirectory;
+  };
+  if ((!left || is_directory(left)) && (!right || is_directory(right))) {
+    return std::string();  // Git does not represent directory entries.
+  }
   MBO_ASSIGN_OR_RETURN(const auto names, TreePatchNames(left, right, relative_path, paths));
   MBO_RETURN_IF_ERROR(destinations.Claim(names, left ? left->path : "", right ? right->path : ""));
-  const std::string left_name = left ? patch::HeaderName(names.left) : names.left;
-  const std::string right_name = right ? patch::HeaderName(names.right) : names.right;
-  const bool regular = (!left.has_value() || left->metadata.type == vfs::FileType::kRegular)
-                       && (!right.has_value() || right->metadata.type == vfs::FileType::kRegular);
-  if (!regular) {
-    return absl::StrCat("Files ", left_name, " and ", right_name, " differ\n");
-  }
-  mbo::file::Artefact left_input{.name = left_name};
-  mbo::file::Artefact right_input{.name = right_name};
-  if (prepared) {
-    left_input.data = prepared->left;
-    right_input.data = prepared->right;
-  } else {
-    if (left) {
-      MBO_ASSIGN_OR_RETURN(left_input.data, left->fs->ReadContent(left->path));
+  const auto read = [](const TreeCompareEntry& entry) -> absl::StatusOr<std::string> {
+    if (entry.metadata.type == vfs::FileType::kSymlink) {
+      return entry.fs->ReadLink(entry.path);
     }
-    if (right) {
-      MBO_ASSIGN_OR_RETURN(right_input.data, right->fs->ReadContent(right->path));
+    if (entry.metadata.type == vfs::FileType::kRegular) {
+      return entry.fs->ReadContent(entry.path);
+    }
+    return absl::UnimplementedError("Git patches require regular files, symlinks, or directories");
+  };
+  const auto mode = [](const TreeCompareEntry& entry) -> std::string_view {
+    return entry.metadata.type == vfs::FileType::kSymlink ? "120000"
+           : (entry.metadata.mode & 0111U) != 0           ? "100755"
+                                                          : "100644";
+  };
+  ComparisonBytes read_bytes;
+  if (!prepared) {
+    if (left && !is_directory(left)) {
+      MBO_ASSIGN_OR_RETURN(read_bytes.left, read(*left));
+    }
+    if (right && !is_directory(right)) {
+      MBO_ASSIGN_OR_RETURN(read_bytes.right, read(*right));
     }
   }
-  if (absl::StrContains(std::string_view(left_input.data).substr(0, content::kBinaryNulSniffBytes), '\0')
-      || absl::StrContains(std::string_view(right_input.data).substr(0, content::kBinaryNulSniffBytes), '\0')) {
-    return absl::StrCat("Binary files ", left_name, " and ", right_name, " differ\n");
+  const ComparisonBytes& bytes = prepared ? *prepared : read_bytes;
+  if (!left || is_directory(left)) {
+    return patch::AbsentSide(names, bytes.right, mode(*right), false);
   }
-  return mbo::diff::Diff::FileDiff(left_input, right_input, options);
+  if (!right || is_directory(right)) {
+    return patch::AbsentSide(names, bytes.left, mode(*left), true);
+  }
+  return patch::Update(
+      names, {.content = bytes.left, .mode = mode(*left)}, {.content = bytes.right, .mode = mode(*right)}, options);
 }
 
 using MatchedEntryFn = absl::FunctionRef<void(const Visit&)>;
