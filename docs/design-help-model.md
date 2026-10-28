@@ -105,6 +105,9 @@ the authored order. A topic's
 related topics and exact flag spellings are declared in `HelpTopics()`; aliases share the canonical
 topic's navigation. Handwritten See also prose or bullet lists are forbidden: the structured
 metadata is the single source of navigation for every renderer.
+`see_also`, `affects`, and registered operand choices are spans over named constexpr arrays,
+not delimiter-encoded strings. Validation and selection consume those lists directly; output
+renderers choose their separators, links, and wrapping.
 The commands distinguish a topic (`--help=regex`), a global flag (`--help=--regextype`), and an
 expression primary (`--help=-regex`). External manuals retain their `name(section)` notation.
 

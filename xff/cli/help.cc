@@ -148,183 +148,252 @@ absl::Span<const HelpTopic> HelpTopics() {
   static constexpr auto kNoticeAliases = std::to_array<std::string_view>({"notices"});
   static constexpr auto kLicenseAliases = std::to_array<std::string_view>({"licenses"});
   static constexpr auto kFullAliases = std::to_array<std::string_view>({"long"});
+  static constexpr auto kSafetySeeAlso = std::to_array<std::string_view>({"config", "archive", "output"});
+  static constexpr auto kHelpSeeAlso = std::to_array<std::string_view>({"cookbook", "config", "expressions"});
+  static constexpr auto kAllSeeAlso = std::to_array<std::string_view>({"expressions", "cookbook", "config"});
+  static constexpr auto kExpressionsSeeAlso = std::to_array<std::string_view>({
+      "regex",
+      "content",
+      "output",
+      "safety",
+  });
+  static constexpr auto kFieldsSeeAlso = std::to_array<std::string_view>({
+      "printf",
+      "output",
+      "time",
+      "content",
+  });
+  static constexpr auto kOutputSeeAlso = std::to_array<std::string_view>({
+      "fields",
+      "printf",
+      "stats",
+      "compare",
+      "safety",
+  });
+  static constexpr auto kPrintfSeeAlso = std::to_array<std::string_view>({"fields", "output", "time"});
+  static constexpr auto kTimeSeeAlso = std::to_array<std::string_view>({"fields", "printf"});
+  static constexpr auto kSizeSeeAlso = std::to_array<std::string_view>({"stats", "fields"});
+  static constexpr auto kRegexSeeAlso = std::to_array<std::string_view>({"grammars", "content"});
+  static constexpr auto kGrammarsSeeAlso = std::to_array<std::string_view>({"regex", "content"});
+  static constexpr auto kRgSeeAlso = std::to_array<std::string_view>({"content", "regex", "config"});
+  static constexpr auto kContentSeeAlso = std::to_array<std::string_view>({"regex", "fields", "output"});
+  static constexpr auto kDiffSeeAlso = std::to_array<std::string_view>({
+      "compare",
+      "-diff",
+      "-rdiff",
+      "content",
+      "fields",
+      "ignore",
+  });
+  static constexpr auto kCompareSeeAlso = std::to_array<std::string_view>({
+      "diff",
+      "stats",
+      "output",
+      "content",
+      "--summary",
+      "--compare-select",
+      "--summary-scope",
+      "--summary-precision",
+      "--format",
+      "-diff",
+      "-rdiff",
+  });
+  static constexpr auto kIgnoreSeeAlso = std::to_array<std::string_view>({"config", "archive"});
+  static constexpr auto kConfigSeeAlso = std::to_array<std::string_view>({"safety", "ignore", "archive"});
+  static constexpr auto kEnvironmentSeeAlso = std::to_array<std::string_view>({"config", "output"});
+  static constexpr auto kStylesSeeAlso = std::to_array<std::string_view>({
+      "config",
+      "expressions",
+      "cookbook",
+  });
+  static constexpr auto kExtrasSeeAlso = std::to_array<std::string_view>({"archive", "regex", "notice"});
+  static constexpr auto kArchiveSeeAlso = std::to_array<std::string_view>({"safety", "config", "output"});
+  static constexpr auto kStatsSeeAlso = std::to_array<std::string_view>({"compare", "fields", "output"});
+  static constexpr auto kCookbookSeeAlso = std::to_array<std::string_view>({
+      "config",
+      "expressions",
+      "output",
+      "safety",
+  });
+  static constexpr auto kNoticeSeeAlso = std::to_array<std::string_view>({"extras", "license"});
+  static constexpr auto kLicenseSeeAlso = std::to_array<std::string_view>({"notice"});
+
   static constexpr auto kTopics = std::to_array<HelpTopic>({
       {
           .name = "safety",
           .summary = "mandatory blocks, safe profiles, archive policy, and dry-run",
-          .see_also = "config,archive,output",
+          .see_also = kSafetySeeAlso,
           .in_full = true,
       },
       {
           .name = "help",
           .aliases = {},
           .summary = "how the help system works, and the topics here",
-          .see_also = "cookbook,config,expressions",
+          .see_also = kHelpSeeAlso,
       },
       {
           .name = "list",
           .aliases = kListAliases,
           .summary = "this list of help topics",
-          .see_also = "cookbook,config,expressions",
+          .see_also = kHelpSeeAlso,
       },
       {
           .name = "all",
           .aliases = {},
           .summary = "every option and primary, summaries only",
-          .see_also = "expressions,cookbook,config",
+          .see_also = kAllSeeAlso,
       },
       {
           .name = "expressions",
           .aliases = {},
           .summary = "the expression vocabulary: tests, operators, actions",
-          .see_also = "regex,content,output,safety",
+          .see_also = kExpressionsSeeAlso,
       },
       {
           .name = "fields",
           .aliases = {},
           .summary = "the {field} placeholder vocabulary",
-          .see_also = "printf,output,time,content",
+          .see_also = kFieldsSeeAlso,
           .in_full = true,
       },
       {
           .name = "output",
           .aliases = {},
           .summary = "implicit listing, output formats, columns, templates, and filename safety",
-          .see_also = "fields,printf,stats,compare,safety",
+          .see_also = kOutputSeeAlso,
           .in_full = true,
       },
       {
           .name = "printf",
           .aliases = {},
           .summary = "the -printf % directives and the %{field} escape",
-          .see_also = "fields,output,time",
+          .see_also = kPrintfSeeAlso,
           .in_full = true,
       },
       {
           .name = "time",
           .aliases = {},
           .summary = "time-format presets and strftime patterns",
-          .see_also = "fields,printf",
+          .see_also = kTimeSeeAlso,
           .in_full = true,
       },
       {
           .name = "size",
           .aliases = {},
           .summary = "-size/-blocks legacy, SI, and IEC units plus +/-",
-          .see_also = "stats,fields",
+          .see_also = kSizeSeeAlso,
           .in_full = true,
       },
       {
           .name = "regex",
           .aliases = kRegexAliases,
           .summary = "regex matching, grammars, case, and related controls",
-          .see_also = "grammars,content",
+          .see_also = kRegexSeeAlso,
           .in_full = true,
       },
       {
           .name = "grammars",
           .aliases = {},
           .summary = "the --regextype grammars (RE2, ERE, EXACT, FNMATCH, GLOB, SHGLOB, PCRE2)",
-          .see_also = "regex,content",
+          .see_also = kGrammarsSeeAlso,
           .in_full = true,
       },
       {
           .name = "rg",
           .aliases = {},
           .summary = "ripgrep-style arguments, match output, and the --xff grammar switch",
-          .see_also = "content,regex,config",
+          .see_also = kRgSeeAlso,
           .in_full = true,
       },
       {
           .name = "content",
           .aliases = {},
           .summary = "reading inside files: -grep, -content, -rxc, -text, and their fields",
-          .see_also = "regex,fields,output",
+          .see_also = kContentSeeAlso,
           .in_full = true,
       },
       {
           .name = "diff",
           .aliases = {},
           .summary = "one-sided and two-tree patch output, direction, and destination paths",
-          .see_also = "compare,-diff,-rdiff,content,fields,ignore",
+          .see_also = kDiffSeeAlso,
           .in_full = true,
       },
       {
           .name = "compare",
           .aliases = {},
           .summary = "compare two selected trees as statuses or a patch",
-          .see_also = "diff,stats,output,content,--summary,--compare-select,--summary-scope,--summary-precision,"
-                      "--format,-diff,-rdiff",
+          .see_also = kCompareSeeAlso,
           .in_full = true,
       },
       {
           .name = "ignore",
           .aliases = kIgnoreAliases,
           .summary = "ignore sources, VCS metadata pruning, hidden paths, and precedence",
-          .see_also = "config,archive",
+          .see_also = kIgnoreSeeAlso,
           .in_full = true,
       },
       {
           .name = "config",
           .aliases = {},
           .summary = "config tiers, style selection (--config / argv[0]), and arming",
-          .see_also = "safety,ignore,archive",
+          .see_also = kConfigSeeAlso,
       },
       {
           .name = "environment",
           .aliases = kEnvironmentAliases,
           .summary = "the environment variables xff reads (NO_COLOR, PAGER, ...)",
-          .see_also = "config,output",
+          .see_also = kEnvironmentSeeAlso,
           .in_full = true,
       },
       {
           .name = "styles",
           .aliases = kStyleAliases,
           .summary = "the find / xff / rg flavor comparison",
-          .see_also = "config,expressions,cookbook",
+          .see_also = kStylesSeeAlso,
       },
       {
           .name = "extras",
           .aliases = {},
           .summary = "optional build extras (PCRE2, archive) and whether this binary has them",
-          .see_also = "archive,regex,notice",
+          .see_also = kExtrasSeeAlso,
       },
       {
           .name = "archive",
           .aliases = kArchiveAliases,
           .summary = "walking INTO containers: dive modes, member paths, and what is writable",
-          .see_also = "safety,config,output",
+          .see_also = kArchiveSeeAlso,
       },
       {
           .name = "stats",
           .aliases = {},
           .summary = "the --summary and --histogram reductions",
-          .see_also = "compare,fields,output",
+          .see_also = kStatsSeeAlso,
       },
       {
           .name = "cookbook",
           .aliases = kCookbookAliases,
           .summary = "worked examples that compose xff end to end",
-          .see_also = "config,expressions,output,safety",
+          .see_also = kCookbookSeeAlso,
           .in_full = true,
       },
       {
           .name = "notice",
           .aliases = kNoticeAliases,
           .summary = "third-party components + what this binary contains",
-          .see_also = "extras,license",
+          .see_also = kNoticeSeeAlso,
       },
       {
           .name = "license",
           .aliases = kLicenseAliases,
           .summary = "xff's license in full (Apache-2.0); =COMPONENT for one component's",
-          .see_also = "notice",
+          .see_also = kLicenseSeeAlso,
       },
       {
           .name = "full",
           .aliases = kFullAliases,
           .summary = "every option and primary, with the long explanations",
-          .see_also = "cookbook,config,expressions",
+          .see_also = kHelpSeeAlso,
       },
   });
   return kTopics;

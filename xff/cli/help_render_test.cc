@@ -324,8 +324,8 @@ TEST_F(HelpTest, GrammarReferenceIsAlphabetical) {
 }
 
 TEST_F(HelpTest, EntrySeeAlsoTopicsResolve) {
-  const auto check = [](std::string_view topics) {
-    for (const std::string_view topic : absl::StrSplit(topics, ',', absl::SkipEmpty())) {
+  const auto check = [](const auto& topics) {
+    for (const std::string_view topic : topics) {
       EXPECT_THAT(TopicNavigation(topic).sections, Not(IsEmpty())) << topic;
     }
   };
@@ -349,7 +349,7 @@ TEST_F(HelpTest, EveryEntryHasFocusedNavigation) {
 TEST_F(HelpTest, EveryTopicHasResolvableRelatedTargets) {
   for (const HelpTopic& topic : HelpTopics()) {
     EXPECT_THAT(topic.see_also, Not(IsEmpty())) << topic.name;
-    for (const std::string_view related : absl::StrSplit(topic.see_also, ',', absl::SkipEmpty())) {
+    for (const std::string_view related : topic.see_also) {
       if (related.starts_with('-')) {
         EXPECT_THAT(EntryReference(related), Optional(_)) << topic.name << " -> " << related;
       } else {
@@ -464,7 +464,7 @@ TEST_F(HelpTest, SeeAlsoDoesNotRepeatAnyForwardOrReverseInfluence) {
     }
   };
   for (const GlobalFlag& flag : Globals()) {
-    for (const std::string_view affected : absl::StrSplit(flag.affects, ',', absl::SkipEmpty())) {
+    for (const std::string_view affected : flag.affects) {
       check(flag.name, affected);
       check(affected, flag.name);
     }
@@ -489,7 +489,7 @@ TEST_F(HelpTest, DesignatedTopicBelongsToSeeAlsoAndIsTheOnlyExpansion) {
     if (entry.primary_expansion_topic.empty()) {
       return;
     }
-    const std::vector<std::string_view> related = absl::StrSplit(entry.see_also, ',', absl::SkipEmpty());
+    const auto related = entry.see_also;
     EXPECT_THAT(related, Contains(entry.primary_expansion_topic)) << entry.name;
     const auto doc = EntryReference(entry.name);
     const auto topic = TopicReference(entry.primary_expansion_topic);
@@ -791,7 +791,7 @@ TEST_F(HelpTest, EveryAffectsTokenResolvesToARealEntry) {
   // a rename. (A leading-'@' category token is a planned extension and is intentionally not used
   // yet -- it would fail this check until the resolver learns to expand it.)
   for (const GlobalFlag& flag : Globals()) {
-    for (const std::string_view token : absl::StrSplit(flag.affects, ',', absl::SkipEmpty())) {
+    for (const std::string_view token : flag.affects) {
       const bool resolves = registry::Lookup(token).has_value() || LookupGlobal(token).has_value();
       EXPECT_THAT(resolves, IsTrue()) << flag.name << " affects unknown entry '" << token << "'";
     }

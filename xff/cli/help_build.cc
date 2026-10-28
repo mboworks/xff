@@ -29,7 +29,6 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/str_split.h"
 #include "absl/types/span.h"
 #include "xff/archive/archive_backend.h"
 #include "xff/cli/globals.h"
@@ -86,7 +85,7 @@ Content RowsOf(absl::Span<const DocPair> pairs) {
 }
 
 // Related topics and flags are registry metadata. Keep the authored order without repeats.
-SeeAlso RelatedLinks(std::string_view topic, std::string_view related) {
+SeeAlso RelatedLinks(std::string_view topic, absl::Span<const std::string_view> related) {
   SeeAlso links;
   const auto add = [&](std::string_view name) {
     if (!name.empty() && !absl::c_any_of(links.refs, [&](const RefTarget& ref) { return ref.id == name; })) {
@@ -97,7 +96,7 @@ SeeAlso RelatedLinks(std::string_view topic, std::string_view related) {
     }
   };
   add(topic);
-  for (const std::string_view name : absl::StrSplit(related, ',', absl::SkipEmpty())) {
+  for (const std::string_view name : related) {
     add(name);
   }
   return links;
@@ -147,7 +146,7 @@ std::vector<std::string> PrimaryTags(const registry::Descriptor& descriptor) {
 std::vector<std::string_view> AffectedByFlags(std::string_view name) {
   std::vector<std::string_view> out;
   for (const GlobalFlag& flag : Globals()) {
-    for (const std::string_view token : absl::StrSplit(flag.affects, ',', absl::SkipEmpty())) {
+    for (const std::string_view token : flag.affects) {
       if (token == name) {
         out.push_back(flag.name);
         break;
@@ -163,7 +162,7 @@ SeeAlso EntryLinks(const Descriptor& entry) {
   SeeAlso links = RelatedLinks(entry.topic, entry.see_also);
   std::vector<std::string_view> influences = AffectedByFlags(entry.name);
   if constexpr (std::is_same_v<Descriptor, GlobalFlag>) {
-    for (const std::string_view name : absl::StrSplit(entry.affects, ',', absl::SkipEmpty())) {
+    for (const std::string_view name : entry.affects) {
       influences.push_back(name);
     }
   }
@@ -174,7 +173,7 @@ SeeAlso EntryLinks(const Descriptor& entry) {
 }
 
 // Appends an influence detail line ("Header: a, b, c") to `blocks` when non-empty.
-void AppendInfluence(Blocks& blocks, std::string_view header, const std::vector<std::string_view>& names) {
+void AppendInfluence(Blocks& blocks, std::string_view header, absl::Span<const std::string_view> names) {
   if (names.empty()) {
     return;
   }
@@ -237,7 +236,7 @@ Content FlagEntry(const GlobalFlag& flag, bool with_details = true, Audience aud
     for (Content& block : ParseBlocks(flag.details)) {
       details.push_back(std::move(block));
     }
-    AppendInfluence(details, "Affects:", absl::StrSplit(flag.affects, ',', absl::SkipEmpty()));
+    AppendInfluence(details, "Affects:", flag.affects);
     AppendInfluence(details, "Affected by:", AffectedByFlags(flag.name));
   }
   return Content{
@@ -516,7 +515,7 @@ Section GrammarsSection() {
 }
 
 bool IsRegexPrimary(const registry::Descriptor& descriptor) {
-  return descriptor.regex_argument || absl::c_linear_search(absl::StrSplit(descriptor.see_also, ','), "regex");
+  return descriptor.regex_argument || absl::c_linear_search(descriptor.see_also, "regex");
 }
 
 Section RegexSection(bool in_full) {
@@ -537,7 +536,7 @@ Section RegexSection(bool in_full) {
     Subsection flags{.title = "Related controls"};
     for (const GlobalFlag& flag : Globals()) {
       bool relevant = flag.topic == "regex";
-      for (const std::string_view affected : absl::StrSplit(flag.affects, ',')) {
+      for (const std::string_view affected : flag.affects) {
         const auto primary = registry::Lookup(affected);
         relevant = relevant || (primary.has_value() && IsRegexPrimary(*primary));
       }
