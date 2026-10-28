@@ -1395,8 +1395,11 @@ Section DiffSection(bool in_full) {
               {"-diff TARGET", "TARGET", "Found entry"},
               {"-rdiff (TARGET omitted)", "Found entry", "Absent (/dev/null)"},
               {"-rdiff TARGET", "Found entry", "TARGET"},
-              {"--compare=diff LEFT RIGHT", "Matching entry under LEFT, or absent",
-               "Matching entry under RIGHT, or absent"},
+              {
+                  "--compare=diff LEFT RIGHT",
+                  "Matching entry under LEFT, or absent",
+                  "Matching entry under RIGHT, or absent",
+              },
           },
   };
   section.children.push_back(Content{.node = std::move(direction)});

@@ -868,9 +868,18 @@ TEST_F(RunTest, CompareIgnorePoliciesMapNestedRulesByRelativePath) {
   { std::ofstream(right / "nested/nested-right.dat") << "right"; }
 
   const auto compare = [&](std::string_view ignore_policy) {
-    return RunArgvRecords(
-        {"--compare", "--compare-select=all", "--gitignore=on", absl::StrCat("--compare-ignore=", ignore_policy),
-         left.string(), right.string(), "-type", "f", "-name", "*.dat"});
+    return RunArgvRecords({
+        "--compare",
+        "--compare-select=all",
+        "--gitignore=on",
+        absl::StrCat("--compare-ignore=", ignore_policy),
+        left.string(),
+        right.string(),
+        "-type",
+        "f",
+        "-name",
+        "*.dat",
+    });
   };
   EXPECT_THAT(compare("respective"), ElementsAre("identical\tshared.dat"));
   EXPECT_THAT(

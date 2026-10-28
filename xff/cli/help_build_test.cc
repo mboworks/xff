@@ -32,6 +32,7 @@
 namespace xff::cli {
 namespace {
 
+using ::testing::_;
 using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
@@ -235,10 +236,11 @@ TEST_F(BuildReferenceTest, RgHelpExplainsNativeFileSelectionBeforeLineSelection)
 
 TEST_F(BuildReferenceTest, DiffTopicExplainsImportAndRecurringUpdatePathMapping) {
   const std::optional<Document> diff = TopicReference("diff");
-  ASSERT_THAT(diff, Optional(::testing::_));
-  ASSERT_THAT(diff->sections, SizeIs(1));
-  EXPECT_THAT(diff->sections.front().title, Eq("Diff and patch output"));
-  const std::string prose = ProseTextOf(diff->sections.front().children);
+  const Document document = diff.value_or(Document{});
+  ASSERT_THAT(diff, Optional(_));
+  ASSERT_THAT(document.sections, SizeIs(1));
+  EXPECT_THAT(document.sections.front().title, Eq("Diff and patch output"));
+  const std::string prose = ProseTextOf(document.sections.front().children);
   EXPECT_THAT(prose, HasSubstr("new root directory"));
   EXPECT_THAT(prose, HasSubstr("ongoing update"));
   EXPECT_THAT(prose, HasSubstr("current destination paths"));
@@ -246,7 +248,7 @@ TEST_F(BuildReferenceTest, DiffTopicExplainsImportAndRecurringUpdatePathMapping)
   EXPECT_THAT(prose, HasSubstr("--compare-ignore=respective"));
   EXPECT_THAT(prose, HasSubstr("either stack excludes it"));
   const Table* direction = nullptr;
-  for (const Content& content : diff->sections.front().children) {
+  for (const Content& content : document.sections.front().children) {
     if (const auto* table = std::get_if<Table>(&content.node)) {
       direction = table;
       break;
