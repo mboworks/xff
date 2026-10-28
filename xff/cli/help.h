@@ -50,7 +50,7 @@ struct HelpTopic {
   std::string_view name;                       // the topic keyword (--help=NAME)
   absl::Span<const std::string_view> aliases;  // alternate spellings, or empty
   std::string_view summary;                    // one-line description
-  std::string_view see_also;                   // comma-separated related topic names
+  std::string_view see_also;                   // comma-separated topic names and exact flag spellings
   bool in_full = false;                        // folded into the --help=full reference
 };
 

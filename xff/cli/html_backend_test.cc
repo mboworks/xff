@@ -267,7 +267,7 @@ TEST_F(HtmlBackendTest, CompleteReferencePointersUseTheFormatPresentation) {
       .refs = {{.kind = RefTarget::Kind::kTopic, .id = "regex", .label = "Regex matching"}},
       .in_document = true,
   });
-  EXPECT_THAT(backend.Take(), HasSubstr("href=\"#topic-regex\">Regex matching</a>"));
+  EXPECT_THAT(backend.Take(), HasSubstr("href=\"#topic-regex\">--help=regex</a>"));
 }
 
 }  // namespace

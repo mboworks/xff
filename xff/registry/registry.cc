@@ -1332,8 +1332,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .name = "-print0",
         .summary = "print the path followed by a NUL",
         .details = "Prints the path then a NUL byte instead of a newline, so paths containing spaces or newlines "
-                   "survive a pipe into `xargs -0`. The machine-readable counterpart of `-print`; see also "
-                   "`--format=jsonl`.",
+                   "survive a pipe into `xargs -0`. The machine-readable counterpart of `-print`. "
+                   "For structured records, `--format=jsonl` provides JSON Lines output.",
         .kind = Kind::kAction,
         .stdout_output = true,
         .arity = 0,

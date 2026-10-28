@@ -167,7 +167,7 @@ TEST_F(HelpTest, CompareTopicExplainsSelectionAndEquality) {
           HasSubstr("Metadata such as permissions, owner, timestamps, and inode numbers is not compared"),
           HasSubstr("each retains its complete matched-entry inventory"), HasSubstr("`--sort` controls traversal"),
           HasSubstr("their synchronized output may interleave"), HasSubstr("does not cap the comparison inventories"),
-          HasSubstr("Patch output"), HasSubstr("`--help=-diff` / `--help=-rdiff`")));
+          HasSubstr("Patch output"), HasSubstr("--help=-diff, --help=-rdiff")));
   for (const GlobalFlag& flag : Globals()) {
     if (flag.topic == "compare") {
       EXPECT_THAT(out, HasSubstr(flag.name)) << flag.name;
@@ -178,8 +178,21 @@ TEST_F(HelpTest, CompareTopicExplainsSelectionAndEquality) {
 TEST_F(HelpTest, DiffTopicPreservesInlineCodeAndPointsToFlagHelp) {
   const std::string out = RenderTopicDoc("diff");
   EXPECT_THAT(
-      out,
-      AllOf(HasSubstr("`-diff [TARGET]`"), HasSubstr("`--compare=diff LEFT RIGHT`"), HasSubstr("`--help=compare`")));
+      out, AllOf(HasSubstr("`-diff [TARGET]`"), HasSubstr("`--compare=diff LEFT RIGHT`"), HasSubstr("--help=compare")));
+}
+
+TEST_F(HelpTest, DiffAndCompareUseOneStructuredNavigationList) {
+  constexpr auto kTopics = std::to_array<std::string_view>({"diff", "compare"});
+  for (const std::string_view topic : kTopics) {
+    const std::string out = RenderTopicDoc(topic);
+    const std::size_t navigation = out.find("See also:");
+    ASSERT_THAT(navigation, Not(Eq(std::string::npos))) << topic;
+    EXPECT_THAT(out.find("See also", navigation + 1), Eq(std::string::npos)) << topic;
+    const std::string links = out.substr(navigation);
+    EXPECT_THAT(links, HasSubstr("--help=-diff, --help=-rdiff")) << topic;
+    EXPECT_THAT(out, Not(HasSubstr("  See also:\n    -"))) << topic;
+  }
+  EXPECT_THAT(RenderTopicDoc("compare"), HasSubstr("--help=--summary, --help=--compare-select"));
 }
 
 TEST_F(HelpTest, IgnoreTopicDoesNotInventComparisonDefaults) {
@@ -333,11 +346,15 @@ TEST_F(HelpTest, EveryEntryHasFocusedNavigation) {
   }
 }
 
-TEST_F(HelpTest, EveryTopicHasResolvableRelatedTopics) {
+TEST_F(HelpTest, EveryTopicHasResolvableRelatedTargets) {
   for (const HelpTopic& topic : HelpTopics()) {
     EXPECT_THAT(topic.see_also, Not(IsEmpty())) << topic.name;
     for (const std::string_view related : absl::StrSplit(topic.see_also, ',', absl::SkipEmpty())) {
-      EXPECT_THAT(TopicNavigation(related).sections, Not(IsEmpty())) << topic.name << " -> " << related;
+      if (related.starts_with('-')) {
+        EXPECT_THAT(EntryReference(related), Optional(_)) << topic.name << " -> " << related;
+      } else {
+        EXPECT_THAT(TopicNavigation(related).sections, Not(IsEmpty())) << topic.name << " -> " << related;
+      }
       EXPECT_THAT(related, Not(Eq(topic.name)));
     }
   }
@@ -420,7 +437,7 @@ TEST_F(HelpTest, LongReferenceDoesNotRepeatEntriesOrExpandNavigation) {
   }
 }
 
-TEST_F(HelpTest, SingleTopicExpandsOnceEvenWithRelatedFlags) {
+TEST_F(HelpTest, SingleTopicExpansionDoesNotRepeatInfluenceFlags) {
   const auto doc = EntryReference("--compare-select");
   ASSERT_THAT(doc, Optional(_));
   if (!doc.has_value()) {
@@ -428,7 +445,30 @@ TEST_F(HelpTest, SingleTopicExpandsOnceEvenWithRelatedFlags) {
   }
   ASSERT_THAT(doc->sections, SizeIs(2));
   EXPECT_THAT(doc->sections.back().anchor, Eq("topic-compare"));
-  EXPECT_THAT(RenderEntry("--compare-select"), HasSubstr("--help=--compare"));
+  EXPECT_THAT(
+      RenderEntry("--compare-select"), AllOf(HasSubstr("Affected by: --compare"), Not(HasSubstr("--help=--compare"))));
+}
+
+TEST_F(HelpTest, SeeAlsoDoesNotRepeatAnyForwardOrReverseInfluence) {
+  const auto check = [](std::string_view name, std::string_view influence) {
+    const auto document = EntryReference(name);
+    ASSERT_THAT(document, Optional(_));
+    if (!document.has_value()) {
+      return;
+    }
+    for (const Content& block : document->sections.front().children) {
+      if (std::holds_alternative<SeeAlso>(block.node)) {
+        EXPECT_THAT(std::get<SeeAlso>(block.node).refs, Not(Contains(Field(&RefTarget::id, Eq(influence)))))
+            << name << " repeats influence " << influence;
+      }
+    }
+  };
+  for (const GlobalFlag& flag : Globals()) {
+    for (const std::string_view affected : absl::StrSplit(flag.affects, ',', absl::SkipEmpty())) {
+      check(flag.name, affected);
+      check(affected, flag.name);
+    }
+  }
 }
 
 TEST_F(HelpTest, MultipleTopicsRemainPointersWithoutContextExpansion) {

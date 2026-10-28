@@ -98,9 +98,13 @@ only if help ever becomes externally authored by non-coders.
 ## Focused navigation and full references
 
 Focused `--help=NAME` pages end with **See also** commands. Entry navigation combines the
-registry's topic membership, explicit `see_also` topics, and forward/reverse `affects`
-relationships. Duplicate targets are removed while preserving the authored order. A topic's
-related pages are declared in `HelpTopics()`; aliases share the canonical topic's navigation.
+registry's topic membership and explicit `see_also` targets. Operational relationships appear
+under **Affects** and **Affected by** using exact flag spellings; these flags are omitted from
+the same entry's **See also** list. Duplicate navigation targets are removed while preserving
+the authored order. A topic's
+related topics and exact flag spellings are declared in `HelpTopics()`; aliases share the canonical
+topic's navigation. Handwritten See also prose or bullet lists are forbidden: the structured
+metadata is the single source of navigation for every renderer.
 The commands distinguish a topic (`--help=regex`), a global flag (`--help=--regextype`), and an
 expression primary (`--help=-regex`). External manuals retain their `name(section)` notation.
 
@@ -116,8 +120,9 @@ the full grammar vocabulary. Topic help lists its related pages without expandin
 `--help=full` and `--help=long` render the same complete document. Each detailed entry and each
 topic appears once. The model retains related pointers only to targets present in the document;
 no reference renderer can expand a target. Console long help omits these per-entry and per-topic
-pointers. HTML and Markdown show clickable topic titles and flag names. Man pages show those
-names as text references. Focused console help keeps copyable `--help=NAME` commands.
+pointers. Every other renderer uses complete `--help=NAME` commands for both topics and flags,
+including the flag's dashes. HTML and Markdown make those commands clickable; man pages and
+focused console help show them as text.
 
 Stable topic and entry anchors (`topic-`, `flag-`, and `primary-` namespaces) keep internal
 Markdown/HTML references independent of display headings, including automatically generated

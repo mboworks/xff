@@ -107,6 +107,24 @@ struct BuildReferenceTest : ::testing::Test {
   Document doc = BuildReference();
 };
 
+TEST_F(BuildReferenceTest, SeeAlsoNavigationUsesStructuredBlocks) {
+  const auto check = [&](auto&& self, const Blocks& blocks) -> void {
+    EXPECT_THAT(ProseTextOf(blocks), Not(HasSubstr("See also:")));
+    for (const Content& block : blocks) {
+      if (std::holds_alternative<Subsection>(block.node)) {
+        const auto& subsection = std::get<Subsection>(block.node);
+        EXPECT_THAT(subsection.title, Not(Eq("See also")));
+        self(self, subsection.children);
+      } else if (std::holds_alternative<Entry>(block.node)) {
+        self(self, std::get<Entry>(block.node).details);
+      }
+    }
+  };
+  for (const Section& section : doc.sections) {
+    check(check, section.children);
+  }
+}
+
 TEST_F(BuildReferenceTest, APublishedReferenceOmitsThePerBinaryNotBuiltNote) {
   // XFF.md documents the TOOL, so a note about the binary that happened to generate it would be
   // misleading. The feature is still documented, and its own text still says it is a build extra.

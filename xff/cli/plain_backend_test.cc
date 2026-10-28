@@ -179,9 +179,9 @@ TEST_F(PlainBackendTest, SeeAlsoUsesCopyableHelpCommands) {
   backend.EmitSeeAlso({
       .refs =
           {
-              {.kind = RefTarget::Kind::kTopic, .id = "regex"},
-              {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
-              {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
+              {.kind = RefTarget::Kind::kTopic, .id = "regex", .label = "Regex matching"},
+              {.kind = RefTarget::Kind::kFlag, .id = "--summary", .label = "Summary"},
+              {.kind = RefTarget::Kind::kPrimary, .id = "-printf", .label = "Formatted output"},
               {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
               {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference"},
               {.kind = RefTarget::Kind::kAnchor, .id = "section"},
