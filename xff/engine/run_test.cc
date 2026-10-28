@@ -953,6 +953,108 @@ TEST_F(RunTest, CompareIgnoreFileRejectsInvalidRequestsBeforeWalking) {
   check({"--compare", "--compare-ignore-file=" + right.string(), root_.string(), right.string()}, right.string());
 }
 
+TEST_F(RunTest, RootOnlyGitignoreDottedNameAllowlistKeepsUndottedDirectoriesTraversable) {
+  const fs::path left = root_ / "root-rules-left";
+  const fs::path right = root_ / "root-rules-right";
+  const auto roots = std::to_array<fs::path>({left, right});
+  for (const fs::path& root : roots) {
+    ASSERT_THAT(fs::create_directories(root / "plain"), IsTrue());
+    ASSERT_THAT(fs::create_directories(root / "open.dir"), IsTrue());
+    ASSERT_THAT(fs::create_directories(root / "closed.dir"), IsTrue());
+    { std::ofstream(root / ".gitignore") << "/*.*\n!/keep.txt\n!/open.dir/\n"; }
+    { std::ofstream(root / "keep.txt") << root.filename().string(); }
+    { std::ofstream(root / "skip.txt") << "skip"; }
+    { std::ofstream(root / "plain/child.txt") << "plain"; }
+    { std::ofstream(root / "open.dir/child.txt") << "open"; }
+    { std::ofstream(root / "closed.dir/child.txt") << "closed"; }
+  }
+  EXPECT_THAT(
+      RunArgvRecords({"-g+", left.string(), "-type", "f", "-name", "*.txt"}),
+      UnorderedElementsAre(
+          (left / "keep.txt").string(), (left / "plain/child.txt").string(), (left / "open.dir/child.txt").string()));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(
+      RunArgvRecords({"-g+", "--compare", "--compare-select=all", left.string(), right.string(), "-name", "*.txt"}),
+      ElementsAre("different\tkeep.txt", "identical\topen.dir/child.txt", "identical\tplain/child.txt"));
+  EXPECT_THAT(last_errors_, Eq(0));
+}
+
+TEST_F(RunTest, RootOnlyGitignoreAllowlistSelectsFilesAtMultipleDepthsWithoutNestedRules) {
+  const fs::path left = root_ / "recursive-allow-left";
+  const fs::path right = root_ / "recursive-allow-right";
+  const auto roots = std::to_array<fs::path>({left, right});
+  for (const fs::path& root : roots) {
+    ASSERT_THAT(fs::create_directories(root / "deep/inside"), IsTrue());
+    { std::ofstream(root / ".gitignore") << "*\n!*/\n!/keep.txt\n!/deep/inside/keep.txt\n"; }
+    { std::ofstream(root / "keep.txt") << root.filename().string(); }
+    { std::ofstream(root / "skip.txt") << "skip"; }
+    { std::ofstream(root / "deep/keep.txt") << "not anchored here"; }
+    { std::ofstream(root / "deep/inside/keep.txt") << root.filename().string(); }
+    { std::ofstream(root / "deep/inside/skip.txt") << "skip"; }
+  }
+  EXPECT_THAT(
+      RunArgvRecords({"-g+", left.string(), "-type", "f"}),
+      UnorderedElementsAre((left / "keep.txt").string(), (left / "deep/inside/keep.txt").string()));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(
+      RunArgvRecords({"-g+", "--compare", left.string(), right.string(), "-type", "f"}),
+      ElementsAre("different\tdeep/inside/keep.txt", "different\tkeep.txt"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(
+      RunArgvRecords({"-g+", left.string(), "-type", "f", "-diff"}),
+      AllOf(
+          Contains(HasSubstr("b/deep/inside/keep.txt")), Contains(HasSubstr("b/keep.txt")),
+          Not(Contains(HasSubstr("skip.txt"))), Not(Contains(HasSubstr("b/deep/keep.txt")))));
+  EXPECT_THAT(last_errors_, Eq(0));
+  // A root-only allowlist can also be projected onto a tree without its own rules.
+  { std::ofstream(right / ".gitignore") << ""; }
+  constexpr auto policies = std::to_array<std::string_view>({"left", "union"});
+  for (const std::string_view policy : policies) {
+    EXPECT_THAT(
+        RunArgvRecords(
+            {"-g+", "--compare", absl::StrCat("--compare-ignore=", policy), left.string(), right.string(), "-type",
+             "f"}),
+        ElementsAre("different\tdeep/inside/keep.txt", "different\tkeep.txt"));
+    EXPECT_THAT(last_errors_, Eq(0));
+  }
+}
+
+TEST_F(RunTest, RootOnlyGitignoreChildExceptionNeedsEveryParentAndRespectsLaterExclusions) {
+  const fs::path left = root_ / "parent-allow-left";
+  const fs::path right = root_ / "parent-allow-right";
+  const auto roots = std::to_array<fs::path>({left, right});
+  for (const fs::path& root : roots) {
+    ASSERT_THAT(fs::create_directories(root / "deep/inside"), IsTrue());
+    { std::ofstream(root / ".gitignore") << "*\n!/deep/inside/keep.txt\n"; }
+    { std::ofstream(root / "deep/inside/keep.txt") << root.filename().string(); }
+    { std::ofstream(root / "deep/inside/skip.txt") << "skip"; }
+  }
+  const std::vector<std::string> args = {"-g+", "--compare", left.string(), right.string(), "-type", "f"};
+  EXPECT_THAT(RunArgvRecords(args), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+  for (const fs::path& root : roots) {
+    {
+      std::ofstream(root / ".gitignore") << "*\n!/deep/\n!/deep/inside/keep.txt\n";
+    }
+  }
+  EXPECT_THAT(RunArgvRecords(args), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+  for (const fs::path& root : roots) {
+    {
+      std::ofstream(root / ".gitignore") << "*\n!/deep/\n!/deep/inside/\n!/deep/inside/keep.txt\n";
+    }
+  }
+  EXPECT_THAT(RunArgvRecords(args), ElementsAre("different\tdeep/inside/keep.txt"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  for (const fs::path& root : roots) {
+    {
+      std::ofstream(root / ".gitignore") << "*\n!*/\n!/deep/inside/keep.txt\n/deep/inside/keep.txt\n";
+    }
+  }
+  EXPECT_THAT(RunArgvRecords(args), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+}
+
 TEST_F(RunTest, GitignoreAllowlistMustKeepParentsTraversableForNestedRules) {
   const fs::path left = root_ / "allowlist-left";
   const fs::path right = root_ / "allowlist-right";
