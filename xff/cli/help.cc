@@ -243,10 +243,17 @@ absl::Span<const HelpTopic> HelpTopics() {
           .in_full = true,
       },
       {
+          .name = "diff",
+          .aliases = {},
+          .summary = "one-sided and two-tree patch output, direction, and destination paths",
+          .see_also = "compare,content,fields,ignore",
+          .in_full = true,
+      },
+      {
           .name = "compare",
           .aliases = {},
           .summary = "compare two selected trees as statuses or a patch",
-          .see_also = "stats,output,content",
+          .see_also = "diff,stats,output,content",
           .in_full = true,
       },
       {

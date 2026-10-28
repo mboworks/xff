@@ -21,6 +21,7 @@ eXtended File Find, a find(1)-compatible file finder with modern extensions.
 - [Regex matching](#topic-regex)
 - [Ripgrep-style searches](#topic-rg)
 - [Content](#topic-content)
+- [Diff and patch output](#topic-diff)
 - [Comparing trees](#topic-compare)
 - [Ignore and VCS traversal](#topic-ignore)
 - [Archives](#topic-archive)
@@ -851,13 +852,28 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `diff` - a unified tree diff suitable for saving as a patch
 
   Requires exactly two roots. `--compare=summary` expands at its position to `--compare=status --compare-select=none --summary=compare`; later flags may override its settings. Combining the shorthand with bare `--summary` emits the comparison summary once. With an explicit `--summary-scope`, bare `--summary` also adds scoped totals; explicit groupings such as `--summary=ext` add their own tables. Bare `--compare` and `--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or `different` records. With `--format=jsonl`, each status is a JSON object containing `record: comparison`, `status`, relative `path`, `left_root`, and `right_root`. `--compare=diff` emits one unified tree diff, suitable for redirecting to a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is an expression action comparing each match from one walk with a templated target and therefore cannot discover target-only paths, `--compare` walks both roots independently and pairs the matches by relative path. The ordinary expression, ignore, hidden-file, archive, traversal, and `-P` / `-H` / `-L` symlink rules apply unchanged to each side; comparison itself enables none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks are compared by target. Both walks complete before comparison records are emitted in bytewise relative-path order; `--sort` affects each walk, not that final order. In status mode, `--path-encoding=escape` makes control bytes in the relative path unambiguous. `--summary` / `--summary=compare` append results and combined bytes by entry type and status. Results count each pair once; bytes include both sides, including two copies of identical files. Directories and special entries are included; directory equality compares the entry kind, not its subtree. Ordinary summary groupings default to `--summary-scope=compare`: one table with left and right columns across all comparison categories. Explicit `--summary-scope=all` combines both sides; `--summary-scope=root` separates roots. `--compare` changes this default regardless of option order.
-  Affected by: --compare-select, --diff-algorithm, --diff-left-strip, --diff-left-root, --diff-left-prefix, --diff-left-rewrite, --diff-right-strip, --diff-right-root, --diff-right-prefix, --diff-right-rewrite, --diff-context, --summary-precision
-  See also: [Comparing trees](#topic-compare), [--compare-select](#flag-compare-select), [--diff-algorithm](#flag-diff-algorithm), [--diff-left-strip](#flag-diff-left-strip), [--diff-left-root](#flag-diff-left-root), [--diff-left-prefix](#flag-diff-left-prefix), [--diff-left-rewrite](#flag-diff-left-rewrite), [--diff-right-strip](#flag-diff-right-strip), [--diff-right-root](#flag-diff-right-root), [--diff-right-prefix](#flag-diff-right-prefix), [--diff-right-rewrite](#flag-diff-right-rewrite), [--diff-context](#flag-diff-context), [--summary-precision](#flag-summary-precision)
+  Affected by: --compare-select, --compare-ignore, --diff-algorithm, --diff-left-strip, --diff-left-root, --diff-left-prefix, --diff-left-rewrite, --diff-right-strip, --diff-right-root, --diff-right-prefix, --diff-right-rewrite, --diff-context, --summary-precision
+  See also: [Comparing trees](#topic-compare), [--compare-select](#flag-compare-select), [--compare-ignore](#flag-compare-ignore), [--diff-algorithm](#flag-diff-algorithm), [--diff-left-strip](#flag-diff-left-strip), [--diff-left-root](#flag-diff-left-root), [--diff-left-prefix](#flag-diff-left-prefix), [--diff-left-rewrite](#flag-diff-left-rewrite), [--diff-right-strip](#flag-diff-right-strip), [--diff-right-root](#flag-diff-right-root), [--diff-right-prefix](#flag-diff-right-prefix), [--diff-right-rewrite](#flag-diff-right-rewrite), [--diff-context](#flag-diff-context), [--summary-precision](#flag-summary-precision)
 
 <a id="flag-compare-select"></a>
 
 - `--compare-select=KIND,...` - tree-comparison results to emit: left-only, right-only, identical, different, all, or none _(global, find, xff, rg)_
   Selects comma-separated result kinds for `--compare`. The default is `left-only,right-only,different`, so equal files stay silent. `all` selects every kind. `none` or an empty value suppresses per-path output. Requires `--compare`; neither comparison-result nor ordinary summaries are filtered by this selection. `identical` is available with status output and is rejected with `--compare=diff`, where an unchanged file has no patch representation.
+  Affects: --compare
+  See also: [Comparing trees](#topic-compare), [--compare](#flag-compare)
+
+<a id="flag-compare-ignore"></a>
+
+- `--compare-ignore=none|left|right|respective|union` - select which per-directory ignore policy applies during a two-root comparison _(global, find, xff, rg)_
+  One of:
+
+  - `none` - do not apply auto-discovered per-directory ignore files
+  - `left` - apply the left tree's auto-discovered ignore stack to both trees
+  - `right` - apply the right tree's auto-discovered ignore stack to both trees
+  - `respective` - apply each tree's own ignore stack independently (the default)
+  - `union` - exclude a path from both trees if either tree's ignore stack excludes it
+
+  Requires `--compare`. `respective` is the default and applies each tree's own auto-discovered ignore stack. `left` or `right` applies that tree's stack to matching relative paths on both sides. `union` excludes a relative path from both sides when either stack excludes it. `none` disables auto-discovered per-directory ignore files for the comparison. `left`, `right`, and `union` enable the Git ignore layer; `--no-ignore` still disables every ignore-file source. `respective` follows the ordinary `-g` / `--gitignore` and program-style settings. The selected stack includes `.gitignore` when the Git layer is on, and `.ignore` / `.xffignore` when enabled by `--ignore-files` or the selected style. Explicit `--ignore-file`, `--include`, and `--exclude` retain their normal scope. `--skip-vcs` remains a separate traversal filter.
   Affects: --compare
   See also: [Comparing trees](#topic-compare), [--compare](#flag-compare)
 
@@ -3078,11 +3094,82 @@ per-member match counts inside an archive
 
 See also: [Regex matching](#topic-regex), [Fields](#topic-fields), [Output](#topic-output)
 
+<a id="topic-diff"></a>
+
+## Diff and patch output
+
+XFF has two patch-producing forms. `-diff [TARGET]` and `-rdiff [TARGET]` are expression actions: they visit entries selected below the search roots and compare each found entry with an optional target. `--compare=diff LEFT RIGHT` walks two roots, pairs selected entries by root-relative path, and can discover files present on only one side. Use the one-sided form when you already know which paths to visit; use two-root comparison when additions, removals, or path pairing must be discovered.
+
+| Mode                      | Left / old                           | Right / new                           |
+| ------------------------- | ------------------------------------ | ------------------------------------- |
+| -diff (TARGET omitted)    | Absent (/dev/null)                   | Found entry                           |
+| -diff TARGET              | TARGET                               | Found entry                           |
+| -rdiff (TARGET omitted)   | Found entry                          | Absent (/dev/null)                    |
+| -rdiff TARGET             | Found entry                          | TARGET                                |
+| --compare=diff LEFT RIGHT | Matching entry under LEFT, or absent | Matching entry under RIGHT, or absent |
+
+Patch direction is always old/left to new/right. `-diff TARGET` treats TARGET as old and the found entry as new; `-rdiff TARGET` treats the found entry as old and TARGET as new. Without TARGET, `-diff` creates the found entry from absence and `-rdiff` deletes it. `/dev/null` explicitly selects the absent side. An equal pair is true and silent; a difference is false. This is the opposite of `--compare --exit-match`, where a difference is a match. Optional TARGETs are field templates evaluated for each found entry; their paths are resolved from the process working directory. A missing explicit TARGET does not become a creation/deletion patch.
+
+### Patch contents and limitations
+
+Text changes use the selected diff style (`u3` by default; `c`, `n`, `y`, or `none` are also available). Absent-side creation/deletion patches use Git format, including empty files, executable bits, symlinks, and binary contents. Directories do not produce patches, because directory entries are not represented in Git; other special file types are unsupported for absent-side patches. `--compare=diff` emits text hunks for regular text files and diagnostics for binary or non-regular differences. An empty file addition or removal can have no text hunk, so use the comparison status or summary when you need a record of every changed entry.
+
+`-diff` and `-rdiff` see only entries visited below their search roots. In particular, they cannot find target-only paths to remove, and a source path whose explicit TARGET does not exist cannot be emitted as a new file. `--compare=diff` is the whole-tree operation for discovering additions and removals. Its two walks use the same filters and traversal options; comparison does not implicitly enable hidden files, ignore rules, archive traversal, or symlink following. See `--help=compare` for pairing, selection, and exit-status behavior.
+
+With `-g+` or `--ignore-vcs`, each comparison root uses its own VCS ignore context; rules above a search root still apply when it is inside a Git worktree. `--compare-ignore=respective` preserves that per-tree behavior. `left` or `right` instead uses the selected side's auto-discovered stack for both trees; `union` excludes a relative path from both when either stack excludes it. `none` disables the auto-discovered stack, while explicit `--ignore-file`, `--include`, and `--exclude` retain their normal scope. `--skip-vcs` remains a separate traversal filter. These choices also cover `.ignore` / `.xffignore` when those files are enabled. See `--help=ignore` for ignore-source scope and precedence.
+
+### Patch destination paths
+
+Patch labels are independent of the paths XFF reads. For every patch, left means old and right means new. The shared path pipeline is: logical root-relative path; strip leading components; inject a relative output root; apply ordered regex rewrites; validate; prepend a literal side prefix (`a/` or `b/` by default); then quote for the patch format. The left and right controls apply to those patch sides, not necessarily to the command's first and second root when using `-rdiff`. Rewriting labels never changes traversal, comparison pairing, TARGET lookup, or file contents.
+
+Use `--diff-left-root=DIR` and `--diff-right-root=DIR` to place the same repository under a new directory in a destination tree. For a path such as `src/main.cc`, injecting `third_party/widget` on both sides produces `a/third_party/widget/src/main.cc` and `b/third_party/widget/src/main.cc`. This is the usual mapping when importing a repository as a new root directory. Use side-specific `--diff-*-rewrite=RULES` when destination paths need renaming or restructuring. For an ongoing update, make left labels identify the current destination paths and right labels identify where updated files should land; use the same rewrite on both sides for a stable mapping, or different rewrites for an intentional rename. Rewrites use the field substitution grammar, for example `s|^lib/|src/|;s|\.generated\.cc$|.cc|`, and accumulate in option order. Strip/root/prefix settings use their last supplied value.
+
+Injected roots and final labels must remain safe relative file paths: no absolute paths, empty, `.` or `..` components, NUL, or `.git` component. Stripping cannot remove the filename. Prefixes are literal and add no separator; an empty prefix removes `a/` or `b/`. `/dev/null` denotes absence and bypasses path rewrites. If distinct source entries map to the same destination on one side, XFF reports a collision. Patch output streams, so a later error can follow earlier complete patches; check the process exit status before applying the output.
+
+### Examples
+
+```sh
+xff -g+ upstream -type f -diff --diff-left-root=third_party/widget \
+  --diff-right-root=third_party/widget > import-widget.patch
+```
+
+create files from an upstream repository under a new directory in the destination repository; apply the patch from the destination repository root. `-g+` applies Git ignore rules during traversal; omit it when ignored files should be included
+
+```sh
+xff -g+ --compare=diff upstream/widget destination/third_party/widget \
+  --diff-left-root=third_party/widget --diff-right-root=third_party/widget > update-widget.patch
+```
+
+compare the upstream tree with its existing destination copy, discovering changed, added, and removed files while emitting paths rooted at `third_party/widget`
+
+```sh
+xff -g+ --compare=diff upstream destination --diff-left-rewrite='s|^old-name/|widget/|' \
+  --diff-right-rewrite='s|^new-name/|widget/|'
+```
+
+map differently named old and new trees onto the same destination names for an ongoing update
+
+```sh
+xff -g+ source -type f -diff 'destination/{relpath}' --diff-left-root=vendor/widget \
+  --diff-right-root=vendor/widget
+```
+
+use an explicit per-entry reference for known files; use `--compare=diff` instead when additions and removals must be discovered
+
+### See also
+
+- `--help=compare`: two-root comparison, selection, summaries, and patch mode.
+- `-diff` / `-rdiff`: one-sided patch actions.
+- `--help=fields`: field templates accepted by diff targets.
+- `--help=ignore`: VCS ignore rules and explicit ignore files.
+
+See also: [Comparing trees](#topic-compare), [Content](#topic-content), [Fields](#topic-fields), [Ignore and VCS traversal](#topic-ignore)
+
 <a id="topic-compare"></a>
 
 ## Comparing trees
 
-`--compare` requires exactly two roots. xff walks both roots with the same expression and the same explicitly selected traversal, ignore, archive, hidden-file, and symlink options. Comparison does not enable `--gitignore`, `--no-ignore`, `-L`, or any other policy on its own. The matched entries are paired by path relative to their respective roots, so the root directory names need not match.
+`--compare` requires exactly two roots. xff walks both roots with the same expression and the same explicitly selected traversal, ignore, archive, hidden-file, and symlink options. Comparison does not enable `--gitignore`, `--no-ignore`, `-L`, or any other policy on its own. `--compare-ignore` selects how auto-discovered per-directory ignore stacks are applied: `respective` keeps each side independent and follows the ordinary `-g` / style setting; `left` or `right` applies that side's stack to both; `union` excludes a path from both if either stack excludes it; and `none` disables those stacks. `left`, `right`, and `union` enable the Git ignore layer; `--no-ignore` still disables all ignore-file sources. The matched entries are paired by path relative to their respective roots, so the root directory names need not match.
 
 Regular files are equal when their bytes are equal, for both text and binary data. Unfollowed symlinks are equal when their link targets are equal; `-H` / `-L` instead apply their ordinary traversal meaning. Directories and other non-regular entries are compared by type. Metadata such as permissions, owner, timestamps, and inode numbers is not compared.
 
@@ -3131,6 +3218,7 @@ xff src -type f -rdiff --diff-left-prefix= --diff-right-prefix=
 - `--summary-scope`: combined, per-root, or category statistics.
 - `--summary-precision`: decimal places in summary percentages.
 - `--format=jsonl`: machine-readable comparison summary rows.
+- `--help=-diff` / `--help=-rdiff`: one-sided patch action details.
 
 ### Examples
 
@@ -3170,7 +3258,7 @@ xff -L --compare left-tree right-tree -type f -name '*.dat'
 
 follow symlinks and compare only matching regular data files
 
-See also: [Statistics](#topic-stats), [Output](#topic-output), [Content](#topic-content)
+See also: [Diff and patch output](#topic-diff), [Statistics](#topic-stats), [Output](#topic-output), [Content](#topic-content)
 
 <a id="topic-ignore"></a>
 

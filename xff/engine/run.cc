@@ -1891,19 +1891,31 @@ class IgnoreFileCache {
   bool Active() const { return !filenames_.empty(); }
 
   ignore::Decision Decide(std::string_view path, std::string_view root, bool is_dir) {
-    const Scope& scope = ScopeFor(root);
+    return DecideUsingRoot(path, root, root, is_dir);
+  }
+
+  // Applies the ignore stack discovered below policy_root to the path at the same
+  // root-relative location under root. Comparison uses this to select one tree's
+  // policy for both sides without changing the path that is paired or emitted.
+  ignore::Decision DecideUsingRoot(
+      std::string_view path,
+      std::string_view root,
+      std::string_view policy_root,
+      bool is_dir) {
+    const Scope& scope = ScopeFor(policy_root);
     // In repo scope the walk is done in absolute paths anchored at the repo root, so a
     // relative entry (e.g. under root ".") is first rebased onto the search root's
-    // absolute form. Off a repo, `base` is the search root as given and no rebase is
-    // needed. `owner` keeps the rebased string alive for the string_views below.
+    // absolute form. For comparison, the entry's relative path is projected beneath
+    // policy_root before it is rebased. Off a repo, `base` is policy_root and no rebase
+    // is needed. `owner` keeps the rebased string alive for the string_views below.
     std::string owner;
     std::string_view rel;
+    const std::string_view rel_to_root = RelativeTo(path, root);
     if (scope.in_repo) {
-      const std::string_view rel_to_root = RelativeTo(path, root);
       owner = rel_to_root.empty() ? scope.abs_root : absl::StrCat(scope.abs_root, "/", rel_to_root);
       rel = RelativeTo(owner, scope.base);
     } else {
-      rel = RelativeTo(path, root);
+      rel = rel_to_root;
     }
     // A `.gitkeep` intentionally keeps its (otherwise-empty) directory in the repo, so the gitignore
     // layers never ignore it - it is always kept, as if by a top-precedence `!.gitkeep`. Explicit
@@ -4075,6 +4087,25 @@ using TreeCompareEntries = std::map<std::string, TreeCompareEntry>;
 
 enum class TreeCompareOutput { kStatus, kDiff };
 
+enum class CompareIgnorePolicy { kRespective, kNone, kLeft, kRight, kUnion };
+
+CompareIgnorePolicy ResolveCompareIgnorePolicy(const std::vector<std::string>& globals) {
+  constexpr std::string_view kPrefix = "--compare-ignore=";
+  CompareIgnorePolicy policy = CompareIgnorePolicy::kRespective;
+  for (const std::string& global : globals) {
+    if (!global.starts_with(kPrefix)) {
+      continue;
+    }
+    const std::string_view value = std::string_view(global).substr(kPrefix.size());
+    policy = value == "none"    ? CompareIgnorePolicy::kNone
+             : value == "left"  ? CompareIgnorePolicy::kLeft
+             : value == "right" ? CompareIgnorePolicy::kRight
+             : value == "union" ? CompareIgnorePolicy::kUnion
+                                : CompareIgnorePolicy::kRespective;
+  }
+  return policy;
+}
+
 struct TreeCompareSelection {
   bool left_only = true;
   bool right_only = true;
@@ -5424,12 +5455,28 @@ RunResult RunFindCore(
   // ResolveGitignoreMode returns kOff then, so the repo probe and the global-excludes
   // read below are skipped too.
   const GitignoreMode gitignore_mode = ResolveGitignoreMode(command.globals, style);
-  const bool gitignore_on =
+  const CompareIgnorePolicy compare_ignore_policy =
+      compare_listing ? ResolveCompareIgnorePolicy(command.globals) : CompareIgnorePolicy::kRespective;
+  const bool no_ignore = HasGlobal(command.globals, "--no-ignore") || HasGlobal(command.globals, "-u");
+  const bool configured_gitignore_on =
       gitignore_mode == GitignoreMode::kOn || (gitignore_mode == GitignoreMode::kAuto && AnyRootInRepo(walk_fs, roots));
+  bool gitignore_on = configured_gitignore_on;
+  bool skip_vcs_gitignore_on = configured_gitignore_on;
+  if (compare_listing && !no_ignore) {
+    if (compare_ignore_policy == CompareIgnorePolicy::kNone) {
+      gitignore_on = false;
+    } else if (
+        compare_ignore_policy == CompareIgnorePolicy::kLeft || compare_ignore_policy == CompareIgnorePolicy::kRight
+        || compare_ignore_policy == CompareIgnorePolicy::kUnion) {
+      gitignore_on = true;
+      skip_vcs_gitignore_on = true;
+    }
+  }
   // --skip-vcs[=LIST] / --no-skip-vcs: the VCS metadata dir names to prune. Resolved once (needs
   // gitignore_on for the -g -> .git default) and validated here, so a bad token is a usage error
   // (exit 2) refused before the walk.
-  const absl::StatusOr<absl::flat_hash_set<std::string>> skip_vcs = ResolveSkipVcs(command.globals, gitignore_on);
+  const absl::StatusOr<absl::flat_hash_set<std::string>> skip_vcs =
+      ResolveSkipVcs(command.globals, skip_vcs_gitignore_on);
   if (!skip_vcs.ok()) {
     on_error("--skip-vcs", skip_vcs.status());
     return RunResult{.errors = 2};
@@ -6020,7 +6067,10 @@ RunResult RunFindCore(
         // --exclude/--include has highest precedence, then explicit --ignore-file sources
         // (rooted at the file's own dir), then the auto per-directory ignore-file stack
         // (--ignore-files / -g); each later layer decides only where the earlier ones are silent.
-        if (!ignore_patterns.empty() || rooted_ignore_files.Active() || ignore_files.Active()) {
+        const bool compare_auto_ignore =
+            compare_listing && compare_ignore_policy != CompareIgnorePolicy::kNone && ignore_files.Active();
+        if (!ignore_patterns.empty() || rooted_ignore_files.Active() || compare_auto_ignore
+            || (!compare_listing && ignore_files.Active())) {
           const bool is_dir = visit.metadata.type == vfs::FileType::kDirectory;
           const std::string_view rel = RelativeTo(visit.path, visit.root);
           if (!rel.empty()) {
@@ -6028,7 +6078,29 @@ RunResult RunFindCore(
             if (decision == ignore::Decision::kDefault && rooted_ignore_files.Active()) {
               decision = rooted_ignore_files.Decide(AbsoluteDir(visit.path), is_dir);
             }
-            if (decision == ignore::Decision::kDefault && ignore_files.Active()) {
+            if (decision == ignore::Decision::kDefault && compare_auto_ignore) {
+              const auto from_policy = [&](std::size_t side) {
+                return ignore_files.DecideUsingRoot(visit.path, visit.root, command.roots.at(side), is_dir);
+              };
+              switch (compare_ignore_policy) {
+                case CompareIgnorePolicy::kNone:
+                case CompareIgnorePolicy::kRespective:
+                  decision = ignore_files.Decide(visit.path, visit.root, is_dir);
+                  break;
+                case CompareIgnorePolicy::kLeft: decision = from_policy(0); break;
+                case CompareIgnorePolicy::kRight: decision = from_policy(1); break;
+                case CompareIgnorePolicy::kUnion: {
+                  const ignore::Decision left = from_policy(0);
+                  const ignore::Decision right = from_policy(1);
+                  decision = left == ignore::Decision::kIgnore || right == ignore::Decision::kIgnore
+                                 ? ignore::Decision::kIgnore
+                             : left == ignore::Decision::kInclude || right == ignore::Decision::kInclude
+                                 ? ignore::Decision::kInclude
+                                 : ignore::Decision::kDefault;
+                  break;
+                }
+              }
+            } else if (decision == ignore::Decision::kDefault && !compare_listing && ignore_files.Active()) {
               decision = ignore_files.Decide(visit.path, visit.root, is_dir);
             }
             if (decision == ignore::Decision::kIgnore) {
@@ -6877,6 +6949,14 @@ absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, boo
   return ValidateReductionFormat(globals, compare, has_histograms);
 }
 
+absl::Status ValidateCompareIgnoreOption(const std::vector<std::string>& globals, bool compare) {
+  if (!compare
+      && absl::c_any_of(globals, [](std::string_view global) { return global.starts_with("--compare-ignore="); })) {
+    return absl::InvalidArgumentError("--compare-ignore requires --compare");
+  }
+  return absl::OkStatus();
+}
+
 std::set<registry::ModifierConsumer> OutputHashConsumers(
     const parser::Command& command,
     const std::vector<SummarySpec>& summaries,
@@ -7293,6 +7373,10 @@ RunResult RunFind(
   });
   if (command.rg && compare) {
     on_error("--rg", absl::InvalidArgumentError("rg search cannot be combined with tree comparison"));
+    return RunResult{.errors = 2};
+  }
+  if (const absl::Status status = ValidateCompareIgnoreOption(command.globals, compare); !status.ok()) {
+    on_error("--compare-ignore", status);
     return RunResult{.errors = 2};
   }
   const auto output_format = ResolveFormat(command.globals);

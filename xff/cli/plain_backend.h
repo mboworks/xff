@@ -27,9 +27,10 @@
 // the `--help` / topic format. Blocks are separated by a blank line; a section
 // heading is upper-cased, a subsection ends in a colon, an entry is a term line
 // with an indented summary, and a vocabulary table aligns on its widest term. Prose
-// drops backtick markup, while a term / row description keeps it (matching the
-// hand-written help). Flowing text (prose, a bullet, an entry summary / detail, a
-// see-also note) word-wraps to the configured `width` (#153 / #164), each
+// drops emphasis markup but keeps inline-code backticks, matching the help prose
+// rules; terms and row descriptions also preserve inline code. Flowing text (prose,
+// bullets, entry summaries / details, and see-also notes) word-wraps to the configured
+// `width` (#153 / #164), each
 // continuation line carrying its block's indent. Examples retain their layout; tables
 // use labeled rows when fixed columns leave insufficient room for the last column.
 // A `width` of 0 disables wrapping. ANSI

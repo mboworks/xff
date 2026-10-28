@@ -463,6 +463,10 @@ test::comparison_help_includes_summary_context() {
     expect_output_contains 'xff --compare=summary left-tree right-tree' "${out}"
     expect_output_contains 'Percentages use all results or all combined' "${out}"
   done
+  out="$("$(_xff_bin)" --help=compare --width=0)"
+  expect_output_contains '--compare-ignore=none|left|right|respective|union' "${out}"
+  out="$("$(_xff_bin)" --help=compare-ignore --width=0)"
+  expect_output_contains 'excludes a relative path from both' "${out}"
 }
 
 test::grammar_selector_help_links_to_regex_topic() {
@@ -505,11 +509,27 @@ test::regex_help_covers_matching_and_controls() {
 
 test::related_help_is_available_across_topics() {
   local topic out
-  for topic in fields printf time size content output compare ignore config safety archive stats \
+  for topic in fields printf time size content diff compare ignore config safety archive stats \
     environment styles extras notice license help list all expressions cookbook; do
     out="$("$(_xff_bin)" "--help=${topic}" --width=0)"
     expect_output_contains 'See also: --help=' "${out}"
   done
+}
+
+test::diff_help_documents_direction_and_repository_migration() {
+  local out
+  out="$("$(_xff_bin)" --help=diff --width=0)"
+  expect_output_contains '-diff (TARGET omitted)' "${out}"
+  expect_output_contains '-rdiff (TARGET omitted)' "${out}"
+  expect_output_contains '--compare=diff LEFT RIGHT' "${out}"
+  expect_output_contains 'Absent (/dev/null)' "${out}"
+  expect_output_contains 'third_party/widget' "${out}"
+  expect_output_contains 'ongoing update' "${out}"
+  expect_output_contains '--diff-left-rewrite' "${out}"
+  expect_output_contains 'either stack excludes it' "${out}"
+  expect_output_contains '-g+' "${out}"
+  expect_output_contains 'See also: --help=compare' "${out}"
+  expect_output_contains 'DIFF AND PATCH OUTPUT' "$("$(_xff_bin)" --help=full --width=0)"
 }
 
 test::focused_help_links_to_topics_and_related_controls() {

@@ -1216,7 +1216,12 @@ Section CompareSection(bool in_full) {
   section.children.push_back(ProseOf(
       "`--compare` requires exactly two roots. xff walks both roots with the same expression and the "
       "same explicitly selected traversal, ignore, archive, hidden-file, and symlink options. Comparison "
-      "does not enable `--gitignore`, `--no-ignore`, `-L`, or any other policy on its own. The matched entries "
+      "does not enable `--gitignore`, `--no-ignore`, `-L`, or any other policy on its own. "
+      "`--compare-ignore` selects how auto-discovered per-directory ignore stacks are applied: `respective` "
+      "keeps each side independent and follows the ordinary `-g` / style setting; `left` or `right` applies that "
+      "side's stack to both; `union` excludes a path from both if either stack excludes it; and `none` disables "
+      "those stacks. `left`, `right`, and `union` enable the Git ignore layer; `--no-ignore` still disables all "
+      "ignore-file sources. The matched entries "
       "are paired by path relative to their respective roots, so the root directory names need not match."));
   section.children.push_back(ProseOf(
       "Regular files are equal when their bytes are equal, for both text and binary data. Unfollowed symlinks "
@@ -1351,6 +1356,7 @@ Section CompareSection(bool in_full) {
   links.items.push_back(ParseInline("`--summary-scope`: combined, per-root, or category statistics."));
   links.items.push_back(ParseInline("`--summary-precision`: decimal places in summary percentages."));
   links.items.push_back(ParseInline("`--format=jsonl`: machine-readable comparison summary rows."));
+  links.items.push_back(ParseInline("`--help=-diff` / `--help=-rdiff`: one-sided patch action details."));
   related.children.push_back(Content{.node = std::move(links)});
   section.children.push_back(Content{.node = std::move(related)});
 
@@ -1369,6 +1375,147 @@ Section CompareSection(bool in_full) {
   examples.children.push_back(ExampleOf("xff -L --compare left-tree right-tree -type f -name '*.dat'", "sh"));
   examples.children.push_back(ProseOf("follow symlinks and compare only matching regular data files"));
   section.children.push_back(Content{.node = std::move(examples)});
+  return section;
+}
+
+// DIFF: patch direction and path mapping are shared by one-sided actions and two-root comparison.
+Section DiffSection(bool in_full) {
+  Section section{.title = "Diff and patch output", .anchor = "topic-diff"};
+  section.children.push_back(ProseOf(
+      "XFF has two patch-producing forms. `-diff [TARGET]` and `-rdiff [TARGET]` are expression actions: they "
+      "visit entries selected below the search roots and compare each found entry with an optional target. "
+      "`--compare=diff LEFT RIGHT` walks two roots, pairs selected entries by root-relative path, and can discover "
+      "files present on only one side. Use the one-sided form when you already know which paths to visit; use "
+      "two-root comparison when additions, removals, or path pairing must be discovered."));
+  Table direction{
+      .header = {"Mode", "Left / old", "Right / new"},
+      .cells =
+          {
+              {"-diff (TARGET omitted)", "Absent (/dev/null)", "Found entry"},
+              {"-diff TARGET", "TARGET", "Found entry"},
+              {"-rdiff (TARGET omitted)", "Found entry", "Absent (/dev/null)"},
+              {"-rdiff TARGET", "Found entry", "TARGET"},
+              {
+                  "--compare=diff LEFT RIGHT",
+                  "Matching entry under LEFT, or absent",
+                  "Matching entry under RIGHT, or absent",
+              },
+          },
+  };
+  section.children.push_back(Content{.node = std::move(direction)});
+  section.children.push_back(ProseOf(
+      "Patch direction is always old/left to new/right. `-diff TARGET` treats TARGET as old and the found entry "
+      "as new; `-rdiff TARGET` treats the found entry as old and TARGET as new. Without TARGET, `-diff` creates "
+      "the found entry from absence and `-rdiff` deletes it. `/dev/null` explicitly selects the absent side. "
+      "An equal pair is true and silent; a difference is false. This is the opposite of `--compare --exit-match`, "
+      "where a difference is a match. Optional TARGETs are field templates evaluated for each found entry; their "
+      "paths are resolved from the process working directory. A missing explicit TARGET does not become a "
+      "creation/deletion patch."));
+
+  Subsection output{.title = "Patch contents and limitations"};
+  output.children.push_back(ProseOf(
+      "Text changes use the selected diff style (`u3` by default; `c`, `n`, `y`, or `none` are also available). "
+      "Absent-side creation/deletion patches use Git format, including empty files, executable bits, symlinks, and "
+      "binary contents. Directories do not produce patches, because directory entries are not represented in Git; "
+      "other special file types are unsupported for absent-side patches. `--compare=diff` emits text hunks for "
+      "regular text files and diagnostics for binary or non-regular differences. An empty file addition or removal "
+      "can have no text hunk, so use the comparison status or summary when you need a record of every changed "
+      "entry."));
+  output.children.push_back(ProseOf(
+      "`-diff` and `-rdiff` see only entries visited below their search roots. In particular, they cannot find "
+      "target-only paths to remove, and a source path whose explicit TARGET does not exist cannot be emitted as "
+      "a new file. `--compare=diff` is the whole-tree operation for discovering additions and removals. Its two "
+      "walks use the same filters and traversal options; comparison does not implicitly enable hidden files, "
+      "ignore rules, archive traversal, or symlink following. See `--help=compare` for pairing, selection, and "
+      "exit-status behavior."));
+  output.children.push_back(ProseOf(
+      "With `-g+` or `--ignore-vcs`, each comparison root uses its own VCS ignore context; rules above a search "
+      "root still apply when it is inside a Git worktree. `--compare-ignore=respective` preserves that "
+      "per-tree behavior. `left` or `right` instead uses the selected side's auto-discovered stack for both "
+      "trees; `union` excludes a relative path from both when either stack excludes it. `none` disables the "
+      "auto-discovered stack, while explicit `--ignore-file`, `--include`, and `--exclude` retain their normal "
+      "scope. `--skip-vcs` remains a separate traversal filter. "
+      "These choices also cover `.ignore` / `.xffignore` when those files are enabled. See `--help=ignore` "
+      "for ignore-source scope and precedence."));
+  section.children.push_back(Content{.node = std::move(output)});
+
+  Subsection paths{.title = "Patch destination paths"};
+  paths.children.push_back(ProseOf(
+      "Patch labels are independent of the paths XFF reads. For every patch, left means old and right means new. "
+      "The shared path pipeline is: logical root-relative path; strip leading components; inject a relative output "
+      "root; apply ordered regex rewrites; validate; prepend a literal side prefix (`a/` or `b/` by default); "
+      "then quote for the patch format. The left and right controls apply to those patch sides, not necessarily "
+      "to the command's first and second root when using `-rdiff`. Rewriting labels never changes traversal, "
+      "comparison pairing, TARGET lookup, or file contents."));
+  paths.children.push_back(ProseOf(
+      "Use `--diff-left-root=DIR` and `--diff-right-root=DIR` to place the same repository under a new directory "
+      "in a destination tree. For a path such as `src/main.cc`, injecting `third_party/widget` on both sides "
+      "produces `a/third_party/widget/src/main.cc` and `b/third_party/widget/src/main.cc`. This is the usual "
+      "mapping when importing a repository as a new root directory. Use side-specific `--diff-*-rewrite=RULES` "
+      "when destination paths need renaming or restructuring. For an ongoing update, make left labels identify "
+      "the current destination paths and right labels identify where updated files should land; use the same "
+      "rewrite on both sides for a stable mapping, or different rewrites for an intentional rename. Rewrites use "
+      "the field substitution grammar, "
+      "for example `s|^lib/|src/|;s|\\.generated\\.cc$|.cc|`, and accumulate in option order. Strip/root/prefix "
+      "settings use their last supplied value."));
+  paths.children.push_back(ProseOf(
+      "Injected roots and final labels must remain safe relative file paths: no absolute paths, empty, `.` or `..` "
+      "components, NUL, or `.git` component. Stripping cannot remove the filename. Prefixes are literal and add "
+      "no separator; an empty prefix removes `a/` or `b/`. `/dev/null` denotes absence and bypasses path "
+      "rewrites. If distinct source entries map to the same destination on one side, XFF reports a collision. "
+      "Patch output streams, so a later error can follow earlier complete patches; check the process exit status "
+      "before applying the output."));
+  section.children.push_back(Content{.node = std::move(paths)});
+
+  Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
+  examples.children.push_back(ExampleOf(
+      "xff -g+ upstream -type f -diff --diff-left-root=third_party/widget \\\n  --diff-right-root=third_party/widget > "
+      "import-widget.patch",
+      "sh"));
+  examples.children.push_back(ProseOf(
+      "create files from an upstream repository under a new directory in the destination repository; apply the "
+      "patch from the destination repository root. `-g+` applies Git ignore rules during traversal; omit it "
+      "when ignored files should be included"));
+  examples.children.push_back(ExampleOf(
+      "xff -g+ --compare=diff upstream/widget destination/third_party/widget \\\n  --diff-left-root=third_party/widget "
+      "--diff-right-root=third_party/widget > update-widget.patch",
+      "sh"));
+  examples.children.push_back(ProseOf(
+      "compare the upstream tree with its existing destination copy, discovering changed, added, and removed "
+      "files while emitting paths rooted at `third_party/widget`"));
+  examples.children.push_back(ExampleOf(
+      "xff -g+ --compare=diff upstream destination --diff-left-rewrite='s|^old-name/|widget/|' \\\n  "
+      "--diff-right-rewrite='s|^new-name/|widget/|'",
+      "sh"));
+  examples.children.push_back(
+      ProseOf("map differently named old and new trees onto the same destination names for an ongoing update"));
+  examples.children.push_back(ExampleOf(
+      "xff -g+ source -type f -diff 'destination/{relpath}' --diff-left-root=vendor/widget \\\n  "
+      "--diff-right-root=vendor/widget",
+      "sh"));
+  examples.children.push_back(ProseOf(
+      "use an explicit per-entry reference for known files; use `--compare=diff` instead when additions and "
+      "removals must be discovered"));
+  section.children.push_back(Content{.node = std::move(examples)});
+
+  if (!in_full) {
+    Subsection flags{.title = "Diff path options"};
+    for (const GlobalFlag& flag : Globals()) {
+      if (flag.name.starts_with("--diff-")) {
+        flags.children.push_back(FlagEntry(flag));
+      }
+    }
+    section.children.push_back(Content{.node = std::move(flags)});
+  }
+
+  Subsection related{.title = "See also"};
+  Bullets links;
+  links.items.push_back(ParseInline("`--help=compare`: two-root comparison, selection, summaries, and patch mode."));
+  links.items.push_back(ParseInline("`-diff` / `-rdiff`: one-sided patch actions."));
+  links.items.push_back(ParseInline("`--help=fields`: field templates accepted by diff targets."));
+  links.items.push_back(ParseInline("`--help=ignore`: VCS ignore rules and explicit ignore files."));
+  related.children.push_back(Content{.node = std::move(links)});
+  section.children.push_back(Content{.node = std::move(related)});
   return section;
 }
 
@@ -2320,6 +2467,8 @@ std::optional<Section> NamedTopicSection(std::string_view name) {
     return RgSection(/*in_full=*/false);
   } else if (name == "content") {
     return ContentSection(/*in_full=*/false);
+  } else if (name == "diff") {
+    return DiffSection(/*in_full=*/false);
   } else if (name == "compare") {
     return CompareSection(/*in_full=*/false);
   } else if (IsIgnoreTopicName(name)) {
@@ -2447,6 +2596,7 @@ Document BuildReference(Audience audience) {
   doc.sections.push_back(RegexSection(/*in_full=*/true));
   doc.sections.push_back(RgSection(/*in_full=*/true));
   doc.sections.push_back(ContentSection(/*in_full=*/true));
+  doc.sections.push_back(DiffSection(/*in_full=*/true));
   doc.sections.push_back(CompareSection(/*in_full=*/true));
   doc.sections.push_back(IgnoreSection(/*in_full=*/true));
   doc.sections.push_back(ArchiveSection(/*in_full=*/true));

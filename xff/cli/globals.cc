@@ -293,6 +293,13 @@ constexpr std::array kCompareValues = std::to_array<ValueDoc>({
     {.value = "status", .meaning = "one tab-separated selected result kind and relative path per record"},
     {.value = "diff", .meaning = "a unified tree diff suitable for saving as a patch"},
 });
+constexpr std::array kCompareIgnoreValues = std::to_array<ValueDoc>({
+    {.value = "none", .meaning = "do not apply auto-discovered per-directory ignore files"},
+    {.value = "left", .meaning = "apply the left tree's auto-discovered ignore stack to both trees"},
+    {.value = "right", .meaning = "apply the right tree's auto-discovered ignore stack to both trees"},
+    {.value = "respective", .meaning = "apply each tree's own ignore stack independently (the default)"},
+    {.value = "union", .meaning = "exclude a path from both trees if either tree's ignore stack excludes it"},
+});
 constexpr std::array kDiffAlgorithmValues = std::to_array<ValueDoc>({
     {.value = "myers", .meaning = "minimal diff, as git computes it (the default)"},
     {.value = "direct", .meaning = "line-by-line, no alignment search"},
@@ -1450,6 +1457,27 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "unchanged file has no patch representation.",
         .affects = "--compare",
         .topic = "compare",
+    },
+    {
+        .name = "--compare-ignore",
+        .display = "--compare-ignore=none|left|right|respective|union",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "select which per-directory ignore policy applies during a two-root comparison",
+        .details =
+            "Requires `--compare`. `respective` is the default and applies each tree's own auto-discovered ignore "
+            "stack. `left` or `right` applies that tree's stack to matching relative paths on both sides. `union` "
+            "excludes a relative path from both sides when either stack excludes it. `none` disables auto-discovered "
+            "per-directory ignore files for the comparison. `left`, `right`, and `union` enable the Git ignore "
+            "layer; `--no-ignore` still disables every ignore-file source. `respective` follows the ordinary "
+            "`-g` / `--gitignore` and program-style settings. The selected stack includes `.gitignore` when the Git "
+            "layer is on, and `.ignore` / `.xffignore` when enabled by `--ignore-files` or the selected style. "
+            "Explicit `--ignore-file`, `--include`, and `--exclude` retain their normal scope. `--skip-vcs` remains "
+            "a separate traversal filter.",
+        .values = kCompareIgnoreValues,
+        .affects = "--compare",
+        .topic = "compare",
+        .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
         .name = "--diff-algorithm",
