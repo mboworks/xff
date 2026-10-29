@@ -8,8 +8,8 @@
       verify both aliases, both argument orders, CLI pattern independence, and comparison patches.
 - [ ] Decide hard errors versus intentional absence for missing/unreadable explicit `-diff` / `-rdiff`
       TARGETs; keep `/dev/null` as the explicit absence sentinel.
-- [ ] Diagnose normalization controls accepted without effect in tree comparison, or design support
-      while preserving exact comparison defaults.
+- [x] Reject nonempty explicit CLI normalization without a file-diff consumer before actions;
+      retain exact comparison, dormant config defaults, empty resets, and advisory explain output.
 - [ ] Replace full-tree comparison inventories with bounded directory-by-directory comparison;
       preserve deterministic ordering, summaries, ignore scopes, and parallel comparison semantics.
 
