@@ -2369,6 +2369,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "9f14a44ac69469d2ffa3ef833d422b9855590f4ed02d00ceb1fba2ed172b6945"
+        },
+        {
+          "commit": "3292b6f308ab92f61d8575c95ee2cef2c41e4205",
+          "date": "2026-10-29T05:34:26Z",
+          "measured": "2026-10-29T05:34:30Z",
+          "report": "runs/40824179969/1/linux/report.json",
+          "report_identity": "c15980f2b15cc8a89faf1c6ebf286e16e52e3627d300f47a2d23954dad0af109",
+          "batch": null,
+          "batch_identity": null,
+          "method": "9f14a44ac69469d2ffa3ef833d422b9855590f4ed02d00ceb1fba2ed172b6945"
         }
       ]
     },
@@ -4965,6 +4975,46 @@
             "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
             "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
           }
+        },
+        "4482443fcf3998370088287995f910c319611c446ae16a511801f4efc942ef0b": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.6.2-arm64-arm-64bit-Mach-O",
+              "sha256": "9cd3b4bbb80ac290fd188172e5fcbc48a6fe10ff3374313e4f01efea0101be1b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.5 (Homebrew)",
+              "sha256": "ffe65ac524ca5b26e281e8a95b50b49e411002ce016c1e054d5f88529eba2c0c"
+            }
+          },
+          "build": "4c68e12bb8d40a870719fd897556958033f9fd7d111453f7354bfd44b6c6e19c",
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": 3,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "parent": "/Users/runner/work/_temp",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          },
+          "resource_accounting": {
+            "sha256": "594076022928f5ffd0f5d2f5eebdc332aecc36ba7c2f8d4e3e719a78278dda76",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+          }
         }
       },
       "observations": [
@@ -5727,6 +5777,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "aeab4a8937f54272688c1781007ed97c7455605d2c88dd08bd7d39a2c3142c6d"
+        },
+        {
+          "commit": "3292b6f308ab92f61d8575c95ee2cef2c41e4205",
+          "date": "2026-10-29T05:34:26Z",
+          "measured": "2026-10-29T05:34:30Z",
+          "report": "runs/40824179969/1/macos/report.json",
+          "report_identity": "e3e879acce41461234515c99e1971a50dbdc936b756e9df8a327c6e0062f5ba1",
+          "batch": null,
+          "batch_identity": null,
+          "method": "4482443fcf3998370088287995f910c319611c446ae16a511801f4efc942ef0b"
         }
       ]
     },
