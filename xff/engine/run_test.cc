@@ -944,9 +944,15 @@ TEST_F(RunTest, CompareIgnoreRelativeFilePathsUseWorkingDirectoryForEveryScope) 
   ASSERT_THAT(fs::exists(left / relative), IsFalse());
   ASSERT_THAT(fs::exists(right / relative), IsFalse());
   const auto compare = [&](std::string_view flag) {
-    const auto records = RunArgvRecords(
-        {"--compare", "--compare-select=all", absl::StrCat(flag, "=", relative.string()), left.string(), right.string(),
-         "-type", "f"});
+    const auto records = RunArgvRecords({
+        "--compare",
+        "--compare-select=all",
+        absl::StrCat(flag, "=", relative.string()),
+        left.string(),
+        right.string(),
+        "-type",
+        "f",
+    });
     EXPECT_THAT(last_errors_, Eq(0));
     return records;
   };
