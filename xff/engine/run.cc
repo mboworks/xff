@@ -4213,6 +4213,40 @@ absl::StatusOr<patch::Names> TreePatchNames(
   return names;
 }
 
+bool HasTreePatchContent(mbo::types::OptionalRef<const TreeCompareEntry> entry) {
+  return entry && entry->metadata.type != vfs::FileType::kDirectory;
+}
+
+absl::StatusOr<std::string> ReadTreePatchContent(const TreeCompareEntry& entry) {
+  if (entry.metadata.type == vfs::FileType::kSymlink) {
+    return entry.fs->ReadLink(entry.path);
+  }
+  if (entry.metadata.type == vfs::FileType::kRegular) {
+    return entry.fs->ReadContent(entry.path);
+  }
+  return absl::UnimplementedError("Git patches require regular files, symlinks, or directories");
+}
+
+std::string_view TreePatchMode(const TreeCompareEntry& entry) {
+  if (entry.metadata.type == vfs::FileType::kSymlink) {
+    return "120000";
+  }
+  return (entry.metadata.mode & 0111U) != 0 ? std::string_view("100755") : std::string_view("100644");
+}
+
+absl::StatusOr<ComparisonBytes> ReadTreePatchBytes(
+    mbo::types::OptionalRef<const TreeCompareEntry> left,
+    mbo::types::OptionalRef<const TreeCompareEntry> right) {
+  ComparisonBytes bytes;
+  if (HasTreePatchContent(left)) {
+    MBO_ASSIGN_OR_RETURN(bytes.left, ReadTreePatchContent(*left));
+  }
+  if (HasTreePatchContent(right)) {
+    MBO_ASSIGN_OR_RETURN(bytes.right, ReadTreePatchContent(*right));
+  }
+  return bytes;
+}
+
 absl::StatusOr<std::string> TreeEntryPatch(
     mbo::types::OptionalRef<const TreeCompareEntry> left,
     mbo::types::OptionalRef<const TreeCompareEntry> right,
@@ -4221,46 +4255,25 @@ absl::StatusOr<std::string> TreeEntryPatch(
     const patch::Paths& paths,
     patch::Destinations& destinations,
     mbo::types::OptionalRef<const ComparisonBytes> prepared) {
-  const auto is_directory = [](mbo::types::OptionalRef<const TreeCompareEntry> entry) {
-    return entry && entry->metadata.type == vfs::FileType::kDirectory;
-  };
-  if ((!left || is_directory(left)) && (!right || is_directory(right))) {
+  if (!HasTreePatchContent(left) && !HasTreePatchContent(right)) {
     return std::string();  // Git does not represent directory entries.
   }
   MBO_ASSIGN_OR_RETURN(const auto names, TreePatchNames(left, right, relative_path, paths));
   MBO_RETURN_IF_ERROR(destinations.Claim(names, left ? left->path : "", right ? right->path : ""));
-  const auto read = [](const TreeCompareEntry& entry) -> absl::StatusOr<std::string> {
-    if (entry.metadata.type == vfs::FileType::kSymlink) {
-      return entry.fs->ReadLink(entry.path);
-    }
-    if (entry.metadata.type == vfs::FileType::kRegular) {
-      return entry.fs->ReadContent(entry.path);
-    }
-    return absl::UnimplementedError("Git patches require regular files, symlinks, or directories");
-  };
-  const auto mode = [](const TreeCompareEntry& entry) -> std::string_view {
-    return entry.metadata.type == vfs::FileType::kSymlink ? "120000"
-           : (entry.metadata.mode & 0111U) != 0           ? "100755"
-                                                          : "100644";
-  };
   ComparisonBytes read_bytes;
   if (!prepared) {
-    if (left && !is_directory(left)) {
-      MBO_ASSIGN_OR_RETURN(read_bytes.left, read(*left));
-    }
-    if (right && !is_directory(right)) {
-      MBO_ASSIGN_OR_RETURN(read_bytes.right, read(*right));
-    }
+    MBO_ASSIGN_OR_RETURN(read_bytes, ReadTreePatchBytes(left, right));
   }
   const ComparisonBytes& bytes = prepared ? *prepared : read_bytes;
-  if (!left || is_directory(left)) {
-    return patch::AbsentSide(names, bytes.right, mode(*right), false);
+  if (!HasTreePatchContent(left)) {
+    return patch::AbsentSide(names, bytes.right, TreePatchMode(*right), false);
   }
-  if (!right || is_directory(right)) {
-    return patch::AbsentSide(names, bytes.left, mode(*left), true);
+  if (!HasTreePatchContent(right)) {
+    return patch::AbsentSide(names, bytes.left, TreePatchMode(*left), true);
   }
   return patch::Update(
-      names, {.content = bytes.left, .mode = mode(*left)}, {.content = bytes.right, .mode = mode(*right)}, options);
+      names, {.content = bytes.left, .mode = TreePatchMode(*left)},
+      {.content = bytes.right, .mode = TreePatchMode(*right)}, options);
 }
 
 using MatchedEntryFn = absl::FunctionRef<void(const Visit&)>;

@@ -123,6 +123,13 @@ absl::Status ValidateMode(std::string_view mode) {
   return absl::OkStatus();
 }
 
+absl::Status ValidateUpdate(const Names& names, File left, File right) {
+  MBO_RETURN_IF_ERROR(ValidatePath(names.left));
+  MBO_RETURN_IF_ERROR(ValidatePath(names.right));
+  MBO_RETURN_IF_ERROR(ValidateMode(left.mode));
+  return ValidateMode(right.mode);
+}
+
 // RFC 1950/1951 stored blocks: a valid zlib stream without a compression dependency.
 // Git's literal patch accepts stored blocks; output size trades compression for a lean core.
 std::string StoredZlib(std::string_view content) {
@@ -285,10 +292,7 @@ absl::StatusOr<std::string> AbsentSide(
 }
 
 absl::StatusOr<std::string> Update(const Names& names, File left, File right, const mbo::diff::DiffOptions& options) {
-  MBO_RETURN_IF_ERROR(ValidatePath(names.left));
-  MBO_RETURN_IF_ERROR(ValidatePath(names.right));
-  MBO_RETURN_IF_ERROR(ValidateMode(left.mode));
-  MBO_RETURN_IF_ERROR(ValidateMode(right.mode));
+  MBO_RETURN_IF_ERROR(ValidateUpdate(names, left, right));
   if ((left.mode == "120000") != (right.mode == "120000")) {
     MBO_ASSIGN_OR_RETURN(auto removed, AbsentSide(names, left.content, left.mode, true));
     MBO_ASSIGN_OR_RETURN(const auto created, AbsentSide(names, right.content, right.mode, false));
