@@ -1,0 +1,343 @@
+<!doctype html><html lang="en">
+<!-- mboworks favicons -->
+<link rel="icon" href="../../../../favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../../favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../../../apple-touch-icon.png">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/benchmark-backfill.md - xff v0.10.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.10.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.10.0">Release &amp; downloads</a><a href="/xff/releases/0.10.0/">CLI reference</a><a href="/xff/coverage/tag/0.10.0/">Coverage</a><a href="/xff/benchmarks/tag/0.10.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/3292b6f308ab92f61d8575c95ee2cef2c41e4205">Source</a><a href="/xff/site/tag/v0.10.0/documents.html">Documentation</a></nav><p>xff v0.10.0</p><main><h1 dir="auto" id="historical-benchmark-backfill">Historical benchmark backfill</h1>
+<p dir="auto">The CI workflow collects replacements for historical CI measurements. The standalone tool also supports additional<br>
+local machine histories. These are distinct purposes, recorded explicitly in each batch and report:</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Collection</th>
+<th>Grid</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>macOS CI</td>
+<td>1 and 3 workers</td>
+<td>Replace macOS CI history for the measured commits</td>
+</tr>
+<tr>
+<td>Linux CI</td>
+<td>1 and 3 pinned logical CPUs</td>
+<td>Replace Linux CI history for the measured commits</td>
+</tr>
+<tr>
+<td>Local Mac, M5 Pro</td>
+<td>1, 3 and 10 workers (host maximum 18)</td>
+<td>Add a separate M5 Pro history</td>
+</tr>
+<tr>
+<td>Local Mac, M2 Ultra</td>
+<td>1, 3 and 10 workers (host maximum 24)</td>
+<td>Add a separate M2 Ultra history</td>
+</tr>
+<tr>
+<td>Local Linux, Zen 5</td>
+<td>1, 3 and 10 physical cores</td>
+<td>Add a separate Zen 5 history</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Keep every measurement of one replayed revision on one host, with a common benchmark driver,<br>
+reference tools and fixtures. Different historical revisions may use different machines. The CI<br>
+workflow schedules those revisions concurrently; a standalone local batch can keep its complete<br>
+revision list on one host. Record each host and reference-tool identity: raw elapsed times from<br>
+different hosts are not a paired comparison, and same-run XFF/reference ratios do not remove<br>
+every hardware or storage difference.<br>
+The local grid must be selected explicitly. The recommended 1, 3, 10 grid shares the<br>
+three-worker comparison with CI and adds a larger scaling measurement; it can extend to 30<br>
+on a suitable future host. This approximately logarithmic progression does not make timings<br>
+from different hosts interchangeable. The two Mac models<br>
+remain separate histories. macOS allocations are worker requests because the driver cannot pin<br>
+Mac CPUs. Apple's <code class="notranslate">container --cpus=N</code> caps a Linux VM, so it would measure Linux ARM64,<br>
+not macOS. A macOS VM can cap guest vCPUs but would be a separate series and does not<br>
+select physical host cores. Local Linux uses one hardware thread per physical core and enforces affinity.</p>
+<p dir="auto">Replacement means selecting the backfilled CI data as the active history for the corresponding<br>
+platform and commit. Superseded raw observations remain available for provenance. A local series<br>
+must never replace a CI series, and different CPU allocations must not be pooled or normalized<br>
+into equivalence. The collection command records this intent. After a complete successful CI<br>
+campaign, the trusted publisher validates and imports the whole campaign before selecting any replacements.</p>
+<h2 dir="auto" id="automatic-local-backfill">Automatic local backfill</h2>
+<p dir="auto">Use the local benchmark command to discover this machine's existing measurements and fill gaps:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">bazel run //tools:benchmark -- <span class="pl-c1">help</span>
+bazel run //tools:benchmark -- list
+bazel run //tools:benchmark -- backfill</pre></div>
+<p dir="auto">Bazel supplies the pinned Python runtime and declared dependencies. Direct execution with<br>
+<code class="notranslate">./tools/benchmark.py COMMAND</code> or <code class="notranslate">python3 tools/benchmark.py COMMAND</code> is also supported<br>
+with Python 3.13+ installed. Use one invocation form consistently within a resumable batch,<br>
+since the Python runtime is part of its frozen environment.<br>
+<code class="notranslate">bazel run</code> forwards standard input, so interactive dataset selection and confirmation work normally.<br>
+<code class="notranslate">help backfill</code> and <code class="notranslate">backfill --help</code> explain the options. This maintenance tool uses subcommands;<br>
+the XFF search executable continues to use flags.</p>
+<p dir="auto"><code class="notranslate">list</code> refreshes <code class="notranslate">origin/main</code> and downloads the site's small <code class="notranslate">datasets.json</code> catalog. It shows<br>
+the published series, workload grids, sampling settings and compatibility with this machine.<br>
+It prefers an unambiguous compatible dataset belonging to this machine. For a selected dataset,<br>
+it shows each main revision since comparison benchmarks were introduced: its date, SHA, PR/subject,<br>
+and whether this machine's requested measurements exist. It checks saved batches under<br>
+<code class="notranslate">~/xff-benchmarks</code> and downloads only the selected machine dataset's published observations,<br>
+including packed reports. Downloads must match the metadata's canonical JSON identities before<br>
+their observations are reused. It does not build, measure, or change saved results.</p>
+<p dir="auto"><code class="notranslate">backfill</code> offers a numbered selection when several datasets are compatible. An existing machine<br>
+continues its series; a new machine can reuse a compatible published workload as a new independent<br>
+series. File counts, CPU allocations, depth and sampling are taken from the selected recipe, so<br>
+the user does not need to reconstruct its flags. <code class="notranslate">--dataset=ID</code> accepts a unique ID prefix for<br>
+scripts; <code class="notranslate">--yes</code> requires that selection when more than one dataset fits. Explicit grid/sampling<br>
+flags override recipe defaults and will produce a distinct workload description on publication.</p>
+<p dir="auto"><code class="notranslate">--no-fetch</code> uses existing local Git refs and metadata, which can be stale.<br>
+<code class="notranslate">--history-root=PATH/benchmarks</code> reads a Pages checkout, and <code class="notranslate">--catalog-url=HTTPS_URL</code> selects another<br>
+published catalog. Before a site publishes dataset metadata, a 404 falls back to the batch discovery<br>
+in <code class="notranslate">origin/coverage-pages</code>. Other network errors fail rather than treating existing data as absent.<br>
+Only local-observation JSON is extracted in that fallback; rendered site pages are not checked out.</p>
+<p dir="auto">After dataset selection, <code class="notranslate">backfill</code> shows the revision inventory and its proposed batches, then asks<br>
+<code class="notranslate">Build and measure the missing revisions? [y/N]</code>. Only <code class="notranslate">y</code> or <code class="notranslate">yes</code> proceeds; empty input or EOF<br>
+cancels. <code class="notranslate">-Y</code> / <code class="notranslate">--yes</code> supplies that confirmation for unattended runs. Discovery can refresh Git<br>
+refs before confirmation; building, measuring and saving new batches happen only after confirmation.<br>
+Nothing uploads automatically. See <a href="#publishing-completed-local-observations">Publishing completed local observations</a>.</p>
+<p dir="auto">To keep long histories readable, <code class="notranslate">list</code> and <code class="notranslate">backfill</code> show the newest ten revisions individually and group<br>
+older revisions into adaptive day, ISO-week, month, or year ranges. A range never crosses a status or<br>
+diagnostic-detail transition. Each aggregate reports its date span, commit count, PR range, and counts by<br>
+status and diagnostic detail. Pass <code class="notranslate">--full</code> to show every revision.</p>
+<p dir="auto">Machine identification hashes the macOS platform UUID or Linux installation machine ID; raw IDs<br>
+are never stored. New machines receive distinct series names automatically. Existing batches<br>
+with the stable ID remain recognizable after a hostname change. For older batches, a matching<br>
+hostname hash, architecture and CPU count identifies the existing series; its historical batches<br>
+then remain available even if older records have a different hostname. This legacy identification<br>
+cannot distinguish machines cloned with the same hostname and hardware configuration. It does not<br>
+guess a match from the processor model alone. If multiple series match, select one with <code class="notranslate">--series</code>.<br>
+A series carrying another stable machine ID cannot be adopted. Cloned OS machine IDs likewise<br>
+must be made unique before collecting separate machine histories.</p>
+<p dir="auto">Without a published recipe, a recognized local series supplies its latest saved settings. For a new<br>
+series without a recipe, the default workload is 1/3/10 workers or cores, file counts 10 through<br>
+100,000, the prepared <code class="notranslate">broad/v2</code> and <code class="notranslate">deep/v2</code> layouts, and the fastest seven of nine measurements.<br>
+Override it with repeated <code class="notranslate">--cpus</code> / <code class="notranslate">--files</code> and <code class="notranslate">--depth</code>, <code class="notranslate">--repetitions</code>, or <code class="notranslate">--keep</code>.<br>
+<code class="notranslate">--layout-revision=legacy</code> explicitly selects the old independently generated fixtures; selecting a<br>
+published legacy dataset does the same automatically. A small host must select an allocation it can support;<br>
+the tool never silently reduces the requested grid. On Linux, fixtures default to <code class="notranslate">/dev/shm</code> and<br>
+must be memory-backed; one logical CPU per physical core is pinned. macOS requests workers.</p>
+<p dir="auto">A saved observation counts only after validation of its complete task/participant/sample matrix,<br>
+revision, batch and binary identity. Its file/CPU grid must cover the requested grid, and its depth<br>
+and sampling settings must match. CI measurements and other machines never satisfy local coverage.<br>
+Missing files, incomplete samples, failed runs and incompatible settings remain missing, with the<br>
+reason shown per revision. Driver or reference-tool updates do not erase valid historical<br>
+observations; their recorded identities remain available for comparison eligibility and normalization.</p>
+<p dir="auto">Every main revision is considered, including older gaps rather than only commits after the newest<br>
+measurement. Existing batches remain immutable. An interrupted batch with the exact current<br>
+environment and driver resumes; otherwise a new batch contains only still-missing revisions.<br>
+Completed reports from any batch are reused without rerunning them. New batches live under<br>
+<code class="notranslate">~/xff-benchmarks/batches/IDENTITY/</code>; use <code class="notranslate">--root</code> to change local storage. Two invocations of this<br>
+command cannot collect simultaneously for the same machine and storage root. An older manual<br>
+collector does not use this lock; finish it before starting automatic collection.</p>
+<h2 dir="auto" id="published-dataset-metadata">Published dataset metadata</h2>
+<p dir="auto">The benchmark page's <strong>Measurement datasets and methods</strong> section explains the available series<br>
+and links to <code class="notranslate">datasets.json</code>. The publisher derives this catalog from retained raw observations,<br>
+including packed history; it does not invent missing provenance or modify measurements. PR preview<br>
+reports are excluded from the backfill catalog. Publishing a new measurement refreshes the metadata.</p>
+<p dir="auto">Schema version 1 separates:</p>
+<ul dir="auto">
+<li><strong>Dataset identity:</strong> local or CI origin, named series, OS, architecture and a workload recipe.<br>
+The recipe records file counts, CPU counts and allocation policy, tree shapes/depth, fixture<br>
+version/source, complete ordered layout definitions and anchor hashes, tasks and reference participants,<br>
+warm-up/order, estimator and sampling, and storage.<br>
+Changing the recipe creates another dataset ID within the series.</li>
+<li><strong>Machine identity:</strong> stable hashed IDs where available, plus explicitly recorded legacy host<br>
+fingerprints. Reusing another host's recipe never adopts that host's observation history.</li>
+<li><strong>Observation provenance:</strong> measured and revision dates, commit, raw report and batch links with<br>
+canonical JSON identities, and a method reference. Methods retain driver hashes, reference-tool<br>
+identities, build details, actual platform/CPU count, affinity, storage and shard sampling.</li>
+</ul>
+<p dir="auto">The client interprets only the known recipe fields. It never executes downloaded commands.<br>
+Compatibility means that the current driver can collect the workload on this OS/architecture with<br>
+sufficient capacity. Unsupported custom fixtures, unknown fixture versions, changed task sets and<br>
+allocation/storage policies are listed with reasons instead of being guessed. In particular,<br>
+Linux CI's logical-CPU allocation is not interchangeable with local physical-core allocation.</p>
+<p dir="auto">A runnable recipe is not a claim of identical performance conditions. New runs use the installed<br>
+reference tools and current measurement driver, and build each XFF revision with that revision's<br>
+release configuration. The original and new identities remain attached to their observations;<br>
+comparison and reference-window normalization still enforce their own compatibility rules.</p>
+<h2 dir="auto" id="explicit-local-batch">Explicit local batch</h2>
+<p dir="auto">Install Bazel, Python 3.13+, ripgrep and fzf. <code class="notranslate">find</code> must also be on PATH. Use a checkout containing<br>
+all selected commits; the driver never changes that checkout or includes its uncommitted edits.<br>
+Place the desired Git references in a whitespace-separated file, or repeat <code class="notranslate">--revision=REF</code>.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">python3 tools/benchmark_backfill.py \
+  --repo=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$PWD</span><span class="pl-pds">"</span></span> --output=/tmp/xff-backfill-macos --series=macos-m5-pro \
+  --revisions-file=/tmp/xff-backfill-revisions.txt \
+  --purpose=local-addition --cpus=1 --cpus=3 --cpus=10 --disk-cache=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$HOME</span>/.cache/bazel-disk<span class="pl-pds">"</span></span></pre></div>
+<p dir="auto">Without <code class="notranslate">--run</code>, this resolves references to full commit IDs, sorts them by commit date, validates<br>
+capacity and tools, and writes <code class="notranslate">batch.json</code>. Inspect it, then repeat the command with <code class="notranslate">--run</code>.<br>
+The same driver is available as <code class="notranslate">bazel run //tools:benchmark_backfill -- ...</code>.<br>
+Use <code class="notranslate">--history-root=PATH/benchmarks</code> instead of a revision list to select retained comparison commits<br>
+from a coverage-pages checkout. Selection defaults to the local OS; <code class="notranslate">--history-platform=macos|linux</code><br>
+chooses another historical platform's commit list. The selection is deduplicated. This only chooses<br>
+revisions to build; it does not relabel where the new measurements run.</p>
+<p dir="auto">For a local Linux run, select <code class="notranslate">--series=linux-zen5</code>, an explicit grid such as <code class="notranslate">--cpus=1 --cpus=3 --cpus=10</code>,<br>
+and <code class="notranslate">--fixture-parent=/dev/shm --require-memory</code>. Pinning is mandatory for local Linux even without<br>
+<code class="notranslate">--require-cpu-affinity</code>: the driver reads package/core IDs from sysfs, selects one allowed logical<br>
+CPU per physical core, and rejects requests exceeding the available physical-core count. Missing<br>
+or unknown topology is an error, not permission to count SMT siblings as separate cores.</p>
+<p dir="auto">The measurement worker and all tool processes inherit the selected mask. Each allocation uses<br>
+its requested subset of that pool. The driver restores its original mask after measurement, also<br>
+on failure; builds run with the original allowance. The frozen contract records the selected pool<br>
+and each result records the actual per-allocation CPU IDs. Respect an externally restricted mask;<br>
+the driver never expands it. Core pinning does not reserve those cores against unrelated processes.</p>
+<p dir="auto">The standard grid includes the 1-2-5 file-count progression from 10 through 100,000, both tree<br>
+shapes and all current comparison tasks, retaining the fastest seven of nine samples. Repeated<br>
+<code class="notranslate">--files</code> and <code class="notranslate">--cpus</code> flags select a smaller pilot or another allocation. <code class="notranslate">--repetitions</code> and<br>
+<code class="notranslate">--keep</code> control sampling. Workload changes create a different batch contract.</p>
+<h2 dir="auto" id="execution-failures-and-resuming">Execution, failures and resuming</h2>
+<p dir="auto">Progress lines begin with the local time and the revision's one-based position in the batch:</p>
+<pre lang="text" class="notranslate"><code class="notranslate">20261004 130136 5/9 Workers: 1 Files: 100,000 Run: 5/10; broad/fuzzy-list-hdn; fzf; sample: 4/9
+</code></pre>
+<p dir="auto">The timestamp uses <code class="notranslate">YYYYMMDD HHMMSS</code>; <code class="notranslate">10/17</code> means the tenth of seventeen selected revisions.<br>
+The initial batch summary uses <code class="notranslate">0/17</code> before any revision starts. Build, measurement, nested<br>
+fixture/sample progress, failures, reused reports and completion messages carry this prefix.<br>
+Nested progress retains its five-second throttle, with scale boundaries always shown.<br>
+Native Bazel build output is shown as it arrives and retained in each revision's <code class="notranslate">build.log</code>.<br>
+The revision progress lines distinguish a new build from reuse and show the log path, saved<br>
+executable path and SHA-256. The measurement announcement repeats that executable identity.</p>
+<p dir="auto">All selected binaries are built before measurement begins. An isolated shared Git clone under the<br>
+output directory checks out each exact revision and uses its own <code class="notranslate">clang_release</code> configuration,<br>
+Bazel version and dependency pins. Binaries and build logs are retained outside the checkout.<br>
+Compilation does not overlap measurements. Historical build changes remain visible in each<br>
+record; they are not silently replaced with today's compiler configuration.</p>
+<p dir="auto">New build contracts disable the system and home Bazel RC files; the checked-out workspace RC<br>
+still supplies its historical configuration. The driver verifies the checkout's HEAD, tree and<br>
+clean source state before and after building, and rejects a workspace <code class="notranslate">.bazelrc.user</code>. It asks<br>
+Bazel for the executable under the same release configuration, copies that artifact into the<br>
+revision directory, and checks the copy's hash. Build records retain the source tree and artifact<br>
+path. Generated, ignored files such as <code class="notranslate">MODULE.bazel.lock</code> remain separate from the Git source<br>
+tree; their hashes are retained in the build configuration.</p>
+<p dir="auto">Before measurement or report reuse, the executable must match its build identity. Newly collected<br>
+reports must name that same executable hash, and the saved file is checked again after collection.<br>
+A file changed between the compilation and measurement phases stops the batch. Older saved build<br>
+records retain their original evidence: a matching binary hash alone cannot independently prove<br>
+which source was compiled. See the <a href="benchmark-correctness-audit.html">correctness audit and native investigation</a>.</p>
+<p dir="auto">Measurements then run sequentially, with the existing discarded warm-up and interleaved reference<br>
+tool samples. Reference executable hashes, versions, driver hashes, Python, OS, architecture,<br>
+host identity, available CPUs and storage settings are frozen. Host identity uses a hash of the<br>
+hostname rather than publishing the hostname. Same-host collection reduces variation; it does<br>
+not eliminate thermal drift or unrelated background activity.</p>
+<p dir="auto">Repeat the same command to resume. A changed host, driver, tool or invocation contract is rejected;<br>
+use another output directory for a new series. Moving Git references that resolve to new commits<br>
+also fail the frozen-contract check. Use the recorded full SHAs when resuming after a branch advances.<br>
+Saved binaries are verified by hash, and completed reports are validated and reused. An interrupted<br>
+revision restarts from the beginning; partial samples are never pooled with a later invocation. Failed<br>
+builds and measurements are retried by the identical command, while completed observations are reused.<br>
+If a historical build tool needs a compatibility runtime absent from the host, pass its library directory<br>
+with <code class="notranslate">--build-library-path=PATH</code>. The path is frozen in the batch contract and reaches build actions through<br>
+Bazel's <code class="notranslate">LD_LIBRARY_PATH</code> action environment; it does not affect benchmark execution. Later collections for<br>
+the same local series automatically reuse its newest recorded non-empty build-library path and reject it<br>
+before building if the directory is no longer available. An explicit flag overrides the inherited path.</p>
+<p dir="auto">A historical build failure or unsupported CLI workload is recorded with its actionable diagnostic and<br>
+build-log link and does not prevent later<br>
+revisions from running. Any missing revision makes the batch exit nonzero. Environment drift<br>
+stops the entire batch. Do not change historical commands just to obtain a passing comparison:<br>
+that would change the task being measured.</p>
+<p dir="auto">The output contains:</p>
+<ul dir="auto">
+<li><code class="notranslate">batch.json</code>: immutable selection and measurement contract.</li>
+<li><code class="notranslate">status.json</code> and <code class="notranslate">index.html</code>: completion state, report links and failure diagnostics.</li>
+<li><code class="notranslate">reports/COMMIT/benchmark-report-OS-ARCH.json</code> and <code class="notranslate">.html</code>: raw measurements and rendered tables.</li>
+<li><code class="notranslate">binaries/COMMIT/</code>: saved executable, build identity and build log.</li>
+<li><code class="notranslate">checkout/</code>: disposable build checkout; keep it and the source repository available while resuming.</li>
+</ul>
+<p dir="auto">The shared clone borrows source Git objects. Do not prune those objects during the campaign.<br>
+Completed result JSON and HTML are independent of the source checkout. Keep them even when<br>
+another series becomes the preferred presentation. Publication into the shared benchmark history<br>
+is separate from measurement and does not invent paired results for historical commits.</p>
+<h2 dir="auto" id="manual-github-workflow">Manual GitHub workflow</h2>
+<p dir="auto"><strong>Benchmark backfill</strong> is a manually dispatched CI-only workflow. Its planning job freezes every<br>
+retained comparison commit for each platform, the source and history commits, driver hashes,<br>
+task/participant set and full sampling grid in <code class="notranslate">campaign.json</code>. It creates one job per platform<br>
+and historical revision, with at most eight jobs running concurrently. A revision is never split<br>
+across hosts. This avoids putting the entire history into a single six-hour hosted job.</p>
+<p dir="auto">Each job installs reference tools once, builds its revision with that revision's release settings,<br>
+then measures the complete matrix on the same machine: one/three workers on macOS, one/three pinned logical CPUs<br>
+on Linux. Linux fixtures use verified tmpfs, matching the ordinary hosted measurement policy. Using three<br>
+of a four-vCPU Linux runner's CPUs leaves one outside the tools' affinity mask for background<br>
+work. This provides headroom without reserving CPUs or preventing background work on the<br>
+measured CPUs; reduced contention is expected, not guaranteed.</p>
+<p dir="auto">The tool's <code class="notranslate">--purpose=ci-replacement</code> requires a GitHub-hosted environment and the exact platform<br>
+grid. Its <code class="notranslate">replacement_target</code> is <code class="notranslate">github-ci-macos</code> or <code class="notranslate">github-ci-linux</code>. Local runs default to<br>
+<code class="notranslate">--purpose=local-addition</code>, have no replacement target, and require an explicit grid. The workflow<br>
+has no dispatch inputs; arbitrary local host labels or allocations cannot change its CI targets.</p>
+<p dir="auto">Artifacts contain the campaign plan plus each revision's host manifest, status, reports and build<br>
+logs. The build/measurement step has a 165-minute ceiling within a 180-minute job, leaving time to<br>
+upload completed results after failure or timeout. Failed jobs do not cancel the other revisions.<br>
+Retrying a failed job replaces that revision's artifact with a complete new measurement; it never<br>
+pools partial observations across hosts. Successful jobs from an earlier attempt remain usable<br>
+when they belong to the same frozen campaign, source commit and workflow run. Each batch records<br>
+its actual collection attempt separately from the successful campaign attempt.</p>
+<h2 dir="auto" id="publication">Publication</h2>
+<p dir="auto"><strong>Publish benchmarks</strong> imports a successful main-branch <strong>Benchmark backfill</strong> dispatch. Publisher<br>
+code comes from trusted main; artifacts are read as data. It verifies source workflow identity,<br>
+the complete frozen job set, report and binary identities, driver hashes, host/tool consistency,<br>
+the full files/CPUs/tree/task/participant matrix, every repetition, and Linux affinity/tmpfs.<br>
+Missing, duplicate, failed or incompatible data rejects the campaign before the site changes.<br>
+Local additions cannot enter this replacement path.</p>
+<p dir="auto">The complete campaign is retained atomically under <code class="notranslate">backfills/RUN/ATTEMPT/</code>, with the plan and<br>
+per-platform/commit raw reports, batch contracts and completion states. Re-importing identical<br>
+data is harmless; changing a retained campaign is an error. The index, version slider, and exact<br>
+PR/release references prefer a validated CI backfill for its measured platform and commit. They<br>
+use the historical commit/merge time, not the replay date or the publisher's source commit.</p>
+<p dir="auto">Each replacement links its original measurements, including the paired base/head results that<br>
+the backfill does not reproduce. These original reports are protected from ordinary retention;<br>
+backfill records are also kept outside that bounded run cache. New commits remain independent<br>
+entries. Host and reference-tool differences between revisions remain visible in the raw contracts;<br>
+publication does not normalize, pool or relabel their observations.</p>
+<h2 dir="auto" id="publishing-completed-local-observations">Publishing completed local observations</h2>
+<p dir="auto">Local collection writes reports on the measurement machine. Upload its completed observations; the<br>
+benchmark publisher then includes it in the main page's platform/version selector and report table.<br>
+Local series have their own names and never replace the CI series. The landscape's Workers selector<br>
+chooses any measured pair (for a 1/3/10 grid: 1/3, 1/10 or 3/10); detailed tables retain all allocations.</p>
+<p dir="auto">Use the automatic uploader from a current source checkout:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">bazel run //tools:benchmark -- upload</pre></div>
+<p dir="auto">The command fetches <code class="notranslate">origin/coverage-pages</code>, creates a temporary detached worktree, and lists every<br>
+local batch with completed observations. Each row shows whether its raw observations are ready or<br>
+already uploaded and how many revisions completed. Pick one numbered batch, choose <code class="notranslate">a</code> to upload every<br>
+listed ready batch, or cancel. The all-ready choice excludes batches already present in the Pages<br>
+checkout; a numbered already-uploaded selection still dispatches publication, so retrying after an<br>
+authentication or dispatch failure repairs the missing step. The selection authorizes validation,<br>
+import, commit, push, and publication for all selected batches as one operation.</p>
+<p dir="auto">For unattended operation, select batches explicitly by directory, batch JSON path, or unique identity<br>
+prefix; repeat <code class="notranslate">--batch</code> to publish several batches together and pass <code class="notranslate">-Y</code> to confirm the push:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">bazel run //tools:benchmark -- upload --batch=0957eb2cce8f -Y</pre></div>
+<p dir="auto">After the push, the command dispatches <code class="notranslate">benchmark_pages.yml</code> from trusted <code class="notranslate">main</code>. Use <code class="notranslate">--no-publish</code><br>
+to push the raw observations without dispatching the site publication workflow.</p>
+<p dir="auto">The equivalent manual procedure uses a separate checkout of the <code class="notranslate">coverage-pages</code> branch:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">python3 tools/benchmark_local.py --batch=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$HOME</span>/xff-benchmarks/macos-m5-pro<span class="pl-pds">"</span></span> \
+  --root=/path/to/pages-checkout/benchmarks
+git -C /path/to/pages-checkout add benchmarks/local
+git -C /path/to/pages-checkout commit -m <span class="pl-s"><span class="pl-pds">"</span>benchmarks: retain completed local series<span class="pl-pds">"</span></span>
+git -C /path/to/pages-checkout push origin HEAD:coverage-pages
+gh workflow run benchmark_pages.yml --repo mboworks/xff --ref main</pre></div>
+<p dir="auto">The importer validates every completed revision, allocation, task, participant and sample before retaining<br>
+anything. Failed or pending revisions do not prevent completed observations from being retained. It preserves<br>
+raw reports and the frozen host/build contract under<br>
+<code class="notranslate">local/SERIES/BATCH_ID/</code>. Re-importing identical observations is harmless; changing an existing<br>
+batch fails. Binaries, source checkouts and build logs are not uploaded. There is no automatic<br>
+upload from the measurement machine.</p>
+<p dir="auto">Publication is restricted to <code class="notranslate">main</code> by the Pages environment and uses trusted main code.<br>
+Every deployment fetches the public benchmark index and checks its digest, so a successful<br>
+Pages response alone cannot mark stale content as successfully published.</p>
+<h2 dir="auto" id="presentation-normalization">Presentation normalization</h2>
+<p dir="auto">Raw results remain unchanged. Publication calculates reference-window corrections for the<br>
+presentation layer, separately from collection. Worker allocations and machine series remain<br>
+separate. The first five measurements share their five-reference mean; subsequent measurements<br>
+use the current reference plus four prior ones. Scale each individual XFF time by that window<br>
+mean divided by its own reference time. XFF results are not averaged across versions.<br>
+The <strong>Timings</strong> selector exposes this information in hover cards; raw reports and ratios remain<br>
+unchanged. See <a href="benchmark-comparisons.html#reference-window-timing-normalization">Reference-window timing normalization</a>.</p></main><footer>Release snapshot &middot; 3292b6f308ab92f61d8575c95ee2cef2c41e4205</footer></body></html>

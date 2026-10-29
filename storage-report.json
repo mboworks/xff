@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "total_bytes": 464435656,
+  "total_bytes": 467081453,
   "sections": {
     "root": {
       "files": 34,
-      "bytes": 543463
+      "bytes": 543465
     },
     "coverage": {
       "files": 7659,
@@ -51,8 +51,8 @@
       "bytes": 6223402
     },
     "site": {
-      "files": 320,
-      "bytes": 11628511
+      "files": 381,
+      "bytes": 14274306
     }
   },
   "coverage_detail_days": 7,

@@ -1,0 +1,71 @@
+<!doctype html><html lang="en">
+<!-- mboworks favicons -->
+<link rel="icon" href="../../../../favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../../favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../../../apple-touch-icon.png">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/site-storage.md - xff v0.10.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.10.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.10.0">Release &amp; downloads</a><a href="/xff/releases/0.10.0/">CLI reference</a><a href="/xff/coverage/tag/0.10.0/">Coverage</a><a href="/xff/benchmarks/tag/0.10.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/3292b6f308ab92f61d8575c95ee2cef2c41e4205">Source</a><a href="/xff/site/tag/v0.10.0/documents.html">Documentation</a></nav><p>xff v0.10.0</p><main><h1 dir="auto" id="published-site-storage">Published site storage</h1>
+<p dir="auto">The complete Pages deployment shares one storage budget across coverage, benchmarks, release<br>
+sites, and assets. <code class="notranslate">storage-report.json</code> reports each section's file count and byte total.<br>
+Publication emits a warning at <strong>200 MB</strong>, so we can review growth before it disrupts deployment.<br>
+The final packaging guard remains 9 GB. Git history is not part of the deployed site; publishers<br>
+restore the site with a shallow checkout and do not rewrite old publication commits. Source<br>
+checkouts that need complete commit history use <code class="notranslate">blob:none</code> filtering to avoid fetching historical<br>
+report contents.</p>
+<h2 dir="auto" id="retention">Retention</h2>
+<ul dir="auto">
+<li>Coverage history, category totals, patch results, policy thresholds, and original run metadata<br>
+are retained indefinitely. The overview still prefers post-merge results when available and<br>
+retains the separate pre/post-merge history.</li>
+<li>Detailed coverage source, function, and branch pages are retained for <strong>seven days</strong>, based on<br>
+the original report completion time. Republishing does not restart that clock. Older reports<br>
+explicitly explain that details expired and still link their aggregate summary.</li>
+<li>Benchmark observations for releases and merges to main are retained indefinitely, including<br>
+original measurements superseded by backfills. There is no report-count eviction. Local data,<br>
+provenance, invocation contracts, and normalization inputs are preserved as well.</li>
+</ul>
+<h2 dir="auto" id="representation">Representation</h2>
+<p dir="auto">Coverage details use compressed report manifests and shared source-page bases. Each changed page<br>
+stores edits against one base; there are no chains through earlier versions. Numbered source-line<br>
+labels are generated in the viewer so inserting a source line does not duplicate the remaining<br>
+HTML. Garbage collection removes only detail archives and bases no longer referenced by a retained<br>
+seven-day report. The shared viewer loads the selected report and source page on demand.<br>
+Historical detail URLs route through this viewer; expired details show an explanation.</p>
+<p dir="auto">Raw benchmark reports and coverage summaries are available as <code class="notranslate">.json.gz</code> downloads. Gzip preserves<br>
+the original observation bytes. Chart data interns repeated JSON values before compression; the<br>
+browser reconstructs the same values without rounding, resampling, or changing normalization.<br>
+Standalone reports share their chart payload with the history explorer. Large report tables are<br>
+packed HTML loaded at their original URL, preserving navigation and relative assets.</p>
+<p dir="auto">The browser uses its built-in <code class="notranslate">DecompressionStream</code> support; no archive library, remote renderer,<br>
+or server-side execution is required. Packed report viewing requires JavaScript. Raw compressed<br>
+JSON remains downloadable without it. Loading a historical report performs a small decompression<br>
+step instead of transferring repeated generated markup.</p>
+<p dir="auto">All publishers compact the retained <code class="notranslate">coverage-pages</code> branch <strong>before committing</strong>, then inspect<br>
+and deploy the complete site. Benchmark publication expands its stored inputs in the disposable<br>
+checkout before regenerating views. CI baseline selection and backfill revision discovery read<br>
+both expanded and compressed observations. This keeps storage changes independent of coverage<br>
+policy and benchmark compatibility decisions.</p>
+<h2 dir="auto" id="next-review-at-200-mb">Next review at 200 MB</h2>
+<ul dir="auto">
+<li>Replace packed generated summary/table HTML with one shared renderer driven by compact records.</li>
+<li>Generate chart order, scale, and CPU-pair views from one numeric matrix in the browser instead<br>
+of storing precomputed views, even though repeated values are currently interned.</li>
+<li>Evaluate column-oriented benchmark observations and shared invocation/tool dictionaries. Keep<br>
+original observations and provenance recoverable; never evict release or merged-PR data to<br>
+meet a size target.</li>
+<li>Measure whether coverage file data can replace remaining presentation markup in detail deltas.</li>
+<li>Consolidate duplicate historical release documentation and old renderer assets only after<br>
+checking all retained links.</li>
+<li>Report deployment bytes separately from the Git object database and Actions artifact/cache<br>
+usage. A smaller current tree does not erase historical Git objects; any history rewrite needs<br>
+a separate, explicit decision.</li>
+</ul></main><footer>Release snapshot &middot; 3292b6f308ab92f61d8575c95ee2cef2c41e4205</footer></body></html>

@@ -1,0 +1,317 @@
+<!doctype html><html lang="en">
+<!-- mboworks favicons -->
+<link rel="icon" href="../../../../favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../../favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../../../apple-touch-icon.png">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design-diff-paths.md - xff v0.10.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.10.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.10.0">Release &amp; downloads</a><a href="/xff/releases/0.10.0/">CLI reference</a><a href="/xff/coverage/tag/0.10.0/">Coverage</a><a href="/xff/benchmarks/tag/0.10.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/3292b6f308ab92f61d8575c95ee2cef2c41e4205">Source</a><a href="/xff/site/tag/v0.10.0/documents.html">Documentation</a></nav><p>xff v0.10.0</p><main><h1 dir="auto" id="diff-direction-and-output-paths">Diff direction and output paths</h1>
+<h2 dir="auto" id="purpose">Purpose</h2>
+<p dir="auto">Produce patches whose direction and destination paths are explicit and consistent across<br>
+one-sided expression actions and two-root comparison. A traversal selects physical entries;<br>
+patch paths describe where the resulting change belongs. Rewriting a patch path never changes<br>
+the selected files, their contents, traversal, expression fields, or comparison pairing.</p>
+<h2 dir="auto" id="direction">Direction</h2>
+<p dir="auto">Left means old content; right means new content.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Invocation</th>
+<th>Left / old</th>
+<th>Right / new</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">-diff</code></td>
+<td>Absent</td>
+<td>Found entry</td>
+</tr>
+<tr>
+<td><code class="notranslate">-rdiff</code></td>
+<td>Found entry</td>
+<td>Absent</td>
+</tr>
+<tr>
+<td><code class="notranslate">-diff TARGET</code></td>
+<td>TARGET</td>
+<td>Found entry</td>
+</tr>
+<tr>
+<td><code class="notranslate">-rdiff TARGET</code></td>
+<td>Found entry</td>
+<td>TARGET</td>
+</tr>
+<tr>
+<td><code class="notranslate">--compare=diff LEFT RIGHT</code></td>
+<td>LEFT</td>
+<td>RIGHT</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Both primaries accept the same optional TARGET, field templates, and <code class="notranslate">:STYLE</code> suffix.<br>
+Omitted TARGET and a TARGET that renders to <code class="notranslate">/dev/null</code> select the absent side. Optional<br>
+arguments never consume an operator or global flag. A dash-leading filename needs <code class="notranslate">./</code>.<br>
+Reversal exchanges content, labels, modes, hashes, and binary forward/reverse payloads;<br>
+it is not a textual substitution of <code class="notranslate">+</code> and <code class="notranslate">-</code> characters.</p>
+<p dir="auto">Equality remains true and silent; a difference remains false. Empty-file creation and<br>
+deletion are differences. Directory entries emit nothing for absent-side patches. Other<br>
+special file types are unsupported there. Regular files, executable files, and symlinks<br>
+have Git creation/deletion representations, including empty files and binary literals.<br>
+Absent-side patches use Git format regardless of STYLE, except <code class="notranslate">none</code>, which stays silent.<br>
+Explicit file-to-file actions retain their existing output styles, normalization options,<br>
+and binary diagnostics. An unreadable explicit TARGET retains the existing false/different result without synthesizing<br>
+a creation or deletion patch.</p>
+<p dir="auto">This intentionally reverses the previous explicit <code class="notranslate">-diff TARGET</code> direction. Users needing<br>
+that direction use <code class="notranslate">-rdiff TARGET</code>. Bare <code class="notranslate">-diff</code> continues to create files.</p>
+<p dir="auto">Comparison pairs regular files by bytes and executable capability (any execute bit set); all status,<br>
+summary, and patch selections use this equality. Other permission bits, ownership and timestamps are<br>
+not compared. Symlinks compare their targets without following them unless traversal requests it.</p>
+<p dir="auto">Comparison patch output uses Git headers for additions, removals, text/binary changes, executable-mode<br>
+changes and file/symlink replacements. Empty files use metadata-only creation/deletion headers.<br>
+Binary changes carry forward and reverse literals with complete blob IDs. A directory-to-file or<br>
+file-to-directory replacement combines the directory's child removals/additions with the file patch.<br>
+Git cannot represent empty directories; those remain visible in statuses and summaries. Other special<br>
+entry types report errors when selected for patch output. One-sided explicit TARGET actions retain<br>
+their text formats and binary diagnostic behavior.</p>
+<p dir="auto">Exactly two roots are required. Two file roots pair directly even when their basenames differ;<br>
+their displayed paths use their respective basenames instead of <code class="notranslate">.</code>. Directory roots pair by<br>
+their unmodified root-relative keys. Reverse a comparison by exchanging its root operands.</p>
+<h2 dir="auto" id="logical-paths">Logical paths</h2>
+<p dir="auto">Keep three concepts separate:</p>
+<ol dir="auto">
+<li>Physical paths are used exclusively for VFS reads and metadata.</li>
+<li>Logical paths identify files in the patch before user transformations.</li>
+<li>Output labels are transformed logical paths with literal side prefixes.</li>
+</ol>
+<p dir="auto">For expression actions, the logical path is the found entry relative to its search root;<br>
+a file root uses its basename. Both sides of an explicit TARGET comparison use this logical<br>
+path by default: TARGET selects comparison bytes, rather than an unrelated patch destination.<br>
+This makes <code class="notranslate">-diff '../old/{relpath}'</code> produce a patch for the found tree's relative names.<br>
+Independent side transformations can express intentionally different old and new names.<br>
+For directory comparison, the logical path is the existing pairing key. File-root comparison<br>
+uses each file's basename for output while retaining the shared internal pairing key.</p>
+<h2 dir="auto" id="options">Options</h2>
+<p dir="auto">All eight settings are whole-run globals and apply to <code class="notranslate">-diff</code>, <code class="notranslate">-rdiff</code>, and comparison<br>
+patch output. Left and right always refer to the emitted old and new sides, including<br>
+reversed actions. The defaults produce <code class="notranslate">a/</code> and <code class="notranslate">b/</code> labels.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">--diff-left-strip=N</code></td>
+<td><code class="notranslate">0</code></td>
+<td>Remove N leading old-side logical path components</td>
+</tr>
+<tr>
+<td><code class="notranslate">--diff-right-strip=N</code></td>
+<td><code class="notranslate">0</code></td>
+<td>Remove N leading new-side logical path components</td>
+</tr>
+<tr>
+<td><code class="notranslate">--diff-left-root=PATH</code></td>
+<td>Empty</td>
+<td>Inject an old-side output directory</td>
+</tr>
+<tr>
+<td><code class="notranslate">--diff-right-root=PATH</code></td>
+<td>Empty</td>
+<td>Inject a new-side output directory</td>
+</tr>
+<tr>
+<td><code class="notranslate">--diff-left-rewrite=RULES</code></td>
+<td>No rules</td>
+<td>Rewrite the rebased old-side logical path</td>
+</tr>
+<tr>
+<td><code class="notranslate">--diff-right-rewrite=RULES</code></td>
+<td>No rules</td>
+<td>Rewrite the rebased new-side logical path</td>
+</tr>
+<tr>
+<td><code class="notranslate">--diff-left-prefix=TEXT</code></td>
+<td><code class="notranslate">a/</code></td>
+<td>Prepend a literal old-side label prefix</td>
+</tr>
+<tr>
+<td><code class="notranslate">--diff-right-prefix=TEXT</code></td>
+<td><code class="notranslate">b/</code></td>
+<td>Prepend a literal new-side label prefix</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Strip, root, and prefix settings use their last supplied value. Rewrite settings accumulate<br>
+in command-line order independently for each side. Position among other option kinds never<br>
+changes the pipeline order. Empty root/prefix values are meaningful; an empty rewrite is an<br>
+invalid rule. Strip counts are nonnegative decimal integers with overflow rejected.</p>
+<p dir="auto">The pipeline is fixed:</p>
+<pre lang="text" class="notranslate"><code class="notranslate">logical path
+  -&gt; strip N leading components
+  -&gt; join injected root and remaining path
+  -&gt; apply ordered regex rewrite chains
+  -&gt; validate destination path
+  -&gt; prepend literal prefix
+  -&gt; quote for the selected output format
+</code></pre>
+<p dir="auto">Joining inserts a separator as needed; an injected root may have a trailing slash. It is a<br>
+relative directory path. Prefixes are literal: no separator is inserted and no path resolution<br>
+is performed. Empty prefixes remove <code class="notranslate">a/</code> and <code class="notranslate">b/</code>. Their spelling is preserved, but a prefix<br>
+must not make the complete output label an absolute or traversing path. <code class="notranslate">/dev/null</code> is an<br>
+absence sentinel and bypasses all transformations; a present file cannot map to that sentinel.<br>
+No stage follows symlinks, reads the host filesystem, or uses <code class="notranslate">..</code> to cancel earlier components.</p>
+<p dir="auto">Validate roots and prefixes statically where possible and transformed paths at rendering time.<br>
+Destination paths must be nonempty relative file paths without NULs, empty components, <code class="notranslate">.</code>,<br>
+<code class="notranslate">..</code>, or <code class="notranslate">.git</code> components. Stripping may not consume the entire logical path. Rewrites may<br>
+repair intermediate names, but the stripped path and injected root must independently have<br>
+valid structure. Logical <code class="notranslate">.git</code> names may be rewritten to ordinary destinations; the restriction<br>
+applies to emitted paths and injected roots. Quoting preserves whitespace, control bytes, backslashes, and non-ASCII bytes<br>
+in patch headers without changing the underlying filename.</p>
+<h2 dir="auto" id="regex-syntax">Regex syntax</h2>
+<p dir="auto">Use the existing field substitution grammar and RE2 validation, shared with field templates:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">--diff-left-rewrite=<span class="pl-s"><span class="pl-pds">'</span>s|^legacy/|src/|<span class="pl-pds">'</span></span>
+--diff-right-rewrite=<span class="pl-s"><span class="pl-pds">'</span>s|\.generated\.cc$|.cc|;s|^include/|public/|<span class="pl-pds">'</span></span></pre></div>
+<p dir="auto">Each command is <code class="notranslate">s/PATTERN/REPLACEMENT/FLAGS</code>. Any punctuation delimiter supported by field<br>
+rewrites is accepted; choose a delimiter absent from the pattern and replacement rather than<br>
+introducing a separate escaping convention. Chains are separated by semicolons outside the<br>
+delimited arguments. Subsequent commands may omit <code class="notranslate">s</code>, following the field grammar. Only<br>
+substitution commands are accepted; field extraction/reducer syntax is not a path rewrite.<br>
+Replacement capture references use <code class="notranslate">\0</code> through <code class="notranslate">\9</code>, with the same validation as field<br>
+rewrites. Default replacement changes the first match, <code class="notranslate">g</code> changes every match, and <code class="notranslate">i</code> enables<br>
+case-insensitive matching. Nonmatches leave the path unchanged.</p>
+<p dir="auto">Patterns, replacement references, command structure, and flags are validated and compiled<br>
+before traversal, even when no entries match. Compiled programs own their source arguments<br>
+and can be reused without parsing per file. Path rewrites use RE2 consistently, independently<br>
+of optional filename matching engines. Rewrites run after root injection and before prefixes,<br>
+so they can modify injected roots without accidentally matching the synthetic <code class="notranslate">a/</code> or <code class="notranslate">b/</code>.</p>
+<h2 dir="auto" id="consistent-labels-and-collisions">Consistent labels and collisions</h2>
+<p dir="auto">Apply one resolved mapping to every corresponding filename: <code class="notranslate">diff --git</code>, <code class="notranslate">---</code> / <code class="notranslate">+++</code>,<br>
+context headers, Git binary headers, one-sided binary diagnostics, and other path-bearing metadata.<br>
+Git creation/deletion headers retain both mapped names in <code class="notranslate">diff --git</code>, and use <code class="notranslate">/dev/null</code><br>
+only for the missing side of content headers. Preserve mode and blob identity information.</p>
+<p dir="auto">Track output destinations separately for old and new sides within each patch-producing<br>
+operation. Distinct physical entries mapping to the same destination on the same side are an<br>
+error. Old and new sides may share a destination; that is the normal update case. Repeated<br>
+evaluation of the same physical pair is allowed, and separate expression actions have separate<br>
+collision domains. Comparison checks only paths selected for patch output. A collision or<br>
+runtime invalid path terminates that operation with a diagnostic and nonzero run status.<br>
+Patch output is streaming: earlier complete patches may already have been written when a later<br>
+entry fails, so callers must check the command's exit status before applying its output.</p>
+<h2 dir="auto" id="examples">Examples</h2>
+<p dir="auto">Create and remove a selected tree:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff src -type f -diff <span class="pl-k">&gt;</span> additions.patch
+xff src -type f -rdiff <span class="pl-k">&gt;</span> removals.patch</pre></div>
+<p dir="auto">Compare a mirror with the found contents as the new side:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff new-tree -type f -diff <span class="pl-s"><span class="pl-pds">'</span>../old-tree/{relpath}<span class="pl-pds">'</span></span> <span class="pl-k">&gt;</span> changes.patch</pre></div>
+<p dir="auto">The relative TARGET above is evaluated relative to the process working directory, just as<br>
+other TARGET templates are; use a path appropriate to that directory or an absolute template.<br>
+Expression actions visit only their search roots. They cannot discover TARGET-only paths;<br>
+use comparison when both trees must be walked.</p>
+<p dir="auto">Strip <code class="notranslate">vendor/</code> and inject independent output directories:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff --compare=diff old-tree new-tree \
+  --diff-left-strip=1 --diff-right-strip=1 \
+  --diff-left-root=injected-left --diff-right-root=injected-right</pre></div>
+<p dir="auto">For logical <code class="notranslate">vendor/src/file.cc</code>, headers become <code class="notranslate">a/injected-left/src/file.cc</code> and<br>
+<code class="notranslate">b/injected-right/src/file.cc</code>. Different injected roots intentionally describe different<br>
+old/new labels. Use the same injected root for ordinary updates at the same destination.</p>
+<p dir="auto">Produce labels without the conventional prefixes:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff --compare=diff old-tree new-tree --diff-left-prefix= --diff-right-prefix=</pre></div>
+<h2 dir="auto" id="implementation-and-verification">Implementation and verification</h2>
+<p dir="auto">The presentation patch package owns compiled side transformations, validation, output quoting,<br>
+and collision tracking. The field package exposes its compiled substitution program so both<br>
+clients share the grammar and validation. The engine resolves one configuration before each<br>
+walk, borrows it into evaluation contexts, and keeps collision state in the coordinator.<br>
+Collision tracking retains output and source names in memory proportional to the number of<br>
+unique emitted paths per operation. Comparison already retains its matched inventories.<br>
+Comparison keeps physical pairing keys and worker input unchanged; only rendering consumes<br>
+the transformations. Registry/global descriptors carry the complete user-facing help.</p>
+<p dir="auto">Verification covers direction and boolean behavior; both optional argument spellings and<br>
+styles; field TARGETs; file and directory roots; each stage and its fixed ordering; repeated<br>
+rewrites, captures, flags, and malformed input before an empty walk; both sides and empty<br>
+prefixes; every header/diagnostic representation; invalid paths and collisions; and actual<br>
+Git application of creation/deletion patches containing text, empty files, binary data,<br>
+executable files, symlinks, unusual names, and missing final newlines. Existing comparison,<br>
+parser, expression executor, help, and conformance suites must continue to pass with direction<br>
+goldens updated intentionally. Run repository formatting/policy checks and the full Bazel suite.</p>
+<h2 dir="auto" id="explicit-comparison-ignore-files">Explicit comparison ignore files</h2>
+<p dir="auto"><code class="notranslate">--compare-ignore-file=PATH</code> reads an explicit gitignore-format file for a two-root comparison.<br>
+Absolute paths are accepted; relative file paths resolve from the working directory. Patterns<br>
+are anchored at each comparison root, not the rules file's directory. For example:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff -g+ --compare=diff old-tree new-tree --compare-ignore-file=/path/to/shared.ignore</pre></div>
+<p dir="auto">A <code class="notranslate">/build/</code> rule prunes the top-level <code class="notranslate">build</code> directory in both trees. Unanchored patterns match<br>
+at any depth. Negations follow ordinary gitignore behavior: excluded directories are pruned,<br>
+so including a child requires keeping its parents traversable.</p>
+<p dir="auto">Choose which roots receive each file's rules:</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Flag</th>
+<th>Apply patterns relative to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">--compare-ignore-file=PATH</code></td>
+<td>Both roots</td>
+</tr>
+<tr>
+<td><code class="notranslate">--compare-left-ignore-file=PATH</code></td>
+<td>Left root only</td>
+</tr>
+<tr>
+<td><code class="notranslate">--compare-right-ignore-file=PATH</code></td>
+<td>Right root only</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">For all three flags, distinguish the rule file's location from the patterns' scope:</p>
+<ul dir="auto">
+<li><strong>File location:</strong> absolute, or relative to the process working directory. Comparison roots and<br>
+the INI file containing the option do not change that base.</li>
+<li><strong>Pattern scope:</strong> relative to both comparison roots, the left root, or the right root.</li>
+</ul>
+<p dir="auto">For example, when run from a directory containing <code class="notranslate">old</code> and <code class="notranslate">new</code>:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff --compare old new --compare-left-ignore-file=old/.gitignore</pre></div>
+<p dir="auto">This reads <code class="notranslate">old/.gitignore</code> from the working directory. A <code class="notranslate">/build/</code> rule inside it excludes<br>
+<code class="notranslate">old/build/</code>. A bare <code class="notranslate">.gitignore</code> file argument would instead read the working directory's<br>
+<code class="notranslate">.gitignore</code>, regardless of which side receives its patterns.</p>
+<p dir="auto">Shared and side-specific files accumulate in argument order. On each side, the last matching applicable rule wins; a<br>
+side-specific file has no implicit priority over a shared file. For example:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff --compare LEFT RIGHT --compare-ignore-file=/rules/common.ignore \
+  --compare-left-ignore-file=/rules/left.ignore --compare-right-ignore-file=/rules/right.ignore</pre></div>
+<p dir="auto">Shared files are the recommended default. Asymmetric exclusions can make an existing file appear<br>
+left-only or right-only. These explicit scopes are independent of <code class="notranslate">--compare-ignore</code>: selecting<br>
+<code class="notranslate">left</code>, <code class="notranslate">right</code>, or <code class="notranslate">union</code> for auto-discovered rules does not change an explicit file's chosen side.<br>
+Precedence is:</p>
+<ol dir="auto">
+<li>CLI <code class="notranslate">--include</code> / <code class="notranslate">--exclude</code> patterns.</li>
+<li>Applicable shared and side-specific comparison ignore files, in argument order.</li>
+<li>Ordinary <code class="notranslate">--ignore-file</code> sources, still anchored at their own directory.</li>
+<li>Automatically discovered rules chosen by <code class="notranslate">--compare-ignore</code>.</li>
+</ol>
+<p dir="auto">These flags supplement every <code class="notranslate">--compare-ignore</code> policy, including <code class="notranslate">none</code>, and do not enable<br>
+Git ignore discovery by themselves. <code class="notranslate">--no-ignore</code> disables application of comparison ignore files.<br>
+Explicit file requests are still validated: empty paths and missing or unreadable files are hard<br>
+errors before traversal, including when <code class="notranslate">--no-ignore</code> is set. Each option requires <code class="notranslate">--compare</code> and<br>
+works with status, summary, and patch output. It changes selection, not patch destination paths.</p>
+<h2 dir="auto" id="complete-comparison-patch-verification">Complete comparison patch verification</h2>
+<p dir="auto">A Git-application round trip compares file bytes, symlink targets and executable capability after<br>
+forward and reverse application. The matrix includes empty and nonempty additions/removals,<br>
+large multi-block binary literals, text/binary transitions, text without a final newline, unusual<br>
+ASCII names, symlink updates, regular/symlink replacements, directory/file replacements, and mode-only<br>
+or combined mode/content updates. It runs with one and four comparison workers, and also generates<br>
+the inverse comparison by exchanging roots. Pure renderer tests validate paths, modes and unchanged<br>
+inputs; worker tests distinguish executable capability from other permission bits.</p></main><footer>Release snapshot &middot; 3292b6f308ab92f61d8575c95ee2cef2c41e4205</footer></body></html>
