@@ -3,14 +3,14 @@
 
 # 0.10.0
 
-# 0.9.1
-
 - Emit Git-applicable comparison patches for empty files, binary updates, symlinks, executable-mode
   changes, and type replacements. Include executable capability in comparison equality.
 
 - Add repeatable `--compare-ignore-file=PATH`, `--compare-left-ignore-file=PATH`, and
   `--compare-right-ignore-file=PATH` to apply explicit gitignore-format rules relative to both
   comparison roots or one side, independently of the rules file's location.
+
+# 0.9.1
 
 - Make `-diff TARGET` emit TARGET-to-found changes and add `-rdiff [TARGET]` for the reverse.
   Omitted TARGET creates or deletes files respectively, including binary files, empty files,
