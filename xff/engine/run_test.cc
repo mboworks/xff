@@ -2185,6 +2185,51 @@ TEST_F(RunTest, IgnoreFileExcludesMatchingEntriesRootedAtItsOwnDir) {
   EXPECT_THAT(out, AllOf(Contains(Path("a.txt")), Not(Contains(Path("keep.log")))));
 }
 
+TEST_F(RunTest, NoIgnoreDisablesExplicitRuleFilesInEitherArgumentOrderWithoutDisablingCliPatterns) {
+  { std::ofstream(root_ / "keep.log") << "keep"; }
+  { std::ofstream(root_ / "drop.log") << "drop"; }
+  { std::ofstream(root_ / "rules.ignore") << "*.log\n"; }
+  const std::string rules = "--ignore-file=" + Path("rules.ignore");
+  EXPECT_THAT(RunArgvRecords({rules, root_.string(), "-name", "*.log"}), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+  constexpr auto disable_flags = std::to_array<std::string_view>({"--no-ignore", "-u"});
+  for (const std::string_view disable : disable_flags) {
+    EXPECT_THAT(
+        RunArgvRecords({std::string(disable), rules, root_.string(), "-name", "*.log"}),
+        UnorderedElementsAre(Path("keep.log"), Path("drop.log")));
+    EXPECT_THAT(last_errors_, Eq(0));
+    EXPECT_THAT(
+        RunArgvRecords({rules, std::string(disable), root_.string(), "-name", "*.log"}),
+        UnorderedElementsAre(Path("keep.log"), Path("drop.log")));
+    EXPECT_THAT(last_errors_, Eq(0));
+    EXPECT_THAT(
+        RunArgvRecords({rules, std::string(disable), "--exclude=drop.log", root_.string(), "-name", "*.log"}),
+        ElementsAre(Path("keep.log")));
+    EXPECT_THAT(last_errors_, Eq(0));
+  }
+}
+
+TEST_F(RunTest, NoIgnoreDisablesOrdinaryExplicitRulesDuringComparison) {
+  const fs::path left = root_ / "disable-left";
+  const fs::path right = root_ / "disable-right";
+  ASSERT_THAT(fs::create_directories(left), IsTrue());
+  ASSERT_THAT(fs::create_directories(right), IsTrue());
+  { std::ofstream(left / "value.dat") << "left\n"; }
+  { std::ofstream(right / "value.dat") << "right\n"; }
+  { std::ofstream(root_ / "comparison.ignore") << "*.dat\n"; }
+  const std::string rules = "--ignore-file=" + Path("comparison.ignore");
+  EXPECT_THAT(RunArgvRecords({"--compare", rules, left.string(), right.string(), "-type", "f"}), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(
+      RunArgvRecords({"--compare", rules, "--no-ignore", left.string(), right.string(), "-type", "f"}),
+      ElementsAre("different\tvalue.dat"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(
+      RunArgvRecords({"--compare=diff", "--no-ignore", rules, left.string(), right.string(), "-type", "f"}),
+      Contains(HasSubstr("-left\n+right")));
+  EXPECT_THAT(last_errors_, Eq(0));
+}
+
 TEST_F(RunTest, IgnoreFileRootsAtItsOwnDirectoryNotTheSearchRoot) {
   { std::ofstream(root_ / "top.log") << "x"; }           // under root_, NOT under sub/
   { std::ofstream(root_ / "sub" / "deep.log") << "y"; }  // under sub/

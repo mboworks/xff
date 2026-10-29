@@ -1391,7 +1391,12 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--no-ignore, -u",
         .group = "filter",
         .header = "Filter & Ignore",
-        .summary = "disable all ignore-file processing (.gitignore/.ignore/.xffignore)",
+        .summary = "disable all ignore-file processing, including explicit rule files",
+        .details = "Disables automatically discovered ignore files and explicit `--ignore-file`, "
+                   "`--compare-ignore-file`, `--compare-left-ignore-file`, and `--compare-right-ignore-file` rules, "
+                   "regardless of argument order. Comparison ignore-file requests still validate their paths and "
+                   "readability. Command-line `--include` / `--exclude`, hidden-path controls, and `--skip-vcs` "
+                   "remain independent.",
         .topic = "ignore",
         .alias_modes = registry::Modes::kNative,
         .rg =

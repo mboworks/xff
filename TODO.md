@@ -4,7 +4,8 @@
 
 - [x] Produce Git-applicable comparison patches for empty files, binary updates, symlinks, executable
       capability changes, and file/directory/type replacements; verify forward/reverse Git application.
-- [ ] Make `--no-ignore` disable ordinary explicit `--ignore-file` sources consistently with help.
+- [x] Make `--no-ignore` disable ordinary explicit `--ignore-file` sources consistently with help;
+      verify both aliases, both argument orders, CLI pattern independence, and comparison patches.
 - [ ] Decide hard errors versus intentional absence for missing/unreadable explicit `-diff` / `-rdiff`
       TARGETs; keep `/dev/null` as the explicit absence sentinel.
 - [ ] Diagnose normalization controls accepted without effect in tree comparison, or design support
