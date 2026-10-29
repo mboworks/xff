@@ -54,6 +54,7 @@ struct FileDiffModifierTest : ModifierDiagnosticsTest {
   static absl::Status Validate(const std::vector<std::string>& args) {
     MBO_ASSIGN_OR_RETURN(const auto command, parser::Parse(args));
     std::vector<config::ResolvedFlag> application;
+    application.reserve(command.globals.size());
     for (const std::string& global : command.globals) {
       application.push_back({.flag = global, .source = config::Source::kCli});
     }
