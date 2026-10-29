@@ -1,58 +1,58 @@
 {
   "schema": 1,
-  "total_bytes": 445023054,
+  "total_bytes": 445949937,
   "sections": {
     "root": {
       "files": 34,
       "bytes": 543463
     },
     "coverage": {
-      "files": 7484,
-      "bytes": 22543370
-    },
-    "benchmarks": {
-      "files": 3827,
-      "bytes": 401672954
-    },
-    "xff_extras_api": {
-      "files": 21,
-      "bytes": 126921
+      "files": 7498,
+      "bytes": 23470253
     },
     "bazelmod": {
       "files": 4,
       "bytes": 9173
     },
+    "benchmarks": {
+      "files": 3827,
+      "bytes": 401672954
+    },
     ".trunk": {
       "files": 4,
       "bytes": 3761
-    },
-    "xff": {
-      "files": 248,
-      "bytes": 2147842
     },
     "docs": {
       "files": 7,
       "bytes": 79309
     },
+    "xff_extras_api": {
+      "files": 21,
+      "bytes": 126921
+    },
     "tools": {
       "files": 40,
       "bytes": 200238
     },
-    ".github": {
-      "files": 2,
-      "bytes": 32056
-    },
-    "extra_modules": {
-      "files": 84,
-      "bytes": 519549
+    "xff": {
+      "files": 248,
+      "bytes": 2147842
     },
     "releases": {
       "files": 25,
       "bytes": 5515907
     },
+    "extra_modules": {
+      "files": 84,
+      "bytes": 519549
+    },
     "site": {
       "files": 320,
       "bytes": 11628511
+    },
+    ".github": {
+      "files": 2,
+      "bytes": 32056
     }
   },
   "coverage_detail_days": 7,
