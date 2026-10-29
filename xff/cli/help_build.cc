@@ -664,12 +664,13 @@ Section IgnoreSection(bool in_full) {
       "trees such as `.git` or `.hg` at all. Hidden-path filtering is a third independent switch. "
       "Changing one does not silently change the others."));
 
-  static constexpr std::array<DocPair, 6> kAxes = {
+  static constexpr std::array<DocPair, 7> kAxes = {
       {
           {"--exclude / --include", "command-line gitignore-style patterns; repeatable, later matches win"},
           {"--gitignore / -g", "Git's `.gitignore`, `.git/info/exclude`, and `core.excludesFile` layer"},
           {"--ignore-files", "per-directory `.ignore` and `.xffignore` files"},
           {"--ignore-file=PATH", "an explicitly named rule file, rooted at its own directory"},
+          {"--compare-ignore-file=PATH", "an explicit rule file applied relative to both comparison roots"},
           {"--skip-vcs", "prune VCS metadata names; independent of pattern-based ignore files"},
           {"--hidden / --no-hidden", "show or skip dot-prefixed path components"},
       },
@@ -702,10 +703,18 @@ Section IgnoreSection(bool in_full) {
 
   Subsection precedence{.title = "Pattern precedence"};
   precedence.children.push_back(ProseOf(
-      "For a path, command-line `--exclude` / `--include` patterns decide first, then explicit "
-      "`--ignore-file` sources, then per-directory files. Within a source, gitignore last-match-wins "
+      "For a path, command-line `--exclude` / `--include` patterns decide first, then `--compare-ignore-file` "
+      "and applicable side-specific sources in argument order, then ordinary `--ignore-file` sources, then "
+      "per-directory files. Within a source, "
+      "gitignore last-match-wins "
       "semantics apply; a matched directory is pruned, so a later rule cannot recover descendants "
       "that were never visited."));
+  precedence.children.push_back(ProseOf(
+      "An excluded directory's nested `.gitignore` is never read. For an allowlist that keeps directories "
+      "traversable, use `*` followed by `!*/`, then file negations such as `!/foo.txt`; nested ignore files can "
+      "then choose their own files. Alternatively, explicitly re-include every required parent directory. "
+      "`/*.*` only excludes root-level names containing a dot; it does not exclude a directory named `foo`. "
+      "With `-diff`, these rules select the found entries; they do not filter an explicitly supplied target."));
   section.children.push_back(Content{.node = std::move(precedence)});
 
   if (!in_full) {
@@ -1216,7 +1225,13 @@ Section CompareSection(bool in_full) {
       "keeps each side independent and follows the ordinary `-g` / style setting; `left` or `right` applies that "
       "side's stack to both; `union` excludes a path from both if either stack excludes it; and `none` disables "
       "those stacks. `left`, `right`, and `union` enable the Git ignore layer; `--no-ignore` still disables all "
-      "ignore-file sources. The matched entries "
+      "ignore-file sources. `--compare-ignore-file=PATH` reads an explicit gitignore-format file whose patterns "
+      "apply relative to both roots, even when the file is elsewhere. `--compare-left-ignore-file=PATH` and "
+      "`--compare-right-ignore-file=PATH` restrict explicit rules to one side. Shared and side-specific files "
+      "apply in argument order; the last matching applicable rule wins, with no implicit priority for side-specific "
+      "files. Asymmetric exclusions can make an existing file appear left-only or right-only. Each supplements any "
+      "`--compare-ignore` "
+      "policy, including `none`; a missing or unreadable explicit file is an error. The matched entries "
       "are paired by path relative to their respective roots, so the root directory names need not match."));
   section.children.push_back(ProseOf(
       "Regular files are equal when their bytes are equal, for both text and binary data. Unfollowed symlinks "
@@ -1417,7 +1432,10 @@ Section DiffSection(bool in_full) {
       "per-tree behavior. `left` or `right` instead uses the selected side's auto-discovered stack for both "
       "trees; `union` excludes a relative path from both when either stack excludes it. `none` disables the "
       "auto-discovered stack, while explicit `--ignore-file`, `--include`, and `--exclude` retain their normal "
-      "scope. `--skip-vcs` remains a separate traversal filter. "
+      "scope. `--compare-ignore-file=PATH` instead applies the named file relative to both comparison roots; "
+      "`--compare-left-ignore-file=PATH` and `--compare-right-ignore-file=PATH` apply only to the named side. "
+      "For example, `xff -g+ --compare=diff LEFT RIGHT --compare-ignore-file=/path/to/rules.ignore` shares those "
+      "explicit rules across the trees. `--skip-vcs` remains a separate traversal filter. "
       "These choices also cover `.ignore` / `.xffignore` when those files are enabled. See `--help=ignore` "
       "for ignore-source scope and precedence."));
   section.children.push_back(Content{.node = std::move(output)});

@@ -171,6 +171,9 @@ struct GlobalFlag {
   bool canonicalize_alias = false;
   std::optional<registry::Mode> enters_mode;
   std::optional<registry::CompatibilitySpelling> rg;
+  // Which comparison roots receive an explicit ignore file. None means this is not an ignore-file flag.
+  enum class CompareIgnoreScope : std::uint8_t { kNone, kBoth, kLeft, kRight };
+  CompareIgnoreScope compare_ignore_scope = CompareIgnoreScope::kNone;
 };
 
 struct GlobalAliasArgument {

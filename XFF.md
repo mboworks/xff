@@ -852,7 +852,7 @@ See also: [--help=config](#topic-config), [--help=archive](#topic-archive), [--h
   - `diff` - a unified tree diff suitable for saving as a patch
 
   Requires exactly two roots. `--compare=summary` expands at its position to `--compare=status --compare-select=none --summary=compare`; later flags may override its settings. Combining the shorthand with bare `--summary` emits the comparison summary once. With an explicit `--summary-scope`, bare `--summary` also adds scoped totals; explicit groupings such as `--summary=ext` add their own tables. Bare `--compare` and `--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or `different` records. With `--format=jsonl`, each status is a JSON object containing `record: comparison`, `status`, relative `path`, `left_root`, and `right_root`. `--compare=diff` emits one unified tree diff, suitable for redirecting to a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is an expression action comparing each match from one walk with a templated target and therefore cannot discover target-only paths, `--compare` walks both roots independently and pairs the matches by relative path. The ordinary expression, ignore, hidden-file, archive, traversal, and `-P` / `-H` / `-L` symlink rules apply unchanged to each side; comparison itself enables none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks are compared by target. Both walks complete before comparison records are emitted in bytewise relative-path order; `--sort` affects each walk, not that final order. In status mode, `--path-encoding=escape` makes control bytes in the relative path unambiguous. `--summary` / `--summary=compare` append results and combined bytes by entry type and status. Results count each pair once; bytes include both sides, including two copies of identical files. Directories and special entries are included; directory equality compares the entry kind, not its subtree. Ordinary summary groupings default to `--summary-scope=compare`: one table with left and right columns across all comparison categories. Explicit `--summary-scope=all` combines both sides; `--summary-scope=root` separates roots. `--compare` changes this default regardless of option order.
-  Affected by: --compare-select, --compare-ignore, --diff-algorithm, --diff-left-strip, --diff-left-root, --diff-left-prefix, --diff-left-rewrite, --diff-right-strip, --diff-right-root, --diff-right-prefix, --diff-right-rewrite, --diff-context, --summary-precision
+  Affected by: --compare-select, --compare-ignore, --compare-ignore-file, --compare-left-ignore-file, --compare-right-ignore-file, --diff-algorithm, --diff-left-strip, --diff-left-root, --diff-left-prefix, --diff-left-rewrite, --diff-right-strip, --diff-right-root, --diff-right-prefix, --diff-right-rewrite, --diff-context, --summary-precision
   See also: [--help=compare](#topic-compare)
 
 <a id="flag-compare-select"></a>
@@ -874,6 +874,27 @@ See also: [--help=config](#topic-config), [--help=archive](#topic-archive), [--h
   - `union` - exclude a path from both trees if either tree's ignore stack excludes it
 
   Requires `--compare`. `respective` is the default and applies each tree's own auto-discovered ignore stack. `left` or `right` applies that tree's stack to matching relative paths on both sides. `union` excludes a relative path from both sides when either stack excludes it. `none` disables auto-discovered per-directory ignore files for the comparison. `left`, `right`, and `union` enable the Git ignore layer; `--no-ignore` still disables every ignore-file source. `respective` follows the ordinary `-g` / `--gitignore` and program-style settings. The selected stack includes `.gitignore` when the Git layer is on, and `.ignore` / `.xffignore` when enabled by `--ignore-files` or the selected style. Explicit `--ignore-file`, `--include`, and `--exclude` retain their normal scope. `--skip-vcs` remains a separate traversal filter.
+  Affects: --compare
+  See also: [--help=compare](#topic-compare)
+
+<a id="flag-compare-ignore-file"></a>
+
+- `--compare-ignore-file=PATH` - apply an explicit ignore file relative to both comparison roots (repeatable) _(global, find, xff, rg)_
+  Requires `--compare`. Read a gitignore-format file from an absolute path or a path relative to the working directory, never relative to a comparison root or the INI file containing this flag. Patterns apply relative to each comparison root, regardless of the ignore file's location: `/build/` excludes each root's top-level `build` directory. Shared and side-specific files apply in argument order; the last matching applicable rule wins, including `!` negations. `--compare-left-ignore-file` and `--compare-right-ignore-file` restrict rules to one side, with no implicit extra priority. Command-line `--include` / `--exclude` take precedence, followed by these files, ordinary `--ignore-file` sources, and auto-discovered rules. Supplements every `--compare-ignore` policy, including `none`, without enabling auto-discovery. `--no-ignore` disables application of these rules. Empty paths and missing or unreadable files are errors, even with `--no-ignore`.
+  Affects: --compare
+  See also: [--help=compare](#topic-compare)
+
+<a id="flag-compare-left-ignore-file"></a>
+
+- `--compare-left-ignore-file=PATH` - apply an explicit ignore file only to the left comparison root (repeatable) _(global, find, xff, rg)_
+  Requires `--compare`. Like `--compare-ignore-file`, but patterns apply only to the left root. Accepts absolute paths or paths relative to the working directory, never the selected root or the INI file containing this flag; patterns anchor at the left comparison root. Shared and side-specific files apply in argument order; the last matching applicable rule wins. Side-specific files have no implicit extra priority. Asymmetric exclusions can make an existing file appear right-only. `--no-ignore` disables application; empty paths and missing or unreadable files remain errors.
+  Affects: --compare
+  See also: [--help=compare](#topic-compare)
+
+<a id="flag-compare-right-ignore-file"></a>
+
+- `--compare-right-ignore-file=PATH` - apply an explicit ignore file only to the right comparison root (repeatable) _(global, find, xff, rg)_
+  Requires `--compare`. Like `--compare-ignore-file`, but patterns apply only to the right root. Accepts absolute paths or paths relative to the working directory, never the selected root or the INI file containing this flag; patterns anchor at the right comparison root. Shared and side-specific files apply in argument order; the last matching applicable rule wins. Side-specific files have no implicit extra priority. Asymmetric exclusions can make an existing file appear left-only. `--no-ignore` disables application; empty paths and missing or unreadable files remain errors.
   Affects: --compare
   See also: [--help=compare](#topic-compare)
 
@@ -3116,7 +3137,7 @@ Text changes use the selected diff style (`u3` by default; `c`, `n`, `y`, or `no
 
 `-diff` and `-rdiff` see only entries visited below their search roots. In particular, they cannot find target-only paths to remove, and a source path whose explicit TARGET does not exist cannot be emitted as a new file. `--compare=diff` is the whole-tree operation for discovering additions and removals. Its two walks use the same filters and traversal options; comparison does not implicitly enable hidden files, ignore rules, archive traversal, or symlink following. See `--help=compare` for pairing, selection, and exit-status behavior.
 
-With `-g+` or `--ignore-vcs`, each comparison root uses its own VCS ignore context; rules above a search root still apply when it is inside a Git worktree. `--compare-ignore=respective` preserves that per-tree behavior. `left` or `right` instead uses the selected side's auto-discovered stack for both trees; `union` excludes a relative path from both when either stack excludes it. `none` disables the auto-discovered stack, while explicit `--ignore-file`, `--include`, and `--exclude` retain their normal scope. `--skip-vcs` remains a separate traversal filter. These choices also cover `.ignore` / `.xffignore` when those files are enabled. See `--help=ignore` for ignore-source scope and precedence.
+With `-g+` or `--ignore-vcs`, each comparison root uses its own VCS ignore context; rules above a search root still apply when it is inside a Git worktree. `--compare-ignore=respective` preserves that per-tree behavior. `left` or `right` instead uses the selected side's auto-discovered stack for both trees; `union` excludes a relative path from both when either stack excludes it. `none` disables the auto-discovered stack, while explicit `--ignore-file`, `--include`, and `--exclude` retain their normal scope. `--compare-ignore-file=PATH` instead applies the named file relative to both comparison roots; `--compare-left-ignore-file=PATH` and `--compare-right-ignore-file=PATH` apply only to the named side. For example, `xff -g+ --compare=diff LEFT RIGHT --compare-ignore-file=/path/to/rules.ignore` shares those explicit rules across the trees. `--skip-vcs` remains a separate traversal filter. These choices also cover `.ignore` / `.xffignore` when those files are enabled. See `--help=ignore` for ignore-source scope and precedence.
 
 ### Patch destination paths
 
@@ -3162,7 +3183,7 @@ See also: [--help=compare](#topic-compare), [--help=-diff](#primary-diff), [--he
 
 ## Comparing trees
 
-`--compare` requires exactly two roots. xff walks both roots with the same expression and the same explicitly selected traversal, ignore, archive, hidden-file, and symlink options. Comparison does not enable `--gitignore`, `--no-ignore`, `-L`, or any other policy on its own. `--compare-ignore` selects how auto-discovered per-directory ignore stacks are applied: `respective` keeps each side independent and follows the ordinary `-g` / style setting; `left` or `right` applies that side's stack to both; `union` excludes a path from both if either stack excludes it; and `none` disables those stacks. `left`, `right`, and `union` enable the Git ignore layer; `--no-ignore` still disables all ignore-file sources. The matched entries are paired by path relative to their respective roots, so the root directory names need not match.
+`--compare` requires exactly two roots. xff walks both roots with the same expression and the same explicitly selected traversal, ignore, archive, hidden-file, and symlink options. Comparison does not enable `--gitignore`, `--no-ignore`, `-L`, or any other policy on its own. `--compare-ignore` selects how auto-discovered per-directory ignore stacks are applied: `respective` keeps each side independent and follows the ordinary `-g` / style setting; `left` or `right` applies that side's stack to both; `union` excludes a path from both if either stack excludes it; and `none` disables those stacks. `left`, `right`, and `union` enable the Git ignore layer; `--no-ignore` still disables all ignore-file sources. `--compare-ignore-file=PATH` reads an explicit gitignore-format file whose patterns apply relative to both roots, even when the file is elsewhere. `--compare-left-ignore-file=PATH` and `--compare-right-ignore-file=PATH` restrict explicit rules to one side. Shared and side-specific files apply in argument order; the last matching applicable rule wins, with no implicit priority for side-specific files. Asymmetric exclusions can make an existing file appear left-only or right-only. Each supplements any `--compare-ignore` policy, including `none`; a missing or unreadable explicit file is an error. The matched entries are paired by path relative to their respective roots, so the root directory names need not match.
 
 Regular files are equal when their bytes are equal, for both text and binary data. Unfollowed symlinks are equal when their link targets are equal; `-H` / `-L` instead apply their ordinary traversal meaning. Directories and other non-regular entries are compared by type. Metadata such as permissions, owner, timestamps, and inode numbers is not compared.
 
@@ -3256,6 +3277,7 @@ Ignoring a path and pruning version-control metadata are separate decisions. Ign
 - `--gitignore / -g` - Git's `.gitignore`, `.git/info/exclude`, and `core.excludesFile` layer
 - `--ignore-files` - per-directory `.ignore` and `.xffignore` files
 - `--ignore-file=PATH` - an explicitly named rule file, rooted at its own directory
+- `--compare-ignore-file=PATH` - an explicit rule file applied relative to both comparison roots
 - `--skip-vcs` - prune VCS metadata names; independent of pattern-based ignore files
 - `--hidden / --no-hidden` - show or skip dot-prefixed path components
 
@@ -3271,7 +3293,9 @@ When the Git ignore layer is active, xff also implicitly prunes `.git` as if `--
 
 ### Pattern precedence
 
-For a path, command-line `--exclude` / `--include` patterns decide first, then explicit `--ignore-file` sources, then per-directory files. Within a source, gitignore last-match-wins semantics apply; a matched directory is pruned, so a later rule cannot recover descendants that were never visited.
+For a path, command-line `--exclude` / `--include` patterns decide first, then `--compare-ignore-file` and applicable side-specific sources in argument order, then ordinary `--ignore-file` sources, then per-directory files. Within a source, gitignore last-match-wins semantics apply; a matched directory is pruned, so a later rule cannot recover descendants that were never visited.
+
+An excluded directory's nested `.gitignore` is never read. For an allowlist that keeps directories traversable, use `*` followed by `!*/`, then file negations such as `!/foo.txt`; nested ignore files can then choose their own files. Alternatively, explicitly re-include every required parent directory. `/*.*` only excludes root-level names containing a dot; it does not exclude a directory named `foo`. With `-diff`, these rules select the found entries; they do not filter an explicitly supplied target.
 
 ### Examples
 
