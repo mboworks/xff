@@ -9,6 +9,16 @@
       "href": "https://github.com/mboworks/xff/pull/363"
     }
   ],
+  "3292b6f308ab92f61d8575c95ee2cef2c41e4205": [
+    {
+      "label": "Release v0.10.0",
+      "href": "https://github.com/mboworks/xff/releases/tag/v0.10.0"
+    },
+    {
+      "label": "PR #1029",
+      "href": "https://github.com/mboworks/xff/pull/1029"
+    }
+  ],
   "b0308a0cb4578f45a985cbd658368242c45305e8": [
     {
       "label": "Release v0.2.0",
@@ -169,10 +179,10 @@
       "href": "https://github.com/mboworks/xff/pull/1021"
     }
   ],
-  "3292b6f308ab92f61d8575c95ee2cef2c41e4205": [
+  "f3743bccb0fbf9f4df1727087ef47b2ef4f7e3c6": [
     {
-      "label": "PR #1029",
-      "href": "https://github.com/mboworks/xff/pull/1029"
+      "label": "PR #1030",
+      "href": "https://github.com/mboworks/xff/pull/1030"
     }
   ],
   "390fe14e2fc8dbb152892ae6163ecea83e9830ff": [
