@@ -9,6 +9,7 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "mbo/status/status_macros.h"
@@ -66,24 +67,32 @@ struct ModifierRequest {
   config::Source source;
 };
 
-}  // namespace
-
-absl::StatusOr<std::string> InactiveModifierNotes(
-    const parser::Command& effective,
+std::map<std::string_view, ModifierRequest> LatestModifierRequests(
     const std::vector<config::ResolvedFlag>& application,
-    registry::Style style) {
+    registry::ModifierConsumer filter = registry::ModifierConsumer::kNone) {
   std::map<std::string_view, ModifierRequest> latest;
   for (const config::ResolvedFlag& applied : application) {
     if (applied.is_argument) {
       continue;
     }
     const auto flag = LookupGlobalArgument(applied.flag);
-    if (flag && flag->required_consumer != registry::ModifierConsumer::kNone) {
+    if (flag && flag->required_consumer != registry::ModifierConsumer::kNone
+        && (filter == registry::ModifierConsumer::kNone || filter == flag->required_consumer)) {
       latest.insert_or_assign(
           flag->name,
           ModifierRequest{.flag = applied.flag, .consumer = flag->required_consumer, .source = applied.source});
     }
   }
+  return latest;
+}
+
+}  // namespace
+
+absl::StatusOr<std::string> InactiveModifierNotes(
+    const parser::Command& effective,
+    const std::vector<config::ResolvedFlag>& application,
+    registry::Style style) {
+  const auto latest = LatestModifierRequests(application);
   if (!std::ranges::any_of(latest, [](const auto& entry) { return entry.second.source == config::Source::kCli; })) {
     return std::string{};
   }
@@ -95,6 +104,30 @@ absl::StatusOr<std::string> InactiveModifierNotes(
     }
   }
   return notes;
+}
+
+absl::Status ValidateFileDiffModifiers(
+    const parser::Command& effective,
+    const std::vector<config::ResolvedFlag>& application,
+    registry::Style style) {
+  const auto latest = LatestModifierRequests(application, registry::ModifierConsumer::kFileDiff);
+  const auto requested = std::ranges::find_if(latest, [](const auto& entry) {
+    const ModifierRequest& request = entry.second;
+    const auto equals = request.flag.find('=');
+    return request.source == config::Source::kCli && request.consumer == registry::ModifierConsumer::kFileDiff
+           && equals != std::string_view::npos && equals + 1 < request.flag.size();
+  });
+  if (requested == latest.end()) {
+    return absl::OkStatus();
+  }
+  MBO_ASSIGN_OR_RETURN(const auto consumers, engine::ActiveModifierConsumers(effective, style));
+  if (consumers.contains(registry::ModifierConsumer::kFileDiff)) {
+    return absl::OkStatus();
+  }
+  return absl::InvalidArgumentError(
+      absl::StrCat(
+          requested->second.flag, " ", ConsumerRequirement(requested->second.consumer),
+          "; tree comparison does not use text normalization. Drop the modifier or add a -diff/-rdiff action."));
 }
 
 }  // namespace xff::cli

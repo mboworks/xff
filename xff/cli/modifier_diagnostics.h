@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "xff/config/config.h"
 #include "xff/parser/ast.h"
@@ -17,6 +18,13 @@ namespace xff::cli {
 // Nonfatal explanations for effective CLI modifiers with no structural consumer.
 // Config defaults and superseded requests are quiet. Does not evaluate expressions.
 absl::StatusOr<std::string> InactiveModifierNotes(
+    const parser::Command& effective,
+    const std::vector<config::ResolvedFlag>& application,
+    registry::Style style = registry::Style::kXff);
+
+// Reject ineffective explicit CLI normalization before actions. Dormant config defaults and
+// empty resets remain valid; --explain uses the advisory interface above instead.
+absl::Status ValidateFileDiffModifiers(
     const parser::Command& effective,
     const std::vector<config::ResolvedFlag>& application,
     registry::Style style = registry::Style::kXff);

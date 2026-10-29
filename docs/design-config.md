@@ -577,6 +577,20 @@ See [Inspecting effective policy](design-safety.md#inspecting-effective-policy) 
 Directory-scoped temp/output permissions and root-declaration precedence are specified in
 [Directory-scoped safety controls](design-directory-safety.md).
 
+## Explicit diff normalization requires a consumer
+
+A nonempty explicit CLI `--diff-ignore` or `--diff-ignore-matching` requires a structural `-diff`
+or `-rdiff` consumer, including their silent forms. Without one, ordinary execution fails with a
+usage error before matching or actions. In particular, `--compare` does not consume these controls:
+its equality is exact, including executable capability, and its patches preserve the actual bytes.
+A `-diff` or `-rdiff` expression inside comparison can still consume normalization independently.
+
+Normalization defaults saved in configuration remain quiet when dormant. A later empty CLI value
+resets the configured default and is permitted without a consumer. Primary argument text and
+superseded requests do not trigger the guard. `--explain` remains nonfatal and reports the existing
+inactive-modifier notes instead. Both paths use the global registry's typed consumer metadata and
+the latest effective setting's provenance, rather than a separate list of normalization spellings.
+
 ## Inactive modifiers in explain output
 
 `--explain` reports `inactive-modifier` notes when a modifier's winning setting came from the CLI

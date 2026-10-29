@@ -162,4 +162,25 @@ test::diff_format_and_context_globals() {
   expect_output_contains 'bad --diff-context value' "${out}"
 }
 
+test::comparison_normalization_errors_before_actions_and_explain_remains_advisory() {
+  local dir mode modifier out rc
+  dir="$(test_tmpdir comparison_normalization)"
+  mkdir -p "${dir}/left" "${dir}/right"
+  printf 'preserve\n' >"${dir}/left/victim"
+  printf 'preserve\n' >"${dir}/right/victim"
+  for mode in --compare --compare=diff --compare=summary; do
+    for modifier in --diff-ignore=trail '--diff-ignore-matching=^DEBUG'; do
+      out="$("$(_xff_bin)" --no-config "${mode}" "${dir}/left" "${dir}/right" "${modifier}" -name victim -delete 2>&1)" && rc=0 || rc=$?
+      expect_eq "2" "${rc}" || return
+      expect_output_contains 'requires a -diff or -rdiff action' "${out}" || return
+      expect_eq 'preserve' "$(cat "${dir}/left/victim")" || return
+      expect_eq 'preserve' "$(cat "${dir}/right/victim")" || return
+    done
+  done
+  out="$("$(_xff_bin)" --no-config --compare "${dir}/left" "${dir}/right" --diff-ignore=trail --explain)"
+  expect_output_contains $'inactive-modifier\t--diff-ignore=trail' "${out}" || return
+  out="$("$(_xff_bin)" --no-config --compare "${dir}/left" "${dir}/right" --diff-ignore=trail --diff-ignore=)"
+  expect_eq '' "${out}"
+}
+
 test_runner

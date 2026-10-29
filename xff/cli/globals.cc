@@ -1813,7 +1813,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "config or an "
                    "explicit `--xffrc=FILE`, and a command-line value overrides the configured value. An empty value "
                    "disables configured normalization. Tokens are `ws`, `change`, `trail`, `blank`, `case`, and "
-                   "`eofnl`, comma-separated.",
+                   "`eofnl`, comma-separated. A nonempty explicit CLI value requires a `-diff` or `-rdiff` action; "
+                   "tree comparison remains exact and rejects ineffective CLI normalization before traversal. "
+                   "Dormant config defaults and empty resets are allowed; `--explain` reports advisory notes.",
         .affects = kAffectsDiffRdiff,
         .see_also = kSeeAlsoCompareContent,
         .required_consumer = registry::ModifierConsumer::kFileDiff,
@@ -1824,10 +1826,14 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "diff",
         .header = "Tree comparison and diffs",
         .summary = "-diff / -rdiff ignore lines matching this regex (RE2)",
-        .details = "Drops matching lines before `-diff` or `-rdiff` compares the two inputs. It may be saved in user "
-                   "config or an "
-                   "explicit `--xffrc=FILE`; the last value wins, so a command-line value overrides configuration. An "
-                   "empty value disables a configured expression. The expression uses RE2.",
+        .details =
+            "Drops matching lines before `-diff` or `-rdiff` compares the two inputs. It may be saved in user "
+            "config or an "
+            "explicit `--xffrc=FILE`; the last value wins, so a command-line value overrides configuration. An "
+            "empty value disables a configured expression. The expression uses RE2. A nonempty explicit CLI value "
+            "requires a `-diff` or `-rdiff` action; tree comparison remains exact and rejects ineffective "
+            "CLI normalization before traversal. Dormant config defaults and empty resets are allowed; "
+            "`--explain` reports advisory notes.",
         .affects = kAffectsDiffRdiff,
         .see_also = kSeeAlsoCompareContent,
         .required_consumer = registry::ModifierConsumer::kFileDiff,

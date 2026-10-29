@@ -970,14 +970,14 @@ See also: [--help=config](#topic-config), [--help=archive](#topic-archive), [--h
 <a id="flag-diff-ignore"></a>
 
 - `--diff-ignore=TOKEN,...` - normalize diff actions: ws, change, trail, blank, case, eofnl (comma-separated) _(global, find, xff, rg)_
-  Sets the normalization used by `-diff` and `-rdiff`; the last value wins. It may be saved in user config or an explicit `--xffrc=FILE`, and a command-line value overrides the configured value. An empty value disables configured normalization. Tokens are `ws`, `change`, `trail`, `blank`, `case`, and `eofnl`, comma-separated.
+  Sets the normalization used by `-diff` and `-rdiff`; the last value wins. It may be saved in user config or an explicit `--xffrc=FILE`, and a command-line value overrides the configured value. An empty value disables configured normalization. Tokens are `ws`, `change`, `trail`, `blank`, `case`, and `eofnl`, comma-separated. A nonempty explicit CLI value requires a `-diff` or `-rdiff` action; tree comparison remains exact and rejects ineffective CLI normalization before traversal. Dormant config defaults and empty resets are allowed; `--explain` reports advisory notes.
   Affects: -diff, -rdiff
   See also: [--help=compare](#topic-compare), [--help=content](#topic-content)
 
 <a id="flag-diff-ignore-matching"></a>
 
 - `--diff-ignore-matching=REGEX` - -diff / -rdiff ignore lines matching this regex (RE2) _(global, find, xff, rg)_
-  Drops matching lines before `-diff` or `-rdiff` compares the two inputs. It may be saved in user config or an explicit `--xffrc=FILE`; the last value wins, so a command-line value overrides configuration. An empty value disables a configured expression. The expression uses RE2.
+  Drops matching lines before `-diff` or `-rdiff` compares the two inputs. It may be saved in user config or an explicit `--xffrc=FILE`; the last value wins, so a command-line value overrides configuration. An empty value disables a configured expression. The expression uses RE2. A nonempty explicit CLI value requires a `-diff` or `-rdiff` action; tree comparison remains exact and rejects ineffective CLI normalization before traversal. Dormant config defaults and empty resets are allowed; `--explain` reports advisory notes.
   Affects: -diff, -rdiff
   See also: [--help=compare](#topic-compare), [--help=content](#topic-content)
 

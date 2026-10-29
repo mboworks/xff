@@ -3,6 +3,8 @@
 
 # 0.10.0
 
+- Reject command-line file-diff normalization options without a `-diff` or `-rdiff` consumer before actions run, including byte-exact comparison commands.
+
 - Honor `--no-ignore` / `-u` for ordinary explicit `--ignore-file` rules as well as discovered and comparison ignore rules.
 
 - Emit Git-applicable comparison patches for empty files, binary updates, symlinks, executable-mode
