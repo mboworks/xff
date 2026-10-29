@@ -763,7 +763,8 @@ See also: [--help=config](#topic-config), [--help=archive](#topic-archive), [--h
 
 <a id="flag-no-ignore"></a>
 
-- `--no-ignore, -u` - disable all ignore-file processing (.gitignore/.ignore/.xffignore) _(global, find, xff, rg)_
+- `--no-ignore, -u` - disable all ignore-file processing, including explicit rule files _(global, find, xff, rg)_
+  Disables automatically discovered ignore files and explicit `--ignore-file`, `--compare-ignore-file`, `--compare-left-ignore-file`, and `--compare-right-ignore-file` rules, regardless of argument order. Comparison ignore-file requests still validate their paths and readability. Command-line `--include` / `--exclude`, hidden-path controls, and `--skip-vcs` remain independent.
   See also: [--help=ignore](#topic-ignore)
 
 <a id="flag-ignore-vcs"></a>
@@ -3039,7 +3040,7 @@ Mode tags (`find`, `xff`, `rg`) come from the same metadata as flag lookup. Shar
 - `--type-add TYPE:GLOB` - append a basename glob or import comma-separated filename types into a shared definition
 - `--type-clear TYPE` - remove a filename-filter definition through its canonical name or alias
 - `--type-list` - list effective filename-type definitions and aliases without searching
-- `--no-ignore` - disable all ignore-file processing (.gitignore/.ignore/.xffignore)
+- `--no-ignore` - disable all ignore-file processing, including explicit rule files
 - `--hidden` - include hidden dotfiles in the walk (default: find/xff show, rg skips)
 - `--no-hidden` - skip hidden dotfiles (the rg default; opts find/xff out)
 - `--root NAME=PATH` - add a named search root; use NAME as its archive destination directory

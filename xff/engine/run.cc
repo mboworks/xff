@@ -5554,9 +5554,10 @@ RunResult RunFindCore(
   IgnoreFileCache ignore_files(
       walk_fs, ResolveIgnoreFileNames(command.globals, gitignore_on, style), gitignore_on, std::move(global_excludes));
   // --ignore-file=PATH: explicit ignore files, each rooted at its own directory. Independent of
-  // -g / --no-ignore (the user named these), consulted below CLI --exclude but above the auto
+  // -g, but disabled by --no-ignore. Consulted below CLI --exclude but above the auto
   // .gitignore stack (an explicitly named file outranks auto-discovery, below a direct glob).
-  const RootedIgnoreFiles rooted_ignore_files = RootedIgnoreFiles::FromGlobals(walk_fs, command.globals);
+  const RootedIgnoreFiles rooted_ignore_files =
+      no_ignore ? RootedIgnoreFiles{} : RootedIgnoreFiles::FromGlobals(walk_fs, command.globals);
   const auto compare_ignore_files = ReadCompareIgnoreFiles(walk_fs, command.globals, root_offset);
   if (!compare_ignore_files.ok()) {
     on_error("--compare-ignore-file", compare_ignore_files.status());
