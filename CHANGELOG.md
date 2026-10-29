@@ -3,6 +3,8 @@
 
 # 0.10.0
 
+- Verify staged release executables generate Git-applicable comparison patches for binary and empty-file additions, removals, and updates, including reverse application.
+
 - Reject command-line file-diff normalization options without a `-diff` or `-rdiff` consumer before actions run, including byte-exact comparison commands.
 
 - Honor `--no-ignore` / `-u` for ordinary explicit `--ignore-file` rules as well as discovered and comparison ignore rules.

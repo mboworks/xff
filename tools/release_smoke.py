@@ -10,6 +10,7 @@ import io
 import json
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 
@@ -19,6 +20,64 @@ from release_smoke_unicode import unicode_smoke
 def check(condition, message):
     if not condition:
         raise RuntimeError(message)
+
+
+def comparison_patch_smoke(run, root):
+    """Apply the staged executable's Git patch, including empty and binary files."""
+    left, right, applied = (root / name for name in ("patch-left", "patch-right", "patch-applied"))
+    left_files = {
+        "same.txt": b"unchanged\n",
+        "empty-stays": b"",
+        "empty-delete": b"",
+        "binary-delete": b"before\x00delete\xff",
+        "binary-update": b"before\x00update\xff",
+        "empty-to-binary": b"",
+        "binary-to-empty": b"before\x00empty\xff",
+        "text-update": b"before\n",
+    }
+    right_files = {
+        "same.txt": b"unchanged\n",
+        "empty-stays": b"",
+        "empty-add": b"",
+        "binary-add": b"after\x00add\xff",
+        "binary-update": b"after\x00update\xfe",
+        "empty-to-binary": b"after\x00empty\xfe",
+        "binary-to-empty": b"",
+        "text-update": b"after\n",
+    }
+    for directory, files in ((left, left_files), (right, right_files)):
+        directory.mkdir()
+        for name, content in files.items():
+            (directory / name).write_bytes(content)
+
+    patch = run("--compare=diff", left, right)
+    check("GIT binary patch" in patch, "comparison patch is missing binary payloads")
+    check("new file mode" in patch and "deleted file mode" in patch,
+          "comparison patch is missing file creation/deletion records")
+    shutil.copytree(left, applied)
+
+    def git_apply(*args):
+        result = subprocess.run(
+            ["git", "-c", "core.autocrlf=false", "apply", *args],
+            input=patch,
+            cwd=applied,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        check(result.returncode == 0,
+              f"git apply {args!r}: exit {result.returncode}\n{result.stderr}")
+
+    def snapshot():
+        return {path.name: path.read_bytes() for path in applied.iterdir()}
+
+    git_apply("--check")
+    git_apply()
+    check(snapshot() == right_files, "Git-applied comparison patch differs from the right tree")
+    git_apply("--reverse", "--check")
+    git_apply("--reverse")
+    check(snapshot() == left_files, "reverse Git-applied comparison patch did not restore the left tree")
 
 
 def smoke(binary, expected_version):
@@ -101,6 +160,7 @@ def smoke(binary, expected_version):
                 re.search(rf"\b{category}\s+1\s+25\.00%", comparison),
                 f"comparison category {category}: {comparison}",
             )
+        comparison_patch_smoke(run, root)
         unicode_smoke(run, root, check)
     print(f"Release smoke passed: {binary} ({expected_version})")
 
