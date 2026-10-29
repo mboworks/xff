@@ -12,6 +12,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
+#include "mbo/diff/diff_options.h"
 #include "xff/presentation/fields/fields.h"
 
 namespace xff::patch {
@@ -63,5 +64,15 @@ absl::StatusOr<std::string> AbsentSide(
     std::string_view content,
     std::string_view mode,
     bool reverse);
+
+// Git-representable entry bytes and mode; symlink content is its target.
+struct File {
+  std::string_view content;
+  std::string_view mode;
+};
+
+// Render an update, including executable mode changes and reversible binary literals.
+// File/symlink replacements are a deletion followed by a creation.
+absl::StatusOr<std::string> Update(const Names& names, File left, File right, const mbo::diff::DiffOptions& options);
 }  // namespace xff::patch
 #endif  // XFF_PRESENTATION_PATCH_PATCH_H_

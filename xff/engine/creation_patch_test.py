@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Apply diff patches and verify direction, transformed paths, bytes, links and modes."""
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -86,6 +87,88 @@ class CreationPatchTest(unittest.TestCase):
         applied = subprocess.run(['git', 'apply', f'-p{strip}', '--whitespace=nowarn', '-'],
                                  input=data, cwd=directory, capture_output=True, check=False)
         self.assertEqual(applied.returncode, 0, applied.stderr)
+
+    @unittest.skipUnless(hasattr(os, 'mkfifo'), 'requires POSIX named pipes')
+    def test_comparison_patch_rejects_special_files_without_reading_them(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            left, right = root / 'left', root / 'right'
+            left.mkdir()
+            right.mkdir()
+            os.mkfifo(right / 'pipe')
+            result = self.run_xff('--compare=diff', left, right)
+            self.assertEqual(result.returncode, 2, result.stderr)
+            self.assertEqual(result.stdout, b'')
+            self.assertIn(b'Git patches require', result.stderr)
+            status = self.run_xff('--compare', left, right)
+            self.assertEqual(status.returncode, 0, status.stderr)
+            self.assertEqual(status.stdout, b'right-only\tpipe\n')
+
+    def test_complete_comparison_git_round_trip(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            old, new, target = (root / name for name in ('old', 'new', 'apply'))
+            old.mkdir()
+            new.mkdir()
+            before = {'deleted-empty': b'', 'deleted-binary': bytes(range(256)) * 300,
+                      'text': b'old\n', 'binary': b'old\0' * 20000,
+                      'no-newline': b'before', 'text-to-binary': b'text\n',
+                      'binary-to-text': b'x\0', 'file-to-link': b'regular',
+                      'dir-to-file/child': b'old', 'file-to-dir': b'old',
+                      'mode-only': b'same\n', 'mode-and-text': b'old\n',
+                      'space \"name': b'old\n'}
+            after = {'added-empty': b'', 'added-binary': bytes(range(255, -1, -1)) * 300,
+                     'text': b'new\n', 'binary': b'new\0' * 20000,
+                     'no-newline': b'after', 'text-to-binary': b'x\0',
+                     'binary-to-text': b'text\n', 'link-to-file': b'regular',
+                     'dir-to-file': b'new', 'file-to-dir/child': b'new',
+                     'mode-only': b'same\n', 'mode-and-text': b'new\n',
+                     'space \"name': b'new\n'}
+            for tree, entries in ((old, before), (new, after)):
+                for name, data in entries.items():
+                    path = tree / name
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(data)
+                (tree / 'empty-dir').mkdir()
+            (old / 'deleted-link').symlink_to('missing-old-target')
+            (new / 'added-link').symlink_to('missing-new-target')
+            (old / 'changed-link').symlink_to('old-target')
+            (new / 'changed-link').symlink_to('new-target')
+            (old / 'link-to-file').symlink_to('old-target')
+            (new / 'file-to-link').symlink_to('new-target')
+            (new / 'mode-only').chmod(0o755)
+            (new / 'mode-and-text').chmod(0o755)
+
+            def snapshot(tree):
+                result = {}
+                for path in tree.rglob('*'):
+                    name = path.relative_to(tree).as_posix()
+                    if path.is_symlink():
+                        result[name] = ('link', os.readlink(path))
+                    elif path.is_file():
+                        result[name] = ('file', path.read_bytes(), bool(path.stat().st_mode & 0o111))
+                return result
+
+            initial, final = snapshot(old), snapshot(new)
+            shutil.copytree(old, target, symlinks=True)
+            for workers in (1, 4):
+                result = self.run_xff('--compare=diff', old, new, f'--jobs={workers}')
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn(b'GIT binary patch', result.stdout)
+                self.assertIn(b'old mode 100644\nnew mode 100755', result.stdout)
+                self.apply_patch(target, result.stdout)
+                self.assertEqual(snapshot(target), final)
+                restored = subprocess.run(['git', 'apply', '--reverse', '--whitespace=nowarn', '-'],
+                                          input=result.stdout, cwd=target, capture_output=True, check=False)
+                self.assertEqual(restored.returncode, 0, restored.stderr)
+                self.assertEqual(snapshot(target), initial)
+            mode = self.run_xff('--compare', old, new, '-name', 'mode-only')
+            self.assertEqual(mode.stdout, b'different\tmode-only\n')
+            reverse = self.run_xff('--compare=diff', new, old)
+            self.assertEqual(reverse.returncode, 0, reverse.stderr)
+            self.apply_patch(target, self.run_xff('--compare=diff', old, new).stdout)
+            self.apply_patch(target, reverse.stdout)
+            self.assertEqual(snapshot(target), initial)
 
     def test_explicit_target_direction_and_file_comparison(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -231,7 +314,8 @@ class CreationPatchTest(unittest.TestCase):
                      '--diff-left-prefix=L/', '--diff-right-prefix=R/']
             compared = self.run_xff('--compare=diff', left, right, '-type', 'f', *flags)
             self.assertEqual(compared.returncode, 0, compared.stderr)
-            self.assertIn(b'Binary files L/old/file and R/new/file differ', compared.stdout)
+            self.assertIn(b'diff --git \"L/old/file\" \"R/new/file\"', compared.stdout)
+            self.assertIn(b'GIT binary patch', compared.stdout)
             for primary in ('-diff', '-rdiff'):
                 result = self.run_xff(right / 'file', primary, left / 'file', *flags)
                 self.assertEqual(result.returncode, 0, result.stderr)
@@ -245,7 +329,9 @@ class CreationPatchTest(unittest.TestCase):
             (right / 'link').symlink_to('new-target')
             links = self.run_xff('--compare=diff', left, right, '-type', 'l', *flags)
             self.assertEqual(links.returncode, 0, links.stderr)
-            self.assertIn(b'Files L/old/link and R/new/link differ', links.stdout)
+            self.assertIn(b'--- L/old/link\n+++ R/new/link', links.stdout)
+            self.assertIn(b'-old-target\n', links.stdout)
+            self.assertIn(b'+new-target\n', links.stdout)
             status = self.run_xff('--compare=status', left, right, '-type', 'l', *flags)
             self.assertEqual(status.returncode, 0, status.stderr)
             self.assertEqual(status.stdout, b'different\tlink\n')

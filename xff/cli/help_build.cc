@@ -1234,10 +1234,11 @@ Section CompareSection(bool in_full) {
       "policy, including `none`; a missing or unreadable explicit file is an error. The matched entries "
       "are paired by path relative to their respective roots, so the root directory names need not match."));
   section.children.push_back(ProseOf(
-      "Regular files are equal when their bytes are equal, for both text and binary data. Unfollowed symlinks "
+      "Regular files are equal when their bytes and executable capability match, for both text and binary data. "
+      "Executable capability means at least one execute permission bit is set. Unfollowed symlinks "
       "are equal when their link targets are equal; `-H` / `-L` instead apply their ordinary traversal meaning. "
-      "Directories and other non-regular entries are compared by type. Metadata such as permissions, owner, "
-      "timestamps, and inode numbers is not compared."));
+      "Directories and other non-regular entries are compared by type. Other permissions, owner, "
+      "timestamps, and inode numbers are not compared."));
   section.children.push_back(ProseOf(
       "The two walks run concurrently and each retains its complete matched-entry inventory until both finish. "
       "xff then merges those inventories and emits comparison records in bytewise relative-path order. This final "
@@ -1261,7 +1262,7 @@ Section CompareSection(bool in_full) {
       {
           {"left-only", "the relative path matched only below the left root"},
           {"right-only", "the relative path matched only below the right root"},
-          {"different", "both sides matched the path, but its type, bytes, or symlink target differs"},
+          {"different", "both sides matched, but type, bytes, executable capability, or symlink target differs"},
           {"identical", "both sides matched and compare equal; omitted unless explicitly selected"},
       },
   };
@@ -1320,8 +1321,10 @@ Section CompareSection(bool in_full) {
 
   Subsection patch{.title = "Patch output"};
   patch.children.push_back(ProseOf(
-      "`--compare=diff` writes one unified patch for added, removed, and changed regular files. Text files get "
-      "hunks; binary and non-regular differences get a diagnostic line. `--diff-algorithm` and `--diff-context` "
+      "`--compare=diff` writes Git-applicable patches for regular files and symlinks, including empty files, "
+      "executable mode changes, type replacements, and reversible binary literals. Text changes use unified "
+      "hunks. Empty directories have no Git representation; other special entry types fail with an error "
+      "when selected for patch output. `--diff-algorithm` and `--diff-context` "
       "tune this mode. `identical` is rejected because an unchanged entry has no patch representation."));
   patch.children.push_back(ProseOf(
       "Left is old content and right is new content. `-diff [TARGET]` emits TARGET-to-found changes; "
@@ -1415,10 +1418,10 @@ Section DiffSection(bool in_full) {
       "Text changes use the selected diff style (`u3` by default; `c`, `n`, `y`, or `none` are also available). "
       "Absent-side creation/deletion patches use Git format, including empty files, executable bits, symlinks, and "
       "binary contents. Directories do not produce patches, because directory entries are not represented in Git; "
-      "other special file types are unsupported for absent-side patches. `--compare=diff` emits text hunks for "
-      "regular text files and diagnostics for binary or non-regular differences. An empty file addition or removal "
-      "can have no text hunk, so use the comparison status or summary when you need a record of every changed "
-      "entry."));
+      "other special file types are unsupported for absent-side patches. `--compare=diff` also produces "
+      "Git-applicable empty-file, binary, symlink, executable-mode, and type-replacement changes. Empty files "
+      "use metadata headers even when there is no text hunk. Empty-directory differences remain visible only "
+      "in status and summary output."));
   output.children.push_back(ProseOf(
       "`-diff` and `-rdiff` see only entries visited below their search roots. In particular, they cannot find "
       "target-only paths to remove, and a source path whose explicit TARGET does not exist cannot be emitted as "

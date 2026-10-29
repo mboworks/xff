@@ -9,6 +9,7 @@
 #include "absl/status/status.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/diff/diff_options.h"
 #include "mbo/testing/status.h"
 
 namespace xff::patch {
@@ -19,9 +20,59 @@ using ::mbo::testing::StatusIs;
 using ::testing::AllOf;
 using ::testing::Eq;
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
 using ::testing::Not;
 
 struct PatchTest : ::testing::Test {};
+
+TEST_F(PatchTest, UpdatePreservesEqualityAndExecutableModeOnlyChanges) {
+  const Names names{.left = "a/file", .right = "b/file"};
+  const mbo::diff::DiffOptions options;
+  EXPECT_THAT(
+      Update(names, {.content = "same", .mode = "100644"}, {.content = "same", .mode = "100644"}, options),
+      IsOkAndHolds(IsEmpty()));
+  EXPECT_THAT(
+      Update(names, {.content = "same", .mode = "100644"}, {.content = "same", .mode = "100755"}, options),
+      IsOkAndHolds(AllOf(HasSubstr("old mode 100644\nnew mode 100755\n"), Not(HasSubstr("@@")))));
+}
+
+TEST_F(PatchTest, UpdateRendersTextBinaryAndTypeChanges) {
+  const Names names{.left = "a/file", .right = "b/file"};
+  const mbo::diff::DiffOptions options;
+  EXPECT_THAT(
+      Update(names, {.content = "old\n", .mode = "100644"}, {.content = "new\n", .mode = "100755"}, options),
+      IsOkAndHolds(AllOf(HasSubstr("old mode 100644\nnew mode 100755\n"), HasSubstr("-old\n+new\n"))));
+  EXPECT_THAT(
+      Update(
+          names, {.content = std::string_view("x\0", 2), .mode = "100644"}, {.content = "new", .mode = "100644"},
+          options),
+      IsOkAndHolds(
+          AllOf(HasSubstr(" 100644\nGIT binary patch\n"), HasSubstr("literal 3\n"), HasSubstr("literal 2\n"))));
+  EXPECT_THAT(
+      Update(names, {.content = "old", .mode = "120000"}, {.content = "new", .mode = "120000"}, options),
+      IsOkAndHolds(AllOf(HasSubstr("120000\n"), HasSubstr("-old\n"), HasSubstr("+new\n"))));
+  EXPECT_THAT(
+      Update(names, {.content = "old", .mode = "100644"}, {.content = "target", .mode = "120000"}, options),
+      IsOkAndHolds(AllOf(HasSubstr("deleted file mode 100644"), HasSubstr("new file mode 120000"))));
+  EXPECT_THAT(
+      Update(names, {.content = "target", .mode = "120000"}, {.content = "new", .mode = "100755"}, options),
+      IsOkAndHolds(AllOf(HasSubstr("deleted file mode 120000"), HasSubstr("new file mode 100755"))));
+}
+
+TEST_F(PatchTest, UpdateRejectsInvalidPathsAndUnsupportedModes) {
+  const mbo::diff::DiffOptions options;
+  const File file{.content = "content", .mode = "100644"};
+  EXPECT_THAT(
+      Update({.left = "../bad", .right = "b/file"}, file, file, options), StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(
+      Update({.left = "a/file", .right = "/bad"}, file, file, options), StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(
+      Update({.left = "a/file", .right = "b/file"}, {.content = "", .mode = "bad"}, file, options),
+      StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(
+      Update({.left = "a/file", .right = "b/file"}, file, {.content = "", .mode = "bad"}, options),
+      StatusIs(absl::StatusCode::kInvalidArgument));
+}
 
 TEST_F(PatchTest, MapPathsInFixedOrderAndAccumulateRewrites) {
   ASSERT_OK_AND_ASSIGN(

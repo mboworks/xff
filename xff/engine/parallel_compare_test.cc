@@ -145,6 +145,25 @@ struct ParallelCompareTest : ::testing::Test {
   TreeCompareEntry right{.path = "right", .metadata = {.type = vfs::FileType::kRegular, .size = 4}, .fs = fs};
 };
 
+TEST_F(ParallelCompareTest, ExecutableCapabilityAffectsEqualityButOtherModeBitsDoNot) {
+  ParallelCompare compare(1);
+  left.metadata.size = right.metadata.size = 0;
+  left.metadata.mode = 0644;
+  right.metadata.mode = 0755;
+  EXPECT_THAT(
+      compare.Compare({{.left = left, .right = right}}).front(),
+      IsOkAndHolds(Field(&ComparisonResult::same, IsFalse())));
+  right.metadata.mode = 0600;
+  EXPECT_THAT(
+      compare.Compare({{.left = left, .right = right}}).front(),
+      IsOkAndHolds(Field(&ComparisonResult::same, IsTrue())));
+  left.metadata.mode = 0100;
+  right.metadata.mode = 0111;
+  EXPECT_THAT(
+      compare.Compare({{.left = left, .right = right}}).front(),
+      IsOkAndHolds(Field(&ComparisonResult::same, IsTrue())));
+}
+
 TEST_F(ParallelCompareTest, RetainsOnlyCompleteSmallDifferingInputs) {
   ParallelCompare compare(1, true);
   ASSERT_OK_AND_ASSIGN(const auto result, compare.Compare({{.path = "file", .left = left, .right = right}}).front());

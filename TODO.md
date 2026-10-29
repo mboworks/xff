@@ -1,5 +1,17 @@
 # TODO
 
+## Comparison and diff audit follow-ups
+
+- [x] Produce Git-applicable comparison patches for empty files, binary updates, symlinks, executable
+      capability changes, and file/directory/type replacements; verify forward/reverse Git application.
+- [ ] Make `--no-ignore` disable ordinary explicit `--ignore-file` sources consistently with help.
+- [ ] Decide hard errors versus intentional absence for missing/unreadable explicit `-diff` / `-rdiff`
+      TARGETs; keep `/dev/null` as the explicit absence sentinel.
+- [ ] Diagnose normalization controls accepted without effect in tree comparison, or design support
+      while preserving exact comparison defaults.
+- [ ] Replace full-tree comparison inventories with bounded directory-by-directory comparison;
+      preserve deterministic ordering, summaries, ignore scopes, and parallel comparison semantics.
+
 ## Diff direction and output path transformations
 
 Design: [`docs/design-diff-paths.md`](docs/design-diff-paths.md).
