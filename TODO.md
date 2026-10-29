@@ -796,6 +796,8 @@ The safety model and directory-scoped permissions are tracked in
 - [x] Make expression-evaluation fuzzing abort on all write and controlled-mutation entrypoints.
 - [x] Exercise both staged release executables with a cross-feature smoke corpus before upload.
 - [x] Cover NUL, escaped plain, and TSV record boundaries in the release smoke corpus.
+- [x] Verify staged-executable comparison patches with Git application and reversal, including
+      empty-file creation/deletion, binary changes, and empty/binary transitions.
 
 ### Audit S05: effective safety explanation
 

@@ -251,7 +251,11 @@ The default Linux/macOS jobs and tag builds run `tools/release_smoke.py` against
 stripped executables after staging. The disposable corpus checks the exact stamped version,
 help, JSONL/CSV/NUL filename round trips, escaped plain/TSV record boundaries, named INI
 selection, repeated summary identity,
-a literal `total` extension, and all four comparison outcomes. No installed executable or
+a literal `total` extension, and all four comparison outcomes. Git checks and applies comparison
+patches containing empty-file creation/deletion, binary additions/deletions/updates, and transitions
+between empty and binary content. The resulting tree must match the right tree byte for byte;
+reverse application must restore the left tree. Git must be available on `PATH`.
+No installed executable or
 user data is modified. Existing required system/user configuration still applies; run this
 release check in a clean CI environment. It complements the full tests rather than replacing them.
 
