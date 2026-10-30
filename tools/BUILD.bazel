@@ -1208,7 +1208,11 @@ py_test(
     name = "benchmark_shards_test",
     size = "small",
     srcs = ["benchmark_shards_test.py"],
-    deps = [":benchmark_shards_lib"],
+    data = ["//:python_workflow_test_data"],
+    deps = [
+        ":benchmark_shards_lib",
+        ":test_paths_lib",
+    ],
 )
 
 py_library(

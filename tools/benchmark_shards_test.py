@@ -10,6 +10,7 @@ import unittest
 from unittest import mock
 
 import benchmark_shards as shards
+from test_paths import repository_file
 
 
 def records(cpus=(1, 4), count=3, partition='balanced', repetitions=9, keep=7, *, adaptive=False,
@@ -43,6 +44,36 @@ def records(cpus=(1, 4), count=3, partition='balanced', repetitions=9, keep=7, *
 
 
 class BenchmarkShardsTest(unittest.TestCase):
+    def test_optional_candidates_override_skipped_ancestor_status(self):
+        workflow = repository_file('.github/workflows/main.yml').read_text()
+        for stage, selector in (('fourth', 'initial'), ('fifth', 'fourth')):
+            for platform in ('linux', 'macos'):
+                with self.subTest(stage=stage, platform=platform):
+                    job = workflow.split(f'  benchmark-measure-{stage}-{platform}:', 1)[1]
+                    condition = job.split('    if:', 1)[1].split('    runs-on:', 1)[0]
+                    # An explicit status function prevents GitHub's implicit success() from
+                    # suppressing a requested candidate when the other platform was skipped.
+                    self.assertIn('!cancelled()', condition)
+                    self.assertIn(f"needs.benchmark-select-{selector}.result == 'success'", condition)
+                    self.assertIn(f"outputs.{platform}_{stage} == 'true'", condition)
+
+    def test_two_pairs_of_runner_environments_require_the_fifth_candidate(self):
+        for platform, cpu_count in (('linux', 4), ('macos', 3)):
+            with self.subTest(platform=platform):
+                values = records(count=5, partition='samples', repetitions=15, keep=15,
+                                 adaptive=True, host_cpu_count=cpu_count)
+                for index, record in enumerate(values):
+                    record['tool_comparisons']['contract']['platform'] = (
+                        'environment-a' if index % 2 == 0 else 'environment-b')
+                candidates = {platform: dict(enumerate(values[:4]))}
+                self.assertTrue(shards.adaptive_decisions(candidates, 'fourth')[platform])
+                with self.assertRaisesRegex(ValueError, 'no three-shard compatible'):
+                    shards.select_adaptive_reports(candidates, platform)
+                candidates[platform][4] = values[4]
+                selected = shards.select_adaptive_reports(candidates, platform)
+                self.assertEqual([r['tool_comparisons']['contract']['shard']['index'] for r in selected],
+                                 [0, 2, 4])
+
     def native_records(self):
         inputs = records(partition='samples')
         for index, record in enumerate(inputs):
