@@ -60,7 +60,7 @@ single_version_override(
     patches = ["//bazelmod:abseil-lazy-corefoundation.patch"],
 )
 bazel_dep(name = "re2", version = "2025-11-05.bcr.1")
-bazel_dep(name = "utf8proc", version = "2.11.0")
+bazel_dep(name = "utf8proc", version = "2.12.0")
 
 # The published BUILD still uses native C++ rules removed in Bazel 9.
 single_version_override(
