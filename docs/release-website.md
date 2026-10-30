@@ -71,6 +71,35 @@ CLI reference, Coverage, and Benchmarks.
 
 ## Backfill a historical release
 
+### Recover an unpublished release
+
+`Release backfill` recovers the original `v0.9.0` release without moving its signed tag or
+changing any executable bytes. Run it from `main`:
+
+```sh
+gh workflow run release_backfill.yml --repo mboworks/xff --ref main -f tag=v0.9.0
+```
+
+This is a reviewed exception for source run `40432376834` at commit
+`8e95f5546187b2a6f4ec165af9cf794af18ac4a1`, not a general option to ignore failed release gates.
+Both platform builds and their staged smoke tests passed. Coverage ran 298 test targets and
+failed only because the rg invocation test expected development version `0.0.0` from the correctly
+stamped `0.9.0` executable. The assertion has no effect on release behavior.
+
+The workflow checks that exact source and failure, verifies GitHub's original artifact digests,
+reruns each platform's staged smoke tests, and compares archived executables with their raw
+downloads. It publishes checksums, recovery attestations, and `release-backfill.json` identifying
+the original run, source commit, artifact digests, and exception. It does not claim a successful
+tag coverage report or weaken the normal Release workflow. Expired or missing artifacts are a
+hard error. Any different recovery needs a separately reviewed change to the allowlist.
+
+The recovered release uses `--latest=false` and explicitly dispatches the existing documentation
+and benchmark publishers. It does not open another changelog PR. If publication needs retrying
+after the GitHub release already exists, rerun those publishers directly rather than overwriting
+release assets.
+
+### Republish documentation for an existing release
+
 No new release or tag change is needed. Manually dispatch `Publish release site` with `tag` set to
 the historical release and `config_path` set to a tracked JSON file on `main`. Leave `config_path`
 empty to use a configuration already in the tag. For example, after selecting a compatible

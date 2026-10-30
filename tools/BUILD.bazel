@@ -23,6 +23,19 @@ load(":compile_sources_test.bzl", "compile_sources_tests")
 
 package(default_visibility = ["//visibility:private"])
 
+py_library(
+    name = "release_backfill_lib",
+    srcs = ["release_backfill.py"],
+    imports = ["."],
+)
+
+py_test(
+    name = "release_backfill_test",
+    size = "small",
+    srcs = ["release_backfill_test.py"],
+    deps = [":release_backfill_lib"],
+)
+
 compile_sources_tests(name = "compile_sources_test")
 
 py_library(
@@ -857,6 +870,7 @@ test_suite(
         ":generate_mime_db_test",
         ":measure_resources_test",
         ":process_resources_test",
+        ":release_backfill_test",
         ":release_notes_test",
         ":release_site_test",
         ":site_artwork_test",
