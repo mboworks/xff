@@ -880,14 +880,18 @@ jobs:
       - name: Schedule a fourth candidate only for unresolved platforms
         id: decision
         run: |
+          set -euo pipefail
           mkdir -p candidate-shards
           python3 tools/benchmark_shards.py --decide-adaptive=candidate-shards \
-            --decision-stage=initial >>"${GITHUB_OUTPUT}"
+            --decision-stage=initial | tee -a "${GITHUB_OUTPUT}"
 
   benchmark-measure-fourth-linux:
     name: Benchmark measurement (linux, shard 3)
     needs: benchmark-select-initial
-    if: github.event_name == 'pull_request' && needs.benchmark-select-initial.outputs.linux_fourth == 'true'
+    if: >-
+      !cancelled() && github.event_name == 'pull_request' &&
+      needs.benchmark-select-initial.result == 'success' &&
+      needs.benchmark-select-initial.outputs.linux_fourth == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -907,7 +911,10 @@ jobs:
   benchmark-measure-fourth-macos:
     name: Benchmark measurement (macos, shard 3)
     needs: benchmark-select-initial
-    if: github.event_name == 'pull_request' && needs.benchmark-select-initial.outputs.macos_fourth == 'true'
+    if: >-
+      !cancelled() && github.event_name == 'pull_request' &&
+      needs.benchmark-select-initial.result == 'success' &&
+      needs.benchmark-select-initial.outputs.macos_fourth == 'true'
     runs-on: macos-latest
     timeout-minutes: 60
     permissions:
@@ -958,14 +965,18 @@ jobs:
       - name: Schedule a fifth candidate only without a three-shard majority
         id: decision
         run: |
+          set -euo pipefail
           mkdir -p candidate-shards
           python3 tools/benchmark_shards.py --decide-adaptive=candidate-shards \
-            --decision-stage=fourth >>"${GITHUB_OUTPUT}"
+            --decision-stage=fourth | tee -a "${GITHUB_OUTPUT}"
 
   benchmark-measure-fifth-linux:
     name: Benchmark measurement (linux, shard 4)
     needs: benchmark-select-fourth
-    if: github.event_name == 'pull_request' && needs.benchmark-select-fourth.outputs.linux_fifth == 'true'
+    if: >-
+      !cancelled() && github.event_name == 'pull_request' &&
+      needs.benchmark-select-fourth.result == 'success' &&
+      needs.benchmark-select-fourth.outputs.linux_fifth == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -985,7 +996,10 @@ jobs:
   benchmark-measure-fifth-macos:
     name: Benchmark measurement (macos, shard 4)
     needs: benchmark-select-fourth
-    if: github.event_name == 'pull_request' && needs.benchmark-select-fourth.outputs.macos_fifth == 'true'
+    if: >-
+      !cancelled() && github.event_name == 'pull_request' &&
+      needs.benchmark-select-fourth.result == 'success' &&
+      needs.benchmark-select-fourth.outputs.macos_fifth == 'true'
     runs-on: macos-latest
     timeout-minutes: 60
     permissions:
