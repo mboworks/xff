@@ -88,4 +88,4 @@ git_override(
     remote = "https://github.com/mboworks/mbo.git",
 )
 bazel_dep(name = "nlohmann_json", version = "3.12.0.bcr.2")
-bazel_dep(name = "mboworks_bashtest", version = "0.6.1")
+bazel_dep(name = "mboworks_bashtest", version = "0.7.0")
