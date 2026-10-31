@@ -17,7 +17,6 @@ package(default_visibility = ["//visibility:private"])
 
 exports_files([
     "abseil-lazy-corefoundation.patch",
-    "bashtest-launcher-exec-properties.patch",
     "dev.MODULE.bazel",
     "expat-build.patch",
     "libarchive-xar.patch",
