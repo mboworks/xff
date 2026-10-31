@@ -1437,26 +1437,12 @@ absl::Status ApplyDiffIgnore(std::string_view tokens, std::string_view matching,
 }  // namespace
 
 namespace {
-bool EmitCreationPatch(const parser::Expr& expr, EvalContext& ctx) {
-  const auto type = ctx.visit.metadata.type;
-  if (type == vfs::FileType::kDirectory || expr.diff_style == "none") {
-    return false;
-  }
-  if (type != vfs::FileType::kRegular && type != vfs::FileType::kSymlink) {
-    ctx.control.SetUnsupported("-diff creation patches require regular files or symlinks");
-    return false;
-  }
-  const auto content =
-      type == vfs::FileType::kSymlink ? ctx.fs.ReadLink(ctx.visit.path) : ctx.fs.ReadContent(ctx.visit.path);
-  if (!content.ok()) {
-    ctx.control.SetUnsupported(absl::StrCat("-diff cannot read source: ", content.status().message()));
-    return false;
-  }
-  std::string_view path = ctx.visit.path;
-  if (path == ctx.visit.root) {
-    path = ctx.visit.name;
-  } else if (path.starts_with(ctx.visit.root)) {
-    path.remove_prefix(ctx.visit.root.size());
+std::string_view DiffLogicalPath(const Visit& visit) {
+  std::string_view path = visit.path;
+  if (path == visit.root) {
+    path = visit.name;
+  } else if (path.starts_with(visit.root)) {
+    path.remove_prefix(visit.root.size());
     if (path.starts_with('/')) {
       path.remove_prefix(1);
     }
@@ -1464,19 +1450,71 @@ bool EmitCreationPatch(const parser::Expr& expr, EvalContext& ctx) {
   while (path.starts_with("./")) {
     path.remove_prefix(2);
   }
+  return path;
+}
+
+absl::StatusOr<patch::Names> DiffNames(const EvalContext& ctx) {
+  const patch::Paths defaults;
+  const auto& paths = ctx.diff_paths ? *ctx.diff_paths : defaults;
+  const auto logical = DiffLogicalPath(ctx.visit);
+  MBO_ASSIGN_OR_RETURN(auto left, paths.left.Map(logical));
+  MBO_ASSIGN_OR_RETURN(auto right, paths.right.Map(logical));
+  return patch::Names{.left = std::move(left), .right = std::move(right)};
+}
+
+absl::Status ClaimDiffNames(
+    const parser::Expr& expr,
+    EvalContext& ctx,
+    const patch::Names& names,
+    std::string_view left_source,
+    std::string_view right_source) {
+  if (!ctx.diff_destinations) {
+    return absl::OkStatus();
+  }
+  return (*ctx.diff_destinations)[ExprIdentity(expr)].Claim(names, left_source, right_source);
+}
+
+bool DiffOutputError(EvalContext& ctx, absl::Status status) {
+  ctx.control.output_error = std::move(status);
+  ctx.control.quit = true;
+  return false;
+}
+
+bool EmitAbsentPatch(const parser::Expr& expr, EvalContext& ctx, bool reverse) {
+  const auto type = ctx.visit.metadata.type;
+  if (type == vfs::FileType::kDirectory || expr.diff_style == "none") {
+    return false;
+  }
+  if (type != vfs::FileType::kRegular && type != vfs::FileType::kSymlink) {
+    ctx.control.SetUnsupported("diff creation/deletion patches require regular files or symlinks");
+    return false;
+  }
+  const auto content =
+      type == vfs::FileType::kSymlink ? ctx.fs.ReadLink(ctx.visit.path) : ctx.fs.ReadContent(ctx.visit.path);
+  if (!content.ok()) {
+    ctx.control.SetUnsupported(absl::StrCat("diff cannot read source: ", content.status().message()));
+    return false;
+  }
   std::string_view mode = "100644";
   if (type == vfs::FileType::kSymlink) {
     mode = "120000";
   } else if ((ctx.visit.metadata.mode & 0111U) != 0) {
     mode = "100755";
   }
-  const auto rendered = patch::Creation(path, *content, mode);
+  const auto names = DiffNames(ctx);
+  if (!names.ok()) {
+    return DiffOutputError(ctx, names.status());
+  }
+  const auto claim = ClaimDiffNames(expr, ctx, *names, reverse ? ctx.visit.path : "", reverse ? "" : ctx.visit.path);
+  if (!claim.ok()) {
+    return DiffOutputError(ctx, claim);
+  }
+  const auto rendered = patch::AbsentSide(*names, *content, mode, reverse);
   if (!rendered.ok()) {
-    ctx.control.SetUnsupported(std::string(rendered.status().message()));
-    return false;
+    return DiffOutputError(ctx, rendered.status());
   }
   ctx.emit(*rendered);
-  return false;  // An added file differs from a nonexistent file, even when empty.
+  return false;  // Presence differs from absence, including empty files.
 }
 }  // namespace
 
@@ -1489,28 +1527,42 @@ bool EvalDiffWithTemplate(
     const parser::Expr& expr,
     EvalContext& ctx,
     mbo::types::OptionalRef<const fields::Template> prepared) {
-  if (expr.args.empty() || expr.args.front() == "/dev/null") {
-    return EmitCreationPatch(expr, ctx);
+  const bool reverse = expr.descriptor->name == "-rdiff";
+  const std::string target = expr.args.empty() ? "/dev/null" : RenderTarget(expr, ctx, prepared);
+  if (target == "/dev/null") {
+    return EmitAbsentPatch(expr, ctx, reverse);
   }
-  const std::string target = RenderTarget(expr, ctx, prepared);
   if (target.empty()) {
     return false;  // no target resolved -> treat as differing
   }
-  const absl::StatusOr<std::string> lhs_data = ctx.fs.ReadContent(ctx.visit.path);
-  const absl::StatusOr<std::string> rhs_data = ctx.fs.ReadContent(target);
+  const std::string_view left_source = reverse ? ctx.visit.path : std::string_view(target);
+  const std::string_view right_source = reverse ? std::string_view(target) : ctx.visit.path;
+  const absl::StatusOr<std::string> lhs_data = ctx.fs.ReadContent(left_source);
+  const absl::StatusOr<std::string> rhs_data = ctx.fs.ReadContent(right_source);
   if (!lhs_data.ok() || !rhs_data.ok()) {
     return false;  // missing / unreadable -> differs
   }
+  if (*lhs_data == *rhs_data) {
+    return true;
+  }
+  const DiffStyle style = ParseDiffStyle(expr.diff_style);
+  const auto names = style.silent ? absl::StatusOr<patch::Names>(patch::Names{}) : DiffNames(ctx);
   // A binary side is byte-compared, not text-diffed: equal is silent; a difference notes it on
   // stderr (like `diff`/`cmp`) and is false.
   if (LooksBinary(*lhs_data) || LooksBinary(*rhs_data)) {
-    if (*lhs_data == *rhs_data) {
-      return true;
+    if (!style.silent) {
+      if (!names.ok()) {
+        return DiffOutputError(ctx, names.status());
+      }
+      const auto claim = ClaimDiffNames(expr, ctx, *names, left_source, right_source);
+      if (!claim.ok()) {
+        return DiffOutputError(ctx, claim);
+      }
+      std::cerr << "Binary files " << patch::HeaderName(names->left) << " and " << patch::HeaderName(names->right)
+                << " differ\n";
     }
-    std::cerr << "Binary files " << ctx.visit.path << " and " << target << " differ\n";
     return false;
   }
-  const DiffStyle style = ParseDiffStyle(expr.diff_style);
   mbo::diff::DiffOptions options;  // default-constructed (myers, unified, ctx 3) then tuned
   // A -diff:STYLE token overrides only the parts it names; an omitted format/context falls back to
   // the resolved global default (--diff-format / --diff-context / --context, else unified / 3).
@@ -1528,8 +1580,8 @@ bool EvalDiffWithTemplate(
   // the walk (ValidateDiffIgnore), so this only configures; the returned status is ignored.
   ApplyDiffIgnore(ctx.diff_ignore, ctx.diff_ignore_matching, options).IgnoreError();
   const absl::StatusOr<std::string> diff = mbo::diff::Diff::FileDiff(
-      mbo::file::Artefact{.data = *lhs_data, .name = std::string(ctx.visit.path)},
-      mbo::file::Artefact{.data = *rhs_data, .name = target}, options);
+      mbo::file::Artefact{.data = *lhs_data, .name = names.ok() ? patch::HeaderName(names->left) : ""},
+      mbo::file::Artefact{.data = *rhs_data, .name = names.ok() ? patch::HeaderName(names->right) : ""}, options);
   if (!diff.ok()) {
     return false;  // a diff failure -> treat as differing
   }
@@ -1537,6 +1589,13 @@ bool EvalDiffWithTemplate(
     return true;  // identical (FileDiff returns "" when the sides are equal)
   }
   if (!style.silent) {
+    if (!names.ok()) {
+      return DiffOutputError(ctx, names.status());
+    }
+    const auto claim = ClaimDiffNames(expr, ctx, *names, left_source, right_source);
+    if (!claim.ok()) {
+      return DiffOutputError(ctx, claim);
+    }
     ctx.emit(*diff);
   }
   return false;  // differ
@@ -3251,6 +3310,10 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-println", MakeEvalEntry<&EvalPrintln>()},
     DispatchPair{"-prune", MakeEvalEntry<&EvalPrune>()},
     DispatchPair{"-quit", MakeEvalEntry<&EvalQuit>()},
+    DispatchPair{
+        "-rdiff",
+        MakeEvalEntry<&EvalDiff>(&PrepareTemplateOperand, &EvalPreparedTemplate<&EvalDiffWithTemplate>),
+    },
     DispatchPair{"-readable", MakeEvalEntry<&EvalReadable>()},
     DispatchPair{"-regex", MakeEvalEntry<&EvalRegex>(nullptr, &EvalPreparedRegex, true)},
     DispatchPair{"-rxc", MakeEvalEntry<&EvalRxc>(nullptr, &EvalPreparedRxc, true)},
@@ -3576,6 +3639,9 @@ EvaluationResult EvaluatePredicateResult(Cursor cursor, EvalContext& context) {
     return EvaluateShardStatus(expr, context);
   }
   const bool matched = cursor.Predicate(context);
+  if (!context.control.output_error.ok()) {
+    return {.unknown = true};
+  }
   if (invalidate) {
     // An action may read fields before mutating this same file through its sink.
     context.content.Invalidate();

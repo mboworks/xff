@@ -33,12 +33,16 @@
 //      `fuse_conn_info` are only ever passed through, so their layouts are irrelevant AND absent.
 //      What is not written cannot drift.
 //   2. Anything whose fields we touch carries the exact layout, field for field, in libfuse's own
-//      order, transcribed against fuse-3.18.2. Order IS the ABI.
+//      order, transcribed against fuse-3.18.2. Order IS the ABI. The prefix we use also matches
+//      fuse-3.14.0 (Linux SONAME 3); fuse-3.18.2 uses SONAME 4. We only access the common
+//      fuse_file_info fields and lowlevel ops prefix, and use the exported four-argument
+//      fuse_session_new compatibility entry point on both runtimes.
 //
 // HOW A MISTAKE SURFACES: the loader resolves every entry point by NAME (see fuse_loader.h), so a
 // wrong signature or field offset cannot be caught at link time - it corrupts at runtime. The guard
-// is Linux CI, where fuse_server_test and the --archive-mount CLI cases drive a real fuse3: a
-// mismatched `fuse_lowlevel_ops` prefix or a shifted `fuse_file_info::fh` fails there loudly.
+// is Linux CI on Ubuntu 24.04 (SONAME 3) and ubuntu-latest (SONAME 4), where fuse_server_test
+// and the --archive-mount CLI cases drive a real fuse3: a mismatched `fuse_lowlevel_ops` prefix or a shifted
+// `fuse_file_info::fh` fails there loudly.
 //
 // EXTENDING IT: fields are only ever APPENDED to `fuse_lowlevel_ops`, and fuse_server passes
 // `op_size` as the offset just past the LAST op it implements (never `sizeof`), so this prefix means

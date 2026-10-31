@@ -930,6 +930,11 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     return 0;
   }
 
+  if (const absl::Status status = xff::cli::ValidateFileDiffModifiers(command, resolved, style); !status.ok()) {
+    std::cerr << "xff: " << status.message() << "\n";
+    return 2;
+  }
+
   // Apply the resolved case mode to the matchers (--case / -i / -s[+|-]; rg defaults
   // smart), in place before the walk: sets folding on the case-sensitive matchers and
   // recompiles their pre-compiled regex. A no-op under the sensitive default.

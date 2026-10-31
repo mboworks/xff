@@ -32,15 +32,18 @@
 namespace xff::cli {
 namespace {
 
+using ::testing::_;
 using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::Eq;
+using ::testing::Field;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsTrue;
 using ::testing::Not;
 using ::testing::NotNull;
+using ::testing::Optional;
 using ::testing::SizeIs;
 
 std::vector<std::string> SectionTitles(const Document& doc) {
@@ -104,6 +107,24 @@ struct BuildReferenceTest : ::testing::Test {
   Document doc = BuildReference();
 };
 
+TEST_F(BuildReferenceTest, SeeAlsoNavigationUsesStructuredBlocks) {
+  const auto check = [&](auto&& self, const Blocks& blocks) -> void {
+    EXPECT_THAT(ProseTextOf(blocks), Not(HasSubstr("See also:")));
+    for (const Content& block : blocks) {
+      if (std::holds_alternative<Subsection>(block.node)) {
+        const auto& subsection = std::get<Subsection>(block.node);
+        EXPECT_THAT(subsection.title, Not(Eq("See also")));
+        self(self, subsection.children);
+      } else if (std::holds_alternative<Entry>(block.node)) {
+        self(self, std::get<Entry>(block.node).details);
+      }
+    }
+  };
+  for (const Section& section : doc.sections) {
+    check(check, section.children);
+  }
+}
+
 TEST_F(BuildReferenceTest, APublishedReferenceOmitsThePerBinaryNotBuiltNote) {
   // XFF.md documents the TOOL, so a note about the binary that happened to generate it would be
   // misleading. The feature is still documented, and its own text still says it is a build extra.
@@ -159,6 +180,7 @@ TEST_F(BuildReferenceTest, SectionsAppearInReferenceOrder) {
                               "Regex matching",
                               "Ripgrep-style searches",
                               "Content",
+                              "Diff and patch output",
                               "Comparing trees",
                               "Ignore and VCS traversal",
                               "Archives",
@@ -228,6 +250,57 @@ TEST_F(BuildReferenceTest, RgHelpExplainsNativeFileSelectionBeforeLineSelection)
   EXPECT_THAT(text, HasSubstr("remain active; the first rg positional argument is the search pattern"));
   EXPECT_THAT(text, HasSubstr("independently selects which lines to print"));
   EXPECT_THAT(text, Not(HasSubstr("Switching back into rg grammar is not supported")));
+}
+
+TEST_F(BuildReferenceTest, DiffTopicExplainsImportAndRecurringUpdatePathMapping) {
+  const std::optional<Document> diff = TopicReference("diff");
+  const Document document = diff.value_or(Document{});
+  ASSERT_THAT(diff, Optional(_));
+  ASSERT_THAT(document.sections, SizeIs(1));
+  EXPECT_THAT(document.sections.front().title, Eq("Diff and patch output"));
+  const std::string prose = ProseTextOf(document.sections.front().children);
+  EXPECT_THAT(prose, HasSubstr("new root directory"));
+  EXPECT_THAT(prose, HasSubstr("ongoing update"));
+  EXPECT_THAT(prose, HasSubstr("current destination paths"));
+  EXPECT_THAT(prose, HasSubstr("comparison pairing"));
+  EXPECT_THAT(prose, HasSubstr("--compare-ignore=respective"));
+  EXPECT_THAT(prose, HasSubstr("either stack excludes it"));
+  const Table* direction = nullptr;
+  for (const Content& content : document.sections.front().children) {
+    if (const auto* table = std::get_if<Table>(&content.node)) {
+      direction = table;
+      break;
+    }
+  }
+  ASSERT_THAT(direction, NotNull());
+  EXPECT_THAT(direction->header, ElementsAre("Mode", "Left / old", "Right / new"));
+  EXPECT_THAT(
+      direction->cells, ElementsAre(
+                            std::vector<std::string>{"-diff (TARGET omitted)", "Absent (/dev/null)", "Found entry"},
+                            std::vector<std::string>{"-diff TARGET", "TARGET", "Found entry"},
+                            std::vector<std::string>{"-rdiff (TARGET omitted)", "Found entry", "Absent (/dev/null)"},
+                            std::vector<std::string>{"-rdiff TARGET", "Found entry", "TARGET"},
+                            std::vector<std::string>{
+                                "--compare=diff LEFT RIGHT", "Matching entry under LEFT, or absent",
+                                "Matching entry under RIGHT, or absent"}));
+}
+
+TEST_F(BuildReferenceTest, CompareTopicCrossReferencesDiff) {
+  const Document navigation = TopicNavigation("compare");
+  ASSERT_THAT(navigation.sections, SizeIs(1));
+  ASSERT_THAT(navigation.sections.front().children, SizeIs(1));
+  const auto* block = std::get_if<SeeAlso>(&navigation.sections.front().children.front().node);
+  ASSERT_THAT(block, NotNull());
+  EXPECT_THAT(block->refs, Contains(Field(&RefTarget::id, Eq("diff"))));
+}
+
+TEST_F(BuildReferenceTest, DiffTopicCrossReferencesCompare) {
+  const Document navigation = TopicNavigation("diff");
+  ASSERT_THAT(navigation.sections, SizeIs(1));
+  ASSERT_THAT(navigation.sections.front().children, SizeIs(1));
+  const auto* block = std::get_if<SeeAlso>(&navigation.sections.front().children.front().node);
+  ASSERT_THAT(block, NotNull());
+  EXPECT_THAT(block->refs, Contains(Field(&RefTarget::id, Eq("compare"))));
 }
 
 TEST_F(BuildReferenceTest, SeeAlsoCarriesManPageCrossReferences) {

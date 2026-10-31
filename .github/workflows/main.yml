@@ -30,7 +30,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - name: Check live repository tooling
         run: bazel run //tools:repository_tooling_test
       - uses: actions/setup-node@v7
@@ -67,15 +67,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-24.04, ubuntu-latest, macos-latest]
         config:
           - name: default
             flags: "--config=clang_release"
           - name: asan
             flags: "--config=clang --config=asan"
         exclude:
-          # asan on Linux is enough; the macOS asan cell is redundant sanitizer coverage, so drop it.
-          # This leaves: ubuntu default, ubuntu asan, macos default.
+          # Exercise both Linux FUSE SONAMEs in default builds; one Linux asan cell is enough.
+          # This leaves: Ubuntu 24.04 default, latest default + asan, and macOS default.
+          - os: ubuntu-24.04
+            config:
+              name: asan
+              flags: "--config=clang --config=asan"
           - os: macos-latest
             config:
               name: asan
@@ -83,14 +87,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       # bazelisk launches the Bazel release pinned in .bazelversion.
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       # PRs restore main's latest compiled outputs. Every main run saves a new bounded
       # generation; GitHub cache entries cannot be updated in place.
       - name: Restore Bazel compiled outputs
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
         with:
-          namespace: ${{ matrix.config.name }}
+          namespace: ${{ matrix.os == 'ubuntu-24.04' && 'default-ubuntu24' || matrix.config.name }}
           legacy-prefix: bazel-disk-${{ matrix.os }}-${{ matrix.config.name }}-
       # Every matrix cell uses hermetic LLVM. Do not persist the repository cache: one LLVM archive
       # is ~4.4 GB and would consume almost half of GitHub's per-repository cache budget. Compiled
@@ -105,13 +109,14 @@ jobs:
           command -v mandoc
       # The FUSE server's integration test mounts a real filesystem through the kernel, which only
       # Linux runners can do (macOS has no fuse3; the test skips there by design). Install the
-      # runtime pieces the loader dlopens (libfuse3) and the unmount helper (fusermount3). The test
+      # fuse3 package, which pulls in the matching libfuse3 runtime (SONAME 3 on Ubuntu 24.04,
+      # SONAME 4 on Ubuntu 26.04) and the unmount helper (fusermount3). The test
       # command below opts Linux into the Bazel capability contract, so mounting failures cannot
       # silently become skips.
       - name: Enable FUSE integration coverage (Linux)
         run: |
           if [ "${RUNNER_OS}" = "Linux" ]; then
-            sudo apt-get install -y fuse3 libfuse3-3
+            sudo apt-get install -y fuse3
           fi
       # Every job builds with EVERY extra on (--config=xff_docs, which is --config=xff_full plus the
       # archive extra), so the composable extras get the SAME asan / tsan coverage as the core - our
@@ -213,7 +218,7 @@ jobs:
           sudo update-alternatives --set gcc /usr/bin/gcc-15
           gcc --version
           g++ --version
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - name: Restore Bazel compiled outputs
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
@@ -248,7 +253,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
@@ -280,7 +285,7 @@ jobs:
       FUZZ_SECONDS_PER_TARGET: 60
     steps:
       - uses: actions/checkout@v7
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - name: Restore Bazel compiled outputs
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
@@ -338,7 +343,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       # Coverage instrumentation has distinct action keys, so keep its compiled outputs in a
       # dedicated cache rather than crowding out the ordinary Clang build. Prefix restoration lets a
       # later run reuse objects from the newest saved generation.
@@ -355,7 +360,7 @@ jobs:
         run: |
           # Ubuntu's lcov package supplies the Perl dependencies, but its old genhtml ignores
           # metric-specific color thresholds. Install the pinned current release over it below.
-          sudo apt-get install -y lcov mandoc fuse3 libfuse3-3
+          sudo apt-get install -y lcov mandoc fuse3
           tools/install_lcov.sh "${RUNNER_TEMP}/lcov"
           echo "${RUNNER_TEMP}/lcov/bin" >>"${GITHUB_PATH}"
       - name: Collect and enforce coverage
@@ -465,7 +470,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - name: Restore Bazel compiled outputs
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
@@ -477,7 +482,7 @@ jobs:
       # This runner promises a working mount path through the named Bazel config below.
       - name: Enable FUSE integration coverage
         run: |
-          sudo apt-get install -y fuse3 libfuse3-3
+          sudo apt-get install -y fuse3
       - name: bazel test
         run: |
           # shellcheck disable=SC2046  # deliberate word splitting: the tool prints bazel target patterns
@@ -507,25 +512,27 @@ jobs:
       contents: read
       actions: write # Retire replaced main cache generations after successful uploads.
     needs: [pre-commit, trunk]
-    runs-on: ubuntu-latest
+    # LLVM 22.1.8 LLD requires libxml2.so.2; Ubuntu 26.04 only packages SONAME 16.
+    # Keep the matching MSan compiler/libc++ pair on a host with compatible libraries.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - name: Restore Bazel compiled outputs
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
         with:
-          namespace: msan
+          namespace: msan-ubuntu24
           legacy-prefix: bazel-disk-msan-
-      - name: Install roff formatter (mandoc)
-        run: sudo apt-get install -y mandoc
+      - name: Install LLVM 22 runtime dependency and roff formatter
+        run: sudo apt-get install -y libxml2 mandoc
       # Installed for the same reason as the tsan cell, though every mounting test skips here: a
       # mount runs through the dlopened SYSTEM libfuse3, and MSan reports everything it did not
       # instrument as uninitialized. The skips key off --config=msan itself (the MEMORY_SANITIZER
       # macro in C++, the XFF_MSAN env in the shell test), so they hold whether or not this is set.
       - name: Enable FUSE integration coverage
         run: |
-          sudo apt-get install -y fuse3 libfuse3-3
+          sudo apt-get install -y fuse3
       - name: bazel test
         run: |
           # shellcheck disable=SC2046  # deliberate word splitting: the tool prints bazel target patterns
@@ -553,7 +560,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - name: Restore Bazel compiled outputs
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
@@ -595,7 +602,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - name: Restore Bazel compiled outputs
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
@@ -661,7 +668,7 @@ jobs:
             echo "CLANG_TIDY_SCOPE=none" >>"${GITHUB_ENV}"
             echo "No C++ source or header changed; clang-tidy is not required."
           fi
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
         if: env.CLANG_TIDY_ENABLED == 'true'
       - uses: actions/setup-python@v7
         if: env.CLANG_TIDY_ENABLED == 'true'
@@ -681,8 +688,8 @@ jobs:
         if: env.CLANG_TIDY_ENABLED == 'true'
         # A gitignored local artifact, so build it here. The script extracts the DB in
         # --config=clang-tidy and names the hermetic clang driver, which is what makes the commands
-        # parseable by the matching clang-tidy. It also runs `bazel build --config=clang-tidy //...`
-        # first (the same config as its aquery) to materialize the generated / virtual-include
+        # parseable by the matching clang-tidy. It first builds core, manual lint targets, and all
+        # extras in one Bazel invocation (the same config as its aquery) to materialize virtual-include
         # headers the recorded commands reference - without which clang-tidy would abort on
         # `'xff/license/notice.h' file not found` on a fresh runner.
         run: ./compile_commands-update.sh
@@ -741,7 +748,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: bazel-contrib/setup-bazel@0.19.1
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
@@ -873,14 +880,18 @@ jobs:
       - name: Schedule a fourth candidate only for unresolved platforms
         id: decision
         run: |
+          set -euo pipefail
           mkdir -p candidate-shards
           python3 tools/benchmark_shards.py --decide-adaptive=candidate-shards \
-            --decision-stage=initial >>"${GITHUB_OUTPUT}"
+            --decision-stage=initial | tee -a "${GITHUB_OUTPUT}"
 
   benchmark-measure-fourth-linux:
     name: Benchmark measurement (linux, shard 3)
     needs: benchmark-select-initial
-    if: github.event_name == 'pull_request' && needs.benchmark-select-initial.outputs.linux_fourth == 'true'
+    if: >-
+      !cancelled() && github.event_name == 'pull_request' &&
+      needs.benchmark-select-initial.result == 'success' &&
+      needs.benchmark-select-initial.outputs.linux_fourth == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -900,7 +911,10 @@ jobs:
   benchmark-measure-fourth-macos:
     name: Benchmark measurement (macos, shard 3)
     needs: benchmark-select-initial
-    if: github.event_name == 'pull_request' && needs.benchmark-select-initial.outputs.macos_fourth == 'true'
+    if: >-
+      !cancelled() && github.event_name == 'pull_request' &&
+      needs.benchmark-select-initial.result == 'success' &&
+      needs.benchmark-select-initial.outputs.macos_fourth == 'true'
     runs-on: macos-latest
     timeout-minutes: 60
     permissions:
@@ -951,14 +965,18 @@ jobs:
       - name: Schedule a fifth candidate only without a three-shard majority
         id: decision
         run: |
+          set -euo pipefail
           mkdir -p candidate-shards
           python3 tools/benchmark_shards.py --decide-adaptive=candidate-shards \
-            --decision-stage=fourth >>"${GITHUB_OUTPUT}"
+            --decision-stage=fourth | tee -a "${GITHUB_OUTPUT}"
 
   benchmark-measure-fifth-linux:
     name: Benchmark measurement (linux, shard 4)
     needs: benchmark-select-fourth
-    if: github.event_name == 'pull_request' && needs.benchmark-select-fourth.outputs.linux_fifth == 'true'
+    if: >-
+      !cancelled() && github.event_name == 'pull_request' &&
+      needs.benchmark-select-fourth.result == 'success' &&
+      needs.benchmark-select-fourth.outputs.linux_fifth == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -978,7 +996,10 @@ jobs:
   benchmark-measure-fifth-macos:
     name: Benchmark measurement (macos, shard 4)
     needs: benchmark-select-fourth
-    if: github.event_name == 'pull_request' && needs.benchmark-select-fourth.outputs.macos_fifth == 'true'
+    if: >-
+      !cancelled() && github.event_name == 'pull_request' &&
+      needs.benchmark-select-fourth.result == 'success' &&
+      needs.benchmark-select-fourth.outputs.macos_fifth == 'true'
     runs-on: macos-latest
     timeout-minutes: 60
     permissions:

@@ -56,6 +56,7 @@ constexpr std::array kLibraryCandidates = std::to_array<std::string_view>({
     "/usr/local/lib/libfuse3.dylib",
     "libfuse3.dylib",
 #else
+    "libfuse3.so.4",
     "libfuse3.so.3",
     "libfuse3.so",
 #endif

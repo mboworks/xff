@@ -3,6 +3,7 @@
 
 #include "xff/cli/modifier_diagnostics.h"
 
+#include <array>
 #include <memory>
 #include <optional>
 #include <string>
@@ -27,6 +28,7 @@
 namespace xff::cli {
 namespace {
 
+using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
 using ::testing::Eq;
@@ -48,6 +50,55 @@ struct ModifierDiagnosticsTest : ::testing::Test {
   }
 };
 
+struct FileDiffModifierTest : ModifierDiagnosticsTest {
+  static absl::Status Validate(const std::vector<std::string>& args) {
+    MBO_ASSIGN_OR_RETURN(const auto command, parser::Parse(args));
+    std::vector<config::ResolvedFlag> application;
+    application.reserve(command.globals.size());
+    for (const std::string& global : command.globals) {
+      application.push_back({.flag = global, .source = config::Source::kCli});
+    }
+    return ValidateFileDiffModifiers(command, application);
+  }
+};
+
+TEST_F(FileDiffModifierTest, RejectsExplicitNormalizationWithoutAFileDiffConsumer) {
+  constexpr auto modifiers = std::to_array<std::string_view>({"--diff-ignore=trail", "--diff-ignore-matching=^DEBUG"});
+  constexpr auto modes = std::to_array<std::string_view>({"--compare", "--compare=diff", "--compare=summary"});
+  for (const std::string_view modifier : modifiers) {
+    for (const std::string_view mode : modes) {
+      EXPECT_THAT(
+          Validate({"left", "right", std::string(mode), std::string(modifier)}),
+          StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("requires a -diff or -rdiff action")));
+    }
+    EXPECT_THAT(Validate({".", std::string(modifier)}), StatusIs(absl::StatusCode::kInvalidArgument));
+    EXPECT_THAT(Validate({".", std::string(modifier), "-diff:none", "other"}), IsOk());
+    EXPECT_THAT(Validate({"left", "right", "--compare", std::string(modifier), "-rdiff:none", "other"}), IsOk());
+  }
+}
+
+TEST_F(FileDiffModifierTest, EmptyResetsAndUnrelatedAdvisoryModifiersRemainValid) {
+  EXPECT_THAT(Validate({"left", "right", "--compare", "--diff-ignore=trail", "--diff-ignore="}), IsOk());
+  EXPECT_THAT(Validate({"left", "right", "--compare", "--diff-ignore-matching=x", "--diff-ignore-matching="}), IsOk());
+  EXPECT_THAT(Validate({".", "--count"}), IsOk());
+  EXPECT_THAT(
+      Validate({".", "--diff-ignore=trail", "--context=x"}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("context")));
+}
+
+TEST_F(FileDiffModifierTest, RespectsConfigProvenanceSupersededRequestsAndPrimaryArguments) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"left", "right", "--compare"}));
+  const config::ResolvedFlag user{.flag = "--diff-ignore=trail", .source = config::Source::kUser};
+  const config::ResolvedFlag cli{.flag = "--diff-ignore=trail", .source = config::Source::kCli};
+  EXPECT_THAT(ValidateFileDiffModifiers(command, {user}), IsOk());
+  EXPECT_THAT(ValidateFileDiffModifiers(command, {cli, user}), IsOk());
+  EXPECT_THAT(ValidateFileDiffModifiers(command, {user, cli}), StatusIs(absl::StatusCode::kInvalidArgument));
+  auto argument = cli;
+  argument.is_argument = true;
+  EXPECT_THAT(ValidateFileDiffModifiers(command, {argument}), IsOk());
+  EXPECT_THAT(ValidateFileDiffModifiers(command, {{.flag = "--no-pager", .source = config::Source::kCli}}), IsOk());
+}
+
 struct ArchiveModifierDiagnosticsTest : ModifierDiagnosticsTest {
   void SetUp() override {
     archive::RegisterContainerReader(
@@ -62,6 +113,18 @@ struct ArchiveModifierDiagnosticsTest : ModifierDiagnosticsTest {
 
   void TearDown() override { archive::RegisterContainerReader("modifier-diagnostics", archive::ContainerOpener{}, {}); }
 };
+
+TEST_F(ModifierDiagnosticsTest, PatchPathsRequireAnOutputProducingDiffConsumer) {
+  EXPECT_THAT(Notes({".", "--diff-left-root=project", "-diff"}), IsOkAndHolds(Eq("")));
+  EXPECT_THAT(Notes({".", "--diff-right-rewrite=s|x|y|", "-rdiff"}), IsOkAndHolds(Eq("")));
+  EXPECT_THAT(Notes({"left", "right", "--compare=diff", "--diff-right-prefix="}), IsOkAndHolds(Eq("")));
+  EXPECT_THAT(
+      Notes({".", "--diff-left-root=project", "-rdiff:none"}),
+      IsOkAndHolds(HasSubstr("patch output from -diff, -rdiff, or --compare=diff")));
+  EXPECT_THAT(
+      Notes({"left", "right", "--compare=status", "--diff-left-strip=1"}),
+      IsOkAndHolds(HasSubstr("inactive-modifier")));
+}
 
 TEST_F(ModifierDiagnosticsTest, HashActionsConsumeOnlyUnspecifiedDefaults) {
   EXPECT_THAT(Notes({".", "--hash-algorithm=md5", "-hash"}), IsOkAndHolds(Eq("")));
@@ -230,13 +293,14 @@ TEST_F(ModifierDiagnosticsTest, DiffDefaultsDistinguishActionsOverridesAndTreeOu
   EXPECT_THAT(
       Notes({"left", "right", "--compare", "--diff-algorithm=direct"}), IsOkAndHolds(HasSubstr("requires -diff or")));
   EXPECT_THAT(Notes({".", "--diff-ignore=ws", "-diff", "other"}), IsOkAndHolds(Eq("")));
-  EXPECT_THAT(Notes({".", "--diff-ignore-matching=x"}), IsOkAndHolds(HasSubstr("requires a -diff action")));
+  EXPECT_THAT(Notes({".", "--diff-ignore-matching=x"}), IsOkAndHolds(HasSubstr("requires a -diff or -rdiff action")));
 }
 
 TEST_F(ModifierDiagnosticsTest, SharedContextUsesTheActualDiffStyleAndSymmetry) {
   EXPECT_THAT(Notes({".", "--context-before=2", "--context-after=2", "-diff", "other"}), IsOkAndHolds(Eq("")));
   EXPECT_THAT(
-      Notes({".", "--context=2", "-diff:u4", "other"}), IsOkAndHolds(HasSubstr("symmetric default -diff context")));
+      Notes({".", "--context=2", "-diff:u4", "other"}),
+      IsOkAndHolds(HasSubstr("symmetric default -diff/-rdiff context")));
   EXPECT_THAT(
       Notes({".", "--context=2", "--diff-context=4", "-diff", "other"}),
       IsOkAndHolds(HasSubstr("inactive-modifier\t--context=2")));

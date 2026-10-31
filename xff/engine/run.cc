@@ -88,6 +88,7 @@
 #include "xff/presentation/color/color.h"
 #include "xff/presentation/fields/fields.h"
 #include "xff/presentation/format/format.h"
+#include "xff/presentation/patch/patch.h"
 #include "xff/presentation/render/render.h"
 #include "xff/presentation/render/scoped_table.h"
 #include "xff/presentation/render/summary_export.h"
@@ -1890,19 +1891,31 @@ class IgnoreFileCache {
   bool Active() const { return !filenames_.empty(); }
 
   ignore::Decision Decide(std::string_view path, std::string_view root, bool is_dir) {
-    const Scope& scope = ScopeFor(root);
+    return DecideUsingRoot(path, root, root, is_dir);
+  }
+
+  // Applies the ignore stack discovered below policy_root to the path at the same
+  // root-relative location under root. Comparison uses this to select one tree's
+  // policy for both sides without changing the path that is paired or emitted.
+  ignore::Decision DecideUsingRoot(
+      std::string_view path,
+      std::string_view root,
+      std::string_view policy_root,
+      bool is_dir) {
+    const Scope& scope = ScopeFor(policy_root);
     // In repo scope the walk is done in absolute paths anchored at the repo root, so a
     // relative entry (e.g. under root ".") is first rebased onto the search root's
-    // absolute form. Off a repo, `base` is the search root as given and no rebase is
-    // needed. `owner` keeps the rebased string alive for the string_views below.
+    // absolute form. For comparison, the entry's relative path is projected beneath
+    // policy_root before it is rebased. Off a repo, `base` is policy_root and no rebase
+    // is needed. `owner` keeps the rebased string alive for the string_views below.
     std::string owner;
     std::string_view rel;
+    const std::string_view rel_to_root = RelativeTo(path, root);
     if (scope.in_repo) {
-      const std::string_view rel_to_root = RelativeTo(path, root);
       owner = rel_to_root.empty() ? scope.abs_root : absl::StrCat(scope.abs_root, "/", rel_to_root);
       rel = RelativeTo(owner, scope.base);
     } else {
-      rel = RelativeTo(path, root);
+      rel = rel_to_root;
     }
     // A `.gitkeep` intentionally keeps its (otherwise-empty) directory in the repo, so the gitignore
     // layers never ignore it - it is always kept, as if by a top-precedence `!.gitkeep`. Explicit
@@ -2083,6 +2096,38 @@ class RootedIgnoreFiles {
 
   std::vector<Source> sources_;
 };
+
+// Explicit comparison rules share a logical base: each comparison root, not the file's parent.
+absl::StatusOr<ignore::PatternList> ReadCompareIgnoreFiles(
+    const vfs::FileSystem& fs,
+    const std::vector<std::string>& globals,
+    std::size_t side) {
+  using Scope = cli::GlobalFlag::CompareIgnoreScope;
+  ignore::PatternList patterns;
+  for (const std::string& global : globals) {
+    const auto flag = cli::LookupGlobalArgument(global);
+    if (!flag || flag->compare_ignore_scope == Scope::kNone) {
+      continue;
+    }
+    const std::string_view path = global.size() <= flag->name.size()
+                                      ? std::string_view()
+                                      : std::string_view(global).substr(flag->name.size() + 1);
+    if (path.empty()) {
+      return absl::InvalidArgumentError(absl::StrCat(flag->name, " requires a non-empty path"));
+    }
+    // Validate every explicit request, including files whose rules apply only to the other side.
+    const auto content = fs.ReadContent(path);
+    if (!content.ok()) {
+      return absl::Status(
+          content.status().code(), absl::StrCat(flag->name, ": ", path, ": ", content.status().message()));
+    }
+    if (flag->compare_ignore_scope == Scope::kBoth
+        || flag->compare_ignore_scope == (side == 0 ? Scope::kLeft : Scope::kRight)) {
+      patterns.AddPatterns(*content);
+    }
+  }
+  return patterns;
+}
 
 bool HasGlobal(const std::vector<std::string>& globals, std::string_view flag) {
   return absl::c_any_of(globals, [flag](std::string_view global) { return global == flag; });
@@ -4074,6 +4119,25 @@ using TreeCompareEntries = std::map<std::string, TreeCompareEntry>;
 
 enum class TreeCompareOutput { kStatus, kDiff };
 
+enum class CompareIgnorePolicy { kRespective, kNone, kLeft, kRight, kUnion };
+
+CompareIgnorePolicy ResolveCompareIgnorePolicy(const std::vector<std::string>& globals) {
+  constexpr std::string_view kPrefix = "--compare-ignore=";
+  CompareIgnorePolicy policy = CompareIgnorePolicy::kRespective;
+  for (const std::string& global : globals) {
+    if (!global.starts_with(kPrefix)) {
+      continue;
+    }
+    const std::string_view value = std::string_view(global).substr(kPrefix.size());
+    policy = value == "none"    ? CompareIgnorePolicy::kNone
+             : value == "left"  ? CompareIgnorePolicy::kLeft
+             : value == "right" ? CompareIgnorePolicy::kRight
+             : value == "union" ? CompareIgnorePolicy::kUnion
+                                : CompareIgnorePolicy::kRespective;
+  }
+  return policy;
+}
+
 struct TreeCompareSelection {
   bool left_only = true;
   bool right_only = true;
@@ -4130,37 +4194,86 @@ absl::StatusOr<TreeCompareSelection> ResolveTreeCompareSelection(const std::vect
   return selection;
 }
 
+absl::StatusOr<patch::Names> TreePatchNames(
+    mbo::types::OptionalRef<const TreeCompareEntry> left,
+    mbo::types::OptionalRef<const TreeCompareEntry> right,
+    std::string_view relative_path,
+    const patch::Paths& paths) {
+  const auto logical = [relative_path](const TreeCompareEntry& entry) -> std::string_view {
+    if (relative_path != ".") {
+      return relative_path;
+    }
+    const std::string_view path = entry.path;
+    const auto slash = path.find_last_of('/');
+    return slash == std::string_view::npos ? path : path.substr(slash + 1);
+  };
+  patch::Names names;
+  MBO_ASSIGN_OR_RETURN(names.left, paths.left.Map(logical(left ? *left : *right)));
+  MBO_ASSIGN_OR_RETURN(names.right, paths.right.Map(logical(right ? *right : *left)));
+  return names;
+}
+
+bool HasTreePatchContent(mbo::types::OptionalRef<const TreeCompareEntry> entry) {
+  return entry && entry->metadata.type != vfs::FileType::kDirectory;
+}
+
+absl::StatusOr<std::string> ReadTreePatchContent(const TreeCompareEntry& entry) {
+  if (entry.metadata.type == vfs::FileType::kSymlink) {
+    return entry.fs->ReadLink(entry.path);
+  }
+  if (entry.metadata.type == vfs::FileType::kRegular) {
+    return entry.fs->ReadContent(entry.path);
+  }
+  return absl::UnimplementedError("Git patches require regular files, symlinks, or directories");
+}
+
+std::string_view TreePatchMode(const TreeCompareEntry& entry) {
+  if (entry.metadata.type == vfs::FileType::kSymlink) {
+    return "120000";
+  }
+  return (entry.metadata.mode & 0111U) != 0 ? std::string_view("100755") : std::string_view("100644");
+}
+
+absl::StatusOr<ComparisonBytes> ReadTreePatchBytes(
+    mbo::types::OptionalRef<const TreeCompareEntry> left,
+    mbo::types::OptionalRef<const TreeCompareEntry> right) {
+  ComparisonBytes bytes;
+  if (HasTreePatchContent(left)) {
+    MBO_ASSIGN_OR_RETURN(bytes.left, ReadTreePatchContent(*left));
+  }
+  if (HasTreePatchContent(right)) {
+    MBO_ASSIGN_OR_RETURN(bytes.right, ReadTreePatchContent(*right));
+  }
+  return bytes;
+}
+
 absl::StatusOr<std::string> TreeEntryPatch(
     mbo::types::OptionalRef<const TreeCompareEntry> left,
     mbo::types::OptionalRef<const TreeCompareEntry> right,
     std::string_view relative_path,
     const mbo::diff::DiffOptions& options,
+    const patch::Paths& paths,
+    patch::Destinations& destinations,
     mbo::types::OptionalRef<const ComparisonBytes> prepared) {
-  const std::string left_name = left.has_value() ? absl::StrCat("a/", relative_path) : "/dev/null";
-  const std::string right_name = right.has_value() ? absl::StrCat("b/", relative_path) : "/dev/null";
-  const bool regular = (!left.has_value() || left->metadata.type == vfs::FileType::kRegular)
-                       && (!right.has_value() || right->metadata.type == vfs::FileType::kRegular);
-  if (!regular) {
-    return absl::StrCat("Files ", left_name, " and ", right_name, " differ\n");
+  if (!HasTreePatchContent(left) && !HasTreePatchContent(right)) {
+    return std::string();  // Git does not represent directory entries.
   }
-  mbo::file::Artefact left_input{.name = left_name};
-  mbo::file::Artefact right_input{.name = right_name};
-  if (prepared) {
-    left_input.data = prepared->left;
-    right_input.data = prepared->right;
-  } else {
-    if (left) {
-      MBO_ASSIGN_OR_RETURN(left_input.data, left->fs->ReadContent(left->path));
-    }
-    if (right) {
-      MBO_ASSIGN_OR_RETURN(right_input.data, right->fs->ReadContent(right->path));
-    }
+  MBO_ASSIGN_OR_RETURN(const auto names, TreePatchNames(left, right, relative_path, paths));
+  MBO_RETURN_IF_ERROR(destinations.Claim(names, left ? left->path : "", right ? right->path : ""));
+  ComparisonBytes read_bytes;
+  if (!prepared) {
+    MBO_ASSIGN_OR_RETURN(read_bytes, ReadTreePatchBytes(left, right));
   }
-  if (absl::StrContains(std::string_view(left_input.data).substr(0, content::kBinaryNulSniffBytes), '\0')
-      || absl::StrContains(std::string_view(right_input.data).substr(0, content::kBinaryNulSniffBytes), '\0')) {
-    return absl::StrCat("Binary files ", left_name, " and ", right_name, " differ\n");
+  const ComparisonBytes& bytes = prepared ? *prepared : read_bytes;
+  if (!HasTreePatchContent(left)) {
+    return patch::AbsentSide(names, bytes.right, TreePatchMode(*right), false);
   }
-  return mbo::diff::Diff::FileDiff(left_input, right_input, options);
+  if (!HasTreePatchContent(right)) {
+    return patch::AbsentSide(names, bytes.left, TreePatchMode(*left), true);
+  }
+  return patch::Update(
+      names, {.content = bytes.left, .mode = TreePatchMode(*left)},
+      {.content = bytes.right, .mode = TreePatchMode(*right)}, options);
 }
 
 using MatchedEntryFn = absl::FunctionRef<void(const Visit&)>;
@@ -4363,6 +4476,12 @@ RunResult RunTreeCompare(
     on_error("--compare", absl::InvalidArgumentError("requires exactly two roots"));
     return RunResult{.errors = 2};
   }
+  const auto diff_paths = patch::Paths::Resolve(command.globals);
+  if (!diff_paths.ok()) {
+    on_error("diff paths", diff_paths.status());
+    return RunResult{.errors = 2};
+  }
+  patch::Destinations diff_destinations;
   const TreeCompareOutput output = ResolveTreeCompareOutput(command.globals);
   const render::Renderer status_renderer(render::Format::kPlain, ResolvePathEncoding(command.globals));
   const absl::StatusOr<TreeCompareSelection> selection_result = ResolveTreeCompareSelection(command.globals);
@@ -4514,7 +4633,7 @@ RunResult RunTreeCompare(
         emit_status(category_name, pair.path);
       } else {
         const auto patch = TreeEntryPatch(
-            pair.left, pair.right, pair.path, diff_options,
+            pair.left, pair.right, pair.path, diff_options, *diff_paths, diff_destinations,
             result->bytes ? mbo::types::OptionalRef<const ComparisonBytes>{*result->bytes}
                           : mbo::types::OptionalRef<const ComparisonBytes>{});
         if (!patch.ok()) {
@@ -4997,6 +5116,13 @@ RunResult RunFindCore(
     return RunResult{.errors = 2};
   }
   const mbo::diff::DiffOptions::OutputFormat diff_format = *diff_format_result;
+  const auto diff_paths = patch::Paths::Resolve(command.globals);
+  if (!diff_paths.ok()) {
+    on_error("diff paths", diff_paths.status());
+    return RunResult{.errors = 2};
+  }
+  PatchDestinations diff_destinations;
+  bool diff_output_failed = false;
   // --diff-context=N (and --context=N when symmetric): the default -diff context size (built-in 3).
   // --context feeds diff only when before==after (a single symmetric value a diff can represent);
   // --diff-context overrides --context regardless of order; a per-action -diff:uN overrides both.
@@ -5383,12 +5509,28 @@ RunResult RunFindCore(
   // ResolveGitignoreMode returns kOff then, so the repo probe and the global-excludes
   // read below are skipped too.
   const GitignoreMode gitignore_mode = ResolveGitignoreMode(command.globals, style);
-  const bool gitignore_on =
+  const CompareIgnorePolicy compare_ignore_policy =
+      compare_listing ? ResolveCompareIgnorePolicy(command.globals) : CompareIgnorePolicy::kRespective;
+  const bool no_ignore = HasGlobal(command.globals, "--no-ignore") || HasGlobal(command.globals, "-u");
+  const bool configured_gitignore_on =
       gitignore_mode == GitignoreMode::kOn || (gitignore_mode == GitignoreMode::kAuto && AnyRootInRepo(walk_fs, roots));
+  bool gitignore_on = configured_gitignore_on;
+  bool skip_vcs_gitignore_on = configured_gitignore_on;
+  if (compare_listing && !no_ignore) {
+    if (compare_ignore_policy == CompareIgnorePolicy::kNone) {
+      gitignore_on = false;
+    } else if (
+        compare_ignore_policy == CompareIgnorePolicy::kLeft || compare_ignore_policy == CompareIgnorePolicy::kRight
+        || compare_ignore_policy == CompareIgnorePolicy::kUnion) {
+      gitignore_on = true;
+      skip_vcs_gitignore_on = true;
+    }
+  }
   // --skip-vcs[=LIST] / --no-skip-vcs: the VCS metadata dir names to prune. Resolved once (needs
   // gitignore_on for the -g -> .git default) and validated here, so a bad token is a usage error
   // (exit 2) refused before the walk.
-  const absl::StatusOr<absl::flat_hash_set<std::string>> skip_vcs = ResolveSkipVcs(command.globals, gitignore_on);
+  const absl::StatusOr<absl::flat_hash_set<std::string>> skip_vcs =
+      ResolveSkipVcs(command.globals, skip_vcs_gitignore_on);
   if (!skip_vcs.ok()) {
     on_error("--skip-vcs", skip_vcs.status());
     return RunResult{.errors = 2};
@@ -5412,9 +5554,16 @@ RunResult RunFindCore(
   IgnoreFileCache ignore_files(
       walk_fs, ResolveIgnoreFileNames(command.globals, gitignore_on, style), gitignore_on, std::move(global_excludes));
   // --ignore-file=PATH: explicit ignore files, each rooted at its own directory. Independent of
-  // -g / --no-ignore (the user named these), consulted below CLI --exclude but above the auto
+  // -g, but disabled by --no-ignore. Consulted below CLI --exclude but above the auto
   // .gitignore stack (an explicitly named file outranks auto-discovery, below a direct glob).
-  const RootedIgnoreFiles rooted_ignore_files = RootedIgnoreFiles::FromGlobals(walk_fs, command.globals);
+  const RootedIgnoreFiles rooted_ignore_files =
+      no_ignore ? RootedIgnoreFiles{} : RootedIgnoreFiles::FromGlobals(walk_fs, command.globals);
+  const auto compare_ignore_files = ReadCompareIgnoreFiles(walk_fs, command.globals, root_offset);
+  if (!compare_ignore_files.ok()) {
+    on_error("--compare-ignore-file", compare_ignore_files.status());
+    return RunResult{.errors = 2};
+  }
+  const bool compare_explicit_ignore = !no_ignore && !compare_ignore_files->empty();
 
   // -ok confirmation: prompt to stderr, read a line from stdin, affirmative on y/Y (like find).
   const auto confirm = [](std::string_view prompt) -> bool {
@@ -5976,18 +6125,46 @@ RunResult RunFindCore(
         // matched directory is pruned (its subtree is never walked, so this is also
         // the fast path); a matched file is simply skipped. The search root itself
         // (empty relative path) is never filtered -- the user named it. CLI
-        // --exclude/--include has highest precedence, then explicit --ignore-file sources
+        // --exclude/--include has highest precedence, then --compare-ignore-file sources, then --ignore-file sources
         // (rooted at the file's own dir), then the auto per-directory ignore-file stack
         // (--ignore-files / -g); each later layer decides only where the earlier ones are silent.
-        if (!ignore_patterns.empty() || rooted_ignore_files.Active() || ignore_files.Active()) {
+        const bool compare_auto_ignore =
+            compare_listing && compare_ignore_policy != CompareIgnorePolicy::kNone && ignore_files.Active();
+        if (!ignore_patterns.empty() || compare_explicit_ignore || rooted_ignore_files.Active() || compare_auto_ignore
+            || (!compare_listing && ignore_files.Active())) {
           const bool is_dir = visit.metadata.type == vfs::FileType::kDirectory;
           const std::string_view rel = RelativeTo(visit.path, visit.root);
           if (!rel.empty()) {
             ignore::Decision decision = ignore_patterns.Match(rel, is_dir);
+            if (decision == ignore::Decision::kDefault && compare_explicit_ignore) {
+              decision = compare_ignore_files->Match(rel, is_dir);
+            }
             if (decision == ignore::Decision::kDefault && rooted_ignore_files.Active()) {
               decision = rooted_ignore_files.Decide(AbsoluteDir(visit.path), is_dir);
             }
-            if (decision == ignore::Decision::kDefault && ignore_files.Active()) {
+            if (decision == ignore::Decision::kDefault && compare_auto_ignore) {
+              const auto from_policy = [&](std::size_t side) {
+                return ignore_files.DecideUsingRoot(visit.path, visit.root, command.roots.at(side), is_dir);
+              };
+              switch (compare_ignore_policy) {
+                case CompareIgnorePolicy::kNone:
+                case CompareIgnorePolicy::kRespective:
+                  decision = ignore_files.Decide(visit.path, visit.root, is_dir);
+                  break;
+                case CompareIgnorePolicy::kLeft: decision = from_policy(0); break;
+                case CompareIgnorePolicy::kRight: decision = from_policy(1); break;
+                case CompareIgnorePolicy::kUnion: {
+                  const ignore::Decision left = from_policy(0);
+                  const ignore::Decision right = from_policy(1);
+                  decision = left == ignore::Decision::kIgnore || right == ignore::Decision::kIgnore
+                                 ? ignore::Decision::kIgnore
+                             : left == ignore::Decision::kInclude || right == ignore::Decision::kInclude
+                                 ? ignore::Decision::kInclude
+                                 : ignore::Decision::kDefault;
+                  break;
+                }
+              }
+            } else if (decision == ignore::Decision::kDefault && !compare_listing && ignore_files.Active()) {
               decision = ignore_files.Decide(visit.path, visit.root, is_dir);
             }
             if (decision == ignore::Decision::kIgnore) {
@@ -6070,6 +6247,8 @@ RunResult RunFindCore(
             .diff_ignore_matching = diff_ignore_matching,
             .diff_format = diff_format,
             .diff_context = diff_context,
+            .diff_paths = *diff_paths,
+            .diff_destinations = diff_destinations,
             .hash_algorithm = hash_algorithm,
             .hash_encoding = hash_encoding,
             .control = control,
@@ -6093,6 +6272,12 @@ RunResult RunFindCore(
         const EvaluationResult evaluated = serial_evaluator ? serial_evaluator->Evaluate(eval_context)
                                            : expression     ? EvaluateDeferred(*expression, eval_context)
                                                             : EvaluationResult{.matched = true};
+        if (!control.output_error.ok()) {
+          diff_output_failed = true;
+          ++errors;
+          on_error(visit.path, control.output_error);
+          return WalkAction::kStop;
+        }
         if (!control.metadata_error.ok()) {
           if (!(options.ignore_readdir_race && absl::IsNotFound(control.metadata_error))) {
             ++errors;
@@ -6156,6 +6341,9 @@ RunResult RunFindCore(
   }
 
   flush_matches();
+  if (diff_output_failed) {
+    return RunResult{.errors = errors, .any_match = any_match};
+  }
 
   // Resolve one deferred frontier at a time. A decision may expose another result-set predicate
   // farther right; replay stops there and the next round resolves that node's independent cohort.
@@ -6216,6 +6404,8 @@ RunResult RunFindCore(
           .diff_ignore_matching = diff_ignore_matching,
           .diff_format = diff_format,
           .diff_context = diff_context,
+          .diff_paths = *diff_paths,
+          .diff_destinations = diff_destinations,
           .hash_algorithm = hash_algorithm,
           .hash_encoding = hash_encoding,
           .control = control,
@@ -6238,6 +6428,11 @@ RunResult RunFindCore(
       };
       const EvaluationResult evaluated =
           serial_evaluator ? serial_evaluator->Evaluate(eval_context) : EvaluateDeferred(*expression, eval_context);
+      if (!control.output_error.ok()) {
+        ++errors;
+        on_error(visit.path, control.output_error);
+        return RunResult{.errors = errors, .any_match = any_match};
+      }
       if (evaluated.deferred) {
         candidate.waiting_at = evaluated.waiting_at.value();
         candidate.score = evaluated.fuzzy.value_or(0);
@@ -6733,6 +6928,9 @@ std::set<registry::ModifierConsumer> ExpressionConsumers(
     }
     if (consumer == ModifierConsumer::kFileDiff) {
       consumers.insert(ModifierConsumer::kDiffComputation);
+      if (expr.diff_style != "none") {
+        consumers.insert(ModifierConsumer::kDiffPaths);
+      }
       const DiffDefaultDependencies defaults = InspectDiffDefaults(expr.diff_style, diff_format);
       if (defaults.format) {
         consumers.insert(ModifierConsumer::kDefaultDiffFormat);
@@ -6813,6 +7011,20 @@ absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, boo
     }
   }
   return ValidateReductionFormat(globals, compare, has_histograms);
+}
+
+absl::Status ValidateCompareIgnoreOption(const std::vector<std::string>& globals, bool compare) {
+  if (!compare) {
+    for (const std::string& global : globals) {
+      const auto flag = cli::LookupGlobalArgument(global);
+      if (global.starts_with("--compare-ignore=")
+          || (flag && flag->compare_ignore_scope != cli::GlobalFlag::CompareIgnoreScope::kNone)) {
+        return absl::InvalidArgumentError(
+            absl::StrCat(std::string_view(global).substr(0, global.find('=')), " requires --compare"));
+      }
+    }
+  }
+  return absl::OkStatus();
 }
 
 std::set<registry::ModifierConsumer> OutputHashConsumers(
@@ -7092,6 +7304,7 @@ absl::StatusOr<std::set<registry::ModifierConsumer>> ActiveModifierConsumers(
   consumers.merge(OutputHashConsumers(command, summaries, listing));
   if (compare && ResolveTreeCompareOutput(command.globals) == TreeCompareOutput::kDiff) {
     consumers.insert(ModifierConsumer::kDiffComputation);
+    consumers.insert(ModifierConsumer::kDiffPaths);
     consumers.insert(ModifierConsumer::kDiffContext);
   }
   MBO_ASSIGN_OR_RETURN(const auto context, ResolveGrepContext(command.globals));
@@ -7230,6 +7443,10 @@ RunResult RunFind(
   });
   if (command.rg && compare) {
     on_error("--rg", absl::InvalidArgumentError("rg search cannot be combined with tree comparison"));
+    return RunResult{.errors = 2};
+  }
+  if (const absl::Status status = ValidateCompareIgnoreOption(command.globals, compare); !status.ok()) {
+    on_error("--compare-ignore", status);
     return RunResult{.errors = 2};
   }
   const auto output_format = ResolveFormat(command.globals);

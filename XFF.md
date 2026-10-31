@@ -21,6 +21,7 @@ eXtended File Find, a find(1)-compatible file finder with modern extensions.
 - [Regex matching](#topic-regex)
 - [Ripgrep-style searches](#topic-rg)
 - [Content](#topic-content)
+- [Diff and patch output](#topic-diff)
 - [Comparing trees](#topic-compare)
 - [Ignore and VCS traversal](#topic-ignore)
 - [Archives](#topic-archive)
@@ -247,7 +248,7 @@ With that grant, `xff project` applies `--hidden`, and `--config=quiet` also app
 
 A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`, or `-delete`) carried by an explicit or autoloaded `.xffrc` file is inert unless `--allow-exec` is set from a trusted tier (the command line or the system/user config, never an `--xffrc` file itself). Unarmed lines are dropped with a warning. Arming cannot bypass unconditional safety blocks or an active safe profile.
 
-See also: [Safety](#topic-safety), [Ignore and VCS traversal](#topic-ignore), [Archives](#topic-archive)
+See also: [--help=safety](#topic-safety), [--help=ignore](#topic-ignore), [--help=archive](#topic-archive)
 
 <a id="topic-safety"></a>
 
@@ -323,7 +324,7 @@ Explicit-file arming with `--allow-exec` covers execution and deletion. It does 
 
 `--dry-run` validates safety restrictions first, then previews actions without executing commands or modifying files. It never grants a blocked operation. Reading and normal terminal output remain allowed. A command's exit status or captured output cannot be predicted: preview stops evaluation of that entry and reports an incomplete preview rather than inventing subsequent matches.
 
-See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#topic-output)
+See also: [--help=config](#topic-config), [--help=archive](#topic-archive), [--help=output](#topic-output)
 
 ## Options
 
@@ -333,64 +334,64 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `--config=NAME` - activate a named config or select the find, xff, or rg style; repeatable _(global, find, xff, rg)_
   A config style sets the defaults for ignore files, hidden files, sizes, sort order, and case. find restricts the expression to find-compatible vocabulary and defaults; whole-run xff globals remain available as explicit overrides. xff keeps find's grammar but sorts and prints human sizes; rg is opinionated (respect `.gitignore`, skip hidden, smart case). Every occurrence remains an active selector, so several named config blocks can apply. All config files use INI sections; each name is declared once per file and may be refined in other files. `--config=NAME` inside a section composes it with another config. Among the built-in style selectors, the last `find`, `xff`, or `rg` occurrence chooses the baseline; custom names do not change it. A `STYLE:EPOCH` spelling such as `xff:2` selects `STYLE` while retaining the full name as a config selector, which must be declared in an active config file. Only plain `find`, `xff`, and `rg` need no declaration. See `--help=styles` for the per-style defaults and `--help=config` for layering.
-  See also: [Configuration](#topic-config)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-require-system-globals"></a>
 
 - `--require-system-globals` - keep existing system globals active when named configs are skipped _(global, find, xff, rg, config-only)_
   Config-only: unsectioned system config only, once per positive/negative pair. System globals remain active with `--no-system-config` or `--no-config`. This is the default; missing files remain normal. Named sections can still be excluded.
-  See also: [Configuration](#topic-config)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-no-require-system-globals"></a>
 
 - `--no-require-system-globals` - permit skipping system globals along with named configs _(global, find, xff, rg, config-only)_
   Config-only: unsectioned system config only, once per pair. `--no-system-config` or `--no-config` then excludes globals as well as named sections. Without a skip request, globals still apply. Authoritative system admission and requirement controls are still inspected.
-  See also: [Configuration](#topic-config)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-require-user-globals"></a>
 
 - `--require-user-globals` - keep existing user globals active when named configs are skipped _(global, find, xff, rg, config-only)_
   Config-only: unsectioned system or user config, once per pair per file. The system decision wins. User globals remain active with `--no-user-config` or `--no-config`. This is the default; missing files remain normal. Named sections can still be excluded.
-  See also: [Configuration](#topic-config)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-no-require-user-globals"></a>
 
 - `--no-require-user-globals` - permit skipping user globals along with named configs _(global, find, xff, rg, config-only)_
   Config-only: unsectioned system or user config, once per pair per file. The system decision wins. `--no-user-config` or `--no-config` then excludes user globals as well as named sections. Without a skip request, globals still apply.
-  See also: [Configuration](#topic-config)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-allow-xffrc"></a>
 
 - `--allow-xffrc` - permit explicit and automatic .xffrc loading _(global, find, xff, rg, config-only)_
   Config-only: unsectioned system config or any user section. User decisions follow configuration application order, including composed sections. A system denial remains authoritative. Neither the CLI nor an .xffrc file may grant admission.
-  See also: [Configuration](#topic-config)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-no-allow-xffrc"></a>
 
 - `--no-allow-xffrc` - reject explicit and automatic .xffrc loading _(global, find, xff, rg, config-only)_
   Config-only: unsectioned system config or any user section. A system denial cannot be overridden by user or .xffrc content, or by skipping system defaults. Admission is checked before files are opened.
-  See also: [Configuration](#topic-config)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-no-config"></a>
 
 - `--no-config` - exclude named system and user configs and disable rc autoloading _(global, find, xff, rg, command-line-only)_
   Command-line only; rejected in configuration files.
   Excludes named system and user sections and disables `.xffrc` autoloading regardless of flag order. Existing globals remain active by default; the applicable `--no-require-system-globals` or `--no-require-user-globals` permits excluding the corresponding globals too. Both files are still read and validated. Missing automatic files remain normal. Explicit `--xffrc=FILE` inputs and ignore files remain active.
-  See also: [Configuration](#topic-config)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-no-system-config"></a>
 
 - `--no-system-config` - exclude named system config sections while retaining required globals _(global, find, xff, rg, command-line-only)_
   Command-line only; rejected in configuration files.
   Excludes named sections in `/etc/xff.ini`. Unsectioned globals remain active by default or with `--require-system-globals`; `--no-require-system-globals` allows excluding them too. The file is still read and validated. User and explicit `.xffrc` configurations remain active.
-  See also: [Configuration](#topic-config)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-no-user-config"></a>
 
 - `--no-user-config` - exclude named user config sections while retaining required globals _(global, find, xff, rg, command-line-only)_
   Command-line only; rejected in configuration files.
   Excludes named user sections. Unsectioned globals remain active by default or with `--require-user-globals`; `--no-require-user-globals` allows excluding them too. The system decision takes precedence over the user declaration. The file is still read and validated. System and explicit `.xffrc` configurations remain active.
-  See also: [Configuration](#topic-config)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-rc"></a>
 
@@ -398,21 +399,21 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   Defaults to `--rc-` (off). `--rc` loads `.xffrc` in each directory search root; `--rc+` also searches descendant directories. With no roots, the default root is `.`. Discovery finishes before execution, in argument order, parent before children and lexicographically among siblings. Files contribute to the whole invocation, after trusted defaults and before CLI flags. Discovery ignores search filters and never follows directory symlinks or enters archives. Only system/user configuration and the CLI may set this mode. `--no-config` disables discovery. Unsectioned content requires a trusted `--allow-rc-globals` grant; otherwise loading fails. Explicit `--xffrc=FILE` remains independent.
   Affects: --xffrc, --explain
   Affected by: --allow-rc-globals, --no-allow-rc-globals
-  See also: [Configuration](#topic-config), [--allow-rc-globals](#flag-allow-rc-globals), [--no-allow-rc-globals](#flag-no-allow-rc-globals), [--xffrc](#flag-xffrc), [--explain](#flag-explain)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-allow-rc-globals"></a>
 
 - `--allow-rc-globals` - permit unsectioned content in automatically discovered .xffrc files _(global, find, xff, rg, config-only)_
   Config-only: once per pair in unsectioned system/user configuration. A system `--no-allow-rc-globals` decision cannot be overridden. Without a grant, an autoloaded file containing unsectioned content fails before execution. Named sections remain available; explicit `--xffrc=FILE` is unaffected. This permission does not arm dangerous actions.
   Affects: --rc
-  See also: [Configuration](#topic-config), [--rc](#flag-rc)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-no-allow-rc-globals"></a>
 
 - `--no-allow-rc-globals` - reject unsectioned content in automatically discovered .xffrc files _(global, find, xff, rg, config-only)_
   The default without an explicit grant. Config-only: once per pair before all sections in system/user configuration. A system denial is authoritative. Rejection includes unsectioned expressions and `--config=NAME`; nothing is silently dropped. Explicit `--xffrc=FILE` keeps its existing global and named-section behavior.
   Affects: --rc
-  See also: [Configuration](#topic-config), [--rc](#flag-rc)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-xffrc"></a>
 
@@ -421,7 +422,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   Loads FILE as a config tier above the user config (naming it is consent to LOAD it). It is a NON-ARMING tier: execution and deletion actions - the exec family (-exec/-execdir/-ok, -capture) or -delete - are inert unless --allow-exec is set from a trusted tier (the CLI or the user/system config, never from an --xffrc file itself). An unarmed dangerous line is dropped with a one-line warning. Repeatable; later files win.
   Affects: --allow-exec
   Affected by: --rc, --allow-exec
-  See also: [Configuration](#topic-config), [--rc](#flag-rc), [--allow-exec](#flag-allow-exec)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-allow-exec"></a>
 
@@ -429,7 +430,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   Permits the sensitive/destructive directives (the exec family -exec/-execdir/-ok and -capture, and the destructive -delete) carried by an explicit or autoloaded `.xffrc` file to actually run. Honored only from a trusted tier - typed on the CLI, or set in the user/system config - never from an --xffrc file (so a named config cannot authorize itself). Arming cannot bypass unconditional blocks or the active safe profile; see `--help=safety`.
   Affects: --xffrc
   Affected by: --xffrc
-  See also: [Configuration](#topic-config), [--xffrc](#flag-xffrc)
+  See also: [--help=config](#topic-config)
 
 <a id="flag-explain"></a>
 
@@ -437,7 +438,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   Command-line only; rejected in configuration files.
   Prints the active style, every config source consulted and whether it was found, resolved flags in application order with their provenance, rejected config directives, and the style-default table with this run's effective values. The effective safety table shows unconditional blocks, the stored safe profile, active decisions, and source file/line/section or CLI origins. It also shows per-file category translation, resolved temp/output roots, and dry-run state. Profile origins remain visible when an unconditional block wins. Named declarations list their source, selection, availability or skip/validation reason, and whether they declare globals, predicates, or actions; availability never authorizes a gated action. The resource view reports worker limits, potential retained state, active hash/line-count fields, and advisory expression costs. Native expression preparation reports the recursive executor, source-node/operand/matcher-slot counts, owned record bytes, preserved source order, and coordinator/worker matcher ownership. Counts describe the resolved expression before worker/output splitting; owned bytes exclude the source tree, regex backends, adapters, allocator overhead and workers. It does not predict bytes read, peak memory, or latency. It performs enabled `.xffrc` discovery but does not evaluate the expression. Existing unreadable config files and missing explicit `--xffrc` files are errors. For modifiers with registered dependencies, `inactive-modifier` notes identify effective CLI settings with no consumer. Dormant config defaults and superseded settings stay quiet; the notes do not reject commands or prove that a conditional action will run.
   Affected by: --rc
-  See also: [Configuration](#topic-config), [--rc](#flag-rc)
+  See also: [--help=config](#topic-config)
 
 ### Matching
 
@@ -446,7 +447,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 - `-E` - use the configured extended-regex grammar (RE2 by default) _(global, find, xff)_
   Accepts BSD/macOS find's leading extended-regex switch. In xff the extended grammar is selected by `--regextype`; it defaults to `RE2`, and command-line `--re2` or `--pcre` override a configured choice. This compatibility flag does not itself replace that choice.
   Affects: -regex, -iregex, -rxc, -irxc, -grep, -capture, -capturedir
-  See also: [Regex matching](#topic-regex), [Regex grammars](#topic-grammars), [-regex](#primary-regex), [-iregex](#primary-iregex), [-rxc](#primary-rxc), [-irxc](#primary-irxc), [-grep](#primary-grep), [-capture](#primary-capture), [-capturedir](#primary-capturedir)
+  See also: [--help=regex](#topic-regex), [--help=grammars](#topic-grammars)
 
 ### Traversal
 
@@ -454,19 +455,19 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `-H` - follow symlinks named on the command line, not while walking _(global, find, xff)_
   Dereferences each symlink root operand before matching or descending, but keeps symlinks found below that root as symlinks. A dangling root symlink falls back to the link itself. `-H`, `-L`, and `-P` are mutually overriding leading options; the last occurrence wins.
-  See also: [Configuration](#topic-config), [Ignore and VCS traversal](#topic-ignore), [Archives](#topic-archive)
+  See also: [--help=config](#topic-config), [--help=ignore](#topic-ignore), [--help=archive](#topic-archive)
 
 <a id="flag-l"></a>
 
 - `-L` - follow symlinks everywhere during the walk _(global, find, xff)_
   Dereferences symlink roots and symlinks encountered below them. Matching sees the target's type and metadata, and directory targets are descended. Dangling links fall back to the link itself. Filesystem loops are detected and reported instead of recursed indefinitely. `-H`, `-L`, and `-P` are mutually overriding leading options; the last occurrence wins.
-  See also: [Configuration](#topic-config), [Ignore and VCS traversal](#topic-ignore), [Archives](#topic-archive)
+  See also: [--help=config](#topic-config), [--help=ignore](#topic-ignore), [--help=archive](#topic-archive)
 
 <a id="flag-p"></a>
 
 - `-P` - never follow symlinks (the default) _(global, find, xff)_
   Matches every symlink as a link and never descends through it, including a symlink supplied as a root operand. Predicates that explicitly inspect a target, such as `-xtype` and `-lname`, retain their documented behavior. `-H`, `-L`, and `-P` are mutually overriding leading options; the last occurrence wins.
-  See also: [Configuration](#topic-config), [Ignore and VCS traversal](#topic-ignore), [Archives](#topic-archive)
+  See also: [--help=config](#topic-config), [--help=ignore](#topic-ignore), [--help=archive](#topic-archive)
 
 ### Archive traversal
 
@@ -482,14 +483,14 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
   Treats each archive (tar, gz, bzip2, xz, zstd, lz4, zip, ...) as a directory, so a member is an ordinary entry at a member path like `foo.tar.gz!inner/x` and the expression matches it with the same -name / -type / -size / -newer every other entry gets - and the predicates and fields that READ an entry (-grep, -content, -hash, {hash}, {lines}) read the member out of its container. The modes are nested: `none` keeps find's behavior (an archive is one plain file); `roots` dives only when a search root is itself an archive (pointing xff AT an archive implies looking inside); `all` also dives archives discovered during the walk; `any` is `all` without the name gate, offering every file to the reader (the older spelling is `--archive-any`). Bare `--archive` means `all`, and the short form carries chmod-style suffix signs (`-z-` none, `-z` roots, `-z+` all, `-z++` any). The UPPER-case family is the same ladder with writing armed (`-Z` is `-z` plus `--archive-write`, `-Z+` is `-z+` plus it, `-Z++` is `-z++` plus it): the case carries the capability and the signs carry the level, so aiming at one cannot reach the other. The two axes resolve independently and later wins, so `-Z++ -z-` arms writing with reading off, while `-Z-` is the full reset (reading off AND writing disarmed). Filename sniffing follows that final mode too: `--archive=any --archive=all` restores the filename gate, including when the modes come from named configurations applied in that order. The find style defaults to `none`, every xff-family style to `roots`. Members are read-only until a write spelling arms them, so `-delete` and the exec family refuse them rather than silently skipping. Under `all`, a file met mid-walk is offered to the reader only if its NAME looks like a container (`any` drops that gate); one named on the command line always is. A native phar exposes its executable stub as `.phar/stub.php`, matching tar- and zip-based phars; it is an ordinary regular member for matching, fields, and statistics. If the manifest stores that path, the stored member wins so one path never denotes two entries. The synthetic stub is readable but cannot be deleted because the format requires it. build-time extras: the stock binary is lean and omits readers; rebuild with `--config=xff_full`, `--//xff:xff_archive` for the broad libarchive-backed set, or one of the independent `--//xff:xff_asar` or `--//xff:xff_squashfs` readers. Asking for archive handling without any reader is a hard error.
   Affected by: --archive-depth, --archive-aggregate, --archive-delete, --archive-extract, --archive-mount, --archive-any
-  See also: [Archives](#topic-archive), [--archive-depth](#flag-archive-depth), [--archive-aggregate](#flag-archive-aggregate), [--archive-delete](#flag-archive-delete), [--archive-extract](#flag-archive-extract), [--archive-mount](#flag-archive-mount), [--archive-any](#flag-archive-any)
+  See also: [--help=archive](#topic-archive)
 
 <a id="flag-archive-depth"></a>
 
 - `--archive-depth=N` - how many containers deep --archive dives (default 1) _(global, find, xff, rg)_
   Counted in CONTAINERS, not directory levels: the default 1 opens an archive but leaves an archive INSIDE it a plain member, so a `.gem` shows its `data.tar.gz` without unpacking it. `--archive-depth=2` opens that one too. Its own knob rather than part of -maxdepth because nesting is where a decompression bomb lives - a few kilobytes can promise gigabytes per level - while -maxdepth keeps counting member levels as the ordinary depth they are. Only `all` nests: under `roots` a member is never a search root, so nothing inside the container is dived whatever the value. N must be at least 1; use --archive=none / -z- to stop diving.
   Affects: --archive
-  See also: [Archives](#topic-archive), [--archive](#flag-archive)
+  See also: [--help=archive](#topic-archive)
 
 <a id="flag-archive-aggregate"></a>
 
@@ -502,7 +503,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
   Diving makes one byte visible twice - once as the container's own size, once as its members' - so a total that adds `both` describes no filesystem that exists. `members` (the default) counts a dived container's members instead of the container itself, which is what unpacking it and measuring the result would give; `container` counts the archives and never what is in them, which is what the disk holds; `both` counts everything, the archive AND its unpacked copy, for when the doubling is the point. Only the REDUCTIONS are affected: -print and every action still see every entry the walk visits, so a member is listed under `container` and the container is listed under `members`. `members` needs the walk to open a container before deciding, so a `-prune` on a container no longer avoids opening it - use another mode, or no reduction, to keep that.
   Affects: --archive
-  See also: [Archives](#topic-archive), [--archive](#flag-archive)
+  See also: [--help=archive](#topic-archive)
 
 <a id="flag-archive-delete"></a>
 
@@ -510,7 +511,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   There is no such thing as removing a member in place: an archive is a stream of header and data records, so the container is written again from the members that survive. That is why this is opt-in and why `-delete` refuses a member without it - an action that silently rewrites a whole archive is not one to do by default. The rewrite happens after the walk, once per container however many of its members matched, because the walk is reading that same container while it runs. The new archive keeps the original's format and compression (a `.tar.gz` stays a gzipped tar) and every surviving member keeps its name, mode, times and content; it is written beside the original and renamed over it only when complete, so an interrupted run leaves the container as it was. `--dry-run` lists the members that would go and writes nothing. A NATIVE phar is rewritten too, by xff's own writer: the manifest and data section are rebuilt from the surviving entries verbatim (so per-member gz / bz2 compression is untouched) and the trailing signature is recomputed (md5 / sha1 / sha256 / sha512). Refused, with the reason named: a format this build reads but cannot write (7-Zip, RAR, ISO); a TAR-based or ZIP-based phar, whose signature is a MEMBER computed over the rest of the container, so a rewrite would leave it stale and PHP would reject the result; an OpenSSL-signed phar, which cannot be re-signed without its private key; a compressed single file, which has no member list to rewrite; and a member of a container nested inside another one.
   Affects: --archive
   Affected by: --archive-write
-  See also: [Archives](#topic-archive), [--archive-write](#flag-archive-write), [--archive](#flag-archive)
+  See also: [--help=archive](#topic-archive)
 
 <a id="flag-archive-extract"></a>
 
@@ -518,34 +519,34 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   A member is bytes inside a container, so there is no path a child process can open and the exec family refuses one by default. With this flag the member is written to its own temporary directory under the same name it has inside the archive, and the child is handed THAT path: `{}` renders as the temporary file, `-execdir` runs in the temporary directory, and `-ok` shows the copy in its prompt before anything runs. Each copy is removed as soon as its child finishes (for a `+` batch or a `-j` child, when the run ends), so nothing is left behind. The copy first goes to a memory-backed directory where the platform has one (`$XDG_RUNTIME_DIR` or `/dev/shm` on Linux, both tmpfs), so the child gets an ordinary path without normally writing the member to disk. If no memory-backed directory is available, or the member is larger than its reported free space, xff falls back to `$TMPDIR` (or the platform temporary directory); extraction therefore does not guarantee that member data never reaches disk. It is opt-in because the child is editing a COPY: a formatter or a patch tool will report success and change nothing in the archive. `-delete` stays refused whatever this flag says - removing a temporary copy would be a no-op dressed as a deletion. The container itself is an ordinary file, so an action on IT never needed this.
   Affects: --archive
   Affected by: --archive-mount, --archive-write
-  See also: [Archives](#topic-archive), [--archive-mount](#flag-archive-mount), [--archive-write](#flag-archive-write), [--archive](#flag-archive)
+  See also: [--help=archive](#topic-archive)
 
 <a id="flag-archive-mount"></a>
 
 - `--archive-mount` - let -exec / -ok run on an archive member by mounting its container read-only _(global, find, xff, rg)_
   The alternative to `--archive-extract`, answering the same question - what path can a child process open for a member? - with the container itself instead of a copy. The container is mounted read-only (once, whichever members are visited), so `{}` names a path INSIDE the archive: a tool that only reads it (a compiler, a checksum, `grep`) sees the real member and nothing is written anywhere. That also removes extraction's trap, where an in-place formatter edits a temporary copy and reports success while the archive keeps its old content: here the mount has no write path at all, so such a tool fails honestly. Mounting is a per-MACHINE capability (it needs the fuse extra AND a runtime FUSE library and permission to mount), so where it cannot happen the run says so once and falls back to extraction rather than failing - which is why this flag is safe to keep in a config file. `--archive-extract` is still what arms writing through a copy; this one arms reading in place.
   Affects: --archive, --archive-extract
-  See also: [Archives](#topic-archive), [--archive](#flag-archive), [--archive-extract](#flag-archive-extract)
+  See also: [--help=archive](#topic-archive)
 
 <a id="flag-archive-write"></a>
 
 - `--archive-write, -Z[-|+|++]` - arm both archive write flags (--archive-extract + --archive-delete) _(global, find, xff, rg)_
   One spelling for "let actions touch members", because the two write flags are almost always wanted together: `--archive-extract` so `-exec` / `-ok` can run over a member, and `--archive-delete` so `-delete` can remove one. It is exactly those two flags and nothing else - the dive MODE is untouched. The short form is the UPPER-case archive ladder: `-Z` is `-z` with writing armed, `-Z+` is `-z+` with it, `-Z++` is `-z++` with it. Case carries the capability and the signs carry the level, so a slipped shift key changes which of the two you asked for, never both - and arming is not doing, since an action still has to ask for the write and `--safe` / `--dry-run` still apply. The level and the arming resolve as separate axes with later winning, so `-Z++ -z-` keeps writing armed with diving off; `-Z-` is the full reset, disarming writing and turning diving off together.
   Affects: --archive-delete, --archive-extract
-  See also: [Archives](#topic-archive), [--archive-delete](#flag-archive-delete), [--archive-extract](#flag-archive-extract)
+  See also: [--help=archive](#topic-archive)
 
 <a id="flag-archive-any"></a>
 
 - `--archive-any` - alias for --archive=any: traverse all archives without the filename gate _(global, find, xff, rg)_
   Selects the same traversal mode as `--archive=any` or `-z++`: open archives discovered during the walk, even when their names lack a known archive suffix. This may read every candidate file to identify its format. A root file is always offered to the reader when archive traversal is enabled. Like the other archive mode selectors, a later selector can replace this mode, including `--archive=roots` or `--archive=none`.
   Affects: --archive
-  See also: [Archives](#topic-archive), [--archive](#flag-archive)
+  See also: [--help=archive](#topic-archive)
 
 <a id="flag-archive-separator"></a>
 
 - `--archive-separator=STRING` - string between container and member in a member path (default `!`) _(global, find, xff, rg)_
   A member path is `<container><separator><member>`, and there is no single ecosystem convention - `!` (JAR / Java URLs), `#` (fragment style), and the multi-character `!/` or `#/` other tools print all exist - so this is a presentation choice rather than something hard-coded. ANY string is accepted, not a fixed menu, so xff can emit what another system accepts. Rendering is plain concatenation and xff adds or removes no slash, so a member stored with a leading slash keeps it: `a.tgz!/rooted` (and with `--archive-separator=!/`, the doubled `a.tgz!//rooted`, which is why plain `!` is the better default). Parsing splits at the FIRST occurrence and takes the remainder verbatim, so a path xff printed round-trips. A plain `/` is allowed and composes with globs, but is lossy - a real directory named x.tar becomes indistinguishable from an archive - so it is never the default.
-  See also: [Archives](#topic-archive)
+  See also: [--help=archive](#topic-archive)
 
 <a id="flag-archive-prefix"></a>
 
@@ -557,7 +558,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `STRING` - any other value is used literally, e.g. `--archive-prefix=vfs:`
 
   Empty (the default) prints the bare path, `a.tgz!inner/x`. `URI` renders a URL the RECEIVING tool will accept, which means the ecosystem's own where one owns the format: a `.phar` as PHP's `phar:///abs/a.phar/inner/x`, a `.jar` / `.war` / `.ear` as Java's `jar:file:/abs/a.jar!/pkg/C.class`, and everything else as `archive:///abs/a.tar!x` for an absolute container or the opaque `archive:a.tgz!x` for a relative one - `archive://a.tgz` would be WRONG, since `//` starts the authority and would make `a.tgz` a host name. The choice is by EXTENSION, because that is what the claim is: a jar IS a zip, and only its name says which readers expect it. Those two spellings fix the separator as well, so `--archive-separator` does not reach them; the BARE path keeps one separator whatever the container is, since being re-pasteable matters more there than matching a foreign form. Any other value is used LITERALLY (e.g. `--archive-prefix=vfs:`), the same freedom `--archive-separator` has; `URI` is the one keyword, spelled in caps like `RE2` / `PCRE2` / `GLOB`. There is deliberately no `none` value: it would be indistinguishable from a literal prefix spelled `none`, which is why empty means no prefix. Applies to PARSING too - under a prefix, a bare path is not accepted as a member path, so the spellings never silently interchange.
-  See also: [Archives](#topic-archive)
+  See also: [--help=archive](#topic-archive)
 
 ### Concurrency and ordering
 
@@ -565,7 +566,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `-j N, -j=N, --jobs=N|all` - directory-read, eligible content-match, comparison and -exec workers _(global, find, xff, rg)_
   `N` is a positive integer; use `-j 4`, `-j=4`, or `--jobs=4`. The conventional attached short form `-j4` is also accepted. Every form accepts `all` in place of `N`. `-j 1` makes directory reads and `-exec ... ;` synchronous. At larger values, xff reads directories on up to `N` worker threads; large directory listings can split required eager metadata reads across the same pool. Lazy and metadata-free listings do not start stat workers. Independent content predicates and rg searches also match in bounded parallel batches, with output kept in traversal order. Small initial batches, archive members, stateful expressions stay on the coordinator. Metadata-consuming output does not itself prevent eligible content filters from running in workers; reductions and rendering remain serial. Independent regular-file comparison pairs can also use bounded workers, preserving relative-path output order. Batches of only small or metadata-only comparisons stay inline; archive and owned filesystem sources stay serial. Xff may independently keep up to `N` semicolon-form `-exec` / `-execdir` children outstanding. Reads and children can overlap; `N` is not one shared operation budget. The children's truth value is therefore success on launch. The `... +` batch forms still run once after the walk and propagate a failing exit status. With no flag, xff uses one fewer than the detected cores, capped at 15 and floored at 1; find and rg modes use every detected core. `all` always means every detected core.
-  See also: [Output](#topic-output), [Statistics](#topic-stats)
+  See also: [--help=output](#topic-output), [--help=stats](#topic-stats)
 
 <a id="flag-sort"></a>
 
@@ -582,7 +583,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
   Traversal order and result buffering are separate. Every mode materializes one directory listing, and `--jobs` may read additional directory listings ahead; none of the path-order modes buffers every match. `none` preserves each directory's filesystem order. `dir` sorts a directory's complete child listing, emits that listing, then descends into its sorted children. `subtree` emits sorted non-directory children first, then each sorted directory or container subtree contiguously. `tree` visits each sorted child and its descendants before the next child, giving lexicographic depth-first order WITHIN each root while retaining command-line root order. `roots` stable-sorts only the root operands and otherwise behaves like `none`. `global` stable-sorts the roots and applies `tree` below each one, producing a total hierarchical order by root and then path. Duplicate or overlapping roots remain separate walks and can therefore repeat paths. `-depth` makes every mode post-order (children before their parent); `none` retains filesystem sibling order; `roots` does too, while every other ordered mode uses sorted sibling order. The default is per style: xff sorts per directory, while find and rg leave the order unspecified. `score` is the odd one out: the others are TRAVERSAL orders the walk streams, while a `-fuzzy` score only exists once an entry has been evaluated, so results are buffered and ranked after the walk (best first, ties keeping the walk's own order). It needs `-fuzzy` or `-ifuzzy` in the expression - ranking by a value nothing produced is a mistake, not an empty ordering - and side-effecting actions such as `-exec` still run during the walk, so only the printed listing is reordered.
   Affected by: --root, --pack
-  See also: [Output](#topic-output), [Statistics](#topic-stats), [--root](#flag-root), [--pack](#flag-pack)
+  See also: [--help=output](#topic-output), [--help=stats](#topic-stats)
 
 ### Matching
 
@@ -590,13 +591,13 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `--block-size=SIZE` - bytes per bare/-b block for -size and -blocks (default 512) _(global, find, xff, rg)_
   A bare number is bytes. Explicit `B`/`kB`/`MB`/... units use SI powers of 1000; `KiB`/`MiB`/... use IEC powers of 1024. Legacy `k`/`M`/`G`/... remain binary for find compatibility. The value must be positive and fit in 64 bits. Lowercase `b` is invalid here because defining a block in blocks is circular. This changes the comparison unit for both `-size` (apparent bytes) and `-blocks` (allocated bytes); it does not change filesystem metadata or the fixed units printed by `-ls`.
-  See also: [Size units](#topic-size), [Output](#topic-output)
+  See also: [--help=size](#topic-size), [--help=output](#topic-output)
 
 <a id="flag-exact"></a>
 
 - `--exact` - disable xff's filesystem-native case folding for name/path/fuzzy matching _(global, find, xff, rg)_
   In xff mode, the otherwise case-sensitive `-name`, `-path`, `-fuzzy`, and `-fuzzypath` matchers follow the containing volume: xff folds ASCII case on a case-insensitive volume and compares exactly on a case-sensitive one. `--exact` opts out and makes those matchers byte-case-exact unless `--case=insensitive` or an explicitly insensitive primary (`-iname`, `-ipath`, `-ifuzzy`, `-ifuzzypath`) requests folding. Find mode is already exact by default. The volume probe is cached per device and safely defaults to exact matching if unavailable.
-  See also: [Regex matching](#topic-regex), [Regex grammars](#topic-grammars)
+  See also: [--help=regex](#topic-regex), [--help=grammars](#topic-grammars)
 
 <a id="flag-case"></a>
 
@@ -609,7 +610,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
   Controls the otherwise case-sensitive name, path, symlink-target, fuzzy, regex, and content matchers (`-name`, `-path`, `-lname`, `-fuzzy`, `-fuzzypath`, `-regex`, `-rxc`, `-grep`). Their `-i...` variants always fold independently. `sensitive` matches exactly; `insensitive` (`-i`) folds case; `smart` (`-s` / `-s+`) folds only when the pattern is all free of ASCII uppercase letters and matches exactly otherwise; `-s-` forces `sensitive`. For name, path, and fuzzy matching, xff's filesystem-native folding can additionally apply unless `--exact` is present. rg defaults to `smart`; xff and find default to `sensitive`.
   Affects: -name, -path, -lname, -fuzzy, -fuzzypath, -regex, -rxc, -grep, -content
-  See also: [Regex matching](#topic-regex), [Regex grammars](#topic-grammars), [-name](#primary-name), [-path](#primary-path), [-lname](#primary-lname), [-fuzzy](#primary-fuzzy), [-fuzzypath](#primary-fuzzypath), [-regex](#primary-regex), [-rxc](#primary-rxc), [-grep](#primary-grep), [-content](#primary-content)
+  See also: [--help=regex](#topic-regex), [--help=grammars](#topic-grammars)
 
 <a id="flag-regextype"></a>
 
@@ -627,33 +628,33 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   Selects one grammar for every `-regex`/`-iregex`, `-rxc`/`-irxc`, and `-grep` pattern in the run; the last occurrence wins. `RE2` is the default. Selecting `PCRE2` in a build without that extra is a hard error; see `--help=extras` for availability.
   Affects: -regex, -iregex, -rxc, -irxc, -grep, -capture, -capturedir
   Affected by: --re2, --pcre
-  See also: [Regex matching](#topic-regex), [Regex grammars](#topic-grammars), [--re2](#flag-re2), [--pcre](#flag-pcre), [-regex](#primary-regex), [-iregex](#primary-iregex), [-rxc](#primary-rxc), [-irxc](#primary-irxc), [-grep](#primary-grep), [-capture](#primary-capture), [-capturedir](#primary-capturedir)
+  See also: [--help=regex](#topic-regex), [--help=grammars](#topic-grammars)
 
 <a id="flag-re2"></a>
 
 - `--re2` - select the fast, linear-time RE2 grammar _(global, find, xff, rg)_
   A convenient command-line spelling of `--regextype=RE2`. It overrides a grammar selected by configuration; among grammar selectors, the last occurrence wins.
   Affects: --regextype, -regex, -iregex, -rxc, -irxc, -grep, -capture, -capturedir
-  See also: [Regex matching](#topic-regex), [Regex grammars](#topic-grammars), [--regextype](#flag-regextype), [-regex](#primary-regex), [-iregex](#primary-iregex), [-rxc](#primary-rxc), [-irxc](#primary-irxc), [-grep](#primary-grep), [-capture](#primary-capture), [-capturedir](#primary-capturedir)
+  See also: [--help=regex](#topic-regex), [--help=grammars](#topic-grammars)
 
 <a id="flag-pcre"></a>
 
 - `--pcre` - select the PCRE2 grammar (a build extra) _(global, find, xff, rg)_
   A convenient command-line spelling of `--regextype=PCRE2`. It overrides a grammar selected by configuration; among grammar selectors, the last occurrence wins. PCRE2 is available only in a full build, and selecting it in a lean build is a usage error.
   Affects: --regextype, -regex, -iregex, -rxc, -irxc, -grep, -capture, -capturedir
-  See also: [Regex matching](#topic-regex), [Regex grammars](#topic-grammars), [--regextype](#flag-regextype), [-regex](#primary-regex), [-iregex](#primary-iregex), [-rxc](#primary-rxc), [-irxc](#primary-irxc), [-grep](#primary-grep), [-capture](#primary-capture), [-capturedir](#primary-capturedir)
+  See also: [--help=regex](#topic-regex), [--help=grammars](#topic-grammars)
 
 ### Path filters
 
 <a id="flag-exclude"></a>
 
 - `--exclude=GLOB` - skip paths matching a gitignore-style glob (repeatable; a matched directory is pruned) _(global, find, xff, rg)_
-  See also: [Ignore and VCS traversal](#topic-ignore)
+  See also: [--help=ignore](#topic-ignore)
 
 <a id="flag-include"></a>
 
 - `--include=GLOB` - re-include paths a --exclude would skip, matching a gitignore-style glob (repeatable) _(global, find, xff, rg)_
-  See also: [Ignore and VCS traversal](#topic-ignore)
+  See also: [--help=ignore](#topic-ignore)
 
 ### Classification databases
 
@@ -662,7 +663,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 - `-t NAME, -t=NAME, -tNAME, --file-type=NAME` - include a filename type; repeatable, with the last matching type rule winning _(global, find, xff, rg)_
   Selects a named filename-filter definition from the shared catalog. `all` selects every known type. Any positive selection excludes entries outside the selected types. Directory traversal continues through unselected names; explicitly named regular files bypass discovery filters. This is separate from filesystem `-type f/d/l`, language `-lang`, and media-type `-mime`. The `-t` short form works in XFF and rg modes, not find mode. Native short globals precede roots; the long form works anywhere.
   Affected by: --file-type-not, --type-add, --type-clear, --type-list
-  See also: [Content](#topic-content), [--file-type-not](#flag-file-type-not), [--type-add](#flag-type-add), [--type-clear](#flag-type-clear), [--type-list](#flag-type-list)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-file-type-not"></a>
 
@@ -670,21 +671,21 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   Uses the same definitions as `--file-type`. With exclusions alone, other entries remain eligible; `--file-type-not=all` keeps unrecognized names. The `-T` short form works in XFF and rg modes, not find mode. Native short globals precede roots; the long form works anywhere.
   Affects: --file-type
   Affected by: --type-add, --type-clear, --type-list
-  See also: [Content](#topic-content), [--type-add](#flag-type-add), [--type-clear](#flag-type-clear), [--type-list](#flag-type-list), [--file-type](#flag-file-type)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-type-add"></a>
 
 - `--type-add=NAME:GLOB|NAME:include:TYPES` - append a basename glob or import comma-separated filename types into a shared definition _(global, find, xff, rg)_
   Available in native XFF, rg grammar, and INI files. Definitions start from the configured language database, including overlapping candidates. `NAME:GLOB` adds a case-sensitive basename glob; `NAME:include:TYPE,...` copies the current definitions of those types. New names contain letters and numbers; `all` is reserved. Edits run in resolved config/CLI order after JSON overlays, before selection. These filter groups do not change `-lang`, `-mime`, preferred labels, colors, or summary buckets.
   Affects: --file-type, --file-type-not, --type-list
-  See also: [Content](#topic-content), [--file-type](#flag-file-type), [--file-type-not](#flag-file-type-not), [--type-list](#flag-type-list)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-type-clear"></a>
 
 - `--type-clear=NAME` - remove a filename-filter definition through its canonical name or alias _(global, find, xff, rg)_
   Later `--type-add` operations can rebuild the definition. Clearing an unknown name is a no-op. This removes filtering membership, preserving language metadata and preferred labels; use `--lang-db` to change those classifications.
   Affects: --file-type, --file-type-not, --type-list
-  See also: [Content](#topic-content), [--file-type](#flag-file-type), [--file-type-not](#flag-file-type-not), [--type-list](#flag-type-list)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-type-list"></a>
 
@@ -692,7 +693,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   Lists the shared catalog after configured JSON overlays and ordered add/import/clear operations. Available in both native XFF and rg grammar. Does not read search input.
   Affects: --file-type, --file-type-not
   Affected by: --type-add, --type-clear
-  See also: [Content](#topic-content), [--type-add](#flag-type-add), [--type-clear](#flag-type-clear), [--file-type](#flag-file-type), [--file-type-not](#flag-file-type-not)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-lang-db"></a>
 
@@ -700,7 +701,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   Loads a JSON object keyed by canonical language name. Each value may set `type`, `color`, `group`, and `source`, plus string arrays `aliases`, `extensions`, `filenames`, `shared_extensions`, and `shared_filenames`. Ordinary claims choose a preferred label; shared claims add overlapping candidates for `-lang` and rg types without changing that label. Later files override earlier files and compiled data. Extensions may include their leading dot and may contain multiple parts; matching folds suffix case while exact filenames retain case. Conflicts between two preferred claims in ONE file follow `--lang-conflicts`; shared claims may overlap. A new preferred claim replaces older memberships for that key; shared claims in the same layer are then added. A supplied shared list replaces that language's prior shared list of the same kind.
   Affects: -lang
   Affected by: --lang-conflicts
-  See also: [Content](#topic-content), [--lang-conflicts](#flag-lang-conflicts), [-lang](#primary-lang)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-lang-conflicts"></a>
 
@@ -713,7 +714,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
   Controls only preferred-label ambiguity inside one `--lang-db` file; explicit shared claims are allowed regardless of this policy. Layering remains deterministic: a later file intentionally overrides earlier files and compiled data. `error` is the default; `first` or `last` is an explicit compatibility escape hatch for imported databases.
   Affects: --lang-db
-  See also: [Content](#topic-content), [--lang-db](#flag-lang-db)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-mime-vocabulary"></a>
 
@@ -721,7 +722,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   Loads a JSON object keyed by canonical media type. Each value may set `description`, `source`, `charset`, boolean `compressible`, and string arrays `aliases` and `extensions`. Later files override earlier files and compiled data. An extension may include its leading dot; matching folds case. Conflicts between two types in ONE file follow `--mime-conflicts`.
   Affects: -mime
   Affected by: --mime-conflicts
-  See also: [Content](#topic-content), [--mime-conflicts](#flag-mime-conflicts), [-mime](#primary-mime)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-mime-conflicts"></a>
 
@@ -734,7 +735,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
   Controls only ambiguity inside one `--mime-vocabulary` file. Layering remains deterministic: a later file intentionally overrides earlier files and compiled data. `error` is the default; `first` or `last` provides an explicit compatibility escape hatch for imported databases.
   Affects: --mime-vocabulary
-  See also: [Content](#topic-content), [--mime-vocabulary](#flag-mime-vocabulary)
+  See also: [--help=content](#topic-content)
 
 ### Filter & Ignore
 
@@ -748,44 +749,45 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `on` - respect it anywhere, git repository or not (also `-g+`, yes / true / 1)
 
   Reads .gitignore rules while walking, including nested .gitignore files, .git/info/exclude, and core.excludesFile. `-g` / `auto` activates only inside a git working tree; `-g+` / `=on` forces it anywhere; `-g-` / `=off` disables it. Independent of `--ignore-files` (.ignore / .xffignore).
-  See also: [Ignore and VCS traversal](#topic-ignore)
+  See also: [--help=ignore](#topic-ignore)
 
 <a id="flag-ignore-files"></a>
 
 - `--ignore-files` - respect per-directory .ignore and .xffignore files (off by default) _(global, find, xff, rg)_
-  See also: [Ignore and VCS traversal](#topic-ignore)
+  See also: [--help=ignore](#topic-ignore)
 
 <a id="flag-ignore-file"></a>
 
 - `--ignore-file=PATH` - read an extra gitignore-format file, rooted at its own directory (repeatable) _(global, find, xff, rg)_
-  See also: [Ignore and VCS traversal](#topic-ignore)
+  See also: [--help=ignore](#topic-ignore)
 
 <a id="flag-no-ignore"></a>
 
-- `--no-ignore, -u` - disable all ignore-file processing (.gitignore/.ignore/.xffignore) _(global, find, xff, rg)_
-  See also: [Ignore and VCS traversal](#topic-ignore)
+- `--no-ignore, -u` - disable all ignore-file processing, including explicit rule files _(global, find, xff, rg)_
+  Disables automatically discovered ignore files and explicit `--ignore-file`, `--compare-ignore-file`, `--compare-left-ignore-file`, and `--compare-right-ignore-file` rules, regardless of argument order. Comparison ignore-file requests still validate their paths and readability. Command-line `--include` / `--exclude`, hidden-path controls, and `--skip-vcs` remain independent.
+  See also: [--help=ignore](#topic-ignore)
 
 <a id="flag-ignore-vcs"></a>
 
 - `--ignore-vcs` - respect version-control ignore files (.gitignore / .git/info/exclude / core.excludesFile) _(global, find, xff, rg)_
   The rg-style affirmative for the VCS ignore-file layer - today git's (.gitignore at any depth, .git/info/exclude, core.excludesFile), the same layer -g / --gitignore auto enables. Use it to countermand an earlier --no-ignore-vcs or a style default. Independent of --ignore-files (.ignore / .xffignore), which keep their own switch; --no-ignore / -u still turns off every ignore source. Last of the ignore-mode flags wins.
-  See also: [Ignore and VCS traversal](#topic-ignore)
+  See also: [--help=ignore](#topic-ignore)
 
 <a id="flag-no-ignore-vcs"></a>
 
 - `--no-ignore-vcs` - do not respect version-control ignore files (keeps .ignore / .xffignore) _(global, find, xff, rg)_
   Drops the VCS ignore-file layer (git's .gitignore / .git/info/exclude / core.excludesFile) while leaving --ignore-files (.ignore / .xffignore) untouched - that is the difference from --no-ignore / -u, which turns off every ignore source. Today git is the only VCS ignore file xff reads, so this is nearly --gitignore=off. Last of the ignore-mode flags wins.
-  See also: [Ignore and VCS traversal](#topic-ignore)
+  See also: [--help=ignore](#topic-ignore)
 
 <a id="flag-hidden"></a>
 
 - `--hidden` - include hidden dotfiles in the walk (default: find/xff show, rg skips) _(global, find, xff, rg)_
-  See also: [Ignore and VCS traversal](#topic-ignore)
+  See also: [--help=ignore](#topic-ignore)
 
 <a id="flag-no-hidden"></a>
 
 - `--no-hidden` - skip hidden dotfiles (the rg default; opts find/xff out) _(global, find, xff, rg)_
-  See also: [Ignore and VCS traversal](#topic-ignore)
+  See also: [--help=ignore](#topic-ignore)
 
 <a id="flag-skip-vcs"></a>
 
@@ -803,12 +805,12 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `none` - off (same as --no-skip-vcs)
 
   Prunes version-control metadata directories at any depth (like ripgrep / fd), so a search never wades into repo plumbing. Bare `--skip-vcs` (or `=all`) covers every known VCS: `git` (.git), `hg` (.hg), `svn` (.svn), `jj` (.jj), `bzr` (.bzr), `darcs` (_darcs), `cvs` (CVS). A comma list (`--skip-vcs=git,hg`) is an explicit, frozen subset - it never changes if a VCS is added to the default set later. `--no-skip-vcs` (or `=none`) turns it off. Independent of `--hidden`, so the user's own dotfiles (.bazelrc, .gitignore) still show. `-g` / gitignore mode implies `--skip-vcs=git` (only .git); an explicit `--skip-vcs` overrides that. Default off otherwise.
-  See also: [Ignore and VCS traversal](#topic-ignore)
+  See also: [--help=ignore](#topic-ignore)
 
 <a id="flag-no-skip-vcs"></a>
 
 - `--no-skip-vcs` - keep VCS metadata dirs in the walk (opts out of --skip-vcs and the -g .git default) _(global, find, xff, rg)_
-  See also: [Ignore and VCS traversal](#topic-ignore)
+  See also: [--help=ignore](#topic-ignore)
 
 ### Result formatting
 
@@ -827,17 +829,17 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `tree` - an indented directory tree
 
   `markdown` (alias `md`) also renders ordinary, comparison-result, and paired summary tables as Markdown, with vertically aligned separators and right-aligned numeric headers and values in both source and rendered tables. Aligned and Markdown cells and tree labels C-escape control bytes and literal backslashes; Markdown additionally escapes that spelling for its renderer. Widths include the escaped text. This does not alter raw plain output or CSV, TSV, NUL, and JSONL encoding; `--path-encoding` controls plain listing paths. Summary schemas come from `--summary`; `--columns` selects listing fields and cannot change summary columns. Markdown summaries have descriptive headings above their scope and table. `--no-header` omits those headings, table headers, and Markdown separator rows when producing fragments. Summaries support `plain`, `aligned`, `jsonl`, `markdown` (alias `md`), `csv`, and `tsv`; `nul` and `tree` are listing-only formats. CSV/TSV summary exports have one header for all requests, explicit row identity, raw numeric values, and canonical scope-prefixed columns. Missing metrics are empty; `--no-header` removes the single header. TSV uses the same backslash escaping as listings. Histograms, action output, and dry-run previews cannot be mixed into these exports. In comparison mode use `--compare=summary` or `--compare-select=none`. Comparison status records support `plain` and `jsonl`; comparison patches require `plain`. Use `--compare-select=none` to format only comparison summaries. Explicit expression actions retain their own output formats. Built-in `-grep` uses JSON match/context/count records with `jsonl` and rejects formats other than `plain` or `jsonl`; an explicit `-grep:FORMAT` remains authored output. JSONL textual values stay strings when valid UTF-8; other byte sequences use `{"encoding":"base64","data":"..."}` with standard padded base64, preserving every byte.
-  See also: [Output](#topic-output)
+  See also: [--help=output](#topic-output)
 
 <a id="flag-no-header"></a>
 
 - `--no-header` - omit the header row from tabular --format (csv/tsv/aligned/markdown; on by default) _(global, find, xff, rg)_
-  See also: [Output](#topic-output)
+  See also: [--help=output](#topic-output)
 
 <a id="flag-columns"></a>
 
 - `--columns=FIELD,...` - columns for tabular --format, from the {field} vocabulary (e.g. path,size,mtime) _(global, find, xff, rg)_
-  See also: [Output](#topic-output)
+  See also: [--help=output](#topic-output)
 
 ### Tree comparison and diffs
 
@@ -850,46 +852,138 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `status` - one tab-separated selected result kind and relative path per record
   - `diff` - a unified tree diff suitable for saving as a patch
 
-  Requires exactly two roots. `--compare=summary` expands at its position to `--compare=status --compare-select=none --summary=compare`; later flags may override its settings. Combining the shorthand with bare `--summary` emits the comparison summary once. With an explicit `--summary-scope`, bare `--summary` also adds scoped totals; explicit groupings such as `--summary=ext` add their own tables. Bare `--compare` and `--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or `different` records. With `--format=jsonl`, each status is a JSON object containing `record: comparison`, `status`, relative `path`, `left_root`, and `right_root`. `--compare=diff` emits one unified tree diff, suitable for redirecting to a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is an expression action comparing each match from one walk with a templated target and therefore cannot discover target-only paths, `--compare` walks both roots independently and pairs the matches by relative path. The ordinary expression, ignore, hidden-file, archive, traversal, and `-P` / `-H` / `-L` symlink rules apply unchanged to each side; comparison itself enables none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks are compared by target. Both walks complete before comparison records are emitted in bytewise relative-path order; `--sort` affects each walk, not that final order. In status mode, `--path-encoding=escape` makes control bytes in the relative path unambiguous. `--summary` / `--summary=compare` append results and combined bytes by entry type and status. Results count each pair once; bytes include both sides, including two copies of identical files. Directories and special entries are included; directory equality compares the entry kind, not its subtree. Ordinary summary groupings default to `--summary-scope=compare`: one table with left and right columns across all comparison categories. Explicit `--summary-scope=all` combines both sides; `--summary-scope=root` separates roots. `--compare` changes this default regardless of option order.
-  Affected by: --compare-select, --diff-algorithm, --diff-context, --summary-precision
-  See also: [Comparing trees](#topic-compare), [--compare-select](#flag-compare-select), [--diff-algorithm](#flag-diff-algorithm), [--diff-context](#flag-diff-context), [--summary-precision](#flag-summary-precision)
+  Requires exactly two roots. `--compare=summary` expands at its position to `--compare=status --compare-select=none --summary=compare`; later flags may override its settings. Combining the shorthand with bare `--summary` emits the comparison summary once. With an explicit `--summary-scope`, bare `--summary` also adds scoped totals; explicit groupings such as `--summary=ext` add their own tables. Bare `--compare` and `--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or `different` records. With `--format=jsonl`, each status is a JSON object containing `record: comparison`, `status`, relative `path`, `left_root`, and `right_root`. `--compare=diff` emits Git-applicable unified text, binary, symlink, empty-file, executable-mode, and type-replacement changes, suitable for redirecting to a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is an expression action comparing each match from one walk with a templated target and therefore cannot discover target-only paths, `--compare` walks both roots independently and pairs the matches by relative path. The ordinary expression, ignore, hidden-file, archive, traversal, and `-P` / `-H` / `-L` symlink rules apply unchanged to each side; comparison itself enables none of them. Regular files compare bytes and executable capability (any execute bit set); other permission bits are ignored. Unfollowed symlinks are compared by target. Both walks complete before comparison records are emitted in bytewise relative-path order; `--sort` affects each walk, not that final order. In status mode, `--path-encoding=escape` makes control bytes in the relative path unambiguous. `--summary` / `--summary=compare` append results and combined bytes by entry type and status. Results count each pair once; bytes include both sides, including two copies of identical files. Directories and special entries are included; directory equality compares the entry kind, not its subtree. Ordinary summary groupings default to `--summary-scope=compare`: one table with left and right columns across all comparison categories. Explicit `--summary-scope=all` combines both sides; `--summary-scope=root` separates roots. `--compare` changes this default regardless of option order.
+  Affected by: --compare-select, --compare-ignore, --compare-ignore-file, --compare-left-ignore-file, --compare-right-ignore-file, --diff-algorithm, --diff-left-strip, --diff-left-root, --diff-left-prefix, --diff-left-rewrite, --diff-right-strip, --diff-right-root, --diff-right-prefix, --diff-right-rewrite, --diff-context, --summary-precision
+  See also: [--help=compare](#topic-compare)
 
 <a id="flag-compare-select"></a>
 
 - `--compare-select=KIND,...` - tree-comparison results to emit: left-only, right-only, identical, different, all, or none _(global, find, xff, rg)_
   Selects comma-separated result kinds for `--compare`. The default is `left-only,right-only,different`, so equal files stay silent. `all` selects every kind. `none` or an empty value suppresses per-path output. Requires `--compare`; neither comparison-result nor ordinary summaries are filtered by this selection. `identical` is available with status output and is rejected with `--compare=diff`, where an unchanged file has no patch representation.
   Affects: --compare
-  See also: [Comparing trees](#topic-compare), [--compare](#flag-compare)
+  See also: [--help=compare](#topic-compare)
+
+<a id="flag-compare-ignore"></a>
+
+- `--compare-ignore=none|left|right|respective|union` - select which per-directory ignore policy applies during a two-root comparison _(global, find, xff, rg)_
+  One of:
+
+  - `none` - do not apply auto-discovered per-directory ignore files
+  - `left` - apply the left tree's auto-discovered ignore stack to both trees
+  - `right` - apply the right tree's auto-discovered ignore stack to both trees
+  - `respective` - apply each tree's own ignore stack independently (the default)
+  - `union` - exclude a path from both trees if either tree's ignore stack excludes it
+
+  Requires `--compare`. `respective` is the default and applies each tree's own auto-discovered ignore stack. `left` or `right` applies that tree's stack to matching relative paths on both sides. `union` excludes a relative path from both sides when either stack excludes it. `none` disables auto-discovered per-directory ignore files for the comparison. `left`, `right`, and `union` enable the Git ignore layer; `--no-ignore` still disables every ignore-file source. `respective` follows the ordinary `-g` / `--gitignore` and program-style settings. The selected stack includes `.gitignore` when the Git layer is on, and `.ignore` / `.xffignore` when enabled by `--ignore-files` or the selected style. Explicit `--ignore-file`, `--include`, and `--exclude` retain their normal scope. `--skip-vcs` remains a separate traversal filter.
+  Affects: --compare
+  See also: [--help=compare](#topic-compare)
+
+<a id="flag-compare-ignore-file"></a>
+
+- `--compare-ignore-file=PATH` - apply an explicit ignore file relative to both comparison roots (repeatable) _(global, find, xff, rg)_
+  Requires `--compare`. Read a gitignore-format file from an absolute path or a path relative to the working directory, never relative to a comparison root or the INI file containing this flag. Patterns apply relative to each comparison root, regardless of the ignore file's location: `/build/` excludes each root's top-level `build` directory. Shared and side-specific files apply in argument order; the last matching applicable rule wins, including `!` negations. `--compare-left-ignore-file` and `--compare-right-ignore-file` restrict rules to one side, with no implicit extra priority. Command-line `--include` / `--exclude` take precedence, followed by these files, ordinary `--ignore-file` sources, and auto-discovered rules. Supplements every `--compare-ignore` policy, including `none`, without enabling auto-discovery. `--no-ignore` disables application of these rules. Empty paths and missing or unreadable files are errors, even with `--no-ignore`.
+  Affects: --compare
+  See also: [--help=compare](#topic-compare)
+
+<a id="flag-compare-left-ignore-file"></a>
+
+- `--compare-left-ignore-file=PATH` - apply an explicit ignore file only to the left comparison root (repeatable) _(global, find, xff, rg)_
+  Requires `--compare`. Like `--compare-ignore-file`, but patterns apply only to the left root. Accepts absolute paths or paths relative to the working directory, never the selected root or the INI file containing this flag; patterns anchor at the left comparison root. Shared and side-specific files apply in argument order; the last matching applicable rule wins. Side-specific files have no implicit extra priority. Asymmetric exclusions can make an existing file appear right-only. `--no-ignore` disables application; empty paths and missing or unreadable files remain errors.
+  Affects: --compare
+  See also: [--help=compare](#topic-compare)
+
+<a id="flag-compare-right-ignore-file"></a>
+
+- `--compare-right-ignore-file=PATH` - apply an explicit ignore file only to the right comparison root (repeatable) _(global, find, xff, rg)_
+  Requires `--compare`. Like `--compare-ignore-file`, but patterns apply only to the right root. Accepts absolute paths or paths relative to the working directory, never the selected root or the INI file containing this flag; patterns anchor at the right comparison root. Shared and side-specific files apply in argument order; the last matching applicable rule wins. Side-specific files have no implicit extra priority. Asymmetric exclusions can make an existing file appear left-only. `--no-ignore` disables application; empty paths and missing or unreadable files remain errors.
+  Affects: --compare
+  See also: [--help=compare](#topic-compare)
 
 <a id="flag-diff-algorithm"></a>
 
-- `--diff-algorithm=naive|direct|myers` - diff engine for -diff and tree diffs: naive, direct, or myers (the default) _(global, find, xff, rg)_
+- `--diff-algorithm=naive|direct|myers` - engine for -diff, -rdiff and tree diffs: naive, direct, or myers (the default) _(global, find, xff, rg)_
   One of:
 
   - `myers` - minimal diff, as git computes it (the default)
   - `direct` - line-by-line, no alignment search
   - `naive` - the simple longest-common-subsequence walk
 
-  Affects: -diff, --compare
-  See also: [Comparing trees](#topic-compare), [-diff](#primary-diff), [--compare](#flag-compare)
+  Affects: -diff, -rdiff, --compare
+  See also: [--help=compare](#topic-compare)
+
+<a id="flag-diff-left-strip"></a>
+
+- `--diff-left-strip=N` - remove leading left-side patch path components (default 0) _(global, find, xff, rg)_
+  Nonnegative decimal count; the last value wins. Stripping must leave a filename. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [--help=compare](#topic-compare), [--help=fields](#topic-fields)
+
+<a id="flag-diff-left-root"></a>
+
+- `--diff-left-root=PATH` - inject a relative left-side patch root (default empty) _(global, find, xff, rg)_
+  Prepend a relative directory after stripping, joining with a slash. Empty disables injection; the last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [--help=compare](#topic-compare), [--help=fields](#topic-fields)
+
+<a id="flag-diff-left-prefix"></a>
+
+- `--diff-left-prefix=TEXT` - literal left-side patch prefix (default a/) _(global, find, xff, rg)_
+  Prepend literal text after rewrites, with no automatic separator. Empty removes the prefix; the last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [--help=compare](#topic-compare), [--help=fields](#topic-fields)
+
+<a id="flag-diff-left-rewrite"></a>
+
+- `--diff-left-rewrite=RULES` - rewrite left-side patch paths using ordered s/PAT/REPL/gi rules _(global, find, xff, rg)_
+  Repeatable; chains and repeated flags run in order. Uses the field RE2 substitution grammar, alternate punctuation delimiters, capture references, and `g`/`i` flags. Nonmatches leave paths unchanged. Invalid rules fail before traversal. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [--help=compare](#topic-compare), [--help=fields](#topic-fields)
+
+<a id="flag-diff-right-strip"></a>
+
+- `--diff-right-strip=N` - remove leading right-side patch path components (default 0) _(global, find, xff, rg)_
+  Nonnegative decimal count; the last value wins. Stripping must leave a filename. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [--help=compare](#topic-compare), [--help=fields](#topic-fields)
+
+<a id="flag-diff-right-root"></a>
+
+- `--diff-right-root=PATH` - inject a relative right-side patch root (default empty) _(global, find, xff, rg)_
+  Prepend a relative directory after stripping, joining with a slash. Empty disables injection; the last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [--help=compare](#topic-compare), [--help=fields](#topic-fields)
+
+<a id="flag-diff-right-prefix"></a>
+
+- `--diff-right-prefix=TEXT` - literal right-side patch prefix (default b/) _(global, find, xff, rg)_
+  Prepend literal text after rewrites, with no automatic separator. Empty removes the prefix; the last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [--help=compare](#topic-compare), [--help=fields](#topic-fields)
+
+<a id="flag-diff-right-rewrite"></a>
+
+- `--diff-right-rewrite=RULES` - rewrite right-side patch paths using ordered s/PAT/REPL/gi rules _(global, find, xff, rg)_
+  Repeatable; chains and repeated flags run in order. Uses the field RE2 substitution grammar, alternate punctuation delimiters, capture references, and `g`/`i` flags. Nonmatches leave paths unchanged. Invalid rules fail before traversal. Left is old content and right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying streamed output. See `--help=compare` for examples.
+  Affects: -diff, -rdiff, --compare
+  See also: [--help=compare](#topic-compare), [--help=fields](#topic-fields)
 
 <a id="flag-diff-ignore"></a>
 
-- `--diff-ignore=TOKEN,...` - normalize -diff comparison: ws, change, trail, blank, case, eofnl (comma-separated) _(global, find, xff, rg)_
-  Sets the normalization used by `-diff`; the last value wins. It may be saved in user config or an explicit `--xffrc=FILE`, and a command-line value overrides the configured value. An empty value disables configured normalization. Tokens are `ws`, `change`, `trail`, `blank`, `case`, and `eofnl`, comma-separated.
-  Affects: -diff
-  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [-diff](#primary-diff)
+- `--diff-ignore=TOKEN,...` - normalize diff actions: ws, change, trail, blank, case, eofnl (comma-separated) _(global, find, xff, rg)_
+  Sets the normalization used by `-diff` and `-rdiff`; the last value wins. It may be saved in user config or an explicit `--xffrc=FILE`, and a command-line value overrides the configured value. An empty value disables configured normalization. Tokens are `ws`, `change`, `trail`, `blank`, `case`, and `eofnl`, comma-separated. A nonempty explicit CLI value requires a `-diff` or `-rdiff` action; tree comparison remains exact and rejects ineffective CLI normalization before traversal. Dormant config defaults and empty resets are allowed; `--explain` reports advisory notes.
+  Affects: -diff, -rdiff
+  See also: [--help=compare](#topic-compare), [--help=content](#topic-content)
 
 <a id="flag-diff-ignore-matching"></a>
 
-- `--diff-ignore-matching=REGEX` - -diff ignores lines matching this regex (RE2) _(global, find, xff, rg)_
-  Drops matching lines before `-diff` compares the two inputs. It may be saved in user config or an explicit `--xffrc=FILE`; the last value wins, so a command-line value overrides configuration. An empty value disables a configured expression. The expression uses RE2.
-  Affects: -diff
-  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [-diff](#primary-diff)
+- `--diff-ignore-matching=REGEX` - -diff / -rdiff ignore lines matching this regex (RE2) _(global, find, xff, rg)_
+  Drops matching lines before `-diff` or `-rdiff` compares the two inputs. It may be saved in user config or an explicit `--xffrc=FILE`; the last value wins, so a command-line value overrides configuration. An empty value disables a configured expression. The expression uses RE2. A nonempty explicit CLI value requires a `-diff` or `-rdiff` action; tree comparison remains exact and rejects ineffective CLI normalization before traversal. Dormant config defaults and empty resets are allowed; `--explain` reports advisory notes.
+  Affects: -diff, -rdiff
+  See also: [--help=compare](#topic-compare), [--help=content](#topic-content)
 
 <a id="flag-diff-format"></a>
 
-- `--diff-format=u|c|n|y` - default -diff format: u/unified (default), c/context, n/normal, y/side-by-side _(global, find, xff, rg)_
+- `--diff-format=u|c|n|y` - default -diff / -rdiff format: u/unified (default), c/context, n/normal, y/side-by-side _(global, find, xff, rg)_
   One of:
 
   - `u` - unified, the diff -u shape (the default; also spelled unified)
@@ -897,15 +991,15 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `n` - normal, the plain diff shape (also normal)
   - `y` - side by side, the diff -y shape (also side-by-side)
 
-  Affects: -diff
-  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [-diff](#primary-diff)
+  Affects: -diff, -rdiff
+  See also: [--help=compare](#topic-compare), [--help=content](#topic-content)
 
 <a id="flag-diff-context"></a>
 
-- `--diff-context=N` - default -diff context lines (3); overrides --context for -diff, and -diff:uN overrides it _(global, find, xff, rg)_
-  Affects: -diff, --compare
+- `--diff-context=N` - default diff context lines (3); overrides --context; per-action :uN overrides it _(global, find, xff, rg)_
+  Affects: -diff, -rdiff, --compare
   Affected by: --context
-  See also: [Comparing trees](#topic-compare), [--context](#flag-context), [-diff](#primary-diff), [--compare](#flag-compare)
+  See also: [--help=compare](#topic-compare)
 
 ### Output values and actions
 
@@ -931,7 +1025,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `sha512_256` - SHA-2, 512/256 truncated
 
   Sets the default digest algorithm for the `-hash` action, the `{hash}` field, and `--summary=hash`. `sha256` is the default; a `-hash:ALGO` spec or a `{hash:ALGO}` qualifier overrides it per use. `--explain` identifies a CLI default with no active consumer; suppressed output does not count.
-  See also: [Fields](#topic-fields), [Output](#topic-output)
+  See also: [--help=fields](#topic-fields), [--help=output](#topic-output)
 
 <a id="flag-hash-encoding"></a>
 
@@ -942,7 +1036,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `base64` - standard padded base64 (RFC 4648), the Subresource-Integrity spelling
 
   Used by hash actions, fields, and `--summary=hash` unless that use specifies its own encoding. `--explain` identifies a CLI default with no active consumer; suppressed output does not count.
-  See also: [Fields](#topic-fields), [Output](#topic-output)
+  See also: [--help=fields](#topic-fields), [--help=output](#topic-output)
 
 <a id="flag-path-encoding"></a>
 
@@ -952,12 +1046,12 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `raw` - the path's bytes verbatim, as find writes them (the default)
   - `escape` - C-escape control bytes, so a newline in a name cannot forge a line
 
-  See also: [Output](#topic-output)
+  See also: [--help=output](#topic-output)
 
 <a id="flag-template"></a>
 
 - `--template=TEMPLATE` - render each match through a field template ({path}, {name}, ...) _(global, find, xff, rg)_
-  See also: [Output](#topic-output), [Fields](#topic-fields)
+  See also: [--help=output](#topic-output), [--help=fields](#topic-fields)
 
 <a id="flag-implicit-print"></a>
 
@@ -967,7 +1061,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `yes` - print every match even when the expression has its own action (also on / true / 1)
   - `no` - never add the default print (also off / false / 0)
 
-  See also: [Output](#topic-output)
+  See also: [--help=output](#topic-output)
 
 ### Archive creation
 
@@ -977,7 +1071,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   Command-line only; rejected in configuration files.
   Command-line only, like positional root operands. Repeatable. Each name must be a distinct single directory component; `.` and `..`, path separators, and control characters are rejected. A directory root contributes `NAME/relative/path`; a file root contributes `NAME/basename`. The same physical path may have different names. Named and positional roots retain their argument order, except when `--sort` explicitly sorts roots. Names affect archive destinations; ordinary path output still uses the input paths. Duplicate root names are errors even with `--pack-duplicates=first`.
   Affects: --pack, --pack-duplicates, --sort
-  See also: [Archives](#topic-archive), [--pack](#flag-pack), [--pack-duplicates](#flag-pack-duplicates), [--sort](#flag-sort)
+  See also: [--help=archive](#topic-archive)
 
 <a id="flag-pack"></a>
 
@@ -985,7 +1079,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   The counterpart of `--archive`: instead of reading a container the walk BUILDS one, so the member list comes from the whole expression vocabulary rather than from a shell pipeline into `tar`. The output NAME picks the format - `--help=archive` lists exactly what this binary writes, from the writer's own table rather than a copy kept here, and the single-word shortcuts (`.tgz`, `.txz`, `.tbz2`, `.tzst`, `.tlz`, `.taZ`) mean what they do everywhere else; a name carrying no format is a usage error reported BEFORE the walk, since finding out afterwards would waste the traversal. Each member is stored under the entry's path relative to the search root it was found under, in the order the walk produced it - so `--sort` decides the order inside the archive. Member destinations are normalized; `--pack-duplicates` controls collisions. Like `--summary` it is a sink: it replaces the per-match listing, while explicit actions still run, so add `-print` to watch what goes in. The archive is written after the walk and renamed into place only when complete, so an interrupted run leaves no half archive and an existing FILE survives a failed one. A file the walk meets that IS the output is skipped rather than packed into itself. An archive MEMBER cannot be packed: reading files out of one container to re-pack them into another is its own feature, and until it exists the run is refused rather than quietly short. A build-time extra, like `--archive`.
   Affects: --sort
   Affected by: --root, --pack-duplicates, --pack-option, --pack-level
-  See also: [Archives](#topic-archive), [--root](#flag-root), [--pack-duplicates](#flag-pack-duplicates), [--pack-option](#flag-pack-option), [--pack-level](#flag-pack-level), [--sort](#flag-sort)
+  See also: [--help=archive](#topic-archive)
 
 <a id="flag-pack-duplicates"></a>
 
@@ -998,21 +1092,21 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   Defaults to `error`. Member destinations are normalized before comparison: leading and interior `./`, repeated separators, and trailing separators do not distinguish names. `first` keeps the earliest collected input and skips later copies; it does not rename them. Duplicate validation runs before archive output creation and also applies to `--dry-run`. An error reports both source paths and preserves any existing destination archive.
   Affects: --pack
   Affected by: --root
-  See also: [Archives](#topic-archive), [--root](#flag-root), [--pack](#flag-pack)
+  See also: [--help=archive](#topic-archive)
 
 <a id="flag-pack-option"></a>
 
 - `--pack-option=NAME=VALUE|@FILE.json` - tune how `--pack` writes: repeatable, last value for a NAME wins _(global, find, xff, rg)_
   The general knob behind `--pack-level`. NAME is XFF's own vocabulary, not the archive library's: each name is translated to whatever the linked writer calls the same thing, so an unknown name is a usage error rather than a silent no-op, the accepted set is listed by `--help=archive` straight from the writer's table, and swapping or upgrading that library changes a translation table instead of the flags you type. A name that exists but does not apply to the chosen output format is refused too, naming the formats it does apply to - `zip64` is a zip idea, `threads` is not a gzip one. Everything is checked before the walk starts, so a typo costs no traversal and writes no file. `--pack-option=@FILE.json` reads one JSON object whose keys are option names and whose values are strings, integers, or booleans; booleans become `yes` or `no`. File and inline forms may be repeated and are expanded in command-line order, so the last value for a name wins across both forms.
   Affects: --pack
-  See also: [Archives](#topic-archive), [--pack](#flag-pack)
+  See also: [--help=archive](#topic-archive)
 
 <a id="flag-pack-level"></a>
 
 - `--pack-level=N` - compression level for `--pack` (gzip/xz/lzip/lzma/zip 0-9, bzip2/lz4 1-9, zstd 1-22) _(global, find, xff, rg)_
   How hard the compressor works, on the scale the chosen format uses; left alone it is the format's own default. Exactly `--pack-option=level=N`, kept as its own spelling because it is the common knob for compressors that expose a level - the same relationship `-Z` has to `--archive-write`. On a plain `.tar` it is a usage error rather than a no-op, because there is no compressor to set a level on and a silently ignored level reads as a smaller archive that never arrives. Legacy Unix `compress` has no level knob, so `.tar.Z` refuses this option too.
   Affects: --pack
-  See also: [Archives](#topic-archive), [--pack](#flag-pack)
+  See also: [--help=archive](#topic-archive)
 
 ### Statistics
 
@@ -1036,7 +1130,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
   Selects root populations or collects ordered comparison column groups for each ordinary `--summary` grouping. `all` combines every root; `root` separates input roots. Without an explicit scope, the default is `all` outside comparison and `compare` when `--compare` is active, regardless of option order. An explicit scope overrides that conditional default; repeated scopes use the last occurrence. Comparison scopes require `--compare`. `compare` expands to `left-total,right-total`; `diff` expands to `left-only,right-only,different`. `left` and `right` alias `left-total` and `right-total`; use `left-only` and `right-only` for unmatched entries. Output uses canonical names. Aliases expand in order and duplicate scopes are removed. Repeating the flag replaces the preceding list. Selection is independent of `--compare-select`. Selected comparison scopes share one table, with a column group per scope: count, count percentage, size, and size percentage. Side totals count their own entries and bytes. Categories count pairs once and sum both sides' bytes. Different grouping keys form a left-to-right transition row. Percentages use each column group's full population before `--top`; missing entries display a dash. Overlapping scopes are not added into a grand total. `all` counts both copies. Requires an active file summary such as `--summary` or `--summary=ext`; otherwise it is an error. `--compare=summary` expands to `--summary=compare`, which only counts comparison results and does not satisfy this requirement.
   Affects: --summary
-  See also: [Statistics](#topic-stats), [Comparing trees](#topic-compare), [--summary](#flag-summary)
+  See also: [--help=stats](#topic-stats), [--help=compare](#topic-compare)
 
 <a id="flag-summary"></a>
 
@@ -1059,14 +1153,14 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
   With `--compare`, bare `--summary` or `--summary=compare` appends result counts, combined left-plus-right sizes, and percentages by type and status, plus a total after the comparison output. With explicit `--summary-scope`, bare `--summary` also adds ordinary count and size statistics. Other groupings default to one left/right table with `--compare` (`--summary-scope=compare`), and combine all roots otherwise (`--summary-scope=all`). Explicit scope selection overrides this conditional default regardless of option order. `--summary-scope` selects combined, per-root, or comparison-category tables. Plain and Markdown tables identify their grouping unless `--no-header` is set. JSONL summary rows carry `record=summary`, a zero-based `request` index, the canonical `summary` grouping, and `scope`. Template groupings also retain their exact `template`. Comparison tables identify `left_root` and `right_root`; ordinary tables identify `root` (empty when combined). Request indices distinguish repeated groupings and survive table reordering. JSONL rows distinguish aggregate totals with `is_total=true`; data rows have `is_total=false`, even when their group is named `total`. Text and Markdown quote data labels that are empty, equal to `total`, or begin with a quote, keeping the aggregate label unambiguous. Outside comparison, replaces the per-match listing with an aggregate table: match count and total size per group (overall, by type, extension, programming language, media (MIME) type, user (owner), owning group, file digest, or hash-verification result). The categorical keys reuse the {mime}/{user}/{group}/{hash} field vocabulary; --summary=hash groups identical files into one bucket (a dedup count, reading every file through its active filesystem, including archive members). It uses `--hash-algorithm` and `--hash-encoding`, just like `{hash}`. `--summary=hash-verification` requires exactly one `-hasheq` and counts its `verified` or `failed` verdict even when that verdict makes the complete expression false; an entry that short-circuits before reaching `-hasheq` is not counted. Empty expected values and unreadable entries are failed, matching `-hasheq` itself. A {template} key groups by any field value (e.g. --summary='{ext}-{type}'); a single m// extraction key (--summary='{capture.NAME:m/re/\1/}') groups per extracted line, so a per-file command's multi-line output tallies per key (e.g. git-blame lines per author) - the size column is not meaningful there. Explicit groupings are repeatable: each request adds its own table (e.g. `--summary=ext --summary=type`), printed in request order within each scope. In comparison mode, bare `--summary` and `--compare=summary` reuse an existing comparison-results table; explicit `--summary=compare` requests remain repeatable. Comparison-result tables precede ordinary tables regardless of request order. Percentages use the complete table totals before `--top`; a zero denominator yields zero percent. Sizes sum entry metadata sizes, including directory metadata, never recursive subtree sizes. `--format=markdown` (or `md`) renders these tables with grouping-specific headings above their scopes and fixed summary columns. Scope/root labels and explanatory notes are Markdown bullet items so each stays on its own rendered line. Each accounting note stays with its table, separated from the next summary by a blank line. Exact bytes align with scaled sizes at the decimal boundary. `--format=jsonl` includes `count_percent` and `size_percent` alongside `count` and `bytes`. --top=N limits the rows of each, `--summary-precision` sets all summary percentage and scaled-size digits, and --format=jsonl emits one object per group for scripts. Supported summary formats are `plain`, `aligned`, `jsonl`, `markdown` (alias `md`), `csv`, and `tsv`; listing-only formats `nul` and `tree` are rejected. CSV/TSV exports use one header, explicit `is_total` identity, raw numeric metrics, and canonical scope-prefixed columns for comparison groups. They reject histograms, action output, and applicable dry-run previews. Per-path comparison records and expression actions retain their own output; use `--compare-select=none` or `--compare=summary` for summary-only exports.
   Affected by: --summary-scope, --top, --summary-precision
-  See also: [Statistics](#topic-stats), [--summary-scope](#flag-summary-scope), [--top](#flag-top), [--summary-precision](#flag-summary-precision)
+  See also: [--help=stats](#topic-stats)
 
 <a id="flag-histogram"></a>
 
 - `--histogram=BUCKET[:MEASURE]` - bar chart per bucket: a count or sum/mean/min/max of size|lines (repeatable) _(global, find, xff, rg)_
   A terminal reduction like --summary, drawn as bars. BUCKET groups the matches - a category (overall, type, ext, lang, mime, user (owner), or group) or a numeric-range field (size / lines by order of magnitude, depth per level, drawn as an ascending distribution). The optional :MEASURE is the bar's value - `count` (the default) or an aggregate `sum(FIELD)` / `mean(FIELD)` / `min(FIELD)` / `max(FIELD)` over a numeric FIELD (size or lines). A numeric metric needs an aggregator (`ext:lines` is an error; `ext:sum(lines)` is not). Repeatable and combinable with --summary - both are fed by one walk and replace the per-match listing. Bars scale to the tallest, use Unicode block characters on a UTF-8 locale (see --unicode) or ASCII '#' otherwise; --top=N keeps the N tallest and --format=jsonl emits one object per bar for scripts. `--format=markdown` renders bucket/value tables with numeric values right-aligned, including when combined with summaries. `--no-header` omits histogram headings and column headers. `plain` and `aligned` retain text bars; `csv`, `tsv`, `nul`, and `tree` are unsupported for histograms and fail before traversal or actions.
   Affected by: --top, --histogram-width, --summary-precision
-  See also: [Statistics](#topic-stats), [--top](#flag-top), [--histogram-width](#flag-histogram-width), [--summary-precision](#flag-summary-precision)
+  See also: [--help=stats](#topic-stats)
 
 ### Sharded files
 
@@ -1081,7 +1175,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `underscore` - only `<stem>_<NNN>`
 
   Recognizes sharded-file naming conventions and collapses each logical set to a single line instead of listing every shard. Bare `--shards` (or `=auto`) enables all built-in schemes: `<stem>-<index>-of-<total>` (`of`), `<stem>.<NNN>` (`dotnum`), and `<stem>_<NNN>` (`underscore`). Restrict to specific schemes with a comma list, e.g. `--shards=of,dotnum`. Grouping is per-directory; files that match no scheme are listed unchanged. Off by default. In `--compare` mode, entries and reductions remain physical files; `--shards` does not collapse them or infer a whole-set comparison result. Its scheme selection still applies to `-shard-status`.
-  See also: [Statistics](#topic-stats)
+  See also: [--help=stats](#topic-stats)
 
 <a id="flag-shards-show"></a>
 
@@ -1093,7 +1187,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `count` - the wildcard name plus the shard count, e.g. `arc.??? (3 shards)`
 
   Picks each collapsed set's display: `first` = the representative (lowest-index) shard's path; `wildcard` = the masked-index name (the index digits shown as `???`); `count` = the `wildcard` name plus the shard count. An incomplete set is always annotated `(present/expected - INCOMPLETE)`. Only meaningful with `--shards`.
-  See also: [Statistics](#topic-stats)
+  See also: [--help=stats](#topic-stats)
 
 <a id="flag-shards-dedup"></a>
 
@@ -1105,13 +1199,13 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `error` - treat a same-index duplicate as an error (non-zero exit)
 
   When two files are the same logical shard (they differ only by an opaque tail, e.g. a regeneration id), `--shards-dedup` picks which is the representative: `first` keeps the lexicographically-first name; `mtime` keeps the newest; `error` treats the duplicate as an error and fails the run (non-zero exit). Also selects the representative used when `-shard-status` classifies physical files.
-  See also: [Statistics](#topic-stats)
+  See also: [--help=stats](#topic-stats)
 
 <a id="flag-shard-pattern"></a>
 
 - `--shard-pattern=REGEX` - a custom shard scheme via a named-capture regex (repeatable); the escape hatch _(global, find, xff, rg)_
   Defines a custom sharded-file scheme for `--shards` and `-shard-status` when the built-ins do not fit. REGEX is an RE2 pattern with named groups: `(?P<stem>...)` and `(?P<index>...)` are required, `(?P<total>...)` and `(?P<dup>...)` are optional. Repeatable; the patterns are tried in order, before the built-in schemes.
-  See also: [Statistics](#topic-stats)
+  See also: [--help=stats](#topic-stats)
 
 ### Content-match output
 
@@ -1121,14 +1215,14 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   Command-line only; rejected in configuration files.
   May follow native roots and matchers: `xff src -name '*.cc' --rg TODO -n`. Native matchers select files; the rg pattern selects output lines. Later `--rg` resumes rg options after `--xff`. Invocation as `rg` selects this grammar automatically. Selects `--config=rg` and content output. `--xff` switches subsequent arguments to an XFF filter expression without resetting output or configuration. Use `--help=rg` for supported options and intentional differences.
   Affected by: --files-with-matches, --files-without-match, --invert-match, --no-invert-match
-  See also: [Ripgrep-style searches](#topic-rg), [--files-with-matches](#flag-files-with-matches), [--files-without-match](#flag-files-without-match), [--invert-match](#flag-invert-match), [--no-invert-match](#flag-no-invert-match)
+  See also: [--help=rg](#topic-rg)
 
 <a id="flag-xff"></a>
 
 - `--xff` - switch from rg arguments to an XFF filter expression; otherwise do nothing _(global, find, xff, rg, command-line-only)_
   Command-line only; rejected in configuration files.
   Preserves the search patterns, roots, output and configuration. In native XFF syntax this is a no-op. Inside an option argument, child command or after rg's bare `--`, it remains data. Grammar switches are command-line-only.
-  See also: [Ripgrep-style searches](#topic-rg)
+  See also: [--help=rg](#topic-rg)
 
 <a id="flag-match-output"></a>
 
@@ -1136,119 +1230,119 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   Uses content predicates such as `-rxc` and `-content` to select output lines in files that pass the complete expression. Existing grep output controls apply. Explicit actions retain their normal precedence over default output. The short alias `-M` must precede the roots.
   Affects: -rxc, -irxc, -content, -icontent
   Affected by: --no-match-output, --only-matching, --no-only-matching, --files-with-matches, --files-without-match, --count-matches, --invert-match, --no-invert-match, --line-number, --no-line-number, --with-filename, --no-filename, --count, --context
-  See also: [Content](#topic-content), [--no-match-output](#flag-no-match-output), [--only-matching](#flag-only-matching), [--no-only-matching](#flag-no-only-matching), [--files-with-matches](#flag-files-with-matches), [--files-without-match](#flag-files-without-match), [--count-matches](#flag-count-matches), [--invert-match](#flag-invert-match), [--no-invert-match](#flag-no-invert-match), [--line-number](#flag-line-number), [--no-line-number](#flag-no-line-number), [--with-filename](#flag-with-filename), [--no-filename](#flag-no-filename), [--count](#flag-count), [--context](#flag-context), [-rxc](#primary-rxc), [-irxc](#primary-irxc), [-content](#primary-content), [-icontent](#primary-icontent)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-no-match-output"></a>
 
 - `--no-match-output, -M-` - restore the default path listing instead of content-match output _(global, find, xff, rg)_
   Disables `--match-output`. Last setting wins, including configuration-file defaults. The short alias `-M-` must precede the roots.
   Affects: --match-output
-  See also: [Content](#topic-content), [--match-output](#flag-match-output)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-only-matching"></a>
 
 - `--only-matching` - print matched portions instead of complete lines _(global, find, xff, rg)_
   For content-match output, emit nonempty, non-overlapping matches instead of complete lines. In rg mode, empty matches are included and inversion selects whole nonmatching lines. Otherwise context is ignored. With `--count`, count individual matches. Inverted selection has no matching portions to print. `FNMATCH` treats the complete matching line as its matched portion.
   Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-no-only-matching"></a>
 
 - `--no-only-matching` - print complete selected lines instead of matched portions _(global, find, xff, rg)_
   Restores complete-line content output. Last setting wins.
   Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-files-with-matches"></a>
 
 - `--files-with-matches` - print paths of files containing selected lines _(global, find, xff, rg)_
   Suppresses line and count output. Selection includes `--invert-match`. Each reached `-grep` action reports its own result; this does not defer actions until the full expression succeeds.
   Affects: -grep, --match-output, --rg
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output), [--rg](#flag-rg)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-files-without-match"></a>
 
 - `--files-without-match, --files-without-matches` - print paths of readable text files without selected lines _(global, find, xff, rg)_
   Empty text files qualify. Binary, unreadable and non-regular files do not. This changes the truth of the `-grep` action to whether the file has no selected lines.
   Affects: -grep, --match-output, --rg
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output), [--rg](#flag-rg)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-count-matches"></a>
 
 - `--count-matches` - count matching portions per file _(global, find, xff, rg)_
   Counts non-overlapping matched portions instead of selected lines. Context and explicit grep templates are superseded. Inverted selection has no matching portions to count.
   Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-invert-match"></a>
 
 - `--invert-match` - select lines that do not match its pattern _(global, find, xff, rg)_
   Inverts line selection, not the file-level expression. `! -rxc PATTERN` instead selects files whose content does not match. Does not invert other predicates.
   Affects: -grep, --match-output, --rg
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output), [--rg](#flag-rg)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-no-invert-match"></a>
 
 - `--no-invert-match` - select lines that match its pattern _(global, find, xff, rg)_
   Restores positive line selection. Last setting wins.
   Affects: -grep, --match-output, --rg
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output), [--rg](#flag-rg)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-line-number"></a>
 
 - `--line-number` - include line numbers in built-in plain grep output (default) _(global, find, xff, rg)_
   Prefix selected and context lines with one-based line numbers. Explicit templates and JSON records retain their own fields.
   Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-no-line-number"></a>
 
 - `--no-line-number` - omit line numbers from built-in plain grep output _(global, find, xff, rg)_
   Does not remove line fields from JSON records or explicit templates. Last setting wins.
   Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-with-filename"></a>
 
 - `--with-filename` - include paths in built-in plain grep output _(global, find, xff, rg)_
   Applies to line and count prefixes. Filename-only modes always print paths. Explicit templates and JSON records retain their own fields.
   Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-no-filename"></a>
 
 - `--no-filename` - omit paths from built-in plain grep line and count output _(global, find, xff, rg)_
   Filename-only modes always print paths. Explicit templates and JSON records retain their own fields. Last setting wins.
   Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-count"></a>
 
 - `--count, -c` - print a per-file matching-line count (path:count) instead of the lines _(global, find, xff, rg)_
   Counts selected lines, or nonempty matched portions with `--only-matching`. Files without selected lines emit no count. Context and templates are superseded. The last count/filename mode wins.
   Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-context"></a>
 
 - `--context=SPEC` - -grep context lines: N both sides, or A:N,B:N,C:N for after/before/both _(global, find, xff, rg)_
   `--context=2` is grep's `-C 2` (two lines either side); the A / B / C keys inside the value select one side (`--context=A:3,B:1`), which is what `--context-after` and `--context-before` spell one at a time. In rg mode, `-C N` / `-CN` selects both sides, `-A N` / `-AN` selects after-context, and `-B N` / `-BN` selects before-context. These short forms require rg mode; use the long forms in native XFF/find mode or INI files. A final symmetric before/after context also supplies the default for contextual `-diff` output, unless `--diff-context` or a per-action count overrides it.
   Affects: -grep, --match-output, -diff, --diff-context
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output), [-diff](#primary-diff), [--diff-context](#flag-diff-context)
+  See also: [--help=content](#topic-content)
 
 <a id="flag-context-after"></a>
 
 - `--context-after=N, --after-context=N` - with -grep, print N lines of context after each match (= --context=A:N) _(global, find, xff, rg)_
   `--after-context` is an alias in every mode and in INI files. In rg mode, `-A N` and `-AN` are short aliases. Together with the other context settings, a final symmetric context also supplies the default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.
   Affects: -grep, -diff
-  See also: [Content](#topic-content), [Regex matching](#topic-regex), [-grep](#primary-grep), [-diff](#primary-diff)
+  See also: [--help=content](#topic-content), [--help=regex](#topic-regex)
 
 <a id="flag-context-before"></a>
 
 - `--context-before=N, --before-context=N` - with -grep, print N lines of context before each match (= --context=B:N) _(global, find, xff, rg)_
   `--before-context` is an alias in every mode and in INI files. In rg mode, `-B N` and `-BN` are short aliases. Together with the other context settings, a final symmetric context also supplies the default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.
   Affects: -grep, -diff
-  See also: [Content](#topic-content), [Regex matching](#topic-regex), [-grep](#primary-grep), [-diff](#primary-diff)
+  See also: [--help=content](#topic-content), [--help=regex](#topic-regex)
 
 ### Result limits
 
@@ -1256,14 +1350,14 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `--max-results=N` - list at most N matched entries without stopping or truncating reductions _(global, find, xff, rg)_
   Caps the implicit result listing after the whole expression, across every branch and every per-instance `-first` / `-top` filter. It does NOT stop traversal: `--summary`, `--histogram`, `--count`, and archive packing still see the complete matched set rather than silently reporting a partial walk. Explicit expression actions (`-print`, `-grep`, `-exec`, and friends) keep their own positional semantics and are not suppressed; use `-first` or `-top` before an action to cap the entries that reach it. With one capped filter this flag is usually redundant; its distinct use is an aggregate ceiling such as `\( -type f -first 10 \) -o \( -type d -first 5 \) --max-results=12`. Last occurrence wins. A malformed or negative count is a usage error; `0` lists none.
-  See also: [Output](#topic-output), [Safety](#topic-safety)
+  See also: [--help=output](#topic-output), [--help=safety](#topic-safety)
 
 <a id="flag-top"></a>
 
 - `--top=N` - with --summary or --histogram, keep only the N largest/tallest groups _(global, find, xff, rg)_
   Requires a non-negative integer; `0` removes the limit. Last occurrence wins. Ordinary summary groups rank by bytes, then count, then name; comparison-scope tables rank by the sum of displayed column-group bytes, including overlap. Extraction summaries rank by count because they have no byte dimension. Totals and percentage denominators include groups omitted by the limit. When groups are omitted, summary tables state how many are shown out of the complete set; JSONL rows add `groups_shown` and `groups_total`. Comparison scopes count distinct group keys across the selected columns, including overlapping scopes only once. Comparison-result summaries always show every type and status; `--top` does not truncate them. Numeric-range histograms retain every range; only categorical histogram buckets are top-limited.
   Affects: --summary, --histogram
-  See also: [Statistics](#topic-stats), [--summary](#flag-summary), [--histogram](#flag-histogram)
+  See also: [--help=stats](#topic-stats)
 
 ### Statistics display
 
@@ -1272,14 +1366,14 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 - `--histogram-width=N` - cell width the tallest --histogram bar fills (default 40) _(global, find, xff, rg)_
   Requires a positive integer; zero, negative, malformed, and overflowing values are errors. Last occurrence wins.
   Affects: --histogram
-  See also: [Statistics](#topic-stats), [--histogram](#flag-histogram)
+  See also: [--help=stats](#topic-stats)
 
 <a id="flag-summary-precision"></a>
 
 - `--summary-precision=N` - fraction digits for summary percentages and human-readable sizes (default 2) _(global, find, xff, rg)_
   Accepts integers from `0` through `9`; other values are errors. Last occurrence wins. Applies to ordinary and comparison summaries, including JSON percentage fields, and histogram means. Exact byte counts stay integers.
   Affects: --summary, --compare, --histogram
-  See also: [Statistics](#topic-stats), [--summary](#flag-summary), [--compare](#flag-compare), [--histogram](#flag-histogram)
+  See also: [--help=stats](#topic-stats)
 
 ### Terminal display
 
@@ -1294,7 +1388,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
   Colorizes the plain listing by file type and, when the active language vocabulary supplies a colour, programming language. auto colorizes only when stdout is a terminal and NO_COLOR is unset; always forces color even through a pipe or pager and deliberately overrides NO_COLOR; never disables it.
   Affected by: --color-scheme
-  See also: [Output](#topic-output), [Environment](#topic-environment), [--color-scheme](#flag-color-scheme)
+  See also: [--help=output](#topic-output), [--help=environment](#topic-environment)
 
 <a id="flag-color-scheme"></a>
 
@@ -1308,7 +1402,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
   Colour is a whole-run choice, so this one palette is used by every surface that colours - the plain listing and -ls alike; they cannot disagree. $LS_COLORS is the variable `ls` and `dircolors` use, and xff reads the same keys: the two-letter types (`di`, `ln`, `ex`, `pi`, `so`, `bd`, `cd`, `fi`) and the per-extension `*.tar=` entries. Where only BSD's $LSCOLORS is set - the macOS case - that is read instead: its 11 letter pairs carry the same types in a fixed order, with no way to say "leave this plain" and no per-extension entries, so `merged` is the interesting scheme there. $LS_COLORS wins when both are set, being the richer format. Both variables are read on every platform rather than one per OS: which one is SET is better evidence than which system this is (a macOS shell with GNU coreutils is themed through $LS_COLORS, and $LSCOLORS is not macOS-only), and the fixed 22-character shape makes the BSD one self-validating. "Use ls's colours" turns out to mean three different things, so each has its own name, spelled the way logic spells it: `+` is OR, and the merge is AND. `auto` (the default, also `ls+xff` or `ls-or-xff`) is the theme OR xff's scheme - a theme that is set at all is the whole answer, and with none set xff's scheme is, so the decision is per VARIABLE; `default` is a fourth spelling of it, for a config file that wants whatever the default currently is. `ls` is the theme ALONE, so a type it never mentions prints uncoloured exactly as in a real ls listing (and with no theme set, nothing is coloured). `merged` (also `ls-and-xff`) is the theme AND xff's scheme, merged per KEY: the theme where it speaks, xff's colour for every key it omits - for a sparse theme you want filled in. (`ls&xff` is deliberately not accepted: an unquoted `&` backgrounds the command.) `xff` ignores $LS_COLORS entirely. In xff's scheme a regular non-executable file uses the active language vocabulary's `#RRGGBB` colour when present. A theme's matching extension or `fi` value wins; `ls` and a themed `auto` do not add language colours, while `merged` uses one only for a key the theme omitted. Executables and non-regular files retain their type colours. An EMPTY value in the theme (`di=` or `fi=`) is it saying "leave these plain" and is honoured as such; a malformed entry is skipped rather than failing the run, as in ls. Whether colour is emitted at all is --color's business, not this flag's.
   Affects: --color
-  See also: [Output](#topic-output), [Environment](#topic-environment), [--color](#flag-color)
+  See also: [--help=output](#topic-output), [--help=environment](#topic-environment)
 
 <a id="flag-unicode"></a>
 
@@ -1320,7 +1414,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `never` - force the ASCII connectors (also off / no / false / 0)
 
   Selects the box-drawing characters --format=tree connects nodes with. auto uses Unicode when the locale (LC_ALL / LC_CTYPE / LANG) is UTF-8, else ASCII; always forces the Unicode connectors; never forces the ASCII ones.
-  See also: [Output](#topic-output), [Environment](#topic-environment)
+  See also: [--help=output](#topic-output), [--help=environment](#topic-environment)
 
 <a id="flag-human"></a>
 
@@ -1331,18 +1425,18 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `iec` - powers of 1024: KiB, MiB, GiB (also 1024)
   - `off` - plain byte counts, no unit suffix
 
-  See also: [Output](#topic-output), [Environment](#topic-environment)
+  See also: [--help=output](#topic-output), [--help=environment](#topic-environment)
 
 <a id="flag-si"></a>
 
 - `--si` - human sizes in SI (kB/MB, 1000^N); an alias for --human=si (the --human default) _(global, find, xff, rg)_
-  See also: [Output](#topic-output), [Environment](#topic-environment)
+  See also: [--help=output](#topic-output), [--help=environment](#topic-environment)
 
 <a id="flag-buffer"></a>
 
 - `--buffer[=auto|off|all|N[kMGT]|NMB|NMiB]` - buffer to size columns (-ls / tables): auto, off, all, N[kMGT] rows, or NMB/NMiB bytes _(global, find, xff, rg)_
   Row windows use a bare count or decimal `k`/`M`/`G`/`T` multiplier. Byte budgets require an explicit trailing `B`: `B`/`kB`/`MB`/.../`EB` are SI, while `KiB`/`MiB`/.../`EiB` are IEC. The distinct suffixes keep rows and bytes unambiguous. Malformed, negative, and overflowing limits are errors before traversal. `off` or `0` disables column buffering; `all` requests the complete row set.
-  See also: [Output](#topic-output), [Environment](#topic-environment)
+  See also: [--help=output](#topic-output), [--help=environment](#topic-environment)
 
 <a id="flag-help-format"></a>
 
@@ -1357,13 +1451,13 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
   Command-line only; rejected in configuration files.
   Requires help output, including a topic, flag, index, or the full reference. For example, `--help=notice --help-format=markdown`. Markup output ignores terminal `--width` and `--color`; Markdown and HTML disable automatic paging, while explicit `--pager=always` or a pager command still applies. Roff uses the same terminal formatting and paging as `--man`. Conflicting format selections are errors, including conflicts with `--man` (which selects `roff`).
-  See also: [Output](#topic-output), [Environment](#topic-environment)
+  See also: [--help=output](#topic-output), [--help=environment](#topic-environment)
 
 <a id="flag-width"></a>
 
 - `--width[=auto|auto:COLS|none|COLS]` - width for plain help and comparison summaries: capped auto, auto, none, or a column count _(global, find, xff, rg)_
   Wraps the flowing text of `--help` and `--help=TOPIC` to a column width. Also bounds plain/aligned comparison-summary tables: scopes use grouped column headers when they fit, or labelled rows in one table when they do not. Numeric cells are never truncated; a width below one metric row may overflow. The default is `auto:110`. `auto:COLS` caps automatic width at `COLS`, using the cap when detection is unavailable; caps below 40 are errors. Explicit `auto` (also bare `--width`) is uncapped and uses `$COLUMNS` when set, otherwise the terminal width when stdout is a terminal, otherwise unlimited width. `none` (or `0`) disables wrapping; a positive integer sets a fixed width (at least 40 columns); 60 or more is recommended for readability. Aligned help vocabulary tables and example blocks keep their own layout. Does not affect the file listing, comparison-results table, summary legends or path headings, `--man`, or formatted full help. Save a personal preference such as `--width=auto:100` in the unsectioned user INI at `<OS account home>/.config/xff/config`. Explicit CLI width overrides the preference. Help reads only automatic system/user preferences, including selected named sections; it never loads `.xffrc` files or executes configured actions. Unavailable or invalid automatic preferences are ignored for help so configuration remains repairable.
-  See also: [Output](#topic-output), [Environment](#topic-environment)
+  See also: [--help=output](#topic-output), [--help=environment](#topic-environment)
 
 <a id="flag-pager"></a>
 
@@ -1377,12 +1471,12 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `COMMAND` - always page through this explicit shell command
 
   Pages every pageable output: long meta output (`--help`, `--help=TOPIC`, `--man`) and the file listing, including action rows such as `-ls`. The default `help` pages only those meta surfaces and only on a terminal. `auto` adds every pageable listing when stdout is a terminal; `always` also pages through a pipe; `never` (or `--no-pager`) disables it. Automatic command selection prefers an installed `less -FRX`, then `more`, and only then consults `$XFF_PAGER` followed by ambient `$PAGER`. `--pager=COMMAND` always uses COMMAND directly, so `--pager="$PAGER"` is the explicit way to request the process environment's choice. Listings stream through one pager for the whole walk, so the first screen appears while the walk is still running and quitting ends the run quietly. Paging steps aside for an expression that needs the terminal itself (`-ok`, `-okdir`, `-exec`, `-execdir`, which can hand the terminal to an editor) and for `--quiet`, which prints nothing to page; those runs are simply unpaged.
-  See also: [Output](#topic-output), [Environment](#topic-environment)
+  See also: [--help=output](#topic-output), [--help=environment](#topic-environment)
 
 <a id="flag-no-pager"></a>
 
 - `--no-pager` - never page any output (an alias for --pager=never) _(global, find, xff, rg)_
-  See also: [Output](#topic-output), [Environment](#topic-environment)
+  See also: [--help=output](#topic-output), [--help=environment](#topic-environment)
 
 ### Exit code control
 
@@ -1390,13 +1484,13 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `--quiet, -q` - suppress output; exit 0 if anything matched, else 1 (-q: grep-compatible) _(global, find, xff, rg)_
   In comparison mode, a match means a left-only, right-only, or different entry in the matched population: `0` means discrepancies, `1` means none, and `2` means an error. `--compare-select` and summary output do not change this status.
-  See also: [Output](#topic-output)
+  See also: [--help=output](#topic-output)
 
 <a id="flag-exit-match"></a>
 
 - `--exit-match` - keep output; exit 0 if anything matched, else 1 _(global, find, xff, rg)_
   In comparison mode, a match means a left-only, right-only, or different entry in the matched population: `0` means discrepancies, `1` means none, and `2` means an error. `--compare-select` and summary output do not change this status.
-  See also: [Output](#topic-output)
+  See also: [--help=output](#topic-output)
 
 ### Safety
 
@@ -1410,432 +1504,432 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `output` - use dedicated controls within the declared output root
 
   Selects separate controls; this directive itself neither blocks nor allows operations. A comma-separated category list; empty means ordinary file controls for all categories (default). `archive`, `temp`, and `output` are supported. Allowed once before all sections in system or user configuration. Each file chooses its own policy, including for its named sections. Neither named sections, explicit `.xffrc` files, nor the CLI may set it. See `--help=safety` for the operation table and archive replacement tradeoff.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-temp-root"></a>
 
 - `--temp-root=PATH` - declare an existing absolute temp root (config only) _(global, find, xff, rg, config-only)_
   Allowed once in unsectioned system or user INI; a system declaration wins. Permissions cover descendants recursively; the root itself remains protected. Roots and descendant traversal must not contain symlinks. INI `${NAME}` substitutions are allowed, but trust the caller-controlled environment to choose the root; use literal paths for fixed administrator boundaries. See `--help=config` and `--help=safety`.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-output-root"></a>
 
 - `--output-root=PATH` - declare an existing absolute output root (config only) _(global, find, xff, rg, config-only)_
   Allowed once in unsectioned system or user INI; a system declaration wins. Permissions cover descendants recursively; the root itself remains protected. Roots and descendant traversal must not contain symlinks. INI `${NAME}` substitutions are allowed, but trust the caller-controlled environment to choose the root; use literal paths for fixed administrator boundaries. See `--help=config` and `--help=safety`.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-directory-creation"></a>
 
 - `--block-directory-creation` - unconditionally prohibit directory creation; later settings cannot clear it _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-directory-creation"></a>
 
 - `--safe-block-directory-creation` - include directory creation in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-directory-creation"></a>
 
 - `--no-safe-block-directory-creation` - exclude directory creation from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-directory-deletion"></a>
 
 - `--block-directory-deletion` - unconditionally prohibit directory deletion; later settings cannot clear it _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-directory-deletion"></a>
 
 - `--safe-block-directory-deletion` - include directory deletion in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-directory-deletion"></a>
 
 - `--no-safe-block-directory-deletion` - exclude directory deletion from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-temp-file-writing"></a>
 
 - `--block-temp-file-writing` - unconditionally prohibit temp file writing; later settings cannot clear it _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-temp-file-writing"></a>
 
 - `--safe-block-temp-file-writing` - include temp file writing in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-temp-file-writing"></a>
 
 - `--no-safe-block-temp-file-writing` - exclude temp file writing from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-temp-file-overwrite"></a>
 
 - `--block-temp-file-overwrite` - unconditionally prohibit temp file overwrite; later settings cannot clear it _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-temp-file-overwrite"></a>
 
 - `--safe-block-temp-file-overwrite` - include temp file overwrite in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-temp-file-overwrite"></a>
 
 - `--no-safe-block-temp-file-overwrite` - exclude temp file overwrite from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-temp-file-deletion"></a>
 
 - `--block-temp-file-deletion` - unconditionally prohibit temp file deletion; later settings cannot clear it _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-temp-file-deletion"></a>
 
 - `--safe-block-temp-file-deletion` - include temp file deletion in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-temp-file-deletion"></a>
 
 - `--no-safe-block-temp-file-deletion` - exclude temp file deletion from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-temp-directory-creation"></a>
 
 - `--block-temp-directory-creation` - unconditionally prohibit temp directory creation; later settings cannot clear it _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-temp-directory-creation"></a>
 
 - `--safe-block-temp-directory-creation` - include temp directory creation in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-temp-directory-creation"></a>
 
 - `--no-safe-block-temp-directory-creation` - exclude temp directory creation from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-temp-directory-deletion"></a>
 
 - `--block-temp-directory-deletion` - unconditionally prohibit temp directory deletion; later settings cannot clear it _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-temp-directory-deletion"></a>
 
 - `--safe-block-temp-directory-deletion` - include temp directory deletion in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-temp-directory-deletion"></a>
 
 - `--no-safe-block-temp-directory-deletion` - exclude temp directory deletion from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-output-file-writing"></a>
 
 - `--block-output-file-writing` - unconditionally prohibit output file writing; later settings cannot clear it _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-output-file-writing"></a>
 
 - `--safe-block-output-file-writing` - include output file writing in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-output-file-writing"></a>
 
 - `--no-safe-block-output-file-writing` - exclude output file writing from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-output-file-overwrite"></a>
 
 - `--block-output-file-overwrite` - unconditionally prohibit output file overwrite; later settings cannot clear it _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-output-file-overwrite"></a>
 
 - `--safe-block-output-file-overwrite` - include output file overwrite in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-output-file-overwrite"></a>
 
 - `--no-safe-block-output-file-overwrite` - exclude output file overwrite from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-output-file-deletion"></a>
 
 - `--block-output-file-deletion` - unconditionally prohibit output file deletion; later settings cannot clear it _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-output-file-deletion"></a>
 
 - `--safe-block-output-file-deletion` - include output file deletion in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-output-file-deletion"></a>
 
 - `--no-safe-block-output-file-deletion` - exclude output file deletion from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-output-directory-creation"></a>
 
 - `--block-output-directory-creation` - unconditionally prohibit output directory creation; later settings cannot clear it _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-output-directory-creation"></a>
 
 - `--safe-block-output-directory-creation` - include output directory creation in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-output-directory-creation"></a>
 
 - `--no-safe-block-output-directory-creation` - exclude output directory creation from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-output-directory-deletion"></a>
 
 - `--block-output-directory-deletion` - unconditionally prohibit output directory deletion; later settings cannot clear it _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-output-directory-deletion"></a>
 
 - `--safe-block-output-directory-deletion` - include output directory deletion in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-output-directory-deletion"></a>
 
 - `--no-safe-block-output-directory-deletion` - exclude output directory deletion from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-file-deletion"></a>
 
 - `--block-file-deletion` - unconditionally prohibit deletion; later flags cannot remove this block _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-file-deletion"></a>
 
 - `--safe-block-file-deletion` - include deletion in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-file-deletion"></a>
 
 - `--no-safe-block-file-deletion` - exclude deletion from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-execution"></a>
 
 - `--block-execution` - unconditionally prohibit execution; later flags cannot remove this block _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-execution"></a>
 
 - `--safe-block-execution` - include execution in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-execution"></a>
 
 - `--no-safe-block-execution` - exclude execution from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-file-writing"></a>
 
 - `--block-file-writing` - unconditionally prohibit writing; later flags cannot remove this block _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-file-writing"></a>
 
 - `--safe-block-file-writing` - include writing in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-file-writing"></a>
 
 - `--no-safe-block-file-writing` - exclude writing from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-file-overwrite"></a>
 
 - `--block-file-overwrite` - unconditionally prohibit overwrite; later flags cannot remove this block _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-file-overwrite"></a>
 
 - `--safe-block-file-overwrite` - include overwrite in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-file-overwrite"></a>
 
 - `--no-safe-block-file-overwrite` - exclude overwrite from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-archive-writing"></a>
 
 - `--block-archive-writing` - unconditionally prohibit archive writing; later flags cannot remove this block _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-archive-writing"></a>
 
 - `--safe-block-archive-writing` - include archive writing in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-archive-writing"></a>
 
 - `--no-safe-block-archive-writing` - exclude archive writing from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-archive-overwrite"></a>
 
 - `--block-archive-overwrite` - unconditionally prohibit archive overwrite; later flags cannot remove this block _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-archive-overwrite"></a>
 
 - `--safe-block-archive-overwrite` - include archive overwrite in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-archive-overwrite"></a>
 
 - `--no-safe-block-archive-overwrite` - exclude archive overwrite from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-archive-content-writing"></a>
 
 - `--block-archive-content-writing` - unconditionally block archive content writing _(global, find, xff, rg)_
   Applies to member edits of existing archives under `--block-policy-categories=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-archive-content-writing"></a>
 
 - `--safe-block-archive-content-writing` - include in the safe profile: archive content writing _(global, find, xff, rg)_
   Applies to member edits of existing archives under `--block-policy-categories=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-archive-content-writing"></a>
 
 - `--no-safe-block-archive-content-writing` - exclude from the safe profile: archive content writing _(global, find, xff, rg)_
   Applies to member edits of existing archives under `--block-policy-categories=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-archive-content-overwrite"></a>
 
 - `--block-archive-content-overwrite` - unconditionally block archive content overwrite _(global, find, xff, rg)_
   Applies to member edits of existing archives under `--block-policy-categories=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-archive-content-overwrite"></a>
 
 - `--safe-block-archive-content-overwrite` - include in the safe profile: archive content overwrite _(global, find, xff, rg)_
   Applies to member edits of existing archives under `--block-policy-categories=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-archive-content-overwrite"></a>
 
 - `--no-safe-block-archive-content-overwrite` - exclude from the safe profile: archive content overwrite _(global, find, xff, rg)_
   Applies to member edits of existing archives under `--block-policy-categories=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-block-archive-content-deletion"></a>
 
 - `--block-archive-content-deletion` - unconditionally prohibit archive deletion; later flags cannot remove this block _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe-block-archive-content-deletion"></a>
 
 - `--safe-block-archive-content-deletion` - include archive deletion in the active safe-mode restrictions _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe-block-archive-content-deletion"></a>
 
 - `--no-safe-block-archive-content-deletion` - exclude archive deletion from the safe profile; unconditional blocks still apply _(global, find, xff, rg)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-no-safe"></a>
 
 - `--no-safe` - disable the safe-mode profile; unconditional blocks remain enforced _(global, find, xff, rg)_
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-safe"></a>
 
 - `--safe` - activate the configured safe-mode profile _(global, find, xff, rg)_
   Initially the profile blocks execution and file/archive deletion, writing, and overwrite. `--safe-block-*` and `--no-safe-block-*` customize it without activating it. `--no-safe` deactivates the profile. Unconditional `--block-*` restrictions always apply. Prohibited actions are rejected before traversal; overwrite collisions are enforced at creation.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-dry-run"></a>
 
 - `--dry-run` - preview permitted actions without writes, deletion, or execution _(global, find, xff, rg)_
   Policy is checked first; dry run cannot bypass a block. Reads and normal output remain enabled. File output, deletion, and archives are previewed. Commands are reported but never launched. A skipped command or capture has no result: evaluation of that entry stops with an incomplete-preview error, rather than guessing which subsequent actions would run.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 <a id="flag-skip-unsupported"></a>
 
 - `--skip-unsupported` - warn and skip a predicate a filesystem cannot evaluate, not fail _(global, find, xff, rg)_
   Applies when a predicate is unsupported for an entry's filesystem, most commonly an archive member that cannot provide an operation available on the host filesystem. Without this flag the unsupported operation is a hard error; with it the entry is skipped and the reason is reported. Ordinary I/O and traversal errors remain errors.
-  See also: [Safety](#topic-safety)
+  See also: [--help=safety](#topic-safety)
 
 ### Fields & Exec
 
 <a id="flag-exec-fields"></a>
 
 - `--exec-fields` - render -exec tokens through the field vocabulary ({name}, {path}, ...) _(global, find, xff, rg)_
-  See also: [Fields](#topic-fields), [Output](#topic-output)
+  See also: [--help=fields](#topic-fields), [--help=output](#topic-output)
 
 <a id="flag-define"></a>
 
 - `--define=NAME=VALUE` - define a value referenced as {def.NAME} _(global, find, xff, rg)_
-  See also: [Fields](#topic-fields), [Output](#topic-output)
+  See also: [--help=fields](#topic-fields), [--help=output](#topic-output)
 
 ### Time
 
@@ -1843,13 +1937,13 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `--time-format=FMT` - default format for time fields (a preset name or a strftime pattern) _(global, find, xff, rg)_
   Sets the default rendering for time fields ({mtime}, {atime}, -printf %t, ...) when no per-field qualifier is given. Accepts a preset (iso, epoch, space, find) or any strftime pattern such as %Y-%m-%d. A per-field qualifier like {mtime:%H:%M} still overrides it.
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="flag-timezone"></a>
 
 - `--timezone=ZONE, --tz=ZONE` - zone for interpreting/formatting times (local, utc, an IANA name, or +HH:MM) _(global, find, xff, rg)_
   The zone used to interpret and format every time. Accepts local, utc, an IANA name like Europe/London, or a fixed offset like +02:00. Affects time fields and -newerXt comparisons.
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="flag-time-zone-suffix"></a>
 
@@ -1861,7 +1955,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `never` - drop the optional offset (also off / no / false / 0)
 
   Controls whether a time field's named preset renders its trailing zone (+0100, +01:00). `auto` keeps each preset's default (`space` / `iso` / `rfc3339` show it, `asctime` / `epoch` omit it); `never` drops it; `always` forces it, even on a preset that omits one. Accepts `true` / `yes` / `on` (= `always`) and `false` / `no` / `off` (= `never`). The inherently-zoned `zulu` / `zulu-dense` / `asn1z` always keep their mandatory Z, and a custom strftime `--time-format` is never altered - control its zone with %z / %Ez / %Z yourself. `asn1`'s zone is optional: `always` adds its ASN.1-style offset (+0100, no separator), `never` / `auto` leave it bare.
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="topic-expressions"></a>
 
@@ -1874,556 +1968,556 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 - `-name ARG, -n ARG` - match the basename against a shell glob _(test, find, xff)_
   Globs the entry's basename (last path component): `*` matches any run including none, `?` one character, `[...]` a class. Unlike the shell a leading dot is matched literally. Case follows `--case` - the xff default folds when the volume does (APFS / HFS+ / NTFS), while `--exact` or `--config=find` forces a byte-exact compare; `-iname` always folds. Contrast `-path` (whole path) and `-regex` (anchored pattern). Example: `xff . -name '*.log'`.
   Affected by: --case
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook), [--case](#flag-case)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-iname"></a>
 
 - `-iname ARG` - match the basename against a shell glob, case-insensitively _(test, find, xff)_
   The always-case-insensitive `-name`: folds case regardless of `--case` or the volume.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-path"></a>
 
 - `-path ARG, -p ARG` - match the whole path against a shell glob _(test, find, xff)_
   Globs the whole path as printed (from the start point down), not just the basename. Unlike the shell, `*` and `?` DO match `/`, so `-path '*/build/*'` matches a build directory at any depth. Wildcards and case handling are `-name`'s. GNU spells this `-wholename`.
   Affected by: --case
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook), [--case](#flag-case)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-ipath"></a>
 
 - `-ipath ARG` - match the whole path against a shell glob, case-insensitively _(test, find, xff)_
   The always-case-insensitive `-path` (whole-path glob).
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-wholename"></a>
 
 - `-wholename ARG` - GNU synonym for -path _(test, find, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-iwholename"></a>
 
 - `-iwholename ARG` - GNU synonym for -ipath _(test, find, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-lname"></a>
 
 - `-lname ARG` - match the symlink target against a shell glob _(test, find, xff)_
   Globs the symlink's target text - the path the link points AT, never the resolved destination - so a link matches even when its target is missing. Only a symbolic link can match, and with the default `-P` (or `-H`) a symlink is seen as itself. Wildcards and case handling are `-name`'s; `-ilname` always folds.
   Affected by: --case
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook), [--case](#flag-case)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-ilname"></a>
 
 - `-ilname ARG` - match the symlink target against a shell glob, case-insensitively _(test, find, xff)_
   The always-case-insensitive `-lname` (symlink-target glob).
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-regex"></a>
 
 - `-regex ARG` - match the whole path against a regular expression _(test, find, xff)_
   Matches when the pattern matches the WHOLE path (anchored both ends, like find), not just a substring - use `.*` to match anywhere. Dialect is chosen by `-regextype` (RE2 by default); capture groups become `{1}`..`{N}` for a following `-exec` / `-printf`. Example: `xff . -regex '.*/[0-9]+\.log'`.
   Affected by: -E, --case, --regextype, --re2, --pcre
-  See also: [Regex matching](#topic-regex), [Regex grammars](#topic-grammars), [-E](#flag-e), [--case](#flag-case), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre)
+  See also: [--help=regex](#topic-regex), [--help=grammars](#topic-grammars)
 
 <a id="primary-iregex"></a>
 
 - `-iregex ARG` - match the whole path against a regular expression, case-insensitively _(test, find, xff)_
   The case-insensitive `-regex`: same whole-path anchoring and capture-group binding, matching without regard to case.
   Affected by: -E, --regextype, --re2, --pcre
-  See also: [Regex matching](#topic-regex), [Regex grammars](#topic-grammars), [-E](#flag-e), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre)
+  See also: [--help=regex](#topic-regex), [--help=grammars](#topic-grammars)
 
 <a id="primary-regextype"></a>
 
 - `-regextype ARG` - select the regex dialect for the following -regex/-iregex _(test, find, xff)_
-  See also: [Regex matching](#topic-regex), [Regex grammars](#topic-grammars)
+  See also: [--help=regex](#topic-regex), [--help=grammars](#topic-grammars)
 
 <a id="primary-content"></a>
 
 - `-content ARG` - match a literal substring in the file's content (xff) _(test, xff)_
   Matches when the file contains SUBSTRING literally (no regex metacharacters - the literal pair sidesteps grep's flavor ambiguity). Reads the file, so it is expensive; a non-regular, unreadable, or binary file (a NUL byte in the first 8,000 bytes) never matches. `-icontent` folds ASCII case. Use `-rxc` for a pattern. This is an xff extension `--config=find` rejects.
   Affected by: --case, --match-output
-  See also: [Content](#topic-content), [--case](#flag-case), [--match-output](#flag-match-output)
+  See also: [--help=content](#topic-content)
 
 <a id="primary-icontent"></a>
 
 - `-icontent ARG` - match a literal substring in the file's content, case-insensitively (xff) _(test, xff)_
   The case-insensitive `-content`: folds ASCII case on the literal substring search.
   Affected by: --match-output
-  See also: [Content](#topic-content), [--match-output](#flag-match-output)
+  See also: [--help=content](#topic-content)
 
 <a id="primary-rxc"></a>
 
 - `-rxc ARG` - match the file's content against a regular expression (xff) _(test, xff)_
   The regex counterpart of `-content`: matches when the selected regex pattern is found ANYWHERE in the content (unanchored, like grep - use `^` / `$` to anchor), not the whole-file anchoring `-regex` applies to the path. Same expensive read and non-regular / unreadable / binary skip; `-irxc` folds case. An xff extension `--config=find` rejects.
   Affected by: -E, --case, --regextype, --re2, --pcre, --match-output
-  See also: [Content](#topic-content), [-E](#flag-e), [--case](#flag-case), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre), [--match-output](#flag-match-output)
+  See also: [--help=content](#topic-content)
 
 <a id="primary-irxc"></a>
 
 - `-irxc ARG` - match the file's content against a regular expression, case-insensitively (xff) _(test, xff)_
   The case-insensitive `-rxc`: folds case on the content regex search.
   Affected by: -E, --regextype, --re2, --pcre, --match-output
-  See also: [Content](#topic-content), [-E](#flag-e), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre), [--match-output](#flag-match-output)
+  See also: [--help=content](#topic-content)
 
 <a id="primary-text"></a>
 
 - `-text[:FLAVOR]` - match a regular text file; -text[=git|posix|windows|apple] picks the definition (xff) _(test, xff)_
   TRUE for a regular, readable file whose content is text. Bare `-text` (or `=git`) is the default heuristic: no NUL byte in the first 8,000 bytes (git's buffer_is_binary, also grep/ripgrep), line-ending-agnostic. One leading UTF-8 BOM is transparent. The strict flavors forbid a NUL ANYWHERE after that BOM and pin the line ending, requiring a final terminator (an empty file is vacuously complete): `=posix` = LF only, ends with a newline; `=windows` = CRLF only; `=apple` = CR only. Reads the file (expensive). A directory, symlink, device or unreadable file is not text (nor binary), so it never matches - `! -text` is NOT `-binary`. An xff extension `--config=find` rejects.
-  See also: [Content](#topic-content)
+  See also: [--help=content](#topic-content)
 
 <a id="primary-binary"></a>
 
 - `-binary` - match a regular file whose content is binary (a NUL in the first 8,000 bytes) (xff) _(test, xff)_
   TRUE for a regular, readable file whose content is binary - a NUL byte in the first 8,000 bytes. The precise complement of `-text` WITHIN regular files: a directory, symlink, device or unreadable file is neither, so `-binary` is not `! -text`. Reads the file (expensive). An xff extension `--config=find` rejects.
-  See also: [Content](#topic-content), [Fields](#topic-fields)
+  See also: [--help=content](#topic-content), [--help=fields](#topic-fields)
 
 <a id="primary-eofnl"></a>
 
 - `-eofnl` - match a regular file whose content ends with a newline (LF), or is empty (xff) _(test, xff)_
   TRUE for a regular, readable file whose content ends with a newline / LF (or is empty - a zero-line file is complete). Tests ONLY the final terminator, the other axis from `-text`/-binary: compose `-text` `-eofnl` for a well-formed (POSIX-style) text file, or `-text` ! `-eofnl` for the common lint 'a text file missing its final newline'. A CRLF file ends with LF too, so it also matches `-eofnl`; `-eofcrlf` is the strict CRLF form. Reads the file (expensive). An xff extension `--config=find` rejects.
-  See also: [Content](#topic-content), [Fields](#topic-fields)
+  See also: [--help=content](#topic-content), [--help=fields](#topic-fields)
 
 <a id="primary-eofcr"></a>
 
 - `-eofcr` - match a regular file whose content ends with a bare CR, or is empty (xff) _(test, xff)_
   TRUE for a regular, readable file whose content ends with a bare carriage return / CR (or is empty). The classic-Mac / `-text:apple` final terminator, and the CR analogue of `-eofnl`: compose `-text:apple` `-eofcr` for a well-formed CR-terminated file, or `-text:apple` ! `-eofcr` for the missing final CR. A CRLF file ends with LF (not a bare CR), so it does NOT match `-eofcr`. Reads the file (expensive). An xff extension `--config=find` rejects.
-  See also: [Content](#topic-content)
+  See also: [--help=content](#topic-content)
 
 <a id="primary-eofcrlf"></a>
 
 - `-eofcrlf` - match a regular file whose content ends with CRLF, or is empty (xff) _(test, xff)_
   TRUE for a regular, readable file whose content ends with CRLF (or is empty). The Windows / `-text:windows` final terminator, and the CRLF analogue of `-eofnl`: compose `-text:windows` `-eofcrlf` for a well-formed CRLF-terminated file, or `-text:windows` ! `-eofcrlf` for the missing final CRLF. Stricter than `-eofnl` (which any LF-ending file, including CRLF, satisfies). Reads the file (expensive). An xff extension `--config=find` rejects.
-  See also: [Content](#topic-content)
+  See also: [--help=content](#topic-content)
 
 <a id="primary-first"></a>
 
 - `-first ARG` - true for the first N entries this instance sees, false after (xff) _(test, xff)_
   Caps a result set as it streams: TRUE for the first N entries reaching it, FALSE from then on. The count is PER USE, not per run, so each `-first` keeps its own budget - `\( -type f -first 10 \) -o \( -type d -first 5 \)` yields ten files AND five directories, which no whole-run flag could express. Because a FALSE test removes the entry from everything downstream, `-first` genuinely narrows the result set (the summary sees only those N); use `-collect` before it when you want the full set summarised and only a few shown. Which N you get follows `--sort`, like any other order-dependent behaviour. An xff extension `--config=find` rejects. A count that cannot be read is a usage error rather than an empty result set - `-first nope` is a typo, and returning nothing would be indistinguishable from a tree with no matches; `-first 0` IS valid and means none. Example: `xff . -type f -first 20`.
-  See also: [Statistics](#topic-stats), [Output](#topic-output)
+  See also: [--help=stats](#topic-stats), [--help=output](#topic-output)
 
 <a id="primary-top"></a>
 
 - `-top ARG` - true for the N best fuzzy matches reaching this instance (xff) _(test, xff)_
   Keeps exactly the N entries with the best normalized fuzzy score reaching THIS use, then resumes the expression for those survivors. It is a TEST, not an output limit: everything to its left has already happened, while tests and actions to its right run after the walk only for entries that make the cut. Thus `-collect -top 10 -ls --summary` collects every good match, lists the ten best, and summarises all of them; `-top 10 -collect --summary` collects and summarises only the ten and prints no implicit listing. Each `-top` instance owns an independent candidate set, retained until the post-walk decision so a rejected entry can still take an `-o` alternative to the right. A tie keeps traversal order, making the result deterministic under a deterministic `--sort`. A fuzzy matcher must precede the node on every path that reaches it. All contributing fuzzy matchers must use the same model and threshold: scores from different models or differently strict predicates do not describe one ordering. A bare fuzzy matcher has a `0%` threshold. `-fuzzy:fzf:80% foo -top 10` therefore means the ten best good matches. An xff extension `--config=find` rejects. A malformed or negative count is a usage error; `-top 0` is valid and keeps none.
-  See also: [Statistics](#topic-stats), [Output](#topic-output)
+  See also: [--help=stats](#topic-stats), [--help=output](#topic-output)
 
 <a id="primary-shard-status"></a>
 
 - `-shard-status ARG` - match complete, incomplete, or superfluous physical shards (xff) _(test, xff)_
   Classifies the physical shard files reaching THIS primary after the traversal, then resumes the expression. `complete` matches representatives belonging to a set with every expected index; `incomplete` matches representatives in a set with a missing expected index; `superfluous` matches same-index duplicate copies and indices outside a declared total. A non-shard file matches none. Completeness is computed per directory and only from entries that reach this node, so a predicate to its left intentionally narrows the cohort being validated; put ordinary actions to its right when they should run only for the selected status. This is a physical-file diagnostic independent of `--shards`: without `--shards` every selected file is listed, while `--shards` still controls logical-set collapsing. Custom `--shard-pattern` definitions and any scheme restriction from `--shards=SCHEME,...` apply. Example: `xff data -type f -shard-status incomplete -print`.
-  See also: [Statistics](#topic-stats)
+  See also: [--help=stats](#topic-stats)
 
 <a id="primary-fuzzy"></a>
 
 - `-fuzzy[:MODEL[:PCT%]|PCT%] PATTERN` - match the basename loosely, optionally requiring a normalized score (xff) _(test, xff)_
   TRUE when PATTERN matches the entry's basename under the selected MODEL. The forms are `-fuzzy PATTERN`, `-fuzzy:MODEL PATTERN`, `-fuzzy:PCT% PATTERN`, and `-fuzzy:MODEL:PCT% PATTERN`; the default model is `fzf`, and `edit` aliases `levenshtein`. The models answer different questions. `sequence` is a literal ordered subsequence: `tmh` finds `the_main_header.h`. `fzf` adds fzf EXTENDED-SEARCH expressions: spaces AND terms, `|` joins OR alternatives, `'` requests exact matching, `^` and `$` anchor, `!` excludes, and `\ ` embeds a literal space. Quote a query containing spaces for the shell, for example `-fuzzy:fzf '^core go$ | rb$ | py$'`. As in fzf, anchors ignore whitespace at the corresponding candidate edge. An OR applies only inside its adjacent group: in that example `^core` remains a required AND term while `go$`, `rb$`, and `py$` are alternatives. Prefix an exact term with `!'` to exclude that fuzzy subsequence; `!^foo` excludes a prefix and `!foo$` a suffix. Backslash only escapes the next query character, so shell quoting and fzf query escaping are separate layers. `levenshtein` is normalized edit similarity (insert, delete, and substitute cost one), while `shingles` is unique character-bigram Jaccard similarity. The first two reject a candidate that is not a subsequence/query match; the latter two score every candidate. Case follows `--case` like `-name` does; `-ifuzzy` always folds. PCT requires normalized quality from 0 through 100, and `{fuzzy}` renders it. Multiple fuzzy tests compose through the expression: AND keeps the weakest required score and OR the best successful alternative, independent of predicate order. Ranking requires every fuzzy test to use the same MODEL and threshold (a bare test means `0%`): different domains are valid filters, but do not define one unambiguous ordering. In `fzf`, the percentage is the best alignment relative to an exact self-match: characters at a word start, matched consecutively, and matched early score higher. Thus nearby candidates can all match while receiving different scores; inspect them with `--format=tsv --columns=fuzzy,path`, rank them with `--sort=score`, or keep the best N with `-top N`. Use `-name` for a glob and `-regex` for a pattern. An xff extension `--config=find` rejects. Example: `xff . -fuzzy rdme --columns=fuzzy,path`.
   Affected by: --case
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook), [--case](#flag-case)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-fuzzypath"></a>
 
 - `-fuzzypath[:MODEL[:PCT%]|PCT%] PATTERN` - match the whole path loosely, optionally requiring a normalized score (xff) _(test, xff)_
   `-fuzzy` for the whole PATH instead of the basename - the `-path` to its `-name`. It accepts the same `:MODEL[:PCT%]` syntax and scoring, so `-fuzzypath:sequence eng/wlk` finds `xff/engine/walk.cc`, which no basename match could. It matches far more than `-fuzzy` does (every path shares its directories), so it is most useful RANKED: `--sort=score` puts the best match first, and `{fuzzy}` renders the score. Case follows `--case`; `-ifuzzypath` always folds. An xff extension `--config=find` rejects. Example: `xff . -fuzzypath eng/wlk --sort=score`.
   Affected by: --case
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook), [--case](#flag-case)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-ifuzzy"></a>
 
 - `-ifuzzy[:MODEL[:PCT%]|PCT%] PATTERN` - match the basename loosely, case-insensitively (xff) _(test, xff)_
   The always-case-insensitive `-fuzzy`: accepts the same `:MODEL[:PCT%]` syntax and folds ASCII case regardless of `--case` or the volume.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-ifuzzypath"></a>
 
 - `-ifuzzypath[:MODEL[:PCT%]|PCT%] PATTERN` - match the whole path loosely, case-insensitively (xff) _(test, xff)_
   The always-case-insensitive `-fuzzypath`: accepts the same `:MODEL[:PCT%]` syntax and folds ASCII case regardless of `--case` or the volume.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-cmp"></a>
 
 - `-cmp ARG` - true when the file's content is byte-identical to TARGET (a field template) (xff) _(test, xff)_
-  See also: [Comparing trees](#topic-compare), [Content](#topic-content)
+  See also: [--help=compare](#topic-compare), [--help=content](#topic-content)
 
 <a id="primary-similar"></a>
 
 - `-similar[:WIDTH[:PCT%]|PCT%] TARGET` - match text whose word-shingle Jaccard similarity to TARGET reaches a threshold (xff) _(test, xff)_
   Compares a regular text file with TARGET, which is a {field} template evaluated per entry, using Jaccard overlap of unique contiguous word shingles. Bare `-similar TARGET` uses five-word shingles and requires `80%`; qualify it as `-similar:PCT%`, `-similar:WIDTH`, or `-similar:WIDTH:PCT%` to override either default. Words are case-folded ASCII alphanumeric or UTF-8 byte runs; punctuation and whitespace separate them. A short non-empty file contributes one shingle containing all its words. Non-regular, unreadable, or binary files do not match. This v1 answers whether each file resembles one reference; whole-tree clustering is deferred.
-  See also: [Content](#topic-content)
+  See also: [--help=content](#topic-content)
 
 <a id="primary-hasheq"></a>
 
 - `-hasheq[:ALGO[/ENCODING]] EXPECTED` - true when the digest equals EXPECTED (a field template); -hasheq:ALGO[/ENC] (xff) _(test, xff)_
   Computes the file's digest and is true when it equals EXPECTED - a {field} template evaluated per entry, so it can name a sidecar value like `{def.SUMS}` or a capture. `-hasheq:ALGO[/ENCODING]` picks the algorithm (sha256 default; also sha1/sha512/...) and encoding (hex default, or base64); the same grammar as `-hash` / {hash}. It is a strict equality test (hex folds case). `! -hasheq` selects files whose digest differs (drift / corruption). Reads the whole file, so it is expensive.
-  See also: [Content](#topic-content), [Fields](#topic-fields)
+  See also: [--help=content](#topic-content), [--help=fields](#topic-fields)
 
 <a id="primary-type"></a>
 
 - `-type ARG` - match the file type (f, d, l, b, c, p, s) _(test, find, xff)_
   Matches the entry's type by letter: `f`=regular file, `d`=directory, `l`=symlink, `b`/`c`=block / char device, `p`=FIFO, `s`=socket. A GNU-style comma list is any-of, so `-type f,l` matches regular files or symlinks. Under the default `-P` a symlink is type `l`; `-xtype` tests its target's type instead. Unknown type letters and empty list elements are usage errors.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-xtype"></a>
 
 - `-xtype ARG` - match the file type of a symlink's target _(test, find, xff)_
   Like `-type`, but for a symlink it tests the type of the link's TARGET (the link is followed). A broken symlink has no target, so it reports as a symlink and `-xtype l` matches it, matching GNU find under the default `-P`. On a non-symlink it is identical to `-type`. Accepts the same type letters and comma lists; unknown or empty values are usage errors.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-mime"></a>
 
 - `-mime ARG` - match the media type by extension against a glob, e.g. -mime 'image/*' (xff) _(test, xff)_
   xff extension: matches the media (MIME) type derived from the filename extension against a shell glob, so `image/*` matches png/jpg/... and `text/plain` is exact. The lean binary has a curated common-type table; the removable `mime-db` build extra supplies thousands of types, and repeatable `--mime-vocabulary=FILE` JSON layers override mappings and metadata. This is fast name classification, not content sniffing. The same value is the `{mime}` field; `{mime-category}`, `{mime-description}`, `{mime-charset}`, `{mime-compressible}`, and `{mime-source}` expose its metadata. Matching is always case-insensitive (MIME names are case-insensitive per RFC 2045/6838), so `IMAGE/*` behaves like `image/*`; `--case` / -i / -s do not affect it. See `--help=content` for the overlay schema and conflict policy.
   Affected by: --mime-vocabulary
-  See also: [Content](#topic-content), [Fields](#topic-fields), [--mime-vocabulary](#flag-mime-vocabulary)
+  See also: [--help=content](#topic-content), [--help=fields](#topic-fields)
 
 <a id="primary-lang"></a>
 
 - `-lang ARG` - match the language by extension/filename against a glob, e.g. -lang 'C*' (xff) _(test, xff)_
   xff extension: matches any candidate language inferred from the extension/filename against a shell glob, so `C*` matches C / C++ / C#. The lean binary has a curated common table; the removable GitHub Linguist build extra supplies hundreds of canonical records, and repeatable `--lang-db=FILE` JSON layers override mappings and metadata. Exact filenames win over the longest matching suffix. Shared candidates overlap: `.h` matches `C`, `C++`, and `Objective-C`. `{lang}` retains one preferred canonical label for display and summaries; `{lang-type}`, `{lang-color}`, `{lang-group}`, and `{lang-source}` expose metadata. A pattern may also match an alias (`cpp` matches canonical `C++`). Matching is always case-insensitive and unaffected by `--case` / -i / -s. This is fast name classification, not Linguist's content/shebang heuristic classifier.
   Affected by: --lang-db
-  See also: [Content](#topic-content), [Fields](#topic-fields), [--lang-db](#flag-lang-db)
+  See also: [--help=content](#topic-content), [--help=fields](#topic-fields)
 
 <a id="primary-size"></a>
 
 - `-size ARG` - match apparent size with legacy, explicit SI (MB), or IEC (MiB) units _(test, find, xff)_
   Compares the file's apparent size. A bare number counts 512-byte blocks (find default); a unit suffix sets the scale: find's `c`/`w`/`k`/`M`/`G`/`T`/`P`/`E` are retained as legacy binary units; explicit `B`/`kB`/`MB`/... are SI powers of 1000, and `KiB`/`MiB`/... are IEC powers of 1024. A leading + / - means greater / less than. The size is rounded up to whole units, so `-size +100M` means larger than `100 MiB`, while `-size +100MB` means larger than `100 MB`. See `--help=size` and `-blocks` for allocated space.
-  See also: [Size units](#topic-size), [Fields](#topic-fields)
+  See also: [--help=size](#topic-size), [--help=fields](#topic-fields)
 
 <a id="primary-blocks"></a>
 
 - `-blocks ARG` - match the allocated size (st_blocks); xff's disk-occupancy counterpart to -size _(test, xff)_
   Uses the same `[+|-]N[unit]` grammar as `-size`, but compares allocated disk space rather than apparent length. See `--help=size` for legacy, SI, and IEC units.
-  See also: [Size units](#topic-size), [Fields](#topic-fields)
+  See also: [--help=size](#topic-size), [--help=fields](#topic-fields)
 
 <a id="primary-links"></a>
 
 - `-links ARG` - match the hard-link count _(test, find, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-inum"></a>
 
 - `-inum ARG` - match the inode number _(test, find, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-samefile"></a>
 
 - `-samefile ARG` - match files that share an inode with FILE _(test, find, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-fstype"></a>
 
 - `-fstype ARG` - match the filesystem type (statfs) _(test, find, xff)_
   Matches when the filesystem holding the entry has the given type name (e.g. `apfs`, `ext2/ext3`, `tmpfs`, `nfs`). The recognized names are platform-specific - macOS / BSD report `f_fstypename` verbatim, Linux maps the statfs magic to a find-compatible name - so a portable expression usually cannot assume one name across OSes.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-uid"></a>
 
 - `-uid ARG` - match the numeric owner id _(test, find, xff)_
   Matches the owner's numeric user id. Like find's numeric tests it accepts `+N` (greater than), `-N` (less than), or a bare N (exact). Match by login name with `-user` instead.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-gid"></a>
 
 - `-gid ARG` - match the numeric group id _(test, find, xff)_
   The group counterpart of `-uid`: the numeric group id, with `+N` / `-N` / bare-N. Match by group name with `-group` instead.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-user"></a>
 
 - `-user ARG` - match the owner by name _(test, find, xff)_
   Matches the owner by login name, resolved through the passwd database. A name with no passwd entry never matches, but a bare numeric argument is taken as a uid, so `-user 0` behaves like `-uid 0`. Exact match only (no `+` / `-`).
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-group"></a>
 
 - `-group ARG` - match the group by name _(test, find, xff)_
   The group counterpart of `-user`: matches by group name (via the group database), falling back to a numeric gid. Exact match only.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-nouser"></a>
 
 - `-nouser` - match when the owner uid has no passwd entry _(test, find, xff)_
   Matches when the entry's owner uid has NO entry in the passwd database - an orphaned owner, e.g. from a deleted account or an archive unpacked with foreign ids. Takes no argument. See `-nogroup` for the group side.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-nogroup"></a>
 
 - `-nogroup` - match when the group gid has no group entry _(test, find, xff)_
   Matches when the entry's group gid has no entry in the group database (the group side of `-nouser`).
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-newer"></a>
 
 - `-newer ARG` - match when mtime is newer than the reference file's mtime _(test, find, xff)_
   Matches when the entry's mtime is strictly newer than reference FILE's mtime. FILE is stat'd following symlinks; a missing or unreadable reference makes it false. This is the base of the -newerXY family: `-newerXY FILE` compares the entry's X time against the reference's Y time, where each of X and Y is a=access, c=status-change, m=modification, or B=birth - so `-newerac` is the entry's atime vs the reference's ctime. `-anewer` / `-cnewer` are the classic aliases. When Y is `t` the operand is a TIME STRING, not a file (see `-newermt`). A birth time the filesystem never recorded makes an X=B test a hard error and a Y=B reference a silent no-match.
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-anewer"></a>
 
 - `-anewer ARG` - match when atime is newer than the reference file's mtime (== -neweram) _(test, find, xff)_
   find's classic spelling of `-neweram`: the entry's access time is newer than the reference file's modification time. See `-newer` for the -newerXY family.
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-cnewer"></a>
 
 - `-cnewer ARG` - match when ctime is newer than the reference file's mtime (== -newercm) _(test, find, xff)_
   find's classic spelling of `-newercm`: the entry's status-change time is newer than the reference file's modification time. See `-newer` for the -newerXY family.
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-neweraa"></a>
 
 - `-neweraa ARG` - match when atime is newer than the reference file's atime _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newerac"></a>
 
 - `-newerac ARG` - match when atime is newer than the reference file's ctime _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-neweram"></a>
 
 - `-neweram ARG` - match when atime is newer than the reference file's mtime _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newerca"></a>
 
 - `-newerca ARG` - match when ctime is newer than the reference file's atime _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newercc"></a>
 
 - `-newercc ARG` - match when ctime is newer than the reference file's ctime _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newercm"></a>
 
 - `-newercm ARG` - match when ctime is newer than the reference file's mtime _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newerma"></a>
 
 - `-newerma ARG` - match when mtime is newer than the reference file's atime _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newermc"></a>
 
 - `-newermc ARG` - match when mtime is newer than the reference file's ctime _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newermm"></a>
 
 - `-newermm ARG` - match when mtime is newer than the reference file's mtime _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newerat"></a>
 
 - `-newerat ARG` - match when atime is newer than a time string _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newerct"></a>
 
 - `-newerct ARG` - match when ctime is newer than a time string _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newermt"></a>
 
 - `-newermt ARG` - match when mtime is newer than a time string _(test, find, xff)_
   The `-newerXt` time-string form: matches when the entry's mtime is newer than TIME - a timestamp xff parses (an ISO date / date-time, @epoch, or a relative span), interpreted in `--timezone` - rather than a reference file. `-newerat` / `-newerct` / `-newerBt` are the access / status-change / birth-time counterparts; the file-reference forms are -newerXY (see `-newer`).
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newerba"></a>
 
 - `-newerBa ARG` - match when birth time is newer than the reference file's atime _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newerbc"></a>
 
 - `-newerBc ARG` - match when birth time is newer than the reference file's ctime _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newerbm"></a>
 
 - `-newerBm ARG` - match when birth time is newer than the reference file's mtime _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newerbb"></a>
 
 - `-newerBB ARG` - match when birth time is newer than the reference file's birth time _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newerbt"></a>
 
 - `-newerBt ARG` - match when birth time is newer than a time string _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newerab"></a>
 
 - `-neweraB ARG` - match when atime is newer than the reference file's birth time _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newercb"></a>
 
 - `-newercB ARG` - match when ctime is newer than the reference file's birth time _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-newermb"></a>
 
 - `-newermB ARG` - match when mtime is newer than the reference file's birth time _(test, find, xff)_
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-mtime"></a>
 
 - `-mtime ARG` - match the data-modification age in days _(test, find, xff)_
   Matches the data-modification age. A bare integer N counts 24-hour periods with any fraction floored (a 2.9-day file is 2); `+N` matches strictly older than N units, `-N` strictly younger. A trailing s/m/h/d/w overrides the unit BSD-style (`-mtime -1h` = under an hour old). The xff-only word/compound span (`-mtime "-3 weeks 3 hours"`, sign required) reaches back a full relative duration and is rejected by `--config=find`. See `-mmin` for the minute scale, `-atime` / `-ctime` / `-Btime` for the other time axes.
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-mmin"></a>
 
 - `-mmin ARG` - match the data-modification age in minutes _(test, find, xff)_
   The minute-scale `-mtime`: N counts whole minutes (floored), `+N` / `-N` for older / younger. Integer only - no unit suffix and no compound span (use `-mtime` for those).
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-atime"></a>
 
 - `-atime ARG` - match the access age in days _(test, find, xff)_
   `-mtime` measured on the access time (atime): same N-day scale, `+N` / `-N` polarity, BSD unit suffix, and xff compound span. Note atime is often unreliable - many mounts use relatime or noatime, so a read may not update it.
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-amin"></a>
 
 - `-amin ARG` - match the access age in minutes _(test, find, xff)_
   The minute-scale `-atime` (access time): integer minutes, `+N` / `-N`, no suffix. See `-mmin`.
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-ctime"></a>
 
 - `-ctime ARG` - match the status-change age in days _(test, find, xff)_
   `-mtime` measured on the status-change time (ctime) - when the inode metadata last changed (permissions, ownership, link count, rename), which a content edit also bumps. Same N-day scale, `+N` / `-N` polarity, BSD unit suffix, and xff compound span. This is not a creation time; see `-Btime` for that.
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-cmin"></a>
 
 - `-cmin ARG` - match the status-change age in minutes _(test, find, xff)_
   The minute-scale `-ctime` (status-change time): integer minutes, `+N` / `-N`, no suffix. See `-mmin`.
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-btime"></a>
 
 - `-Btime ARG` - match the birth (creation) age in days _(test, find, xff)_
   `-mtime` measured on the birth (creation) time: same N-day scale, `+N` / `-N` polarity, BSD unit suffix, and xff compound span. Birth time is not recorded on every filesystem or kernel - where it is absent the test cannot be evaluated and is a hard error (exit 2); `--skip-unsupported` downgrades that to a warning and skips the entry.
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-bmin"></a>
 
 - `-Bmin ARG` - match the birth (creation) age in minutes _(test, find, xff)_
   The minute-scale `-Btime` (birth time): integer minutes, `+N` / `-N`, no suffix. Same unrecorded-birth-time handling as `-Btime` (hard error, or a skip under `--skip-unsupported`).
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-used"></a>
 
 - `-used ARG` - match the whole days between atime and ctime _(test, find, xff)_
   Matches the whole days between an entry's last status change and its last access (atime minus ctime) - roughly how long after its metadata changed it was next read. `+N` / `-N` for more / fewer days. Shares atime's relatime / noatime caveat (see `-atime`).
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-perm"></a>
 
 - `-perm ARG` - match the permission bits (octal or symbolic mode) _(test, find, xff)_
   Matches the permission (and setuid / setgid / sticky) bits. MODE is octal (`644`, `0755`) or a chmod-style symbolic mode (`u+w`, `go=r`, comma-separated clauses). A bare MODE matches exactly; `-MODE` matches when ALL the listed bits are set; `/MODE` (GNU) when ANY are. BSD `+octal` is any-of like `/`, while a symbolic `+r` stays exact. Example: `-perm -u+x` = owner-executable. Contrast `-readable` / `-writable` / `-executable`, which probe the effective user's real access.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-maxdepth"></a>
 
 - `-maxdepth ARG` - descend at most N directory levels below each start _(test, find, xff)_
   Limits traversal to at most N levels below each start point: level 0 is a start point itself, 1 its immediate children. Like find this is a global positional option - it applies to the whole run wherever it sits in the expression, not just to what follows it. Pair with `-mindepth` to bound both ends.
-  See also: [Ignore and VCS traversal](#topic-ignore), [Archives](#topic-archive)
+  See also: [--help=ignore](#topic-ignore), [--help=archive](#topic-archive)
 
 <a id="primary-mindepth"></a>
 
 - `-mindepth ARG` - skip entries fewer than N levels below each start _(test, find, xff)_
   Skips entries fewer than N levels below a start point, so `-mindepth` 1 excludes the start points themselves. A global positional option like `-maxdepth` (applies run-wide).
-  See also: [Ignore and VCS traversal](#topic-ignore), [Archives](#topic-archive)
+  See also: [--help=ignore](#topic-ignore), [--help=archive](#topic-archive)
 
 <a id="primary-depth"></a>
 
 - `-depth` - process a directory's contents before the directory _(test, find, xff)_
   Visits a directory's contents BEFORE the directory itself (post-order), so a directory is acted on only after everything within it - what `-delete` needs, and `-delete` turns this on for you. A global positional option; `-d` is the BSD/GNU short spelling.
-  See also: [Ignore and VCS traversal](#topic-ignore), [Archives](#topic-archive)
+  See also: [--help=ignore](#topic-ignore), [--help=archive](#topic-archive)
 
 <a id="primary-d"></a>
 
 - `-d` - BSD/GNU short spelling of -depth _(test, find, xff)_
-  See also: [Ignore and VCS traversal](#topic-ignore), [Archives](#topic-archive)
+  See also: [--help=ignore](#topic-ignore), [--help=archive](#topic-archive)
 
 <a id="primary-xdev"></a>
 
 - `-xdev` - do not descend into other filesystems _(test, find, xff)_
   Confines the walk to the filesystem of each start point: it will not descend into a directory that lives on a different mounted device. A global positional option; `-mount` and `-x` are synonyms.
-  See also: [Ignore and VCS traversal](#topic-ignore), [Archives](#topic-archive)
+  See also: [--help=ignore](#topic-ignore), [--help=archive](#topic-archive)
 
 <a id="primary-mount"></a>
 
 - `-mount` - GNU/BSD synonym for -xdev _(test, find, xff)_
-  See also: [Ignore and VCS traversal](#topic-ignore), [Archives](#topic-archive)
+  See also: [--help=ignore](#topic-ignore), [--help=archive](#topic-archive)
 
 <a id="primary-x"></a>
 
 - `-x` - BSD synonym for -xdev _(test, find, xff)_
-  See also: [Ignore and VCS traversal](#topic-ignore), [Archives](#topic-archive)
+  See also: [--help=ignore](#topic-ignore), [--help=archive](#topic-archive)
 
 <a id="primary-daystart"></a>
 
 - `-daystart` - measure age tests from today's local midnight _(test, find, xff)_
   Measures the day- and minute-scale age tests (`-mtime` / `-atime` / `-ctime` / `-Btime` and their -min forms) from the start of today (local midnight) instead of from the exact current instant, matching GNU find's `-daystart`. Unlike find, where it only affects tests to its right, in xff it applies run-wide regardless of where it appears in the expression.
-  See also: [Time formats](#topic-time), [Fields](#topic-fields)
+  See also: [--help=time](#topic-time), [--help=fields](#topic-fields)
 
 <a id="primary-ignore-readdir-race"></a>
 
 - `-ignore_readdir_race` - skip entries that vanish during the walk (ENOENT) _(test, find, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-noignore-readdir-race"></a>
 
 - `-noignore_readdir_race` - report vanished entries as errors (default) _(test, find, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-empty"></a>
 
 - `-empty` - match an empty regular file or empty directory _(test, find, xff)_
   Matches an empty regular file (size 0) or a directory with no entries; other types never match. The directory case reads the directory to check, so it costs a syscall.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-sparse"></a>
 
 - `-sparse` - match a file with holes (allocated blocks < apparent size) _(test, find, xff)_
   Matches a file stored sparsely - fewer 512-byte blocks are allocated than its apparent size would need (`st_blocks * 512 < st_size`), i.e. it has holes. A zero-size file is never sparse. Compare `-blocks` (allocated space) against `-size` (apparent size).
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-readable"></a>
 
 - `-readable` - match entries the current user can read _(test, find, xff)_
   Matches when the entry is readable by the CURRENT (effective) user, via a real access(2) probe rather than a guess from the mode bits - so it reflects ownership and ACLs and can differ from `-perm`. See `-writable` / `-executable` for the other access modes.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-writable"></a>
 
 - `-writable` - match entries the current user can write _(test, find, xff)_
   The write-mode `-readable`: a real access(2) probe for the effective user (see `-readable`).
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-executable"></a>
 
 - `-executable` - match entries the current user can execute _(test, find, xff)_
   The execute/search-mode `-readable`: a real access(2) probe for the effective user. On a directory this means search (traverse) permission. See `-readable`.
-  See also: [Safety](#topic-safety), [Fields](#topic-fields), [Configuration](#topic-config)
+  See also: [--help=safety](#topic-safety), [--help=fields](#topic-fields), [--help=config](#topic-config)
 
 <a id="primary-true"></a>
 
 - `-true` - always match _(test, find, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-false"></a>
 
 - `-false` - never match _(test, find, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 ### Actions
 
@@ -2431,155 +2525,162 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `-collect[:[!]NAME]` - add the entry to a named collection for --summary to reduce (xff) _(action, xff)_
   xff extension: an ACTION that adds the entry to a collection instead of printing it, and makes `--summary` reduce THAT collection rather than what matched. This is what a truncating test cannot do on its own: a FALSE test removes the entry from every sink, so `-first 10 --summary` summarises ten entries, never "all of them, showing ten". ORDER selects the reading, because these are primaries rather than position-independent globals: `-collect -first 10 -ls --summary` collects everything, lists ten, and summarises ALL of them, while `-first 10 -collect --summary` collects only the ten and summarises those. The second prints no listing because `-collect` is an action, so the implicit `-print` is suppressed - find's own rule, not a new one. `-collect:NAME` uses a second collection; a bare `-collect` uses the one named `default`. A NAME is an identifier (`[A-Za-z_][A-Za-z0-9_]*`), which is what reserves punctuation for modifiers. Two nodes MAY share a collection, but the later one must SAY so with `!`: `\( -type f -collect:all \) -o \( -type d -collect:!all \)` gathers both branches into one collection, while an unmarked repeat is a usage error - a silently shared collection shows up only as a doubled total. The modifier is per node, so it cannot loosen the other `-collect` in a long command the way a whole-run flag would. A collection holds every match until the walk ends, so `--buffer` bounds it (a row count or a byte budget); exceeding it is an ERROR rather than a silent truncation, because a summary over part of the walk is indistinguishable from a correct one. Without `--buffer` there is no cap. Presence is SYNTACTIC, like the implicit print: a `-collect` in a branch that never runs still switches the summary's source, and the summary is then empty. With `--shards`, summaries and histograms group each named collection into logical sets once; they do not also count the physical members. An entry collected under two names contributes to both collections. Comparison reductions remain physical. Example: `xff . -type f -collect -first 3 -ls --summary`.
-  See also: [Statistics](#topic-stats), [Output](#topic-output)
+  See also: [--help=stats](#topic-stats), [--help=output](#topic-output)
 
 <a id="primary-diff"></a>
 
-- `-diff[:STYLE] [TARGET]` - diff against optional TARGET; defaults to a Git creation patch (xff) _(action, xff)_
-  Compares the matched file against TARGET - a {field} template evaluated per entry, so it can name a mirror path like `../b/{relpath}` - and is true when they are equal, false on a difference. The optional :STYLE picks the output: unified `u3` (default; 3 lines of context), context `c`, normal `n`, side-by-side `y`, or `none` for just the boolean. This is a one-sided expression action: it visits only the search roots, so it cannot report paths that exist only under TARGET. Use `--compare[=status|diff] LEFT RIGHT` to walk two roots with the same options and expression, then compare their matches symmetrically. An omitted TARGET defaults to `/dev/null`: emit a Git creation patch with root-relative paths (a file root uses its basename), including empty files, executable bits, symlinks and binary literals. Directories emit nothing; other special types are unsupported. Explicit `/dev/null` does the same. Creation patches are false (different), including empty files, and use Git format regardless of :STYLE except `none` (silent). Use `./-name` for targets starting with a dash. Avoid duplicate root-relative paths across roots. Reads each file into memory. Binary patches use uncompressed zlib blocks. Example: `xff src -type f -diff > additions.patch`; apply in an empty directory with `git apply additions.patch`.
-  Affected by: --diff-algorithm, --diff-ignore, --diff-ignore-matching, --diff-format, --diff-context, --context, --context-after, --context-before
-  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [--diff-algorithm](#flag-diff-algorithm), [--diff-ignore](#flag-diff-ignore), [--diff-ignore-matching](#flag-diff-ignore-matching), [--diff-format](#flag-diff-format), [--diff-context](#flag-diff-context), [--context](#flag-context), [--context-after](#flag-context-after), [--context-before](#flag-context-before)
+- `-diff[:STYLE] [TARGET]` - emit TARGET-to-found changes; omitted TARGET creates files (xff) _(action, xff)_
+  The matched entry is the new/right side and TARGET is the old/left side. TARGET is an optional {field} template evaluated per entry, for example `../old/{relpath}`. Equality is true and silent; differences are false. This one-sided action visits only the search roots; use `--compare=diff LEFT RIGHT` to discover paths on both sides. The `:STYLE` suffix selects unified `u3` (default), context `c`, normal `n`, side-by-side `y`, or silent `none`. Omitted TARGET or a TARGET rendering to `/dev/null` emits a Git creation/deletion patch, including empty files, executable bits, symlinks and binary literals. Directories emit nothing; other special types are unsupported. These patches use Git format except `none`, which stays silent. Both patch sides use the found entry's root-relative name; a file root uses its basename. The `--diff-left-*` and `--diff-right-*` globals strip components, inject roots, apply ordered `s/PAT/REPL/gi` rewrites, then prepend literal prefixes (defaults `a/` and `b/`). These affect output labels only. Invalid output paths and collisions are errors; check exit status before applying streamed output. Use `./-name` for a dash-leading TARGET. Reads files into memory and retains output/source names for collision detection. Binary creation/deletion patches use uncompressed zlib blocks.
+  Affected by: --diff-algorithm, --diff-left-strip, --diff-left-root, --diff-left-prefix, --diff-left-rewrite, --diff-right-strip, --diff-right-root, --diff-right-prefix, --diff-right-rewrite, --diff-ignore, --diff-ignore-matching, --diff-format, --diff-context, --context, --context-after, --context-before
+  See also: [--help=compare](#topic-compare), [--help=content](#topic-content)
+
+<a id="primary-rdiff"></a>
+
+- `-rdiff[:STYLE] [TARGET]` - emit found-to-TARGET changes; omitted TARGET deletes files (xff) _(action, xff)_
+  The matched entry is the old/left side and TARGET is the new/right side. This reverses `-diff`. TARGET is an optional {field} template evaluated per entry, for example `../old/{relpath}`. Equality is true and silent; differences are false. This one-sided action visits only the search roots; use `--compare=diff LEFT RIGHT` to discover paths on both sides. The `:STYLE` suffix selects unified `u3` (default), context `c`, normal `n`, side-by-side `y`, or silent `none`. Omitted TARGET or a TARGET rendering to `/dev/null` emits a Git creation/deletion patch, including empty files, executable bits, symlinks and binary literals. Directories emit nothing; other special types are unsupported. These patches use Git format except `none`, which stays silent. Both patch sides use the found entry's root-relative name; a file root uses its basename. The `--diff-left-*` and `--diff-right-*` globals strip components, inject roots, apply ordered `s/PAT/REPL/gi` rewrites, then prepend literal prefixes (defaults `a/` and `b/`). These affect output labels only. Invalid output paths and collisions are errors; check exit status before applying streamed output. Use `./-name` for a dash-leading TARGET. Reads files into memory and retains output/source names for collision detection. Binary creation/deletion patches use uncompressed zlib blocks.
+  Affected by: --diff-algorithm, --diff-left-strip, --diff-left-root, --diff-left-prefix, --diff-left-rewrite, --diff-right-strip, --diff-right-root, --diff-right-prefix, --diff-right-rewrite, --diff-ignore, --diff-ignore-matching, --diff-format, --diff-context
+  See also: [--help=compare](#topic-compare), [--help=content](#topic-content)
 
 <a id="primary-hash"></a>
 
 - `-hash[:ALGO[/ENCODING]]` - print the file digest and path; -hash:ALGO[/ENCODING], sha256 hex default (xff) _(action, xff)_
   Prints `DIGEST  PATH` for each match (an action). `-hash:ALGO[/ENCODING]` picks the algorithm (sha256 default; also sha1/sha512/...) and encoding (hex default, or base64). Reads the whole file, so it is expensive; the same digest is available as the {hash} field.
-  See also: [Content](#topic-content), [Fields](#topic-fields)
+  See also: [--help=content](#topic-content), [--help=fields](#topic-fields)
 
 <a id="primary-ls"></a>
 
 - `-ls` - print an `ls -dils` style line per entry _(action, find, xff)_
   Prints one `ls -dils`-style line per match: inode, blocks, mode, links, owner, group, size, time, name (find's `-ls`). Columns align to ls/BSD width defaults. For a custom layout use `-printf`; for aligned columns of {field}s use `--format=aligned`.
-  See also: [Output](#topic-output), [Fields](#topic-fields)
+  See also: [--help=output](#topic-output), [--help=fields](#topic-fields)
 
 <a id="primary-print"></a>
 
 - `-print` - print the path followed by a newline _(action, find, xff)_
   Prints the path then a newline. This is the DEFAULT action: with no action anywhere in the expression xff prints each match, exactly as if `-print` were appended. Naming any action (including `-print` itself) suppresses that implicit default; `--implicit-print=yes`|no forces it on or off.
-  See also: [Output](#topic-output), [Fields](#topic-fields)
+  See also: [--help=output](#topic-output), [--help=fields](#topic-fields)
 
 <a id="primary-print0"></a>
 
 - `-print0` - print the path followed by a NUL _(action, find, xff)_
-  Prints the path then a NUL byte instead of a newline, so paths containing spaces or newlines survive a pipe into `xargs -0`. The machine-readable counterpart of `-print`; see also `--format=jsonl`.
-  See also: [Output](#topic-output), [Fields](#topic-fields)
+  Prints the path then a NUL byte instead of a newline, so paths containing spaces or newlines survive a pipe into `xargs -0`. The machine-readable counterpart of `-print`. For structured records, `--format=jsonl` provides JSON Lines output.
+  See also: [--help=output](#topic-output), [--help=fields](#topic-fields)
 
 <a id="primary-printf"></a>
 
 - `-printf ARG` - print a custom format string (%{field} expands the xff field vocabulary) _(action, find, xff)_
   Prints FORMAT for each match, expanding find's `%` directives (%p path, %f name, %s size, %t/%Ak times, ...) and C escapes (\n, \t). xff adds `%{NAME}` to reach the full {field} vocabulary and its qualifiers (see --help=fields, --help=printf). No trailing newline unless you write one; `-printfln` adds the OS line ending. Example: `xff . -printf '%s\t%p\n'`.
-  See also: [Printf directives](#topic-printf), [Fields](#topic-fields), [Output](#topic-output)
+  See also: [--help=printf](#topic-printf), [--help=fields](#topic-fields), [--help=output](#topic-output)
 
 <a id="primary-println"></a>
 
 - `-println` - print the path with the OS line ending (xff) _(action, xff)_
   `-print` but terminated with the OS-native line ending (CRLF on Windows, LF elsewhere) rather than always LF. An xff extension `--config=find` rejects.
-  See also: [Output](#topic-output), [Fields](#topic-fields)
+  See also: [--help=output](#topic-output), [--help=fields](#topic-fields)
 
 <a id="primary-printfln"></a>
 
 - `-printfln ARG` - print a custom format with the OS line ending (xff) _(action, xff)_
   `-printf` plus the OS line ending appended, so you write FORMAT without a trailing `\n`. An xff extension `--config=find` rejects; see `-printf` for the directive vocabulary.
-  See also: [Printf directives](#topic-printf), [Fields](#topic-fields), [Output](#topic-output)
+  See also: [--help=printf](#topic-printf), [--help=fields](#topic-fields), [--help=output](#topic-output)
 
 <a id="primary-grep"></a>
 
 - `-grep[:FORMAT] PATTERN` - print each content line matching a regex; -grep:FORMAT for a template (xff) _(action, xff)_
   The line-output companion of `-rxc`: `-grep PATTERN` prints every content line matching the RE2 PATTERN as `path:lineno:text` (grep's piped form; a literal substring under `--regextype=EXACT`). `-grep:FORMAT PATTERN` renders a {line}/{text}/{match}/{column} template instead. Honors `-c` / `--count` (one `path:count` per file) and `--context-after` / `--context-before` / `--context` (surrounding lines, grep-style). `--only-matching` emits each nonempty matching portion; `--invert-match` selects nonmatching lines. Filename/count output modes supersede templates; the last mode wins. `--no-filename` and `--no-line-number` control plain-text prefixes. With `--format=jsonl`, built-in output emits `record: grep` objects with `kind` set to `match`, `context`, or `count`; each includes `path`, `root`, and `pattern`. Line records include one-based `line`, zero-based context `group`, and `text`; count records include `count`. Context gaps do not emit text separators in JSONL. Built-in output supports only `plain` and `jsonl`; other formats are rejected before actions execute. Explicit `-grep:FORMAT` templates retain authored output; `--count` supersedes the template. Reads the file (expensive); non-regular / unreadable / binary files yield nothing. Its truth is "matched a line", so it composes with `-o` / `-q`. An xff extension `--config=find` rejects.
   Affected by: -E, --case, --regextype, --re2, --pcre, --only-matching, --no-only-matching, --files-with-matches, --files-without-match, --count-matches, --invert-match, --no-invert-match, --line-number, --no-line-number, --with-filename, --no-filename, --count, --context, --context-after, --context-before
-  See also: [Content](#topic-content), [-E](#flag-e), [--case](#flag-case), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre), [--only-matching](#flag-only-matching), [--no-only-matching](#flag-no-only-matching), [--files-with-matches](#flag-files-with-matches), [--files-without-match](#flag-files-without-match), [--count-matches](#flag-count-matches), [--invert-match](#flag-invert-match), [--no-invert-match](#flag-no-invert-match), [--line-number](#flag-line-number), [--no-line-number](#flag-no-line-number), [--with-filename](#flag-with-filename), [--no-filename](#flag-no-filename), [--count](#flag-count), [--context](#flag-context), [--context-after](#flag-context-after), [--context-before](#flag-context-before)
+  See also: [--help=content](#topic-content)
 
 <a id="primary-fprint"></a>
 
 - `-fprint ARG` - write -print output to a named file _(action, find, xff)_
   Writes what `-print` would emit to FILE instead of stdout. FILE is opened once (truncating any existing content) and held open for the whole walk, so matches append to it in visit order. This is the anchor of the -f* family - each mirrors a stdout action: `-fprint0`, `-fprintf`, `-fls`, and the xff `-fprintln` / `-fprintfln`.
-  See also: [Output](#topic-output), [Fields](#topic-fields), [Safety](#topic-safety)
+  See also: [--help=output](#topic-output), [--help=fields](#topic-fields), [--help=safety](#topic-safety)
 
 <a id="primary-fprintln"></a>
 
 - `-fprintln ARG` - write -println output to a named file (xff) _(action, xff)_
   The file form of `-println` (`-fprint` with the OS line ending). See `-fprint` for the file handling; an xff extension `--config=find` rejects.
-  See also: [Output](#topic-output), [Fields](#topic-fields), [Safety](#topic-safety)
+  See also: [--help=output](#topic-output), [--help=fields](#topic-fields), [--help=safety](#topic-safety)
 
 <a id="primary-fprint0"></a>
 
 - `-fprint0 ARG` - write -print0 output to a named file _(action, find, xff)_
   The file form of `-print0` (NUL-terminated paths). See `-fprint` for the file handling.
-  See also: [Output](#topic-output), [Fields](#topic-fields), [Safety](#topic-safety)
+  See also: [--help=output](#topic-output), [--help=fields](#topic-fields), [--help=safety](#topic-safety)
 
 <a id="primary-fprintf"></a>
 
 - `-fprintf ARG ARG` - write -printf output to a named file _(action, find, xff)_
   The file form of `-printf`: `-fprintf FILE FORMAT` (FILE first, then the format). See `-printf` for the directive vocabulary and `-fprint` for the file handling.
-  See also: [Printf directives](#topic-printf), [Fields](#topic-fields), [Output](#topic-output), [Safety](#topic-safety)
+  See also: [--help=printf](#topic-printf), [--help=fields](#topic-fields), [--help=output](#topic-output), [--help=safety](#topic-safety)
 
 <a id="primary-fprintfln"></a>
 
 - `-fprintfln ARG ARG` - write -printfln output to a named file (xff) _(action, xff)_
   The file form of `-printfln`: `-fprintfln FILE FORMAT` with the OS line ending appended. An xff extension `--config=find` rejects; see `-fprint` for the file handling.
-  See also: [Printf directives](#topic-printf), [Fields](#topic-fields), [Output](#topic-output), [Safety](#topic-safety)
+  See also: [--help=printf](#topic-printf), [--help=fields](#topic-fields), [--help=output](#topic-output), [--help=safety](#topic-safety)
 
 <a id="primary-fls"></a>
 
 - `-fls ARG` - write -ls output to a named file _(action, find, xff)_
   The file form of `-ls` (the `ls -dils` line). See `-fprint` for the file handling.
-  See also: [Output](#topic-output), [Fields](#topic-fields), [Safety](#topic-safety)
+  See also: [--help=output](#topic-output), [--help=fields](#topic-fields), [--help=safety](#topic-safety)
 
 <a id="primary-delete"></a>
 
 - `-delete` - delete the matched entry _(action, find, xff, modifies the filesystem)_
   Deletes the matched file or (empty) directory, and implies `-depth` so a directory's contents are visited before the directory itself. Only matched entries are removed; nonempty directories fail with an error. Local deletion failures name the path and report earlier successful deletions and their known regular-file logical bytes, not disk space reclaimed. `-prune` cannot prevent descent when `-delete` implies `-depth`. Destructive, so it is guarded: `--dry-run` previews (prints what would be deleted, removes nothing) and `--safe` refuses risky targets. Example: `xff . -name '*.tmp' -delete`.
-  See also: [Safety](#topic-safety), [Archives](#topic-archive)
+  See also: [--help=safety](#topic-safety), [--help=archive](#topic-archive)
 
 <a id="primary-prune"></a>
 
 - `-prune` - do not descend into the matched directory _(action, find, xff)_
   When the matched entry is a directory, do not descend into it (evaluates true). Usually paired with `-o` to skip a subtree while still processing everything else: `xff . -name .git -prune -o -print`. Has no effect with `-depth`, including the depth-first traversal implied by `-delete`.
-  See also: [Ignore and VCS traversal](#topic-ignore), [Archives](#topic-archive)
+  See also: [--help=ignore](#topic-ignore), [--help=archive](#topic-archive)
 
 <a id="primary-quit"></a>
 
 - `-quit` - stop the search immediately _(action, find, xff)_
   Stops the whole search as soon as it is reached (after actions on the current entry have run). Handy to emit just the first match: `xff . -name target -print -quit`.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-exec"></a>
 
 - `-exec CMD... ;` - run a command per match (;) or batched (+) _(action, find, xff, runs commands)_
   Runs the command up to a terminator: `;` runs it once per match, `+` batches as many paths as fit per invocation (like xargs). `{}` expands to the path; xff also binds `{1}`..`{N}` from `-regex` capture groups and the whole {field} vocabulary. The `;` form is synchronous at `-j 1`; larger job counts permit up to `N` children concurrently, and their direct stdout / stderr may interleave. The `+` form remains an end-of-walk batch. Sensitive: loaded from an `--xffrc` file it needs `--allow-exec`. Example: `xff . -name '*.o' -exec rm {} +`.
-  See also: [Safety](#topic-safety), [Fields](#topic-fields), [Configuration](#topic-config)
+  See also: [--help=safety](#topic-safety), [--help=fields](#topic-fields), [--help=config](#topic-config)
 
 <a id="primary-execdir"></a>
 
 - `-execdir CMD... ;` - run a command in the matched entry's directory _(action, find, xff, runs commands)_
   Like `-exec`, but each command runs with its working directory set to the matched entry's parent and `{}` is the basename - safer against path injection and directory races. `;` per match or `+` batched (a batch shares one directory). Example: `xff . -name '*.log' -execdir gzip {} ;`.
-  See also: [Safety](#topic-safety), [Fields](#topic-fields), [Configuration](#topic-config)
+  See also: [--help=safety](#topic-safety), [--help=fields](#topic-fields), [--help=config](#topic-config)
 
 <a id="primary-ok"></a>
 
 - `-ok CMD... ;` - like -exec, but prompt before each command _(action, find, xff, runs commands)_
   Like `-exec` but prompts on stderr before each command and runs it only when the reply begins with 'y'; a declined or EOF answer skips that entry. `;`-terminated only (no `+` batching, since each run needs its own prompt).
-  See also: [Safety](#topic-safety), [Fields](#topic-fields), [Configuration](#topic-config)
+  See also: [--help=safety](#topic-safety), [--help=fields](#topic-fields), [--help=config](#topic-config)
 
 <a id="primary-okdir"></a>
 
 - `-okdir CMD... ;` - like -execdir, but prompt before each command _(action, find, xff, runs commands)_
   Like `-execdir` (runs in the matched entry's directory, `{}` is the basename) but prompts before each command, exactly as `-ok` does.
-  See also: [Safety](#topic-safety), [Fields](#topic-fields), [Configuration](#topic-config)
+  See also: [--help=safety](#topic-safety), [--help=fields](#topic-fields), [--help=config](#topic-config)
 
 <a id="primary-capture"></a>
 
 - `-capture:[!]NAME[=REGEX] CMD... ;` - run a command and bind its output to {capture.NAME} (xff) _(action, xff, runs commands)_
   xff extension: runs the `;`-terminated command and binds its stdout to `{capture.NAME}` for a later field consumer, such as `-printf '%{capture.NAME}'`, `--template={capture.NAME}`, a grep template, summary key, column, or command using `--exec-fields`. Unused captures are errors; escaped literal braces do not count as references. `-capture:NAME=REGEX` keeps only REGEX's first capture group. A NAME must be an identifier (`[A-Za-z_][A-Za-z0-9_]*`), because it is referenced as `{capture.NAME}`; binding one NAME twice is an error, and `-capture:!NAME` on the LATER node says the re-bind is meant (per node, so it cannot loosen the other captures in the command). Sensitive: from an `--xffrc` file it needs `--allow-exec`. Example: `-capture:branch git rev-parse --abbrev-ref HEAD ; -printf '%{relpath}\t%{capture.branch}\n'`.
   Affected by: -E, --regextype, --re2, --pcre
-  See also: [Safety](#topic-safety), [Fields](#topic-fields), [Configuration](#topic-config), [-E](#flag-e), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre)
+  See also: [--help=safety](#topic-safety), [--help=fields](#topic-fields), [--help=config](#topic-config)
 
 <a id="primary-capturedir"></a>
 
 - `-capturedir:[!]NAME[=REGEX] CMD... ;` - run -capture in the matched entry's directory (xff) _(action, xff, runs commands)_
   The `-execdir` counterpart of `-capture`: runs the command in the matched entry's directory and binds its stdout to `{capture.NAME}`. Like `-capture`, it preserves implicit output and requires a reference to the captured value. Same `NAME[=REGEX]` binding and `--allow-exec` gating.
   Affected by: -E, --regextype, --re2, --pcre
-  See also: [Safety](#topic-safety), [Fields](#topic-fields), [Configuration](#topic-config), [-E](#flag-e), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre)
+  See also: [--help=safety](#topic-safety), [--help=fields](#topic-fields), [--help=config](#topic-config)
 
 ### Operators
 
@@ -2587,63 +2688,63 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `-a` - logical AND (implicit between predicates) _(operator, find, xff)_
   Logical AND of two predicates (`-and` is the long spelling). It is also IMPLICIT between juxtaposed predicates, so `-type f -name '*.c'` means `-type f -a -name '*.c'`. Precedence, tightest to loosest: `-not`, then `-a`, then (xff) `-xor`, then `-o`, then the `,` comma operator; parentheses `( ... )` override it. Evaluation short-circuits.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-and"></a>
 
 - `-and` - logical AND (implicit between predicates) _(operator, find, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-o"></a>
 
 - `-o` - logical OR _(operator, find, xff)_
   Logical OR of two predicates (`-or` is the long spelling); binds looser than `-a`, so `A -o B -a C` is `A -o (B -a C)`. Short-circuits: the right side is skipped when the left already matched. See `-a` for the full precedence order.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary"></a>
 
 - `+` - logical OR in XFF expression positions _(operator, xff)_
   Synonym for `-o` in XFF expressions, including after `--xff`; rejected by `--config=find`. In rg arguments it is pattern or path data. It remains literal data when consumed as a primary argument, and retains its batch terminator meaning for `-exec`.
-  See also: [Expression](#topic-expressions), [Ripgrep-style searches](#topic-rg)
+  See also: [--help=expressions](#topic-expressions), [--help=rg](#topic-rg)
 
 <a id="primary-or"></a>
 
 - `-or` - logical OR _(operator, find, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-not"></a>
 
 - `-not` - logical negation _(operator, find, xff)_
   Negates the predicate that follows (`!` is the synonym). Binds tightest of the operators, so `-not -type d -o -name x` is `(-not -type d) -o -name x`. See `-a` for the full precedence order.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary"></a>
 
 - `!` - logical negation _(operator, find, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-xor"></a>
 
 - `-xor` - logical XOR; matches exactly one side (xff) _(operator, xff)_
   Matches when exactly ONE side is true (never both). One of four xff-only operators find lacks: `-xor`, and the negations `-nand` (not both), `-nor` (neither), `-xnor` (both agree). They sit between `-a` and `-o` in precedence (`-not` > `-a` / `-nand` > `-xor` / `-xnor` > `-o` / `-nor`) and, like all xff-only operators, are rejected by `--config=find`.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-nand"></a>
 
 - `-nand` - logical NAND; ! (lhs -a rhs) (xff) _(operator, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-nor"></a>
 
 - `-nor` - logical NOR; ! (lhs -o rhs) (xff) _(operator, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
 <a id="primary-xnor"></a>
 
 - `-xnor` - logical XNOR; matches when both sides agree (xff) _(operator, xff)_
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  See also: [--help=expressions](#topic-expressions), [--help=cookbook](#topic-cookbook)
 
-See also: [Regex matching](#topic-regex), [Content](#topic-content), [Output](#topic-output), [Safety](#topic-safety)
+See also: [--help=regex](#topic-regex), [--help=content](#topic-content), [--help=output](#topic-output), [--help=safety](#topic-safety)
 
 <a id="topic-output"></a>
 
@@ -2688,7 +2789,7 @@ xff . -type f --template='{size:human}  {path}'
 
 render a custom human-readable record for each match
 
-See also: [Fields](#topic-fields), [Printf directives](#topic-printf), [Statistics](#topic-stats), [Comparing trees](#topic-compare), [Safety](#topic-safety)
+See also: [--help=fields](#topic-fields), [--help=printf](#topic-printf), [--help=stats](#topic-stats), [--help=compare](#topic-compare), [--help=safety](#topic-safety)
 
 <a id="topic-fields"></a>
 
@@ -2797,7 +2898,7 @@ An m// extraction is a left-to-right pipeline: s/// maps whatever is flowing (ea
 
 For -printf's own % directives (%p %f %s %t ...) and the `%{field}` escape that bridges them to this vocabulary, see the Printf directives (`--help=-printf`).
 
-See also: [Printf directives](#topic-printf), [Output](#topic-output), [Time formats](#topic-time), [Content](#topic-content)
+See also: [--help=printf](#topic-printf), [--help=output](#topic-output), [--help=time](#topic-time), [--help=content](#topic-content)
 
 <a id="topic-printf"></a>
 
@@ -2825,7 +2926,7 @@ Directives for `-printf` / `-fprintf` / `-printfln` / `-fprintfln` FORMAT, and t
 - `%{NAME}` - xff: the {field} vocabulary (%{relpath}, %{size:h}, %{def.X}); see --help=fields
 - `%{NAME:qual}` - xff: a field with a :qualifier -- time format, {size:h}, s/// rewrite, or path component (see --help=fields for the full qualifier list)
 
-See also: [Fields](#topic-fields), [Output](#topic-output), [Time formats](#topic-time)
+See also: [--help=fields](#topic-fields), [--help=output](#topic-output), [--help=time](#topic-time)
 
 <a id="topic-time"></a>
 
@@ -2850,7 +2951,7 @@ Time zone. `--timezone=ZONE` (alias `--tz`) sets the zone every time is interpre
 
 Zone suffix. `--time-zone-suffix=never` drops the trailing offset (`+0100`, `+01:00`) from a preset that shows it by default (`space`, `iso` / `iso8601-*`, `rfc3339`); `always` forces one on, even onto `asctime` which omits it; `auto` (the default) keeps each preset's built-in behavior. `true` / `false` are accepted for `always` / `never`. Two things it never touches: the inherently-zoned `zulu` / `zulu-dense` / `asn1z` keep their mandatory `Z` (UTC is the format's identity), and a custom strftime `--time-format` is left exactly as written - control its zone there with `%z` / `%Ez` / `%Z` yourself. `asn1`'s zone is optional, so `always` appends its ASN.1-style offset (`+0100`, no separator) and `never` / `auto` leave it bare.
 
-See also: [Fields](#topic-fields), [Printf directives](#topic-printf)
+See also: [--help=fields](#topic-fields), [--help=printf](#topic-printf)
 
 <a id="topic-size"></a>
 
@@ -2869,7 +2970,7 @@ Units for -size / -blocks [+|-]N[unit]; spell SI and IEC explicitly.
 
 All byte counts use an unsigned 64-bit value, so the largest representable size is `18446744073709551615 B` (about `18.45 EB`, just under `16 EiB`). A number multiplied by its unit must fit that range: `18EB` and `15EiB` fit, while `19EB` and `16EiB` overflow and are usage errors. `ZB` and `ZiB` are not accepted because one zettabyte/zebibyte already exceeds the representation; listing their suffixes would promise a unit for which no positive whole value can be represented.
 
-See also: [Statistics](#topic-stats), [Fields](#topic-fields)
+See also: [--help=stats](#topic-stats), [--help=fields](#topic-fields)
 
 <a id="topic-grammars"></a>
 
@@ -2885,7 +2986,7 @@ The grammar for `-regex` / `-iregex` and the content matchers `-rxc` / `-grep`, 
 - `RE2` - the default. Google RE2 regular expressions - linear-time, no catastrophic backtracking. Full syntax: https://github.com/google/re2/wiki/Syntax .
 - `SHGLOB` - GLOB plus brace alternation: {a,b,c} matches any one alternative, so *.{cc,h} matches either. Integer and ASCII-letter sequences expand in either direction (`{1..9}`, `{09..01}`, `{a..z}`); a leading zero preserves integer width, and expansion above 10,000 terms is rejected. Alternatives and sequences may nest; alternatives may be empty. Escaped braces and commas, braces inside a [...] class, and comma-less braces that are not a sequence are literal. The optional shell increment form (`{1..9..2}`) is not supported and remains literal. Everything else is exactly GLOB.
 
-See also: [Regex matching](#topic-regex), [Content](#topic-content)
+See also: [--help=regex](#topic-regex), [--help=content](#topic-content)
 
 <a id="topic-regex"></a>
 
@@ -2903,7 +3004,7 @@ xff src --regextype=RE2 -regex '.*[.](cc|h)'
 xff src --regextype=RE2 --case=insensitive -grep 'todo|fixme'
 ```
 
-See also: [Regex grammars](#topic-grammars), [Content](#topic-content)
+See also: [--help=grammars](#topic-grammars), [--help=content](#topic-content)
 
 <a id="topic-rg"></a>
 
@@ -2939,7 +3040,7 @@ Mode tags (`find`, `xff`, `rg`) come from the same metadata as flag lookup. Shar
 - `--type-add TYPE:GLOB` - append a basename glob or import comma-separated filename types into a shared definition
 - `--type-clear TYPE` - remove a filename-filter definition through its canonical name or alias
 - `--type-list` - list effective filename-type definitions and aliases without searching
-- `--no-ignore` - disable all ignore-file processing (.gitignore/.ignore/.xffignore)
+- `--no-ignore` - disable all ignore-file processing, including explicit rule files
 - `--hidden` - include hidden dotfiles in the walk (default: find/xff show, rg skips)
 - `--no-hidden` - skip hidden dotfiles (the rg default; opts find/xff out)
 - `--root NAME=PATH` - add a named search root; use NAME as its archive destination directory
@@ -2981,7 +3082,7 @@ Mode tags (`find`, `xff`, `rg`) come from the same metadata as flag lookup. Shar
 
 This is an rg-style frontend, not a complete ripgrep replacement. Unsupported short options are errors. XFF double-dash globals retain their normal meanings, validation and safety enforcement. Binary files are skipped unless `--text` is set. Single-line searches stream source bytes, retaining one incomplete line and requested before-context. Rendered records are buffered per file until EOF to detect binary data and late errors before publication. Long lines and selected output can still require proportional memory; multiline searches and stdin retain their subject. `-j N` runs eligible host-file searches in parallel while keeping records in traversal order; archive members and stateful native filters stay serial. Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. Native summaries count the files selected by the search. `--no-match-output` lists those files instead. Search-selection modifiers remain active in both cases; line-rendering modifiers do not. Normal `-M` behavior is unchanged outside rg grammar; inside it, `-M` requires a maximum-column count.
 
-See also: [Content](#topic-content), [Regex matching](#topic-regex), [Configuration](#topic-config)
+See also: [--help=content](#topic-content), [--help=regex](#topic-regex), [--help=config](#topic-config)
 
 <a id="topic-content"></a>
 
@@ -3013,15 +3114,79 @@ xff -z logs.tar -grep ERROR --count
 
 per-member match counts inside an archive
 
-See also: [Regex matching](#topic-regex), [Fields](#topic-fields), [Output](#topic-output)
+See also: [--help=regex](#topic-regex), [--help=fields](#topic-fields), [--help=output](#topic-output)
+
+<a id="topic-diff"></a>
+
+## Diff and patch output
+
+XFF has two patch-producing forms. `-diff [TARGET]` and `-rdiff [TARGET]` are expression actions: they visit entries selected below the search roots and compare each found entry with an optional target. `--compare=diff LEFT RIGHT` walks two roots, pairs selected entries by root-relative path, and can discover files present on only one side. Use the one-sided form when you already know which paths to visit; use two-root comparison when additions, removals, or path pairing must be discovered.
+
+| Mode                      | Left / old                           | Right / new                           |
+| ------------------------- | ------------------------------------ | ------------------------------------- |
+| -diff (TARGET omitted)    | Absent (/dev/null)                   | Found entry                           |
+| -diff TARGET              | TARGET                               | Found entry                           |
+| -rdiff (TARGET omitted)   | Found entry                          | Absent (/dev/null)                    |
+| -rdiff TARGET             | Found entry                          | TARGET                                |
+| --compare=diff LEFT RIGHT | Matching entry under LEFT, or absent | Matching entry under RIGHT, or absent |
+
+Patch direction is always old/left to new/right. `-diff TARGET` treats TARGET as old and the found entry as new; `-rdiff TARGET` treats the found entry as old and TARGET as new. Without TARGET, `-diff` creates the found entry from absence and `-rdiff` deletes it. `/dev/null` explicitly selects the absent side. An equal pair is true and silent; a difference is false. This is the opposite of `--compare --exit-match`, where a difference is a match. Optional TARGETs are field templates evaluated for each found entry; their paths are resolved from the process working directory. A missing explicit TARGET does not become a creation/deletion patch.
+
+### Patch contents and limitations
+
+Text changes use the selected diff style (`u3` by default; `c`, `n`, `y`, or `none` are also available). Absent-side creation/deletion patches use Git format, including empty files, executable bits, symlinks, and binary contents. Directories do not produce patches, because directory entries are not represented in Git; other special file types are unsupported for absent-side patches. `--compare=diff` also produces Git-applicable empty-file, binary, symlink, executable-mode, and type-replacement changes. Empty files use metadata headers even when there is no text hunk. Empty-directory differences remain visible only in status and summary output.
+
+`-diff` and `-rdiff` see only entries visited below their search roots. In particular, they cannot find target-only paths to remove, and a source path whose explicit TARGET does not exist cannot be emitted as a new file. `--compare=diff` is the whole-tree operation for discovering additions and removals. Its two walks use the same filters and traversal options; comparison does not implicitly enable hidden files, ignore rules, archive traversal, or symlink following. See `--help=compare` for pairing, selection, and exit-status behavior.
+
+With `-g+` or `--ignore-vcs`, each comparison root uses its own VCS ignore context; rules above a search root still apply when it is inside a Git worktree. `--compare-ignore=respective` preserves that per-tree behavior. `left` or `right` instead uses the selected side's auto-discovered stack for both trees; `union` excludes a relative path from both when either stack excludes it. `none` disables the auto-discovered stack, while explicit `--ignore-file`, `--include`, and `--exclude` retain their normal scope. `--compare-ignore-file=PATH` instead applies the named file relative to both comparison roots; `--compare-left-ignore-file=PATH` and `--compare-right-ignore-file=PATH` apply only to the named side. For example, `xff -g+ --compare=diff LEFT RIGHT --compare-ignore-file=/path/to/rules.ignore` shares those explicit rules across the trees. `--skip-vcs` remains a separate traversal filter. These choices also cover `.ignore` / `.xffignore` when those files are enabled. See `--help=ignore` for ignore-source scope and precedence.
+
+### Patch destination paths
+
+Patch labels are independent of the paths XFF reads. For every patch, left means old and right means new. The shared path pipeline is: logical root-relative path; strip leading components; inject a relative output root; apply ordered regex rewrites; validate; prepend a literal side prefix (`a/` or `b/` by default); then quote for the patch format. The left and right controls apply to those patch sides, not necessarily to the command's first and second root when using `-rdiff`. Rewriting labels never changes traversal, comparison pairing, TARGET lookup, or file contents.
+
+Use `--diff-left-root=DIR` and `--diff-right-root=DIR` to place the same repository under a new directory in a destination tree. For a path such as `src/main.cc`, injecting `third_party/widget` on both sides produces `a/third_party/widget/src/main.cc` and `b/third_party/widget/src/main.cc`. This is the usual mapping when importing a repository as a new root directory. Use side-specific `--diff-*-rewrite=RULES` when destination paths need renaming or restructuring. For an ongoing update, make left labels identify the current destination paths and right labels identify where updated files should land; use the same rewrite on both sides for a stable mapping, or different rewrites for an intentional rename. Rewrites use the field substitution grammar, for example `s|^lib/|src/|;s|\.generated\.cc$|.cc|`, and accumulate in option order. Strip/root/prefix settings use their last supplied value.
+
+Injected roots and final labels must remain safe relative file paths: no absolute paths, empty, `.` or `..` components, NUL, or `.git` component. Stripping cannot remove the filename. Prefixes are literal and add no separator; an empty prefix removes `a/` or `b/`. `/dev/null` denotes absence and bypasses path rewrites. If distinct source entries map to the same destination on one side, XFF reports a collision. Patch output streams, so a later error can follow earlier complete patches; check the process exit status before applying the output.
+
+### Examples
+
+```sh
+xff -g+ upstream -type f -diff --diff-left-root=third_party/widget \
+  --diff-right-root=third_party/widget > import-widget.patch
+```
+
+create files from an upstream repository under a new directory in the destination repository; apply the patch from the destination repository root. `-g+` applies Git ignore rules during traversal; omit it when ignored files should be included
+
+```sh
+xff -g+ --compare=diff upstream/widget destination/third_party/widget \
+  --diff-left-root=third_party/widget --diff-right-root=third_party/widget > update-widget.patch
+```
+
+compare the upstream tree with its existing destination copy, discovering changed, added, and removed files while emitting paths rooted at `third_party/widget`
+
+```sh
+xff -g+ --compare=diff upstream destination --diff-left-rewrite='s|^old-name/|widget/|' \
+  --diff-right-rewrite='s|^new-name/|widget/|'
+```
+
+map differently named old and new trees onto the same destination names for an ongoing update
+
+```sh
+xff -g+ source -type f -diff 'destination/{relpath}' --diff-left-root=vendor/widget \
+  --diff-right-root=vendor/widget
+```
+
+use an explicit per-entry reference for known files; use `--compare=diff` instead when additions and removals must be discovered
+
+See also: [--help=compare](#topic-compare), [--help=-diff](#primary-diff), [--help=-rdiff](#primary-rdiff), [--help=content](#topic-content), [--help=fields](#topic-fields), [--help=ignore](#topic-ignore)
 
 <a id="topic-compare"></a>
 
 ## Comparing trees
 
-`--compare` requires exactly two roots. xff walks both roots with the same expression and the same explicitly selected traversal, ignore, archive, hidden-file, and symlink options. Comparison does not enable `--gitignore`, `--no-ignore`, `-L`, or any other policy on its own. The matched entries are paired by path relative to their respective roots, so the root directory names need not match.
+`--compare` requires exactly two roots. xff walks both roots with the same expression and the same explicitly selected traversal, ignore, archive, hidden-file, and symlink options. Comparison does not enable `--gitignore`, `--no-ignore`, `-L`, or any other policy on its own. `--compare-ignore` selects how auto-discovered per-directory ignore stacks are applied: `respective` keeps each side independent and follows the ordinary `-g` / style setting; `left` or `right` applies that side's stack to both; `union` excludes a path from both if either stack excludes it; and `none` disables those stacks. `left`, `right`, and `union` enable the Git ignore layer; `--no-ignore` still disables all ignore-file sources. `--compare-ignore-file=PATH` reads an explicit gitignore-format file whose patterns apply relative to both roots, even when the file is elsewhere. `--compare-left-ignore-file=PATH` and `--compare-right-ignore-file=PATH` restrict explicit rules to one side. Shared and side-specific files apply in argument order; the last matching applicable rule wins, with no implicit priority for side-specific files. Asymmetric exclusions can make an existing file appear left-only or right-only. Each supplements any `--compare-ignore` policy, including `none`; a missing or unreadable explicit file is an error. The matched entries are paired by path relative to their respective roots, so the root directory names need not match.
 
-Regular files are equal when their bytes are equal, for both text and binary data. Unfollowed symlinks are equal when their link targets are equal; `-H` / `-L` instead apply their ordinary traversal meaning. Directories and other non-regular entries are compared by type. Metadata such as permissions, owner, timestamps, and inode numbers is not compared.
+Regular files are equal when their bytes and executable capability match, for both text and binary data. Executable capability means at least one execute permission bit is set. Unfollowed symlinks are equal when their link targets are equal; `-H` / `-L` instead apply their ordinary traversal meaning. Directories and other non-regular entries are compared by type. Other permissions, owner, timestamps, and inode numbers are not compared.
 
 The two walks run concurrently and each retains its complete matched-entry inventory until both finish. xff then merges those inventories and emits comparison records in bytewise relative-path order. This final comparison order is fixed: `--sort` controls traversal and the timing of expression actions within each side, not the order of status records or patch entries. Explicit expression actions execute independently for both walks; their synchronized output may interleave. `--buffer` still controls the output and collection buffers documented for those features, but it does not cap the comparison inventories, whose memory use grows with the total number of matched entries.
 
@@ -3033,7 +3198,7 @@ Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relat
 
 - `left-only` - the relative path matched only below the left root
 - `right-only` - the relative path matched only below the right root
-- `different` - both sides matched the path, but its type, bytes, or symlink target differs
+- `different` - both sides matched, but type, bytes, executable capability, or symlink target differs
 - `identical` - both sides matched and compare equal; omitted unless explicitly selected
 
 ### Summary tables
@@ -3050,15 +3215,16 @@ Ordinary summary groupings default to `--summary-scope=compare` when `--compare`
 
 ### Patch output
 
-`--compare=diff` writes one unified patch for added, removed, and changed regular files. Text files get hunks; binary and non-regular differences get a diagnostic line. `--diff-algorithm` and `--diff-context` tune this mode. `identical` is rejected because an unchanged entry has no patch representation.
+`--compare=diff` writes Git-applicable patches for regular files and symlinks, including empty files, executable mode changes, type replacements, and reversible binary literals. Text changes use unified hunks. Empty directories have no Git representation; other special entry types fail with an error when selected for patch output. `--diff-algorithm` and `--diff-context` tune this mode. `identical` is rejected because an unchanged entry has no patch representation.
 
-### See also
+Left is old content and right is new content. `-diff [TARGET]` emits TARGET-to-found changes; `-rdiff [TARGET]` emits found-to-TARGET changes. An omitted TARGET or `/dev/null` creates or deletes the found entry respectively. Both use its root-relative name (a file root uses its basename); TARGET selects bytes and may be a field template. Comparison accepts two file roots too, using their respective basenames as patch names.
 
-- `--summary=compare`: counts, percentages, and combined sizes for all comparison results.
-- `--compare-select`: choose per-path records; `none` suppresses the listing.
-- `--summary-scope`: combined, per-root, or category statistics.
-- `--summary-precision`: decimal places in summary percentages.
-- `--format=jsonl`: machine-readable comparison summary rows.
+Patch paths have an output-only pipeline: `--diff-left-strip=N` / `--diff-right-strip=N` remove leading logical components, `--diff-left-root=PATH` / `--diff-right-root=PATH` inject relative directories, repeatable `--diff-left-rewrite=RULES` / `--diff-right-rewrite=RULES` apply ordered field-style `s/PAT/REPL/gi` substitution chains, then `--diff-left-prefix=TEXT` / `--diff-right-prefix=TEXT` prepend literal prefixes (defaults `a/` and `b/`; empty removes them). Stages always run in that order. Root, strip and prefix values use the last occurrence; rewrite flags accumulate. Rewrites use RE2 and capture references such as `\1`. Patterns, replacements and flags are validated before traversal. Strip counts must leave a filename; roots and final paths must be relative without empty, `.`, `..`, or `.git` components. Prefixes add no separator. `/dev/null` stays unchanged. These settings affect labels in both diff primaries and comparison patches, including diagnostics, without changing reads, pairing, status records or summaries. Different entries mapping to the same output destination on one side are errors. Earlier patches may already have been emitted: check exit status before applying streamed output.
+
+```
+xff --compare=diff old-tree new-tree --diff-left-root=project --diff-right-root=project
+xff src -type f -rdiff --diff-left-prefix= --diff-right-prefix=
+```
 
 ### Examples
 
@@ -3098,7 +3264,7 @@ xff -L --compare left-tree right-tree -type f -name '*.dat'
 
 follow symlinks and compare only matching regular data files
 
-See also: [Statistics](#topic-stats), [Output](#topic-output), [Content](#topic-content)
+See also: [--help=diff](#topic-diff), [--help=stats](#topic-stats), [--help=output](#topic-output), [--help=content](#topic-content), [--help=--summary](#flag-summary), [--help=--compare-select](#flag-compare-select), [--help=--summary-scope](#flag-summary-scope), [--help=--summary-precision](#flag-summary-precision), [--help=--format](#flag-format), [--help=-diff](#primary-diff), [--help=-rdiff](#primary-rdiff)
 
 <a id="topic-ignore"></a>
 
@@ -3112,6 +3278,7 @@ Ignoring a path and pruning version-control metadata are separate decisions. Ign
 - `--gitignore / -g` - Git's `.gitignore`, `.git/info/exclude`, and `core.excludesFile` layer
 - `--ignore-files` - per-directory `.ignore` and `.xffignore` files
 - `--ignore-file=PATH` - an explicitly named rule file, rooted at its own directory
+- `--compare-ignore-file=PATH` - an explicit rule file applied relative to both comparison roots
 - `--skip-vcs` - prune VCS metadata names; independent of pattern-based ignore files
 - `--hidden / --no-hidden` - show or skip dot-prefixed path components
 
@@ -3127,7 +3294,9 @@ When the Git ignore layer is active, xff also implicitly prunes `.git` as if `--
 
 ### Pattern precedence
 
-For a path, command-line `--exclude` / `--include` patterns decide first, then explicit `--ignore-file` sources, then per-directory files. Within a source, gitignore last-match-wins semantics apply; a matched directory is pruned, so a later rule cannot recover descendants that were never visited.
+For a path, command-line `--exclude` / `--include` patterns decide first, then `--compare-ignore-file` and applicable side-specific sources in argument order, then ordinary `--ignore-file` sources, then per-directory files. Within a source, gitignore last-match-wins semantics apply; a matched directory is pruned, so a later rule cannot recover descendants that were never visited.
+
+An excluded directory's nested `.gitignore` is never read. For an allowlist that keeps directories traversable, use `*` followed by `!*/`, then file negations such as `!/foo.txt`; nested ignore files can then choose their own files. Alternatively, explicitly re-include every required parent directory. `/*.*` only excludes root-level names containing a dot; it does not exclude a directory named `foo`. With `-diff`, these rules select the found entries; they do not filter an explicitly supplied target.
 
 ### Examples
 
@@ -3155,7 +3324,7 @@ xff -u --skip-vcs .
 
 ignore no rule files, but still prune every known VCS metadata tree
 
-See also: [Configuration](#topic-config), [Archives](#topic-archive)
+See also: [--help=config](#topic-config), [--help=archive](#topic-archive)
 
 <a id="topic-archive"></a>
 
@@ -3284,7 +3453,7 @@ xff . -name '*.cc' -newer VERSION --pack=changed.tar.gz
 
 pack what the expression matched into a new archive
 
-See also: [Safety](#topic-safety), [Configuration](#topic-config), [Output](#topic-output)
+See also: [--help=safety](#topic-safety), [--help=config](#topic-config), [--help=output](#topic-output)
 
 <a id="topic-stats"></a>
 
@@ -3330,7 +3499,7 @@ xff --summary=type --histogram=ext --format=md
 
 both, as Markdown tables
 
-See also: [Comparing trees](#topic-compare), [Fields](#topic-fields), [Output](#topic-output)
+See also: [--help=compare](#topic-compare), [--help=fields](#topic-fields), [--help=output](#topic-output)
 
 <a id="topic-environment"></a>
 
@@ -3353,7 +3522,7 @@ Environment variables xff reads. An explicit command-line flag generally overrid
 
 Any process environment variable is also readable in the field vocabulary as `{env.NAME}` (see `--help=fields`). INI arguments also support `${NAME}`, `${NAME:-DEFAULT}`, and `${NAME:?MESSAGE}` at load time; see `--help=config`. `%{...}` remains reserved for field-aware consumers.
 
-See also: [Configuration](#topic-config), [Output](#topic-output)
+See also: [--help=config](#topic-config), [--help=output](#topic-output)
 
 <a id="topic-cookbook"></a>
 
@@ -3433,7 +3602,7 @@ xff . -type f -mtime -1 --format=jsonl
 
 everything modified in the last day, one JSON object per file, ready for jq or a script.
 
-See also: [Configuration](#topic-config), [Expression](#topic-expressions), [Output](#topic-output), [Safety](#topic-safety)
+See also: [--help=config](#topic-config), [--help=expressions](#topic-expressions), [--help=output](#topic-output), [--help=safety](#topic-safety)
 
 ## Exit status
 

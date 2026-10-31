@@ -31,6 +31,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "mbo/status/status_macros.h"
 #include "xff/cli/globals.h"
@@ -629,7 +630,7 @@ class ExprParser {
       args.emplace_back(tokens_[pos_++].text);
     }
     if (!descriptor->argument_choices.empty()) {
-      const std::vector<std::string_view> choices = absl::StrSplit(descriptor->argument_choices, ',');
+      const auto choices = descriptor->argument_choices;
       for (const std::string& argument : args) {
         const std::vector<std::string_view> values = descriptor->argument_choice_list
                                                          ? std::vector<std::string_view>(absl::StrSplit(argument, ','))
@@ -638,7 +639,7 @@ class ExprParser {
           if (!absl::c_contains(choices, value)) {
             Fail(
                 absl::StrCat(
-                    "unknown value '", value, "' for ", descriptor->name, " (accepted: ", descriptor->argument_choices,
+                    "unknown value '", value, "' for ", descriptor->name, " (accepted: ", absl::StrJoin(choices, ","),
                     ")"));
             return nullptr;
           }

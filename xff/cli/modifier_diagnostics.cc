@@ -9,6 +9,7 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "mbo/status/status_macros.h"
@@ -36,15 +37,17 @@ std::string_view ConsumerRequirement(registry::ModifierConsumer consumer) {
     case ModifierConsumer::kGrepLines:
       return "requires -grep or --match-output line output; --count suppresses line output";
     case ModifierConsumer::kSharedContext:
-      return "requires -grep or --match-output line output or symmetric default -diff context; --count suppresses grep "
+      return "requires -grep or --match-output line output or symmetric default -diff/-rdiff context; --count "
+             "suppresses grep "
              "lines";
-    case ModifierConsumer::kFileDiffContext: return "requires a -diff action using default context";
+    case ModifierConsumer::kFileDiffContext: return "requires a -diff or -rdiff action using default context";
     case ModifierConsumer::kDiffContext:
-      return "requires --compare=diff or -diff context output without an explicit per-action context count";
-    case ModifierConsumer::kFileDiff: return "requires a -diff action";
+      return "requires --compare=diff or -diff/-rdiff context output without an explicit per-action context count";
+    case ModifierConsumer::kFileDiff: return "requires a -diff or -rdiff action";
     case ModifierConsumer::kDefaultDiffFormat:
-      return "requires -diff without an attached style; tree diffs use unified output";
-    case ModifierConsumer::kDiffComputation: return "requires -diff or --compare=diff";
+      return "requires -diff or -rdiff without an attached style; tree diffs use unified output";
+    case ModifierConsumer::kDiffPaths: return "requires patch output from -diff, -rdiff, or --compare=diff";
+    case ModifierConsumer::kDiffComputation: return "requires -diff or -rdiff or --compare=diff";
     case ModifierConsumer::kShardStatus: return "requires -shard-status";
     case ModifierConsumer::kShardGrouping: return "requires ordinary --shards grouping or -shard-status";
     case ModifierConsumer::kShardListing:
@@ -64,24 +67,32 @@ struct ModifierRequest {
   config::Source source;
 };
 
-}  // namespace
-
-absl::StatusOr<std::string> InactiveModifierNotes(
-    const parser::Command& effective,
+std::map<std::string_view, ModifierRequest> LatestModifierRequests(
     const std::vector<config::ResolvedFlag>& application,
-    registry::Style style) {
+    registry::ModifierConsumer filter = registry::ModifierConsumer::kNone) {
   std::map<std::string_view, ModifierRequest> latest;
   for (const config::ResolvedFlag& applied : application) {
     if (applied.is_argument) {
       continue;
     }
     const auto flag = LookupGlobalArgument(applied.flag);
-    if (flag && flag->required_consumer != registry::ModifierConsumer::kNone) {
+    if (flag && flag->required_consumer != registry::ModifierConsumer::kNone
+        && (filter == registry::ModifierConsumer::kNone || filter == flag->required_consumer)) {
       latest.insert_or_assign(
           flag->name,
           ModifierRequest{.flag = applied.flag, .consumer = flag->required_consumer, .source = applied.source});
     }
   }
+  return latest;
+}
+
+}  // namespace
+
+absl::StatusOr<std::string> InactiveModifierNotes(
+    const parser::Command& effective,
+    const std::vector<config::ResolvedFlag>& application,
+    registry::Style style) {
+  const auto latest = LatestModifierRequests(application);
   if (!std::ranges::any_of(latest, [](const auto& entry) { return entry.second.source == config::Source::kCli; })) {
     return std::string{};
   }
@@ -93,6 +104,30 @@ absl::StatusOr<std::string> InactiveModifierNotes(
     }
   }
   return notes;
+}
+
+absl::Status ValidateFileDiffModifiers(
+    const parser::Command& effective,
+    const std::vector<config::ResolvedFlag>& application,
+    registry::Style style) {
+  const auto latest = LatestModifierRequests(application, registry::ModifierConsumer::kFileDiff);
+  const auto requested = std::ranges::find_if(latest, [](const auto& entry) {
+    const ModifierRequest& request = entry.second;
+    const auto equals = request.flag.find('=');
+    return request.source == config::Source::kCli && request.consumer == registry::ModifierConsumer::kFileDiff
+           && equals != std::string_view::npos && equals + 1 < request.flag.size();
+  });
+  if (requested == latest.end()) {
+    return absl::OkStatus();
+  }
+  MBO_ASSIGN_OR_RETURN(const auto consumers, engine::ActiveModifierConsumers(effective, style));
+  if (consumers.contains(registry::ModifierConsumer::kFileDiff)) {
+    return absl::OkStatus();
+  }
+  return absl::InvalidArgumentError(
+      absl::StrCat(
+          requested->second.flag, " ", ConsumerRequirement(requested->second.consumer),
+          "; tree comparison does not use text normalization. Drop the modifier or add a -diff/-rdiff action."));
 }
 
 }  // namespace xff::cli

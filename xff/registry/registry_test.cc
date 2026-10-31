@@ -30,6 +30,7 @@ namespace xff::registry {
 namespace {
 
 using ::testing::_;
+using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::HasSubstr;
@@ -86,7 +87,9 @@ TEST_F(RegistryTest, CompatibilitySpellingsAreDisjointFromNativePrimaries) {
   EXPECT_THAT(Lookup("-o", Mode::kXff), Optional(Field(&Descriptor::kind, Kind::kOperator)));
   EXPECT_THAT(Lookup("-o", Mode::kFind), Optional(Field(&Descriptor::kind, Kind::kOperator)));
   EXPECT_THAT(Lookup("-o", Mode::kRg), Eq(std::nullopt));
-  EXPECT_THAT(Lookup("-type", Mode::kFind), Optional(Field(&Descriptor::argument_choices, "b,c,d,f,l,p,s")));
+  EXPECT_THAT(
+      Lookup("-type", Mode::kFind),
+      Optional(Field(&Descriptor::argument_choices, ElementsAre("b", "c", "d", "f", "l", "p", "s"))));
   for (const auto mode : kModes) {
     EXPECT_THAT(Supports(Modes::kAll, mode), IsTrue());
     EXPECT_THAT(Supports(Modes::kNone, mode), IsFalse());
@@ -100,6 +103,7 @@ TEST_F(RegistryTest, CompatibilitySpellingsAreDisjointFromNativePrimaries) {
 TEST_F(RegistryTest, OutputCapabilitiesDistinguishStdoutFromCapturedAndFileSinks) {
   static constexpr std::array kStdoutPrimaries = std::to_array<std::string_view>({
       "-diff",
+      "-rdiff",
       "-hash",
       "-ls",
       "-print",

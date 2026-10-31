@@ -2,11 +2,11 @@
 +++ b/one.txt
 @@ -1,2 +1,2 @@
  alpha
--beta
-+BETA
+-BETA
++beta
 --- a/sub/two.txt
 +++ b/sub/two.txt
 @@ -1,2 +1,2 @@
  gamma
--delta
-+DELTA
+-DELTA
++delta

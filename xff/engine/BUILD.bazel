@@ -309,6 +309,7 @@ cc_library(
         "//xff/presentation/color:color_cc",
         "//xff/presentation/fields:fields_cc",
         "//xff/presentation/format:format_cc",
+        "//xff/presentation/patch:patch_cc",
         "//xff/presentation/render:render_cc",
         "//xff/presentation/render:scoped_table_cc",
         "//xff/presentation/render:summary_export_cc",
@@ -328,6 +329,23 @@ cc_library(
         "@nlohmann_json//:json",
         "@xff_extras_api//:archive_backend_cc",
         "@xff_extras_api//:member_path_cc",
+    ],
+)
+
+cc_test(
+    name = "diff_paths_test",
+    size = "small",
+    srcs = ["diff_paths_test.cc"],
+    deps = [
+        ":run_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )
 

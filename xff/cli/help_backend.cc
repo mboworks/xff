@@ -58,16 +58,13 @@ void RenderBlocks(const Blocks& blocks, HelpBackend& backend) {
 }  // namespace
 
 std::string HelpReferenceLabel(const RefTarget& target) {
-  if (!target.label.empty()) {
-    return target.label;
-  }
   switch (target.kind) {
     case RefTarget::Kind::kTopic:
     case RefTarget::Kind::kFlag:
     case RefTarget::Kind::kPrimary: return "--help=" + target.id;
-    case RefTarget::Kind::kManPage: return target.id + "(" + target.section + ")";
+    case RefTarget::Kind::kManPage: return target.label.empty() ? target.id + "(" + target.section + ")" : target.label;
     case RefTarget::Kind::kUrl:
-    case RefTarget::Kind::kAnchor: return target.id;
+    case RefTarget::Kind::kAnchor: return target.label.empty() ? target.id : target.label;
   }
   return target.id;
 }

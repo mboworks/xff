@@ -17,13 +17,13 @@ package(default_visibility = ["//visibility:private"])
 
 exports_files([
     "abseil-lazy-corefoundation.patch",
+    "bashtest-launcher-exec-properties.patch",
     "dev.MODULE.bazel",
     "expat-build.patch",
     "libarchive-xar.patch",
     "extras.MODULE.bazel",
     "llvm.MODULE.bazel",
     "pcre2-jit.patch",
-    "utf8proc-bazel9.patch",
     "xz-callback-types.patch",
     "xz-crc64-bounds.patch",
 ])

@@ -19,8 +19,24 @@ load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library", "py_test")
 load("@mboworks_bashtest//bashtest:bashtest.bzl", "bashtest")
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 load("//xff:cc.bzl", "cc_binary")
+load(":compile_sources_test.bzl", "compile_sources_tests")
 
 package(default_visibility = ["//visibility:private"])
+
+py_library(
+    name = "release_backfill_lib",
+    srcs = ["release_backfill.py"],
+    imports = ["."],
+)
+
+py_test(
+    name = "release_backfill_test",
+    size = "small",
+    srcs = ["release_backfill_test.py"],
+    deps = [":release_backfill_lib"],
+)
+
+compile_sources_tests(name = "compile_sources_test")
 
 py_library(
     name = "package_init",
@@ -72,9 +88,8 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-# The smallest cc target there is: compile_commands-update.sh builds it under --config=clang to
-# materialize the hermetic LLVM toolchain on a fresh checkout (so the extractor can point the DB
-# at it). `manual` keeps it out of `//...`. Also prints the compiler, as a diagnostic.
+# Print the selected compiler for diagnostics. `manual` keeps this probe out of `//...`;
+# compile_commands-update.sh materializes LLVM through its combined preparation build.
 cc_binary(
     name = "show_compiler",
     srcs = ["show_compiler.cc"],
@@ -855,6 +870,7 @@ test_suite(
         ":generate_mime_db_test",
         ":measure_resources_test",
         ":process_resources_test",
+        ":release_backfill_test",
         ":release_notes_test",
         ":release_site_test",
         ":site_artwork_test",
@@ -1192,7 +1208,11 @@ py_test(
     name = "benchmark_shards_test",
     size = "small",
     srcs = ["benchmark_shards_test.py"],
-    deps = [":benchmark_shards_lib"],
+    data = ["//:python_workflow_test_data"],
+    deps = [
+        ":benchmark_shards_lib",
+        ":test_paths_lib",
+    ],
 )
 
 py_library(

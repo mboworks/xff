@@ -29,7 +29,6 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/str_split.h"
 #include "absl/types/span.h"
 #include "xff/archive/archive_backend.h"
 #include "xff/cli/globals.h"
@@ -85,16 +84,19 @@ Content RowsOf(absl::Span<const DocPair> pairs) {
   return Content{.node = std::move(rows)};
 }
 
-// Related topics are registry metadata. Suppress repeats and keep the authored order.
-SeeAlso TopicLinks(std::string_view topic, std::string_view related) {
+// Related topics and flags are registry metadata. Keep the authored order without repeats.
+SeeAlso RelatedLinks(std::string_view topic, absl::Span<const std::string_view> related) {
   SeeAlso links;
   const auto add = [&](std::string_view name) {
     if (!name.empty() && !absl::c_any_of(links.refs, [&](const RefTarget& ref) { return ref.id == name; })) {
-      links.refs.push_back({.kind = RefTarget::Kind::kTopic, .id = std::string(name)});
+      const RefTarget::Kind kind = LookupGlobal(name).has_value()       ? RefTarget::Kind::kFlag
+                                   : registry::Lookup(name).has_value() ? RefTarget::Kind::kPrimary
+                                                                        : RefTarget::Kind::kTopic;
+      links.refs.push_back({.kind = kind, .id = std::string(name)});
     }
   };
   add(topic);
-  for (const std::string_view name : absl::StrSplit(related, ',', absl::SkipEmpty())) {
+  for (const std::string_view name : related) {
     add(name);
   }
   return links;
@@ -144,7 +146,7 @@ std::vector<std::string> PrimaryTags(const registry::Descriptor& descriptor) {
 std::vector<std::string_view> AffectedByFlags(std::string_view name) {
   std::vector<std::string_view> out;
   for (const GlobalFlag& flag : Globals()) {
-    for (const std::string_view token : absl::StrSplit(flag.affects, ',', absl::SkipEmpty())) {
+    for (const std::string_view token : flag.affects) {
       if (token == name) {
         out.push_back(flag.name);
         break;
@@ -154,31 +156,24 @@ std::vector<std::string_view> AffectedByFlags(std::string_view name) {
   return out;
 }
 
-// Related topics and controls, shared by focused help and full-reference pointers.
+// Navigation never repeats controls already described by the influence lines.
 template<typename Descriptor>
 SeeAlso EntryLinks(const Descriptor& entry) {
-  SeeAlso links = TopicLinks(entry.topic, entry.see_also);
-  const auto add_flag = [&](std::string_view name) {
-    if (!absl::c_any_of(links.refs, [&](const RefTarget& ref) { return ref.id == name; })) {
-      links.refs.push_back({
-          .kind = LookupGlobal(name).has_value() ? RefTarget::Kind::kFlag : RefTarget::Kind::kPrimary,
-          .id = std::string(name),
-      });
-    }
-  };
-  for (const std::string_view name : AffectedByFlags(entry.name)) {
-    add_flag(name);
-  }
+  SeeAlso links = RelatedLinks(entry.topic, entry.see_also);
+  std::vector<std::string_view> influences = AffectedByFlags(entry.name);
   if constexpr (std::is_same_v<Descriptor, GlobalFlag>) {
-    for (const std::string_view name : absl::StrSplit(entry.affects, ',', absl::SkipEmpty())) {
-      add_flag(name);
+    for (const std::string_view name : entry.affects) {
+      influences.push_back(name);
     }
   }
+  std::erase_if(links.refs, [&](const RefTarget& ref) {
+    return ref.kind != RefTarget::Kind::kTopic && absl::c_linear_search(influences, ref.id);
+  });
   return links;
 }
 
 // Appends an influence detail line ("Header: a, b, c") to `blocks` when non-empty.
-void AppendInfluence(Blocks& blocks, std::string_view header, const std::vector<std::string_view>& names) {
+void AppendInfluence(Blocks& blocks, std::string_view header, absl::Span<const std::string_view> names) {
   if (names.empty()) {
     return;
   }
@@ -241,7 +236,7 @@ Content FlagEntry(const GlobalFlag& flag, bool with_details = true, Audience aud
     for (Content& block : ParseBlocks(flag.details)) {
       details.push_back(std::move(block));
     }
-    AppendInfluence(details, "Affects:", absl::StrSplit(flag.affects, ',', absl::SkipEmpty()));
+    AppendInfluence(details, "Affects:", flag.affects);
     AppendInfluence(details, "Affected by:", AffectedByFlags(flag.name));
   }
   return Content{
@@ -520,7 +515,7 @@ Section GrammarsSection() {
 }
 
 bool IsRegexPrimary(const registry::Descriptor& descriptor) {
-  return descriptor.regex_argument || absl::c_linear_search(absl::StrSplit(descriptor.see_also, ','), "regex");
+  return descriptor.regex_argument || absl::c_linear_search(descriptor.see_also, "regex");
 }
 
 Section RegexSection(bool in_full) {
@@ -541,7 +536,7 @@ Section RegexSection(bool in_full) {
     Subsection flags{.title = "Related controls"};
     for (const GlobalFlag& flag : Globals()) {
       bool relevant = flag.topic == "regex";
-      for (const std::string_view affected : absl::StrSplit(flag.affects, ',')) {
+      for (const std::string_view affected : flag.affects) {
         const auto primary = registry::Lookup(affected);
         relevant = relevant || (primary.has_value() && IsRegexPrimary(*primary));
       }
@@ -669,12 +664,13 @@ Section IgnoreSection(bool in_full) {
       "trees such as `.git` or `.hg` at all. Hidden-path filtering is a third independent switch. "
       "Changing one does not silently change the others."));
 
-  static constexpr std::array<DocPair, 6> kAxes = {
+  static constexpr std::array<DocPair, 7> kAxes = {
       {
           {"--exclude / --include", "command-line gitignore-style patterns; repeatable, later matches win"},
           {"--gitignore / -g", "Git's `.gitignore`, `.git/info/exclude`, and `core.excludesFile` layer"},
           {"--ignore-files", "per-directory `.ignore` and `.xffignore` files"},
           {"--ignore-file=PATH", "an explicitly named rule file, rooted at its own directory"},
+          {"--compare-ignore-file=PATH", "an explicit rule file applied relative to both comparison roots"},
           {"--skip-vcs", "prune VCS metadata names; independent of pattern-based ignore files"},
           {"--hidden / --no-hidden", "show or skip dot-prefixed path components"},
       },
@@ -707,10 +703,18 @@ Section IgnoreSection(bool in_full) {
 
   Subsection precedence{.title = "Pattern precedence"};
   precedence.children.push_back(ProseOf(
-      "For a path, command-line `--exclude` / `--include` patterns decide first, then explicit "
-      "`--ignore-file` sources, then per-directory files. Within a source, gitignore last-match-wins "
+      "For a path, command-line `--exclude` / `--include` patterns decide first, then `--compare-ignore-file` "
+      "and applicable side-specific sources in argument order, then ordinary `--ignore-file` sources, then "
+      "per-directory files. Within a source, "
+      "gitignore last-match-wins "
       "semantics apply; a matched directory is pruned, so a later rule cannot recover descendants "
       "that were never visited."));
+  precedence.children.push_back(ProseOf(
+      "An excluded directory's nested `.gitignore` is never read. For an allowlist that keeps directories "
+      "traversable, use `*` followed by `!*/`, then file negations such as `!/foo.txt`; nested ignore files can "
+      "then choose their own files. Alternatively, explicitly re-include every required parent directory. "
+      "`/*.*` only excludes root-level names containing a dot; it does not exclude a directory named `foo`. "
+      "With `-diff`, these rules select the found entries; they do not filter an explicitly supplied target."));
   section.children.push_back(Content{.node = std::move(precedence)});
 
   if (!in_full) {
@@ -1216,13 +1220,25 @@ Section CompareSection(bool in_full) {
   section.children.push_back(ProseOf(
       "`--compare` requires exactly two roots. xff walks both roots with the same expression and the "
       "same explicitly selected traversal, ignore, archive, hidden-file, and symlink options. Comparison "
-      "does not enable `--gitignore`, `--no-ignore`, `-L`, or any other policy on its own. The matched entries "
+      "does not enable `--gitignore`, `--no-ignore`, `-L`, or any other policy on its own. "
+      "`--compare-ignore` selects how auto-discovered per-directory ignore stacks are applied: `respective` "
+      "keeps each side independent and follows the ordinary `-g` / style setting; `left` or `right` applies that "
+      "side's stack to both; `union` excludes a path from both if either stack excludes it; and `none` disables "
+      "those stacks. `left`, `right`, and `union` enable the Git ignore layer; `--no-ignore` still disables all "
+      "ignore-file sources. `--compare-ignore-file=PATH` reads an explicit gitignore-format file whose patterns "
+      "apply relative to both roots, even when the file is elsewhere. `--compare-left-ignore-file=PATH` and "
+      "`--compare-right-ignore-file=PATH` restrict explicit rules to one side. Shared and side-specific files "
+      "apply in argument order; the last matching applicable rule wins, with no implicit priority for side-specific "
+      "files. Asymmetric exclusions can make an existing file appear left-only or right-only. Each supplements any "
+      "`--compare-ignore` "
+      "policy, including `none`; a missing or unreadable explicit file is an error. The matched entries "
       "are paired by path relative to their respective roots, so the root directory names need not match."));
   section.children.push_back(ProseOf(
-      "Regular files are equal when their bytes are equal, for both text and binary data. Unfollowed symlinks "
+      "Regular files are equal when their bytes and executable capability match, for both text and binary data. "
+      "Executable capability means at least one execute permission bit is set. Unfollowed symlinks "
       "are equal when their link targets are equal; `-H` / `-L` instead apply their ordinary traversal meaning. "
-      "Directories and other non-regular entries are compared by type. Metadata such as permissions, owner, "
-      "timestamps, and inode numbers is not compared."));
+      "Directories and other non-regular entries are compared by type. Other permissions, owner, "
+      "timestamps, and inode numbers are not compared."));
   section.children.push_back(ProseOf(
       "The two walks run concurrently and each retains its complete matched-entry inventory until both finish. "
       "xff then merges those inventories and emits comparison records in bytewise relative-path order. This final "
@@ -1246,7 +1262,7 @@ Section CompareSection(bool in_full) {
       {
           {"left-only", "the relative path matched only below the left root"},
           {"right-only", "the relative path matched only below the right root"},
-          {"different", "both sides matched the path, but its type, bytes, or symlink target differs"},
+          {"different", "both sides matched, but type, bytes, executable capability, or symlink target differs"},
           {"identical", "both sides matched and compare equal; omitted unless explicitly selected"},
       },
   };
@@ -1305,9 +1321,34 @@ Section CompareSection(bool in_full) {
 
   Subsection patch{.title = "Patch output"};
   patch.children.push_back(ProseOf(
-      "`--compare=diff` writes one unified patch for added, removed, and changed regular files. Text files get "
-      "hunks; binary and non-regular differences get a diagnostic line. `--diff-algorithm` and `--diff-context` "
+      "`--compare=diff` writes Git-applicable patches for regular files and symlinks, including empty files, "
+      "executable mode changes, type replacements, and reversible binary literals. Text changes use unified "
+      "hunks. Empty directories have no Git representation; other special entry types fail with an error "
+      "when selected for patch output. `--diff-algorithm` and `--diff-context` "
       "tune this mode. `identical` is rejected because an unchanged entry has no patch representation."));
+  patch.children.push_back(ProseOf(
+      "Left is old content and right is new content. `-diff [TARGET]` emits TARGET-to-found changes; "
+      "`-rdiff [TARGET]` emits found-to-TARGET changes. An omitted TARGET or `/dev/null` creates or deletes "
+      "the found entry respectively. Both use its root-relative name (a file root uses its basename); "
+      "TARGET selects bytes and may be a field template. Comparison accepts two file roots too, using "
+      "their respective basenames as patch names."));
+  patch.children.push_back(ProseOf(
+      "Patch paths have an output-only pipeline: `--diff-left-strip=N` / `--diff-right-strip=N` remove "
+      "leading logical components, `--diff-left-root=PATH` / `--diff-right-root=PATH` inject relative "
+      "directories, repeatable `--diff-left-rewrite=RULES` / `--diff-right-rewrite=RULES` apply ordered "
+      "field-style `s/PAT/REPL/gi` substitution chains, then `--diff-left-prefix=TEXT` / "
+      "`--diff-right-prefix=TEXT` prepend literal prefixes (defaults `a/` and `b/`; empty removes them). "
+      "Stages always run in that order. Root, strip and prefix values use the last occurrence; rewrite "
+      "flags accumulate. Rewrites use RE2 and capture references such as `\\1`. Patterns, replacements "
+      "and flags are validated before traversal. Strip counts must leave a filename; roots and final "
+      "paths must be relative without empty, `.`, `..`, or `.git` components. Prefixes add no separator. "
+      "`/dev/null` stays unchanged. These settings affect labels in both diff primaries and comparison "
+      "patches, including diagnostics, without changing reads, pairing, status records or summaries. "
+      "Different entries mapping to the same output destination on one side are errors. Earlier patches "
+      "may already have been emitted: check exit status before applying streamed output."));
+  patch.children.push_back(ExampleOf(
+      "xff --compare=diff old-tree new-tree --diff-left-root=project --diff-right-root=project\n"
+      "xff src -type f -rdiff --diff-left-prefix= --diff-right-prefix="));
   section.children.push_back(Content{.node = std::move(patch)});
 
   if (!in_full) {
@@ -1319,17 +1360,6 @@ Section CompareSection(bool in_full) {
     }
     section.children.push_back(Content{.node = std::move(flags)});
   }
-
-  Subsection related{.title = "See also"};
-  Bullets links;
-  links.items.push_back(
-      ParseInline("`--summary=compare`: counts, percentages, and combined sizes for all comparison results."));
-  links.items.push_back(ParseInline("`--compare-select`: choose per-path records; `none` suppresses the listing."));
-  links.items.push_back(ParseInline("`--summary-scope`: combined, per-root, or category statistics."));
-  links.items.push_back(ParseInline("`--summary-precision`: decimal places in summary percentages."));
-  links.items.push_back(ParseInline("`--format=jsonl`: machine-readable comparison summary rows."));
-  related.children.push_back(Content{.node = std::move(links)});
-  section.children.push_back(Content{.node = std::move(related)});
 
   Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   examples.children.push_back(ExampleOf("xff --compare=summary left-tree right-tree", "sh"));
@@ -1346,6 +1376,142 @@ Section CompareSection(bool in_full) {
   examples.children.push_back(ExampleOf("xff -L --compare left-tree right-tree -type f -name '*.dat'", "sh"));
   examples.children.push_back(ProseOf("follow symlinks and compare only matching regular data files"));
   section.children.push_back(Content{.node = std::move(examples)});
+  return section;
+}
+
+// DIFF: patch direction and path mapping are shared by one-sided actions and two-root comparison.
+Section DiffSection(bool in_full) {
+  Section section{.title = "Diff and patch output", .anchor = "topic-diff"};
+  section.children.push_back(ProseOf(
+      "XFF has two patch-producing forms. `-diff [TARGET]` and `-rdiff [TARGET]` are expression actions: they "
+      "visit entries selected below the search roots and compare each found entry with an optional target. "
+      "`--compare=diff LEFT RIGHT` walks two roots, pairs selected entries by root-relative path, and can discover "
+      "files present on only one side. Use the one-sided form when you already know which paths to visit; use "
+      "two-root comparison when additions, removals, or path pairing must be discovered."));
+  Table direction{
+      .header = {"Mode", "Left / old", "Right / new"},
+      .cells =
+          {
+              {"-diff (TARGET omitted)", "Absent (/dev/null)", "Found entry"},
+              {"-diff TARGET", "TARGET", "Found entry"},
+              {"-rdiff (TARGET omitted)", "Found entry", "Absent (/dev/null)"},
+              {"-rdiff TARGET", "Found entry", "TARGET"},
+              {
+                  "--compare=diff LEFT RIGHT",
+                  "Matching entry under LEFT, or absent",
+                  "Matching entry under RIGHT, or absent",
+              },
+          },
+  };
+  section.children.push_back(Content{.node = std::move(direction)});
+  section.children.push_back(ProseOf(
+      "Patch direction is always old/left to new/right. `-diff TARGET` treats TARGET as old and the found entry "
+      "as new; `-rdiff TARGET` treats the found entry as old and TARGET as new. Without TARGET, `-diff` creates "
+      "the found entry from absence and `-rdiff` deletes it. `/dev/null` explicitly selects the absent side. "
+      "An equal pair is true and silent; a difference is false. This is the opposite of `--compare --exit-match`, "
+      "where a difference is a match. Optional TARGETs are field templates evaluated for each found entry; their "
+      "paths are resolved from the process working directory. A missing explicit TARGET does not become a "
+      "creation/deletion patch."));
+
+  Subsection output{.title = "Patch contents and limitations"};
+  output.children.push_back(ProseOf(
+      "Text changes use the selected diff style (`u3` by default; `c`, `n`, `y`, or `none` are also available). "
+      "Absent-side creation/deletion patches use Git format, including empty files, executable bits, symlinks, and "
+      "binary contents. Directories do not produce patches, because directory entries are not represented in Git; "
+      "other special file types are unsupported for absent-side patches. `--compare=diff` also produces "
+      "Git-applicable empty-file, binary, symlink, executable-mode, and type-replacement changes. Empty files "
+      "use metadata headers even when there is no text hunk. Empty-directory differences remain visible only "
+      "in status and summary output."));
+  output.children.push_back(ProseOf(
+      "`-diff` and `-rdiff` see only entries visited below their search roots. In particular, they cannot find "
+      "target-only paths to remove, and a source path whose explicit TARGET does not exist cannot be emitted as "
+      "a new file. `--compare=diff` is the whole-tree operation for discovering additions and removals. Its two "
+      "walks use the same filters and traversal options; comparison does not implicitly enable hidden files, "
+      "ignore rules, archive traversal, or symlink following. See `--help=compare` for pairing, selection, and "
+      "exit-status behavior."));
+  output.children.push_back(ProseOf(
+      "With `-g+` or `--ignore-vcs`, each comparison root uses its own VCS ignore context; rules above a search "
+      "root still apply when it is inside a Git worktree. `--compare-ignore=respective` preserves that "
+      "per-tree behavior. `left` or `right` instead uses the selected side's auto-discovered stack for both "
+      "trees; `union` excludes a relative path from both when either stack excludes it. `none` disables the "
+      "auto-discovered stack, while explicit `--ignore-file`, `--include`, and `--exclude` retain their normal "
+      "scope. `--compare-ignore-file=PATH` instead applies the named file relative to both comparison roots; "
+      "`--compare-left-ignore-file=PATH` and `--compare-right-ignore-file=PATH` apply only to the named side. "
+      "For example, `xff -g+ --compare=diff LEFT RIGHT --compare-ignore-file=/path/to/rules.ignore` shares those "
+      "explicit rules across the trees. `--skip-vcs` remains a separate traversal filter. "
+      "These choices also cover `.ignore` / `.xffignore` when those files are enabled. See `--help=ignore` "
+      "for ignore-source scope and precedence."));
+  section.children.push_back(Content{.node = std::move(output)});
+
+  Subsection paths{.title = "Patch destination paths"};
+  paths.children.push_back(ProseOf(
+      "Patch labels are independent of the paths XFF reads. For every patch, left means old and right means new. "
+      "The shared path pipeline is: logical root-relative path; strip leading components; inject a relative output "
+      "root; apply ordered regex rewrites; validate; prepend a literal side prefix (`a/` or `b/` by default); "
+      "then quote for the patch format. The left and right controls apply to those patch sides, not necessarily "
+      "to the command's first and second root when using `-rdiff`. Rewriting labels never changes traversal, "
+      "comparison pairing, TARGET lookup, or file contents."));
+  paths.children.push_back(ProseOf(
+      "Use `--diff-left-root=DIR` and `--diff-right-root=DIR` to place the same repository under a new directory "
+      "in a destination tree. For a path such as `src/main.cc`, injecting `third_party/widget` on both sides "
+      "produces `a/third_party/widget/src/main.cc` and `b/third_party/widget/src/main.cc`. This is the usual "
+      "mapping when importing a repository as a new root directory. Use side-specific `--diff-*-rewrite=RULES` "
+      "when destination paths need renaming or restructuring. For an ongoing update, make left labels identify "
+      "the current destination paths and right labels identify where updated files should land; use the same "
+      "rewrite on both sides for a stable mapping, or different rewrites for an intentional rename. Rewrites use "
+      "the field substitution grammar, "
+      "for example `s|^lib/|src/|;s|\\.generated\\.cc$|.cc|`, and accumulate in option order. Strip/root/prefix "
+      "settings use their last supplied value."));
+  paths.children.push_back(ProseOf(
+      "Injected roots and final labels must remain safe relative file paths: no absolute paths, empty, `.` or `..` "
+      "components, NUL, or `.git` component. Stripping cannot remove the filename. Prefixes are literal and add "
+      "no separator; an empty prefix removes `a/` or `b/`. `/dev/null` denotes absence and bypasses path "
+      "rewrites. If distinct source entries map to the same destination on one side, XFF reports a collision. "
+      "Patch output streams, so a later error can follow earlier complete patches; check the process exit status "
+      "before applying the output."));
+  section.children.push_back(Content{.node = std::move(paths)});
+
+  Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
+  examples.children.push_back(ExampleOf(
+      "xff -g+ upstream -type f -diff --diff-left-root=third_party/widget \\\n  --diff-right-root=third_party/widget > "
+      "import-widget.patch",
+      "sh"));
+  examples.children.push_back(ProseOf(
+      "create files from an upstream repository under a new directory in the destination repository; apply the "
+      "patch from the destination repository root. `-g+` applies Git ignore rules during traversal; omit it "
+      "when ignored files should be included"));
+  examples.children.push_back(ExampleOf(
+      "xff -g+ --compare=diff upstream/widget destination/third_party/widget \\\n  --diff-left-root=third_party/widget "
+      "--diff-right-root=third_party/widget > update-widget.patch",
+      "sh"));
+  examples.children.push_back(ProseOf(
+      "compare the upstream tree with its existing destination copy, discovering changed, added, and removed "
+      "files while emitting paths rooted at `third_party/widget`"));
+  examples.children.push_back(ExampleOf(
+      "xff -g+ --compare=diff upstream destination --diff-left-rewrite='s|^old-name/|widget/|' \\\n  "
+      "--diff-right-rewrite='s|^new-name/|widget/|'",
+      "sh"));
+  examples.children.push_back(
+      ProseOf("map differently named old and new trees onto the same destination names for an ongoing update"));
+  examples.children.push_back(ExampleOf(
+      "xff -g+ source -type f -diff 'destination/{relpath}' --diff-left-root=vendor/widget \\\n  "
+      "--diff-right-root=vendor/widget",
+      "sh"));
+  examples.children.push_back(ProseOf(
+      "use an explicit per-entry reference for known files; use `--compare=diff` instead when additions and "
+      "removals must be discovered"));
+  section.children.push_back(Content{.node = std::move(examples)});
+
+  if (!in_full) {
+    Subsection flags{.title = "Diff path options"};
+    for (const GlobalFlag& flag : Globals()) {
+      if (flag.name.starts_with("--diff-")) {
+        flags.children.push_back(FlagEntry(flag));
+      }
+    }
+    section.children.push_back(Content{.node = std::move(flags)});
+  }
+
   return section;
 }
 
@@ -2125,7 +2291,7 @@ Section UsageTasksSection() {
       {"Find entries", "`--help=expressions` for tests and actions; `--help=regex` for regular expressions"},
       {"Search contents", "`--help=content` for `-grep`, captures, and content matching"},
       {"Summarize", "`--help=summary` for counts, sizes, grouping, and comparison scopes"},
-      {"Compare trees", "`--help=compare` for differences and comparison summaries"},
+      {"Compare and patch", "`--help=compare` for two-root comparison, `-diff` / `-rdiff`, and patch paths"},
       {"Choose output", "`--help=output` for formats; `--help=fields` for template fields"},
       {"Configure safety", "`--help=config` for INI files; `--help=safety` for blocks, safe mode, and dry-run"},
       {"Use archives", "`--help=archive` for supported readers, writers, and archive traversal"},
@@ -2174,10 +2340,12 @@ Section GuideSection() {
       ProseOf(
           "Focused flag help expands its designated context topic, or its only related topic; "
           "other topics and flags stay in the See also list. Topic help never expands that list. "
+          "Flags already listed under Affects or Affected by are omitted from that entry's See also list. "
           "`--help=long` (also `--help=full`) includes each section once and never expands references. "
-          "HTML and Markdown show clickable related topic titles and flag names; man pages show "
-          "text references. Console long help omits those pointers, while focused console help "
-          "shows copyable `--help=NAME` commands."));
+          "Related topics and flags always use complete `--help=NAME` commands, including the flag's dashes "
+          "(for example, `--help=compare`, `--help=-diff`, and `--help=--summary`). "
+          "HTML and Markdown make these commands clickable; man pages show text references. "
+          "Console long help omits those pointers."));
   Subsection display{.title = "Display options (how help is shown)"};
   Rows display_rows;
   // The display-affecting globals, in the order the section presents them.
@@ -2218,7 +2386,7 @@ Document TopicNavigation(std::string_view name) {
     if (topic.name == name || absl::c_linear_search(topic.aliases, name)) {
       Document doc;
       Section section;
-      section.children.push_back(Content{.node = TopicLinks({}, topic.see_also)});
+      section.children.push_back(Content{.node = RelatedLinks({}, topic.see_also)});
       doc.sections.push_back(std::move(section));
       return doc;
     }
@@ -2297,6 +2465,8 @@ std::optional<Section> NamedTopicSection(std::string_view name) {
     return RgSection(/*in_full=*/false);
   } else if (name == "content") {
     return ContentSection(/*in_full=*/false);
+  } else if (name == "diff") {
+    return DiffSection(/*in_full=*/false);
   } else if (name == "compare") {
     return CompareSection(/*in_full=*/false);
   } else if (IsIgnoreTopicName(name)) {
@@ -2424,6 +2594,7 @@ Document BuildReference(Audience audience) {
   doc.sections.push_back(RegexSection(/*in_full=*/true));
   doc.sections.push_back(RgSection(/*in_full=*/true));
   doc.sections.push_back(ContentSection(/*in_full=*/true));
+  doc.sections.push_back(DiffSection(/*in_full=*/true));
   doc.sections.push_back(CompareSection(/*in_full=*/true));
   doc.sections.push_back(IgnoreSection(/*in_full=*/true));
   doc.sections.push_back(ArchiveSection(/*in_full=*/true));

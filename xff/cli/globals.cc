@@ -293,6 +293,13 @@ constexpr std::array kCompareValues = std::to_array<ValueDoc>({
     {.value = "status", .meaning = "one tab-separated selected result kind and relative path per record"},
     {.value = "diff", .meaning = "a unified tree diff suitable for saving as a patch"},
 });
+constexpr std::array kCompareIgnoreValues = std::to_array<ValueDoc>({
+    {.value = "none", .meaning = "do not apply auto-discovered per-directory ignore files"},
+    {.value = "left", .meaning = "apply the left tree's auto-discovered ignore stack to both trees"},
+    {.value = "right", .meaning = "apply the right tree's auto-discovered ignore stack to both trees"},
+    {.value = "respective", .meaning = "apply each tree's own ignore stack independently (the default)"},
+    {.value = "union", .meaning = "exclude a path from both trees if either tree's ignore stack excludes it"},
+});
 constexpr std::array kDiffAlgorithmValues = std::to_array<ValueDoc>({
     {.value = "myers", .meaning = "minimal diff, as git computes it (the default)"},
     {.value = "direct", .meaning = "line-by-line, no alignment search"},
@@ -339,6 +346,118 @@ constexpr std::array kHashAlgorithmValues = std::to_array<ValueDoc>({
     {.value = "sha512_224", .meaning = "SHA-2, 512/224 truncated"},
     {.value = "sha512_256", .meaning = "SHA-2, 512/256 truncated"},
 });
+
+// Metadata lists have static storage and are consumed directly during constexpr validation.
+constexpr auto kSeeAlsoRegexGrammars = std::to_array<std::string_view>({"regex", "grammars"});
+constexpr auto kSeeAlsoConfigIgnoreArchive = std::to_array<std::string_view>({"config", "ignore", "archive"});
+constexpr auto kSeeAlsoOutputStats = std::to_array<std::string_view>({"output", "stats"});
+constexpr auto kSeeAlsoSizeOutput = std::to_array<std::string_view>({"size", "output"});
+constexpr auto kSeeAlsoFields = std::to_array<std::string_view>({"fields"});
+constexpr auto kSeeAlsoCompareContent = std::to_array<std::string_view>({"compare", "content"});
+constexpr auto kSeeAlsoFieldsOutput = std::to_array<std::string_view>({"fields", "output"});
+constexpr auto kSeeAlsoCompare = std::to_array<std::string_view>({"compare"});
+constexpr auto kSeeAlsoContentRegex = std::to_array<std::string_view>({"content", "regex"});
+constexpr auto kSeeAlsoOutputSafety = std::to_array<std::string_view>({"output", "safety"});
+constexpr auto kSeeAlsoOutputEnvironment = std::to_array<std::string_view>({"output", "environment"});
+constexpr auto kSeeAlsoOutput = std::to_array<std::string_view>({"output"});
+constexpr auto kSeeAlsoSafety = std::to_array<std::string_view>({"safety"});
+constexpr auto kSeeAlsoTimeFields = std::to_array<std::string_view>({"time", "fields"});
+constexpr auto kAffectsXffrcExplain = std::to_array<std::string_view>({"--xffrc", "--explain"});
+constexpr auto kAffectsRc = std::to_array<std::string_view>({"--rc"});
+constexpr auto kAffectsAllowExec = std::to_array<std::string_view>({"--allow-exec"});
+constexpr auto kAffectsXffrc = std::to_array<std::string_view>({"--xffrc"});
+constexpr auto kAffectsRegexIregexRxcIrxcGrepCaptureCapturedir = std::to_array<std::string_view>({
+    "-regex",
+    "-iregex",
+    "-rxc",
+    "-irxc",
+    "-grep",
+    "-capture",
+    "-capturedir",
+});
+constexpr auto kAffectsArchive = std::to_array<std::string_view>({"--archive"});
+constexpr auto kAffectsArchiveArchiveExtract = std::to_array<std::string_view>({
+    "--archive",
+    "--archive-extract",
+});
+constexpr auto kAffectsArchiveDeleteArchiveExtract = std::to_array<std::string_view>({
+    "--archive-delete",
+    "--archive-extract",
+});
+constexpr auto kAffectsNamePathLnameFuzzyFuzzypathRegexRxcGrepContent = std::to_array<std::string_view>({
+    "-name",
+    "-path",
+    "-lname",
+    "-fuzzy",
+    "-fuzzypath",
+    "-regex",
+    "-rxc",
+    "-grep",
+    "-content",
+});
+constexpr auto kAffectsRegextypeRegexIregexRxcIrxcGrepCaptureCapturedir = std::to_array<std::string_view>({
+    "--regextype",
+    "-regex",
+    "-iregex",
+    "-rxc",
+    "-irxc",
+    "-grep",
+    "-capture",
+    "-capturedir",
+});
+constexpr auto kAffectsFileType = std::to_array<std::string_view>({"--file-type"});
+constexpr auto kAffectsFileTypeFileTypeNotTypeList = std::to_array<std::string_view>({
+    "--file-type",
+    "--file-type-not",
+    "--type-list",
+});
+constexpr auto kAffectsFileTypeFileTypeNot = std::to_array<std::string_view>({
+    "--file-type",
+    "--file-type-not",
+});
+constexpr auto kAffectsLang = std::to_array<std::string_view>({"-lang"});
+constexpr auto kAffectsLangDb = std::to_array<std::string_view>({"--lang-db"});
+constexpr auto kAffectsMime = std::to_array<std::string_view>({"-mime"});
+constexpr auto kAffectsMimeVocabulary = std::to_array<std::string_view>({"--mime-vocabulary"});
+constexpr auto kAffectsCompare = std::to_array<std::string_view>({"--compare"});
+constexpr auto kAffectsDiffRdiffCompare = std::to_array<std::string_view>({"-diff", "-rdiff", "--compare"});
+constexpr auto kAffectsDiffRdiff = std::to_array<std::string_view>({"-diff", "-rdiff"});
+constexpr auto kAffectsPackPackDuplicatesSort = std::to_array<std::string_view>({
+    "--pack",
+    "--pack-duplicates",
+    "--sort",
+});
+constexpr auto kAffectsSort = std::to_array<std::string_view>({"--sort"});
+constexpr auto kAffectsPack = std::to_array<std::string_view>({"--pack"});
+constexpr auto kAffectsSummary = std::to_array<std::string_view>({"--summary"});
+constexpr auto kAffectsRxcIrxcContentIcontent = std::to_array<std::string_view>({
+    "-rxc",
+    "-irxc",
+    "-content",
+    "-icontent",
+});
+constexpr auto kAffectsMatchOutput = std::to_array<std::string_view>({"--match-output"});
+constexpr auto kAffectsGrepMatchOutput = std::to_array<std::string_view>({"-grep", "--match-output"});
+constexpr auto kAffectsGrepMatchOutputRg = std::to_array<std::string_view>({
+    "-grep",
+    "--match-output",
+    "--rg",
+});
+constexpr auto kAffectsGrepMatchOutputDiffDiffContext = std::to_array<std::string_view>({
+    "-grep",
+    "--match-output",
+    "-diff",
+    "--diff-context",
+});
+constexpr auto kAffectsGrepDiff = std::to_array<std::string_view>({"-grep", "-diff"});
+constexpr auto kAffectsSummaryHistogram = std::to_array<std::string_view>({"--summary", "--histogram"});
+constexpr auto kAffectsHistogram = std::to_array<std::string_view>({"--histogram"});
+constexpr auto kAffectsSummaryCompareHistogram = std::to_array<std::string_view>({
+    "--summary",
+    "--compare",
+    "--histogram",
+});
+constexpr auto kAffectsColor = std::to_array<std::string_view>({"--color"});
 
 // The whole-run options, in the order the --help usage page groups them. `--help` /
 // `--version` and their aliases are deliberately omitted: they are special-cased in
@@ -494,7 +613,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "symlinks or enters archives. Only system/user configuration and the CLI may set this mode. "
                    "`--no-config` disables discovery. Unsectioned content requires a trusted "
                    "`--allow-rc-globals` grant; otherwise loading fails. Explicit `--xffrc=FILE` remains independent.",
-        .affects = "--xffrc,--explain",
+        .affects = kAffectsXffrcExplain,
         .topic = "config",
         .sign_forms = kRcForms,
         .alias_modes = registry::Modes::kNative,
@@ -509,7 +628,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`--no-allow-rc-globals` decision cannot be overridden. Without a grant, an autoloaded file "
                    "containing unsectioned content fails before execution. Named sections remain available; "
                    "explicit `--xffrc=FILE` is unaffected. This permission does not arm dangerous actions.",
-        .affects = "--rc",
+        .affects = kAffectsRc,
         .topic = "config",
         .config_only = true,
     },
@@ -523,7 +642,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "in system/user configuration. A system denial is authoritative. Rejection includes "
                    "unsectioned expressions and `--config=NAME`; nothing is silently dropped. "
                    "Explicit `--xffrc=FILE` keeps its existing global and named-section behavior.",
-        .affects = "--rc",
+        .affects = kAffectsRc,
         .topic = "config",
         .config_only = true,
     },
@@ -538,7 +657,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "-capture) or -delete - are inert unless --allow-exec is set from a trusted tier (the CLI or the "
                    "user/system config, never from an --xffrc file itself). An unarmed dangerous line is dropped with "
                    "a one-line warning. Repeatable; later files win.",
-        .affects = "--allow-exec",
+        .affects = kAffectsAllowExec,
         .topic = "config",
         .repetition = GlobalFlag::Repetition::kAccumulate,
         .cli_only = true,
@@ -555,7 +674,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "a trusted tier - typed on the CLI, or set in the user/system config - never from an --xffrc file "
                    "(so a named config cannot authorize itself). Arming cannot bypass unconditional blocks or "
                    "the active safe profile; see `--help=safety`.",
-        .affects = "--xffrc",
+        .affects = kAffectsXffrc,
         .topic = "config",
     },
     {
@@ -596,8 +715,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Accepts BSD/macOS find's leading extended-regex switch. In xff the extended grammar is "
                    "selected by `--regextype`; it defaults to `RE2`, and command-line `--re2` or `--pcre` "
                    "override a configured choice. This compatibility flag does not itself replace that choice.",
-        .affects = "-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
-        .see_also = "regex,grammars",
+        .affects = kAffectsRegexIregexRxcIrxcGrepCaptureCapturedir,
+        .see_also = kSeeAlsoRegexGrammars,
         .modes = registry::Modes::kNative,
     },
     {
@@ -609,7 +728,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Dereferences each symlink root operand before matching or descending, but keeps symlinks found "
                    "below that root as symlinks. A dangling root symlink falls back to the link itself. `-H`, `-L`, "
                    "and `-P` are mutually overriding leading options; the last occurrence wins.",
-        .see_also = "config,ignore,archive",
+        .see_also = kSeeAlsoConfigIgnoreArchive,
         .modes = registry::Modes::kNative,
     },
     {
@@ -622,7 +741,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "and metadata, and directory targets are descended. Dangling links fall back to the link itself. "
                    "Filesystem loops are detected and reported instead of recursed indefinitely. `-H`, `-L`, and "
                    "`-P` are mutually overriding leading options; the last occurrence wins.",
-        .see_also = "config,ignore,archive",
+        .see_also = kSeeAlsoConfigIgnoreArchive,
         .modes = registry::Modes::kNative,
         .rg =
             registry::CompatibilitySpelling{
@@ -640,7 +759,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "root operand. Predicates that explicitly inspect a target, such as `-xtype` and `-lname`, retain "
                    "their documented behavior. `-H`, `-L`, and `-P` are mutually overriding leading options; the "
                    "last occurrence wins.",
-        .see_also = "config,ignore,archive",
+        .see_also = kSeeAlsoConfigIgnoreArchive,
         .modes = registry::Modes::kNative,
     },
     {
@@ -700,7 +819,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "- while -maxdepth keeps counting member levels as the ordinary depth they are. Only `all` "
                    "nests: under `roots` a member is never a search root, so nothing inside the container is "
                    "dived whatever the value. N must be at least 1; use --archive=none / -z- to stop diving.",
-        .affects = "--archive",
+        .affects = kAffectsArchive,
         .topic = "archive",
         .extra = "archive",
         .required_consumer = registry::ModifierConsumer::kArchiveNestedTraversal,
@@ -722,7 +841,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "the walk to open a container before deciding, so a `-prune` on a container no longer "
                    "avoids opening it - use another mode, or no reduction, to keep that.",
         .values = kArchiveAggregateValues,
-        .affects = "--archive",
+        .affects = kAffectsArchive,
         .topic = "archive",
         .extra = "archive",
         .value_check = GlobalFlag::ValueCheck::kEnum,
@@ -754,7 +873,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "OpenSSL-signed phar, which cannot be re-signed without its private key; a "
                    "compressed single file, which has no member list to rewrite; and a member of a "
                    "container nested inside another one.",
-        .affects = "--archive",
+        .affects = kAffectsArchive,
         .topic = "archive",
         .extra = "archive",
     },
@@ -782,7 +901,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "this flag says - removing a temporary copy would be a no-op dressed as a "
                    "deletion. The container itself is an ordinary file, so an action on IT never "
                    "needed this.",
-        .affects = "--archive",
+        .affects = kAffectsArchive,
         .topic = "archive",
         .extra = "archive",
     },
@@ -805,7 +924,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "back to extraction rather than failing - which is why this flag is safe to keep "
                    "in a config file. `--archive-extract` is still what arms writing through a "
                    "copy; this one arms reading in place.",
-        .affects = "--archive,--archive-extract",
+        .affects = kAffectsArchiveArchiveExtract,
         .topic = "archive",
         .extra = "fuse",
     },
@@ -825,7 +944,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "the write and `--safe` / `--dry-run` still apply. The level and the arming resolve as "
                    "separate axes with later winning, so `-Z++ -z-` keeps writing armed with diving off; "
                    "`-Z-` is the full reset, disarming writing and turning diving off together.",
-        .affects = "--archive-delete,--archive-extract",
+        .affects = kAffectsArchiveDeleteArchiveExtract,
         .topic = "archive",
         .extra = "archive",
         .sign_forms = kArchiveWriteShorts,
@@ -842,7 +961,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "candidate file to identify its format. A root file is always offered to the reader when "
                    "archive traversal is enabled. Like the other archive mode selectors, a later selector "
                    "can replace this mode, including `--archive=roots` or `--archive=none`.",
-        .affects = "--archive",
+        .affects = kAffectsArchive,
         .topic = "archive",
         .extra = "archive",
     },
@@ -919,7 +1038,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`... +` batch forms still run once after the walk and propagate a failing exit status. With "
                    "no flag, xff uses one fewer than the detected cores, capped at 15 and floored at 1; find and "
                    "rg modes use every detected core. `all` always means every detected core.",
-        .see_also = "output,stats",
+        .see_also = kSeeAlsoOutputStats,
         .alias_modes = registry::Modes::kNative,
         .alias_argument = "N",
         .canonicalize_alias = true,
@@ -959,7 +1078,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "empty ordering - and side-effecting actions such as `-exec` still run during the walk, so "
                    "only the printed listing is reordered.",
         .values = kSortValues,
-        .see_also = "output,stats",
+        .see_also = kSeeAlsoOutputStats,
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -974,7 +1093,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "because defining a block in blocks is circular. This changes the comparison unit for both "
                    "`-size` (apparent bytes) and `-blocks` (allocated bytes); it does not change filesystem "
                    "metadata or the fixed units printed by `-ls`.",
-        .see_also = "size,output",
+        .see_also = kSeeAlsoSizeOutput,
     },
     {
         .name = "--exact",
@@ -988,7 +1107,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "byte-case-exact unless `--case=insensitive` or an explicitly insensitive primary (`-iname`, "
                    "`-ipath`, `-ifuzzy`, `-ifuzzypath`) requests folding. Find mode is already exact by default. "
                    "The volume probe is cached per device and safely defaults to exact matching if unavailable.",
-        .see_also = "regex,grammars",
+        .see_also = kSeeAlsoRegexGrammars,
     },
     {
         .name = "--case",
@@ -1005,8 +1124,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "path, and fuzzy matching, xff's filesystem-native folding can additionally apply unless "
                    "`--exact` is present. rg defaults to `smart`; xff and find default to `sensitive`.",
         .values = kCaseValues,
-        .affects = "-name,-path,-lname,-fuzzy,-fuzzypath,-regex,-rxc,-grep,-content",
-        .see_also = "regex,grammars",
+        .affects = kAffectsNamePathLnameFuzzyFuzzypathRegexRxcGrepContent,
+        .see_also = kSeeAlsoRegexGrammars,
         .sign_forms = kCaseShorts,
         .value_check = GlobalFlag::ValueCheck::kEnum,
         .alias_modes = registry::Modes::kNative,
@@ -1021,9 +1140,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "run; the last occurrence wins. `RE2` is the default. Selecting `PCRE2` in a build without "
                    "that extra is a hard error; see `--help=extras` for availability.",
         .values = kRegextypeValues,
-        .affects = "-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
+        .affects = kAffectsRegexIregexRxcIrxcGrepCaptureCapturedir,
         .primary_expansion_topic = "grammars",
-        .see_also = "regex,grammars",
+        .see_also = kSeeAlsoRegexGrammars,
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -1034,8 +1153,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "select the fast, linear-time RE2 grammar",
         .details = "A convenient command-line spelling of `--regextype=RE2`. It overrides a grammar selected "
                    "by configuration; among grammar selectors, the last occurrence wins.",
-        .affects = "--regextype,-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
-        .see_also = "regex,grammars",
+        .affects = kAffectsRegextypeRegexIregexRxcIrxcGrepCaptureCapturedir,
+        .see_also = kSeeAlsoRegexGrammars,
     },
     {
         .name = "--pcre",
@@ -1046,8 +1165,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "A convenient command-line spelling of `--regextype=PCRE2`. It overrides a grammar selected "
                    "by configuration; among grammar selectors, the last occurrence wins. PCRE2 is available "
                    "only in a full build, and selecting it in a lean build is a usage error.",
-        .affects = "--regextype,-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
-        .see_also = "regex,grammars",
+        .affects = kAffectsRegextypeRegexIregexRxcIrxcGrepCaptureCapturedir,
+        .see_also = kSeeAlsoRegexGrammars,
         .extra = "pcre2",
     },
     {
@@ -1102,7 +1221,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Uses the same definitions as `--file-type`. With exclusions alone, other entries remain "
                    "eligible; `--file-type-not=all` keeps unrecognized names. The `-T` short form works in "
                    "XFF and rg modes, not find mode. Native short globals precede roots; the long form works anywhere.",
-        .affects = "--file-type",
+        .affects = kAffectsFileType,
         .topic = "content",
         .repetition = GlobalFlag::Repetition::kAccumulate,
         .type_effect = GlobalFlag::TypeEffect::kExclude,
@@ -1126,7 +1245,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "New names contain letters and numbers; `all` is reserved. Edits run in resolved config/CLI "
                    "order after JSON overlays, before selection. These filter groups do not change `-lang`, "
                    "`-mime`, preferred labels, colors, or summary buckets.",
-        .affects = "--file-type,--file-type-not,--type-list",
+        .affects = kAffectsFileTypeFileTypeNotTypeList,
         .topic = "content",
         .repetition = GlobalFlag::Repetition::kAccumulate,
         .type_effect = GlobalFlag::TypeEffect::kAdd,
@@ -1144,7 +1263,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Later `--type-add` operations can rebuild the definition. Clearing an unknown name is "
                    "a no-op. This removes filtering membership, preserving language metadata and preferred "
                    "labels; use `--lang-db` to change those classifications.",
-        .affects = "--file-type,--file-type-not,--type-list",
+        .affects = kAffectsFileTypeFileTypeNotTypeList,
         .topic = "content",
         .repetition = GlobalFlag::Repetition::kAccumulate,
         .type_effect = GlobalFlag::TypeEffect::kClear,
@@ -1161,7 +1280,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "list effective filename-type definitions and aliases without searching",
         .details = "Lists the shared catalog after configured JSON overlays and ordered add/import/clear "
                    "operations. Available in both native XFF and rg grammar. Does not read search input.",
-        .affects = "--file-type,--file-type-not",
+        .affects = kAffectsFileTypeFileTypeNot,
         .topic = "content",
         .type_effect = GlobalFlag::TypeEffect::kList,
         .rg =
@@ -1185,7 +1304,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
             "between two preferred claims in ONE file follow `--lang-conflicts`; shared claims may overlap. "
             "A new preferred claim replaces older memberships for that key; shared claims in the same layer "
             "are then added. A supplied shared list replaces that language's prior shared list of the same kind.",
-        .affects = "-lang",
+        .affects = kAffectsLang,
         .topic = "content",
         .repetition = GlobalFlag::Repetition::kAccumulate,
     },
@@ -1200,7 +1319,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "a later file intentionally overrides earlier files and compiled data. `error` is the default; "
                    "`first` or `last` is an explicit compatibility escape hatch for imported databases.",
         .values = kLanguageConflictValues,
-        .affects = "--lang-db",
+        .affects = kAffectsLangDb,
         .topic = "content",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
@@ -1214,7 +1333,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`charset`, boolean `compressible`, and string arrays `aliases` and `extensions`. Later files "
                    "override earlier files and compiled data. An extension may include its leading dot; matching "
                    "folds case. Conflicts between two types in ONE file follow `--mime-conflicts`.",
-        .affects = "-mime",
+        .affects = kAffectsMime,
         .topic = "content",
         .repetition = GlobalFlag::Repetition::kAccumulate,
     },
@@ -1228,7 +1347,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "a later file intentionally overrides earlier files and compiled data. `error` is the default; "
                    "`first` or `last` provides an explicit compatibility escape hatch for imported databases.",
         .values = kMimeConflictValues,
-        .affects = "--mime-vocabulary",
+        .affects = kAffectsMimeVocabulary,
         .topic = "content",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
@@ -1272,7 +1391,12 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--no-ignore, -u",
         .group = "filter",
         .header = "Filter & Ignore",
-        .summary = "disable all ignore-file processing (.gitignore/.ignore/.xffignore)",
+        .summary = "disable all ignore-file processing, including explicit rule files",
+        .details = "Disables automatically discovered ignore files and explicit `--ignore-file`, "
+                   "`--compare-ignore-file`, `--compare-left-ignore-file`, and `--compare-right-ignore-file` rules, "
+                   "regardless of argument order. Comparison ignore-file requests still validate their paths and "
+                   "readability. Command-line `--include` / `--exclude`, hidden-path controls, and `--skip-vcs` "
+                   "remain independent.",
         .topic = "ignore",
         .alias_modes = registry::Modes::kNative,
         .rg =
@@ -1415,13 +1539,15 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
             "`--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or "
             "`different` records. With `--format=jsonl`, each status is a JSON object containing "
             "`record: comparison`, `status`, relative `path`, `left_root`, and `right_root`. "
-            "`--compare=diff` emits one unified tree diff, suitable for redirecting to "
+            "`--compare=diff` emits Git-applicable unified text, binary, symlink, empty-file, executable-mode, and "
+            "type-replacement changes, suitable for redirecting to "
             "a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is "
             "an expression action comparing each match from one walk with a templated target and therefore "
             "cannot discover target-only paths, `--compare` walks both roots independently and pairs the "
             "matches by relative path. The ordinary expression, ignore, hidden-file, archive, traversal, "
             "and `-P` / `-H` / `-L` symlink rules apply unchanged to each side; comparison itself enables "
-            "none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks "
+            "none of them. Regular files compare bytes and executable capability (any execute bit set); other "
+            "permission bits are ignored. Unfollowed symlinks "
             "are compared by target. Both walks complete before comparison records are emitted in bytewise "
             "relative-path order; `--sort` affects each walk, not that final order. In status mode, "
             "`--path-encoding=escape` makes control bytes in the relative path unambiguous. "
@@ -1448,33 +1574,250 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "neither comparison-result nor ordinary summaries are filtered by this selection. "
                    "`identical` is available with status output and is rejected with `--compare=diff`, where an "
                    "unchanged file has no patch representation.",
-        .affects = "--compare",
+        .affects = kAffectsCompare,
         .topic = "compare",
+    },
+    {
+        .name = "--compare-ignore",
+        .display = "--compare-ignore=none|left|right|respective|union",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "select which per-directory ignore policy applies during a two-root comparison",
+        .details =
+            "Requires `--compare`. `respective` is the default and applies each tree's own auto-discovered ignore "
+            "stack. `left` or `right` applies that tree's stack to matching relative paths on both sides. `union` "
+            "excludes a relative path from both sides when either stack excludes it. `none` disables auto-discovered "
+            "per-directory ignore files for the comparison. `left`, `right`, and `union` enable the Git ignore "
+            "layer; `--no-ignore` still disables every ignore-file source. `respective` follows the ordinary "
+            "`-g` / `--gitignore` and program-style settings. The selected stack includes `.gitignore` when the Git "
+            "layer is on, and `.ignore` / `.xffignore` when enabled by `--ignore-files` or the selected style. "
+            "Explicit `--ignore-file`, `--include`, and `--exclude` retain their normal scope. `--skip-vcs` remains "
+            "a separate traversal filter.",
+        .values = kCompareIgnoreValues,
+        .affects = kAffectsCompare,
+        .topic = "compare",
+        .value_check = GlobalFlag::ValueCheck::kEnum,
+    },
+    {
+        .name = "--compare-ignore-file",
+        .display = "--compare-ignore-file=PATH",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "apply an explicit ignore file relative to both comparison roots (repeatable)",
+        .details =
+            "Requires `--compare`. Read a gitignore-format file from an absolute path or a path relative "
+            "to the working directory, never relative to a comparison root or the INI file containing this flag. "
+            "Patterns apply relative to each comparison root, regardless of "
+            "the ignore file's location: `/build/` excludes each root's top-level `build` directory. "
+            "Shared and side-specific files apply in argument order; the last matching applicable rule wins, "
+            "including `!` negations. `--compare-left-ignore-file` and `--compare-right-ignore-file` restrict "
+            "rules to one side, with no implicit extra priority. "
+            "Command-line `--include` / `--exclude` take precedence, followed by these files, ordinary "
+            "`--ignore-file` sources, and auto-discovered rules. Supplements every `--compare-ignore` "
+            "policy, including `none`, without enabling auto-discovery. `--no-ignore` disables application "
+            "of these rules. Empty paths and missing or unreadable files are errors, even with `--no-ignore`.",
+        .affects = kAffectsCompare,
+        .topic = "compare",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+        .compare_ignore_scope = GlobalFlag::CompareIgnoreScope::kBoth,
+    },
+    {
+        .name = "--compare-left-ignore-file",
+        .display = "--compare-left-ignore-file=PATH",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "apply an explicit ignore file only to the left comparison root (repeatable)",
+        .details =
+            "Requires `--compare`. Like `--compare-ignore-file`, but patterns apply only to the left "
+            "root. Accepts absolute paths or paths relative to the working directory, never the selected root or "
+            "the INI file containing this flag; patterns anchor at "
+            "the left comparison root. Shared and side-specific files apply in argument order; the last "
+            "matching applicable rule wins. Side-specific files have no implicit extra priority. "
+            "Asymmetric exclusions can make an existing file appear right-only. `--no-ignore` disables "
+            "application; empty paths and missing or unreadable files remain errors.",
+        .affects = kAffectsCompare,
+        .topic = "compare",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+        .compare_ignore_scope = GlobalFlag::CompareIgnoreScope::kLeft,
+    },
+    {
+        .name = "--compare-right-ignore-file",
+        .display = "--compare-right-ignore-file=PATH",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "apply an explicit ignore file only to the right comparison root (repeatable)",
+        .details =
+            "Requires `--compare`. Like `--compare-ignore-file`, but patterns apply only to the right "
+            "root. Accepts absolute paths or paths relative to the working directory, never the selected root or "
+            "the INI file containing this flag; patterns anchor at "
+            "the right comparison root. Shared and side-specific files apply in argument order; the last "
+            "matching applicable rule wins. Side-specific files have no implicit extra priority. "
+            "Asymmetric exclusions can make an existing file appear left-only. `--no-ignore` disables "
+            "application; empty paths and missing or unreadable files remain errors.",
+        .affects = kAffectsCompare,
+        .topic = "compare",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+        .compare_ignore_scope = GlobalFlag::CompareIgnoreScope::kRight,
     },
     {
         .name = "--diff-algorithm",
         .display = "--diff-algorithm=naive|direct|myers",
         .group = "diff",
         .header = "Tree comparison and diffs",
-        .summary = "diff engine for -diff and tree diffs: naive, direct, or myers (the default)",
+        .summary = "engine for -diff, -rdiff and tree diffs: naive, direct, or myers (the default)",
         .values = kDiffAlgorithmValues,
-        .affects = "-diff,--compare",
+        .affects = kAffectsDiffRdiffCompare,
         .topic = "compare",
         .value_check = GlobalFlag::ValueCheck::kEnum,
         .required_consumer = registry::ModifierConsumer::kDiffComputation,
+    },
+    {
+        .name = "--diff-left-strip",
+        .display = "--diff-left-strip=N",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "remove leading left-side patch path components (default 0)",
+        .details =
+            "Nonnegative decimal count; the last value wins. Stripping must leave a filename. Left is old content and "
+            "right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, "
+            "regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are "
+            "errors; check exit status before applying streamed output. See `--help=compare` for examples.",
+        .affects = kAffectsDiffRdiffCompare,
+        .topic = "compare",
+        .see_also = kSeeAlsoFields,
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
+    },
+    {
+        .name = "--diff-left-root",
+        .display = "--diff-left-root=PATH",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "inject a relative left-side patch root (default empty)",
+        .details = "Prepend a relative directory after stripping, joining with a slash. Empty disables injection; the "
+                   "last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed "
+                   "output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` "
+                   "stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying "
+                   "streamed output. See `--help=compare` for examples.",
+        .affects = kAffectsDiffRdiffCompare,
+        .topic = "compare",
+        .see_also = kSeeAlsoFields,
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
+    },
+    {
+        .name = "--diff-left-prefix",
+        .display = "--diff-left-prefix=TEXT",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "literal left-side patch prefix (default a/)",
+        .details = "Prepend literal text after rewrites, with no automatic separator. Empty removes the prefix; the "
+                   "last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed "
+                   "output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` "
+                   "stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying "
+                   "streamed output. See `--help=compare` for examples.",
+        .affects = kAffectsDiffRdiffCompare,
+        .topic = "compare",
+        .see_also = kSeeAlsoFields,
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
+    },
+    {
+        .name = "--diff-left-rewrite",
+        .display = "--diff-left-rewrite=RULES",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "rewrite left-side patch paths using ordered s/PAT/REPL/gi rules",
+        .details = "Repeatable; chains and repeated flags run in order. Uses the field RE2 substitution grammar, "
+                   "alternate punctuation delimiters, capture references, and `g`/`i` flags. Nonmatches leave paths "
+                   "unchanged. Invalid rules fail before traversal. Left is old content and right is new content, "
+                   "including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, "
+                   "then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; "
+                   "check exit status before applying streamed output. See `--help=compare` for examples.",
+        .affects = kAffectsDiffRdiffCompare,
+        .topic = "compare",
+        .see_also = kSeeAlsoFields,
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
+    },
+    {
+        .name = "--diff-right-strip",
+        .display = "--diff-right-strip=N",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "remove leading right-side patch path components (default 0)",
+        .details =
+            "Nonnegative decimal count; the last value wins. Stripping must leave a filename. Left is old content and "
+            "right is new content, including with `-rdiff`. The fixed output-only pipeline is strip, root injection, "
+            "regex rewrites, then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are "
+            "errors; check exit status before applying streamed output. See `--help=compare` for examples.",
+        .affects = kAffectsDiffRdiffCompare,
+        .topic = "compare",
+        .see_also = kSeeAlsoFields,
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
+    },
+    {
+        .name = "--diff-right-root",
+        .display = "--diff-right-root=PATH",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "inject a relative right-side patch root (default empty)",
+        .details = "Prepend a relative directory after stripping, joining with a slash. Empty disables injection; the "
+                   "last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed "
+                   "output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` "
+                   "stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying "
+                   "streamed output. See `--help=compare` for examples.",
+        .affects = kAffectsDiffRdiffCompare,
+        .topic = "compare",
+        .see_also = kSeeAlsoFields,
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
+    },
+    {
+        .name = "--diff-right-prefix",
+        .display = "--diff-right-prefix=TEXT",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "literal right-side patch prefix (default b/)",
+        .details = "Prepend literal text after rewrites, with no automatic separator. Empty removes the prefix; the "
+                   "last value wins. Left is old content and right is new content, including with `-rdiff`. The fixed "
+                   "output-only pipeline is strip, root injection, regex rewrites, then literal prefix. `/dev/null` "
+                   "stays unchanged. Unsafe paths and output collisions are errors; check exit status before applying "
+                   "streamed output. See `--help=compare` for examples.",
+        .affects = kAffectsDiffRdiffCompare,
+        .topic = "compare",
+        .see_also = kSeeAlsoFields,
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
+    },
+    {
+        .name = "--diff-right-rewrite",
+        .display = "--diff-right-rewrite=RULES",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
+        .summary = "rewrite right-side patch paths using ordered s/PAT/REPL/gi rules",
+        .details = "Repeatable; chains and repeated flags run in order. Uses the field RE2 substitution grammar, "
+                   "alternate punctuation delimiters, capture references, and `g`/`i` flags. Nonmatches leave paths "
+                   "unchanged. Invalid rules fail before traversal. Left is old content and right is new content, "
+                   "including with `-rdiff`. The fixed output-only pipeline is strip, root injection, regex rewrites, "
+                   "then literal prefix. `/dev/null` stays unchanged. Unsafe paths and output collisions are errors; "
+                   "check exit status before applying streamed output. See `--help=compare` for examples.",
+        .affects = kAffectsDiffRdiffCompare,
+        .topic = "compare",
+        .see_also = kSeeAlsoFields,
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+        .required_consumer = registry::ModifierConsumer::kDiffPaths,
     },
     {
         .name = "--diff-ignore",
         .display = "--diff-ignore=TOKEN,...",
         .group = "diff",
         .header = "Tree comparison and diffs",
-        .summary = "normalize -diff comparison: ws, change, trail, blank, case, eofnl (comma-separated)",
-        .details = "Sets the normalization used by `-diff`; the last value wins. It may be saved in user config or an "
+        .summary = "normalize diff actions: ws, change, trail, blank, case, eofnl (comma-separated)",
+        .details = "Sets the normalization used by `-diff` and `-rdiff`; the last value wins. It may be saved in user "
+                   "config or an "
                    "explicit `--xffrc=FILE`, and a command-line value overrides the configured value. An empty value "
                    "disables configured normalization. Tokens are `ws`, `change`, `trail`, `blank`, `case`, and "
-                   "`eofnl`, comma-separated.",
-        .affects = "-diff",
-        .see_also = "compare,content",
+                   "`eofnl`, comma-separated. A nonempty explicit CLI value requires a `-diff` or `-rdiff` action; "
+                   "tree comparison remains exact and rejects ineffective CLI normalization before traversal. "
+                   "Dormant config defaults and empty resets are allowed; `--explain` reports advisory notes.",
+        .affects = kAffectsDiffRdiff,
+        .see_also = kSeeAlsoCompareContent,
         .required_consumer = registry::ModifierConsumer::kFileDiff,
     },
     {
@@ -1482,12 +1825,17 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--diff-ignore-matching=REGEX",
         .group = "diff",
         .header = "Tree comparison and diffs",
-        .summary = "-diff ignores lines matching this regex (RE2)",
-        .details = "Drops matching lines before `-diff` compares the two inputs. It may be saved in user config or an "
-                   "explicit `--xffrc=FILE`; the last value wins, so a command-line value overrides configuration. An "
-                   "empty value disables a configured expression. The expression uses RE2.",
-        .affects = "-diff",
-        .see_also = "compare,content",
+        .summary = "-diff / -rdiff ignore lines matching this regex (RE2)",
+        .details =
+            "Drops matching lines before `-diff` or `-rdiff` compares the two inputs. It may be saved in user "
+            "config or an "
+            "explicit `--xffrc=FILE`; the last value wins, so a command-line value overrides configuration. An "
+            "empty value disables a configured expression. The expression uses RE2. A nonempty explicit CLI value "
+            "requires a `-diff` or `-rdiff` action; tree comparison remains exact and rejects ineffective "
+            "CLI normalization before traversal. Dormant config defaults and empty resets are allowed; "
+            "`--explain` reports advisory notes.",
+        .affects = kAffectsDiffRdiff,
+        .see_also = kSeeAlsoCompareContent,
         .required_consumer = registry::ModifierConsumer::kFileDiff,
     },
     {
@@ -1495,10 +1843,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--diff-format=u|c|n|y",
         .group = "diff",
         .header = "Tree comparison and diffs",
-        .summary = "default -diff format: u/unified (default), c/context, n/normal, y/side-by-side",
+        .summary = "default -diff / -rdiff format: u/unified (default), c/context, n/normal, y/side-by-side",
         .values = kDiffFormatValues,
-        .affects = "-diff",
-        .see_also = "compare,content",
+        .affects = kAffectsDiffRdiff,
+        .see_also = kSeeAlsoCompareContent,
         .value_check = GlobalFlag::ValueCheck::kEnum,
         .required_consumer = registry::ModifierConsumer::kDefaultDiffFormat,
     },
@@ -1507,8 +1855,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--diff-context=N",
         .group = "diff",
         .header = "Tree comparison and diffs",
-        .summary = "default -diff context lines (3); overrides --context for -diff, and -diff:uN overrides it",
-        .affects = "-diff,--compare",
+        .summary = "default diff context lines (3); overrides --context; per-action :uN overrides it",
+        .affects = kAffectsDiffRdiffCompare,
         .topic = "compare",
         .required_consumer = registry::ModifierConsumer::kDiffContext,
     },
@@ -1523,7 +1871,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "the default; a `-hash:ALGO` spec or a `{hash:ALGO}` qualifier overrides it per use. "
                    "`--explain` identifies a CLI default with no active consumer; suppressed output does not count.",
         .values = kHashAlgorithmValues,
-        .see_also = "fields,output",
+        .see_also = kSeeAlsoFieldsOutput,
         .value_check = GlobalFlag::ValueCheck::kEnum,
         .required_consumer = registry::ModifierConsumer::kHashAlgorithm,
     },
@@ -1536,7 +1884,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Used by hash actions, fields, and `--summary=hash` unless that use specifies its own encoding. "
                    "`--explain` identifies a CLI default with no active consumer; suppressed output does not count.",
         .values = kHashEncodingValues,
-        .see_also = "fields,output",
+        .see_also = kSeeAlsoFieldsOutput,
         .value_check = GlobalFlag::ValueCheck::kEnum,
         .required_consumer = registry::ModifierConsumer::kHashEncoding,
     },
@@ -1558,7 +1906,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "render each match through a field template ({path}, {name}, ...)",
         .topic = "output",
         .primary_expansion_topic = "fields",
-        .see_also = "fields",
+        .see_also = kSeeAlsoFields,
     },
     {
         .name = "--implicit-print",
@@ -1584,7 +1932,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "when `--sort` explicitly sorts roots. Names affect archive destinations; ordinary path "
                    "output still uses the input paths. Duplicate root names are errors even with "
                    "`--pack-duplicates=first`.",
-        .affects = "--pack,--pack-duplicates,--sort",
+        .affects = kAffectsPackPackDuplicatesSort,
         .topic = "archive",
         .repetition = GlobalFlag::Repetition::kAccumulate,
         .cli_only = true,
@@ -1619,7 +1967,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "skipped rather than packed into itself. An archive MEMBER cannot be packed: reading files "
                    "out of one container to re-pack them into another is its own feature, and until it exists "
                    "the run is refused rather than quietly short. A build-time extra, like `--archive`.",
-        .affects = "--sort",
+        .affects = kAffectsSort,
         .topic = "archive",
         .extra = "archive",
     },
@@ -1635,7 +1983,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "Duplicate validation runs before archive output creation and also applies to `--dry-run`. "
                    "An error reports both source paths and preserves any existing destination archive.",
         .values = kPackDuplicateValues,
-        .affects = "--pack",
+        .affects = kAffectsPack,
         .topic = "archive",
         .extra = "archive",
         .value_check = GlobalFlag::ValueCheck::kEnum,
@@ -1658,7 +2006,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "values are strings, integers, or booleans; booleans become `yes` or `no`. File and inline "
                    "forms may be repeated and are expanded in command-line order, so the last value for a name "
                    "wins across both forms.",
-        .affects = "--pack",
+        .affects = kAffectsPack,
         .topic = "archive",
         .extra = "archive",
         .repetition = GlobalFlag::Repetition::kKeyed,
@@ -1676,7 +2024,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "there is no compressor to set a level on and a silently ignored level reads as a smaller "
                    "archive that never arrives. Legacy Unix `compress` has no level knob, so `.tar.Z` refuses "
                    "this option too.",
-        .affects = "--pack",
+        .affects = kAffectsPack,
         .topic = "archive",
         .extra = "archive",
     },
@@ -1706,9 +2054,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
             "otherwise it is an error. `--compare=summary` expands to `--summary=compare`, which only counts "
             "comparison results and does not satisfy this requirement.",
         .values = kSummaryScopeValues,
-        .affects = "--summary",
+        .affects = kAffectsSummary,
         .topic = "stats",
-        .see_also = "compare",
+        .see_also = kSeeAlsoCompare,
         .value_check = GlobalFlag::ValueCheck::kEnumList,
     },
     {
@@ -1904,7 +2252,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Uses content predicates such as `-rxc` and `-content` to select output lines in files that pass "
                    "the complete expression. Existing grep output controls apply. Explicit actions retain their "
                    "normal precedence over default output. The short alias `-M` must precede the roots.",
-        .affects = "-rxc,-irxc,-content,-icontent",
+        .affects = kAffectsRxcIrxcContentIcontent,
         .topic = "content",
         .grep_effect = GlobalFlag::GrepEffect::kMatchOutput,
         .alias_modes = registry::Modes::kNative,
@@ -1918,7 +2266,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "restore the default path listing instead of content-match output",
         .details = "Disables `--match-output`. Last setting wins, including configuration-file defaults. "
                    "The short alias `-M-` must precede the roots.",
-        .affects = "--match-output",
+        .affects = kAffectsMatchOutput,
         .topic = "content",
         .grep_effect = GlobalFlag::GrepEffect::kNoMatchOutput,
         .alias_modes = registry::Modes::kNative,
@@ -1934,7 +2282,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "Otherwise context is ignored. With "
                    "`--count`, count individual matches. Inverted selection has no matching portions to print. "
                    "`FNMATCH` treats the complete matching line as its matched portion.",
-        .affects = "-grep,--match-output",
+        .affects = kAffectsGrepMatchOutput,
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kOnlyMatching,
@@ -1950,7 +2298,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Content-match output",
         .summary = "print complete selected lines instead of matched portions",
         .details = "Restores complete-line content output. Last setting wins.",
-        .affects = "-grep,--match-output",
+        .affects = kAffectsGrepMatchOutput,
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kWholeLines,
@@ -1963,7 +2311,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "print paths of files containing selected lines",
         .details = "Suppresses line and count output. Selection includes `--invert-match`. Each reached `-grep` action "
                    "reports its own result; this does not defer actions until the full expression succeeds.",
-        .affects = "-grep,--match-output,--rg",
+        .affects = kAffectsGrepMatchOutputRg,
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrepSelection,
         .grep_effect = GlobalFlag::GrepEffect::kFilesWithMatches,
@@ -1981,7 +2329,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "print paths of readable text files without selected lines",
         .details = "Empty text files qualify. Binary, unreadable and non-regular files do not. This changes the truth "
                    "of the `-grep` action to whether the file has no selected lines.",
-        .affects = "-grep,--match-output,--rg",
+        .affects = kAffectsGrepMatchOutputRg,
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrepSelection,
         .grep_effect = GlobalFlag::GrepEffect::kFilesWithoutMatch,
@@ -1998,7 +2346,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "count matching portions per file",
         .details = "Counts non-overlapping matched portions instead of selected lines. Context and explicit grep "
                    "templates are superseded. Inverted selection has no matching portions to count.",
-        .affects = "-grep,--match-output",
+        .affects = kAffectsGrepMatchOutput,
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kCountMatches,
@@ -2012,7 +2360,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "select lines that do not match its pattern",
         .details = "Inverts line selection, not the file-level expression. `! -rxc PATTERN` instead selects files "
                    "whose content does not match. Does not invert other predicates.",
-        .affects = "-grep,--match-output,--rg",
+        .affects = kAffectsGrepMatchOutputRg,
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrepSelection,
         .grep_effect = GlobalFlag::GrepEffect::kInvertMatch,
@@ -2028,7 +2376,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Content-match output",
         .summary = "select lines that match its pattern",
         .details = "Restores positive line selection. Last setting wins.",
-        .affects = "-grep,--match-output,--rg",
+        .affects = kAffectsGrepMatchOutputRg,
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrepSelection,
         .grep_effect = GlobalFlag::GrepEffect::kPositiveMatch,
@@ -2041,7 +2389,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "include line numbers in built-in plain grep output (default)",
         .details = "Prefix selected and context lines with one-based line numbers. Explicit templates and JSON records "
                    "retain their own fields.",
-        .affects = "-grep,--match-output",
+        .affects = kAffectsGrepMatchOutput,
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kLineNumber,
@@ -2057,7 +2405,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Content-match output",
         .summary = "omit line numbers from built-in plain grep output",
         .details = "Does not remove line fields from JSON records or explicit templates. Last setting wins.",
-        .affects = "-grep,--match-output",
+        .affects = kAffectsGrepMatchOutput,
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kNoLineNumber,
@@ -2074,7 +2422,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "include paths in built-in plain grep output",
         .details = "Applies to line and count prefixes. Filename-only modes always print paths. Explicit templates and "
                    "JSON records retain their own fields.",
-        .affects = "-grep,--match-output",
+        .affects = kAffectsGrepMatchOutput,
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kFilename,
@@ -2091,7 +2439,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "omit paths from built-in plain grep line and count output",
         .details = "Filename-only modes always print paths. Explicit templates and JSON records retain their own "
                    "fields. Last setting wins.",
-        .affects = "-grep,--match-output",
+        .affects = kAffectsGrepMatchOutput,
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kNoFilename,
@@ -2109,7 +2457,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "print a per-file matching-line count (path:count) instead of the lines",
         .details = "Counts selected lines, or nonempty matched portions with `--only-matching`. Files without selected "
                    "lines emit no count. Context and templates are superseded. The last count/filename mode wins.",
-        .affects = "-grep,--match-output",
+        .affects = kAffectsGrepMatchOutput,
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kCountLines,
@@ -2129,7 +2477,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "These short forms require rg mode; use the long forms in native XFF/find mode or INI files. "
                    "A final symmetric before/after context also supplies the default for contextual `-diff` output, "
                    "unless `--diff-context` or a per-action count overrides it.",
-        .affects = "-grep,--match-output,-diff,--diff-context",
+        .affects = kAffectsGrepMatchOutputDiffDiffContext,
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kSharedContext,
         .context_effect = GlobalFlag::ContextEffect::kBoth,
@@ -2150,8 +2498,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "are short aliases. "
                    "Together with the other context settings, a final symmetric context also supplies the "
                    "default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.",
-        .affects = "-grep,-diff",
-        .see_also = "content,regex",
+        .affects = kAffectsGrepDiff,
+        .see_also = kSeeAlsoContentRegex,
         .required_consumer = registry::ModifierConsumer::kSharedContext,
         .context_effect = GlobalFlag::ContextEffect::kAfter,
         .rg =
@@ -2172,8 +2520,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "are short aliases. "
                    "Together with the other context settings, a final symmetric context also supplies the "
                    "default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.",
-        .affects = "-grep,-diff",
-        .see_also = "content,regex",
+        .affects = kAffectsGrepDiff,
+        .see_also = kSeeAlsoContentRegex,
         .required_consumer = registry::ModifierConsumer::kSharedContext,
         .context_effect = GlobalFlag::ContextEffect::kBefore,
         .rg =
@@ -2198,7 +2546,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
             "that reach it. With one capped filter this flag is usually redundant; its distinct use is an aggregate "
             "ceiling such as `\\( -type f -first 10 \\) -o \\( -type d -first 5 \\) --max-results=12`. Last "
             "occurrence wins. A malformed or negative count is a usage error; `0` lists none.",
-        .see_also = "output,safety",
+        .see_also = kSeeAlsoOutputSafety,
     },
     {
         .name = "--top",
@@ -2216,7 +2564,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "keys across the selected columns, including overlapping scopes only once. "
                    "Comparison-result summaries always show every type and status; `--top` does not truncate them. "
                    "Numeric-range histograms retain every range; only categorical histogram buckets are top-limited.",
-        .affects = "--summary,--histogram",
+        .affects = kAffectsSummaryHistogram,
         .topic = "stats",
         .required_consumer = registry::ModifierConsumer::kRankedReduction,
     },
@@ -2228,7 +2576,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "cell width the tallest --histogram bar fills (default 40)",
         .details = "Requires a positive integer; zero, negative, malformed, and overflowing values are errors. "
                    "Last occurrence wins.",
-        .affects = "--histogram",
+        .affects = kAffectsHistogram,
         .topic = "stats",
         .value_check = GlobalFlag::ValueCheck::kPositiveInteger,
         .required_consumer = registry::ModifierConsumer::kHistogramBars,
@@ -2243,7 +2591,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
             "Accepts integers from `0` through `9`; other values are errors. Last occurrence wins. "
             "Applies to ordinary and comparison summaries, including JSON percentage fields, and histogram means. "
             "Exact byte counts stay integers.",
-        .affects = "--summary,--compare,--histogram",
+        .affects = kAffectsSummaryCompareHistogram,
         .topic = "stats",
         .required_consumer = registry::ModifierConsumer::kPrecisionReduction,
     },
@@ -2258,7 +2606,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "unset; always forces color even through a pipe or pager and deliberately overrides NO_COLOR; "
                    "never disables it.",
         .values = kColorValues,
-        .see_also = "output,environment",
+        .see_also = kSeeAlsoOutputEnvironment,
         .value_check = GlobalFlag::ValueCheck::kTristate,
         .rg =
             registry::CompatibilitySpelling{
@@ -2305,8 +2653,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "skipped rather than failing the run, as in ls. Whether colour is emitted at all "
                    "is --color's business, not this flag's.",
         .values = kColorSchemeValues,
-        .affects = "--color",
-        .see_also = "output,environment",
+        .affects = kAffectsColor,
+        .see_also = kSeeAlsoOutputEnvironment,
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -2319,7 +2667,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "locale (LC_ALL / LC_CTYPE / LANG) is UTF-8, else ASCII; always forces the Unicode connectors; "
                    "never forces the ASCII ones.",
         .values = kUnicodeValues,
-        .see_also = "output,environment",
+        .see_also = kSeeAlsoOutputEnvironment,
         .value_check = GlobalFlag::ValueCheck::kTristate,
         .modes = registry::Modes::kNative,
     },
@@ -2330,7 +2678,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Terminal display",
         .summary = "size units for -ls / --summary: si (kB/MB, default), iec (KiB/MiB), off (bytes); xff -> si",
         .values = kHumanValues,
-        .see_also = "output,environment",
+        .see_also = kSeeAlsoOutputEnvironment,
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -2339,7 +2687,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "display",
         .header = "Terminal display",
         .summary = "human sizes in SI (kB/MB, 1000^N); an alias for --human=si (the --human default)",
-        .see_also = "output,environment",
+        .see_also = kSeeAlsoOutputEnvironment,
     },
     {
         .name = "--buffer",
@@ -2352,7 +2700,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`KiB`/`MiB`/.../`EiB` are IEC. The distinct suffixes keep rows and bytes unambiguous. "
                    "Malformed, negative, and overflowing limits are errors before traversal. "
                    "`off` or `0` disables column buffering; `all` requests the complete row set.",
-        .see_also = "output,environment",
+        .see_also = kSeeAlsoOutputEnvironment,
         .value_check = GlobalFlag::ValueCheck::kBuffer,
     },
     {
@@ -2369,7 +2717,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "Conflicting format selections "
                    "are errors, including conflicts with `--man` (which selects `roff`).",
         .values = kHelpFormatValues,
-        .see_also = "output,environment",
+        .see_also = kSeeAlsoOutputEnvironment,
         .value_check = GlobalFlag::ValueCheck::kEnum,
         .cli_only = true,
     },
@@ -2397,7 +2745,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "Help reads only automatic system/user preferences, including selected named sections; "
                    "it never loads `.xffrc` files or executes configured actions. Unavailable or invalid "
                    "automatic preferences are ignored for help so configuration remains repairable.",
-        .see_also = "output,environment",
+        .see_also = kSeeAlsoOutputEnvironment,
         .value_check = GlobalFlag::ValueCheck::kWidth,
     },
     {
@@ -2420,7 +2768,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "terminal to an editor) and for `--quiet`, which prints nothing to page; those runs are "
                    "simply unpaged.",
         .values = kPagerValues,
-        .see_also = "output,environment",
+        .see_also = kSeeAlsoOutputEnvironment,
         .value_check = GlobalFlag::ValueCheck::kNone,
     },
     {
@@ -2429,7 +2777,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "display",
         .header = "Terminal display",
         .summary = "never page any output (an alias for --pager=never)",
-        .see_also = "output,environment",
+        .see_also = kSeeAlsoOutputEnvironment,
     },
     {
         .name = "--quiet",
@@ -2441,7 +2789,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "In comparison mode, a match means a left-only, right-only, or different entry in the "
                    "matched population: `0` means discrepancies, `1` means none, and `2` means an error. "
                    "`--compare-select` and summary output do not change this status.",
-        .see_also = "output",
+        .see_also = kSeeAlsoOutput,
         .grep_effect = GlobalFlag::GrepEffect::kQuiet,
         .alias_modes = registry::Modes::kNative,
         .rg = registry::CompatibilitySpelling{},
@@ -2455,7 +2803,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "In comparison mode, a match means a left-only, right-only, or different entry in the "
                    "matched population: `0` means discrepancies, `1` means none, and `2` means an error. "
                    "`--compare-select` and summary output do not change this status.",
-        .see_also = "output",
+        .see_also = kSeeAlsoOutput,
     },
     {
         .name = "--block-policy-categories",
@@ -3119,7 +3467,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "member that cannot provide an operation available on the host filesystem. Without this flag "
                    "the unsupported operation is a hard error; with it the entry is skipped and the reason is "
                    "reported. Ordinary I/O and traversal errors remain errors.",
-        .see_also = "safety",
+        .see_also = kSeeAlsoSafety,
     },
     {
         .name = "--exec-fields",
@@ -3127,7 +3475,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "fields",
         .header = "Fields & Exec",
         .summary = "render -exec tokens through the field vocabulary ({name}, {path}, ...)",
-        .see_also = "fields,output",
+        .see_also = kSeeAlsoFieldsOutput,
     },
     {
         .name = "--define",
@@ -3135,7 +3483,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "fields",
         .header = "Fields & Exec",
         .summary = "define a value referenced as {def.NAME}",
-        .see_also = "fields,output",
+        .see_also = kSeeAlsoFieldsOutput,
         .repetition = GlobalFlag::Repetition::kKeyed,
     },
     {
@@ -3148,7 +3496,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "qualifier is given. Accepts a preset (iso, epoch, space, find) or any strftime pattern such as "
                    "%Y-%m-%d. A per-field qualifier like {mtime:%H:%M} still overrides it.",
         .primary_expansion_topic = "time",
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "--timezone",
@@ -3159,7 +3507,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "zone for interpreting/formatting times (local, utc, an IANA name, or +HH:MM)",
         .details = "The zone used to interpret and format every time. Accepts local, utc, an IANA name like "
                    "Europe/London, or a fixed offset like +02:00. Affects time fields and -newerXt comparisons.",
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "--time-zone-suffix",
@@ -3176,7 +3524,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`asn1`'s zone is optional: `always` adds its ASN.1-style offset (+0100, no separator), "
                    "`never` / `auto` leave it bare.",
         .values = kZoneSuffixValues,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .value_check = GlobalFlag::ValueCheck::kTristate,
     },
     // Additional globals consumed only by the rg grammar.
@@ -3463,9 +3811,7 @@ static_assert(
         kGlobals,
         [](const GlobalFlag& entry) {
           return entry.primary_expansion_topic.empty()
-                 || std::ranges::any_of(entry.see_also | std::views::split(','), [&](auto topic) {
-                      return std::string_view(topic.begin(), topic.end()) == entry.primary_expansion_topic;
-                    });
+                 || std::ranges::find(entry.see_also, entry.primary_expansion_topic) != entry.see_also.end();
         }),
     "primary_expansion_topic must be an element of see_also");
 

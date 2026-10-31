@@ -28,6 +28,29 @@
 namespace xff::registry {
 namespace {
 
+// Metadata lists have static storage and are consumed directly during constexpr validation.
+constexpr auto kSeeAlsoExpressionsCookbook = std::to_array<std::string_view>({"expressions", "cookbook"});
+constexpr auto kSeeAlsoRegexGrammars = std::to_array<std::string_view>({"regex", "grammars"});
+constexpr auto kSeeAlsoContentFields = std::to_array<std::string_view>({"content", "fields"});
+constexpr auto kSeeAlsoStatsOutput = std::to_array<std::string_view>({"stats", "output"});
+constexpr auto kSeeAlsoCompareContent = std::to_array<std::string_view>({"compare", "content"});
+constexpr auto kSeeAlsoSizeFields = std::to_array<std::string_view>({"size", "fields"});
+constexpr auto kSeeAlsoTimeFields = std::to_array<std::string_view>({"time", "fields"});
+constexpr auto kSeeAlsoIgnoreArchive = std::to_array<std::string_view>({"ignore", "archive"});
+constexpr auto kSeeAlsoSafetyFieldsConfig = std::to_array<std::string_view>({"safety", "fields", "config"});
+constexpr auto kSeeAlsoOutputFields = std::to_array<std::string_view>({"output", "fields"});
+constexpr auto kSeeAlsoPrintfFieldsOutput = std::to_array<std::string_view>({"printf", "fields", "output"});
+constexpr auto kSeeAlsoOutputFieldsSafety = std::to_array<std::string_view>({"output", "fields", "safety"});
+constexpr auto kSeeAlsoPrintfFieldsOutputSafety = std::to_array<std::string_view>({
+    "printf",
+    "fields",
+    "output",
+    "safety",
+});
+constexpr auto kSeeAlsoSafetyArchive = std::to_array<std::string_view>({"safety", "archive"});
+constexpr auto kSeeAlsoExpressionsRg = std::to_array<std::string_view>({"expressions", "rg"});
+constexpr auto kFileTypeChoices = std::to_array<std::string_view>({"b", "c", "d", "f", "l", "p", "s"});
+
 // The find / xff expression vocabulary. The parser, --help, `xff help <name>`,
 // --explain and the cost-warning all read from here; `summary` is the one-line
 // synopsis surfaced by the help system.
@@ -43,7 +66,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "path) and `-regex` (anchored pattern). Example: `xff . -name '*.log'`.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .case_pattern = true,
         .needs_metadata = false,
         .native_case = true,
@@ -56,7 +79,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .fold_case = true,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .needs_metadata = false,
         .parallel_match = true,
     },
@@ -69,7 +92,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "Wildcards and case handling are `-name`'s. GNU spells this `-wholename`.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .case_pattern = true,
         .needs_metadata = false,
         .native_case = true,
@@ -82,7 +105,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .fold_case = true,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .needs_metadata = false,
         .parallel_match = true,
     },
@@ -91,7 +114,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "GNU synonym for -path",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .needs_metadata = false,
         .native_case = true,
         .parallel_match = true,
@@ -102,7 +125,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .fold_case = true,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .needs_metadata = false,
         .parallel_match = true,
     },
@@ -115,7 +138,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "`-ilname` always folds.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .case_pattern = true,
     },
     {
@@ -125,7 +148,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .fold_case = true,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-regex",
@@ -136,7 +159,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "'.*/[0-9]+\\.log'`.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "regex,grammars",
+        .see_also = kSeeAlsoRegexGrammars,
         .regex_argument = true,
         .needs_metadata = false,
         .parallel_match = true,
@@ -149,7 +172,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .fold_case = true,
-        .see_also = "regex,grammars",
+        .see_also = kSeeAlsoRegexGrammars,
         .regex_argument = true,
         .needs_metadata = false,
         .parallel_match = true,
@@ -159,7 +182,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "select the regex dialect for the following -regex/-iregex",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "regex,grammars",
+        .see_also = kSeeAlsoRegexGrammars,
         .evaluation_noop = true,
     },
     // xff content-search predicates: match the file's CONTENT, not its path. The
@@ -268,7 +291,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 0,
         .modes = Modes::kXff,
         .cost = Cost::kExpensive,
-        .see_also = "content,fields",
+        .see_also = kSeeAlsoContentFields,
         .needs_metadata = false,
         .parallel_match = true,
     },
@@ -285,7 +308,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 0,
         .modes = Modes::kXff,
         .cost = Cost::kExpensive,
-        .see_also = "content,fields",
+        .see_also = kSeeAlsoContentFields,
         .needs_metadata = false,
         .parallel_match = true,
     },
@@ -355,7 +378,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 0,
         .binding = Binding::kLabel,
         .modes = Modes::kXff,
-        .see_also = "stats,output",
+        .see_also = kSeeAlsoStatsOutput,
         .control = Control::kCollect,
     },
     // xff -first: the streaming half of result-set shaping (see TODO.md's pinned design). A TEST
@@ -378,7 +401,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .modes = Modes::kXff,
         .pure = false,
-        .see_also = "stats,output",
+        .see_also = kSeeAlsoStatsOutput,
         .control = Control::kFirst,
     },
     // xff -top: the exact ranked half of result-set shaping. Unlike --sort=score this is a TEST in
@@ -407,7 +430,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .modes = Modes::kXff,
         .pure = false,
-        .see_also = "stats,output",
+        .see_also = kSeeAlsoStatsOutput,
         .control = Control::kTop,
     },
     {
@@ -466,7 +489,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .binding = Binding::kFuzzy,
         .modes = Modes::kXff,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .case_pattern = true,
         .needs_metadata = false,
         .native_case = true,
@@ -486,7 +509,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .binding = Binding::kFuzzy,
         .modes = Modes::kXff,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .case_pattern = true,
         .needs_metadata = false,
         .native_case = true,
@@ -502,7 +525,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .binding = Binding::kFuzzy,
         .fold_case = true,
         .modes = Modes::kXff,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .needs_metadata = false,
         .parallel_match = true,
     },
@@ -516,7 +539,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .binding = Binding::kFuzzy,
         .fold_case = true,
         .modes = Modes::kXff,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .needs_metadata = false,
         .parallel_match = true,
     },
@@ -530,7 +553,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .modes = Modes::kXff,
         .cost = Cost::kExpensive,
-        .see_also = "compare,content",
+        .see_also = kSeeAlsoCompareContent,
         .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate},
     },
     {
@@ -551,27 +574,25 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .topic = "content",
         .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate},
     },
-    // xff -diff[:STYLE]: emit a diff of each match against TARGET (a field template). An
-    // ACTION whose truth is TRUE = same (like cmp/diff): silent when equal, prints the diff
-    // and is false on a difference. STYLE (u3 default / c / n / y / none) picks the output.
     {
         .name = "-diff",
-        .summary = "diff against optional TARGET; defaults to a Git creation patch (xff)",
+        .summary = "emit TARGET-to-found changes; omitted TARGET creates files (xff)",
         .details =
-            "Compares the matched file against TARGET - a {field} template evaluated per entry, so it can name "
-            "a mirror path like `../b/{relpath}` - and is true when they are equal, false on a difference. The "
-            "optional :STYLE picks the output: unified `u3` (default; 3 lines of context), context `c`, "
-            "normal `n`, side-by-side `y`, or `none` for just the boolean. This is a one-sided expression "
-            "action: it visits only the search roots, so it cannot report paths that exist only under TARGET. "
-            "Use `--compare[=status|diff] LEFT RIGHT` to walk two roots with the same options and expression, "
-            "then compare their matches symmetrically. An omitted TARGET defaults to `/dev/null`: emit a Git "
-            "creation patch with root-relative paths (a file root uses its basename), including empty files, "
-            "executable bits, symlinks and binary literals. Directories emit nothing; other special types "
-            "are unsupported. Explicit `/dev/null` does the same. Creation patches are false (different), "
-            "including empty files, and use Git format regardless of :STYLE except `none` (silent). "
-            "Use `./-name` for targets starting with a dash. Avoid duplicate root-relative paths across roots. "
-            "Reads each file into memory. Binary patches use uncompressed zlib blocks. Example: "
-            "`xff src -type f -diff > additions.patch`; apply in an empty directory with `git apply additions.patch`.",
+            "The matched entry is the new/right side and TARGET is the old/left side. "
+            "TARGET is an optional {field} template evaluated per entry, for example `../old/{relpath}`. "
+            "Equality is true and silent; differences are false. This one-sided action visits only the search "
+            "roots; use `--compare=diff LEFT RIGHT` to discover paths on both sides. The `:STYLE` suffix selects "
+            "unified `u3` (default), context `c`, normal `n`, side-by-side `y`, or silent `none`. "
+            "Omitted TARGET or a TARGET rendering to `/dev/null` emits a Git creation/deletion patch, including "
+            "empty files, executable bits, symlinks and binary literals. Directories emit nothing; other special "
+            "types are unsupported. These patches use Git format except `none`, which stays silent. "
+            "Both patch sides use the found entry's root-relative name; a file root uses its basename. "
+            "The `--diff-left-*` and `--diff-right-*` globals strip components, inject roots, apply ordered "
+            "`s/PAT/REPL/gi` rewrites, then prepend literal prefixes (defaults `a/` and `b/`). These affect output "
+            "labels only. Invalid output paths and collisions are errors; check exit status before applying "
+            "streamed output. Use `./-name` for a dash-leading TARGET. Reads files into memory and retains "
+            "output/source names for collision detection. Binary creation/deletion patches use uncompressed zlib "
+            "blocks.",
         .kind = Kind::kAction,
         .stdout_output = true,
         .arity = 1,
@@ -579,7 +600,37 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .binding = Binding::kStyle,
         .modes = Modes::kXff,
         .cost = Cost::kExpensive,
-        .see_also = "compare,content",
+        .see_also = kSeeAlsoCompareContent,
+        .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate},
+        .modifier_consumer = ModifierConsumer::kFileDiff,
+    },
+    {
+        .name = "-rdiff",
+        .summary = "emit found-to-TARGET changes; omitted TARGET deletes files (xff)",
+        .details =
+            "The matched entry is the old/left side and TARGET is the new/right side. This reverses `-diff`. "
+            "TARGET is an optional {field} template evaluated per entry, for example `../old/{relpath}`. "
+            "Equality is true and silent; differences are false. This one-sided action visits only the search "
+            "roots; use `--compare=diff LEFT RIGHT` to discover paths on both sides. The `:STYLE` suffix selects "
+            "unified `u3` (default), context `c`, normal `n`, side-by-side `y`, or silent `none`. "
+            "Omitted TARGET or a TARGET rendering to `/dev/null` emits a Git creation/deletion patch, including "
+            "empty files, executable bits, symlinks and binary literals. Directories emit nothing; other special "
+            "types are unsupported. These patches use Git format except `none`, which stays silent. "
+            "Both patch sides use the found entry's root-relative name; a file root uses its basename. "
+            "The `--diff-left-*` and `--diff-right-*` globals strip components, inject roots, apply ordered "
+            "`s/PAT/REPL/gi` rewrites, then prepend literal prefixes (defaults `a/` and `b/`). These affect output "
+            "labels only. Invalid output paths and collisions are errors; check exit status before applying "
+            "streamed output. Use `./-name` for a dash-leading TARGET. Reads files into memory and retains "
+            "output/source names for collision detection. Binary creation/deletion patches use uncompressed zlib "
+            "blocks.",
+        .kind = Kind::kAction,
+        .stdout_output = true,
+        .arity = 1,
+        .default_argument = "/dev/null",
+        .binding = Binding::kStyle,
+        .modes = Modes::kXff,
+        .cost = Cost::kExpensive,
+        .see_also = kSeeAlsoCompareContent,
         .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate},
         .modifier_consumer = ModifierConsumer::kFileDiff,
     },
@@ -595,7 +646,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .binding = Binding::kHash,
         .modes = Modes::kXff,
         .cost = Cost::kExpensive,
-        .see_also = "content,fields",
+        .see_also = kSeeAlsoContentFields,
     },
     // xff -hasheq EXPECTED: true when the file's digest EQUALS EXPECTED (a field template rendered
     // per entry, so it can name a sidecar value like `{def.SUMS}` or a capture). `-hasheq:ALGO
@@ -614,7 +665,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .binding = Binding::kHash,
         .modes = Modes::kXff,
         .cost = Cost::kExpensive,
-        .see_also = "content,fields",
+        .see_also = kSeeAlsoContentFields,
         .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate},
         .control = Control::kHashVerification,
     },
@@ -629,9 +680,9 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "instead. Unknown type letters and empty list elements are usage errors.",
         .kind = Kind::kTest,
         .arity = 1,
-        .argument_choices = "b,c,d,f,l,p,s",
+        .argument_choices = kFileTypeChoices,
         .argument_choice_list = true,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .needs_metadata = false,
         .parallel_match = true,
     },
@@ -644,9 +695,9 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "Accepts the same type letters and comma lists; unknown or empty values are usage errors.",
         .kind = Kind::kTest,
         .arity = 1,
-        .argument_choices = "b,c,d,f,l,p,s",
+        .argument_choices = kFileTypeChoices,
         .argument_choice_list = true,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         // xff: match the media (MIME) type derived from the extension, glob-style.
@@ -666,7 +717,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .modes = Modes::kXff,
-        .see_also = "content,fields",
+        .see_also = kSeeAlsoContentFields,
     },
     {
         .name = "-lang",
@@ -684,7 +735,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .modes = Modes::kXff,
-        .see_also = "content,fields",
+        .see_also = kSeeAlsoContentFields,
     },
     {
         .name = "-size",
@@ -699,7 +750,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .primary_expansion_topic = "size",
-        .see_also = "size,fields",
+        .see_also = kSeeAlsoSizeFields,
         .size_argument = true,
     },
     {
@@ -712,7 +763,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .modes = Modes::kXff,
         .primary_expansion_topic = "size",
-        .see_also = "size,fields",
+        .see_also = kSeeAlsoSizeFields,
         .size_argument = true,
     },
     {
@@ -720,21 +771,21 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "match the hard-link count",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-inum",
         .summary = "match the inode number",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-samefile",
         .summary = "match files that share an inode with FILE",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-fstype",
@@ -745,7 +796,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "expression usually cannot assume one name across OSes.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-uid",
@@ -754,7 +805,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "`-N` (less than), or a bare N (exact). Match by login name with `-user` instead.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-gid",
@@ -763,7 +814,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "name with `-group` instead.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-user",
@@ -773,7 +824,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "`-uid 0`. Exact match only (no `+` / `-`).",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-group",
@@ -782,7 +833,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "to a numeric gid. Exact match only.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-nouser",
@@ -792,7 +843,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "`-nogroup` for the group side.",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-nogroup",
@@ -801,7 +852,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "`-nouser`).",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-newer",
@@ -815,7 +866,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "filesystem never recorded makes an X=B test a hard error and a Y=B reference a silent no-match.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-anewer",
@@ -824,7 +875,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "file's modification time. See `-newer` for the -newerXY family.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-cnewer",
@@ -833,77 +884,77 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "reference file's modification time. See `-newer` for the -newerXY family.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-neweraa",
         .summary = "match when atime is newer than the reference file's atime",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-newerac",
         .summary = "match when atime is newer than the reference file's ctime",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-neweram",
         .summary = "match when atime is newer than the reference file's mtime",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-newerca",
         .summary = "match when ctime is newer than the reference file's atime",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-newercc",
         .summary = "match when ctime is newer than the reference file's ctime",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-newercm",
         .summary = "match when ctime is newer than the reference file's mtime",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-newerma",
         .summary = "match when mtime is newer than the reference file's atime",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-newermc",
         .summary = "match when mtime is newer than the reference file's ctime",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-newermm",
         .summary = "match when mtime is newer than the reference file's mtime",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-newerat",
         .summary = "match when atime is newer than a time string",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .needs_time_zone = true,
     },
     {
@@ -911,7 +962,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "match when ctime is newer than a time string",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .needs_time_zone = true,
     },
     {
@@ -923,7 +974,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "status-change / birth-time counterparts; the file-reference forms are -newerXY (see `-newer`).",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .needs_time_zone = true,
     },
     // Birthtime -newerXY combos (BSD-compat): X or Y = B (birth/creation time).
@@ -932,7 +983,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "match when birth time is newer than the reference file's atime",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .needs_birth_time = true,
     },
     {
@@ -940,7 +991,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "match when birth time is newer than the reference file's ctime",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .needs_birth_time = true,
     },
     {
@@ -948,7 +999,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "match when birth time is newer than the reference file's mtime",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .needs_birth_time = true,
     },
     {
@@ -956,7 +1007,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "match when birth time is newer than the reference file's birth time",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .needs_birth_time = true,
     },
     {
@@ -964,7 +1015,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "match when birth time is newer than a time string",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .needs_time_zone = true,
         .needs_birth_time = true,
     },
@@ -973,21 +1024,21 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "match when atime is newer than the reference file's birth time",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-newercB",
         .summary = "match when ctime is newer than the reference file's birth time",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-newermB",
         .summary = "match when mtime is newer than the reference file's birth time",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-mtime",
@@ -1000,7 +1051,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "/ `-ctime` / `-Btime` for the other time axes.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .day_duration = true,
         .needs_time_zone = true,
     },
@@ -1011,7 +1062,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "Integer only - no unit suffix and no compound span (use `-mtime` for those).",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-atime",
@@ -1021,7 +1072,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "noatime, so a read may not update it.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .day_duration = true,
         .needs_time_zone = true,
     },
@@ -1031,7 +1082,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .details = "The minute-scale `-atime` (access time): integer minutes, `+N` / `-N`, no suffix. See `-mmin`.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-ctime",
@@ -1042,7 +1093,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "`-Btime` for that.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .day_duration = true,
         .needs_time_zone = true,
     },
@@ -1053,7 +1104,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "`-mmin`.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-Btime",
@@ -1064,7 +1115,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "downgrades that to a warning and skips the entry.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .needs_time_zone = true,
         .needs_birth_time = true,
     },
@@ -1075,7 +1126,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "unrecorded-birth-time handling as `-Btime` (hard error, or a skip under `--skip-unsupported`).",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .needs_birth_time = true,
     },
     {
@@ -1086,7 +1137,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "fewer days. Shares atime's relatime / noatime caveat (see `-atime`).",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
     },
     {
         .name = "-perm",
@@ -1099,7 +1150,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "access.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-maxdepth",
@@ -1110,7 +1161,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "bound both ends.",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "ignore,archive",
+        .see_also = kSeeAlsoIgnoreArchive,
         .traversal_effect = TraversalEffect::kMaxDepth,
         .needs_metadata = false,
     },
@@ -1121,7 +1172,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "points themselves. A global positional option like `-maxdepth` (applies run-wide).",
         .kind = Kind::kTest,
         .arity = 1,
-        .see_also = "ignore,archive",
+        .see_also = kSeeAlsoIgnoreArchive,
         .traversal_effect = TraversalEffect::kMinDepth,
         .needs_metadata = false,
     },
@@ -1133,7 +1184,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "A global positional option; `-d` is the BSD/GNU short spelling.",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "ignore,archive",
+        .see_also = kSeeAlsoIgnoreArchive,
         .traversal_effect = TraversalEffect::kPostOrder,
         .needs_metadata = false,
     },
@@ -1142,7 +1193,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "BSD/GNU short spelling of -depth",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "ignore,archive",
+        .see_also = kSeeAlsoIgnoreArchive,
         .traversal_effect = TraversalEffect::kPostOrder,
         .needs_metadata = false,
     },
@@ -1154,7 +1205,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "synonyms.",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "ignore,archive",
+        .see_also = kSeeAlsoIgnoreArchive,
         .traversal_effect = TraversalEffect::kSingleFilesystem,
         .needs_metadata = false,
     },
@@ -1163,7 +1214,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "GNU/BSD synonym for -xdev",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "ignore,archive",
+        .see_also = kSeeAlsoIgnoreArchive,
         .traversal_effect = TraversalEffect::kSingleFilesystem,
         .needs_metadata = false,
     },
@@ -1172,7 +1223,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "BSD synonym for -xdev",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "ignore,archive",
+        .see_also = kSeeAlsoIgnoreArchive,
         .traversal_effect = TraversalEffect::kSingleFilesystem,
         .needs_metadata = false,
     },
@@ -1185,7 +1236,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "in xff it applies run-wide regardless of where it appears in the expression.",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "time,fields",
+        .see_also = kSeeAlsoTimeFields,
         .control = Control::kDayStart,
         .needs_time_zone = true,
     },
@@ -1194,7 +1245,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "skip entries that vanish during the walk (ENOENT)",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .traversal_effect = TraversalEffect::kIgnoreRace,
         .needs_metadata = false,
     },
@@ -1203,7 +1254,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "report vanished entries as errors (default)",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .traversal_effect = TraversalEffect::kReportRace,
         .needs_metadata = false,
     },
@@ -1214,7 +1265,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "The directory case reads the directory to check, so it costs a syscall.",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-sparse",
@@ -1224,7 +1275,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "Compare `-blocks` (allocated space) against `-size` (apparent size).",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-readable",
@@ -1234,7 +1285,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "`-perm`. See `-writable` / `-executable` for the other access modes.",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-writable",
@@ -1242,7 +1293,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .details = "The write-mode `-readable`: a real access(2) probe for the effective user (see `-readable`).",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-executable",
@@ -1251,14 +1302,14 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "directory this means search (traverse) permission. See `-readable`.",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "safety,fields,config",
+        .see_also = kSeeAlsoSafetyFieldsConfig,
     },
     {
         .name = "-true",
         .summary = "always match",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .needs_metadata = false,
         .parallel_match = true,
         .constant_truth = true,
@@ -1268,7 +1319,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "never match",
         .kind = Kind::kTest,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .needs_metadata = false,
         .parallel_match = true,
         .constant_truth = false,
@@ -1283,7 +1334,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .stdout_output = true,
         .arity = 0,
         .buffers_columns = true,
-        .see_also = "output,fields",
+        .see_also = kSeeAlsoOutputFields,
         .needs_time_zone = true,
     },
     {
@@ -1296,7 +1347,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kAction,
         .stdout_output = true,
         .arity = 0,
-        .see_also = "output,fields",
+        .see_also = kSeeAlsoOutputFields,
         .needs_metadata = false,
         .path_output = true,
     },
@@ -1304,12 +1355,12 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .name = "-print0",
         .summary = "print the path followed by a NUL",
         .details = "Prints the path then a NUL byte instead of a newline, so paths containing spaces or newlines "
-                   "survive a pipe into `xargs -0`. The machine-readable counterpart of `-print`; see also "
-                   "`--format=jsonl`.",
+                   "survive a pipe into `xargs -0`. The machine-readable counterpart of `-print`. "
+                   "For structured records, `--format=jsonl` provides JSON Lines output.",
         .kind = Kind::kAction,
         .stdout_output = true,
         .arity = 0,
-        .see_also = "output,fields",
+        .see_also = kSeeAlsoOutputFields,
         .needs_metadata = false,
         .path_output = true,
     },
@@ -1324,7 +1375,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .stdout_output = true,
         .arity = 1,
         .primary_expansion_topic = "printf",
-        .see_also = "printf,fields,output",
+        .see_also = kSeeAlsoPrintfFieldsOutput,
         .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf},
         .needs_time_zone = true,
     },
@@ -1338,7 +1389,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .stdout_output = true,
         .arity = 0,
         .modes = Modes::kXff,
-        .see_also = "output,fields",
+        .see_also = kSeeAlsoOutputFields,
     },
     {
         // xff: -printf + the OS line ending
@@ -1351,7 +1402,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .modes = Modes::kXff,
         .primary_expansion_topic = "printf",
-        .see_also = "printf,fields,output",
+        .see_also = kSeeAlsoPrintfFieldsOutput,
         .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf},
         .needs_time_zone = true,
     },
@@ -1399,7 +1450,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kAction,
         .arity = 1,
         .writes_file = true,
-        .see_also = "output,fields,safety",
+        .see_also = kSeeAlsoOutputFieldsSafety,
     },
     {
         // xff: -fprint with the OS line ending (the file form of -println)
@@ -1411,7 +1462,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .writes_file = true,
         .modes = Modes::kXff,
-        .see_also = "output,fields,safety",
+        .see_also = kSeeAlsoOutputFieldsSafety,
     },
     {
         .name = "-fprint0",
@@ -1420,7 +1471,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kAction,
         .arity = 1,
         .writes_file = true,
-        .see_also = "output,fields,safety",
+        .see_also = kSeeAlsoOutputFieldsSafety,
     },
     {
         .name = "-fprintf",
@@ -1431,7 +1482,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 2,
         .writes_file = true,
         .primary_expansion_topic = "printf",
-        .see_also = "printf,fields,output,safety",
+        .see_also = kSeeAlsoPrintfFieldsOutputSafety,
         .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf, .first = 1},
         .needs_time_zone = true,
     },
@@ -1446,7 +1497,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .writes_file = true,
         .modes = Modes::kXff,
         .primary_expansion_topic = "printf",
-        .see_also = "printf,fields,output,safety",
+        .see_also = kSeeAlsoPrintfFieldsOutputSafety,
         .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf, .first = 1},
     },
     {
@@ -1456,7 +1507,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kAction,
         .arity = 1,
         .writes_file = true,
-        .see_also = "output,fields,safety",
+        .see_also = kSeeAlsoOutputFieldsSafety,
         .needs_time_zone = true,
     },
     {
@@ -1473,7 +1524,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kAction,
         .arity = 0,
         .safety = Safety::kSafety,
-        .see_also = "safety,archive",
+        .see_also = kSeeAlsoSafetyArchive,
         .traversal_effect = TraversalEffect::kPostOrder,
         .needs_metadata = false,
     },
@@ -1485,7 +1536,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "-print`. Has no effect with `-depth`, including the depth-first traversal implied by `-delete`.",
         .kind = Kind::kAction,
         .arity = 0,
-        .see_also = "ignore,archive",
+        .see_also = kSeeAlsoIgnoreArchive,
         .preserves_implicit_output = true,
         .needs_metadata = false,
     },
@@ -1496,7 +1547,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "Handy to emit just the first match: `xff . -name target -print -quit`.",
         .kind = Kind::kAction,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
         .needs_metadata = false,
     },
     {
@@ -1513,7 +1564,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = -1,
         .safety = Safety::kSecurity,
 
-        .see_also = "safety,fields,config",
+        .see_also = kSeeAlsoSafetyFieldsConfig,
         .terminal = true,
         .argument_fields =
             {.syntax = ArgumentFields::Syntax::kTemplate, .remaining = true, .requires_exec_fields = true},
@@ -1530,7 +1581,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = -1,
         .safety = Safety::kSecurity,
 
-        .see_also = "safety,fields,config",
+        .see_also = kSeeAlsoSafetyFieldsConfig,
         .terminal = true,
         .argument_fields =
             {.syntax = ArgumentFields::Syntax::kTemplate, .remaining = true, .requires_exec_fields = true},
@@ -1548,7 +1599,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = -1,
         .safety = Safety::kSecurity,
 
-        .see_also = "safety,fields,config",
+        .see_also = kSeeAlsoSafetyFieldsConfig,
         .terminal = true,
     },
     {
@@ -1561,7 +1612,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = -1,
         .safety = Safety::kSecurity,
 
-        .see_also = "safety,fields,config",
+        .see_also = kSeeAlsoSafetyFieldsConfig,
         .terminal = true,
         .execute_in_directory = true,
     },
@@ -1584,7 +1635,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .binding = Binding::kLabelRegex,
         .safety = Safety::kSecurity,
         .modes = Modes::kXff,
-        .see_also = "safety,fields,config",
+        .see_also = kSeeAlsoSafetyFieldsConfig,
         .binds_capture = true,
         .preserves_implicit_output = true,
         .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate, .first = 2, .remaining = true},
@@ -1601,7 +1652,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .binding = Binding::kLabelRegex,
         .safety = Safety::kSecurity,
         .modes = Modes::kXff,
-        .see_also = "safety,fields,config",
+        .see_also = kSeeAlsoSafetyFieldsConfig,
         .binds_capture = true,
         .preserves_implicit_output = true,
         .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate, .first = 2, .remaining = true},
@@ -1617,7 +1668,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kOperator,
         .operation = Operator::kAnd,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-and",
@@ -1625,7 +1676,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kOperator,
         .operation = Operator::kAnd,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-o",
@@ -1636,7 +1687,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kOperator,
         .operation = Operator::kOr,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "+",
@@ -1648,7 +1699,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .operation = Operator::kOr,
         .arity = 0,
         .modes = Modes::kXff,
-        .see_also = "expressions,rg",
+        .see_also = kSeeAlsoExpressionsRg,
     },
     {
         .name = "-or",
@@ -1656,7 +1707,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kOperator,
         .operation = Operator::kOr,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-not",
@@ -1667,7 +1718,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kOperator,
         .operation = Operator::kNot,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "!",
@@ -1675,7 +1726,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kOperator,
         .operation = Operator::kNot,
         .arity = 0,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     // xff logical operators (no find has them): precedence NOT > AND/-nand > XOR/-xnor > OR/-nor.
     {
@@ -1689,7 +1740,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .operation = Operator::kXor,
         .arity = 0,
         .modes = Modes::kXff,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-nand",
@@ -1698,7 +1749,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .operation = Operator::kNand,
         .arity = 0,
         .modes = Modes::kXff,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-nor",
@@ -1707,7 +1758,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .operation = Operator::kNor,
         .arity = 0,
         .modes = Modes::kXff,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
     {
         .name = "-xnor",
@@ -1716,7 +1767,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .operation = Operator::kXnor,
         .arity = 0,
         .modes = Modes::kXff,
-        .see_also = "expressions,cookbook",
+        .see_also = kSeeAlsoExpressionsCookbook,
     },
 });
 
@@ -1725,9 +1776,7 @@ static_assert(
         kDescriptors,
         [](const Descriptor& entry) {
           return entry.primary_expansion_topic.empty()
-                 || std::ranges::any_of(entry.see_also | std::views::split(','), [&](auto topic) {
-                      return std::string_view(topic.begin(), topic.end()) == entry.primary_expansion_topic;
-                    });
+                 || std::ranges::find(entry.see_also, entry.primary_expansion_topic) != entry.see_also.end();
         }),
     "primary_expansion_topic must be an element of see_also");
 

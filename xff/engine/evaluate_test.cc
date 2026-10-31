@@ -917,7 +917,7 @@ TEST_P(EvaluateTest, CreationDiffRejectsUnsafePatchNames) {
   const Visit visit{.path = path, .name = "../unsafe", .root = path, .depth = 0, .metadata = md};
   md.type = vfs::FileType::kRegular;
   EXPECT_THAT(Match({"-diff"}, visit), IsFalse());
-  EXPECT_THAT(control_.unsupported, HasSubstr("unsafe output path"));
+  EXPECT_THAT(control_.output_error, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("unsafe output path")));
   EXPECT_THAT(emitted_, IsEmpty());
 }
 

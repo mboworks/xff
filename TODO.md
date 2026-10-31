@@ -1,5 +1,40 @@
 # TODO
 
+## Comparison and diff audit follow-ups
+
+- [x] Produce Git-applicable comparison patches for empty files, binary updates, symlinks, executable
+      capability changes, and file/directory/type replacements; verify forward/reverse Git application.
+- [x] Make `--no-ignore` disable ordinary explicit `--ignore-file` sources consistently with help;
+      verify both aliases, both argument orders, CLI pattern independence, and comparison patches.
+- [ ] Decide hard errors versus intentional absence for missing/unreadable explicit `-diff` / `-rdiff`
+      TARGETs; keep `/dev/null` as the explicit absence sentinel.
+- [x] Reject nonempty explicit CLI normalization without a file-diff consumer before actions;
+      retain exact comparison, dormant config defaults, empty resets, and advisory explain output.
+- [ ] Replace full-tree comparison inventories with bounded directory-by-directory comparison;
+      preserve deterministic ordering, summaries, ignore scopes, and parallel comparison semantics.
+
+## Diff direction and output path transformations
+
+Design: [`docs/design-diff-paths.md`](docs/design-diff-paths.md).
+
+- [x] Specify old/new direction, `-rdiff`, root-relative labels, and the eight global options.
+- [x] Implement shared compiled rewrite programs and strip/root/rewrite/prefix mapping.
+- [x] Render reverse Git creation/deletion patches and map action/comparison labels.
+- [x] Complete collision, integration, help, formatting, and full-suite verification.
+
+## Comparison ignore policy
+
+- [x] Add repeatable `--compare-ignore-file=PATH` and left/right specializations: explicit files, including absolute paths outside
+      the compared trees, apply in order relative to both roots or their selected side. CLI include/exclude rules take
+      precedence; explicit comparison rules outrank ordinary ignore files and auto-discovery.
+      Reject empty paths, missing/unreadable files, and use outside comparison mode.
+
+- [x] Add `--compare-ignore=none|left|right|respective|union` for auto-discovered ignore stacks.
+      `respective` preserves independent per-tree rules; `left` / `right` use one side's stack on both;
+      `union` excludes a relative path from both when either stack excludes it; `none` disables the
+      auto-discovered stack. Explicit `--ignore-file`, `--include`, and `--exclude` remain unchanged.
+      Full-stack root-relative matching, including nested files, is covered by comparison tests.
+
 ## Prepared expression execution and optimizer
 
 Detailed scope, data-structure audit, benchmark matrix and decision gates:
@@ -761,6 +796,8 @@ The safety model and directory-scoped permissions are tracked in
 - [x] Make expression-evaluation fuzzing abort on all write and controlled-mutation entrypoints.
 - [x] Exercise both staged release executables with a cross-feature smoke corpus before upload.
 - [x] Cover NUL, escaped plain, and TSV record boundaries in the release smoke corpus.
+- [x] Verify staged-executable comparison patches with Git application and reversal, including
+      empty-file creation/deletion, binary changes, and empty/binary transitions.
 
 ### Audit S05: effective safety explanation
 

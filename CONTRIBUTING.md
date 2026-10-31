@@ -68,15 +68,36 @@ No tests contact GitHub or recursively invoke Bazel; the separate site integrati
 
 ## Compiler and sanitizer versions
 
-`--config=clang` uses LLVM 23.1.2. The `msan` feature selects LLVM 22.1.8 and its matching
+`--config=clang` selects the newest stable LLVM 23 release available for the host from the pinned
+`toolchains_llvm` catalogue (`latest:major==23`). Updating that module can adopt LLVM 23 fixes
+without a separate compiler-version edit; LLVM 24 requires an explicit selector change. The
+`msan` feature selects LLVM 22.1.8 and its matching
 instrumented libc++ on Linux x86-64, independently of config flag order. ASan, TSan, coverage,
 fuzzing, releases, build tools, and clang-tidy use LLVM 23. The existing `--config=lto` selection
 continues to use native Apple ld on macOS and bundled LLD on Linux.
 
-Pre-commit and `tools/clang_format.sh` run clang-format from the same pinned LLVM 23 distribution.
+The official LLVM 22.1.8 LLD executable requires `libxml2.so.2`. The MSan CI job uses
+Ubuntu 24.04 and explicitly installs `libxml2`; Ubuntu 26.04 only packages `libxml2.so.16`,
+which cannot satisfy that dependency. Ordinary LLVM 23 builds and the other sanitizer jobs
+continue on `ubuntu-latest`. Moving MSan to that host requires a compatible compiler/runtime
+distribution; keep its compiler and instrumented libc++ versions matched.
+
+Pre-commit and `tools/clang_format.sh` run clang-format from the same selected LLVM 23 distribution.
 The first run fetches that distribution if needed; it does not compile XFF. CI runs clang-tidy
 across the complete indexed source set when the compiler or lint policy changes; ordinary source
 changes keep the affected-file scope.
+
+## Linux FUSE runtimes
+
+The FUSE extra loads either `libfuse3.so.4` (Ubuntu 26.04) or `libfuse3.so.3` (Ubuntu 24.04)
+at runtime. Install `fuse3`; its package dependency selects the matching runtime library without
+pinning a distribution-specific library package name. Both SONAMEs expose the FUSE3 API subset
+used by xff, including the four-argument `fuse_session_new` compatibility entry point. No libfuse
+headers or libraries are included in the build.
+
+Linux CI runs the real mount tests on Ubuntu 24.04 and `ubuntu-latest`, with
+`--config=xff_fuse_tests_required` so missing libraries or failed mounts fail the job. Hosts without
+a usable FUSE runtime retain the existing extraction fallback.
 
 ## Local clang-tidy scope
 
@@ -121,11 +142,23 @@ pre-commit run clang-tidy --all-files --hook-stage manual
 As with other hooks, `pre-commit run -a` explicitly selects all files. Use `--files` for a focused
 verification; omit it to check staged changes.
 
-Generated dependency sources needed during compile-command extraction must be explicit build
-outputs in the owning extra. The PCRE2 extra exposes `chartables_source` for this purpose;
+Generated dependency sources needed during compile-command extraction must be materialized even
+when their compiled objects or libraries come from cache. The preparation build requests the
+`compile_sources` aspect's output group, which follows configured dependencies and explicitly
+requests generated C-family sources and headers, including exec and Starlark-transition copies.
+Generators must expose these artifacts through `DefaultInfo` or a source-provider target.
+The PCRE2 extra exposes `chartables_source` for materialization and its drift test;
 `@xff_pcre2//:chartables_test` compares it byte-for-byte with PCRE2's versioned
-`pcre2_chartables.c.dist`. The compile-database preparation builds the extra's wildcard targets,
-so the generated source is requested even when the compiled library is cached.
+`pcre2_chartables.c.dist`. The compile-database preparation builds core, manual lint targets, the
+shared extras API, and every extra's wildcard targets in one Bazel invocation, so the generated
+source is requested even when the compiled library is cached. Its source-coverage query follows
+C++ source providers rather than library dependencies, avoiding downloads from inactive dependency
+branches while preserving failures for incomplete queries.
+
+The extractor's internal action query disables `compiler_param_file`, `layering_check`, and
+`parse_headers` in target and exec configurations. Bazel's warning that `--features` and
+`--host_features` changed reports the resulting analysis-cache reset; it does not by itself mean
+compilation was repeated. Normal preparation builds retain both repository header checks.
 
 ## CI build caches
 
@@ -218,7 +251,11 @@ The default Linux/macOS jobs and tag builds run `tools/release_smoke.py` against
 stripped executables after staging. The disposable corpus checks the exact stamped version,
 help, JSONL/CSV/NUL filename round trips, escaped plain/TSV record boundaries, named INI
 selection, repeated summary identity,
-a literal `total` extension, and all four comparison outcomes. No installed executable or
+a literal `total` extension, and all four comparison outcomes. Git checks and applies comparison
+patches containing empty-file creation/deletion, binary additions/deletions/updates, and transitions
+between empty and binary content. The resulting tree must match the right tree byte for byte;
+reverse application must restore the left tree. Git must be available on `PATH`.
+No installed executable or
 user data is modified. Existing required system/user configuration still applies; run this
 release check in a clean CI environment. It complements the full tests rather than replacing them.
 

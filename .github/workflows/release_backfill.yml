@@ -1,0 +1,178 @@
+# SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+# SPDX-License-Identifier: Apache-2.0
+name: Release backfill
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Historical tag with a reviewed recovery in tools/release_backfill.py
+        required: true
+        type: string
+        default: v0.9.0
+
+permissions: {}
+
+concurrency:
+  group: release-backfill-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      source_sha: ${{ steps.source.outputs.source_sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Validate the original release and the approved exception
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          [[ "${RELEASE_TAG}" == v0.9.0 ]]
+          mkdir evidence
+          git fetch --no-tags origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+          source_sha="$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/40432376834" >evidence/run.json
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/40432376834/jobs?filter=latest&per_page=100" >evidence/jobs.json
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/40432376834/artifacts" >evidence/artifacts.json
+          gh run view 40432376834 --repo "${GITHUB_REPOSITORY}" --log-failed >evidence/failure.log
+          python3 tools/release_backfill.py validate --tag="${RELEASE_TAG}" --sha="${source_sha}" \
+            --inputs=evidence --output=release-backfill.json
+          echo "source_sha=${source_sha}" >>"${GITHUB_OUTPUT}"
+          cat release-backfill.json >>"${GITHUB_STEP_SUMMARY}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-backfill-evidence
+          path: |
+            release-backfill.json
+            evidence/
+
+  verify:
+    needs: validate
+    name: verify ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x86_64
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: source
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.validate.outputs.source_sha }}
+          path: release
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-backfill-evidence
+          path: evidence
+      - name: Verify original artifact bytes and staged executable behavior
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PLATFORM: ${{ matrix.platform }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          artifact_id="$(jq -r --arg platform "${PLATFORM}" '.artifacts[$platform].id' evidence/release-backfill.json)"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" >artifact.zip
+          python3 source/tools/release_backfill.py extract --archive=artifact.zip --destination=dist \
+            --platform="${PLATFORM}" --metadata=evidence/release-backfill.json
+          for name in xff xff_full; do
+            binary="${name}-${PLATFORM}-${ARCH}"
+            chmod +x "dist/${binary}"
+            python3 release/tools/release_smoke.py "dist/${binary}" --expected-version=0.9.0
+            mkdir "unpacked-${name}"
+            zstd -dc "dist/${binary}.tar.zst" | tar -xf - -C "unpacked-${name}"
+            cmp "dist/${binary}" "unpacked-${name}/${binary}/${name}"
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: verified-${{ matrix.platform }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    needs: [validate, verify]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.validate.outputs.source_sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: verified-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-backfill-evidence
+          path: evidence
+      - name: Generate recovery provenance and checksums
+        run: |
+          set -euo pipefail
+          cp evidence/release-backfill.json dist/
+          cd dist
+          sha256sum xff-* xff_full-* release-backfill.json >SHA256SUMS
+      - name: Attest recovered release assets
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*
+      - name: Publish the historical release without changing latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          SOURCE_SHA: ${{ needs.validate.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+          test "$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")" = "${SOURCE_SHA}"
+          tools/release_prep.sh "${RELEASE_TAG}" >release-notes.md
+          # The failed coverage job did not produce a report; do not promise one.
+          sed -i '/^- \[Coverage report\]/d' release-notes.md
+          {
+            echo
+            echo '## Historical release recovery'
+            echo
+            jq -r '.exception' evidence/release-backfill.json
+            echo
+            echo "Original build and test evidence: https://github.com/${GITHUB_REPOSITORY}/actions/runs/40432376834"
+            echo
+            echo 'The original signed tag and binary bytes are unchanged. No successful tag coverage report is claimed.'
+            echo 'The attached release-backfill.json records the original source commit, run, and artifact digests.'
+          } >>release-notes.md
+          gh release create "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" --verify-tag \
+            --latest=false --title="${RELEASE_TAG}" --notes-file=release-notes.md dist/*
+      - name: Publish versioned documentation and benchmark links
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          gh workflow run pages.yml --repo "${GITHUB_REPOSITORY}" --ref main -f tag="${RELEASE_TAG}"
+          gh workflow run benchmark_pages.yml --repo "${GITHUB_REPOSITORY}" --ref main

@@ -233,7 +233,7 @@ TEST_F(MarkdownBackendTest, CompleteReferencePointersUseTheFormatPresentation) {
       .refs = {{.kind = RefTarget::Kind::kTopic, .id = "regex", .label = "Regex matching"}},
       .in_document = true,
   });
-  EXPECT_THAT(backend.Take(), HasSubstr("[Regex matching](#topic-regex)"));
+  EXPECT_THAT(backend.Take(), HasSubstr("[--help=regex](#topic-regex)"));
 }
 
 }  // namespace

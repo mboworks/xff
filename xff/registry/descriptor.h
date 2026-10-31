@@ -20,6 +20,7 @@
 #include <optional>
 #include <string_view>
 
+#include "absl/types/span.h"
 #include "xff/registry/consumers.h"
 #include "xff/registry/mode.h"
 
@@ -107,8 +108,8 @@ struct Descriptor {
     return arity;
   }
 
-  // Optional closed vocabulary for each operand, comma-delimited. Empty means unrestricted.
-  std::string_view argument_choices;
+  // Optional closed vocabulary for each operand. Empty means unrestricted.
+  absl::Span<const std::string_view> argument_choices;
   bool argument_choice_list = false;  // an operand may be a non-empty comma list of choices
   Binding binding = Binding::kNone;   // attached ':' qualification carried on the token itself
   // The case-insensitive variant of a matcher (-iname/-ipath/-iregex): folds case
@@ -128,8 +129,8 @@ struct Descriptor {
   // Optional topic to expand in focused help; must be an element of see_also.
   // Without it, expand only when topic membership + see_also names one distinct topic.
   std::string_view primary_expansion_topic;
-  // Comma-separated related help topics linked from standalone entry help.
-  std::string_view see_also;
+  // Related help topics or exact flag spellings; backed by named constexpr arrays.
+  absl::Span<const std::string_view> see_also;
   // The primary may take the TERMINAL for itself: it prompts and reads a reply (-ok / -okdir), or it
   // hands our stdin / stdout to a child that might (an editor under -exec / -execdir). Read by the
   // CLI to suppress the listing pager, which would otherwise sit between that primary and the user.

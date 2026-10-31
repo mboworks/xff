@@ -68,14 +68,14 @@ struct GlobalFlag {
   // `value  meaning` table above the explanation, so the value grammar stays off the
   // (never-wrapped) synopsis yet is fully documented. Empty = no value list.
   absl::Span<const ValueDoc> values;
-  // The single source of truth for cross-references in the help system: a comma-separated
+  // The single source of truth for cross-references in the help system: a constexpr-backed
   // list of the expression primaries and other global flags whose behavior this flag changes
-  // (e.g. "-diff" for --diff-format, "-grep,-diff" for --context). Detailed help derives an
+  // (e.g. {"-diff"} for --diff-format, {"-grep", "-diff"} for --context). Detailed help derives an
   // "Affects:" block here and the reverse "Affected by:" block on each named entry, so the two
-  // directions cannot drift (globals_test checks every token resolves). Each token is a primary
+  // directions cannot drift (help tests check every target resolves). Each target is a primary
   // name ("-diff") or a global name ("--context"); a leading-'@' category token is a planned
   // extension (not yet resolved) for when one flag affects a whole family at once.
-  std::string_view affects;
+  absl::Span<const std::string_view> affects;
   // Help-topic membership, e.g. "stats". A `--help=TOPIC` body pulls every flag tagged with its
   // topic straight from this table, so the topic's flag list is the SOT and cannot drift. Empty
   // means the flag belongs to no topic body (it still appears in the grouped `--help` options).
@@ -83,8 +83,8 @@ struct GlobalFlag {
   // Optional topic to expand in focused help; must be an element of see_also.
   // Without it, expand only when topic membership + see_also names one distinct topic.
   std::string_view primary_expansion_topic;
-  // Comma-separated related help topics linked from standalone entry help.
-  std::string_view see_also;
+  // Related help topics or exact flag spellings; backed by named constexpr arrays.
+  absl::Span<const std::string_view> see_also;
   // The build-time "composable extra" this flag needs, e.g. "archive" (the `//xff:xff_archive` Bazel
   // flag + its `XFF_WITH_ARCHIVE` define). Empty = a core flag, always available. When set and that
   // extra is NOT compiled in (ExtraEnabled), the flag stays listed but is a hard error if used, and
@@ -171,6 +171,9 @@ struct GlobalFlag {
   bool canonicalize_alias = false;
   std::optional<registry::Mode> enters_mode;
   std::optional<registry::CompatibilitySpelling> rg;
+  // Which comparison roots receive an explicit ignore file. None means this is not an ignore-file flag.
+  enum class CompareIgnoreScope : std::uint8_t { kNone, kBoth, kLeft, kRight };
+  CompareIgnoreScope compare_ignore_scope = CompareIgnoreScope::kNone;
 };
 
 struct GlobalAliasArgument {

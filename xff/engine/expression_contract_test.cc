@@ -1053,7 +1053,7 @@ TEST_F(PreparedOperandTest, MimePatternSurvivesMovesAndKeepsCaseAndGlobSemantics
 }
 
 TEST_F(PreparedOperandTest, FieldTemplatesKeepDynamicValuesObservationsAndMovedOwnership) {
-  constexpr auto kPrimaries = std::to_array<std::string_view>({"-cmp", "-similar", "-diff", "-hasheq"});
+  constexpr auto kPrimaries = std::to_array<std::string_view>({"-cmp", "-similar", "-diff", "-rdiff", "-hasheq"});
   constexpr auto kTemplates = std::to_array<std::string_view>({
       "{def.PEER}/{name:s/file/other/}",
       "{def.PEER}",
@@ -1072,7 +1072,7 @@ TEST_F(PreparedOperandTest, FieldTemplatesKeepDynamicValuesObservationsAndMovedO
 }
 
 TEST_P(ExpressionContractTest, SkippedTemplatesDoNotObserveLinksContentOrDynamicFields) {
-  constexpr auto kPrimaries = std::to_array<std::string_view>({"-cmp", "-similar", "-diff", "-hasheq"});
+  constexpr auto kPrimaries = std::to_array<std::string_view>({"-cmp", "-similar", "-diff", "-rdiff", "-hasheq"});
   for (const auto primary : kPrimaries) {
     SCOPED_TRACE(primary);
     ASSERT_OK_AND_ASSIGN(const auto command, Parse({".", "-false", "-a", std::string(primary), "{hash}"}));

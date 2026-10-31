@@ -1,7 +1,32 @@
 <!-- SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# 0.9.0
+# 0.11.0
+
+# 0.10.0
+
+- Verify staged release executables generate Git-applicable comparison patches for binary and empty-file additions, removals, and updates, including reverse application.
+
+- Reject command-line file-diff normalization options without a `-diff` or `-rdiff` consumer before actions run, including byte-exact comparison commands.
+
+- Honor `--no-ignore` / `-u` for ordinary explicit `--ignore-file` rules as well as discovered and comparison ignore rules.
+
+- Emit Git-applicable comparison patches for empty files, binary updates, symlinks, executable-mode
+  changes, and type replacements. Include executable capability in comparison equality.
+
+- Add repeatable `--compare-ignore-file=PATH`, `--compare-left-ignore-file=PATH`, and
+  `--compare-right-ignore-file=PATH` to apply explicit gitignore-format rules relative to both
+  comparison roots or one side, independently of the rules file's location.
+
+# 0.9.1
+
+- Make `-diff TARGET` emit TARGET-to-found changes and add `-rdiff [TARGET]` for the reverse.
+  Omitted TARGET creates or deletes files respectively, including binary files, empty files,
+  executable modes, and symlinks. Use `-rdiff TARGET` for the previous explicit `-diff` direction.
+
+- Add independent left/right patch path stripping, injected roots, ordered regex rewrites, and
+  literal prefixes to diff actions and comparison patches. Reject invalid destinations and path
+  collisions; show useful basenames when comparing two file roots.
 
 - Prepare expression callbacks and invariant operands once per run; reuse compiled coordinator
   matchers and initialize private worker matchers on demand. Report native preparation in `--explain`.

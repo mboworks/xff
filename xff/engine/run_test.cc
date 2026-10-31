@@ -623,6 +623,32 @@ TEST_F(RunTest, CompareUsesTheRequestedIgnorePolicyIndependentlyOnEachSide) {
   EXPECT_THAT(last_errors_, 0);
 
   EXPECT_THAT(
+      RunArgvRecords({"--compare", "--compare-ignore=left", left.string(), right.string()}),
+      ElementsAre(
+          "different\t.gitignore", "different\tchanged", "left-only\tleft-only", "right-only\tright-ignored",
+          "right-only\tright-only"));
+  EXPECT_THAT(last_errors_, 0);
+
+  EXPECT_THAT(
+      RunArgvRecords({"--compare", "--compare-ignore=right", left.string(), right.string()}),
+      ElementsAre(
+          "different\t.gitignore", "different\tchanged", "left-only\tleft-ignored", "left-only\tleft-only",
+          "right-only\tright-only"));
+  EXPECT_THAT(last_errors_, 0);
+
+  EXPECT_THAT(
+      RunArgvRecords({"--compare", "--compare-ignore=union", left.string(), right.string()}),
+      ElementsAre("different\t.gitignore", "different\tchanged", "left-only\tleft-only", "right-only\tright-only"));
+  EXPECT_THAT(last_errors_, 0);
+
+  EXPECT_THAT(
+      RunArgvRecords({"--compare", "--compare-ignore=none", left.string(), right.string()}),
+      ElementsAre(
+          "different\t.gitignore", "different\tchanged", "left-only\tleft-ignored", "left-only\tleft-only",
+          "right-only\tright-ignored", "right-only\tright-only"));
+  EXPECT_THAT(last_errors_, 0);
+
+  EXPECT_THAT(
       RunArgvRecords({"--compare=status", "--compare-select=identical", left.string(), right.string()}),
       ElementsAre("identical\t.", "identical\tnested", "identical\tsame"));
   EXPECT_THAT(last_errors_, 0);
@@ -630,12 +656,12 @@ TEST_F(RunTest, CompareUsesTheRequestedIgnorePolicyIndependentlyOnEachSide) {
   const std::vector<std::string> patch =
       RunArgvRecords({"--compare=diff", "--compare-select=different", left.string(), right.string()});
   EXPECT_THAT(patch, Contains(HasSubstr("--- a/.gitignore\n+++ b/.gitignore")));
-  EXPECT_THAT(patch, Contains("Binary files a/changed and b/changed differ"));
+  EXPECT_THAT(patch, Contains(HasSubstr("GIT binary patch")));
   EXPECT_THAT(last_errors_, 0);
 
   const std::vector<std::string> complete_patch = RunArgvRecords({"--compare=diff", left.string(), right.string()});
-  EXPECT_THAT(complete_patch, Contains(HasSubstr("--- a/left-only\n+++ /dev/null")));
-  EXPECT_THAT(complete_patch, Contains(HasSubstr("--- /dev/null\n+++ b/right-only")));
+  EXPECT_THAT(complete_patch, Contains(HasSubstr("--- \"a/left-only\"\n+++ /dev/null")));
+  EXPECT_THAT(complete_patch, Contains(HasSubstr("--- /dev/null\n+++ \"b/right-only\"")));
   EXPECT_THAT(last_errors_, 0);
 }
 
@@ -758,8 +784,9 @@ TEST_F(RunTest, CompareHandlesFileKindsAndTraversalOptions) {
       RunArgvRecords({"--compare", "--no-hidden", left.string(), right.string()}),
       ElementsAre("different\tlink", "different\tsize-change", "different\ttype-change"));
   EXPECT_THAT(
-      RunArgvRecords({"--compare=diff", "--compare-select=different", left.string(), right.string()}),
-      Contains("Files a/link and b/link differ"));
+      RunArgvRecords(
+          {"--compare=diff", "--compare-select=different", "--exclude=.git/", left.string(), right.string()}),
+      Contains(HasSubstr("-target-a\n")));
   EXPECT_THAT(
       RunArgvRecords({"--compare", "--exclude=size-change", left.string(), right.string()}),
       Not(Contains("different\tsize-change")));
@@ -810,6 +837,437 @@ TEST_F(RunTest, CompareAppliesExplicitAndGlobalIgnoreFiles) {
           {"--compare", "--gitignore=on", "--ignore-file=" + explicit_ignore.string(), left.string(), right.string()}),
       IsEmpty());
   EXPECT_THAT(last_errors_, 0);
+
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--compare", "--compare-ignore=none", "--gitignore=on", "--ignore-file=" + explicit_ignore.string(),
+           left.string(), right.string()}),
+      ElementsAre("different\tglobal"));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, CompareIgnoreFileAppliesExternalAbsoluteRulesToBothRoots) {
+  const fs::path left = root_ / "external-left";
+  const fs::path right = root_ / "external-right";
+  const fs::path rules = root_ / "external.ignore";
+  ASSERT_THAT(fs::create_directories(left / "build"), IsTrue());
+  ASSERT_THAT(fs::create_directories(right / "build"), IsTrue());
+  { std::ofstream(rules) << "/build/\n*.log\n"; }
+  { std::ofstream(left / "build/left.dat") << "left"; }
+  { std::ofstream(right / "build/right.dat") << "right"; }
+  { std::ofstream(left / "skip.log") << "left"; }
+  { std::ofstream(right / "skip.log") << "right"; }
+  { std::ofstream(left / "keep.dat") << "same"; }
+  { std::ofstream(right / "keep.dat") << "same"; }
+  { std::ofstream(left / ".gitignore") << "keep.dat\n"; }
+  { std::ofstream(right / ".gitignore") << "keep.dat\n"; }
+
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--compare", "--compare-select=all", "--compare-ignore=none", "--compare-ignore-file=" + rules.string(),
+           left.string(), right.string(), "-type", "f"}),
+      ElementsAre("identical\t.gitignore", "identical\tkeep.dat"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--compare", "--compare-select=all", "--compare-ignore=none",
+           "--compare-ignore-file=" + fs::relative(rules).string(), left.string(), right.string(), "-type", "f"}),
+      ElementsAre("identical\t.gitignore", "identical\tkeep.dat"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--compare=diff", "--compare-ignore=none", "--compare-ignore-file=" + rules.string(), left.string(),
+           right.string(), "-type", "f", "-name", "*.log"}),
+      IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--compare", "--compare-select=all", "--compare-ignore=none", "--no-ignore",
+           "--compare-ignore-file=" + rules.string(), left.string(), right.string(), "-name", "*.log"}),
+      ElementsAre("different\tskip.log"));
+  EXPECT_THAT(last_errors_, Eq(0));
+}
+
+TEST_F(RunTest, CompareIgnoreFilesAccumulateInOrderBelowCliPatternsAndAboveDiscovery) {
+  const fs::path left = root_ / "ordered-left";
+  const fs::path right = root_ / "ordered-right";
+  ASSERT_THAT(fs::create_directories(left), IsTrue());
+  ASSERT_THAT(fs::create_directories(right), IsTrue());
+  const fs::path first = root_ / "first.ignore";
+  const fs::path second = root_ / "second.ignore";
+  { std::ofstream(first) << "*.dat\n"; }
+  { std::ofstream(second) << "!keep.dat\n"; }
+  { std::ofstream(left / ".gitignore") << "keep.dat\n"; }
+  { std::ofstream(right / ".gitignore") << "keep.dat\n"; }
+  { std::ofstream(left / "keep.dat") << "same"; }
+  { std::ofstream(right / "keep.dat") << "same"; }
+  { std::ofstream(left / "drop.dat") << "left"; }
+  { std::ofstream(right / "drop.dat") << "right"; }
+  const std::vector<std::string> args = {
+      "--compare",
+      "--compare-select=all",
+      "-g+",
+      "--ignore-file=" + first.string(),
+      "--compare-ignore-file=" + first.string(),
+      "--compare-ignore-file=" + second.string(),
+      left.string(),
+      right.string(),
+      "-name",
+      "*.dat",
+  };
+  EXPECT_THAT(RunArgvRecords(args), ElementsAre("identical\tkeep.dat"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  auto exclude = args;
+  exclude.push_back("--exclude=keep.dat");
+  EXPECT_THAT(RunArgvRecords(exclude), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+  auto include = args;
+  include.push_back("--include=drop.dat");
+  EXPECT_THAT(RunArgvRecords(include), ElementsAre("different\tdrop.dat", "identical\tkeep.dat"));
+  EXPECT_THAT(last_errors_, Eq(0));
+}
+
+TEST_F(RunTest, CompareIgnoreRelativeFilePathsUseWorkingDirectoryForEveryScope) {
+  const fs::path left = root_ / "relative-left";
+  const fs::path right = root_ / "relative-right";
+  const auto roots = std::to_array<fs::path>({left, right});
+  for (const fs::path& root : roots) {
+    ASSERT_THAT(fs::create_directories(root), IsTrue());
+    { std::ofstream(root / "keep.dat") << "same"; }
+    { std::ofstream(root / "skip.dat") << "same"; }
+  }
+  const fs::path rules = root_ / "outside.ignore";
+  { std::ofstream(rules) << "/skip.dat\n"; }
+  const fs::path relative = fs::relative(rules);
+  // The same argument cannot name a file relative to either root: this distinguishes the bases.
+  ASSERT_THAT(relative.is_absolute(), IsFalse());
+  ASSERT_THAT(fs::exists(left / relative), IsFalse());
+  ASSERT_THAT(fs::exists(right / relative), IsFalse());
+  const auto compare = [&](std::string_view flag) {
+    const auto records = RunArgvRecords({
+        "--compare",
+        "--compare-select=all",
+        absl::StrCat(flag, "=", relative.string()),
+        left.string(),
+        right.string(),
+        "-type",
+        "f",
+    });
+    EXPECT_THAT(last_errors_, Eq(0));
+    return records;
+  };
+  EXPECT_THAT(compare("--compare-ignore-file"), ElementsAre("identical\tkeep.dat"));
+  EXPECT_THAT(compare("--compare-left-ignore-file"), ElementsAre("identical\tkeep.dat", "right-only\tskip.dat"));
+  EXPECT_THAT(compare("--compare-right-ignore-file"), ElementsAre("identical\tkeep.dat", "left-only\tskip.dat"));
+}
+
+TEST_F(RunTest, CompareSideIgnoreFilesAnchorAtTheirRootsAndExcludeOnlyTheirSide) {
+  const fs::path left = root_ / "side-left";
+  const fs::path right = root_ / "side-right";
+  const auto roots = std::to_array<fs::path>({left, right});
+  constexpr auto names =
+      std::to_array<std::string_view>({"keep.dat", "left.dat", "right.dat", "drop.dat", "build/item.dat"});
+  for (const fs::path& root : roots) {
+    ASSERT_THAT(fs::create_directories(root / "build"), IsTrue());
+    for (const std::string_view name : names) {
+      {
+        std::ofstream(root / name) << "same";
+      }
+    }
+  }
+  const fs::path shared = root_ / "shared-side.ignore";
+  const fs::path left_rules = root_ / "left-side.ignore";
+  const fs::path right_rules = root_ / "right-side.ignore";
+  { std::ofstream(shared) << "drop.dat\n"; }
+  { std::ofstream(left_rules) << "/left.dat\n/build/\n"; }
+  { std::ofstream(right_rules) << "/right.dat\n"; }
+  const std::vector<std::string> args = {
+      "--compare",
+      "--compare-select=all",
+      "--compare-ignore=none",
+      "--compare-ignore-file=" + shared.string(),
+      "--compare-left-ignore-file=" + left_rules.string(),
+      "--compare-right-ignore-file=" + right_rules.string(),
+      left.string(),
+      right.string(),
+      "-type",
+      "f",
+  };
+  EXPECT_THAT(
+      RunArgvRecords(args),
+      ElementsAre("right-only\tbuild/item.dat", "identical\tkeep.dat", "right-only\tleft.dat", "left-only\tright.dat"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  auto disabled = args;
+  disabled.push_back("--no-ignore");
+  EXPECT_THAT(
+      RunArgvRecords(disabled), ElementsAre(
+                                    "identical\tbuild/item.dat", "identical\tdrop.dat", "identical\tkeep.dat",
+                                    "identical\tleft.dat", "identical\tright.dat"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  // Operand position, not root path equality, determines the side.
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--compare", "--compare-select=all", "--compare-left-ignore-file=" + left_rules.string(), left.string(),
+           left.string(), "-type", "f", "-name", "left.dat"}),
+      ElementsAre("right-only\tleft.dat"));
+  EXPECT_THAT(last_errors_, Eq(0));
+}
+
+TEST_F(RunTest, CompareSharedAndSideIgnoreFilesFollowArgumentOrderWithoutScopePriority) {
+  const fs::path left = root_ / "order-side-left";
+  const fs::path right = root_ / "order-side-right";
+  ASSERT_THAT(fs::create_directories(left), IsTrue());
+  ASSERT_THAT(fs::create_directories(right), IsTrue());
+  { std::ofstream(left / "keep.dat") << "same"; }
+  { std::ofstream(right / "keep.dat") << "same"; }
+  { std::ofstream(left / "drop.dat") << "same"; }
+  { std::ofstream(right / "drop.dat") << "same"; }
+  const fs::path deny = root_ / "side-deny.ignore";
+  const fs::path allow = root_ / "side-allow.ignore";
+  { std::ofstream(deny) << "*.dat\n"; }
+  { std::ofstream(allow) << "!keep.dat\n"; }
+  const auto check = [&](std::string_view side_flag, std::string_view expected, std::string_view excluded) {
+    EXPECT_THAT(
+        RunArgvRecords(
+            {"--compare", "--compare-ignore-file=" + deny.string(), absl::StrCat(side_flag, "=", allow.string()),
+             left.string(), right.string()}),
+        ElementsAre(expected));
+    EXPECT_THAT(last_errors_, Eq(0));
+    EXPECT_THAT(
+        RunArgvRecords(
+            {"--compare", absl::StrCat(side_flag, "=", allow.string()), "--compare-ignore-file=" + deny.string(),
+             left.string(), right.string()}),
+        IsEmpty());
+    EXPECT_THAT(last_errors_, Eq(0));
+    EXPECT_THAT(
+        RunArgvRecords(
+            {"--compare", absl::StrCat(side_flag, "=", deny.string()), absl::StrCat(side_flag, "=", allow.string()),
+             "--compare-select=all", left.string(), right.string(), "-name", "*.dat"}),
+        ElementsAre(excluded, "identical\tkeep.dat"));
+    EXPECT_THAT(last_errors_, Eq(0));
+  };
+  check("--compare-left-ignore-file", "left-only\tkeep.dat", "right-only\tdrop.dat");
+  check("--compare-right-ignore-file", "right-only\tkeep.dat", "left-only\tdrop.dat");
+}
+
+TEST_F(RunTest, CompareIgnoreFileRejectsInvalidRequestsBeforeWalking) {
+  const auto check = [&](const std::vector<std::string>& args, std::string_view message) {
+    MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse(args));
+    std::vector<std::string> records;
+    absl::Status reported;
+    const auto result = RunFind(
+        command, fs_, [&](std::string_view record) { records.emplace_back(record); },
+        [&](std::string_view, absl::Status status) { reported = std::move(status); });
+    EXPECT_THAT(records, IsEmpty());
+    EXPECT_THAT(result.errors, Eq(2));
+    EXPECT_THAT(reported.message(), HasSubstr(message));
+  };
+  const fs::path right = root_ / "errors-right";
+  ASSERT_THAT(fs::create_directories(right), IsTrue());
+  constexpr auto flags = std::to_array<std::string_view>({
+      "--compare-ignore-file",
+      "--compare-left-ignore-file",
+      "--compare-right-ignore-file",
+  });
+  for (const std::string_view flag : flags) {
+    check({absl::StrCat(flag, "=", Path("missing.ignore")), root_.string()}, "requires --compare");
+    check({"--compare", absl::StrCat(flag, "="), root_.string(), right.string()}, "non-empty path");
+    check({"--compare", std::string(flag), root_.string(), right.string()}, "non-empty path");
+    check(
+        {"--compare", absl::StrCat(flag, "=", Path("missing.ignore")), root_.string(), right.string()},
+        "missing.ignore");
+    check(
+        {"--compare", "--no-ignore", absl::StrCat(flag, "=", Path("missing.ignore")), root_.string(), right.string()},
+        "missing.ignore");
+    check({"--compare", absl::StrCat(flag, "=", right.string()), root_.string(), right.string()}, right.string());
+  }
+}
+
+TEST_F(RunTest, RootOnlyGitignoreDottedNameAllowlistKeepsUndottedDirectoriesTraversable) {
+  const fs::path left = root_ / "root-rules-left";
+  const fs::path right = root_ / "root-rules-right";
+  const auto roots = std::to_array<fs::path>({left, right});
+  for (const fs::path& root : roots) {
+    ASSERT_THAT(fs::create_directories(root / "plain"), IsTrue());
+    ASSERT_THAT(fs::create_directories(root / "open.dir"), IsTrue());
+    ASSERT_THAT(fs::create_directories(root / "closed.dir"), IsTrue());
+    { std::ofstream(root / ".gitignore") << "/*.*\n!/keep.txt\n!/open.dir/\n"; }
+    { std::ofstream(root / "keep.txt") << root.filename().string(); }
+    { std::ofstream(root / "skip.txt") << "skip"; }
+    { std::ofstream(root / "plain/child.txt") << "plain"; }
+    { std::ofstream(root / "open.dir/child.txt") << "open"; }
+    { std::ofstream(root / "closed.dir/child.txt") << "closed"; }
+  }
+  EXPECT_THAT(
+      RunArgvRecords({"-g+", left.string(), "-type", "f", "-name", "*.txt"}),
+      UnorderedElementsAre(
+          (left / "keep.txt").string(), (left / "plain/child.txt").string(), (left / "open.dir/child.txt").string()));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(
+      RunArgvRecords({"-g+", "--compare", "--compare-select=all", left.string(), right.string(), "-name", "*.txt"}),
+      ElementsAre("different\tkeep.txt", "identical\topen.dir/child.txt", "identical\tplain/child.txt"));
+  EXPECT_THAT(last_errors_, Eq(0));
+}
+
+TEST_F(RunTest, RootOnlyGitignoreAllowlistSelectsFilesAtMultipleDepthsWithoutNestedRules) {
+  const fs::path left = root_ / "recursive-allow-left";
+  const fs::path right = root_ / "recursive-allow-right";
+  const auto roots = std::to_array<fs::path>({left, right});
+  for (const fs::path& root : roots) {
+    ASSERT_THAT(fs::create_directories(root / "deep/inside"), IsTrue());
+    { std::ofstream(root / ".gitignore") << "*\n!*/\n!/keep.txt\n!/deep/inside/keep.txt\n"; }
+    { std::ofstream(root / "keep.txt") << root.filename().string(); }
+    { std::ofstream(root / "skip.txt") << "skip"; }
+    { std::ofstream(root / "deep/keep.txt") << "not anchored here"; }
+    { std::ofstream(root / "deep/inside/keep.txt") << root.filename().string(); }
+    { std::ofstream(root / "deep/inside/skip.txt") << "skip"; }
+  }
+  EXPECT_THAT(
+      RunArgvRecords({"-g+", left.string(), "-type", "f"}),
+      UnorderedElementsAre((left / "keep.txt").string(), (left / "deep/inside/keep.txt").string()));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(
+      RunArgvRecords({"-g+", "--compare", left.string(), right.string(), "-type", "f"}),
+      ElementsAre("different\tdeep/inside/keep.txt", "different\tkeep.txt"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(
+      RunArgvRecords({"-g+", left.string(), "-type", "f", "-diff"}),
+      AllOf(
+          Contains(HasSubstr("b/deep/inside/keep.txt")), Contains(HasSubstr("b/keep.txt")),
+          Not(Contains(HasSubstr("skip.txt"))), Not(Contains(HasSubstr("b/deep/keep.txt")))));
+  EXPECT_THAT(last_errors_, Eq(0));
+  // A root-only allowlist can also be projected onto a tree without its own rules.
+  { std::ofstream(right / ".gitignore") << ""; }
+  constexpr auto policies = std::to_array<std::string_view>({"left", "union"});
+  for (const std::string_view policy : policies) {
+    EXPECT_THAT(
+        RunArgvRecords(
+            {"-g+", "--compare", absl::StrCat("--compare-ignore=", policy), left.string(), right.string(), "-type",
+             "f"}),
+        ElementsAre("different\tdeep/inside/keep.txt", "different\tkeep.txt"));
+    EXPECT_THAT(last_errors_, Eq(0));
+  }
+}
+
+TEST_F(RunTest, RootOnlyGitignoreChildExceptionNeedsEveryParentAndRespectsLaterExclusions) {
+  const fs::path left = root_ / "parent-allow-left";
+  const fs::path right = root_ / "parent-allow-right";
+  const auto roots = std::to_array<fs::path>({left, right});
+  for (const fs::path& root : roots) {
+    ASSERT_THAT(fs::create_directories(root / "deep/inside"), IsTrue());
+    { std::ofstream(root / ".gitignore") << "*\n!/deep/inside/keep.txt\n"; }
+    { std::ofstream(root / "deep/inside/keep.txt") << root.filename().string(); }
+    { std::ofstream(root / "deep/inside/skip.txt") << "skip"; }
+  }
+  const std::vector<std::string> args = {"-g+", "--compare", left.string(), right.string(), "-type", "f"};
+  EXPECT_THAT(RunArgvRecords(args), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+  for (const fs::path& root : roots) {
+    {
+      std::ofstream(root / ".gitignore") << "*\n!/deep/\n!/deep/inside/keep.txt\n";
+    }
+  }
+  EXPECT_THAT(RunArgvRecords(args), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+  for (const fs::path& root : roots) {
+    {
+      std::ofstream(root / ".gitignore") << "*\n!/deep/\n!/deep/inside/\n!/deep/inside/keep.txt\n";
+    }
+  }
+  EXPECT_THAT(RunArgvRecords(args), ElementsAre("different\tdeep/inside/keep.txt"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  for (const fs::path& root : roots) {
+    {
+      std::ofstream(root / ".gitignore") << "*\n!*/\n!/deep/inside/keep.txt\n/deep/inside/keep.txt\n";
+    }
+  }
+  EXPECT_THAT(RunArgvRecords(args), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+}
+
+TEST_F(RunTest, GitignoreAllowlistMustKeepParentsTraversableForNestedRules) {
+  const fs::path left = root_ / "allowlist-left";
+  const fs::path right = root_ / "allowlist-right";
+  ASSERT_THAT(fs::create_directories(left / "foo.dir"), IsTrue());
+  ASSERT_THAT(fs::create_directories(right / "foo.dir"), IsTrue());
+  { std::ofstream(left / ".gitignore") << "/*.*\n"; }
+  { std::ofstream(right / ".gitignore") << "/*.*\n"; }
+  { std::ofstream(left / "foo.dir/.gitignore") << "*.txt\n!keep.txt\n"; }
+  { std::ofstream(right / "foo.dir/.gitignore") << "*.txt\n!keep.txt\n"; }
+  { std::ofstream(left / "foo.dir/keep.txt") << "left\n"; }
+  { std::ofstream(right / "foo.dir/keep.txt") << "right\n"; }
+  { std::ofstream(left / "foo.dir/skip.txt") << "left\n"; }
+  { std::ofstream(right / "foo.dir/skip.txt") << "right\n"; }
+  const std::vector<std::string> args = {"--compare", "-g+", left.string(), right.string(), "-name", "*.txt"};
+  EXPECT_THAT(RunArgvRecords(args), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+  // Restoring the parent makes its nested rules reachable; keep.txt is then re-included.
+  { std::ofstream(left / ".gitignore") << "/*.*\n!/foo.dir\n"; }
+  { std::ofstream(right / ".gitignore") << "/*.*\n!/foo.dir\n"; }
+  EXPECT_THAT(RunArgvRecords(args), ElementsAre("different\tfoo.dir/keep.txt"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(
+      RunArgvRecords({"-g+", left.string(), "-name", "*.txt", "-diff", (right / "foo.dir/keep.txt").string()}),
+      AllOf(Contains(HasSubstr("+left")), Not(Contains(HasSubstr("skip.txt")))));
+  EXPECT_THAT(last_errors_, Eq(0));
+}
+
+TEST_F(RunTest, CompareIgnoreRequiresTreeComparison) {
+  EXPECT_THAT(RunArgvRecords({"--compare-ignore=left", root_.string()}), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(2));
+}
+
+TEST_F(RunTest, CompareIgnorePoliciesMapNestedRulesByRelativePath) {
+  const fs::path left = root_ / "policy-left";
+  const fs::path right = root_ / "policy-right";
+  ASSERT_THAT(fs::create_directories(left / "nested"), IsTrue());
+  ASSERT_THAT(fs::create_directories(right / "nested"), IsTrue());
+  { std::ofstream(left / ".gitignore") << "left-only.dat\n"; }
+  { std::ofstream(right / ".gitignore") << "right-only.dat\n"; }
+  { std::ofstream(left / "nested/.gitignore") << "nested-left.dat\n"; }
+  { std::ofstream(right / "nested/.gitignore") << "nested-right.dat\n"; }
+  { std::ofstream(left / "shared.dat") << "same"; }
+  { std::ofstream(right / "shared.dat") << "same"; }
+  { std::ofstream(left / "left-only.dat") << "left"; }
+  { std::ofstream(right / "right-only.dat") << "right"; }
+  { std::ofstream(left / "nested/nested-left.dat") << "left"; }
+  { std::ofstream(right / "nested/nested-right.dat") << "right"; }
+
+  const auto compare = [&](std::string_view ignore_policy) {
+    return RunArgvRecords({
+        "--compare",
+        "--compare-select=all",
+        "--gitignore=on",
+        absl::StrCat("--compare-ignore=", ignore_policy),
+        left.string(),
+        right.string(),
+        "-type",
+        "f",
+        "-name",
+        "*.dat",
+    });
+  };
+  EXPECT_THAT(compare("respective"), ElementsAre("identical\tshared.dat"));
+  EXPECT_THAT(
+      compare("left"),
+      ElementsAre("right-only\tnested/nested-right.dat", "right-only\tright-only.dat", "identical\tshared.dat"));
+  EXPECT_THAT(
+      compare("right"),
+      ElementsAre("left-only\tleft-only.dat", "left-only\tnested/nested-left.dat", "identical\tshared.dat"));
+  EXPECT_THAT(compare("union"), ElementsAre("identical\tshared.dat"));
+  EXPECT_THAT(
+      compare("none"),
+      ElementsAre(
+          "left-only\tleft-only.dat", "left-only\tnested/nested-left.dat", "right-only\tnested/nested-right.dat",
+          "right-only\tright-only.dat", "identical\tshared.dat"));
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--compare", "--compare-select=all", "--gitignore=on", "--no-ignore", "--compare-ignore=left", left.string(),
+           right.string(), "-type", "f", "-name", "*.dat"}),
+      ElementsAre(
+          "left-only\tleft-only.dat", "left-only\tnested/nested-left.dat", "right-only\tnested/nested-right.dat",
+          "right-only\tright-only.dat", "identical\tshared.dat"));
+  EXPECT_THAT(last_errors_, Eq(0));
 }
 
 TEST_F(RunTest, CompareValidatesRootsSelectionsAndDiffOptions) {
@@ -1664,7 +2122,7 @@ TEST_F(RunTest, DiffFormatAndContextGlobalsSetTheDefaults) {
   // --diff-format=normal switches to the `NcN` normal format (no unified `@@` hunk header).
   EXPECT_THAT(
       RunArgvRecords({"--diff-format=normal", root_.string(), "-name", "one.txt", "-diff", two}),
-      ElementsAre(AllOf(HasSubstr("4c4"), HasSubstr("< d"), HasSubstr("> X"), Not(HasSubstr("@@")))));
+      ElementsAre(AllOf(HasSubstr("4c4"), HasSubstr("< X"), HasSubstr("> d"), Not(HasSubstr("@@")))));
 }
 
 TEST_F(RunTest, ContextGlobalFeedsDiffContextWhenSymmetric) {
@@ -1725,6 +2183,51 @@ TEST_F(RunTest, IgnoreFileExcludesMatchingEntriesRootedAtItsOwnDir) {
   const std::vector<std::string> out =
       RunArgvRecords({"--ignore-file=" + Path("my.ignore"), root_.string(), "-type", "f"});
   EXPECT_THAT(out, AllOf(Contains(Path("a.txt")), Not(Contains(Path("keep.log")))));
+}
+
+TEST_F(RunTest, NoIgnoreDisablesExplicitRuleFilesInEitherArgumentOrderWithoutDisablingCliPatterns) {
+  { std::ofstream(root_ / "keep.log") << "keep"; }
+  { std::ofstream(root_ / "drop.log") << "drop"; }
+  { std::ofstream(root_ / "rules.ignore") << "*.log\n"; }
+  const std::string rules = "--ignore-file=" + Path("rules.ignore");
+  EXPECT_THAT(RunArgvRecords({rules, root_.string(), "-name", "*.log"}), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+  constexpr auto disable_flags = std::to_array<std::string_view>({"--no-ignore", "-u"});
+  for (const std::string_view disable : disable_flags) {
+    EXPECT_THAT(
+        RunArgvRecords({std::string(disable), rules, root_.string(), "-name", "*.log"}),
+        UnorderedElementsAre(Path("keep.log"), Path("drop.log")));
+    EXPECT_THAT(last_errors_, Eq(0));
+    EXPECT_THAT(
+        RunArgvRecords({rules, std::string(disable), root_.string(), "-name", "*.log"}),
+        UnorderedElementsAre(Path("keep.log"), Path("drop.log")));
+    EXPECT_THAT(last_errors_, Eq(0));
+    EXPECT_THAT(
+        RunArgvRecords({rules, std::string(disable), "--exclude=drop.log", root_.string(), "-name", "*.log"}),
+        ElementsAre(Path("keep.log")));
+    EXPECT_THAT(last_errors_, Eq(0));
+  }
+}
+
+TEST_F(RunTest, NoIgnoreDisablesOrdinaryExplicitRulesDuringComparison) {
+  const fs::path left = root_ / "disable-left";
+  const fs::path right = root_ / "disable-right";
+  ASSERT_THAT(fs::create_directories(left), IsTrue());
+  ASSERT_THAT(fs::create_directories(right), IsTrue());
+  { std::ofstream(left / "value.dat") << "left\n"; }
+  { std::ofstream(right / "value.dat") << "right\n"; }
+  { std::ofstream(root_ / "comparison.ignore") << "*.dat\n"; }
+  const std::string rules = "--ignore-file=" + Path("comparison.ignore");
+  EXPECT_THAT(RunArgvRecords({"--compare", rules, left.string(), right.string(), "-type", "f"}), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(
+      RunArgvRecords({"--compare", rules, "--no-ignore", left.string(), right.string(), "-type", "f"}),
+      ElementsAre("different\tvalue.dat"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(
+      RunArgvRecords({"--compare=diff", "--no-ignore", rules, left.string(), right.string(), "-type", "f"}),
+      Contains(HasSubstr("-left\n+right")));
+  EXPECT_THAT(last_errors_, Eq(0));
 }
 
 TEST_F(RunTest, IgnoreFileRootsAtItsOwnDirectoryNotTheSearchRoot) {

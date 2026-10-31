@@ -35,11 +35,11 @@ include("//bazelmod:llvm.MODULE.bazel")
 
 bazel_dep(name = "bazel_skylib", version = "1.9.2")
 bazel_dep(name = "platforms", version = "1.1.0")
-bazel_dep(name = "rules_cc", version = "0.2.25")
+bazel_dep(name = "rules_cc", version = "0.2.26")
 bazel_dep(name = "rules_fuzzing", version = "0.8.0")
 bazel_dep(name = "rules_shell", version = "0.8.0")
-bazel_dep(name = "aspect_rules_py", version = "1.12.1")
-bazel_dep(name = "rules_python", version = "2.3.4")
+bazel_dep(name = "aspect_rules_py", version = "1.13.0")
+bazel_dep(name = "rules_python", version = "2.4.5")
 
 # Aspect owns Python rules; rules_python supplies the pinned standalone interpreter.
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
@@ -60,14 +60,7 @@ single_version_override(
     patches = ["//bazelmod:abseil-lazy-corefoundation.patch"],
 )
 bazel_dep(name = "re2", version = "2025-11-05.bcr.1")
-bazel_dep(name = "utf8proc", version = "2.11.0")
-
-# The published BUILD still uses native C++ rules removed in Bazel 9.
-single_version_override(
-    module_name = "utf8proc",
-    patch_strip = 1,
-    patches = ["//bazelmod:utf8proc-bazel9.patch"],
-)
+bazel_dep(name = "utf8proc", version = "2.12.0")
 
 bazel_dep(name = "googletest", version = "1.18.0.bcr.1")
 bazel_dep(name = "google_benchmark", version = "1.9.5", repo_name = "com_github_google_benchmark")
@@ -88,4 +81,10 @@ git_override(
     remote = "https://github.com/mboworks/mbo.git",
 )
 bazel_dep(name = "nlohmann_json", version = "3.12.0.bcr.2")
-bazel_dep(name = "mboworks_bashtest", version = "0.6.1")
+bazel_dep(name = "mboworks_bashtest", version = "0.7.0")
+# Keep test execution properties on the outer test, not its binary launchers.
+single_version_override(
+    module_name = "mboworks_bashtest",
+    patch_strip = 1,
+    patches = ["//bazelmod:bashtest-launcher-exec-properties.patch"],
+)
