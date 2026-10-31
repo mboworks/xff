@@ -1,0 +1,1075 @@
+<!doctype html><html lang="en">
+<!-- mboworks favicons -->
+<link rel="icon" href="../../../../favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../../favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../../../apple-touch-icon.png">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design-expression-program.md - xff v0.9.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.9.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.9.0">Release &amp; downloads</a><a href="/xff/releases/0.9.0/">CLI reference</a><a href="/xff/coverage/tag/0.9.0/">Coverage</a><a href="/xff/benchmarks/tag/0.9.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/8e95f5546187b2a6f4ec165af9cf794af18ac4a1">Source</a><a href="/xff/site/tag/v0.9.0/documents.html">Documentation</a></nav><p>xff v0.9.0</p><main><h1 dir="auto" id="prepared-expression-programs-and-optimization-plan">Prepared expression programs and optimization plan</h1>
+<p dir="auto">Status: implementation and qualification are in progress. The production candidate uses prepared<br>
+recursion; alternative programs and optimizers remain test-only. Acceptance is pending native CI,<br>
+integration coverage and final resource evidence. Earlier stage measurements below record decisions,<br>
+not current-head validation. Benchmark publication and parser-lookup experiments remain independent.</p>
+<h2 dir="auto" id="objective-and-inspected-baseline">Objective and inspected baseline</h2>
+<p dir="auto">Move invariant expression work out of the per-entry path. Parse and validate once, resolve<br>
+configuration, prepare operands and execution state, then execute a compact program with bound<br>
+operations. Preserve observable behavior, VFS routing, safety enforcement and existing worker<br>
+eligibility. Do not promise zero overhead: matching, indirect calls, branches, memory access and<br>
+output still cost time.</p>
+<p dir="auto">Inspected on 2026-10-04 against XFF main <code class="notranslate">6f9c05aa15</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5692716432" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/956" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/956/hovercard" href="https://github.com/mboworks/xff/pull/956">#956</a>), refreshed before planning:</p>
+<ul dir="auto">
+<li><a href="https://github.com/mboworks/xff/blob/8e95f5546187b2a6f4ec165af9cf794af18ac4a1/xff/parser/parser.cc"><code class="notranslate">parser::Parse</code></a> calls <code class="notranslate">ParseArguments</code> and then <code class="notranslate">ExprParser</code> once.<br>
+Per-entry execution does not repeat either parser pass.</li>
+<li><a href="https://github.com/mboworks/xff/blob/8e95f5546187b2a6f4ec165af9cf794af18ac4a1/xff/cli/config_validation.cc"><code class="notranslate">ApplyResolvedConfig</code></a> parses configuration expressions and<br>
+combines them with the CLI tree. Final case/grammar binding happens after configuration resolution.</li>
+<li><a href="https://github.com/mboworks/xff/blob/8e95f5546187b2a6f4ec165af9cf794af18ac4a1/xff/engine/evaluate.cc"><code class="notranslate">EvaluateResult</code></a> recursively interprets expression nodes.<br>
+<code class="notranslate">EvaluatePredicate</code> looks up the handler by descriptor name in a constexpr <code class="notranslate">LimitedMap</code> for<br>
+every reached predicate. Some constant operands are decoded again: <code class="notranslate">MatchesSize</code> calls<br>
+<code class="notranslate">ParseSizeSpec</code>, numeric tests decode comparisons, and <code class="notranslate">EvalMime</code> lowercases its pattern.</li>
+<li>Regex matchers and field transformations already have preparation paths; reuse these rather<br>
+than creating a second compiler for them.</li>
+<li><a href="https://github.com/mboworks/xff/blob/8e95f5546187b2a6f4ec165af9cf794af18ac4a1/xff/engine/evaluate.h"><code class="notranslate">evaluate.h</code></a> indexes worker matchers, deferred decisions, memoized<br>
+results and counters by <code class="notranslate">ExprIdentity</code> in maps. Deferred evaluation carries truth, fuzzy score,<br>
+suspension and unknown results; it is not ordinary two-valued boolean evaluation.</li>
+<li><a href="https://github.com/mboworks/xff/blob/8e95f5546187b2a6f4ec165af9cf794af18ac4a1/xff/registry/descriptor.h"><code class="notranslate">Descriptor</code></a> already supplies cost, purity, metadata, safety,<br>
+binding, control and worker eligibility. Its <code class="notranslate">pure</code> comment currently suggests reorderability;<br>
+that must be clarified before an optimizer relies on it. Purity alone is insufficient.</li>
+</ul>
+<p dir="auto">Related evidence: <a href="performance-analysis.html">performance analysis</a>, especially the registered<br>
+mode parser experiments, worker-state work and metadata-demand sections.</p>
+<h2 dir="auto" id="data-structure-audit">Data-structure audit</h2>
+<p dir="auto">XFF pins MBO commit <code class="notranslate">c854476fb9bf22b6dc372a756d80831f7655d60e</code> through a git override, despite<br>
+the dependency's declared release version. The audit also inspected the newer local MBO checkout<br>
+at <code class="notranslate">df11721e7b</code>. MBO <a href="https://github.com/mboworks/mbo/pull/550" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/mbo/pull/550/hovercard">PR #550</a> subsequently merged<br>
+experimental <code class="notranslate">FrozenMap</code> / <code class="notranslate">FrozenSet</code> at <code class="notranslate">bf65c21c495fc789feab79f4516d1ae7215cb292</code>.<br>
+The API and implementation audit below includes that commit. These newer APIs are not present in<br>
+XFF's pin; no MBO files or dependency versions were changed for this plan.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Need</th>
+<th>Available now</th>
+<th>Decision / missing work</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Compile-time maps and sets</td>
+<td>MBO <code class="notranslate">LimitedMap</code> / <code class="notranslate">LimitedSet</code> are constexpr-capable ordered, fixed-capacity containers</td>
+<td>Already available; they are not hash tables. Keep as the small-table baseline.</td>
+</tr>
+<tr>
+<td>Exact mode-dependent flag lookup</td>
+<td>XFF <code class="notranslate">SpellingIndex</code> constructs sorted per-mode arrays at compile time</td>
+<td>Already available; preserves aliases and exact unknown-token rejection.</td>
+</tr>
+<tr>
+<td>Compile-time string hashing</td>
+<td>MBO hash algorithms expose constexpr hashing, including tested FNV-1a and other algorithms</td>
+<td>Already available; choose using short-key measurements, not a new ad hoc hash.</td>
+</tr>
+<tr>
+<td>Frozen/perfect-hash string map and set</td>
+<td>Upstream MBO experimental <code class="notranslate">FrozenMap</code> / <code class="notranslate">FrozenSet</code> from PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5166022664" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/550" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/550/hovercard" href="https://github.com/mboworks/xff/pull/550">#550</a>; absent from XFF's pin</td>
+<td>Available for a measured dependency-update experiment in startup lookup; not a prerequisite for the executor.</td>
+</tr>
+<tr>
+<td>Typed node, instruction and slot IDs</td>
+<td>MBO <code class="notranslate">ConstStrongId</code> / <code class="notranslate">ConstStrongOrdinal</code> are in the pinned revision</td>
+<td>Reuse distinct tags; XFF still needs the ID assignment and slot-layout design.</td>
+</tr>
+<tr>
+<td>Contiguous immutable instruction storage</td>
+<td><code class="notranslate">std::vector</code> with reserve and standard arrays/spans</td>
+<td>Sufficient initially. Count nodes, reserve once, then freeze; do not add a container.</td>
+</tr>
+<tr>
+<td>Stable growing records and owned text</td>
+<td>Pinned MBO <code class="notranslate">SegmentedVector</code>, <code class="notranslate">SegmentedDeque</code> and <code class="notranslate">Arena</code></td>
+<td>Available when lifetime/address stability requires them; benchmark against reserved vectors.</td>
+</tr>
+<tr>
+<td>Runtime associative lookup</td>
+<td>Abseil flat hash maps/sets and existing ordered maps</td>
+<td>Available for preparation. Do not replace ordered observable output with hash iteration.</td>
+</tr>
+<tr>
+<td>Dynamic string-to-ID/value mapping</td>
+<td>Newer MBO has experimental <code class="notranslate">StringInterner</code> / <code class="notranslate">StringInternerMap</code>; absent from the XFF pin</td>
+<td>Candidate for captures, definitions and dynamic catalogs after a separate dependency decision.</td>
+</tr>
+<tr>
+<td>Persistent/shared maps</td>
+<td>Newer MBO has experimental HAMT map/set variants; absent from the XFF pin</td>
+<td>No demonstrated need for persistent snapshots in the immutable execution program.</td>
+</tr>
+<tr>
+<td>Per-worker and suspended-entry state</td>
+<td>Existing maps, but no prepared dense execution-slot layout</td>
+<td>XFF-specific work: indexed slots, validity tracking and compact suspended-state records.</td>
+</tr>
+<tr>
+<td>Optimization effects and dependencies</td>
+<td>Existing descriptor fields cover only part of the contract</td>
+<td>XFF-specific work: totality, observations, state reads/writes, invalidation and explicit barriers.</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">The core executor requires no new general-purpose container or dependency upgrade. The missing<br>
+pieces are its representation and semantic contracts. A constexpr hash table improves name-to-ID<br>
+resolution during preparation; the prepared per-entry path should perform neither hashing nor<br>
+flag-name lookup. A HAMT or interner in that path would retain work that binding can remove.<br>
+Registry tables can be built at C++ compile time; the user's particular program is prepared at<br>
+runtime once its CLI and configuration are known. The two preparation times must not be confused.</p>
+<h3 dir="auto" id="optional-frozen-hash-mapset-contract">Optional frozen hash map/set contract</h3>
+<p dir="auto">MBO's experimental containers now provide the planned facility. The requirements for adopting<br>
+them in XFF remain:</p>
+<ol dir="auto">
+<li>Build immutable, statically stored tables from constexpr entries; set and map share key-index<br>
+construction. Use length-aware borrowed keys with static lifetime and typed mapped values.</li>
+<li>Reject conflicting duplicate keys during constant evaluation. Construct each mode from the<br>
+registry's declared spellings; permit the same spelling to mean something else in another mode.</li>
+<li>For the perfect-hash variant, verify unique occupied slots for the registered key set at<br>
+compile time. A unique full hash does not prove collision-free bucket placement. Bound seed or<br>
+displacement search and issue a clear construction failure instead of exhausting compiler resources.</li>
+<li>Always compare the candidate's full spelling on lookup. Unknown input can hit an occupied slot<br>
+even when all registered keys are collision-free. Handle empty, embedded-NUL, non-ASCII byte and<br>
+long unknown inputs safely; never index by a signed character.</li>
+<li>Require constexpr/runtime hash equivalence, allocation-free lookup, no dynamic initialization,<br>
+explicit absent results and checked construction bounds. Use XFF's optional-reference/value<br>
+conventions at its interface. Preserve deterministic generation across supported compilers.</li>
+<li>Test zero/one/many keys, duplicate diagnostics, unsuccessful construction, adversarial misses,<br>
+aliases and all modes. Measure build time, constexpr evaluation cost, object/rodata size and<br>
+whole-command startup alongside lookup latency. A non-minimal sparse perfect table may beat a<br>
+minimal one; neither should be selected from asymptotic complexity alone.</li>
+</ol>
+<p dir="auto">Compare the existing sorted index and <code class="notranslate">LimitedMap</code>, the bounded-probing prototype, a frozen perfect<br>
+table, and the compact/direct trie experiments behind the same exact-lookup interface. A trie may<br>
+help token scanning as well as spelling lookup, but would need an explicit operand-boundary design.<br>
+Do not turn failure to find a fast frozen table into a blocker for expression execution work.</p>
+<h3 dir="auto" id="frozenmapset-adoption-check-after-mbo-550-and-553">FrozenMap/Set adoption check after MBO <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5166022664" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/550" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/550/hovercard" href="https://github.com/mboworks/xff/pull/550">#550</a> and <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5166568632" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/553" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/553/hovercard" href="https://github.com/mboworks/xff/pull/553">#553</a></h3>
+<p dir="auto">The merged <a href="https://github.com/mboworks/mbo/blob/bf65c21c495fc789feab79f4516d1ae7215cb292/mbo/container/experimental/FROZEN.md">API documentation</a><br>
+and headers satisfy the structural requirements: constexpr inline immutable storage, shared map/set<br>
+index construction, bounded displacement search, occupied-slot verification and exact candidate<br>
+equality on lookup. <code class="notranslate">FrozenMap::lookup</code> returns <code class="notranslate">OptionalRef&lt;const Value&gt;</code>, so XFF does not need a<br>
+raw-pointer adapter. Distinct aliases can share a mapped ID; build each mode separately to preserve<br>
+different meanings for the same spelling. Conflicting duplicate mappings fail construction.</p>
+<p dir="auto">Use registry-generated <code class="notranslate">std::string_view</code> to entry-ID pairs with static backing storage. Preserve<br>
+the existing exact miss result and mode switching. <code class="notranslate">FrozenSet</code> is useful only for membership-only<br>
+tables; flag dispatch needs the map's associated entry. Do not introduce a second spelling catalog<br>
+or hash flag names inside the prepared per-entry executor.</p>
+<p dir="auto">The first experiment should compare default sparse placement (twice capacity) and minimal placement<br>
+against the current sorted index on the actual XFF/find/rg vocabularies. Include hits, misses,<br>
+aliases, full parser commands, compile time and binary/read-only storage cost. Verify Clang and GCC<br>
+constant evaluation within their normal budgets. The default limits are 4,096 entries, 65,536 total<br>
+key bytes and 65,536 construction work units; actual registry construction must fit, or justify an<br>
+explicit bounded option change. A distinct-key full-hash collision is rejected, not silently handled<br>
+by a runtime fallback. The experimental API and container measurements alone do not establish an<br>
+XFF startup speedup. Pin the inspected MBO commit in the experiment and retain the current production<br>
+index until those application measurements justify replacement.</p>
+<p dir="auto">MBO <a href="https://github.com/mboworks/mbo/pull/553" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/mbo/pull/553/hovercard">PR #553</a>, merged at<br>
+<code class="notranslate">9d11197da77646e4fa98aa69f5340a636cde2e6f</code>, changes the string default from FNV-1a to fambo.<br>
+Its retained Apple M5 Pro measurements revise the earlier negative assessment: the 64-key sparse<br>
+map's mixed lookup falls from 11.16 to 5.97 ns in the hash comparison; the follow-up default check<br>
+measures 5.98 ns. These are fixed ten-byte keys in a warm cyclic workload, not XFF flag measurements.<br>
+Hash cost was material; Frozen containers are viable candidates again, with fambo as the baseline.</p>
+<p dir="auto">Known registries permit a simpler corpus-specific hash if it wins. Generate candidates from the<br>
+registry rather than duplicating spellings: for example length and selected byte positions with<br>
+small mixing constants. Prove construction for each mode at compile time. Distinct full hashes<br>
+alone are insufficient: verify occupied-slot placement, preserve alias-to-ID mappings, and keep<br>
+exact key equality for unknown inputs. Every selected-byte read must also be valid for empty or<br>
+short unknown tokens. Test similar prefixes/suffixes, edited spellings and unsupported-mode flags.<br>
+Reject an unsuitable candidate at construction instead of adding a runtime collision fallback.</p>
+<p dir="auto">Compare total lookup cost and table footprint, not hash speed alone. The existing sorted index,<br>
+bounded-probing prototype, standard unordered containers, default fambo Frozen and any simpler<br>
+perfect-placement candidate belong in the same application experiment. Include sparse/minimal<br>
+layouts, full commands, normal constexpr budgets and both native platforms. The prepared executor<br>
+continues to avoid per-entry name lookup regardless of which index serves startup parsing.</p>
+<h2 dir="auto" id="program-architecture">Program architecture</h2>
+<h3 dir="auto" id="preparation-boundary-and-ownership">Preparation boundary and ownership</h3>
+<p dir="auto">The logical pipeline is:</p>
+<pre lang="text" class="notranslate"><code class="notranslate">argv / INI tokens -&gt; mode-aware argument pass -&gt; parsed expression
+    -&gt; resolved configuration and whole-command validation
+    -&gt; bound operands and effects -&gt; optional optimization -&gt; execution program
+    -&gt; immutable shared program + worker-local scratch -&gt; entry results / effects
+</code></pre>
+<p dir="auto">The expression pass creates the intermediate representation. Final lowering must wait for resolved<br>
+configuration, case/grammar, block units, timezone/reference time, output defaults and safety policy.<br>
+Do not push engine dependencies or VFS operations into the CLI parser merely to combine passes.<br>
+Measure preparation as a whole before trying to fuse its internal passes.</p>
+<p dir="auto">A run-owned object owns the syntax/provenance needed for diagnostics, prepared operand pools and<br>
+the frozen program. Workers and suspended entries cannot outlive it. Assign stable source-node IDs<br>
+before rewriting; preserve a mapping from optimized instructions to original expressions. Keep<br>
+configuration/CLI origin information where available, and add an explicit source record if current<br>
+AST data is insufficient. IDs are process-local implementation details, not a serialized ABI.</p>
+<h3 dir="auto" id="instructions-operands-and-outcomes">Instructions, operands and outcomes</h3>
+<p dir="auto">Begin with a bound-tree implementation to isolate handler-binding gains. Then compare a contiguous<br>
+instruction array with a small opcode-switch executor against bound function-pointer instructions.<br>
+Avoid allocating <code class="notranslate">std::function</code> closures per node. Do not depend on recursive tail-call elimination,<br>
+computed-goto extensions or machine-code generation for the first implementation.</p>
+<p dir="auto">An instruction needs an operation, a typed operand/operand-pool index, source-node identity and<br>
+explicit control-flow destinations. Keep cold diagnostic strings outside frequently visited records.<br>
+Use separate tagged IDs for instruction positions, source nodes and state slots; check overflow and<br>
+invalid targets during construction. Select index widths from measured program sizes, not assumptions.</p>
+<p dir="auto">For the unscored, non-deferred subset, a program can look like:</p>
+<pre lang="text" class="notranslate"><code class="notranslate">0  test_file_type(regular)       true -&gt; 1, false -&gt; done(false)
+1  test_size(prepared_spec)      true -&gt; 2, false -&gt; done(false)
+2  emit_path(prepared_output)   -&gt; done(true)
+</code></pre>
+<p dir="auto">The complete executor must retain unknown/error/suspend outcomes and fuzzy composition. AND/OR,<br>
+NOT, NAND/NOR, XOR/XNOR and comma cannot all be encoded as the same simple branch. Scored OR may<br>
+need both sides. Compile explicit score-combination and continuation instructions, and retain<br>
+left-to-right execution of side effects. A tiny expression may use a cheaper bound-tree path if<br>
+linear-program preparation does not amortize.</p>
+<p dir="auto">Prepare numeric comparison operators, units, type sets, permission syntax, invariant text flavor,<br>
+pattern normalization, output options and existing regex/template objects once. Keep field-expanded<br>
+values, filesystem-dependent case behavior, mutable capture values and per-entry facts dynamic.<br>
+Distinguish parsing a reference pathname from reading the referenced file: moving a filesystem or<br>
+user/group lookup earlier can change errors or observe different state. Audit those cases before<br>
+caching them. Preserve the existing validation timing and invalid-input behavior; changes to those<br>
+semantics require separate decisions, not silent optimizer side effects.</p>
+<h3 dir="auto" id="state-and-storage">State and storage</h3>
+<ul dir="auto">
+<li>Assign worker matcher/counter/scratch slots at preparation. Reuse existing backend-specific worker<br>
+state; immutable code is shared, mutable RE2/PCRE2 scratch stays private. Binding should remove<br>
+repeated <code class="notranslate">ExprIdentity</code> map lookups, not just replace them with a different map.</li>
+<li>Prepare reusable scratch once per worker. For ordinary filtering, target zero allocations by the<br>
+dispatch/control-flow machinery per entry. Distinguish allocations inside content, rendering and<br>
+actions in measurements instead of claiming all evaluation is allocation-free.</li>
+<li>Avoid clearing every possible slot for every entry. Evaluate compact live-slot layouts, touched-slot<br>
+lists or generation tags; explicitly test generation wrap and stale-state reuse.</li>
+<li>A suspended entry needs its own continuation, completed effects, scores and required state. Do not<br>
+retain an entire dense worker array per file: measure memory versus live deferred slots and preserve<br>
+result-set buffering limits. Keep sparse snapshots where the density does not justify arrays.</li>
+<li>Keep coordinator-owned actions, output ordering, cancellation and existing worker eligibility.<br>
+This project does not make stateful expressions parallel merely because they are compiled.</li>
+<li>Reserve contiguous program/operand storage from counted requirements. Use existing arenas or<br>
+segmented storage only where measurements or stable-lifetime requirements justify them. Include<br>
+construction, move, teardown and peak retained memory; larger blocks are not automatically better.</li>
+</ul>
+<h2 dir="auto" id="optimization-contract">Optimization contract</h2>
+<p dir="auto">Extend declarative semantic metadata rather than adding flag-name conditionals. Engine preparation<br>
+callbacks remain engine-owned; registry metadata stays dependency-light. Add a stable semantic ID<br>
+or generated index binding between them, with completeness and alias-consistency checks. Do not<br>
+duplicate help, mode, safety or operand rules in an optimizer registry.</p>
+<p dir="auto">For each operation, describe inputs, produced values, observable effects, possible failure or<br>
+suspension, metadata/content needs, state invalidation, and whether repeated evaluation is equivalent.<br>
+Default unaudited operations to barriers. Reuse existing fields where their meaning is adequate;<br>
+clarify <code class="notranslate">pure</code> without treating it as permission to reorder all metadata/content predicates.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Transformation</th>
+<th>Initial scope</th>
+<th>Required guard</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bound handler and operand specialization</td>
+<td>All audited predicates; adapters for remaining handlers</td>
+<td>Same validation, error and value semantics; no per-entry string dispatch</td>
+</tr>
+<tr>
+<td>Constant folding / unreachable branch removal</td>
+<td>Proven constant boolean subexpressions</td>
+<td>Preserve whole-command validation, traversal effects and implicit-output decisions made from the original command</td>
+</tr>
+<tr>
+<td>Jump simplification and instruction fusion</td>
+<td>Adjacent equivalent control operations; measured common predicate pairs</td>
+<td>Preserve every failure edge, action order, score and metadata-on-demand boundary</td>
+</tr>
+<tr>
+<td>Reuse of computed values</td>
+<td>Invariant preparation data; audited entry-local derivations</td>
+<td>Compatible parameters and lifetime; invalidate across mutations or unknown effects</td>
+</tr>
+<tr>
+<td>Predicate reordering</td>
+<td>Later experiment within independent, total, unscored conjunctions</td>
+<td>No observable errors, reads whose timing matters, captures, counters, actions, traversal effects or suspension</td>
+</tr>
+<tr>
+<td>Adaptive costs / profile-guided ordering</td>
+<td>Deferred</td>
+<td>Static optimizer must first prove useful; runtime profiling must justify its own overhead</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Examples of required distinctions:</p>
+<ul dir="auto">
+<li><code class="notranslate">false AND X</code> need not execute X, but X's presence may already affect default printing, traversal<br>
+mode, safety preflight or diagnostics. Elimination cannot undo those decisions.</li>
+<li><code class="notranslate">X AND false</code> cannot drop X when it emits output, changes state or reports a reachable error.</li>
+<li><code class="notranslate">P AND P</code> is not generally reducible merely because P is marked pure: content may change,<br>
+observations may fail, and fuzzy scoring or bookkeeping may be relevant.</li>
+<li>Moving a name test before a metadata test can suppress a metadata error. Do not call that an<br>
+equivalent reordering without an explicit language-level decision.</li>
+<li>Never move <code class="notranslate">-delete</code>, execution, output, captures, <code class="notranslate">-prune</code>, <code class="notranslate">-quit</code>, <code class="notranslate">-first</code>, <code class="notranslate">-top</code> or collection<br>
+operations across effects. Mutation policy remains enforced at the VFS control surface.</li>
+</ul>
+<p dir="auto">Keep optimizer passes deterministic and bounded. No exponential normal-form expansion or unlimited<br>
+fusion generation. Record pass time, instruction counts and skipped transformations for <code class="notranslate">--explain</code>.<br>
+The initial comparison selector belongs in test/benchmark APIs, not a provisional user flag or<br>
+environment variable. Extend existing <code class="notranslate">--explain</code> help and tests when program explanations ship.</p>
+<h2 dir="auto" id="implementation-sequence-and-exit-decisions">Implementation sequence and exit decisions</h2>
+<p dir="auto">Each stage is a reviewable PR on the preceding required stage. Independent lookup/container work<br>
+does not belong in this stack. Infrastructure stages need correctness and bounded cost, not invented<br>
+speedup claims; enabling a production optimization requires its measured benefit.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Stage</th>
+<th>Implementation and deliverables</th>
+<th>Exit decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EP01: contract and baseline</td>
+<td>Inventory every evaluator/operand/effect; trace-based oracle; preparation/execution benchmarks; typed node IDs and conservative property schema</td>
+<td>Baseline reproduces current behavior and separates startup from per-entry cost; no production algorithm change</td>
+</tr>
+<tr>
+<td>EP02: bind dispatch</td>
+<td>Resolve handlers once through generated semantic bindings; bound-tree executor; registry coverage checks; keep syntax for diagnostics</td>
+<td>Retain if lookup work disappears and cheap-expression measurements improve without material startup regression</td>
+</tr>
+<tr>
+<td>EP03: prepare operands</td>
+<td>Typed numeric/type/permission operands and audited string/template preparation; indexed worker matcher slots; remaining-dynamic-work inventory</td>
+<td>Retain each family separately; prove invariant parsing happens once and preserve conditional metadata/errors</td>
+</tr>
+<tr>
+<td>EP04: lower control flow</td>
+<td>Contiguous instruction representation; switch versus function-pointer pilot; explicit boolean control flow and reusable scratch; source mapping</td>
+<td>Choose measured layout; enable only audited semantic subset, with whole-expression fallback reported explicitly</td>
+</tr>
+<tr>
+<td>EP05: complete execution semantics</td>
+<td>Scores, unknown/error outcomes, action ordering, deferred continuations and compact snapshots; integrate serial/parallel paths and existing sinks</td>
+<td>Differential equivalence, exactly-once effects and bounded memory; migrate remaining fallbacks or document why they remain</td>
+</tr>
+<tr>
+<td>EP06: deterministic optimizer</td>
+<td>Constant folding with whole-command semantics preserved, jump simplification, selected fusion and proven value reuse; per-pass explain details</td>
+<td>Keep transformations individually by evidence; reordering stays disabled until its stronger proof and benchmarks pass</td>
+</tr>
+<tr>
+<td>EP07: production decision</td>
+<td>Cross-platform comparison, ordinary CLI/regression workloads, binary/preparation/memory accounting, generated help and performance report</td>
+<td>Enable the winning path; retain unoptimized-program and reference test coverage, or leave unsupported/unhelpful cases on the existing executor</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">EP04's fallback is transitional, not completion of the objective. Report its coverage by operation<br>
+and workload, not merely a percentage of tests. Avoid routing back through a name lookup inside every<br>
+prepared instruction. Only remove a reference implementation after the differential suite has an<br>
+equally strong replacement; do not retain two independently evolving public execution modes.</p>
+<h2 dir="auto" id="correctness-and-integration-verification">Correctness and integration verification</h2>
+<p dir="auto">Compare the tree oracle, unoptimized program and optimized program on the same isolated fixture.<br>
+Record truth, fuzzy value, unknown/error status and diagnostics, output bytes/order, prune/quit,<br>
+captures/counters, deferred decisions, action events and final filesystem state. For proven read<br>
+reuse, compare observable results while separately checking allowed read-count reductions. Event<br>
+traces must distinguish permissible internal cache changes from suppressed failures or effects.</p>
+<p dir="auto">Required cases include:</p>
+<ul dir="auto">
+<li>Every operator, nested/long chains, empty/default expressions and every registered predicate family.<br>
+Exhaust small boolean trees; use seeded generated larger trees with reproducible failure fixtures.</li>
+<li>All-match, no-match and mixed selectivity; short-circuited failures and unreachable malformed<br>
+arguments; implicit printing and traversal effects contributed by unreachable actions.</li>
+<li>INI globals/named configurations, composition, CLI overrides, find/XFF/rg switches, native filters<br>
+before <code class="notranslate">--rg</code>, aliases, final case/grammar and block/timezone settings.</li>
+<li>Metadata never/on-demand/always, basic versus birth-time demand, unknown entry types, symlinks,<br>
+unsupported operations, races and read failures. Never turn an error into an ordinary false result.</li>
+<li>Fuzzy scores and ordering; counters, collections and captures; suspend/resume at multiple nodes;<br>
+completed actions must run exactly once through replay and cancellation.</li>
+<li>Safe/block/dry-run combinations; writes, deletion and execution through isolated recording sinks.<br>
+Read-after-mutation invalidation, output ordering, explicit confirmation, batched exec and failures.</li>
+<li>Plain paths, formatted/content output, <code class="notranslate">-M</code>, rg context/count/quiet/multiline behavior, summaries,<br>
+comparison, archives and virtual sources; lean and extension builds.</li>
+<li>Plan moves/lifetime, worker creation/reuse, slot reset, cancellation/teardown and deep expressions.<br>
+Separate Unicode fixtures as required by repository policy.</li>
+</ul>
+<p dir="auto">Use existing VFS seams and in-memory fixtures. Fuzz only registered <code class="notranslate">Safety::kNone</code> operations in<br>
+an isolated filesystem with mutations denied and execution/output sinks disconnected. Effectful<br>
+cases belong in controlled tests, not arbitrary-input fuzzing. Use one C++ test source per Bazel<br>
+target, repository status/optional matchers, changed-file clang-tidy, sanitizer CI and existing<br>
+coverage thresholds. No threshold weakening to accommodate the new executor.</p>
+<h2 dir="auto" id="benchmark-design">Benchmark design</h2>
+<h3 dir="auto" id="separate-four-costs">Separate four costs</h3>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Layer</th>
+<th>Timed work</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Preparation</td>
+<td>Parse, configuration application, operand binding, optimization, worker preparation and teardown; also time phases separately</td>
+<td>Catch regressions for tiny searches and long expressions</td>
+</tr>
+<tr>
+<td>Execution kernel</td>
+<td>Reuse a prepared plan over prebuilt entries with a checked result sink</td>
+<td>Isolate dispatch/control flow; exclude construction and filesystem speed</td>
+</tr>
+<tr>
+<td>In-memory engine</td>
+<td>Real VFS walk, filtering, workers and bounded output over deterministic trees</td>
+<td>Detect allocation, metadata, synchronization and scheduling interactions</td>
+</tr>
+<tr>
+<td>Whole process / competing tools</td>
+<td>Same executable configuration, fixtures and exact output semantics as published comparisons</td>
+<td>Verify user-visible wins, particularly <code class="notranslate">files / rg</code> and <code class="notranslate">name-txt / rg</code></td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Extend the existing <code class="notranslate">parser_benchmark</code>, <code class="notranslate">rg_benchmark</code>, <code class="notranslate">read_benchmark</code> and comparison tooling<br>
+where appropriate; add a focused engine program benchmark for the first two layers. Proposed new<br>
+target names must be marked as proposed until implemented. The current harnesses do not by<br>
+themselves establish performance of this design.</p>
+<p dir="auto">Use an identical frozen fixture description for candidate and baseline. Reuse the manifest format<br>
+(<code class="notranslate">=:</code>, <code class="notranslate">=t:</code>, <code class="notranslate">=b:</code>, <code class="notranslate">=l:</code>) and archive inputs for larger cases; no sidecars. Execution-kernel entries<br>
+and in-memory VFS data exclude host filesystem latency. External tools cannot use XFF's VFS: use<br>
+the existing host-fixture comparison tier and record storage/cache policy separately.</p>
+<p dir="auto">Core matrix:</p>
+<ul dir="auto">
+<li>Entries: 10, 20, 50, 100, 200, 500, 1,000, 2,000, 5,000 and 10,000 for PR comparisons;<br>
+add 20,000, 50,000 and 100,000 for full/main qualification. Add zero/one entry for startup.</li>
+<li>CPU allowance: 1/3 in CI; 1/3/10 locally where capacity permits. Record actual worker count,<br>
+eligibility, scheduling and affinity. Cheap serial predicates remaining serial is not a failed<br>
+concurrency test; separately measure eligible content-worker cases and do not force production<br>
+parallelism just to populate a chart.</li>
+<li>Expressions: 1, 4, 16, 64 and 256 predicates; AND/OR chains, balanced trees, repeated predicates,<br>
+nested negation and mixed operators. Vary selectivity (0/1/50/99/100 percent) and early/late failure,<br>
+with clustered and interleaved entry ordering to expose branch-prediction effects.</li>
+<li>Work families: file/type listing; name/path exact and glob selection; size/permission/time tests;<br>
+content literal and equivalent RE2/PCRE2 workloads; metadata/content reuse; output-heavy actions;<br>
+fuzzy and deferred controls. Include controls without explicit expressions and rg-only searches<br>
+that may barely use the native evaluator. Improvements cannot be assumed for those paths.</li>
+</ul>
+<p dir="auto">Do not multiply every dimension into a prohibitively large campaign. EP01 checks in a named core<br>
+case manifest covering every semantic family and interaction, plus an extended stress matrix.<br>
+Run cheap dispatch/operand cases across all expression lengths; use representative 1/16/64-node<br>
+cases for expensive content and effect tests. Record the exact case set, not only its range.</p>
+<h3 dir="auto" id="sampling-resources-and-publication">Sampling, resources and publication</h3>
+<p dir="auto">Build all variants before timing with identical compiler, optimization, LTO, allocator and extras.<br>
+Measure these variants independently: current tree; bound tree; prepared operands; unoptimized<br>
+linear program; each optimizer pass; final combination. Do not attribute combined gains to one pass.<br>
+An internal harness selector may compare executors in one binary; also compare final shipping<br>
+binaries to catch code-layout and size effects.</p>
+<p dir="auto">Use a correctness-checked discarded warm-up, then rotate/interleave baseline and candidate order.<br>
+Keep nine raw measured rounds and report the fastest-seven mean, matching the existing PR/main<br>
+policy. For microbenchmarks, batch enough entries for reliable clock resolution and report time per<br>
+entry and per reached predicate; do not count a never-reached 256-node chain as 256 evaluations.<br>
+Also retain medians, all-round spread and paired comparisons so fastest-sample selection cannot hide<br>
+tail regressions. Repeat candidate decisions in two independent CI sessions. Use small focused local checks only;<br>
+local timing campaigns require a specific need because this work prioritizes low local resource use.</p>
+<p dir="auto">For CI publication use the existing three shards with three rounds each and pool before selecting<br>
+seven of nine. Keep local machine series separate; Linux uses recorded core affinity, macOS worker<br>
+requests are not hard pinning. Run native macOS ARM64 and Linux x86-64; GCC remains a portability<br>
+check unless separately benchmarked. Sanitizer timings are not release performance evidence.</p>
+<p dir="auto">Collect wall/CPU time, throughput, preparation/optimization time, instruction bytes/count, branch<br>
+targets, allocation counts/bytes by phase, peak RSS, worker scratch and suspended-entry memory,<br>
+VFS calls/bytes and stripped lean/full binary size. Hardware counters for branches/misses and<br>
+instruction/cache behavior are optional platform diagnostics, not a prerequisite. Keep intrusive<br>
+allocation/trace instrumentation out of timed release binaries; use a separate diagnostic run.</p>
+<p dir="auto">Retain raw JSON with revisions, binaries, fixture/case hashes, driver, compiler/LTO commands,<br>
+platform/CPU/allocation, reference-tool versions and sampling contract. Publish HTML and a compact<br>
+decision table with absolute times, paired percentage changes, reference-adjusted changes, noise<br>
+and applicability. Preserve incomplete or incompatible results as such, never as zero.</p>
+<p dir="auto">For whole-process comparisons, show both raw timings and the existing presentation-only reference<br>
+normalization. If baseline is X1/R1 and candidate X2/R2, compare X1 against X2*R1/R2; a common<br>
+reference-window target cancels in that pairwise ratio. Use the established first-five window for<br>
+initial history and backward five-measurement windows thereafter, only within compatible series.<br>
+Microbenchmarks without external references use interleaved paired results; do not manufacture a<br>
+reference normalization for them. Keep the existing 15% CI advisory non-blocking for now.</p>
+<h2 dir="auto" id="decision-gates-and-rollout">Decision gates and rollout</h2>
+<p dir="auto">Correctness and safety are mandatory. Performance thresholds below are initial review budgets,<br>
+not new CI gates or claimed benefits; record deviations and their rationale before adoption.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Decision</th>
+<th>Initial acceptance / rejection rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Correctness</td>
+<td>Zero unexplained oracle differences, no additional mutation route, no repeated effects, all required tests and existing coverage gates green</td>
+</tr>
+<tr>
+<td>Bind/lower/optimize</td>
+<td>Prefer at least 5% repeatable improvement in its targeted cheap-entry cases, exceeding measured noise; require supporting whole-engine results rather than kernel-only wins</td>
+</tr>
+<tr>
+<td>Ordinary workloads</td>
+<td>Investigate any repeatable slowdown over 2% outside noise; do not hide a slow case inside a geometric mean. Keep a simpler path or reject the change if the tradeoff is poor</td>
+</tr>
+<tr>
+<td>Preparation</td>
+<td>Report zero/one/ten-entry latency and long-expression cost. Compute the break-even entry count; do not accept large setup costs based only on 100,000-entry wins</td>
+</tr>
+<tr>
+<td>Dispatch allocations</td>
+<td>Zero steady-state dispatch/control-flow allocations for the ordinary prepared path after worker initialization; separately account for payload operations</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>No per-entry full-program clone and no unbounded dense deferred snapshot. Review any worker/RSS growth above 5% against absolute bytes and workload size</td>
+</tr>
+<tr>
+<td>Code size and build cost</td>
+<td>Review stripped binary growth above 1% or 64 KiB, whichever is smaller; disclose compile-time/constexpr costs and limit specialization/fusion growth</td>
+</tr>
+<tr>
+<td>Architecture consistency</td>
+<td>Require evidence on native ARM64/macOS and x86-64/Linux before a universal default; state unsupported or unmeasured cases explicitly</td>
+</tr>
+<tr>
+<td>Optional containers</td>
+<td>Replace the existing structure only when total preparation or execution improves after including construction, memory, teardown and dependency cost</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Let preparation increase by <code class="notranslate">delta_prepare</code> and per-entry time decrease by <code class="notranslate">delta_entry</code>.<br>
+The simple amortization estimate is <code class="notranslate">ceil(delta_prepare / delta_entry)</code> when both are positive;<br>
+otherwise report immediate benefit or no measured crossover, as applicable. Treat it as an estimate:<br>
+selectivity, output, worker startup and cache behavior can make scaling non-linear.</p>
+<p dir="auto">Each stage appends evidence and a retain/revise/reject decision to<br>
+<a href="performance-analysis.html"><code class="notranslate">performance-analysis.md</code></a>. Record unsuccessful experiments, remaining<br>
+dynamic work, fallback coverage and the next action. The final decision must answer which workload<br>
+benefits, where overhead remains, how much memory/setup it costs, and whether the simpler alternative<br>
+is sufficient. Reject an unhelpful optimization even when its infrastructure already exists.</p>
+<h3 dir="auto" id="open-decisions-with-defaults">Open decisions with defaults</h3>
+<ul dir="auto">
+<li>Executor layout: measure switch and function-pointer forms; start with a reserved contiguous array.</li>
+<li>Operand layout: use small typed records and separate pools; avoid a maximal variant in every<br>
+instruction until its cache footprint is known.</li>
+<li>State layout: typed indexed worker slots; compact/sparse state for suspended entries unless density<br>
+measurements favor another representation.</li>
+<li>General reordering: off until totality, observations and score semantics permit it. Preserve user<br>
+order everywhere else, including error-producing reads.</li>
+<li>Frozen hash table: separate optional MBO work; keep the exact sorted index until a replacement wins.</li>
+<li>Experimental MBO interning/HAMT: no dependency upgrade in the core executor work without a concrete<br>
+consumer, API/lifetime audit and measurements. Existing strong IDs, arrays and arenas are enough<br>
+to start.</li>
+</ul>
+<h2 dir="auto" id="ep01-implementation-record">EP01 implementation record</h2>
+<p dir="auto">The first implementation provides <code class="notranslate">DescribeExpression</code>, dense preorder source IDs from MBO<br>
+<code class="notranslate">ConstStrongId</code>, and conservative registry-derived requirements. The original tree owns the nodes;<br>
+the table borrows them and survives moving the owning <code class="notranslate">unique_ptr</code>, but not replacement of nodes.<br>
+All operations remain optimization barriers. <code class="notranslate">Descriptor::pure</code> is explicitly insufficient to<br>
+establish reorderability. Neither table construction nor lookup is on the production per-entry path.</p>
+<p dir="auto">The isolated contract suite records output and VFS observations and checks every binary operator's<br>
+truth table and short-circuit order, NOT's score behavior, deferred prefix replay, dry-run unknown<br>
+results, and prune/quit effects. This is the initial oracle corpus; EP02-EP05 extend it to compare<br>
+candidate executors and cover the full integration matrix above.</p>
+<p dir="auto"><code class="notranslate">//xff/engine:expression_benchmark</code> separates parse/bind/contract preparation from tree execution<br>
+on immutable in-memory entries. Its named core cases are <code class="notranslate">type</code>, <code class="notranslate">name</code>, <code class="notranslate">size</code>, <code class="notranslate">permission</code>,<br>
+<code class="notranslate">content</code>, <code class="notranslate">regex</code>, <code class="notranslate">fuzzy</code> and <code class="notranslate">output</code>, each at 1/16/64 predicates; kernels process batches of<br>
+10/1,000 entries. All cases match and therefore reach every predicate. Preparation includes<br>
+teardown; kernel construction and its correctness check are untimed. Cached content is invalidated<br>
+between entries. This initial matrix establishes dispatch/operand costs; it is not the extended<br>
+selectivity/parallel/integration qualification matrix.</p>
+<p dir="auto">The existing CI benchmark build jobs collect nine raw rounds after warmup and report fastest-seven,<br>
+median and spread statistics in <code class="notranslate">expression-baseline-linux</code> and <code class="notranslate">expression-baseline-macos</code> JSON<br>
+artifacts. These kernel timings have no external reference and are not reference-normalized. They<br>
+are baseline evidence, not a claimed speedup, and are separate from the unchanged competitor grid.<br>
+No new benchmark job or blocking performance threshold is introduced. CI compilation, sanitizers,<br>
+coverage and linting validate the C++ additions; local checks stay limited to formatting and policy.</p>
+<h2 dir="auto" id="ep02-implementation-record">EP02 implementation record</h2>
+<p dir="auto"><code class="notranslate">BoundExpression</code> is an experimental bound tree in the engine library. Preparation validates shape,<br>
+resolves the existing engine dispatch table once and stores direct handlers beside preorder source<br>
+references and typed child indices. Fuzzy-only subtree classification is prepared in a reverse pass.<br>
+There are no per-entry dispatch lookups or preparation allocations. Payload matchers may still<br>
+allocate, and invariant operand parsing is unchanged until EP03.</p>
+<p dir="auto">The tree must outlive the bound expression. Moving its owning <code class="notranslate">unique_ptr</code> preserves references;<br>
+replacement or mutation of the AST is not permitted after binding. Evaluation uses the existing<br>
+boolean/error/score/deferred implementation specialized on tree or bound cursors, with original<br>
+source identities for per-run counters and replay memoization. Conditional metadata acquisition and<br>
+content invalidation stay in their original order. This experiment introduces no CLI selector and<br>
+does not change which executor production uses.</p>
+<p dir="auto">Every registered non-operator descriptor must have an engine handler or an explicit preparation/<br>
+traversal/control disposition. <code class="notranslate">evaluation_noop</code> marks grammar-only predicates whose effects were<br>
+consumed by parsing. Missing handlers without such a disposition fail preparation. The contract<br>
+tests run as named <code class="notranslate">Tree</code> and <code class="notranslate">Bound</code> parameterizations with the same expected observations.</p>
+<p dir="auto">The benchmark doubles the original kernel case matrix to compare both executors, randomly<br>
+interleaving nine repetitions in one binary. <code class="notranslate">prepare/tree</code> measures the actual parse/bind/teardown<br>
+path without EP01's diagnostic contract table; <code class="notranslate">prepare/bound</code> also includes binding and teardown.<br>
+The discarded correctness check and kernel preparation are untimed. All raw rounds, fastest-seven,<br>
+median and spread remain available; the CI report includes revision and sampling provenance.<br>
+This implementation is a candidate awaiting measurements, not an accepted performance improvement.</p>
+<h2 dir="auto" id="ep03-operand-preparation-boundaries">EP03 operand preparation boundaries</h2>
+<p dir="auto">The first operand candidate covers type lists, size specifications, unsigned numeric tests<br>
+and permission modes. Preparation must retain the existing raw spelling for diagnostics and bind<br>
+its decoder from the same engine dispatch entry as the evaluator. Do not introduce another<br>
+spelling switch or map. Preserve the EP02 bound-only variant in the same benchmark binary to<br>
+separate operand savings from dispatch savings.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Family</th>
+<th align="left">Prepare once</th>
+<th align="left">Preserve at execution / validation boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code class="notranslate">-type</code>, <code class="notranslate">-xtype</code></td>
+<td align="left">Decode the complete type list into a small set; invalid trailing items must invalidate the complete operand</td>
+<td align="left">Entry type; <code class="notranslate">-xtype</code>'s conditional target stat and broken-link fallback</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-size</code>, <code class="notranslate">-blocks</code></td>
+<td align="left">Parse comparison, count and explicit byte unit</td>
+<td align="left">Whole-command <code class="notranslate">ValidateSizeArgs</code> still runs; bare and <code class="notranslate">b</code> units use the resolved block size; apparent versus allocated byte source stays distinct</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-links</code>, <code class="notranslate">-inum</code>, <code class="notranslate">-uid</code>, <code class="notranslate">-gid</code></td>
+<td align="left">Decode comparison and unsigned count</td>
+<td align="left">Conditional metadata; preserve malformed-value behavior and explicitly test integer boundaries before replacing the existing decoder</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-perm</code></td>
+<td align="left">Resolve exact/all/any mode and octal or symbolic mask from a zero base</td>
+<td align="left">Mask the entry mode to <code class="notranslate">07777</code>; preserve zero-mask any-of, BSD <code class="notranslate">+octal</code>, and symbolic <code class="notranslate">+r</code> semantics</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-used</code> and numeric age tests</td>
+<td align="left">Comparison/count and fixed unit after signed boundary tests</td>
+<td align="left">Signed differences, truncation toward zero, birth-time availability and error policy</td>
+</tr>
+<tr>
+<td align="left">Word/calendar ages</td>
+<td align="left">Parse relative time only after the run's time and timezone are final</td>
+<td align="left">Do not change day-start/calendar semantics or initialize timezones for unrelated predicates</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-newer*</code>, <code class="notranslate">-samefile</code></td>
+<td align="left">Spelling/selector decoding only initially</td>
+<td align="left">Reference-file reads remain conditional; preparation must not observe a skipped reference or hide changes made by earlier actions</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-user</code>, <code class="notranslate">-group</code>, <code class="notranslate">-nouser</code>, <code class="notranslate">-nogroup</code></td>
+<td align="left">No account-database snapshot in the first candidate</td>
+<td align="left">Existing name-service lookup/failure behavior remains dynamic until its semantics are separately decided</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Current numeric helpers have different overflow handling: <code class="notranslate">ParseSizeSpec</code> uses checked<br>
+<code class="notranslate">SimpleAtoi</code>, while the plain numeric, signed numeric and permission helpers accumulate digits<br>
+directly. This is an audit finding, not evidence that all boundary forms reach those helpers from<br>
+every command-line path. Add boundary cases before extracting the decoders; do not introduce new<br>
+signed-overflow behavior in the prepared path or silently treat an arbitrary input as zero.</p>
+<p dir="auto">For matcher state, the current <code class="notranslate">WorkerMatchers</code> owns a map keyed by <code class="notranslate">ExprIdentity</code>; <code class="notranslate">MatcherFor</code><br>
+looks into that map per reached regex predicate. The prepared program can assign dense matcher<br>
+slots during preparation and let each worker populate its own vector once. Preserve<br>
+<code class="notranslate">ForkForWorker</code> failure's current fallback to the validated immutable matcher, and keep mutable<br>
+backend state worker-owned. Original expression identities must still remain available for<br>
+captures, counters and deferred replay. Slot indices belong to one program and cannot be reused<br>
+against a different expression's worker vector.</p>
+<p dir="auto">Evaluate compact operand pools before inflating every boolean node with a maximum-sized payload.<br>
+Record node bytes, pool bytes and preparation allocations alongside per-entry cost; unsupported<br>
+families should retain their existing callback rather than reparsing an already prepared family.<br>
+<code class="notranslate">PreparedExpression</code> implements the scalar candidate with a typed pool, source-node references<br>
+and the same recursive control semantics as EP02. Factories are registered with the existing<br>
+engine handler table, and numeric/permission parsing is shared with the reference evaluator.<br>
+At the scalar-candidate stage, production stayed on the tree. The trace oracle runs all three<br>
+executors; boundary tests additionally<br>
+reuse prepared scalars across changed entry metadata and block sizes. Nine-round interleaved CI<br>
+benchmarks compare tree, bound-only and prepared execution in 270 cases and record owned storage<br>
+capacity. Indexed worker matchers and the remaining families above are still open; this is a<br>
+partial EP03 implementation, not the stage's completion.</p>
+<h3 dir="auto" id="on-demand-indexed-worker-matcher-candidate">On-demand indexed worker matcher candidate</h3>
+<p dir="auto">The first whole-engine session exposed eager regex-fork work even for empty searches and<br>
+unreached predicates. Each prepared worker now allocates its slot vector once, then resolves<br>
+each slot on its first reached regex predicate. An initialized bit distinguishes a never-used<br>
+slot from an absent or failed fork; subsequent files never retry it. Successful mutable backend<br>
+state belongs to that worker, while the immutable original matcher remains the failure fallback.<br>
+No shared lazy state or locking is introduced. The original validated matcher still exists before<br>
+the walk, so malformed-pattern validation does not become conditional.</p>
+<p dir="auto"><code class="notranslate">MatcherInitialization::kEager</code> remains an internal comparison option. Tests check partial<br>
+short-circuit initialization, independent workers, reuse across files, moves, captures and<br>
+unbound matchers. Ordinary, iterative and instruction callbacks share slot resolution. Report<br>
+initialized slot counts separately from allocated slot capacity. The bit may increase each slot's<br>
+size through alignment, which is included in the existing storage-byte accounting.</p>
+<p dir="auto">Compare both initialization policies in the native kernel and complete-engine harnesses, including<br>
+zero/one files and a name filter that prevents every regex from being reached. Kernel warmup<br>
+includes the first match, so it excludes initialization; complete-engine timings include it.<br>
+The eager comparator uses the same new slot bookkeeping and isolates initialization timing.<br>
+Compare both against the unchanged tree and the previous candidate results to assess total<br>
+hot-loop/storage overhead. Moving cost into the first match is not by itself a speedup for a<br>
+reached predicate. The original tree remains the qualification baseline; the coordinator strategy<br>
+selected after these measurements is described in the production section below.</p>
+<h3 dir="auto" id="evaluator-operandeffect-inventory">Evaluator operand/effect inventory</h3>
+<p dir="auto">The registry remains authoritative for spelling, aliases, traversal, metadata, safety and worker<br>
+eligibility. The following groups partition the current dispatcher by the work they perform; they<br>
+are an implementation audit, not a second runtime vocabulary. <code class="notranslate">-top</code> and <code class="notranslate">-shard-status</code> bypass the<br>
+ordinary dispatcher; parser/traversal-only primaries preserve their existing true/no-op behavior.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Family</th>
+<th align="left">Current invariant work</th>
+<th align="left">Dynamic work and barriers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code class="notranslate">-true</code>, <code class="notranslate">-false</code></td>
+<td align="left">None</td>
+<td align="left">Whole-command effects of surrounding syntax still apply</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-type</code>, <code class="notranslate">-xtype</code></td>
+<td align="left">Type-list decoding</td>
+<td align="left">Entry type; <code class="notranslate">-xtype</code> may observe the link target and fail</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-name</code>, <code class="notranslate">-iname</code>, path/wholename variants</td>
+<td align="left">Pattern bytes; case selection</td>
+<td align="left">Entry name/path and filesystem case policy</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-lname</code>, <code class="notranslate">-ilname</code></td>
+<td align="left">Link glob and case policy</td>
+<td align="left">VFS link read and failure</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-regex</code>, <code class="notranslate">-iregex</code>, <code class="notranslate">-rxc</code>, <code class="notranslate">-irxc</code></td>
+<td align="left">Matcher already compiled</td>
+<td align="left">Entry bytes, optional captures, backend worker scratch</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-content</code>, <code class="notranslate">-icontent</code>, <code class="notranslate">-text</code>, <code class="notranslate">-binary</code>, <code class="notranslate">-eof*</code></td>
+<td align="left">Literal/flavor interpretation</td>
+<td align="left">Content reads, cache invalidation, unsupported/error outcomes</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-size</code>, <code class="notranslate">-blocks</code>, <code class="notranslate">-links</code>, <code class="notranslate">-inum</code>, <code class="notranslate">-uid</code>, <code class="notranslate">-gid</code>, <code class="notranslate">-used</code></td>
+<td align="left">Numeric comparison, units, block size</td>
+<td align="left">Conditional metadata fetch; signed age arithmetic</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-perm</code></td>
+<td align="left">Numeric/symbolic permission parsing</td>
+<td align="left">Conditional mode fetch; preserve invalid-input behavior</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-*time</code>, <code class="notranslate">-*min</code>, <code class="notranslate">-newer*</code>, <code class="notranslate">-anewer</code>, <code class="notranslate">-cnewer</code></td>
+<td align="left">Duration/time-string decoding</td>
+<td align="left">Clock/timezone, birth-time support and reference-file observations</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-user</code>, <code class="notranslate">-group</code>, <code class="notranslate">-nouser</code>, <code class="notranslate">-nogroup</code></td>
+<td align="left">Numeric-ID parsing</td>
+<td align="left">User/group database lookup is observable; no eager caching yet</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-empty</code>, <code class="notranslate">-sparse</code>, <code class="notranslate">-fstype</code>, <code class="notranslate">-samefile</code></td>
+<td align="left">Reference pathname only</td>
+<td align="left">Metadata, directory reads, filesystem/reference observations</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-readable</code>, <code class="notranslate">-writable</code>, <code class="notranslate">-executable</code></td>
+<td align="left">Access mode</td>
+<td align="left">VFS access checks remain dynamic</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-lang</code>, <code class="notranslate">-mime</code></td>
+<td align="left">Catalog selection / MIME pattern normalization</td>
+<td align="left">Filename classification; final configured catalog</td>
+</tr>
+<tr>
+<td align="left">Fuzzy variants, <code class="notranslate">-similar</code></td>
+<td align="left">Fzf query already compiled; score configuration</td>
+<td align="left">Content/path scoring, incoming score, result-set state</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-first</code>, <code class="notranslate">-top</code>, <code class="notranslate">-shard-status</code></td>
+<td align="left">Limit/selection decoding</td>
+<td align="left">Counters, suspension, replay decisions and fuzzy score</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-print*</code>, <code class="notranslate">-printf*</code>, <code class="notranslate">-fprint*</code>, <code class="notranslate">-ls</code>, <code class="notranslate">-fls</code></td>
+<td align="left">Output format/cells</td>
+<td align="left">Output order, files, fields and conditional reads/errors</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-grep</code>, <code class="notranslate">-diff</code>, <code class="notranslate">-cmp</code></td>
+<td align="left">Matcher/template/style/diff options</td>
+<td align="left">Content, context output, comparison/reference reads</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-hash</code>, <code class="notranslate">-hasheq</code></td>
+<td align="left">Algorithm/encoding interpretation</td>
+<td align="left">Content reads, output and verification bookkeeping</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-collect</code></td>
+<td align="left">Collection name</td>
+<td align="left">Coordinator-owned retained entries and limits</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-exec*</code>, <code class="notranslate">-ok*</code>, <code class="notranslate">-capture</code>, <code class="notranslate">-capturedir</code></td>
+<td align="left">Static argv/template portions</td>
+<td align="left">Dynamic fields, confirmation, execution, capture, batching and dry-run unknown</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-delete</code></td>
+<td align="left">None</td>
+<td align="left">Controlled mutation, failure reporting, archive-member deferral</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-prune</code>, <code class="notranslate">-quit</code></td>
+<td align="left">None</td>
+<td align="left">Traversal control even if a later predicate is false</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Further preparation must preserve when failed observations occur. In particular, username lookup,<br>
+reference-file stat, field expansion and conditional content reads cannot silently move to startup.</p>
+<h3 dir="auto" id="indexed-worker-matcher-candidate">Indexed worker matcher candidate</h3>
+<p dir="auto"><code class="notranslate">PreparedExpression::MakeWorker</code> assigns one dense slot per path/content regex node. A worker<br>
+owns its forked mutable regex state and borrows its prepared expression; the prepared expression<br>
+and source AST must outlive it. Moving either owner preserves allocated storage identities.<br>
+The API binds each worker to its expression, so callers cannot accidentally evaluate a slot vector<br>
+against another program. Worker evaluation calls indexed regex callbacks directly, without<br>
+<code class="notranslate">WorkerMatchers</code>' per-predicate map search. Serial prepared evaluation retains the immutable<br>
+compiled matcher; absent matchers remain false, and a failed fork retains the original fallback.</p>
+<p dir="auto">The existing tree/map path stays available. Regex kernel benchmarks compare it with the indexed<br>
+worker path, including worker construction in preparation timings. Content and path regexes are<br>
+measured separately; the full matrix has 333 cases. Owned-slot capacity is reported separately<br>
+from backend allocations, which are not estimated. Named oracle cases include the worker path,<br>
+plus persistent independent workers, captures, source/worker moves, and unbound matcher cases.<br>
+No production parallel driver has switched yet. Match-output/grep's separate worker program and<br>
+remaining dynamic operand families retain their current handling pending their own audit.</p>
+<h2 dir="auto" id="ep04-contiguous-program-pilot">EP04 contiguous program pilot</h2>
+<p dir="auto"><code class="notranslate">ExpressionProgram</code> lowers every boolean operator into a contiguous stream of predicate calls,<br>
+conditional jumps, negation, and saved-value XOR operations. Each instruction retains its original<br>
+preorder source ID. Lowering uses an explicit stack, and each worker reserves its maximum boolean<br>
+scratch once; repeated entries do not grow that storage. Predicate instructions call the prepared<br>
+worker directly and share the reference evaluator's metadata, safety, invalidation, and control<br>
+handling. No per-instruction flag-name lookup is introduced.</p>
+<p dir="auto">The pilot compares an opcode switch with bound instruction-function dispatch using the same<br>
+instruction layout. Holding layout constant isolates dispatch cost; the table currently stores both<br>
+opcodes and function pointers, so it is not yet a minimal representation for either final choice.<br>
+Worker regex state remains independent. Source/program/worker storage ownership is explicit and<br>
+move-safe under the documented lifetime order.</p>
+<p dir="auto">An evaluation context with fuzzy-score collection or deferred replay uses the prepared recursive<br>
+executor for the whole expression and reports <code class="notranslate">used_fallback</code>. Tests assert that ordinary boolean,<br>
+metadata-failure, dry-run, mutation-denial, regex, long-chain and nested-XOR cases actually use the<br>
+program. Separate tests verify the reported fallback. This is the planned EP04 transitional<br>
+boundary; EP05 must implement or justify the remaining contexts and integrate the driver.</p>
+<p dir="auto">Native CI benchmarks retain every prior variant, add both program dispatch choices, and include<br>
+AND early misses plus OR early hits and complete misses. The expanded core matrix has 666 cases.<br>
+Reached-predicate counts account for short-circuit cases, and program timing rejects unexpected<br>
+fallback during its untimed check. Instruction/storage counters and preparation timings remain<br>
+separate from execution time. No production selection or speedup claim is made before measurement.</p>
+<h2 dir="auto" id="ep05-stateful-execution-candidate">EP05 stateful execution candidate</h2>
+<p dir="auto">Scored and deferred contexts now use an iterative continuation program over the same dense<br>
+prepared nodes. A worker reuses enter/left/right frames, carrying left outcomes and AND input<br>
+scores without recursive expression calls. The ordinary boolean instruction stream remains<br>
+separate so optional replay machinery does not tax every cheap predicate. This is an execution<br>
+representation choice, not a new user-visible mode.</p>
+<p dir="auto">Child outcomes are memoized under their original source identities only after completion.<br>
+Unknown or suspended outcomes unwind worker scratch without caching unresolved ancestors;<br>
+completed effects remain in the existing sparse per-entry memo. Replay therefore preserves<br>
+exactly-once actions, counters and source frontiers. Fuzzy-only OR still evaluates both branches<br>
+when a score consumer exists. AND combines incoming scores, NOT/NAND/NOR/XNOR discard scores as<br>
+before, and XOR preserves the selected branch's score. The caller's score observer and incoming<br>
+score are restored on every exit.</p>
+<p dir="auto">The state stack reserves only on its first use and is reused thereafter; ordinary boolean<br>
+contexts do not allocate it. It is bounded by the prepared node count and is never cloned into<br>
+suspended entries. A future compact depth-based reservation can reduce this conservative bound,<br>
+but requires measurement. The full evaluator suite and observation oracle include iterative and<br>
+program variants, with persistent-worker replay, storage stability, unknown cleanup, and all<br>
+operator score combinations. Two score-consuming benchmark families extend the matrix to<br>
+756 cases. CI must validate behavior and measure costs before production integration, which<br>
+remains a separate EP05 step. EP06 optimization and EP07 whole-engine qualification remain open.</p>
+<h2 dir="auto" id="implementation-qualification-boundary">Implementation qualification boundary</h2>
+<p dir="auto">The internal <code class="notranslate">RunFind</code> executor argument now permits direct whole-engine comparisons of the tree,<br>
+bound, prepared and both program layouts. It is unavailable in CLI/configuration. Preparation<br>
+runs after the original whole-command validation and traversal/output decisions. Each matcher<br>
+worker owns its execution state; deferred replay uses the coordinator worker and preserves sparse<br>
+per-entry memoization. <code class="notranslate">//xff/engine:expression_execution_test</code> checks the integrated paths against<br>
+the reference, and <code class="notranslate">//xff/engine:expression_run_benchmark</code> includes preparation and teardown for<br>
+0 through 10,000 files. The default remains the reference until qualification selects a winner;<br>
+this integration does not complete EP06 or the production decision.</p>
+<h3 dir="auto" id="ep06-candidate-independently-measurable-instruction-rewrites">EP06 candidate: independently measurable instruction rewrites</h3>
+<p dir="auto"><code class="notranslate">ExpressionProgram::Prepare</code> now accepts internal <code class="notranslate">ProgramOptimizations</code> for constants, jump<br>
+threading and branch fusion. None is enabled by default. The test suite runs both dispatch forms<br>
+with each pass independently and their combination. The whole-engine qualification selector adds<br>
+<code class="notranslate">kProgramOptimized</code>; it is not a CLI/config flag or the production default.</p>
+<ul dir="auto">
+<li>Registry <code class="notranslate">constant_truth</code> describes audited total, effect-free literal truth. A compile-time<br>
+guard rejects contradictory effect/metadata/control declarations. Only <code class="notranslate">-true</code> and <code class="notranslate">-false</code><br>
+declare it. Bottom-up facts retain original preorder source IDs. A constant left side may remove<br>
+an unreachable right side; an unknown left side is never discarded because the right is constant.</li>
+<li>Jump threading follows an existing jump directly to another jump testing the same truth value.<br>
+Compiler-generated edges go forward, so a reverse pass is bounded and needs no iterative search.</li>
+<li>Fusion combines a predicate with its immediately following conditional jump only when no other<br>
+edge enters that jump. Unknown/error/suspension exits still precede the conditional. Compaction<br>
+remaps every destination, including the terminal position, and preserves predicate source IDs.</li>
+<li>The original AST remains available to whole-command validation, safety preflight, implicit output,<br>
+traversal policy, scoring and deferred replay. The latter two still use the separately qualified<br>
+stateful executor; these boolean rewrites do not claim to improve that path.</li>
+<li><code class="notranslate">OptimizationStats</code> records each pass's input/output instruction counts and rewrite count;<br>
+optional timing is off for ordinary preparation. Connecting these records to the selected<br>
+production executor's <code class="notranslate">--explain</code> output remains part of EP06/EP07, not a completed deliverable.</li>
+</ul>
+<p dir="auto">The native kernel matrix includes each pass and the full combination beside every earlier executor.<br>
+The whole-engine matrix adds the combined candidate. Keep passes individually only after current<br>
+Linux/macOS measurements and differential tests establish their cost and semantic equivalence.<br>
+No predicate reordering, speculative metadata reads or common-subexpression elimination is enabled.</p>
+<p dir="auto">The program oracle also exhausts the 902 syntax trees containing up to two logical operators<br>
+(all seven binary operators and unary NOT) over literal truth values. A fixed <code class="notranslate">mt19937_64</code> seed<br>
+generates 32 larger mixed trees with constants, scalar/name/regex/fuzzy predicates and recording<br>
+output. Every optimizer/dispatch combination runs both scored and unscored over three entry<br>
+sizes. Failures include the exact token sequence and sample index for reproduction. These<br>
+generated cases complement explicit failure, replay and effect-order tests; they do not replace<br>
+the remaining full-run configuration/archive qualification.</p>
+<h3 dir="auto" id="ep03-continuation-numeric-age-operands">EP03 continuation: numeric age operands</h3>
+<p dir="auto">The prepared path now decodes <code class="notranslate">-used</code>, <code class="notranslate">-mtime</code>/<code class="notranslate">-atime</code>/<code class="notranslate">-ctime</code>/<code class="notranslate">-Btime</code> and their<br>
+minute counterparts through callbacks on the existing engine dispatch entry. A numeric age<br>
+stores its comparison, signed count and duration in seconds. Compile-time size/alignment checks<br>
+keep this record within the existing size operand's storage budget. No new lookup vocabulary,<br>
+clock snapshot, timezone load or filesystem read occurs during preparation.</p>
+<p dir="auto">Evaluation still reads the current metadata and <code class="notranslate">EvalContext::now</code>. Word/calendar ages carry a<br>
+separate tag and retain their existing context-dependent parser; reference-file and account<br>
+lookups remain conditional in their original callbacks. Missing birth time still records the<br>
+unsupported operation before comparing an operand. Minute predicates do not acquire BSD suffix<br>
+support; day predicates retain <code class="notranslate">s</code>/<code class="notranslate">m</code>/<code class="notranslate">h</code>/<code class="notranslate">d</code>/<code class="notranslate">w</code> suffixes and the existing fractional-unit truncation.</p>
+<p dir="auto">The shared signed-count decoder now checks accumulation before multiplication. Values above<br>
+<code class="notranslate">INT64_MAX</code> produce no match instead of signed overflow in both the reference and prepared paths.<br>
+Boundary tests assert this result explicitly, beyond differential comparisons. Reuse tests vary<br>
+clock, timestamps, timezone, birth-time availability and malformed/word/suffix input against the<br>
+same prepared worker, with no VFS observations and stable owned storage.</p>
+<p dir="auto">Four targeted preparation/kernel families and one complete-engine age workload join the native<br>
+CI matrix. Existing families remain as regression controls. Compare the common valid-input tree<br>
+and prepared paths within each session, and compare the reference itself to the preceding session:<br>
+the checked decoder changes reference cost too. Do not credit all of that difference to preparation.<br>
+No production executor is selected by this candidate; performance qualification is still pending.</p>
+<h2 dir="auto" id="production-dependency-boundary">Production dependency boundary</h2>
+<p dir="auto">Whole-run qualification injects an <code class="notranslate">ExpressionFactory</code> after validation. The null factory takes<br>
+exactly the original tree path, including its matcher ownership and absence of preparation; it is<br>
+also supplied explicitly by the benchmark oracle so a later default change cannot silently replace<br>
+the reference. The engine owns only the immutable-plan/worker interface. Factories and the enum<br>
+that select all candidates live in <code class="notranslate">expression_qualification_cc</code>; both that target and the iterative<br>
+<code class="notranslate">expression_program_cc</code> are Bazel <code class="notranslate">testonly</code> targets. Shipping CLI targets cannot depend on them.</p>
+<p dir="auto">Plans and workers keep stable, unique-owned storage across moves. Workers borrow their plan and<br>
+source expression and must finish first. Qualification enters a worker through one virtual call<br>
+per entry, then uses the original candidate implementation. The ordinary tree has no such call.<br>
+This extra boundary is included in whole-engine measurements, not hidden in kernel timings.<br>
+The separation itself does not select an executor. The production candidate below adds that<br>
+selection and its <code class="notranslate">--explain</code> records, subject to native acceptance.</p>
+<h2 dir="auto" id="production-prepared-recursion-and-coordinator-ownership">Production prepared recursion and coordinator ownership</h2>
+<p dir="auto">The production factory now selects <code class="notranslate">PreparedExpression</code>, retaining the reference evaluator's<br>
+recursive operator semantics and source order while binding callbacks and decoding invariant<br>
+operands once. Experimental program interpreters and optimizers remain test-only. The complete<br>
+CLI suite therefore exercises the production candidate; the whole-engine oracle passes a null<br>
+factory explicitly to retain the original tree reference. Native acceptance remains open until<br>
+current-head correctness, startup, throughput, memory and binary-size evidence is complete.</p>
+<p dir="auto">A coordinator worker evaluates directly through the immutable prepared expression and its original<br>
+compiled matchers. A concurrent worker owns lazy private matcher slots; its first reached use forks<br>
+the backend, while skipped branches allocate no backend. The distinction preserves the existing<br>
+thread-safe original-matcher contract without imposing private-fork startup on serial searches.<br>
+Small matcher batches can use the coordinator, larger batches activate the pool, and later small<br>
+batches can return to the coordinator. Capture state stays in each evaluation context. Neither<br>
+worker object may be evaluated concurrently with itself. Plans and source expressions outlive<br>
+workers; moving a plan preserves its backing storage.</p>
+<p dir="auto">The driver avoids preparation for unused parallel paths and shares preparation when the serial<br>
+and pooled expressions are the same source node. A split filter/output expression retains its own<br>
+preparation because each side has a different root. Deferred replay continues through the serial<br>
+worker and preserves original source identities and exactly-once effects.</p>
+<p dir="auto"><code class="notranslate">--explain</code> calls the same production preparation factory without traversing roots or evaluating<br>
+actions. Its records describe the resolved native expression before filter/output splitting,<br>
+including nodes, operands, matcher slots and owned record bytes. Regex backend, source-tree,<br>
+allocator, adapter and worker storage are excluded, so this is not a process-memory estimate.<br>
+It explicitly reports preserved order and disabled optimization; it does not claim the test-only<br>
+optimizer ran. Separate rg search preparation remains described by the existing rg resource row.</p>
+<h2 dir="auto" id="limit-and-mime-preparation-continuation">Limit and MIME preparation continuation</h2>
+<p dir="auto">The follow-up candidate stores the checked positive <code class="notranslate">int</code> limit for <code class="notranslate">-first</code>; the source identity<br>
+and counter map remain unchanged. An invalid or absent limit and an unavailable counter sink keep<br>
+the original no-match behavior. The reference shares decoding/admission helpers but still decodes<br>
+per invocation, permitting comparisons of dispatch and operand preparation separately.</p>
+<p dir="auto">For <code class="notranslate">-mime</code>, an owned lowercase character vector includes the POSIX terminator. It is created once<br>
+and remains immutable across entries and workers. Its capacity joins the owned-byte accounting;<br>
+there is no larger string payload in unrelated scalar records. The entry's derived MIME value is<br>
+still resolved and normalized when reached, and glob behavior remains independent of name-case<br>
+options. No observation, action or metadata demand moves across a short-circuit boundary.</p>
+<p dir="auto">Tests and native measurement cases cover both families separately. Existing cases remain controls<br>
+for preparation/record overhead. Qualification must include tiny inputs, retained storage and<br>
+whole-run results, not just the saved decoder or case-folding calls. This work is separate from<br>
+acceptance of the preceding production candidate.</p>
+<h2 dir="auto" id="instrumented-allocation-regression-diagnostics">Instrumented allocation regression diagnostics</h2>
+<p dir="auto"><code class="notranslate">//xff/engine:expression_allocations_test</code> measures allocation calls, requested bytes and free calls<br>
+in the calling thread through LLVM's documented sanitizer allocator hooks. The hooks are installed<br>
+only in that test executable under ASan. ASan replaces the allocator; the hooks observe that<br>
+instrumented runtime. They do not enter production or timing binaries. Other configurations compile the fixture and explicitly skip these diagnostics.<br>
+The ordinary ASan suite runs them; no additional compilation configuration is introduced.</p>
+<p dir="auto">The 162 named cases cover nine families, 1/16/64 predicate repetitions, coordinator/concurrent roles,<br>
+and the original-tree adapter, production prepared executor and optimized-program candidate.<br>
+Families are boolean, type, size, permission, numeric age, first-entry limit, MIME, reached regex and<br>
+short-circuited regex. The adapter and program currently ignore the role selector; those duplicate<br>
+rows are controls, not evidence of a distinct reference-worker implementation.</p>
+<p dir="auto">Each case records parsing, matcher binding, plan preparation, worker creation, first evaluation,<br>
+128 further evaluations, worker teardown, plan teardown and source/counter teardown independently.<br>
+Assertions and report formatting occur outside measurement scopes. The first visit accounts for<br>
+lazy backend state and counter insertion. Steady cheap predicates must allocate zero times; MIME<br>
+and reached-regex payload allocations are reported separately without asserting that their<br>
+backends allocate nothing. A calibration test must observe an actual buffer allocation and free.</p>
+<p dir="auto">The ASan job retains the XML/log and a JSON conversion carrying the tested revision. The converter<br>
+rejects failures, skips, missing/negative counters and an empty diagnostic set instead of inventing<br>
+zero measurements. To reproduce the diagnostic and its report:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">bazel <span class="pl-c1">test</span> //xff/engine:expression_allocations_test --config=clang --config=asan
+python3 tools/expression_allocations.py \
+  bazel-testlogs/xff/engine/expression_allocations_test/test.xml \
+  --revision=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>git rev-parse HEAD<span class="pl-pds">)</span></span><span class="pl-pds">"</span></span> --output=expression-allocations.json</pre></div>
+<p dir="auto">Requested bytes exclude allocator bookkeeping and sanitizer redzones. These measurements are<br>
+allocation counts and traffic, not retained/peak RSS, release timings, all-thread counts or a<br>
+proof about effectful/deferred payloads. Existing owned-storage and whole-process measurements<br>
+remain separate. ASan can also change allocation behavior and build paths, so these counts qualify<br>
+only the instrumented regression test. They cannot establish production allocation counts or costs,<br>
+and must not select the performance implementation. Native allocation profiling remains an open<br>
+acceptance requirement. JSON explicitly marks these results as not production-representative.</p>
+<h2 dir="auto" id="prepared-field-template-candidate">Prepared field-template candidate</h2>
+<p dir="auto"><code class="notranslate">-cmp</code>, <code class="notranslate">-similar</code>, <code class="notranslate">-diff</code> and <code class="notranslate">-hasheq</code> now register invariant field-template preparation in<br>
+that primary's existing engine dispatch entry. A compact operand owns the compiled field program<br>
+through a unique pointer; no per-entry reference counting or separate flag-name switch is needed.<br>
+The tree reference still compiles the template when reached, so benchmarks can isolate preparation<br>
+from binding. Output, reads, similarity/diff/hash evaluation and verification bookkeeping use the<br>
+same implementation body on both paths.</p>
+<p dir="auto">Only syntax/field-transform compilation moves earlier. Definitions, captures, environment fields,<br>
+link targets, content-dependent fields and final hash/time settings are read while rendering each<br>
+reached entry. Reference content and link observations retain their previous order. Missing operands,<br>
+empty rendered values and <code class="notranslate">/dev/null</code> creation patches retain the existing behavior. Whole-command<br>
+validation remains responsible for syntax errors; the prepared factory introduces no earlier VFS<br>
+observation and no new error policy.</p>
+<p dir="auto">Field programs contribute a conservative record/text-capacity budget to expression storage.<br>
+This counts string capacity even when it is inline and counts shared transform capacity for each<br>
+owning template. Regex backend allocations, diagnostic payloads, allocator headers and reference-count<br>
+bookkeeping remain excluded; this is neither allocation traffic nor peak RSS. Native phase accounting<br>
+remains a separate requirement.</p>
+<p dir="auto">Differential cases cover dynamic definitions, link/content failures, content fields, skipped branches,<br>
+missing/empty arguments, moved owners and repeated workers. Whole-run cases cover final hash defaults,<br>
+rendered peer paths and failures. Native CI adds literal and transformed peer, similarity, diff and<br>
+expected-hash preparation/kernels plus three whole-engine scenarios. No speedup or final retention<br>
+claim precedes those measurements. Hash-spec resolution and diff option/ignore-regex preparation<br>
+remain separate invariant-work candidates.</p></main><footer>Release snapshot &middot; 8e95f5546187b2a6f4ec165af9cf794af18ac4a1</footer></body></html>

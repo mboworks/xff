@@ -1,0 +1,215 @@
+<!doctype html><html lang="en">
+<!-- mboworks favicons -->
+<link rel="icon" href="../../../favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../../apple-touch-icon.png">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>CONTRIBUTING.md - xff v0.9.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.9.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.9.0">Release &amp; downloads</a><a href="/xff/releases/0.9.0/">CLI reference</a><a href="/xff/coverage/tag/0.9.0/">Coverage</a><a href="/xff/benchmarks/tag/0.9.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/8e95f5546187b2a6f4ec165af9cf794af18ac4a1">Source</a><a href="/xff/site/tag/v0.9.0/documents.html">Documentation</a></nav><p>xff v0.9.0</p><main><h1 dir="auto" id="intro">Intro</h1>
+<p dir="auto">All contributions are generally welcome as long as they fit in with the concepts and goals of this repository and as long as the <a href="CODE_OF_CONDUCT.html">CODE_OF_CONDUCT.md</a> is being respected.</p>
+<h1 dir="auto" id="code-rules">Code Rules</h1>
+<p dir="auto">All code must adhere to the <a href="RULES.html">RULES.md</a> and mostly follows the <a href="https://google.github.io/styleguide/" rel="nofollow">Google style</a>. Where it diverges, clang-tidy rules are in effect as much as possible.</p>
+<h2 dir="auto" id="coverage">Coverage</h2>
+<p dir="auto">The production coverage job derives its ratings, HTML colours, and CI gates from<br>
+<a href="https://github.com/mboworks/xff/blob/8e95f5546187b2a6f4ec165af9cf794af18ac4a1/coverage_policy.json"><code class="notranslate">coverage_policy.json</code></a>. See <a href="docs/coverage.html"><code class="notranslate">docs/coverage.md</code></a> before<br>
+changing thresholds or adding a category override; weakened overrides require a documented reason.</p>
+<h1 dir="auto" id="run-pre-commit">Run pre-commit</h1>
+<p dir="auto">All changes will be verified by the pre-commit rules. In order to check these before committing changes install the tool:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">pre-commit install --hook-type pre-commit --hook-type pre-push</pre></div>
+<p dir="auto">Once installed the verification can be triggered for all files as follows:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">pre-commit run -a</pre></div>
+<p dir="auto">Without the <code class="notranslate">-a</code> only the modified and staged files will be checked.</p>
+<h2 dir="auto" id="python-tooling-and-test-ownership">Python tooling and test ownership</h2>
+<p dir="auto">Use Aspect <code class="notranslate">py_library</code>, <code class="notranslate">py_binary</code>, and <code class="notranslate">py_test</code> from<br>
+<code class="notranslate">@aspect_rules_py//py:defs.bzl</code>. <code class="notranslate">MODULE.bazel</code> pins the rules and selects the standalone<br>
+Python 3.13 toolchain supplied by <code class="notranslate">rules_python</code>; Bazel execution does not use ambient <code class="notranslate">python3</code>.<br>
+Declare imported modules as dependencies and non-Python inputs as runfiles, with narrow visibility.<br>
+A filegroup describes data, not an executable Python program.</p>
+<p dir="auto">Run all tooling suites with <code class="notranslate">bazel test //tools:python_tests</code>; they also run under <code class="notranslate">bazel test //...</code>.<br>
+The benchmark integration is <code class="notranslate">//xff/engine:read_benchmark_test</code>. Run the measurement commands with<br>
+<code class="notranslate">bazel run //tools:measure_resources -- -- COMMAND...</code> or<br>
+<code class="notranslate">bazel run //tools:benchmark_resources -- XFF --output=REPORT.json</code>.<br>
+The benchmark driver declares its measurement executable and a small native pipeline launcher.<br>
+Each measurement uses a fresh process, and the native launcher accounts for individual commands<br>
+after leaving Python's address space. RSS remains a kernel high-water mark with the native<br>
+pre-exec footprint included; pipeline peak sums are not simultaneous peaks. Accounting methods<br>
+are recorded separately so they cannot share incompatible timing baselines. Direct script<br>
+invocation remains available with a prebuilt <code class="notranslate">--resource-launcher</code>; see<br>
+<a href="docs/benchmark-comparisons.html#native-process-accounting">native process accounting</a>.</p>
+<p dir="auto">Pre-commit owns changed-file formatting and policy checks, plus fast, narrowly triggered checker<br>
+self-tests. Its Python hooks use the managed Python 3.13 environment. Process-measurement and fuzz<br>
+scheduler suites belong to Bazel, so commits do not run those suites or start recursive Bazel builds.<br>
+Main and release coverage CI run these suites through their existing Bazel test/coverage commands,<br>
+without additional direct unit-test invocations. The Pages workflow is a compatibility exception:<br>
+it checks out historical release tags and tests that tag's site builder directly, since older tags<br>
+need not provide Bazel Python targets.</p>
+<p dir="auto"><code class="notranslate">bazel run //tools:repository_tooling_test</code> is the repository-wide integration check. It uses<br>
+<code class="notranslate">BUILD_WORKSPACE_DIRECTORY</code> to inspect every BUILD file, the extra-module registry, and test ownership<br>
+in the live checkout. Main and release CI run it explicitly. It is a <code class="notranslate">py_binary</code> using the same<br>
+hermetic interpreter, not a sandboxed or cached <code class="notranslate">py_test</code>; its assertions execute on every run.<br>
+No list of exported BUILD files or source snapshots needs maintenance. For direct script execution,<br>
+supply <code class="notranslate">--workspace=PATH</code> explicitly. Fixture-based unit suites remain under <code class="notranslate">bazel test</code>.<br>
+The coverage-index and release-site suites require host Git; release-note tests require Bash and sed.<br>
+Their Bazel targets carry <code class="notranslate">requires-host-tools</code>, and the supported Linux/macOS CI images provide them.<br>
+No tests contact GitHub or recursively invoke Bazel; the separate site integration step does use GitHub.</p>
+<h2 dir="auto" id="compiler-and-sanitizer-versions">Compiler and sanitizer versions</h2>
+<p dir="auto"><code class="notranslate">--config=clang</code> selects the newest stable LLVM 23 release available for the host from the pinned<br>
+<code class="notranslate">toolchains_llvm</code> catalogue (<code class="notranslate">latest:major==23</code>). Updating that module can adopt LLVM 23 fixes<br>
+without a separate compiler-version edit; LLVM 24 requires an explicit selector change. The<br>
+<code class="notranslate">msan</code> feature selects LLVM 22.1.8 and its matching<br>
+instrumented libc++ on Linux x86-64, independently of config flag order. ASan, TSan, coverage,<br>
+fuzzing, releases, build tools, and clang-tidy use LLVM 23. The existing <code class="notranslate">--config=lto</code> selection<br>
+continues to use native Apple ld on macOS and bundled LLD on Linux.</p>
+<p dir="auto">The official LLVM 22.1.8 LLD executable requires <code class="notranslate">libxml2.so.2</code>. The MSan CI job uses<br>
+Ubuntu 24.04 and explicitly installs <code class="notranslate">libxml2</code>; Ubuntu 26.04 only packages <code class="notranslate">libxml2.so.16</code>,<br>
+which cannot satisfy that dependency. Ordinary LLVM 23 builds and the other sanitizer jobs<br>
+continue on <code class="notranslate">ubuntu-latest</code>. Moving MSan to that host requires a compatible compiler/runtime<br>
+distribution; keep its compiler and instrumented libc++ versions matched.</p>
+<p dir="auto">Pre-commit and <code class="notranslate">tools/clang_format.sh</code> run clang-format from the same selected LLVM 23 distribution.<br>
+The first run fetches that distribution if needed; it does not compile XFF. CI runs clang-tidy<br>
+across the complete indexed source set when the compiler or lint policy changes; ordinary source<br>
+changes keep the affected-file scope.</p>
+<h2 dir="auto" id="linux-fuse-runtimes">Linux FUSE runtimes</h2>
+<p dir="auto">The FUSE extra loads either <code class="notranslate">libfuse3.so.4</code> (Ubuntu 26.04) or <code class="notranslate">libfuse3.so.3</code> (Ubuntu 24.04)<br>
+at runtime. Install <code class="notranslate">fuse3</code>; its package dependency selects the matching runtime library without<br>
+pinning a distribution-specific library package name. Both SONAMEs expose the FUSE3 API subset<br>
+used by xff, including the four-argument <code class="notranslate">fuse_session_new</code> compatibility entry point. No libfuse<br>
+headers or libraries are included in the build.</p>
+<p dir="auto">Linux CI runs the real mount tests on Ubuntu 24.04 and <code class="notranslate">ubuntu-latest</code>, with<br>
+<code class="notranslate">--config=xff_fuse_tests_required</code> so missing libraries or failed mounts fail the job. Hosts without<br>
+a usable FUSE runtime retain the existing extraction fallback.</p>
+<h2 dir="auto" id="local-clang-tidy-scope">Local clang-tidy scope</h2>
+<p dir="auto">The normal commit and push hooks run clang-tidy on their changed C++ files. Changed headers<br>
+select the affected translation units. A single coordinator defaults to the detected CPU count minus one<br>
+(minimum one), capped by the number of selected files. This leaves one CPU available for other work. Set <code class="notranslate">CLANG_TIDY_JOBS</code> to a positive integer to override<br>
+that count, or leave it unset (<code class="notranslate">auto</code>) to use CPU detection. GitHub CI explicitly supplies its<br>
+runner CPU count; there is no fixed two-worker local limit.</p>
+<p dir="auto">When Trunk manages Git hooks, its commit and push actions invoke the entire configured pre-commit<br>
+suite, including formatting, repository policy and clang-tidy. Invoking only the clang-tidy hook<br>
+would omit clang-format and the policy checks because Trunk does not own those checks.<br>
+Both Trunk actions explicitly forward <code class="notranslate">CLANG_TIDY_JOBS</code>, so a per-command worker override reaches<br>
+the coordinator (for example <code class="notranslate">CLANG_TIDY_JOBS=8 git push</code>).<br>
+The push action combines changed paths from the pushed refs into one invocation. Existing Trunk<br>
+formatting and checks remain enabled; do not replace <code class="notranslate">core.hooksPath</code> to install competing hooks.</p>
+<p dir="auto">Generate or refresh the compile database with <code class="notranslate">./compile_commands-update.sh</code>, including after<br>
+adding sources or changing build configuration. Without the database or clang-tidy 22 or newer,<br>
+the local hook reports a skip; the dedicated CI job supplies both and enforces the check. A requested<br>
+source missing from an existing database fails with a refresh instruction instead of silently<br>
+omitting that file.</p>
+<p dir="auto">Expected-source queries fail closed: a Bazel query error is reported with its<br>
+package pattern and stops indexing before the database can claim completeness.<br>
+A successful headers-only query may be empty. The source collector publishes no<br>
+partial expected-source list when any query fails; <code class="notranslate">//tools:collect_compile_sources_test</code><br>
+checks both cases without invoking a real build.</p>
+<p dir="auto">Check selected files, including previously committed files that failed CI:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">pre-commit run clang-tidy --files xff_extras_api/mutations_test.cc xff_extras_api/fuse_backend_test.cc</pre></div>
+<p dir="auto">A full scan is a separate, explicit invocation (not part of a normal commit or push):</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">pre-commit run clang-tidy --all-files --hook-stage manual</pre></div>
+<p dir="auto">As with other hooks, <code class="notranslate">pre-commit run -a</code> explicitly selects all files. Use <code class="notranslate">--files</code> for a focused<br>
+verification; omit it to check staged changes.</p>
+<p dir="auto">Generated dependency sources needed during compile-command extraction must be materialized even<br>
+when their compiled objects or libraries come from cache. The preparation build requests the<br>
+<code class="notranslate">compile_sources</code> aspect's output group, which follows configured dependencies and explicitly<br>
+requests generated C-family sources and headers, including exec and Starlark-transition copies.<br>
+Generators must expose these artifacts through <code class="notranslate">DefaultInfo</code> or a source-provider target.<br>
+The PCRE2 extra exposes <code class="notranslate">chartables_source</code> for materialization and its drift test;<br>
+<code class="notranslate">@xff_pcre2//:chartables_test</code> compares it byte-for-byte with PCRE2's versioned<br>
+<code class="notranslate">pcre2_chartables.c.dist</code>. The compile-database preparation builds core, manual lint targets, the<br>
+shared extras API, and every extra's wildcard targets in one Bazel invocation, so the generated<br>
+source is requested even when the compiled library is cached. Its source-coverage query follows<br>
+C++ source providers rather than library dependencies, avoiding downloads from inactive dependency<br>
+branches while preserving failures for incomplete queries.</p>
+<p dir="auto">The extractor's internal action query disables <code class="notranslate">compiler_param_file</code>, <code class="notranslate">layering_check</code>, and<br>
+<code class="notranslate">parse_headers</code> in target and exec configurations. Bazel's warning that <code class="notranslate">--features</code> and<br>
+<code class="notranslate">--host_features</code> changed reports the resulting analysis-cache reset; it does not by itself mean<br>
+compilation was repeated. Normal preparation builds retain both repository header checks.</p>
+<h2 dir="auto" id="ci-build-caches">CI build caches</h2>
+<p dir="auto">Measured cache reuse, scheduling, fuzz throughput, and preparation profiling are documented in<br>
+<a href="docs/ci-performance.html"><code class="notranslate">docs/ci-performance.md</code></a>.</p>
+<p dir="auto">Coverage and fuzz jobs start alongside pre-commit and Trunk to reduce total CI wall time.<br>
+The final <code class="notranslate">done</code> gate still requires every job to pass. This intentionally spends runner time<br>
+on those jobs even when an early lint check fails.</p>
+<p dir="auto">Bazel's compiled-output disk cache is separate from its repository download cache.<br>
+CI restores the latest main cache for each runner OS, architecture, and build configuration.<br>
+Only main writes refreshed generations; PRs and release tags restore without saving. GCC also<br>
+uses a compiled-output cache. Release builds share the production configuration's main cache.</p>
+<p dir="auto">GitHub cache entries are immutable. Every main run therefore saves under a new run/attempt key,<br>
+with prefix restoration to reuse the previous generation. During migration, existing legacy<br>
+compiled-output caches remain a fallback until the first new generation is saved. A GitHub "cache hit" only means the<br>
+archive was restored; Bazel's final process statistics show whether build actions actually hit<br>
+that cache. Dependency and compiler-option changes can still require rebuilding.</p>
+<p dir="auto">Before upload, CI stops Bazel and evicts the largest disk-cache files until the action-cache and<br>
+content-store payload is at most 1,000,000,000 bytes by default. ASan uses 3,000,000,000 bytes and TSan uses<br>
+2,600,000,000 bytes; MSan uses 4,000,000,000 bytes and coverage uses 1,500,000,000 bytes<br>
+to retain more instrumented outputs. These are uncompressed limits; GitHub<br>
+storage usage reflects compressed uploads. Measure those uploads and total repository usage<br>
+after main refreshes the caches before increasing other configurations. This is a synchronous upload bound, not an<br>
+idle-time garbage-collection setting. Evicted outputs become normal cache misses; this bounded<br>
+cache does not promise to retain every object or executable. Size-first eviction favors retaining<br>
+many smaller compilation outputs over large linked executables; ties evict older files first.<br>
+This is a size heuristic, not action-type classification: large object files can also be evicted.<br>
+The weekly deep-fuzz workflow shares the ordinary fuzz cache and main-only refresh policy.<br>
+LLVM downloads remain uncached.<br>
+Cleanup retains ASan/TSan/coverage uploads up to 1,000,000,000 compressed bytes and MSan uploads up to<br>
+1,200,000,000 bytes; other entries keep<br>
+the existing 700,000,000-byte ceiling. The repository storage limit remains 10 GB.</p>
+<p dir="auto">After each successful main upload, the save action checks the GitHub inventory for that exact<br>
+replacement key and its compressed size. Only then does it delete strictly older main generations<br>
+for the same OS, architecture, and configuration. Missing, empty, or oversized replacements leave<br>
+the previous generations intact; concurrent newer uploads are also preserved. Inventory and<br>
+deletion failures leave cleanup to the fallback workflow. Compiler jobs need Actions write<br>
+permission for deletion; PRs and tags never invoke the save/retirement action.</p>
+<p dir="auto">The trusted cache-maintenance workflow removes closed-PR and tag-scoped caches first, then<br>
+superseded generations per configuration and ref, and oversized entries. It retains the newest<br>
+usable generation if a newer upload exceeds the ceiling. Open-PR caches from older workflows are<br>
+not removed merely because they belong to a PR; new PR runs do not write such caches.</p>
+<p dir="auto">Main's <code class="notranslate">done</code> job reports each measured cache's pre-trim and retained uncompressed sizes,<br>
+compressed upload size, and eviction count. It also totals all repository cache entries against<br>
+the 10 GB budget, including any overlapping generations still present. Missing uploads or job<br>
+measurements are identified rather than reported as zero. Small measurement artifacts expire<br>
+after one day and are not part of the cache-storage total.</p>
+<p dir="auto">Locally, use consistent compiler, extras, and linker options when comparing incremental builds.<br>
+An analysis-cache reset alone does not mean compilation was repeated. A personal <code class="notranslate">--disk_cache</code><br>
+setting can preserve action outputs across configuration switches and checkouts; the CI cache<br>
+change does not alter local Bazel settings.</p>
+<h2 dir="auto" id="parallel-fuzz-campaigns">Parallel fuzz campaigns</h2>
+<p dir="auto"><code class="notranslate">tools/fuzz_targets.py --campaign-seconds=60</code> discovers every first-party campaign, builds all<br>
+launchers together, and prepares Bazel run scripts sequentially. It then executes those scripts<br>
+concurrently, avoiding competing Bazel invocations. CI retains 60 seconds per target; weekly/manual<br>
+Deep fuzz uses 600 seconds per target with a 7,200-second aggregate budget.<br>
+<code class="notranslate">--max-total-seconds</code> still limits the sum of all target budgets,<br>
+not parallel wall time.</p>
+<p dir="auto">Local concurrency defaults to CPU count minus one. <code class="notranslate">--jobs=N</code> selects a maximum; both CPU capacity<br>
+and physical RAM further bound it. The driver reserves 2 GiB for the host and 512 MiB of overhead<br>
+per worker beyond <code class="notranslate">--rss-limit-mb</code> (default 2048 MiB). CI requests the runner CPU count through the<br>
+same bounded scheduler. Unknown physical RAM falls back to one worker. The estimate does not<br>
+measure other processes' live memory use; lower <code class="notranslate">--jobs</code> on a busy machine.</p>
+<p dir="auto">Each campaign has its own output directory, log, corpus, crash artifacts, and result JSON.<br>
+<code class="notranslate">--output-dir=PATH</code> chooses the parent; otherwise the driver creates and retains a temporary<br>
+directory and prints its path. Generated launch scripts establish the runfiles context. On failure,<br>
+the scheduler stops queued campaigns and terminates active campaign process groups. A campaign<br>
+that exceeds its budget by 60 seconds is terminated as a failure, covering hung launchers or inputs.</p>
+<p dir="auto">The <code class="notranslate">fuzz-campaigns</code> CI artifact retains logs and findings for seven days, even after failure.<br>
+<code class="notranslate">summary.json</code> records workers, campaign wall time, and per-target execution counts and average<br>
+executions per second when libFuzzer supplies them. Compare those statistics alongside elapsed time:<br>
+CPU or memory contention can reduce mutation throughput even when parallel wall time improves.</p>
+<h2 dir="auto" id="release-artifact-smoke-checks">Release-artifact smoke checks</h2>
+<p dir="auto">The default Linux/macOS jobs and tag builds run <code class="notranslate">tools/release_smoke.py</code> against both<br>
+stripped executables after staging. The disposable corpus checks the exact stamped version,<br>
+help, JSONL/CSV/NUL filename round trips, escaped plain/TSV record boundaries, named INI<br>
+selection, repeated summary identity,<br>
+a literal <code class="notranslate">total</code> extension, and all four comparison outcomes. No installed executable or<br>
+user data is modified. Existing required system/user configuration still applies; run this<br>
+release check in a clean CI environment. It complements the full tests rather than replacing them.</p>
+<p dir="auto">To check an already built development binary:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">python3 tools/release_smoke.py PATH_TO_XFF --expected-version=0.0.0</pre></div>
+<p dir="auto">Use the tag's numeric version for release binaries. Each invocation has a 30-second timeout,<br>
+and a failure prevents artifact publication.</p></main><footer>Release snapshot &middot; 8e95f5546187b2a6f4ec165af9cf794af18ac4a1</footer></body></html>

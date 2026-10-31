@@ -1,0 +1,653 @@
+<!doctype html><html lang="en">
+<!-- mboworks favicons -->
+<link rel="icon" href="../../../../favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../../favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../../../apple-touch-icon.png">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/benchmark-comparisons.md - xff v0.9.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.9.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.9.0">Release &amp; downloads</a><a href="/xff/releases/0.9.0/">CLI reference</a><a href="/xff/coverage/tag/0.9.0/">Coverage</a><a href="/xff/benchmarks/tag/0.9.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/8e95f5546187b2a6f4ec165af9cf794af18ac4a1">Source</a><a href="/xff/site/tag/v0.9.0/documents.html">Documentation</a></nav><p>xff v0.9.0</p><main><h1 dir="auto" id="comparisons-with-other-tools">Comparisons with other tools</h1>
+<p dir="auto">Benchmark tables compare xff, find, ripgrep, and fzf on explicitly equivalent tasks. Every warm-up<br>
+and measured run is checked against an independent fixture oracle. Wrong output, duplicate rows,<br>
+unexpected exit status, diagnostics, and timeouts fail collection. Performance differences are<br>
+informational. A 15% advisory alarm identifies normalized slowdowns without blocking merges.</p>
+<h2 dir="auto" id="matrix-and-sampling">Matrix and sampling</h2>
+<p dir="auto">Each tree shape has one table. Rows identify the task and tool. Columns are grouped by allocation:<br>
+Linux uses <strong>1 CPU</strong> and <strong>3 CPUs</strong> with enforced affinity; hosted macOS uses <strong>1 worker</strong> and<br>
+<strong>3 workers</strong> without affinity. Each group has a 1-2-5 progression from 10 through 10,000 files<br>
+before merge, extended through 100,000 after merge. HTML uses spanning allocation headers;<br>
+Markdown repeats allocation/count labels and aligns numeric cells and their source text to the right.</p>
+<ul dir="auto">
+<li>Both PR CI and main's post-merge benchmark workflow run nine measured repetitions and average<br>
+the fastest seven, pooling three rounds from each of three shards.</li>
+<li>One correctness-checked warm-up round runs every participant and is discarded. The starting<br>
+participant rotates across tasks and rounds; measured samples are interleaved by round.</li>
+<li>Selection is by elapsed time. Associated CPU, latency, memory, and output metrics use that same<br>
+selected subset. All raw samples are retained, including the discarded slower observations.</li>
+<li>Tables explicitly state the sampling policy, normally <code class="notranslate">mean of fastest 7/9 runs</code>. Raw-sample<br>
+variability remains available separately. Historical reports retain their recorded policy.</li>
+</ul>
+<p dir="auto">PR tables compare against the newest successful retained main measurement with compatible cells.<br>
+Cells show <code class="notranslate">current ms / main ms (change)</code>;<br>
+change is <code class="notranslate">(current / main - 1) * 100%</code>, so positive means slower. The baseline commit, run, attempt,<br>
+and policy are explicit. Historical sampling policies may differ; this is not a significance test.</p>
+<p dir="auto">The report stores invocation settings (file counts, CPU counts, depth, fixture mappings), tree and<br>
+source hashes, result hashes, tool versions, executable hashes, build identity, platform, runner<br>
+class, CPU affinity, and filesystem type. Compatibility checks exclude sampling count and temporary<br>
+paths, but require the same measurement semantics, build configuration, environment contract, and<br>
+per-participant commands and competitor identities. Each compared cell must also have the same CPU/file allocation, fixture tree,<br>
+and expected results. Adding a new size or fixture preserves comparisons for overlapping unchanged<br>
+cells; changed/new cells show <code class="notranslate">n/a</code>. If no compatible main report exists, the table says so explicitly.<br>
+The first run of a changed contract may therefore establish a new baseline.<br>
+Without enforced affinity, host CPU count must also match. A three-CPU macOS measurement cannot<br>
+use a five-CPU measurement as its baseline. Local measurements keep their own runner class and<br>
+must not replace hosted observations; remeasure selected revisions on one local machine when a<br>
+local history is needed.<br>
+Use the <a href="benchmark-backfill.html">historical backfill workflow</a> to build and measure a frozen revision<br>
+list in one host session, with a common driver and reference-tool set.</p>
+<h2 dir="auto" id="relative-performance-and-advisory-alarm">Relative performance and advisory alarm</h2>
+<p dir="auto">Each shape also has a CPU-grouped ratio table for participants doing the same task. It shows<br>
+<code class="notranslate">xff elapsed / reference elapsed</code> and the percentage difference; a ratio above one means xff is<br>
+slower. Exact selected averages and absolute differences are retained in <code class="notranslate">relative_results</code> in JSON.<br>
+Standalone fzf list filtering is never compared with xff discovery.</p>
+<p dir="auto">When a compatible main cell exists, the ratio table also shows normalized change:<br>
+<code class="notranslate">(PR xff/reference ratio / main xff/reference ratio - 1) * 100%</code>. Historical reports retain the<br>
+same ratios and all tool versions, so both xff and competitor developments can be inspected.<br>
+Relative measurements reduce some shared runner effects; they do not eliminate all machine noise,<br>
+workload effects, or changes in the reference tool. Changed competitor identities suppress baseline comparisons for that participant while retaining<br>
+unaffected cells, rather than silently attributing a tool upgrade to xff.</p>
+<p dir="auto"><code class="notranslate">--alarm-percent=15</code> is the initial advisory policy. A comparable cell whose xff/reference ratio<br>
+worsens by more than 15% versus main is recorded in the report and produces a CI warning. It does<br>
+not change the command's exit status or block merging. All scales are shown, including startup-heavy<br>
+small cases; the recorded sampling policy remains explicit. New or incompatible cells cannot<br>
+trigger an alarm without a baseline. Correctness failures still fail CI. A future blocking policy<br>
+can use the same evidence with a confirmation run; no performance block is enabled now.</p>
+<h2 dir="auto" id="pr-previews-and-the-performance-overview">PR previews and the performance overview</h2>
+<p dir="auto">The benchmark page defaults to merged history. Its <strong>Source</strong> selector also offers the latest<br>
+available preview for each open PR's current head; <strong>Platform</strong> selects Linux or macOS. Previews<br>
+are labeled explicitly and do not become merged measurements. A new push removes an older head<br>
+from selection on the next publication. Closing or merging a PR also removes its preview from<br>
+selection on that refresh; the original observations remain archived at their immutable URL.</p>
+<p dir="auto">The trusted publisher starts watching when PR CI starts. Once both benchmark comparison jobs pass,<br>
+it publishes their existing JSON results without waiting for unrelated tests. It does not collect<br>
+another set of measurements. Publication still waits for any active Pages deployment. The browser<br>
+loads public data from the site and needs no GitHub credentials. Preview publication does not mean<br>
+the rest of CI passed.</p>
+<p dir="auto">The publisher checks the current PR head, repository, run attempt, successful comparison jobs,<br>
+artifact creation times, and the tested merge commit's parents. Reports preserve both the PR<br>
+branch head and tested merge commit, the base parent, and artifact identity. Only code checked out<br>
+from <code class="notranslate">main</code> executes with publication permissions. Uploaded HTML is ignored; bounded JSON is<br>
+validated and rendered again. Waiting happens outside the shared deployment lock. Preview updates<br>
+reuse merged pages and their catalog instead of rebuilding every historical chart.</p>
+<p dir="auto">The compact <strong>Performance overview</strong> appears before the detailed tables, in the selected chart<br>
+view, and in one bot comment updated on the PR after successful publication. It gives:</p>
+<ul dir="auto">
+<li>The merged baseline commit, run, attempt, and sampling policy.</li>
+<li>A typical change: the equal-weight geometric mean of compatible XFF/reference change factors.</li>
+<li>Counts of faster, within-threshold, and slower cases, plus unavailable comparisons.</li>
+<li>The five largest regressions and a visible advisory warning when any case exceeds 15% slower.</li>
+</ul>
+<p dir="auto">For each matched case the factor is <code class="notranslate">(current XFF / current reference) / (main XFF / main reference)</code>.<br>
+This compares both XFF measurements on the same reference-time scale: multiplying each by a shared<br>
+window reference mean divided by its own reference time gives exactly the same factor. It does<br>
+not average XFF measurements across revisions. Positive change means slower; negative means faster.<br>
+All file counts participate, including startup-heavy small cases. An improved aggregate cannot<br>
+hide a warned individual case. Missing baselines are unknown, never zero regressions. The workload<br>
+grid contains correlated cases, so the counts and aggregate are descriptive, not a significance test.</p>
+<p dir="auto">Reference-window presentation remains separate: a preview can use compatible merged references<br>
+plus itself, but can never enter another preview's window or change a merged window. The first<br>
+five/current-plus-four rule still applies. Raw timings are unchanged. The PR comment updates only<br>
+for the current head and latest selected attempt; it never edits a human's comment. No performance<br>
+failure gate is enabled by this publication work.</p>
+<h2 dir="auto" id="fixture-inputs">Fixture inputs</h2>
+<p dir="auto">A manifest is self-contained UTF-8 text, one entry per line. Paths are relative to an isolated root;<br>
+parent directories are created automatically. Blank lines are ignored. There are no comments,<br>
+escape sequences, shell expansion, or sidecar files. Split at the first <code class="notranslate">=</code>; subsequent <code class="notranslate">=</code> bytes<br>
+belong to the content. Text forms preserve whitespace and add no newline. LF or CRLF terminates a<br>
+manifest line; encode embedded newlines or literal carriage returns with base64.</p>
+<pre lang="text" class="notranslate"><code class="notranslate">empty.txt
+empty-dir/
+src/main.cc=:int main() {}
+docs/note.txt=t:Hello world!
+data/bytes.bin=b:AAECAwQ=
+main.cc=l:src/main.cc
+src/current.cc=l:main.cc
+dangling=l:missing.txt
+loop=l:loop
+</code></pre>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Form</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">path</code></td>
+<td>Empty regular file</td>
+</tr>
+<tr>
+<td><code class="notranslate">path/</code></td>
+<td>Explicit directory, including an empty directory</td>
+</tr>
+<tr>
+<td><code class="notranslate">path=:text</code></td>
+<td>Literal UTF-8 content</td>
+</tr>
+<tr>
+<td><code class="notranslate">path=t:text</code></td>
+<td>Explicit equivalent of <code class="notranslate">=:</code></td>
+</tr>
+<tr>
+<td><code class="notranslate">path=b:BASE64</code></td>
+<td>Strict base64 decoding into exact bytes</td>
+</tr>
+<tr>
+<td><code class="notranslate">path=l:target</code></td>
+<td>Symlink; relative target resolves from the link's parent</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Unknown forms, including <code class="notranslate">=f:</code>, are errors. Duplicate entries and file/directory conflicts are<br>
+errors. Links are created after regular files and directories; fixture creation never follows them.<br>
+Absolute paths, parent traversal in entry names, and link chains escaping the root are rejected.<br>
+Internal dangling links and cycles are allowed. Excessively complex link expansion is rejected.</p>
+<p dir="auto">A tar archive, optionally compressed (<code class="notranslate">.tgz</code>, <code class="notranslate">.tar.gz</code>, etc.), is an alternative for larger content<br>
+or an existing tree. Extraction happens before timing through the same validated entry model;<br>
+files, directories, and symlinks are supported. Hard links, devices, FIFOs, duplicate names, and<br>
+escaping paths/links are rejected. Archive ownership, timestamps, and permissions are not restored:<br>
+these are normalized search fixtures, not metadata-preservation tests. Imports are bounded to<br>
+200,000 entries and 1 GiB of file content. Both the input checksum and canonical tree hash are stored.</p>
+<p dir="auto">Supply repeatable shape/count mappings to replace generated fixtures:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">python3 tools/benchmark_compare.py --binary=/path/to/optimized/xff --report=report.json \
+  --fixture broad:10=fixtures/broad-10.manifest \
+  --fixture broad:100=fixtures/broad-100.tgz</pre></div>
+<p dir="auto">The count is the exact number of regular files in that input. Directories and symlinks do not count;<br>
+inputs are never silently truncated or replicated. Missing shape/count combinations appear as <code class="notranslate">n/a</code>.<br>
+Without custom inputs, hosted CI continues to generate the legacy <code class="notranslate">broad/v1</code> and <code class="notranslate">deep/v1</code> trees for<br>
+each matrix cell. Legacy broad is flat; legacy deep distributes files across up to 40 nested levels,<br>
+capped by the requested count.</p>
+<p dir="auto">New local collections default to the versioned <code class="notranslate">broad/v2</code> and <code class="notranslate">deep/v2</code> layouts specified in<br>
+<a href="design-benchmark-layouts.html">Versioned benchmark fixture layouts</a>. One maximum tree per layout has<br>
+nested exact-count anchors and is reused in layout, worker-count, file-count order. Broad uses<br>
+shallow groups of at most 64 generated files; deep uses a narrow chain with at most 512 generated<br>
+files per directory. Both layouts are prepared before measurement and verified unchanged afterward.<br>
+Pass <code class="notranslate">--layout-revision=legacy</code> to continue an existing legacy dataset explicitly. The <code class="notranslate">.gitignore</code><br>
+is included in reported input counts and throughput in every revision. No third-party corpus is<br>
+downloaded, and hosted CI remains unchanged until the local measurements support a separate decision.</p>
+<h2 dir="auto" id="tasks-and-equivalence">Tasks and equivalence</h2>
+<h3 dir="auto" id="native-process-accounting">Native process accounting</h3>
+<p dir="auto">New collections use a small native pipeline launcher after the fresh Python<br>
+worker. The native process forks the measured commands only after exec has<br>
+discarded Python's address space; its own <code class="notranslate">wait4</code> usage is not reported as a tool<br>
+measurement. Each direct command has an individual RSS high-water mark. Pipeline<br>
+memory remains the sum of those individual peaks, an upper bound rather than a<br>
+simultaneous peak. The kernel can still include the smaller native child's<br>
+pre-exec footprint, so very small-command RSS needs a native control before<br>
+attributing it to the command's allocations.</p>
+<p dir="auto">The extra native launch boundary is deliberately included in elapsed and<br>
+first-output wall time. CPU usage and peaks account for the measured commands,<br>
+including their native pre-exec setup, not the accounting parent. New reports<br>
+record the launcher binary hash and the<br>
+memory/wall-time method in <code class="notranslate">contract.resource_accounting</code>; the full executable<br>
+path is retained separately in <code class="notranslate">resource_launcher</code>, and merged shard provenance<br>
+preserves each host's launcher identity. Different accounting methods<br>
+or launcher hashes cannot share main baselines or normalization windows. Older<br>
+reports remain unchanged and renderable, and dataset catalogs retain both methods<br>
+and their observations under the same workload recipe. Do not infer an engine<br>
+speedup from an old-method/new-method timing comparison.</p>
+<p dir="auto">Bazel declares and builds the launcher before executing measurement tools. Direct<br>
+script use requires an explicit prebuilt binary; measurement never triggers a<br>
+build. For example, prepare it before any timing session:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">bazel build //tools:process_resources_native --config=clang_release
+launcher=<span class="pl-s"><span class="pl-pds">$(</span>bazel cquery //tools:process_resources_native --config=clang_release --output=files<span class="pl-pds">)</span></span>
+python3.13 tools/benchmark_compare.py --resource-launcher=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$PWD</span>/<span class="pl-smi">$launcher</span><span class="pl-pds">"</span></span> \
+  --binary=/path/to/optimized/xff --report=/tmp/native-comparison.json --cpus=1</pre></div>
+<p dir="auto">The PR and main CI build jobs retain the optimized accounting helper alongside<br>
+XFF in <code class="notranslate">benchmark-build.tar</code>. Every measurement shard consumes that same<br>
+prebuilt helper through <code class="notranslate">--resource-launcher</code>; it does not run Bazel. Hosted<br>
+historical backfill builds and copies the current helper before freezing its<br>
+batch and building historical XFF revisions. This separates the accounting<br>
+adapter's identity from the measured source revision and keeps compilation<br>
+outside the measurement phase on both Linux and macOS.</p>
+<p dir="auto">The standalone resource tool, backfill driver and local benchmark command also<br>
+accept <code class="notranslate">--resource-launcher</code>. Frozen backfill contracts include the actual<br>
+launcher identity and both accounting source files. Changing either the driver<br>
+or launcher requires a new batch; it cannot retrofit memory measurements in an<br>
+existing batch. The launcher inherits the fresh worker's affinity and process<br>
+group, so the comparison timeout still terminates the complete pipeline.</p>
+<h3 dir="auto" id="task-populations-and-output">Task populations and output</h3>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Task</th>
+<th>Participants</th>
+<th>Contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>File enumeration</td>
+<td>xff, find, rg</td>
+<td>All regular files, including hidden and ignored names</td>
+</tr>
+<tr>
+<td>Safe enumeration</td>
+<td>xff</td>
+<td>Same population with <code class="notranslate">--safe</code></td>
+</tr>
+<tr>
+<td>Basename <code class="notranslate">*.txt</code></td>
+<td>xff, find, rg</td>
+<td>Case-sensitive suffix selection</td>
+</tr>
+<tr>
+<td>Content selection</td>
+<td>xff, rg</td>
+<td>Literal <code class="notranslate">needle</code> and no-match <code class="notranslate">absent_marker</code></td>
+</tr>
+<tr>
+<td>Discovery plus fuzzy</td>
+<td>xff, find piped to fzf</td>
+<td>Case-sensitive subsequences <code class="notranslate">itm</code>, <code class="notranslate">hdn</code>, and <code class="notranslate">zzzz</code></td>
+</tr>
+<tr>
+<td>Precomputed-list fuzzy</td>
+<td>fzf</td>
+<td>Same candidate paths and queries; excludes discovery</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Results are unordered NUL-delimited path multisets. No symlinks are followed. Sorting, color,<br>
+pagers, rg configuration, and fzf defaults are disabled. xff requests <code class="notranslate">--no-config</code>; mandatory host<br>
+policy that changes results causes correctness validation to fail. The production VFS and safety<br>
+checks remain active. Safe enumeration measures read-only safe-mode overhead, not mutation-policy<br>
+costs. Content tasks are explicitly skipped for fixtures containing NUL bytes: xff and rg do not<br>
+have equivalent binary-skipping semantics. Other tasks still measure those binary fixtures.</p>
+<p dir="auto">Fuzzy tasks compare plain ASCII subsequence acceptance, not scoring, ranking, extended-query syntax,<br>
+or interactive responsiveness. Standalone fzf list filtering has no xff counterpart and must not be<br>
+compared with discovery time. The end-to-end pipeline includes both find and fzf. No cross-scope<br>
+speed ratios are generated.</p>
+<h2 dir="auto" id="storage-cpus-and-accounting">Storage, CPUs, and accounting</h2>
+<p dir="auto">Hosted fixtures use verified Linux <code class="notranslate">/dev/shm</code> tmpfs; there is no silent disk fallback. This excludes<br>
+ordinary backing-device I/O from fixture reads while retaining filesystem calls, metadata, VFS<br>
+routing, and safety checks. Tmpfs can swap under memory pressure. Executables and system config<br>
+remain outside the fixture-storage contract. Fixtures are prepared before timing, warmed up, then<br>
+reused without cache flushes. These are not cold-storage benchmarks.</p>
+<p dir="auto">Linux workers bind to one/three CPUs from the runner's allowed affinity set before timing, and child<br>
+processes inherit that allocation. The entire find/fzf pipeline shares it. xff receives matching<br>
+<code class="notranslate">--jobs</code>, rg matching <code class="notranslate">--threads</code>, and fzf matching <code class="notranslate">GOMAXPROCS</code>. Find remains single-threaded.<br>
+Affinity does not reserve physical cores or eliminate hosted-runner contention.</p>
+<p dir="auto">GitHub documents four CPUs for public Linux runners and three for standard ARM64 macOS runners.<br>
+Both hosted grids request one/three workers. Linux leaves one vCPU outside the tools' affinity<br>
+mask for background work; this is headroom, not an exclusive reservation. macOS has no CPU<br>
+pinning and uses<br>
+ordinary temporary storage and scheduler placement. See<br>
+<a href="https://docs.github.com/en/actions/reference/runners/github-hosted-runners">GitHub's runner specifications</a>.<br>
+On every platform, collection rejects a requested allocation larger than the available CPU count<br>
+before creating any fixtures or measuring smaller allocations. Linux checks the allowed affinity<br>
+mask; other platforms check the host CPU count. An unknown capacity is an error. Requiring<br>
+affinity on an unsupported platform is also an error.</p>
+<p dir="auto">CI runs the same preflight before builds and tool installation. It can be run independently:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate"><span class="pl-c"><span class="pl-c">#</span> Linux: use three CPUs, leaving headroom on the standard four-vCPU runner.</span>
+python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=3 --require-cpu-affinity
+<span class="pl-c"><span class="pl-c">#</span> Standard hosted macOS: require capacity for three workers without claiming pinning.</span>
+python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=3</pre></div>
+<p dir="auto">The standalone comparison driver defaults to one/four requested workers. The local backfill<br>
+tool instead requires an explicit grid; use one/three/ten on a suitable host. Both validate capacity. A native macOS<br>
+worker limit does not bind threads to specific CPUs. Mach's affinity policy describes cache-sharing<br>
+hints, not a CPU mask, and is unsupported on the tested Apple Silicon host. See<br>
+<a href="https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/mach/thread_policy.h">Apple's policy definition</a>.<br>
+A macOS VM can limit virtual CPU count but represents a different measurement environment.</p>
+<p dir="auto">Each invocation uses a fresh measurement worker. Commands run without a shell; stdout is drained<br>
+through a pipe and stderr captured. Validation is outside timing. Both pipeline processes contribute<br>
+CPU and exit status. Single-process RSS is its high-water mark; pipeline memory is the sum of<br>
+individual high-water marks, an upper bound rather than simultaneous peak memory. Missing stdout<br>
+latency is unavailable, not zero. Throughput divides input files by the selected mean elapsed time.<br>
+A 60-second deadline terminates the worker process group. These are leaf commands; arbitrary child<br>
+process trees are outside this accounting contract.</p>
+<h2 dir="auto" id="running-and-publication">Running and publication</h2>
+<p dir="auto">Build with <code class="notranslate">--config=clang_release</code>. The driver is also available as <code class="notranslate">//tools:benchmark_compare</code>.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">python3 tools/benchmark_compare.py --binary=/path/to/optimized/xff --report=report.json \
+  --repetitions=9 --keep=7 --require-tools \
+  --fixture-parent=/dev/shm --require-memory --require-cpu-affinity \
+  --summary=report.md --html=report.html</pre></div>
+<p dir="auto">Repeat <code class="notranslate">--files</code> or <code class="notranslate">--cpus</code> to choose other scales. Use <code class="notranslate">--baseline-root=PATH</code> for a retained<br>
+benchmark directory. <code class="notranslate">--build-identity</code> and <code class="notranslate">--runner-class</code> establish comparable invocation settings.<br>
+For a small local correctness check, use <code class="notranslate">--files=12 --depth=3 --cpus=1 --repetitions=1 --keep=1</code>.<br>
+Without required-memory/affinity options, macOS records ordinary temporary storage and null affinity;<br>
+such results are not comparable with the hosted tmpfs/affinity measurements. Missing competitors<br>
+are explicit skips unless <code class="notranslate">--require-tools</code> is set.</p>
+<p dir="auto">PR measurement is a job in the existing test workflow. Its Markdown table appears in the job summary;<br>
+JSON, HTML, and Markdown are artifacts. Correctness/measurement failures fail CI; timing deltas do<br>
+not. Main's 7/9 measurements join the existing post-merge history and publication workflow. No extra<br>
+cache generation is created. Historical reports and exact-commit release links remain supported.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">bazel <span class="pl-c1">test</span> //tools:benchmark_fixture_test //tools:benchmark_matrix_test \
+  //tools:benchmark_compare_test //tools:benchmark_history_test</pre></div>
+<p dir="auto">Rendered HTML ratios use dark red when xff is slower than the reference and dark green<br>
+when faster; equal results stay neutral. The numeric ratios remain visible in every<br>
+format, and the separate change versus main retains neutral styling.</p>
+<p dir="auto">HTML uses two numeric subcolumns per file count: elapsed milliseconds and the signed<br>
+time difference from main (with percentage change below), or ratio and percentage difference. Each numeric cell is right-aligned; task/tool names are<br>
+left-aligned. A ratio change versus main stays on its own line below the difference.</p>
+<p dir="auto">Broad and deep HTML sections share one table per metric family. Shaded <code class="notranslate">FS tree</code> rows identify<br>
+<code class="notranslate">Broad</code> and <code class="notranslate">Deep</code>, with slightly larger, left-aligned titles. Each section repeats column headers;<br>
+both datasets retain identical numeric column widths. Task names and <code class="notranslate">xff / reference</code> labels occupy<br>
+separate left-aligned columns.</p>
+<p dir="auto">Post-merge measurement runs on both Linux and macOS through the existing benchmark workflow.<br>
+Each platform retains its own HTML report and raw JSON under the workflow run and attempt;<br>
+release reference pages link to the exact tagged commit's retained results for each platform.<br>
+Missing platform results are stated explicitly. PR measurements remain previews.<br>
+Linux uses verified tmpfs and CPU affinity. macOS uses ordinary temporary storage and requested<br>
+worker counts without CPU affinity; the report records this distinction. Platform histories remain<br>
+separate and must not be compared as if their hardware or storage were equivalent.</p>
+<p dir="auto">HTML page titles and headings identify the recorded OS and architecture. Platform reports stay<br>
+separate to keep the scaling tables readable; release reference pages link to each platform.<br>
+Allocation headers say CPUs when affinity is enforced and workers otherwise. Rendering historical<br>
+results uses their recorded provenance, never the rendering host's identity.</p>
+<p dir="auto">Both PR and post-merge workflows retain separate macOS and Linux artifacts. Data and rendered<br>
+pages share a basename, for example <code class="notranslate">benchmark-pr-macos-arm64.json</code> and<br>
+<code class="notranslate">benchmark-pr-macos-arm64.html</code> (or <code class="notranslate">benchmark-report-linux-x86_64.json</code> and <code class="notranslate">.html</code> post-merge).<br>
+The task and tool/comparison occupy separate left-aligned columns; all measurements stay right-aligned.</p>
+<p dir="auto">Download a run's artifacts and render the saved observations with the current renderer:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">gh run download RUN_ID --pattern <span class="pl-s"><span class="pl-pds">'</span>benchmark-pr-*<span class="pl-pds">'</span></span> --dir benchmark-artifacts
+python3 tools/benchmark_compare.py --render-only \
+  --report=benchmark-artifacts/benchmark-pr-macos-arm64/benchmark-pr-macos-arm64.json \
+  --html=benchmark-artifacts/benchmark-pr-macos-arm64/benchmark-pr-macos-arm64.html</pre></div>
+<p dir="auto">Repeat with the Linux artifact's basename for its page. <code class="notranslate">--render-only</code> never invokes a measured<br>
+tool or changes the input JSON. Historical platform identity comes from that JSON, so rendering<br>
+Linux observations on macOS does not relabel them. The same option can regenerate <code class="notranslate">--summary</code><br>
+Markdown. CI artifacts are retained for 30 days; published post-merge history retains the raw JSON<br>
+alongside each platform's page for later rendering.</p>
+<p dir="auto">Measurement progress is flushed to stderr at most once every five seconds, with immediate<br>
+start/completion lines per scale. Updates put <code class="notranslate">Workers: N Files: N</code> first, followed by<br>
+scale X/Y, fixture preparation, or <code class="notranslate">Run: X/Y</code><br>
+within the current task, including the tool and warm-up/sample index. Small scales therefore<br>
+produce little output. Progress output and correctness checks happen outside the timed child<br>
+commands; scale completion confirms all its output validation finished.</p>
+<p dir="auto">The macOS job has a 60-minute pre-merge budget. Post-merge, its build and measurement jobs each<br>
+have a 90-minute budget. Linux has 30 minutes before merge, then 45 minutes for its paired build<br>
+and 60 minutes per measurement shard after merge. These are job ceilings, not requested<br>
+measurement durations; individual benchmark invocations retain their timeout.</p>
+<p dir="auto">PR measurements use 10, 20, 50, 100, 200, 500, 1,000, 2,000, 5,000, and 10,000 files.<br>
+Post-merge adds 20,000, 50,000, and 100,000 files. Both retain the fastest 7 of 9 samples.<br>
+Baseline comparisons use matching cells at shared sizes; extra main-only scales<br>
+do not invalidate comparisons at the smaller sizes. Explicit repeated <code class="notranslate">--files</code> values override<br>
+the default grid for local experiments.</p>
+<h2 dir="auto" id="measurement-shards">Measurement shards</h2>
+<p dir="auto">PR and main runs build once per platform, then start three candidate shards in parallel on Linux<br>
+and three on macOS. Every shard measures the complete file-count,<br>
+worker-count and broad/deep matrix. All tools for each measured round run together on one runner,<br>
+with rotating participant order; the starting order also rotates between shards.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Run</th>
+<th align="right">Initial shards</th>
+<th align="right">Candidate cap</th>
+<th align="right">Measured rounds per candidate</th>
+<th align="right">Selected shards</th>
+<th align="right">Pooled rounds</th>
+<th align="right">Retained fastest rounds</th>
+<th align="right">Largest file count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PR</td>
+<td align="right">3</td>
+<td align="right">5</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">9</td>
+<td align="right">7</td>
+<td align="right">10,000</td>
+</tr>
+<tr>
+<td>Main</td>
+<td align="right">3</td>
+<td align="right">5</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">9</td>
+<td align="right">7</td>
+<td align="right">100,000</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Each shard performs its own discarded, correctness-checked warm-up for each case. The aggregator<br>
+combines raw observations before selecting the fastest seven per participant. It never<br>
+averages shard summaries or discards a shard's slow rounds before pooling. All metrics use the<br>
+same selected observations as elapsed time. The raw JSON retains every measured observation,<br>
+its shard and round number, the shard's hashed host identity, and the original invocation paths.</p>
+<p dir="auto">The workflow counts agreement only among candidates with the same non-CPU benchmark identity and<br>
+the same host CPU count. If three initial candidates do not form a quorum, it schedules a fourth<br>
+candidate for that platform; if four still do not contain three matching candidates, it schedules a<br>
+fifth. This also handles runner image drift, such as Homebrew updating <code class="notranslate">fzf</code> while macOS shards are<br>
+starting: candidates using different tool versions form separate groups and are never pooled. Linux<br>
+and macOS vote independently, since their runner contracts are not comparable. The final aggregator<br>
+runs once and selects exactly three reports from a matching group for each platform. If five<br>
+candidates cannot produce that quorum, aggregation fails rather than mixing unlike measurements. A<br>
+missing report can use the next candidate slot, but a runner cancellation can still make the workflow<br>
+fail and require a CI retry.</p>
+<p dir="auto">Repeating the same matrix on all three selected runners gives approximately equal expected work and avoids<br>
+assigning one tree shape or worker count to a consistently faster host. It does not make hosts<br>
+identical: fastest-run selection may favor samples from a faster host, and the selected hosts<br>
+can differ between tools. Linux still pins one or three logical CPUs; macOS records worker<br>
+requests without claiming CPU affinity. Hardware, storage and background load still affect results.</p>
+<p dir="auto">Warm-ups and fixture creation are repeated on every candidate. The usual three-candidate case<br>
+executes twelve tool rounds including warm-ups per case, versus ten in a serial nine-sample run;<br>
+each additional candidate adds four rounds. Each candidate executes four rounds including its<br>
+warm-up, allowing an ideal 2.5-fold reduction in measurement wall time for the usual case relative<br>
+to that serial run. Build, fixture setup, artifact transfer, aggregation and runner availability<br>
+limit the end-to-end gain.</p>
+<p dir="auto">Aggregation requires the complete planned matrix on each selected sample shard, exactly three raw<br>
+rounds per selected shard, matching source, binary, reference tools, fixture contents, expected<br>
+outputs and commands, compatible CPU affinity, equal host CPU counts and identical sampling<br>
+contracts within the selected group. Each merged report retains the selected candidates' original<br>
+shard indexes and host provenance. Contract differences split candidates into separate groups; an<br>
+invalid candidate or a failure to obtain a three-candidate group remains an error. The adaptive jobs<br>
+run inside the same workflow attempt, so a provider-canceled candidate does not require a workflow<br>
+rerun or a queued GitHub cancellation command.<br>
+Both PR and merged-main aggregation load retained main reports before rendering the overview.<br>
+Only first-parent main revisions preceding the measured commit are eligible (for a PR merge<br>
+preview, this includes its main parent). The nearest compatible revision wins; later reruns of<br>
+older revisions cannot replace it, and a rerun never selects its own commit or a future merge.<br>
+The selected revision, run, attempt and sampling policy remain in the report.</p>
+<p dir="auto">Historical baselines and the advisory slowdown alarm are computed after pooling. JSON and HTML<br>
+share the platform-specific basename; only final merged artifacts are selected by the publisher.</p>
+<p dir="auto"><code class="notranslate">tools/benchmark_shards.py --partition=samples --count=3</code> creates fixed plans. The CI workflows use<br>
+<code class="notranslate">--partition=samples --adaptive --count=5 --repetitions=15 --keep=15</code>; each candidate collects three<br>
+rounds, then the aggregator pools three agreeing candidates into the published 9-round, fastest-7<br>
+contract. <code class="notranslate">--repetitions</code> sets total candidate rounds and must divide evenly among shards; <code class="notranslate">--keep</code><br>
+selects the final fastest subset. The collector must retain every assigned round. The default <code class="notranslate">balanced</code> partition<br>
+continues to support disjoint, cost-balanced fixture plans and existing retained reports.<br>
+Historical CI backfill campaigns and local batches retain their documented one-host-per-revision<br>
+contract; their scheduling is separate from these ordinary PR and main workflows.</p>
+<h2 dir="auto" id="comparison-landscape">Comparison landscape</h2>
+<p dir="auto"><code class="notranslate">tools/benchmark_landscape.py</code> renders existing comparison JSON as a standalone interactive<br>
+HTML landscape. It requires no remeasurement. The 3D chart is open by default; its<br>
+show/hide disclosure collapses the chart, controls and explanation without hiding the tables.<br>
+On the history page, a keyboard-accessible Show/Hide chart button sits on the right of the<br>
+Benchmark history title instead of separate chart headings; the history tables remain visible.<br>
+Reopening resizes the chart to the available width. Absolute measurements are collapsed by default;<br>
+the comparison table stays visible below the plot. Benchmark publication inserts the landscape above all tables on retained reports with the<br>
+one-worker/one-larger-allocation matrix, including both hosted platforms' 1/3 groups and historical 1/4 groups.<br>
+Axis labels, hover cards and explanations use the recorded allocations. Older reports without<br>
+that matrix retain their existing presentation.<br>
+The benchmark overview also shows the same landscape with a <strong>Platform</strong> selector and <strong>Version</strong><br>
+slider. Versions are retained measured commits (including branch/PR/tag labels), not only releases.<br>
+The slider runs oldest to newest and initially selects the newest measurement on the first listed<br>
+platform. It includes only reports with the required comparison matrix, and keeps the latest<br>
+run/attempt for each platform and commit. Platform labels include architecture when recorded.<br>
+Switching platforms preserves the selected commit when available; otherwise it selects that<br>
+platform's newest report. A single available version disables the slider.</p>
+<p dir="auto">The chart's upper-left <strong>Version</strong> card holds a compact table with version position,<br>
+linked commit, PR/release, revision date, measurement date when recorded, and platform. All rows<br>
+remain visible, using explicit placeholders for missing information. Platform details come last<br>
+in a reserved three-line area; their full text remains available in the tooltip. A full-width<br>
+slider follows the table, between minus and plus buttons that select the adjacent retained version.<br>
+The buttons disable at the respective endpoints.<br>
+Revision date identifies the code revision. Measured uses the recorded completion date for both<br>
+CI backfills and local runs; older revisions can therefore have newer measurement dates.<br>
+The commit opens the full report, including tables and raw data;<br>
+its tooltip retains the full branch, time and run/attempt information. The <strong>Performance</strong> card sits<br>
+directly below it, with inset endpoints to keep long tick labels inside the border. It owns the<br>
+Scale, Range, and Out of range selectors and identifies the selected scale in its short title.<br>
+Scale, order and camera state survive version changes. Each chart retains its<br>
+own measurement contract and automatically scaled axes/colors: moving the slider is exploration,<br>
+not a paired cross-host or cross-version regression claim. Missing versions are not interpolated.<br>
+The overview downloads only the selected report's generated landscape JSON. While loading, the<br>
+previous chart and its report link remain visible; the new data replaces them in place without<br>
+collapsing the chart or resetting the camera. Interrupted requests cannot overwrite newer<br>
+selections. A reserved status line keeps the version card and the panels below it stationary<br>
+during loading and failure transitions. Longer errors remain available in the status tooltip.<br>
+On failure the panel explains which requested version could not load; the previous<br>
+chart and its matching metadata remain visible, and the slider remains usable. Generated payloads<br>
+expire with their raw reports under existing retention.</p>
+<p dir="auto">The version selection includes links to the matching PR and release when those references are<br>
+known. The chart reserves its full height before loading; changing versions, worker pairs, range,<br>
+or scale does not collapse the rendering area. Reports with three measured worker counts offer<br>
+all three pairs (<code class="notranslate">1/3</code>, <code class="notranslate">1/10</code>, and <code class="notranslate">3/10</code>); no unmeasured allocation is synthesized.</p>
+<h3 dir="auto" id="view-range-and-selection">View range and selection</h3>
+<p dir="auto">The Version and Performance cards are expanded initially. Each has a disclosure arrow before its<br>
+bold title; collapsing it leaves only that title and the card border.</p>
+<p dir="auto"><strong>Range</strong> offers Auto and symmetric limits of +/-20%, 50%, 100%, or 200% in percentage mode;<br>
+logarithmic mode uses +/-0.2, 0.5, 1, or 2. The default is +/-100% (+/-1 in logarithmic mode),<br>
+so changing versions retains the same vertical scale. <strong>Cap</strong> places outliers at the boundary and marks<br>
+them bright green or red. <strong>Cut off</strong> hides outlying observations and surface cells touching<br>
+them, leaving gaps rather than inventing measurements. Hover cards always retain actual values.</p>
+<p dir="auto">A black bar with a yellow outline marks the hovered measurement on the color legend. Capped<br>
+values pin it to the appropriate endpoint. Hovering over the legend temporarily emphasizes values<br>
+above the pointed-to performance level. <strong>Below threshold</strong> offers increasing transparency:<br>
+50% transparent (the default), 75% transparent, or Hide. <strong>Threshold plane</strong> shows a subtle<br>
+horizontal plane at that level and highlights its exact performance value on the vertical axis,<br>
+including between ticks. It is enabled by default, starts at the lowest displayed level, and remains<br>
+visible rather than acting as a hover preview. Its full-width slider and minus/plus buttons move the<br>
+plane down or up; those controls are present only while the plane is enabled. With the plane disabled,<br>
+hovering the color legend remains a temporary preview and leaving it restores the full view.<br>
+Opacity and plane-mode preferences persist across version, worker-pair, and scale changes. This<br>
+selection changes neither the selected range nor the source data.</p>
+<h3 dir="auto" id="reference-window-timing-normalization">Reference-window timing normalization</h3>
+<p dir="auto"><strong>Timings</strong> selects raw or reference-normalized hover information. For each compatible task,<br>
+tree shape, fileset size, worker allocation, platform/machine series and reference-tool identity,<br>
+take the arithmetic mean of five reference times. The first five measurements share the first<br>
+five-reference window; starting at measurement five the window is the current reference plus<br>
+the four preceding references. Fewer than five compatible measurements make normalization<br>
+unavailable; the card explains this and retains raw timings.</p>
+<p dir="auto">The correction is <code class="notranslate">window reference mean / this run's reference time</code>. Multiply only this<br>
+version's XFF timing by that factor: XFF results are never averaged across versions. Within-run<br>
+fastest-sample selection remains the recorded measurement policy. The card shows the normalized<br>
+XFF time, reference mean, correction, and separate rows for the window's measurement count<br>
+(or unavailability reason), window start date and window end date. Unavailable windows omit the date rows.<br>
+The card presents these values together with task, tree, allocation and file count in an aligned table.<br>
+Each report's generated <code class="notranslate">normalization.json</code> retains the full window identities and commit hashes.<br>
+For duplicate measurements of one commit, selection happens separately for each compatible<br>
+cell. A newer layout revision or smaller measurement grid does not hide retained cells from<br>
+another layout or a larger grid. Each compatible cell contributes at most one measurement per<br>
+commit to its reference window.</p>
+<h3 dir="auto" id="binary-evidence-in-version">Binary evidence in Version</h3>
+<p dir="auto">The Version card shows <strong>Binary</strong> as <strong>Not recorded</strong>, <strong>Not verified</strong>, <strong>Consistent</strong>, or<br>
+<strong>Verified against Retention</strong>. Expand <strong>SHA-256</strong> for the complete hash and the reason behind<br>
+the state. Consistent requires corroborating hashes and agreement of the available revision and<br>
+command identities. A mismatch or invalid retention proof remains Not verified.</p>
+<p dir="auto">Verified against Retention requires hashing the actual retained executable and matching its<br>
+measured identity. CI checks the original build archive after shard aggregation; new backfill<br>
+reports check their saved revision executable. The proof is bound to the measured commit and<br>
+data and retains a verification timestamp and artifact reference. Publication metadata can be<br>
+added without invalidating this check. Verification describes binary identity, not a guarantee<br>
+of compiler behavior or timing stability, and remains historical evidence after artifact expiry.</p>
+<p dir="auto">Historical reports can acquire a separate <code class="notranslate">binary-verification.json</code> without changing raw data:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">python3.13 tools/benchmark_provenance.py \
+  --report=/path/to/retained/report.json --binary=/path/to/original/xff \
+  --retention-reference=<span class="pl-s"><span class="pl-pds">'</span>original batch or CI artifact identity<span class="pl-pds">'</span></span></pre></div>
+<p dir="auto">Use <code class="notranslate">--archive=... --member=benchmark-head</code> for an original CI build archive. The verifier reads<br>
+only the named regular file and never extracts the archive. <code class="notranslate">--embed</code> is reserved for new,<br>
+unpublished reports; sidecars keep already published observations immutable. Missing hashes are<br>
+recovered for display from original paired samples when available. A rebuild cannot supply an<br>
+unknown historical measured hash. Existing catalog entries are enriched from retained reports<br>
+when the history viewer is republished.<br>
+Reference binaries, invocation arguments,<br>
+fixtures, machine series and CPU allocations must match; CI and local series remain separate.<br>
+Ordinary CI and its replacement backfills share reference history: the recorded runner labels<br>
+<code class="notranslate">github-hosted ubuntu-latest</code> / <code class="notranslate">github-ci-linux</code> and<br>
+<code class="notranslate">github-hosted macos-latest</code> / <code class="notranslate">github-ci-macos</code> identify the same respective hosted runner<br>
+classes. This label equivalence does not relax machine, reference, fixture or allocation checks.</p>
+<p dir="auto">This is presentation only. Raw report JSON and the measurement tables remain unchanged. The<br>
+percentage/factor landscape also remains unchanged because its same-run XFF/reference ratio<br>
+already applies the reference correction. Normalized absolute timings are useful for viewing<br>
+variation shared with the reference tool, but cannot eliminate XFF-specific noise.</p>
+<p dir="auto">One shared, pinned Three.js renderer bundle is published alongside the reports; no external CDN is used.<br>
+Standalone previews embed the same bundle for offline use.</p>
+<p dir="auto">The X coordinate mirrors log10 file counts: the 1-CPU group runs from large to small on the<br>
+left, and the 4-CPU group runs from small to large on the right. Reports without affinity use<br>
+worker labels instead. Y is the vertical percentage axis; Broad and Deep task/reference pairs<br>
+extend in opposite directions on Z. Each quadrant forms a separate surface, with missing cells<br>
+left empty. Connections between categorical tasks are visual interpolation, not a predictive<br>
+model. Colors use a shared symmetric scale. The near-neutral blue band spans -10 to +10 percentage<br>
+points, transitioning to dark red/green at -20/+20 points and bright red/green at the extremes.<br>
+The color scale extends to at least +/-20 points even for nearly neutral reports.</p>
+<p dir="auto">The plotted percentage is <code class="notranslate">100 * (1 - xff_time / reference_time)</code>: positive means xff is faster, negative means xff took longer. It reverses the sign of the existing table difference.<br>
+The Scale selector defaults to Percentage, with <code class="notranslate">%</code> on axis and color legend ticks.<br>
+The performance factor uses <code class="notranslate">reference_time / xff_time</code>: <code class="notranslate">2x</code> means twice as fast, <code class="notranslate">0.5x</code> means<br>
+half as fast, and <code class="notranslate">1x</code> is parity. Heights use log10 spacing, so reciprocal factors have<br>
+equal distances from parity. Logarithmic uses uniformly spaced signed log10 tick labels; a 1-2-5 sequence selects<br>
+the interval, not individual tick positions:<br>
+zero is parity, +1 means 10x, and -1 means 0.1x. Bounds are symmetric around zero. The color<br>
+mapping remains based on time saved in both views, with signed log10 labels on the factor legend. Hover cards retain actual factors.<br>
+Switching metrics preserves the camera and selected task order.<br>
+Hover cards show the original ratio and both absolute timings. Picking uses the nearest projected<br>
+corner of the intersected surface triangle, with its original row/column identity. Matching file<br>
+and task ticks are highlighted; dashed guides project the selected measurement to all three axes.<br>
+The exact vertical value is shown at the height guide, including between existing ticks.<br>
+The estimator comes from the report's recorded sampling policy.</p>
+<p dir="auto">Build the MIT-licensed Three.js renderer with its pinned npm dependencies. Node is needed only to<br>
+build and test the renderer; generating pages uses Python's standard library and the existing<br>
+benchmark matrix module:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">npm ci --prefix tools/benchmark_web --ignore-scripts --no-audit --no-fund
+npm run build --prefix tools/benchmark_web
+python3 tools/benchmark_landscape.py /path/to/benchmark-report-linux-x86_64.json \
+  --renderer-js=tools/benchmark_web/dist/landscape.js \
+  --output=/path/to/benchmark-report-linux-x86_64.html</pre></div>
+<p dir="auto">The trusted bundle is embedded with the complete Three.js MIT license. Offline pages need no CDN<br>
+or network access. Published pages share one bundle under the benchmark assets directory.<br>
+Drag to rotate, scroll to zoom, and right-drag to pan. Axis titles are printed on the base plane;<br>
+rotation remains unrestricted. Tick labels stay horizontal and extend outward from their axes.<br>
+Focus the canvas for arrow-key rotation, +/- zoom and Home reset, or use the Reset view button.<br>
+Hover cards occupy the third panel in the chart's upper-left information column, below the<br>
+version and performance-scale panels. Showing or hiding a hover card does not move the panels<br>
+above it or change the chart height; guides still highlight the selected measurement.<br>
+Missing WebGL2 leaves an explanatory message and the complete measurement tables available.<br>
+The chart resizes when its container changes or its disclosure reopens. Rendering is event-driven;<br>
+there is no idle animation loop. Single observations remain visible as points even when missing<br>
+neighbors prevent a surface quad.</p>
+<p dir="auto">Browser tests run in the normal release-site CI job, using Chromium. Run them locally with<br>
+<code class="notranslate">npm test --prefix tools/benchmark_web</code> after <code class="notranslate">npx playwright install chromium</code> from that directory.<br>
+<code class="notranslate">CHROME_PATH</code> can select an existing Chrome executable for these tests, and <code class="notranslate">PYTHON</code> selects the<br>
+Python interpreter. Tests cover offline loading, hover identity for all orders and scales, axis<br>
+highlights, variable color-stop counts, full rotation, resizing and hide/show behavior.</p>
+<p dir="auto">The task-order selector defaults to <strong>Similarity, better toward center</strong>. Each task/reference<br>
+pair has a profile of percentage values across matching file counts, CPU groups and tree shapes.<br>
+Distance is the mean absolute percentage-point difference over shared observations. The renderer<br>
+finds the minimum-total-distance neighbor chain exactly for up to 16 pairs, with deterministic<br>
+ties, and reverses it when necessary so the better endpoint faces the center. Broad and Deep use<br>
+the same mirrored order. This reduces surface jumps without claiming monotonic improvement.<br>
+For larger reports, a bounded multistart nearest-neighbor heuristic replaces the exact search.<br>
+If no complete chain with shared observations exists, the renderer falls back to average order.<br>
+Missing observations are never replaced with zero.</p>
+<p dir="auto"><strong>Average performance, best at center</strong> sorts descending by equally weighted mean time saved;<br>
+<strong>Alphabetical</strong> restores the task/reference name order. Changing order preserves the camera<br>
+and measurements. Every recorded cell has equal weight; file counts are not weighted by the<br>
+number of files or elapsed time. The average is descriptive, not aggregate throughput.</p>
+<h2 dir="auto" id="published-data-retention">Published data retention</h2>
+<p dir="auto">Release and merged-PR measurements do not expire by report count. Raw observations are retained<br>
+losslessly as compressed JSON, and chart/report views share packed assets. The site-wide storage<br>
+review threshold is 200 MB; see <a href="site-storage.html">Published site storage</a>.</p></main><footer>Release snapshot &middot; 8e95f5546187b2a6f4ec165af9cf794af18ac4a1</footer></body></html>
