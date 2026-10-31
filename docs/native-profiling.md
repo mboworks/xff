@@ -28,13 +28,20 @@ filter, or timing columns alone do not establish working counters. Use
 The short duration above is a capability probe, not performance evidence.
 
 Google Benchmark 1.9.5 pins libpfm 4.11.0.bcr.1. That BCR source names the retired
-`netcologne.dl.sourceforge.net` mirror. The opt-in downloader configuration
+`netcologne.dl.sourceforge.net` mirror. The downloader configuration
 redirects exactly that archive to `downloads.sourceforge.net`, preserving the
 pinned version, BCR patches and integrity check. No LLVM/toolchain dependency
 changes are involved. It does not rewrite other archives or disable checksum
 validation. If network access is unavailable, an independently verified copy of
 `libpfm-4.11.0.tar.gz` can be supplied through Bazel's `--distdir=PATH`; do not
 substitute an unverified system library.
+
+Unconfigured `bazel query` traverses all `select` arms, including the optional
+libpfm dependency, even when hardware counters are disabled. Queries therefore
+use the same narrowly scoped download repair so compile-source indexing can
+complete. This does not enable counters or change default/release builds,
+compiler/linker selection or macOS runtime behavior. Source indexing still
+fails closed on any unsuccessful query.
 
 ## Kernel and external perf capability
 

@@ -16,6 +16,7 @@
 #include "xff/engine/walk.h"
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -25,13 +26,16 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <thread>
 #include <utility>
 #include <vector>
 
+#include "absl/base/thread_annotations.h"
 #include "absl/functional/function_ref.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/synchronization/mutex.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
@@ -51,12 +55,15 @@ using ::testing::IsTrue;
 
 namespace fs = ::std::filesystem;
 using ::mbo::testing::IsOk;
+using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::testing::Lt;
 using ::testing::Not;
 using ::testing::Pair;
+using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
+using ::testing::UnorderedElementsAreArray;
 
 // In-memory FileSystem for tests that need metadata the real filesystem won't
 // reproduce locally (device ids for -xdev, symlink targets / loops for -L/-H).
@@ -134,6 +141,27 @@ class FakeFs : public vfs::FileSystem {
   std::map<std::string, std::string> targets_;
 };
 
+class ReadThreadFs : public FakeFs {
+ public:
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view dir) const override ABSL_LOCKS_EXCLUDED(mu_) {
+    {
+      const absl::MutexLock lock(mu_);
+      reads_.emplace_back(dir, std::this_thread::get_id());
+    }
+    return FakeFs::ReadDir(dir);
+  }
+
+  std::vector<std::pair<std::string, std::thread::id>> Reads() const ABSL_LOCKS_EXCLUDED(mu_) {
+    const absl::MutexLock lock(mu_);
+    return reads_;
+  }
+
+ private:
+  // Guards reads_; inherited filesystem nodes are immutable throughout Walk.
+  mutable absl::Mutex mu_;
+  mutable std::vector<std::pair<std::string, std::thread::id>> reads_ ABSL_GUARDED_BY(mu_);
+};
+
 vfs::Entry DirEntry(const std::string& path, const std::string& name) {
   return vfs::Entry{.path = path, .name = name, .type = vfs::FileType::kDirectory};
 }
@@ -200,6 +228,70 @@ struct WalkTest : ::testing::Test {
 
 WalkAction Continue(const Visit& /*visit*/) {
   return WalkAction::kContinue;
+}
+
+struct DirectoryReadAdmissionTest : ::testing::Test {
+  static void ExpectDirectoryReads(std::size_t directory_count, std::size_t workers, bool background_reads) {
+    ReadThreadFs filesystem;
+    std::vector<vfs::Entry> children;
+    std::vector<std::pair<std::string, int>> expected{{"root", 0}};
+    // The index deliberately supplies a unique directory name for each sibling.
+    for (std::size_t index = 0; index < directory_count; ++index) {
+      const std::string name = absl::StrCat("dir-", index);
+      const std::string path = absl::StrCat("root/", name);
+      const std::string file = absl::StrCat(path, "/file");
+      children.push_back(DirEntry(path, name));
+      filesystem.AddDir(path, 1, {FileEntry(file, "file")});
+      filesystem.AddFile(file, 1);
+      expected.emplace_back(path, 1);
+      expected.emplace_back(file, 2);
+    }
+    filesystem.AddDir("root", 1, std::move(children));
+    const std::thread::id coordinator = std::this_thread::get_id();
+    std::vector<std::pair<std::string, int>> seen;
+    int errors = 0;
+    const absl::Status status = Walk(
+        filesystem, {"root"}, WalkOptions{.workers = workers},
+        [&](const Visit& visit) {
+          seen.emplace_back(visit.path, visit.depth);
+          EXPECT_THAT(std::this_thread::get_id(), coordinator);
+          return WalkAction::kContinue;
+        },
+        [&](std::string_view, absl::Status) { ++errors; });
+    EXPECT_THAT(status, IsOk());
+    EXPECT_THAT(errors, 0);
+    EXPECT_THAT(seen, UnorderedElementsAreArray(expected));
+    const auto reads = filesystem.Reads();
+    EXPECT_THAT(reads, SizeIs(directory_count + 1));
+    EXPECT_THAT(reads, Contains(Pair("root", coordinator)));
+    for (const auto& [path, thread] : reads) {
+      if (path == "root") {
+        continue;
+      }
+      SCOPED_TRACE(path);
+      if (background_reads) {
+        EXPECT_THAT(thread, Not(coordinator));
+      } else {
+        EXPECT_THAT(thread, coordinator);
+      }
+    }
+  }
+};
+
+TEST_F(DirectoryReadAdmissionTest, SixtyThreeSiblingDirectoriesStayOnCoordinator) {
+  ExpectDirectoryReads(63, 8, false);
+}
+
+TEST_F(DirectoryReadAdmissionTest, SixtyFourSiblingDirectoriesUseReadWorkers) {
+  ExpectDirectoryReads(64, 8, true);
+}
+
+TEST_F(DirectoryReadAdmissionTest, SixtyFiveSiblingDirectoriesUseReadWorkers) {
+  ExpectDirectoryReads(65, 8, true);
+}
+
+TEST_F(DirectoryReadAdmissionTest, OneWorkerStaysOnCoordinatorAboveAdmissionThreshold) {
+  ExpectDirectoryReads(65, 1, false);
 }
 
 TEST_F(WalkTest, VisitsWholeTreePreorder) {
