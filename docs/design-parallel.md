@@ -44,8 +44,14 @@ A bounded directory-read worker pool with a single coordinator:
 
 - Workers perform only `ReadDir` plus metadata lookup and return complete listings.
   The coordinator submits sibling-directory reads ahead, then consumes their
-  futures in the order required by `--sort`. Directory workers start only when at least
-  two sibling directories provide independent work. For a coordinator-read directory with at least
+  futures in the order required by `--sort`. At least two sibling directories must provide
+  independent work. Cold startup additionally uses the last coordinator read's cost and the
+  estimated number of parallel rounds saved. If the parent does not justify startup, one child
+  is sampled inline and its ready result is retained, so it is never read twice. Cheap work stays
+  inline; expensive small batches can activate workers. An existing pool bypasses cold admission.
+  Only the coordinator records timing, only while the pool is cold; workers never share mutable
+  timing state. The admission budget is a heuristic, not a latency guarantee or an optimal policy
+  for every filesystem. For a coordinator-read directory with at least
   512 children and eagerly required metadata, 128-entry stat chunks use the same pool. At most one
   chunk per worker is pending; worker jobs never wait on nested jobs. Metadata-free, lazy and
   owned/archive-source listings keep their serial per-directory path.

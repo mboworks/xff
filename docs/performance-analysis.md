@@ -2609,3 +2609,40 @@ diff and hash verification at 0/1/10/1,000/10,000 entries and requested 1/3 work
 both native performance and the extra preparation/storage cost before the retention decision.
 The capacity metric conservatively budgets inline strings and shared template transforms; it excludes
 backend, status and allocator bookkeeping. It must not be substituted for native allocation profiling.
+
+## Directory read admission: revised #991 (2026-10-31)
+
+Tested current main `3803544ef4a24e0a72e54a317ee5091638bc70ae` against the original 64-sibling gate and a cost-aware replacement on drogon (Linux/KVM, AMD Ryzen 9 9950X, ten vCPUs). The replacement separates cold startup from reuse. It estimates saved read rounds from the last coordinator read; when that is insufficient, it samples one child and retains its ready result. An existing pool bypasses cold admission. Only the coordinator measures reads, while the pool is cold; there is no per-entry timing, worker-side timing state or new timing lock.
+
+The startup budget is 4 ms of estimated saved serial work. This is a conservative admission heuristic, not a measured optimum for every machine. A bounded best-two-of-three pilot compared 4 ms and 6 ms; 6 ms did not consistently improve larger cases and regressed one 65,536-file metadata case by about 18%. The repeated results below use 4 ms.
+
+Three forward/reverse/shuffled case orders cover fourteen fixture shapes, workers and pinned CPU allowances 1/3/10, ordinary listing and eager metadata output, and separately labeled 2 ms-per-directory latency controls. Each binary receives a discarded warmup and nine interleaved repetitions per cell; retain the fastest seven. The full three-variant experiment performed 9,180 oracle-correct invocations. Additional warm-pool and asymmetric child-latency controls performed 540 oracle-correct invocations. The two budget pilots are screening evidence, not acceptance runs. All builds completed before each timing batch.
+
+Wall time is measured inside the native fork/exec/wait launcher; Python creation and oracle checking are outside that boundary. Fixtures and captured output use tmpfs. No normalization is applied between these same-host paired controls. The retained adaptive timing executable precedes later help-text-only changes; traversal/admission logic is identical.
+
+Negative elapsed change is faster. Values are medians of three per-session estimates; percentages are medians of the paired session changes.
+
+| Fixture / read model                     | Workers | Main ms | Fixed gate ms | Adaptive ms | Adaptive change |
+| ---------------------------------------- | ------: | ------: | ------------: | ----------: | --------------: |
+| broad8x1, warm                           |       3 |   4.270 |         0.902 |       0.873 |          -79.6% |
+| broad64x1, warm                          |       3 |   4.387 |         4.380 |       0.972 |          -77.8% |
+| broad8x512, warm                         |       3 |   5.093 |         1.842 |       1.802 |          -64.6% |
+| broad32x512, warm                        |       3 |   7.900 |         6.216 |       6.218 |          -20.4% |
+| broad64x512, warm                        |       3 |  11.874 |        11.769 |      12.183 |           +2.3% |
+| broad128x512, warm                       |       3 |  17.763 |        18.140 |      17.659 |           -1.7% |
+| broad8x1, 2 ms/open control              |       3 |  13.132 |        20.174 |      13.181 |           +0.4% |
+| broad8x1, 2 ms/open control              |      10 |   9.119 |        20.130 |       9.361 |           +1.2% |
+| broad63x1, 2 ms/open control             |      10 |  22.034 |       134.430 |      22.008 |           -0.2% |
+| warm_pool_eager, 2 ms/child-open control |       3 |  11.908 |        22.385 |      11.897 |           +0.7% |
+| warm_pool_eager, 2 ms/child-open control |      10 |   8.116 |        22.821 |       8.215 |           +1.3% |
+| child_only8, 2 ms/child-open control     |       3 |  11.078 |        18.067 |      13.262 |          +16.8% |
+| child_only8, 2 ms/child-open control     |      10 |   7.179 |        18.197 |       9.250 |          +29.4% |
+| child_only32, 2 ms/child-open control    |       3 |  27.839 |        68.023 |      29.967 |           +7.4% |
+
+The fixed gate shows large small-scan gains but delays profitable slow reads even after the pool exists. Adaptive admission retains the cheap-scan benefit and stays near main for uniform slow-directory controls and existing-pool reuse. Across the 102 primary case definitions, the largest median adaptive regression was 2.3%; that does not establish a universal bound.
+
+**Remaining tradeoff:** a cheap parent does not predict expensive children. When the first child must be sampled synchronously, the candidate pays one child latency before starting parallel reads. The asymmetric eight-child control regresses about 17-30% against eager main. This is an explicit limitation, not an accepted no-regression claim. Heterogeneous later children, real slow storage and native macOS performance remain acceptance gaps; native macOS unit/integration tests establish behavior only. Keep #991 draft while those performance tradeoffs are reviewed.
+
+Separate uninstrumented timing and instrumented diagnostics. On the small warm batch, main created three workers and made 26 futex calls; the old inline gate made none. Main requested 1 ms and 2 ms sleeps. Matching LLVM symbolization (after correcting executable-segment file offsets by `+0x1000`) places them in `MeasureTscFrequencyWithSleep`, reached through Abseil mutex enqueue/clock frequency initialization from `ReadPool::Run`. The guest lacks `tsc_freq_khz`. This is not evidence that thread creation itself costs 3 ms. Removing incidental clock initialization or changing pool synchronization remains a separate candidate, with single-worker controls required before adoption.
+
+Raw data, CPU usage, RSS, executable hashes and fixture/output identities: [directory-admission-20261031.json.gz](benchmarks/directory-admission-20261031.json.gz). Reproduction scripts, native timer extension, latency interposer and diagnostics are retained in `/tmp/xff-991-evidence/` on drogon and `/private/tmp/xff-991-evidence/` locally. The latency injection is a controlled model, not verified physical slow-storage evidence.

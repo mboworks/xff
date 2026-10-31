@@ -19,6 +19,23 @@ load("//xff:cc.bzl", "cc_binary", "cc_library", "cc_test")
 
 package(default_visibility = ["//visibility:private"])
 
+# Internal, pure startup admission arithmetic; durations are supplied by the coordinator.
+cc_library(
+    name = "directory_read_admission_cc",
+    hdrs = ["directory_read_admission.h"],
+)
+
+cc_test(
+    name = "directory_read_admission_test",
+    size = "small",
+    srcs = ["directory_read_admission_test.cc"],
+    deps = [
+        ":directory_read_admission_cc",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
+)
+
 # Directory traversal over a vfs::FileSystem: a worker pool reads (readdir+lstat)
 # in parallel while a single coordinator thread visits in --sort order.
 cc_library(
@@ -27,6 +44,7 @@ cc_library(
     hdrs = ["walk.h"],
     visibility = ["//xff:__subpackages__"],
     deps = [
+        ":directory_read_admission_cc",
         "//xff/vfs:vfs_cc",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",

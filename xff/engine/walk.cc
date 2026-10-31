@@ -16,6 +16,7 @@
 #include "xff/engine/walk.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -40,6 +41,7 @@
 #include "absl/types/span.h"
 #include "mbo/status/status_macros.h"
 #include "mbo/types/optional_ref.h"
+#include "xff/engine/directory_read_admission.h"
 #include "xff/vfs/entry.h"
 #include "xff/vfs/filesystem.h"
 
@@ -71,12 +73,6 @@ struct Stated {
 // The result of reading one directory: its children, or a ReadDir error.
 using Listing = absl::StatusOr<std::vector<Stated>>;
 
-// Creating and synchronizing the directory-read pool has a fixed cost. A small sibling fan-out
-// cannot repay it on native memory-backed fixtures; wait for enough independent directory reads
-// to keep the workers useful. This is a work-unit threshold rather than a file-count threshold,
-// so layout shape remains part of the decision and narrow/deep walks stay serial.
-inline constexpr std::size_t kMinParallelDirectoryReads = 64;
-
 // A fixed pool of worker threads running leaf directory or stat jobs.
 // Workers touch only their job's inputs and the (thread-safe) FileSystem and the
 // task queue; they never call back into the walk, so no job can wait on another
@@ -85,6 +81,8 @@ inline constexpr std::size_t kMinParallelDirectoryReads = 64;
 class ReadPool {
  public:
   explicit ReadPool(std::size_t workers) : max_workers_(workers) {}
+
+  bool Started() const { return !threads_.empty(); }
 
   // Start only when sibling directories or eager stat chunks provide independent work.
   void Start(std::size_t directories) {
@@ -331,7 +329,19 @@ class Walker {
 
   // Only the coordinator dispatches and joins stat chunks. Directory read-ahead jobs
   // stay leaves: no worker ever waits for jobs submitted to its own pool.
+  // Only the coordinator records timing, and only while startup is still avoidable. Workers read
+  // through ReadDir; no shared timing cache, timing mutex or per-entry clock reads are introduced.
   Listing ReadNow(const std::string& dir) {
+    if (options_.workers <= 1 || pool_.Started()) {
+      return ReadNowImpl(dir);
+    }
+    const auto begin = std::chrono::steady_clock::now();
+    Listing listing = ReadNowImpl(dir);
+    last_directory_read_ = std::chrono::steady_clock::now() - begin;
+    return listing;
+  }
+
+  Listing ReadNowImpl(const std::string& dir) {
     MBO_ASSIGN_OR_RETURN(auto entries, fs_.ReadDir(dir));
     constexpr std::size_t kChunk = 128;
     if (options_.workers <= 1 || options_.metadata != MetadataDemand::kAlways || entries.size() < 4 * kChunk
@@ -595,16 +605,35 @@ class Walker {
         directories.push_back(index);
       }
     }
-    if (directories.size() < kMinParallelDirectoryReads) {
+    if (directories.size() < 2) {
       return reads;
     }
-    pool_.Start(directories.size());
-    for (const std::size_t index : directories) {
+    std::size_t first = 0;
+    if (!pool_.Started() && !UsefulDirectoryReads(directories.size())) {
+      // Sample one real child without rereading it; parent listing cost need not represent children.
+      const std::size_t index = directories.front();
+      std::promise<Listing> sampled;
+      reads[index] = sampled.get_future();
+      sampled.set_value(ReadNow(children[index].path));
+      first = 1;
+      if (!pool_.Started() && !UsefulDirectoryReads(directories.size() - first)) {
+        return reads;
+      }
+    }
+    pool_.Start(directories.size() - first);
+    for (; first < directories.size(); ++first) {
+      const std::size_t index = directories[first];
       reads[index] = SubmitRead(children[index].path);
     }
     return reads;
   }
 
+  bool UsefulDirectoryReads(std::size_t directories) const {
+    return walk_internal::UsefulDirectoryReads(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(last_directory_read_), directories, options_.workers);
+  }
+
+  std::chrono::steady_clock::duration last_directory_read_{};
   const vfs::FileSystem& fs_;
   const WalkOptions& options_;
   Visitor visit_;

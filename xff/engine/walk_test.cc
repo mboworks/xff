@@ -16,6 +16,7 @@
 #include "xff/engine/walk.h"
 
 #include <array>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -58,6 +59,7 @@ using ::mbo::testing::IsOk;
 using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
+using ::testing::Le;
 using ::testing::Lt;
 using ::testing::Not;
 using ::testing::Pair;
@@ -143,10 +145,17 @@ class FakeFs : public vfs::FileSystem {
 
 class ReadThreadFs : public FakeFs {
  public:
+  ReadThreadFs(std::chrono::milliseconds root_delay, std::chrono::milliseconds child_delay)
+      : root_delay_(root_delay), child_delay_(child_delay) {}
+
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view dir) const override ABSL_LOCKS_EXCLUDED(mu_) {
     {
       const absl::MutexLock lock(mu_);
       reads_.emplace_back(dir, std::this_thread::get_id());
+    }
+    const auto delay = dir == "root" ? root_delay_ : child_delay_;
+    if (delay.count() > 0) {
+      std::this_thread::sleep_for(delay);
     }
     return FakeFs::ReadDir(dir);
   }
@@ -157,6 +166,9 @@ class ReadThreadFs : public FakeFs {
   }
 
  private:
+  const std::chrono::milliseconds root_delay_;
+  const std::chrono::milliseconds child_delay_;
+
   // Guards reads_; inherited filesystem nodes are immutable throughout Walk.
   mutable absl::Mutex mu_;
   mutable std::vector<std::pair<std::string, std::thread::id>> reads_ ABSL_GUARDED_BY(mu_);
@@ -231,20 +243,45 @@ WalkAction Continue(const Visit& /*visit*/) {
 }
 
 struct DirectoryReadAdmissionTest : ::testing::Test {
-  static void ExpectDirectoryReads(std::size_t directory_count, std::size_t workers, bool background_reads) {
-    ReadThreadFs filesystem;
+  struct Scenario {
+    std::size_t directory_count = 8;
+    std::size_t workers = 3;
+    bool slow_root = false;
+    bool eager_root = false;
+    std::size_t files_per_directory = 1;
+  };
+
+  static void ExpectDirectoryReads(const Scenario& scenario) {
+    const auto [directory_count, workers, slow_root, eager_root, files_per_directory] = scenario;
+    ReadThreadFs filesystem(std::chrono::milliseconds(slow_root ? 10 : 0), std::chrono::milliseconds(10));
+    // A lower bound on observed work makes worker-admission checks independent of machine speed.
+    // Timing-free policy boundaries are tested separately in directory_read_admission_test.cc.
     std::vector<vfs::Entry> children;
     std::vector<std::pair<std::string, int>> expected{{"root", 0}};
-    // The index deliberately supplies a unique directory name for each sibling.
     for (std::size_t index = 0; index < directory_count; ++index) {
       const std::string name = absl::StrCat("dir-", index);
       const std::string path = absl::StrCat("root/", name);
-      const std::string file = absl::StrCat(path, "/file");
       children.push_back(DirEntry(path, name));
-      filesystem.AddDir(path, 1, {FileEntry(file, "file")});
-      filesystem.AddFile(file, 1);
       expected.emplace_back(path, 1);
-      expected.emplace_back(file, 2);
+      std::vector<vfs::Entry> files;
+      for (std::size_t file_index = 0; file_index < files_per_directory; ++file_index) {
+        const std::string file_name = absl::StrCat("file-", file_index);
+        const std::string file_path = absl::StrCat(path, "/", file_name);
+        files.push_back(FileEntry(file_path, file_name));
+        filesystem.AddFile(file_path, 1);
+        expected.emplace_back(file_path, 2);
+      }
+      filesystem.AddDir(path, 1, std::move(files));
+    }
+    if (eager_root) {
+      // ReadNow starts the existing metadata pool before directory admission is considered.
+      for (std::size_t index = 0; index < 512; ++index) {
+        const std::string name = absl::StrCat("file-", index);
+        const std::string path = absl::StrCat("root/", name);
+        children.push_back(FileEntry(path, name));
+        filesystem.AddFile(path, 1);
+        expected.emplace_back(path, 1);
+      }
     }
     filesystem.AddDir("root", 1, std::move(children));
     const std::thread::id coordinator = std::this_thread::get_id();
@@ -264,34 +301,47 @@ struct DirectoryReadAdmissionTest : ::testing::Test {
     const auto reads = filesystem.Reads();
     EXPECT_THAT(reads, SizeIs(directory_count + 1));
     EXPECT_THAT(reads, Contains(Pair("root", coordinator)));
+    std::size_t inline_children = 0;
     for (const auto& [path, thread] : reads) {
-      if (path == "root") {
-        continue;
+      if (path != "root" && thread == coordinator) {
+        ++inline_children;
       }
-      SCOPED_TRACE(path);
-      if (background_reads) {
-        EXPECT_THAT(thread, Not(coordinator));
-      } else {
-        EXPECT_THAT(thread, coordinator);
-      }
+    }
+    if (workers <= 1) {
+      EXPECT_THAT(inline_children, directory_count);
+    } else if (slow_root || eager_root) {
+      EXPECT_THAT(inline_children, 0);
+    } else {
+      // At most one child is sampled inline; its ready future must not cause a second read.
+      EXPECT_THAT(inline_children, Le(1));
     }
   }
 };
 
-TEST_F(DirectoryReadAdmissionTest, SixtyThreeSiblingDirectoriesStayOnCoordinator) {
-  ExpectDirectoryReads(63, 8, false);
+TEST_F(DirectoryReadAdmissionTest, SmallSlowBatchStartsWorkersFromObservedParentCost) {
+  ExpectDirectoryReads({.slow_root = true});
 }
 
-TEST_F(DirectoryReadAdmissionTest, SixtyFourSiblingDirectoriesUseReadWorkers) {
-  ExpectDirectoryReads(64, 8, true);
+TEST_F(DirectoryReadAdmissionTest, SmallSlowBatchSamplesChildWhenParentIsCheap) {
+  ExpectDirectoryReads({});
 }
 
-TEST_F(DirectoryReadAdmissionTest, SixtyFiveSiblingDirectoriesUseReadWorkers) {
-  ExpectDirectoryReads(65, 8, true);
+TEST_F(DirectoryReadAdmissionTest, ReusesMetadataWorkersForSmallDirectoryBatch) {
+  ExpectDirectoryReads({.eager_root = true});
 }
 
-TEST_F(DirectoryReadAdmissionTest, OneWorkerStaysOnCoordinatorAboveAdmissionThreshold) {
-  ExpectDirectoryReads(65, 1, false);
+TEST_F(DirectoryReadAdmissionTest, SampledChildCanActivateMetadataWorkers) {
+  ExpectDirectoryReads({.files_per_directory = 512});
+}
+
+TEST_F(DirectoryReadAdmissionTest, SlowBatchesHaveNoSixtyFourSiblingCliff) {
+  for (const std::size_t count : {63, 64, 65}) {
+    ExpectDirectoryReads({.directory_count = count, .workers = 8});
+  }
+}
+
+TEST_F(DirectoryReadAdmissionTest, OneWorkerStaysOnCoordinatorForSlowReads) {
+  ExpectDirectoryReads({.workers = 1, .slow_root = true});
 }
 
 TEST_F(WalkTest, VisitsWholeTreePreorder) {

@@ -144,8 +144,13 @@ scope or declaring new flags implemented. See
       useful task size, throughput, first output, memory and actual thread/child counts. Include serial
       command/concurrent-discovery, strict dependent expressions and parallel command controls.
       Do not accept a default or performance claim from hosted correctness checks alone.
-- [ ] JC07: Separate directory-admission tuning from worker-budget tuning. PR #991's experimental
-      64-sibling gate is not an optimum across storage types. Design explicit serial operation and
+- [ ] JC07: Separate directory-admission tuning from worker-budget tuning. PR #991 now evaluates
+      observed read cost and reuses warm workers instead of a fixed 64-sibling gate. Its 4 ms
+      estimated-savings budget and first-child sampling are still heuristics: the cheap-parent,
+      slow-child control pays one serial read before startup (about 17-30% for eight children).
+      Qualify heterogeneous later reads, real slow storage and native macOS performance; investigate
+      incidental Abseil clock calibration separately with single-worker controls. Measurements and
+      raw evidence are in docs/performance-analysis.md. Design explicit serial operation and
       minimum independent-work/cost controls in the jobs family, preserving semantic/safety barriers
       and command resource bounds. Distinguish cold start from warm dispatch, and qualify settings
       on small slow frontiers as well as broad memory-backed workloads before choosing defaults.
