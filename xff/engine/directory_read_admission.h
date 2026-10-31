@@ -19,11 +19,11 @@ constexpr bool UsefulDirectoryReads(std::chrono::nanoseconds sample, std::size_t
     return false;
   }
   workers = std::min(workers, directories);
-  const std::size_t rounds = directories / workers + (directories % workers != 0 ? 1 : 0);
+  const std::size_t rounds = (directories / workers) + (directories % workers != 0 ? 1 : 0);
   const std::size_t saved_reads = directories - rounds;
   constexpr auto kStartupBudget = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::milliseconds(4));
   return static_cast<std::uint64_t>(sample.count())
-         >= (static_cast<std::uint64_t>(kStartupBudget.count()) - 1) / saved_reads + 1;
+         >= ((static_cast<std::uint64_t>(kStartupBudget.count()) - 1) / saved_reads) + 1;
 }
 
 }  // namespace xff::engine::walk_internal
