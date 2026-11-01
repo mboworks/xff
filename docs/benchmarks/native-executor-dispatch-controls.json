@@ -147,6 +147,6 @@
     "Phase times include diagnostic bookkeeping; fastest seven selects warmed phase, not process wall time.",
     "CPU model, kernel version and per-sample thermal/load observations were not recorded by this harness.",
     "Guest-visible distinct package/core pairs do not independently verify physical-host cores or QEMU thread affinity.",
-    "Diagnostic C++ targets and their executor dependency are not part of this evidence-only extraction onto main."
+    "Historical evidence remains unchanged; the current diagnostic targets are isolated behind testonly support."
   ]
 }

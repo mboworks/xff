@@ -12,6 +12,7 @@ CLANG_TIDY_MANUAL_TARGETS = [
     "//xff/cli:globals_benchmark",
     "//xff/engine:read_accounting_test",
     "//xff/engine:compare_benchmark",
+    "//xff/engine:executor_benchmark",
     "//xff/engine:rg_benchmark",
     "//xff/engine:expression_benchmark",
     "//xff/engine:expression_run_benchmark",
