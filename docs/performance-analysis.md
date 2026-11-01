@@ -2773,5 +2773,6 @@ small timing differences between those labels cannot be attributed to recycling.
 
 Infrastructure is isolated in [PR #1035](https://github.com/mboworks/xff/pull/1035): the query downloader
 repair and executor diagnostic use private test-only support. The shipping CLI is identical to baseline
-on Linux; all non-debug Mach-O sections match on macOS. Its full CI is green after one targeted retry
-of a runner disk-capacity failure, with no source/head change. Runtime experiments remain unmerged.
+on Linux; all non-debug Mach-O sections match on macOS. Its pre-sync full CI passed after one targeted
+retry of a runner disk-capacity failure, with no source/head change. The subsequent main synchronization
+has a separate current-head CI context. Runtime experiments remain unmerged.

@@ -21,8 +21,14 @@ as an independent parallel uploader component: published/local revision-overlap 
 and selection display. It adds one read-only scan of published batch/status files plus set
 intersections outside the xff CLI and benchmark measurement loop. It changes uploader
 documentation and Python tooling, with no C++ target, normalization or measurement-data
-write change. It needs no runtime timing and remains isolated in its existing PR; it is not
-absorbed into the seven-PR runtime graph or the measurements below.
+write change. It merged independently and needs no runtime timing; it is not absorbed
+into the seven-PR runtime graph or the measurements below. Subsequently merged
+[PR #1038](https://github.com/mboworks/xff/pull/1038) adds uploader dataset-recipe
+overlap/incomplete-batch inventory and bounded publication rebase/regenerate/retry in
+Python, workflow and documentation files. It likewise changes no C++ runtime or
+benchmark measurement loop and does not alter the retained raw samples. The publication
+branch includes current main `b68a9c3a58`; the measured binaries retain the historical
+baseline and source identities below.
 
 Experiments use main `974d137026818bba1c1deaf6cfc4fffe676b314e`, including #1034's
 `ABSL_USE_UNSCALED_CYCLECLOCK=0` for target and execution configurations. The macOS
@@ -162,7 +168,7 @@ keeping the policy because some cheap cases improve would hide serious counterex
 | #996         | Command ownership, comparison sharing, caller-inclusive allowance | Hold: Linux gains coexist with substantial macOS collection regressions.                                         |
 | #997         | Bounded/cancellable read-ahead                                    | Useful latency/RSS gains; full integration retains nested-tree and macOS costs.                                  |
 | #998         | Caller claims required queued directory reads                     | Useful mechanism with #997; full combination still fails a general no-regression claim.                          |
-| #1000        | Executor lifecycle/dispatch diagnostics                           | Extracted into isolated, green #1035.                                                                            |
+| #1000        | Executor lifecycle/dispatch diagnostics                           | Extracted into isolated #1035.                                                                                   |
 | #1001        | Remaining-work matching planner                                   | Reject current cost model and retain the counterexample workloads.                                               |
 | C01 + C03    | Temporary collection/category key construction                    | Retain narrow owned-key fixes; no universal wall-time claim.                                                     |
 | C02          | Reclaim completed matcher batch storage                           | Defer added API pending stable benefit and allocation/RSS evidence.                                              |
@@ -259,9 +265,11 @@ The Linux CLI is byte-identical to main. All fourteen non-debug Mach-O section p
 match on macOS, including code, constants and strings; whole files differ in link-edit
 metadata. These isolation proofs establish absence of a production runtime change
 without inventing an infrastructure timing gain. Both-platform executor/probe tests,
-independent dispatch checksums and changed-file clang-tidy pass. #1035's full CI is green;
-its sole initial failure was runner disk exhaustion while unpacking unchanged LLVM,
-resolved by a targeted job retry without a source change.
+independent dispatch checksums and changed-file clang-tidy passed on the pre-sync head.
+#1035's pre-sync full CI passed after one targeted retry of runner disk exhaustion
+while unpacking unchanged LLVM, without a source change. The subsequent main
+synchronization has its own current-head CI context; earlier checks do not substitute
+for that validation.
 
 The copy candidates pass collection, matcher, rg and run tests on both platforms.
 The six-translation-unit scoped clang-tidy run covered the retained C01/C03
