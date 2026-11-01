@@ -16,6 +16,8 @@
 #include "xff/engine/walk.h"
 
 #include <array>
+#include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -34,6 +36,7 @@
 #include "absl/strings/str_cat.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/vfs/entry.h"
 #include "xff/vfs/filesystem.h"
@@ -42,7 +45,6 @@
 namespace xff::engine {
 namespace {
 
-using ::testing::IsTrue;
 // gtest struct-fixture idioms suppressed file-wide: SetUp/TearDown are public overrides of the
 // base's protected hooks; fixture state carries the private-style `_` suffix; and the data-heavy
 // TEST_F bodies plus trivial local names (a one-line path lambda) trip cognitive-complexity and
@@ -50,9 +52,14 @@ using ::testing::IsTrue;
 // NOLINTBEGIN(misc-override-with-different-visibility,readability-identifier-naming,readability-function-cognitive-complexity,readability-identifier-length)
 
 namespace fs = ::std::filesystem;
+using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
+using ::testing::AllOf;
 using ::testing::ElementsAre;
+using ::testing::Ge;
 using ::testing::IsEmpty;
+using ::testing::IsTrue;
+using ::testing::Le;
 using ::testing::Lt;
 using ::testing::Not;
 using ::testing::Pair;
@@ -364,6 +371,106 @@ TEST_F(WalkTest, DepthVisitsPostOrder) {
     return -1;
   };
   EXPECT_THAT(index_of(Path("sub/b.txt")), Lt(index_of(Path("sub"))));
+}
+
+// Immutable tree data are safe for concurrent reads. This relaxed counter is
+// instrumentation only: it never publishes state or controls worker execution.
+class ReadCountingFs final : public FakeFs {
+ public:
+  explicit ReadCountingFs(std::size_t directories = 64) {
+    std::vector<vfs::Entry> children;
+    children.reserve(directories);
+    for (std::size_t index = 0; index < directories; ++index) {
+      const auto name = "dir_" + std::to_string(index);
+      const auto path = "/r/" + name;
+      children.push_back(DirEntry(path, name));
+      AddDir(path, 1, {FileEntry(path + "/leaf", "leaf")});
+      AddFile(path + "/leaf", 1);
+    }
+    AddDir("/r", 1, std::move(children));
+  }
+
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override {
+    if (path != "/r") {
+      reads_.fetch_add(1, std::memory_order_relaxed);
+    }
+    return FakeFs::ReadDir(path);
+  }
+
+  std::size_t ReadCount() const { return reads_.load(std::memory_order_relaxed); }
+
+ private:
+  mutable std::atomic<std::size_t> reads_{0};
+};
+
+struct WalkReadAheadTest : ::testing::Test {};
+
+TEST_F(WalkReadAheadTest, EarlyStopBoundsSpeculativeSiblingReads) {
+  static constexpr std::array kOrders = std::to_array({
+      SortOrder::kNone,
+      SortOrder::kDir,
+      SortOrder::kTree,
+      SortOrder::kGlobal,
+      SortOrder::kSubtree,
+  });
+  const auto roots = std::to_array<std::string>({"/r"});
+  for (const auto order : kOrders) {
+    for (const std::size_t workers : {1UZ, 2UZ, 3UZ}) {
+      SCOPED_TRACE(static_cast<int>(order));
+      SCOPED_TRACE(workers);
+      const ReadCountingFs fs;
+      std::size_t files = 0;
+      EXPECT_THAT(
+          Walk(
+              fs, roots, {.sort = order, .workers = workers},
+              [&](const Visit& visit) {
+                if (visit.metadata.type == vfs::FileType::kRegular) {
+                  ++files;
+                  return WalkAction::kStop;
+                }
+                return WalkAction::kContinue;
+              },
+              [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }),
+          IsOk());
+      EXPECT_THAT(files, 1);
+      // Walk destroys and joins its pool before returning, so this includes all
+      // queued reads, even those whose future was discarded after the stop.
+      EXPECT_THAT(fs.ReadCount(), AllOf(Ge(1), Le(4 * workers)));
+    }
+  }
+}
+
+TEST_F(WalkReadAheadTest, MultipleWindowsPreserveSerialVisitOrder) {
+  static constexpr std::array kOrders = std::to_array({
+      SortOrder::kNone,
+      SortOrder::kDir,
+      SortOrder::kTree,
+      SortOrder::kGlobal,
+      SortOrder::kSubtree,
+  });
+  const auto roots = std::to_array<std::string>({"/r"});
+  for (const auto order : kOrders) {
+    SCOPED_TRACE(static_cast<int>(order));
+    const ReadCountingFs fs;
+    const auto record = [&](std::size_t workers) {
+      std::string result;
+      EXPECT_THAT(
+          Walk(
+              fs, roots, {.sort = order, .workers = workers},
+              [&](const Visit& visit) {
+                result.append(visit.path).push_back('\n');
+                return WalkAction::kContinue;
+              },
+              [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }),
+          IsOk());
+      return result;
+    };
+    const auto expected = record(1);
+    for (const std::size_t workers : {2UZ, 3UZ}) {
+      SCOPED_TRACE(workers);
+      EXPECT_THAT(record(workers), EqualsText(expected));
+    }
+  }
 }
 
 struct WalkFakeFsTest : ::testing::Test {

@@ -1038,3 +1038,12 @@ this as intentional accounting.
       evidence; keep rejected benchmark alternatives out of shipping dependencies.
 - [ ] Qualify the implemented serial reuse of original validated regex state against the
       on-demand-slot measurements; separate mutable backend state remains private to concurrent workers.
+
+## Directory read-ahead qualification
+
+- [x] Isolate a bounded sibling-read window on the existing pool and measure native/in-memory
+      macOS and Linux controls; retain the four-listing-per-worker deque and reject the two-listing
+      and custom-ring tradeoffs. See [the measured analysis](docs/benchmarks/bounded-read-ahead-20261101.md).
+- [ ] Qualify the retained window on physical slow/network storage and heterogeneous directory
+      sizes. A per-level request limit does not establish a command-wide byte budget or optimal
+      I/O concurrency. Keep JC05/JC06/JC07 open and evaluate cancellation separately.

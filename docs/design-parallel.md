@@ -43,8 +43,10 @@ of the design below; each has a noted follow-up:
 A bounded directory-read worker pool with a single coordinator:
 
 - Workers perform only `ReadDir` plus metadata lookup and return complete listings.
-  The coordinator submits sibling-directory reads ahead, then consumes their
-  futures in the order required by `--sort`. Directory workers start only when at least
+  The coordinator keeps at most four sibling-directory listing requests per requested worker
+  at each active recursion level, then consumes their futures in the order required by `--sort`.
+  This limits speculative listings rather than total bytes: nested levels and large individual
+  listings still contribute memory. Directory workers start only when at least
   two sibling directories provide independent work. For a coordinator-read directory with at least
   512 children and eagerly required metadata, 128-entry stat chunks use the same pool. At most one
   chunk per worker is pending; worker jobs never wait on nested jobs. Metadata-free, lazy and

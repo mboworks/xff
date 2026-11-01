@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Bound speculative sibling-directory listings while preserving worker policy and traversal order.
+
 - Avoid temporary collection-name and comparison-category strings while retaining owned keys.
 
 # 0.10.0
