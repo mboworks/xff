@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Avoid temporary collection-name and comparison-category strings while retaining owned keys.
+
 # 0.10.0
 
 - Verify staged release executables generate Git-applicable comparison patches for binary and empty-file additions, removals, and updates, including reverse application.
