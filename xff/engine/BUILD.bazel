@@ -19,6 +19,73 @@ load("//xff:cc.bzl", "cc_binary", "cc_library", "cc_test")
 
 package(default_visibility = ["//visibility:private"])
 
+# Experimental scheduling support is restricted to tests and diagnostics.
+cc_library(
+    name = "run_executor_cc",
+    testonly = True,
+    srcs = ["run_executor.cc"],
+    hdrs = ["run_executor.h"],
+    deps = [
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/functional:any_invocable",
+        "@abseil-cpp//absl/synchronization",
+    ],
+)
+
+cc_test(
+    name = "run_executor_test",
+    size = "small",
+    srcs = ["run_executor_test.cc"],
+    deps = [
+        ":run_executor_cc",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "executor_measurement_cc",
+    testonly = True,
+    srcs = ["executor_measurement.cc"],
+    hdrs = ["executor_measurement.h"],
+    deps = [
+        ":run_executor_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_test(
+    name = "executor_measurement_test",
+    size = "small",
+    srcs = ["executor_measurement_test.cc"],
+    deps = [
+        ":executor_measurement_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+# Fresh-process lifecycle / warmed-dispatch diagnostic, not runtime admission.
+cc_binary(
+    name = "executor_benchmark",
+    testonly = True,
+    srcs = ["executor_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        ":executor_measurement_cc",
+        "@abseil-cpp//absl/strings",
+        "@nlohmann_json//:json",
+    ],
+)
+
 # Directory traversal over a vfs::FileSystem: a worker pool reads (readdir+lstat)
 # in parallel while a single coordinator thread visits in --sort order.
 cc_library(
