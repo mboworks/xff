@@ -290,6 +290,36 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "glob_evaluate_test",
+    size = "small",
+    srcs = ["glob_evaluate_test.cc"],
+    deps = [
+        ":evaluate_cc",
+        ":walk_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:local_fs_cc",
+        "@abseil-cpp//absl/time",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_test(
+    name = "glob_unicode_test",
+    size = "small",
+    srcs = ["glob_unicode_test.cc"],
+    deps = [
+        ":evaluate_cc",
+        ":walk_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:local_fs_cc",
+        "@abseil-cpp//absl/time",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
 # Parse arbitrary newline-framed argv and evaluate accepted, non-destructive expressions against a
 # read-only synthetic entry. Ordinary tests replay the corpus; the bounded CI campaign mutates it.
 cc_fuzz_test(

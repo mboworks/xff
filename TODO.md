@@ -368,7 +368,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [ ] O01: Adopt measured path-owned basename/root views with fallback copies, unchanged logical
       budgets and ownership/growth/move coverage. Retain small regressions and Linux/macOS evidence
       in [the collection-sharing report](docs/benchmarks/collection-text-sharing-20261101.md).
-- [ ] O02-O06: Independently qualify native glob argument-copy removal, fuzzy scratch/self-score
+- [ ] O02: Qualify owned-pattern references and prepared simple ASCII glob operands.
+      [Cross-platform measurements](docs/benchmarks/native-glob-preparation-20261101.md) preserve
+      case-folded/complex fallbacks, native controls and preparation costs.
+- [ ] O03-O06: Independently qualify fuzzy scratch/self-score
       reuse, lexical field views, heterogeneous capture/definition lookup, and remaining read-buffer
       zeroing. Prefer existing values and interfaces before adding prepared wrappers.
 - [ ] O07-O12: Profile and qualify caller-owned stream buffers, typed reusable directory task slots,
