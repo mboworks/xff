@@ -1,29 +1,28 @@
 # Executor lifecycle and task-grain probe
 
 This page retains the measurement evidence from [PR #1000](https://github.com/mboworks/xff/pull/1000)
-without merging its executor or diagnostic C++ targets. The probe target is not
-available on main: reproducing the experiment requires its exact measured source,
-`c8929d16c77e318b15d87c5bfcbf07af0fa7058e`. The lossless bundle can instead be
-verified offline from main without building or executing any measured binary.
+and makes its executor probe available as a test-only diagnostic. It separates
+thread-start calls, first dispatch, warmed work and executor teardown. Use a
+fresh executable process for every cold sample.
 
-At that source, `//xff/engine:executor_benchmark` is an explicit diagnostic, not a
-shipping dependency or a new runtime admission rule. It separates thread-start calls,
-first dispatch, warmed work and executor teardown. Use a fresh executable process
-for every cold sample: a previous executor or other Abseil contention may already
-have calibrated the process's clock. Ordinary in-process repetition cannot
-establish fresh-process startup cost.
-
-In a separate checkout of the measured source, build before measuring, then
-invoke the resolved executable directly. Do not build this target from main or
-relabel a new build as verification of the historical executable bytes:
+Build before measuring, then invoke the resolved executable directly:
 
 ```sh
-git fetch origin audit/executor-dispatch-costs
-git worktree add --detach /tmp/xff-executor-probe-repro c8929d16c77e318b15d87c5bfcbf07af0fa7058e
-cd /tmp/xff-executor-probe-repro
 bazel build --config=clang_release //xff/engine:executor_benchmark
 bazel-bin/xff/engine/executor_benchmark leaf 3 8192 16 128 32
 ```
+
+The candidate executor support and probe libraries are private `testonly`
+targets. Bazel prevents shipping binaries from depending on them. Production
+traversal and matching keep their existing scheduling implementations; no
+admission, shared-pool, frontier, caller-claim or remaining-work policy is
+installed by this infrastructure extraction.
+
+Historical results below describe the exact measured source
+`c8929d16c77e318b15d87c5bfcbf07af0fa7058e` and original flags. The current main
+includes the Abseil steady-clock correction, so new builds must retain their
+own provenance and must not be relabeled as verification of historical binary
+bytes or used to justify historical cold-start thresholds.
 
 The six arguments are dispatch style (`leaf`, `claimable`, `drain`), caller-inclusive
 participants (1..64), items per warmed sweep, sweep count, chunk grain and unsigned
