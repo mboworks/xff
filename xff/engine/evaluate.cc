@@ -2938,9 +2938,10 @@ struct MimePattern {
 enum class GlobKind : std::uint8_t { kFallback, kLiteral, kPrefix, kSuffix, kContains, kPrefixSuffix };
 
 struct GlobPattern {
-  // Borrow the immutable AST argument. Positions avoid self-references into movable owned strings.
-  std::string_view text;
-  std::uint32_t star = 0;
+  // The immutable AST owns the pattern. Store its C-string length and star position, with
+  // no duplicated pointer and no artificial size restriction on an in-process argument.
+  std::size_t length = 0;
+  std::size_t star = 0;
   GlobKind kind = GlobKind::kFallback;
 };
 
@@ -2970,10 +2971,7 @@ using PrepareOperandFn = PreparedOperand (*)(std::string_view);
 PreparedOperand PrepareGlobOperand(std::string_view argument) {
   // Match the original C-string boundary, including callers that supply embedded NUL bytes.
   argument = argument.substr(0, argument.find('\0'));
-  GlobPattern result{.text = argument};
-  if (argument.size() > std::numeric_limits<std::uint32_t>::max()) {
-    return result;
-  }
+  GlobPattern result{.length = argument.size()};
   for (const unsigned char byte : argument) {
     if (byte >= 128 || byte == '\\' || byte == '?' || byte == '[') {
       return result;
@@ -2984,7 +2982,7 @@ PreparedOperand PrepareGlobOperand(std::string_view argument) {
     result.kind = GlobKind::kLiteral;
     return result;
   }
-  result.star = static_cast<std::uint32_t>(first);
+  result.star = first;
   const auto second = argument.find('*', first + 1);
   if (second == std::string_view::npos) {
     result.kind = first == 0                     ? GlobKind::kSuffix
@@ -3008,31 +3006,31 @@ bool MatchesPreparedGlob(
     return Fnmatch(expression.args.front(), text, flags);
   }
   const auto& pattern = std::get<GlobPattern>(operand);
-  if (pattern.kind == GlobKind::kFallback) {
-    return Fnmatch(expression.args.front(), text, flags);
-  }
-  // Locale-sensitive/multibyte behavior remains with libc. ASCII and zero flags use byte slices.
-  for (std::size_t index = 0; index < text.size(); ++index) {
-    const auto byte = static_cast<unsigned char>(text[index]);
-    if (byte == 0) {
-      text = text.substr(0, index);
-      break;
+  if (pattern.kind != GlobKind::kFallback) {
+    // Locale-sensitive/multibyte behavior remains with libc. ASCII and zero flags use byte slices.
+    for (std::size_t index = 0; index < text.size(); ++index) {
+      const auto byte = static_cast<unsigned char>(text[index]);
+      if (byte == 0) {
+        text = text.substr(0, index);
+        break;
+      }
+      if (byte >= 128) {
+        return Fnmatch(expression.args.front(), text, flags);
+      }
     }
-    if (byte >= 128) {
-      return Fnmatch(expression.args.front(), text, flags);
-    }
   }
+  const std::string_view literal(expression.args.front().data(), pattern.length);
   switch (pattern.kind) {
-    case GlobKind::kLiteral: return text == pattern.text;
-    case GlobKind::kPrefix: return text.starts_with(pattern.text.substr(0, pattern.star));
-    case GlobKind::kSuffix: return text.ends_with(pattern.text.substr(1));
-    case GlobKind::kContains: return text.contains(pattern.text.substr(1, pattern.text.size() - 2));
+    case GlobKind::kLiteral: return text == literal;
+    case GlobKind::kPrefix: return text.starts_with(literal.substr(0, pattern.star));
+    case GlobKind::kSuffix: return text.ends_with(literal.substr(1));
+    case GlobKind::kContains: return text.contains(literal.substr(1, literal.size() - 2));
     case GlobKind::kPrefixSuffix:
-      return text.size() >= pattern.text.size() - 1 && text.starts_with(pattern.text.substr(0, pattern.star))
-             && text.ends_with(pattern.text.substr(pattern.star + 1));
+      return text.size() >= literal.size() - 1 && text.starts_with(literal.substr(0, pattern.star))
+             && text.ends_with(literal.substr(pattern.star + 1));
     case GlobKind::kFallback: return Fnmatch(expression.args.front(), text, flags);
   }
-  return false;
+  std::unreachable();  // LCOV_EXCL_LINE: every internally prepared glob kind is handled above.
 }
 
 bool EvalPreparedName(

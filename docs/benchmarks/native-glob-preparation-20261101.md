@@ -10,7 +10,7 @@ The reference is #1041 head `cb441b7d8dee9893f4b76ebef0a5613d46679f59`, whose ru
 
 The immutable AST owns the pattern. A prepared operand borrows it and survives plan moves; its worker and AST lifetime contract is unchanged. Inputs remain length-delimited views. Match the existing first-NUL C-string boundary explicitly, and never assume a view ends in a NUL. Prefix/suffix checks require enough input bytes to avoid overlapping literals. Every unsupported case returns to the platform implementation. Native case policy, safety, metadata observations and short-circuit behavior are unchanged.
 
-The prepared record is a string view, a star offset and a kind in the existing operand variant. It adds preparation/pool storage for name/path predicates that formerly needed no prepared operand. It does not add mutable per-worker glob storage. Native binary growth is recorded below; preparation costs are reported separately from repeated matching.
+The final prepared record stores the logical pattern length, a full-width star offset and a kind in the existing operand variant; the AST remains the pattern owner. It adds preparation/pool storage for name/path predicates that formerly needed no prepared operand. It does not add mutable per-worker glob storage. Native binary growth is recorded below; preparation costs are reported separately from repeated matching.
 
 `glob_evaluate_test` differentially checks all six name/path/wholename variants, explicit folding, native folding, simple/complex/escaped/malformed patterns, nonterminated input slices, NUL boundaries and plan moves with two independent workers. `glob_unicode_test` separately checks accented multibyte strings and deliberately malformed bytes against native locale behavior; ordinary fixtures remain ASCII. Existing evaluation, execution and full-engine tests remain applicable.
 
@@ -24,7 +24,7 @@ The first supplemental series is an explicit control, not byte-exact matching: d
 
 The existing in-memory expression benchmark separately measures preparation and prepared execution for name/type/constant-true predicates, chains of 1/16/64 predicates and batches of 10/1,000 entries. Nine rounds retain seven, with three shuffled variant sessions. Host I/O is absent; correctness is checked before kernel timing. Percent changes below are median within-session ratios; negative is faster.
 
-## Native 100,000-file results
+## Initial prototype: native 100,000-file results
 
 | Series        | Case    | Workers | Baseline ms | Owned-only change | Prepared ms | Prepared change |
 | ------------- | ------- | ------: | ----------: | ----------------: | ----------: | --------------: |
@@ -49,7 +49,7 @@ The existing in-memory expression benchmark separately measures preparation and 
 
 The default macOS series mostly uses the native fallback and is not a claimed case-sensitive speedup. No-name-predicate controls also change slightly; retain these code-layout/system-noise controls instead of attributing them to matching. The exact series is useful in find-compatible or explicitly exact XFF workflows.
 
-## Kernel, preparation and binary size
+## Initial prototype: kernel, preparation and binary size
 
 | Host          | Case                | Baseline ns | Owned-only change | Prepared ns | Prepared change |
 | ------------- | ------------------- | ----------: | ----------------: | ----------: | --------------: |
@@ -69,7 +69,7 @@ The default macOS series mostly uses the native fallback and is not a claimed ca
 
 These executable sizes include the build output debug sections and are not final compressed release sizes. A fast repeated kernel does not imply a similarly large whole-command gain: traversal, metadata, formatting and process startup remain real costs.
 
-## Counterexamples and remaining work
+## Initial prototype: counterexamples and remaining work
 
 - `linux-default`: worst paired median +3.66% at (10, 3, 'literal'); best -1.77% at (100000, 3, 'suffix'). All raw samples, including slower cases and controls, are retained.
 - `macos-default`: worst paired median +2.21% at (100000, 3, 'literal'); best -1.86% at (1000, 3, 'control'). All raw samples, including slower cases and controls, are retained.
@@ -87,3 +87,43 @@ Release differential glob/Unicode, evaluator, expression-execution and full-engi
 ## Raw evidence
 
 [Lossless JSON evidence](native-glob-preparation-20261101.json.gz): 483,174 bytes; SHA-256 `304977003bf522eff9e5c52922a46c647b828a97097da03e0929d9b59cd6b4a0`. Raw native/kernel samples, source variants, build manifests, scripts and verification logs are retained.
+
+## Final representation confirmation
+
+The final record stores two full-width positions (logical pattern length and star offset) plus the
+kind. The pattern remains AST-owned and the evaluator constructs a borrowed view from its stored
+length. This retains the same operand-record size without an arbitrary 32-bit argument limit.
+A missing-argument regression preserves the non-match behavior of in-process malformed expressions.
+The fallback case now runs once through the switch; the exhaustive enum's impossible fallthrough is
+explicitly unreachable, with the repository's existing coverage annotation. No threshold was changed.
+
+A second complete three-session matrix compares baseline, the first prepared prototype and the
+exact revised source. Each host again has 32 native cases/session, discarded warmups and nine
+interleaved rounds retaining seven, plus the existing expression kernel/preparation controls.
+Linux uses defaults; macOS uses `--case=sensitive --exact`. This adds 5,760 successful native
+invocations including warmups. The earlier tables and counterexamples describe the first prototype;
+this confirmation is the qualification for the final representation.
+
+| Host        | Case    | Workers | Baseline ms | First prepared ms | Final ms | Final change |
+| ----------- | ------- | ------: | ----------: | ----------------: | -------: | -----------: |
+| linux       | suffix  |       1 |     103.779 |           101.568 |  102.077 |       -1.69% |
+| linux       | suffix  |       3 |      38.159 |            37.738 |   37.761 |       -1.04% |
+| linux       | literal |       1 |      99.305 |            98.039 |   98.038 |       -1.28% |
+| linux       | literal |       3 |      35.836 |            35.503 |   35.539 |       -0.73% |
+| linux       | complex |       1 |     104.458 |           104.123 |  103.562 |       -0.43% |
+| linux       | complex |       3 |      38.003 |            38.067 |   38.499 |       +1.26% |
+| linux       | control |       1 |     113.969 |           114.418 |  114.387 |       +0.37% |
+| linux       | control |       3 |      93.839 |            94.477 |   93.597 |       -0.26% |
+| macos-exact | suffix  |       1 |     247.142 |           233.717 |  233.475 |       -6.02% |
+| macos-exact | suffix  |       3 |     207.530 |           194.426 |  192.726 |       -7.11% |
+| macos-exact | literal |       1 |      70.917 |            67.520 |   67.407 |       -4.70% |
+| macos-exact | literal |       3 |      49.039 |            48.875 |   48.973 |       -0.19% |
+| macos-exact | complex |       1 |     247.671 |           247.171 |  246.003 |       -0.67% |
+| macos-exact | complex |       3 |     207.178 |           205.397 |  206.221 |       -0.46% |
+| macos-exact | control |       1 |     230.822 |           229.841 |  227.539 |       -1.44% |
+| macos-exact | control |       3 |     188.509 |           188.111 |  188.495 |       -0.38% |
+
+[Lossless confirmation evidence](native-glob-confirmation-20261101.json.gz): 405,657 bytes;
+SHA-256 `65dca91d9a40943d1e487188f69445607f2bc381eab1edefff132b3c7021c86b`. It retains every raw sample, all three source
+variants, exact runtime hash, scripts and final focused regression logs. The first matrix remains
+available independently rather than being overwritten.

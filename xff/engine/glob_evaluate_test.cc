@@ -22,6 +22,7 @@ namespace xff::engine {
 namespace {
 
 using ::testing::Eq;
+using ::testing::IsFalse;
 
 struct GlobEvaluateTest : ::testing::Test {
   void Check(const std::vector<std::string>& patterns, const std::vector<std::string>& texts) const {
@@ -146,6 +147,29 @@ TEST_F(GlobEvaluateTest, SimpleAndComplexPatternsAgreeWithNativeFnmatch) {
       std::string(170, 'a'),
   };
   Check(patterns, texts);
+}
+
+TEST_F(GlobEvaluateTest, MissingPatternRemainsANonMatchInAnInProcessExpression) {
+  const vfs::Metadata metadata{.type = vfs::FileType::kRegular};
+  const Visit visit{.path = "file.txt", .name = "file.txt", .metadata = metadata};
+  // NOLINTNEXTLINE(misc-const-correctness): EvalContext mutates this control.
+  Control control;
+  const auto emit = [](std::string_view) {};
+  EvalContext context{
+      .visit = visit,
+      .emit = emit,
+      .fs = fs,
+      .now = absl::UnixEpoch(),
+      .tz = absl::UTCTimeZone(),
+      .control = control,
+  };
+  for (const std::string_view primary : {"-name", "-path"}) {
+    MBO_ASSERT_OK_AND_ASSIGN(auto command, parser::Parse({".", std::string(primary), "unused"}));
+    command.expression->args.clear();
+    MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PreparedExpression::Prepare(*command.expression));
+    EXPECT_THAT(Evaluate(*command.expression, context), IsFalse());
+    EXPECT_THAT(prepared.Evaluate(context).matched, IsFalse());
+  }
 }
 
 TEST_F(GlobEvaluateTest, EmbeddedNulUsesTheExistingCStringBoundary) {
