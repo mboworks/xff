@@ -361,6 +361,12 @@ Measured follow-ups (see the P07/P08 sections of `docs/performance-analysis.md`)
 
 ## Performance optimization follow-up
 
+- [ ] Qualify executor admission after the clock correction with separate cold/warm controls and
+      16/32/63/64-entry matching boundaries; check Linux and macOS workload regressions before
+      promoting shared executors, caller-inclusive budgets or bounded directory frontiers.
+- [ ] Revisit recycling matcher batch buffers only when repeatable gains justify the additional API;
+      retain ownership and thread-safety tests plus benchmarks with identical bytes as negative controls.
+
 - [ ] Benchmark collection arena block policies: 4 KiB -> 64 KiB (current), 64 KiB -> 1 MiB,
       and 4 KiB -> 1 MiB. Compare allocation counts, CPU time, unused capacity and peak memory
       for small/large collections on Linux and macOS before choosing new defaults.

@@ -166,6 +166,7 @@ cc_test(
         "//xff/vfs:vfs_cc",
         "@abseil-cpp//absl/status:statusor",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )

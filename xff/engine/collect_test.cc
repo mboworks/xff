@@ -22,6 +22,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/engine/walk.h"
 #include "xff/parser/parser.h"
@@ -30,6 +31,7 @@
 namespace xff::engine {
 namespace {
 
+using ::mbo::testing::EqualsText;
 using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::Eq;
@@ -78,6 +80,21 @@ TEST_F(CollectTest, AddStoresUnderTheNamedCollection) {
   EXPECT_THAT(entry.name, Eq("b.txt"));
   EXPECT_THAT(entry.root, Eq("."));
   EXPECT_THAT(entry.metadata.size, Eq(42));
+}
+
+TEST_F(CollectTest, RepeatedLongNamesOwnTheirKeyBeyondCallerStorage) {
+  const vfs::Metadata metadata{.type = vfs::FileType::kRegular};
+  const std::string expected_name(100, 'n');
+  Collections collections;
+  {
+    std::string name = expected_name;
+    EXPECT_THAT(collections.Add(name, MakeVisit("./a", "a", ".", metadata)), IsTrue());
+    EXPECT_THAT(collections.Add(name, MakeVisit("./b", "b", ".", metadata)), IsTrue());
+    name.assign(100, 'x');
+  }
+  EXPECT_THAT(collections.Names(), ElementsAre(EqualsText(expected_name)));
+  EXPECT_THAT(collections.Entries(expected_name), SizeIs(2));
+  EXPECT_THAT(collections.Entries(expected_name).back().path, EqualsText("./b"));
 }
 
 TEST_F(CollectTest, AsVisitRebuildsTheEntryForASink) {

@@ -23,6 +23,8 @@ repos:
     rev: v5.0.0
     hooks:
       - id: check-added-large-files
+        # Retain the exact lossless cross-platform audit evidence archive.
+        exclude: ^docs/benchmarks/executor-copy-audit-20261101\.json\.gz$
       - id: check-merge-conflict
       - id: check-yaml
       # BINARY_TYPES below: archive containers are binary but can START with text (a phar begins with

@@ -4574,7 +4574,7 @@ RunResult RunTreeCompare(
     return RunResult{.errors = std::max(left_run_result.errors, right_result.errors)};
   }
 
-  const auto record_category = [&](const std::string& path, std::string_view category) {
+  const auto record_category = [&](std::string_view path, std::string_view category) {
     if (side_summaries.at(0).per_entry || side_summaries.at(1).per_entry) {
       categories.emplace(path, category);
     }
@@ -4624,7 +4624,7 @@ RunResult RunTreeCompare(
       const std::size_t category = !pair.left ? 1 : !pair.right ? 0 : result->same ? 3 : 2;
       const auto category_name = kComparisonCategories.at(category);
       counts.Add(category, pair.left, pair.right);
-      record_category(std::string(pair.path), category_name);
+      record_category(pair.path, category_name);
       different |= category != 3;
       if (!selected.at(category)) {
         continue;

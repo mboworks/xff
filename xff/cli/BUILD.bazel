@@ -1264,6 +1264,7 @@ bashtest(
 bashtest(
     name = "rg_test",
     size = "small",
+    timeout = "moderate",  # Repeated frontend subprocesses exceed 60 seconds under MSan.
     srcs = ["rg_test.sh"],
     data = ["//xff/cli/testing:xff"],
 )

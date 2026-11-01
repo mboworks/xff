@@ -2731,3 +2731,48 @@ results; all five macOS targets execute. Full CI remains required before merging
 The macOS samples, binary hashes, invocation settings, output oracles and probe
 source are retained in
 [`abseil-steady-clock-macos-20261031.json.gz`](benchmarks/abseil-steady-clock-macos-20261031.json.gz).
+
+## Executor and allocation audit after the clock correction (2026-11-01)
+
+Keep main's runtime scheduling. The [complete executor/copy audit](benchmarks/executor-copy-audit-20261101.md)
+compares all seven runtime/measurement PRs, their actual dependencies, manageable combinations and
+isolated mechanism controls on macOS and Linux. The initial native matrix has 53 cases and three
+sessions on each platform, with independent output oracles; supplemental native and in-memory
+measurements have separate contracts. The [lossless evidence bundle](benchmarks/executor-copy-audit-20261101.json.gz)
+retains all ten report populations, complete source patches, drivers, identities and provenance corrections.
+
+Reject #991's current four-millisecond directory-admission policy and #1001's current remaining-work
+cost model. A separate matching guard inherited by #992/#996 accumulates 8,192 entries and samples
+16 entries against a 500-microsecond threshold. This guard survives excluding #991's directory policy.
+Removing it restores near-baseline clustered-content and line-output performance on both platforms;
+it does not establish that executor reuse is a universal improvement or restore main's cold-batch policy.
+
+Command-wide execution and bounded read-ahead have useful Linux listing/metadata/comparison results,
+but retain material workload and platform regressions. At three workers, the 65,536-file long-name
+collection case regresses by 39.6% for #996 and 36.3% for #998 on macOS. The #992-only eager control
+also has rg-selection counterexamples. Keep these runtime integrations conditional rather than
+promoting a replacement policy from the favorable cells alone.
+
+Bounded read-ahead has a substantial measured memory benefit on both platforms. In the
+65,536-file metadata case at three workers, median whole-process peak RSS is:
+
+| Platform |      Main |      #996 |     #997 |     #998 |
+| :------- | --------: | --------: | -------: | -------: |
+| Linux    | 20.81 MiB | 20.06 MiB | 6.25 MiB | 6.39 MiB |
+| macOS    | 18.09 MiB | 17.34 MiB | 5.44 MiB | 5.47 MiB |
+
+The #997 frontier reduces peak RSS by about 69% relative to #996 on both platforms;
+#998 retains that improvement. This proves a benefit for this fixture, rather than a
+worst-case bound for arbitrary directory width, path size, archives or storage behavior.
+
+Retain C01/C03: avoid temporary collection-name and comparison-category strings while preserving
+owned keys and caller-storage lifetimes. This is a narrow construction/ownership improvement, without
+a universal wall-clock claim. Defer C02's matcher batch-buffer recycling API until repeatable gains
+justify its additional lifetime transition. Byte-identical collector binaries provide a negative control;
+small timing differences between those labels cannot be attributed to recycling.
+
+Infrastructure is isolated in [PR #1035](https://github.com/mboworks/xff/pull/1035): the query downloader
+repair and executor diagnostic use private test-only support. The shipping CLI is identical to baseline
+on Linux; all non-debug Mach-O sections match on macOS. Its pre-sync full CI passed after one targeted
+retry of a runner disk-capacity failure, with no source/head change. The subsequent main synchronization
+has a separate current-head CI context. Runtime experiments remain unmerged.
