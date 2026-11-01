@@ -83,6 +83,17 @@ class BenchmarkTest(unittest.TestCase):
         args.require_memory = args.require_cpu_affinity = False
         return args
 
+    def incomplete_batch(self, root):
+        value, record = fixture()
+        value['contract']['revisions'].append(dict(sha='b' * 40, date='2026-09-02T12:00:00Z', subject='Pending'))
+        value['identity'] = campaign.identity(value['contract'])
+        record.update(batch=value['identity'], started_at='2026-10-01T12:00:00Z',
+                      completed_at='2026-10-01T13:00:00Z')
+        record['tool_comparisons']['contract']['batch'] = value['identity']
+        directory = save(root / 'batches' / value['identity'], value, record)
+        (directory / 'status.json').write_text(json.dumps({record['head']: {'status': 'complete'}}))
+        return directory, value
+
     def test_machine_identity_hashes_stable_platform_id_not_hostname(self):
         data = plistlib.dumps([{'IOPlatformUUID': 'private-hardware-id'}])
         with mock.patch.object(batch, 'host_platform', return_value='macos'), \
@@ -354,8 +365,8 @@ class BenchmarkTest(unittest.TestCase):
         with mock.patch('builtins.input', return_value='2'), \
                 contextlib.redirect_stdout(io.StringIO()) as output:
             self.assertEqual(cli.choose_upload(candidates), [Path('/second')])
-        self.assertIn('aaaaaaaaaaaa  linux-one  uploaded; 27/49 revisions complete; 0 already present', output.getvalue())
-        self.assertIn('bbbbbbbbbbbb  macos-two  ready; 8/8 revisions complete; 0 already present', output.getvalue())
+        self.assertIn('aaaaaaaaaaaa  linux-one  uploaded; 27/49 revisions complete', output.getvalue())
+        self.assertIn('bbbbbbbbbbbb  macos-two  ready; 8/8 revisions complete', output.getvalue())
         with mock.patch('builtins.input', return_value='a'), \
                 contextlib.redirect_stdout(io.StringIO()) as output:
             self.assertEqual(cli.choose_upload(candidates), [Path('/second'), Path('/third')])
@@ -386,27 +397,144 @@ class BenchmarkTest(unittest.TestCase):
             (pending_root / 'status.json').write_text(json.dumps({revision: {'status': 'pending'}}))
             pages = root / 'pages'
             (pages / 'local/macos-test' / value['identity']).mkdir(parents=True)
-            published = copy.deepcopy(value)
-            published['identity'] = 'd' * 64
-            published_root = pages / 'local/macos-test' / published['identity']
-            published_root.mkdir(parents=True)
-            (published_root / 'batch.json').write_text(json.dumps(published))
-            (published_root / 'status.json').write_text(
+            (pages / 'local/macos-test' / value['identity'] / 'batch.json').write_text(json.dumps(value))
+            (pages / 'local/macos-test' / value['identity'] / 'status.json').write_text(
                 json.dumps({revision: {'status': 'complete'}}))
             candidates = cli.upload_candidates(root, pages)
             self.assertEqual(len(candidates), 1)
             self.assertEqual(candidates[0]['identity'], value['identity'])
             self.assertTrue(candidates[0]['uploaded'])
             self.assertEqual(candidates[0]['present_revisions'], (revision,))
-            self.assertEqual(candidates[0]['published_series_revisions'], 1)
+            self.assertEqual(candidates[0]['published_dataset_revisions'], 1)
+
+    def test_upload_picker_names_published_dataset_before_new_local_batch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            value, record = fixture()
+            ready = save(root / 'batches' / value['identity'], value, record)
+            revision = value['contract']['revisions'][0]['sha']
+            (ready / 'status.json').write_text(json.dumps({revision: {'status': 'complete'}}))
+            published = copy.deepcopy(value)
+            earlier_revision = 'b' * 40
+            published['contract']['revisions'][0]['sha'] = earlier_revision
+            published['identity'] = campaign.identity(published['contract'])
+            earlier_record = copy.deepcopy(record)
+            earlier_record.update(head=earlier_revision, batch=published['identity'],
+                                  revision=published['contract']['revisions'][0])
+            earlier_record['tool_comparisons']['contract']['batch'] = published['identity']
+            pages = root / 'pages'
+            folder = save(pages / 'local/macos-test' / published['identity'], published, earlier_record,
+                          published=True)
+            (folder / 'status.json').write_text(json.dumps({earlier_revision: {'status': 'complete'}}))
+            candidates = cli.upload_candidates(root, pages)
+            self.assertEqual(len(candidates), 1)
+            self.assertFalse(candidates[0]['uploaded'])
+            self.assertEqual(candidates[0]['published_dataset_revisions'], 1)
+            self.assertEqual(candidates[0]['present_revisions'], ())
+            with mock.patch('builtins.input', return_value='1'), \
+                    contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(cli.choose_upload(candidates), [ready.resolve()])
+            text = output.getvalue()
+            self.assertLess(text.index('Dataset: macos-test'), text.index('Local batch inventory:'))
+            self.assertIn('Published: 1 revisions across 1 uploaded batches', text)
+            self.assertIn('Dataset completion: 2/2 planned revisions measured.', text)
+            self.assertIn(published['identity'][:12] + ' 1/1 revisions', text)
+            self.assertIn(value['identity'][:12] + '  macos-test  ready; 1/1 revisions complete', text)
+            self.assertNotIn('extends existing published dataset', text)
+            self.assertNotIn('Same dataset', text)
+
+    def test_upload_overlap_requires_matching_dataset_recipe(self):
+        for different_recipe in (False, True):
+            with self.subTest(different_recipe=different_recipe), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                value, record = fixture()
+                ready = save(root / 'batches' / value['identity'], value, record)
+                revision = record['head']
+                status = json.dumps({revision: {'status': 'complete'}})
+                (ready / 'status.json').write_text(status)
+                published = copy.deepcopy(value)
+                published['contract']['driver'] = {'driver': 'earlier-hash'}
+                earlier_record = copy.deepcopy(record)
+                if different_recipe:
+                    published['contract']['depth'] += 1
+                    earlier_record['tool_comparisons']['contract']['depth'] += 1
+                published['identity'] = campaign.identity(published['contract'])
+                earlier_record['batch'] = published['identity']
+                earlier_record['tool_comparisons']['contract']['batch'] = published['identity']
+                pages = root / 'pages'
+                folder = save(pages / 'local/macos-test' / published['identity'], published,
+                              earlier_record, published=True)
+                (folder / 'status.json').write_text(status)
+                candidate, = cli.upload_candidates(root, pages)
+                self.assertFalse(candidate['uploaded'])
+                self.assertEqual(candidate['present_revisions'], () if different_recipe else (revision,))
+                self.assertEqual(candidate['published_dataset_revisions'], 0 if different_recipe else 1)
+
+    def test_dataset_completion_combines_local_and_published_batches_without_duplicates(self):
+        for published_complete, expected in ((('a', 'd', 'e'), '5/5'), (('a', 'd'), '4/5')):
+            with self.subTest(published_complete=published_complete):
+                candidates = [dict(directory=Path('/earlier'), identity='a' * 64, series='macos-test',
+                                   dataset_id='f' * 64, complete=1, total=3, uploaded=False,
+                                   planned_revisions=('a', 'b', 'c'), completed_revisions=('a',),
+                                   published_planned_revisions=('a', 'd', 'e'),
+                                   published_completed_revisions=published_complete,
+                                   published_dataset_revisions=len(published_complete),
+                                   published_batches=[dict(identity='b' * 64, complete=len(published_complete), total=3)]),
+                              dict(directory=Path('/later'), identity='c' * 64, series='macos-test',
+                                   dataset_id='f' * 64, complete=2, total=2, uploaded=False,
+                                   planned_revisions=('b', 'c'), completed_revisions=('b', 'c'))]
+                with mock.patch('builtins.input', return_value='q'), \
+                        contextlib.redirect_stdout(io.StringIO()) as output:
+                    self.assertIsNone(cli.choose_upload(candidates))
+                self.assertIn(f'Dataset completion: {expected} planned revisions measured.', output.getvalue())
+                self.assertIn('ready; 1/3 revisions complete', output.getvalue())
+
+    def test_upload_picker_all_includes_aggregated_ready_batches(self):
+        candidates = [dict(directory=Path('/batch-' + str(index)), identity=f'{index:064x}',
+                           series='macos-test', dataset_id='a' * 64, complete=1, total=1,
+                           completed_revisions=(f'{index:040x}',), uploaded=False)
+                      for index in range(12)]
+        with mock.patch('builtins.input', return_value='a'), \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(cli.choose_upload(candidates), [candidate['directory'] for candidate in candidates])
+        text = output.getvalue()
+        self.assertEqual(text.count('Dataset: macos-test'), 1)
+        self.assertIn('2 older batches aggregated: 2 ready, 0 uploaded', text)
+        self.assertIn('    10.', text)
+        self.assertNotIn('    11.', text)
+
+    def test_upload_partial_batch_preserves_original_plan_without_extra_confirmation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            directory, original = self.incomplete_batch(root)
+            args = argparse.Namespace(repo=root, root=root, batch=[], remote='origin', pages_ref='coverage-pages',
+                                      github_repository='owner/repo', publish_ref='main', no_publish=True, yes=False)
+            staged = []
+            def run(command, **kwargs):
+                if command[3:5] == ['worktree', 'add']:
+                    Path(command[6]).mkdir(parents=True)
+                if command[3] == 'commit':
+                    batch_path = next((Path(command[2]) / 'benchmarks/local/macos-test').glob('*/batch.json'))
+                    staged.append(json.loads(batch_path.read_text()))
+                return subprocess.CompletedProcess(command, 0, stdout=' M benchmarks/local/data\n')
+            with mock.patch.object(cli.subprocess, 'run', side_effect=run) as execute, \
+                    mock.patch('builtins.input', side_effect=['a']) as answer, \
+                    contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(cli.upload(args), 0)
+            self.assertEqual(staged, [original])
+            self.assertIn('Dataset completion: 1/2 planned revisions measured.', output.getvalue())
+            self.assertEqual(answer.call_count, 1)
+            self.assertEqual(json.loads((directory / 'batch.json').read_text()), original)
+            self.assertTrue(any(call.args[0][3] == 'push' for call in execute.call_args_list))
 
     def test_upload_requires_confirmation_before_commit_and_push(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            directory = root / 'batches' / ('a' * 64)
-            directory.mkdir(parents=True)
-            (directory / 'batch.json').write_text('{}')
-            args = argparse.Namespace(repo=root, root=root, batch=['aaaa'], remote='origin',
+            value, _ = fixture()
+            directory = save(root / 'batches' / value['identity'], value)
+            revision = value['contract']['revisions'][0]['sha']
+            (directory / 'status.json').write_text(json.dumps({revision: {'status': 'complete'}}))
+            args = argparse.Namespace(repo=root, root=root, batch=[value['identity'][:12]], remote='origin',
                                       pages_ref='coverage-pages', github_repository='owner/repo', publish_ref='main',
                                       no_publish=False, yes=False)
             def run(command, **kwargs):
