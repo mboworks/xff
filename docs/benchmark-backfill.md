@@ -321,13 +321,23 @@ Use the automatic uploader from a current source checkout:
 bazel run //tools:benchmark -- upload
 ```
 
-The command fetches `origin/coverage-pages`, creates a temporary detached worktree, and lists every
-local batch with completed observations. Each row shows whether its raw observations are ready or
-already uploaded and how many revisions completed. Pick one numbered batch, choose `a` to upload every
-listed ready batch, or cancel. The all-ready choice excludes batches already present in the Pages
-checkout; a numbered already-uploaded selection still dispatches publication, so retrying after an
-authentication or dispatch failure repairs the missing step. The selection authorizes validation,
-import, commit, push, and publication for all selected batches as one operation.
+The command fetches `origin/coverage-pages`, creates a temporary detached worktree, and groups batches
+under their dataset name and identity. Each dataset shows its published batch IDs and completed
+revision counts first, followed by its completion count and local batch inventory. Dataset completion
+combines planned and completed revisions across matching local and published batches, counting each
+commit once; a partially measured batch may be covered by other batches of the dataset. Each local
+batch occupies one numbered row with its upload state and completed/total revisions. It lists
+the ten most recent local batches individually and aggregates older batches with their ready/uploaded
+counts and unique completed revisions. Pick a numbered batch, choose `a` to upload every
+ready batch (including aggregated older batches), or cancel. The all-ready choice excludes batches
+already present in the Pages checkout; a numbered already-uploaded selection still dispatches
+publication, so retrying after an authentication or dispatch failure repairs the missing step. The
+selection authorizes validation, import, commit, push, and publication for all selected batches as one
+operation. Use `--batch` to select an older batch that is part of the aggregate.
+
+Backfill schedules missing revisions. If retained batches contain multiple completed observations for
+the same local platform and commit, browser history selects the newest measurement. Raw batch reports
+remain available, and dataset completion counts the commit once.
 
 For unattended operation, select batches explicitly by directory, batch JSON path, or unique identity
 prefix; repeat `--batch` to publish several batches together and pass `-Y` to confirm the push:
@@ -351,7 +361,8 @@ gh workflow run benchmark_pages.yml --repo mboworks/xff --ref main
 ```
 
 The importer validates every completed revision, allocation, task, participant and sample before retaining
-anything. Failed or pending revisions do not prevent completed observations from being retained. It preserves
+anything. Failed, pending, or unattempted revisions (absent from `status.json`) do not prevent completed
+observations from being retained. Status entries outside the planned revision set are rejected. It preserves
 raw reports and the frozen host/build contract under
 `local/SERIES/BATCH_ID/`. Re-importing identical observations is harmless; changing an existing
 batch fails. Binaries, source checkouts and build logs are not uploaded. There is no automatic

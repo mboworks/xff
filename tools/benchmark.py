@@ -22,6 +22,7 @@ import tempfile
 
 import benchmark_backfill as batch
 import benchmark_campaign as campaign
+import benchmark_datasets as datasets
 import benchmark_discovery as discovery
 import benchmark_local as local
 import benchmark_records as records
@@ -350,7 +351,50 @@ def upload_batches(root, selections):
     return result
 
 
+def local_dataset_identity(directory, value, status):
+    """Match batches using the same recipe identity the published dataset catalog uses."""
+    complete = [sha for sha, state in status.items() if state.get('status') == 'complete']
+    if not complete:
+        return None
+    sha = complete[0]
+    report_paths = sorted((directory / 'reports' / sha).glob('benchmark-report-*.json'))
+    report_paths.extend(path for path in (directory / sha / 'report.json', directory / sha / 'report.json.gz')
+                        if path not in report_paths)
+    report_path = next((path for path in report_paths if records.exists(path)), None)
+    if report_path is None:
+        return None
+    record = records.read(report_path)
+    report = record['tool_comparisons']
+    contract = value['contract']
+    descriptor = dict(series=record['series'], kind='local', platform=record['platform'],
+                      architecture=report['contract'].get('machine'),
+                      recipe=datasets.recipe(report, contract))
+    return datasets.identity(descriptor)
+
+
 def upload_candidates(root, pages_root):
+    published_revisions = {}
+    published_planned = {}
+    published_by_identity = {}
+    published_batches = {}
+    for path in pages_root.glob('local/*/*/batch.json'):
+        try:
+            value = records.read(path)
+            if value['contract']['purpose'] != 'local-addition':
+                continue
+            status = records.read(path.parent / 'status.json')
+            revisions = {sha for sha, state in status.items() if state.get('status') == 'complete'}
+            published_by_identity[value['identity']] = revisions
+            dataset_id = local_dataset_identity(path.parent, value, status)
+            if dataset_id:
+                published_revisions.setdefault(dataset_id, set()).update(revisions)
+                published_planned.setdefault(dataset_id, set()).update(
+                    revision['sha'] for revision in value['contract']['revisions'])
+                published_batches.setdefault(dataset_id, []).append(
+                    dict(identity=value['identity'], complete=len(revisions),
+                         total=len(value['contract']['revisions'])))
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
     candidates = []
     for path in sorted(root.glob('batches/*/batch.json')):
         try:
@@ -363,31 +407,90 @@ def upload_candidates(root, pages_root):
                 continue
             destination = pages_root / 'local' / contract['series'] / value['identity']
             complete = sum(state.get('status') == 'complete' for state in status.values())
+            completed_revisions = tuple(sha for sha, state in status.items() if state.get('status') == 'complete')
+            dataset_id = local_dataset_identity(path.parent, value, status)
+            published_for_dataset = (published_revisions.get(dataset_id, set()) |
+                                     published_by_identity.get(value['identity'], set()))
+            present_revisions = tuple(sorted(set(completed_revisions) & published_for_dataset))
             candidates.append(dict(directory=path.parent.resolve(), identity=value['identity'],
                                    series=contract['series'], complete=complete,
-                                   total=len(contract['revisions']), uploaded=destination.exists()))
+                                   total=len(contract['revisions']), uploaded=destination.exists(),
+                                   created=value.get('created_at', ''),
+                                   planned_revisions=tuple(revision['sha'] for revision in contract['revisions']),
+                                   completed_revisions=completed_revisions,
+                                   dataset_id=dataset_id,
+                                   present_revisions=present_revisions,
+                                   published_dataset_revisions=len(published_for_dataset),
+                                   published_planned_revisions=tuple(sorted(published_planned.get(dataset_id, set()))),
+                                   published_completed_revisions=tuple(sorted(published_for_dataset)),
+                                   published_batches=published_batches.get(dataset_id, [])))
         except (OSError, ValueError, KeyError, TypeError):
             continue
-    return candidates
+    return sorted(candidates, key=lambda candidate: (candidate['created'], candidate['identity']), reverse=True)
 
 
 def choose_upload(candidates):
     if not candidates:
         raise ValueError('no local datasets have completed observations to upload')
-    print('Eligible local measurement batches:')
-    for number, candidate in enumerate(candidates, 1):
-        state = 'uploaded' if candidate['uploaded'] else 'ready'
-        print(f"  {number}. {candidate['identity'][:12]}  {candidate['series']}  {state}; "
-              f"{candidate['complete']}/{candidate['total']} revisions complete")
+    ready = [candidate for candidate in candidates if not candidate['uploaded']]
+    displayed = candidates[:10]
+    grouped = {}
+    for candidate in candidates:
+        key = (candidate['series'], candidate.get('dataset_id'))
+        grouped.setdefault(key, []).append(candidate)
+    for (series, dataset_id), group in grouped.items():
+        label = f'[{dataset_id[:12]}]' if dataset_id else '(identity unavailable)'
+        print()
+        print(f'Dataset: {series} {label}')
+        published = {item['identity']: item for candidate in group
+                     for item in candidate.get('published_batches', [])}
+        published_count = max(candidate.get('published_dataset_revisions', 0) for candidate in group)
+        rows = [f"{item['identity'][:12]} {item['complete']}/{item['total']} revisions"
+                for item in list(published.values())[:10]]
+        suffix = f'; +{len(published) - 10} older uploaded batches' if len(published) > 10 else ''
+        if published:
+            print(f"  Published: {published_count} revisions across {len(published)} uploaded batches "
+                  f"[{', '.join(rows)}{suffix}].")
+        elif dataset_id is None:
+            print('  Published: dataset matching unavailable.')
+        else:
+            print('  Published: no matching dataset batches found.')
+        local_revisions = {sha for candidate in group for sha in candidate.get('completed_revisions', ())}
+        present_revisions = {sha for candidate in group for sha in candidate.get('present_revisions', ())}
+        planned = {sha for candidate in group
+                   for sha in candidate.get('planned_revisions', candidate.get('completed_revisions', ()))}
+        planned.update(sha for candidate in group for sha in candidate.get('published_planned_revisions', ()))
+        completed = local_revisions | {sha for candidate in group
+                                       for sha in candidate.get('published_completed_revisions', ())}
+        print(f'  Dataset completion: {len(planned & completed)}/{len(planned)} planned revisions measured.')
+        uploaded = sum(candidate['uploaded'] for candidate in group)
+        print(f"  Local batch inventory: {len(group)} batches, {len(local_revisions)} unique completed revisions; "
+              f'{uploaded} of these exact batch IDs are on Pages; {len(present_revisions)} revisions overlap.')
+        print('  Eligible local measurement batches:')
+        for number, candidate in enumerate(displayed, 1):
+            if (candidate['series'], candidate.get('dataset_id')) != (series, dataset_id):
+                continue
+            state = 'uploaded' if candidate['uploaded'] else 'ready'
+            present = len(candidate.get('present_revisions', ()))
+            print(f"    {number}. {candidate['identity'][:12]}  {candidate['series']}  {state}; "
+                  f"{candidate['complete']}/{candidate['total']} revisions complete; {present} already present")
+        older = [candidate for candidate in candidates[10:]
+                 if (candidate['series'], candidate.get('dataset_id')) == (series, dataset_id)]
+        if older:
+            older_revisions = {sha for candidate in older for sha in candidate.get('completed_revisions', ())}
+            older_uploaded = sum(candidate['uploaded'] for candidate in older)
+            print(f'    {len(older)} older batches aggregated: {len(older) - older_uploaded} ready, '
+                  f'{older_uploaded} uploaded; {len(older_revisions)} unique completed revisions.')
     try:
-        answer = input(f'Select batch to upload [1-{len(candidates)}, a for all ready, q to cancel]: ').strip().lower()
+        answer = input(f'Select listed batch [1-{len(displayed)}], a for all {len(ready)} ready, '
+                       'q to cancel: ').strip().lower()
     except EOFError:
         answer = ''
     if answer in ('', 'q', 'quit', 'cancel'):
         print('Cancelled; nothing was pushed or published.')
         return None
     if answer in ('a', 'all'):
-        selected = [candidate['directory'] for candidate in candidates if not candidate['uploaded']]
+        selected = [candidate['directory'] for candidate in ready]
         if not selected:
             raise ValueError('no ready local measurement batches remain to upload')
         print(f'Selected all {len(selected)} ready batches; already uploaded batches are excluded.')
@@ -396,9 +499,9 @@ def choose_upload(candidates):
         selected = int(answer)
     except ValueError as error:
         raise ValueError('batch selection must be a listed number, a, or q') from error
-    if not 1 <= selected <= len(candidates):
+    if not 1 <= selected <= len(displayed):
         raise ValueError('batch selection is outside the listed range')
-    return [candidates[selected - 1]['directory']]
+    return [displayed[selected - 1]['directory']]
 
 
 def upload(args):
