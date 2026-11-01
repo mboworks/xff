@@ -2646,3 +2646,125 @@ The fixed gate shows large small-scan gains but delays profitable slow reads eve
 Separate uninstrumented timing and instrumented diagnostics. On the small warm batch, main created three workers and made 26 futex calls; the old inline gate made none. Main requested 1 ms and 2 ms sleeps. Matching LLVM symbolization (after correcting executable-segment file offsets by `+0x1000`) places them in `MeasureTscFrequencyWithSleep`, reached through Abseil mutex enqueue/clock frequency initialization from `ReadPool::Run`. The guest lacks `tsc_freq_khz`. This is not evidence that thread creation itself costs 3 ms. Removing incidental clock initialization or changing pool synchronization remains a separate candidate, with single-worker controls required before adoption.
 
 Raw data, CPU usage, RSS, executable hashes and fixture/output identities: [directory-admission-20261031.json.gz](benchmarks/directory-admission-20261031.json.gz). Reproduction scripts, native timer extension, latency interposer and diagnostics are retained in `/tmp/xff-991-evidence/` on drogon and `/private/tmp/xff-991-evidence/` locally. The latency injection is a controlled model, not verified physical slow-storage evidence.
+
+## Abseil clock-only startup experiment on current main
+
+A clock-only experiment on `a721b98a306dd9021d31bbc485ae4c7c82ceba00` removes the
+Linux/x86 Abseil TSC calibration cost without changing worker admission or traversal.
+Both builds use `--config=clang_release`. The candidate adds these flags consistently
+for target and exec compilations:
+
+```text
+--copt=-DABSL_USE_UNSCALED_CYCLECLOCK=0
+--host_copt=-DABSL_USE_UNSCALED_CYCLECLOCK=0
+```
+
+The pinned Abseil `unscaledcycleclock_config.h` explicitly supports this compile-time
+override. It selects `std::chrono::steady_clock` and a constant frequency in
+`CycleClock`; it does not remove synchronization. Apple already disables this
+hardware clock by default. Applying the definition to only selected translation
+units risks inconsistent inline clock behavior and is not an acceptable deployment.
+
+On the ten-vCPU Ryzen 9950X KVM Linux guest, a three-worker scan creates three threads
+in both binaries. Baseline `strace` records calibration sleeps requesting 1 ms and
+2 ms; neither occurs in the candidate. A remaining 10 us synchronization backoff is
+not calibration. The hardware-frequency sysfs entry is absent on this guest, causing
+Abseil's calibration fallback. These savings are not guaranteed on machines that can
+obtain the frequency without sleeping.
+
+The native fork/exec/wait timer measures fresh-process wall time, excluding Python,
+fixture preparation, and oracle verification. Eight tmpfs fixture shapes span 10 to
+65,536 files, including broad, nested and chain trees. File listing, metadata output
+and literal content matching run with CPU affinity budgets of 1, 3 and 10. Each of
+72 cases has a discarded warmup per binary, nine interleaved measured samples, and
+three sessions with different case orders. Results below use the median of each
+session's mean fastest seven samples. Changes are medians of paired session changes;
+therefore a change need not exactly equal the ratio of the displayed time medians.
+All 4,320 invocations passed independent output SHA256 oracles.
+
+| Case                    | Workers | Baseline ms | Clock-only ms | Time change |
+| :---------------------- | ------: | ----------: | ------------: | ----------: |
+| broad8x1 / files        |       3 |       3.984 |         0.860 |     -78.42% |
+| nested8x8x64 / files    |       3 |       5.018 |         1.949 |     -61.08% |
+| broad128x512 / files    |       3 |      17.090 |        14.003 |     -17.43% |
+| broad128x512 / metadata |       3 |      75.604 |        68.022 |      -8.38% |
+| broad128x512 / content  |       3 |      56.160 |        53.048 |      -5.54% |
+| broad128x512 / content  |       1 |      98.236 |        98.292 |      -0.45% |
+| broad64x1 / metadata    |       1 |       0.722 |         0.744 |      +2.96% |
+
+Across the 24 single-worker cases the median change is +0.45%, ranging from -1.22%
+to +2.96%. The largest regression is consistent across sessions but only about
+21 us in the displayed small metadata case. Preserve this tradeoff rather than
+claiming every workload improves. The large single-worker content workload is
+essentially unchanged. Median changes across cases at 3 and 10 workers are -55.12%
+and -51.25%, respectively; those summaries describe this startup-heavy fixture mix,
+not a general throughput speedup.
+
+With the override enabled, all five focused targets passed: `//xff/engine:walk_test`,
+`//xff/engine:walk_parallel_test`, `//xff/engine:run_test`, `//xff/cli:rg_test`,
+and `//xff/cli:content_test`. These are experiment checks, not PR readiness or full CI.
+
+The candidate ELF is 12,279,352 bytes versus 12,285,416 bytes for the baseline
+(6,064 bytes smaller). No admission heuristic, per-directory timing, dependency
+upgrade, mutex replacement, or source-code change is present in either binary.
+This experiment supports the simple clock setting as the next Linux startup fix;
+it does not establish an optimal pool-start policy or performance on slow storage,
+bare-metal Linux, Windows, or other architectures. The isolated implementation
+makes this setting explicit in `.bazelrc` for target and exec compilations;
+PR #991 remains unchanged.
+
+Raw samples, binary hashes, build flags, output oracles, reproduction scripts and
+startup traces are retained in
+[`abseil-steady-clock-20261031.json.gz`](benchmarks/abseil-steady-clock-20261031.json.gz).
+The probe reuses the native elapsed-time launcher and fixture setup described in
+PR #991's directory-admission experiment; its script records the required paths.
+
+### Isolated macOS control and implementation order
+
+The same source commit and release settings were measured independently on an
+Apple M5 Pro (18 cores, 64 GiB), macOS 26.6 arm64. Only the target and host clock
+macro definitions differ. The native timer has identical diagnostic instrumentation
+for both binaries; no worker-admission change is included. The protocol again uses
+72 cases, three case orders, one discarded warmup per binary, nine interleaved
+samples and the mean fastest seven. All 4,320 invocations passed the output oracles.
+
+Unlike Linux's pinned tmpfs runs, macOS uses warm APFS fixtures and worker limits
+without CPU pinning. Compare the two macOS builds with each other; these numbers
+are not a controlled comparison of the operating systems or their hardware.
+
+| macOS case              | Workers | Baseline ms | Explicit clock override ms | Time change |
+| :---------------------- | ------: | ----------: | -------------------------: | ----------: |
+| broad8x1 / files        |       3 |       4.223 |                      4.215 |      +0.89% |
+| broad128x512 / files    |       3 |      33.371 |                     33.205 |      -0.47% |
+| broad128x512 / metadata |       3 |     129.073 |                    127.606 |      -0.72% |
+| broad128x512 / content  |       3 |     820.187 |                    821.165 |      +0.21% |
+| broad128x512 / content  |       1 |    1135.752 |                   1133.272 |      -0.16% |
+
+At one worker, the median paired change across cases is -0.02%,
+with case medians ranging from -1.37% to +3.73%.
+
+At three workers, the median paired change across cases is +0.01%,
+with case medians ranging from -1.80% to +1.78%.
+
+At ten workers, the median paired change across cases is +0.11%,
+with case medians ranging from -1.49% to +1.11%.
+
+The median paired change across all macOS cases is +0.02%, consistent with
+Abseil already selecting this clock on Apple platforms. This is a no-regression
+control, not a measured macOS optimization.
+
+The build setting is independent of PR #991. First make Abseil's
+steady-clock choice explicit in both target and exec builds. Then revisit worker
+admission against that baseline: a threshold estimated while paying hardware-clock
+calibration is not an appropriate cost model after the calibration is removed.
+Do not introduce startup-time sampling, a fixed millisecond gate or another pool
+policy as part of this clock-only change. Main's configuration and PR #991 have
+not been changed by these local experiments.
+
+With the definitions in `.bazelrc` and no command-line macro overrides, the same
+five focused targets pass on both macOS and Linux. Linux reuses valid cached test
+results; all five macOS targets execute. Full CI remains required before merging.
+
+The macOS samples, binary hashes, invocation settings, output oracles and probe
+source are retained in
+[`abseil-steady-clock-macos-20261031.json.gz`](benchmarks/abseil-steady-clock-macos-20261031.json.gz).

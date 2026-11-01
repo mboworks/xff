@@ -35,6 +35,13 @@ common --define absl=1
 # xff is a C++23 project.
 common --cxxopt=-std=c++23 --host_cxxopt=-std=c++23
 
+# Use Abseil's steady clock instead of calibrating a hardware cycle counter.
+# The calibration fallback can sleep during the first contended mutex operation
+# on Linux. Keep target and exec configurations consistent; macOS already uses
+# this clock by default.
+common --copt=-DABSL_USE_UNSCALED_CYCLECLOCK=0
+common --host_copt=-DABSL_USE_UNSCALED_CYCLECLOCK=0
+
 # Warnings policy: everything we control compiles with ALL warnings as errors (-Wextra and
 # -Wpedantic on top of the toolchain's -Wall), while genuinely third-party code keeps its warnings
 # non-fatal. "We control" includes the composable extras and the shared extras API: they are
