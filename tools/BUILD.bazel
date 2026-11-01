@@ -870,6 +870,7 @@ test_suite(
         ":generate_mime_db_test",
         ":measure_resources_test",
         ":process_resources_test",
+        ":publish_site_test",
         ":release_backfill_test",
         ":release_notes_test",
         ":release_site_test",
@@ -985,6 +986,7 @@ py_library(
     deps = [
         ":benchmark_backfill_lib",
         ":benchmark_campaign_lib",
+        ":benchmark_datasets_lib",
         ":benchmark_discovery_lib",
         ":benchmark_local_lib",
         ":benchmark_records_lib",
@@ -997,6 +999,7 @@ py_binary(
     deps = [
         ":benchmark_backfill_lib",
         ":benchmark_campaign_lib",
+        ":benchmark_datasets_lib",
         ":benchmark_discovery_lib",
         ":benchmark_local_lib",
         ":benchmark_records_lib",
@@ -1324,6 +1327,25 @@ py_test(
     size = "small",
     srcs = ["verify_benchmark_publication_test.py"],
     deps = [":verify_benchmark_publication_lib"],
+)
+
+py_library(
+    name = "publish_site_lib",
+    srcs = ["publish_site.py"],
+    imports = ["."],
+)
+
+py_binary(
+    name = "publish_site",
+    srcs = ["publish_site.py"],
+)
+
+py_test(
+    name = "publish_site_test",
+    size = "small",
+    srcs = ["publish_site_test.py"],
+    tags = ["requires-host-tools"],
+    deps = [":publish_site_lib"],
 )
 
 py_library(

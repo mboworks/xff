@@ -33,7 +33,9 @@ def retain(root, directory):
     require(contract['driver'], 'missing measurement driver identity')
     revisions = contract['revisions']
     shas = [revision['sha'] for revision in revisions]
-    require(shas and len(shas) == len(set(shas)) and set(shas) == set(status), 'incomplete revision set')
+    require(shas and len(shas) == len(set(shas)), 'invalid revision set')
+    # Collection records status only after an attempt; unattempted revisions have no entry.
+    require(set(status).issubset(shas), 'status contains revision outside batch contract')
     arch = contract['environment']['machine'].lower()
     require(re.fullmatch('[a-z0-9_]+', arch), 'invalid machine architecture')
     complete = {sha for sha, state in status.items() if state.get('status') == 'complete'}

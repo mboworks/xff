@@ -384,6 +384,34 @@ class BenchmarkLandscapeTest(unittest.TestCase):
             landscape.publish(root, '/* renderer */')
             self.assertEqual((root / 'index.html').read_text(), first)
 
+    def test_local_history_selects_latest_measurement_when_batches_overlap(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'index.html').write_text('<h1>History</h1>')
+            originals = {}
+            for batch, measured in [('earlier', '2026-10-01T00:00:00Z'),
+                                    ('later', '2026-10-02T00:00:00Z')]:
+                folder = root / 'local' / 'zen5' / batch / ('a' * 40)
+                folder.mkdir(parents=True)
+                comparison = report()
+                comparison['contract'].update(machine='x86_64', platform='Linux-6.8-x86_64')
+                data = dict(tool_comparisons=comparison, platform='linux', kind='backfill',
+                            purpose='local-addition', series='zen5', head='a' * 40,
+                            revision={'date': '2026-09-01T00:00:00Z'}, completed_at=measured)
+                path = folder / 'report.json'
+                path.write_text(json.dumps(data))
+                originals[path] = path.read_bytes()
+                (folder / 'index.html').write_text('<h1>Report</h1>')
+            self.assertEqual(landscape.publish(root, '/* renderer */'), 2)
+            prefix = 'window.XffBenchmarkHistory(document.getElementById("benchmark-explorer"),'
+            page = (root / 'index.html').read_text()
+            browser_catalog = json.loads(page.split(prefix)[1].split(');</script>')[0])
+            self.assertEqual(len(browser_catalog), 1)
+            self.assertIn('/later/', browser_catalog[0]['report'])
+            self.assertEqual(browser_catalog[0]['measured'], '2026-10-02T00:00:00Z')
+            for path, original in originals.items():
+                self.assertEqual(path.read_bytes(), original)
+
     def test_local_history_keeps_layout_revisions_as_separate_platforms(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

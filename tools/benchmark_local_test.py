@@ -74,6 +74,53 @@ def add_failed_revision(batch, root):
 
 
 class BenchmarkLocalTest(unittest.TestCase):
+    def test_publish_completed_observations_with_unattempted_revisions(self):
+        batch, record = batch_data()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            incoming = root / 'incoming'
+            write_batch(incoming, batch, record)
+            add_failed_revision(batch, incoming)
+            status_path = incoming / 'status.json'
+            status = json.loads(status_path.read_text())
+            del status['e' * 40]
+            status_path.write_text(json.dumps(status))
+            original_status = status_path.read_text()
+            original_batch = (incoming / 'batch.json').read_text()
+            destination = local.retain(root / 'site', incoming)
+            self.assertEqual(json.loads((destination / 'batch.json').read_text()), batch)
+            self.assertEqual(json.loads((destination / 'status.json').read_text()), status)
+            self.assertEqual(json.loads((destination / record['head'] / 'report.json').read_text())['head'],
+                             record['head'])
+            self.assertFalse((destination / ('e' * 40) / 'report.json').exists())
+            self.assertEqual(status_path.read_text(), original_status)
+            self.assertEqual((incoming / 'batch.json').read_text(), original_batch)
+            self.assertEqual(local.retain(root / 'site', incoming), destination)
+
+    def test_reject_status_for_revision_outside_contract_before_writing(self):
+        batch, record = batch_data()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            incoming = root / 'incoming'
+            write_batch(incoming, batch, record)
+            status_path = incoming / 'status.json'
+            status = json.loads(status_path.read_text())
+            status['e' * 40] = {'status': 'complete'}
+            status_path.write_text(json.dumps(status))
+            with self.assertRaisesRegex(ValueError, 'status contains revision outside batch contract'):
+                local.retain(root / 'site', incoming)
+            self.assertFalse((root / 'site').exists())
+
+    def test_reject_missing_completed_report_before_writing(self):
+        batch, record = batch_data()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            report_path = write_batch(root / 'incoming', batch, record)
+            report_path.unlink()
+            with self.assertRaisesRegex(ValueError, 'unexpected report set'):
+                local.retain(root / 'site', root / 'incoming')
+            self.assertFalse((root / 'site').exists())
+
     def test_publish_completed_observations_from_partially_failed_batch(self):
         batch, record = batch_data()
         with tempfile.TemporaryDirectory() as temporary:

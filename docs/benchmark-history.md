@@ -52,6 +52,11 @@ It checks the measured head against the source workflow SHA and derives run iden
 It shares the `coverage-pages` deployment queue and retained branch with coverage and release
 publication, preserving their pages.
 
+Local uploads can advance the retained branch while a publisher is rendering it. A rejected push
+fetches and rebases onto that update, then performs a full benchmark refresh before retrying, with
+at most three push attempts. Newly uploaded measurements remain in the branch and enter the rebuilt
+indexes. History rewrites and merge conflicts stop publication; pushes are never forced.
+
 A full publication refresh reconstructs missing comparison baselines for retained main runs from
 compatible earlier commits on main's first-parent history. Commit order determines the nearest
 eligible baseline; measurement dates only select attempts of that commit. The current commit,
