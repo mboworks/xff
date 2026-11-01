@@ -80,6 +80,21 @@ TEST_F(CollectTest, AddStoresUnderTheNamedCollection) {
   EXPECT_THAT(entry.metadata.size, Eq(42));
 }
 
+TEST_F(CollectTest, RepeatedLongNamesOwnTheirKeyBeyondCallerStorage) {
+  const vfs::Metadata metadata{.type = vfs::FileType::kRegular};
+  const std::string expected_name(100, 'n');
+  Collections collections;
+  {
+    std::string name = expected_name;
+    EXPECT_THAT(collections.Add(name, MakeVisit("./a", "a", ".", metadata)), IsTrue());
+    EXPECT_THAT(collections.Add(name, MakeVisit("./b", "b", ".", metadata)), IsTrue());
+    name.assign(100, 'x');
+  }
+  EXPECT_THAT(collections.Names(), ElementsAre(expected_name));
+  EXPECT_THAT(collections.Entries(expected_name), SizeIs(2));
+  EXPECT_THAT(collections.Entries(expected_name).back().path, Eq("./b"));
+}
+
 TEST_F(CollectTest, AsVisitRebuildsTheEntryForASink) {
   const vfs::Metadata md{.type = vfs::FileType::kRegular, .size = 7};
   Collections collections;

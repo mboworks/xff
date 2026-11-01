@@ -67,7 +67,7 @@ bool Collections::Add(std::string_view name, const Visit& visit) {
   }
   rows_ += 1;
   bytes_ += entry_bytes;
-  by_name_[std::string(name)].push_back(
+  by_name_.try_emplace(name).first->second.push_back(
       Entry{
           .path = CopyText(visit.path),
           .name = CopyText(visit.name),
