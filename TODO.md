@@ -367,9 +367,13 @@ Measured follow-ups (see the P07/P08 sections of `docs/performance-analysis.md`)
 - [ ] Revisit recycling matcher batch buffers only when repeatable gains justify the additional API;
       retain ownership and thread-safety tests plus benchmarks with identical bytes as negative controls.
 
-- [ ] Benchmark collection arena block policies: 4 KiB -> 64 KiB (current), 64 KiB -> 1 MiB,
-      and 4 KiB -> 1 MiB. Compare allocation counts, CPU time, unused capacity and peak memory
-      for small/large collections on Linux and macOS before choosing new defaults.
+- [x] Benchmark collection arena block policies: 4 KiB -> 64 KiB (previous), 64 KiB -> 1 MiB,
+      4 KiB -> 1 MiB and fixed 1 MiB. Compare small/large native and in-memory collections on
+      Linux and macOS, with separate actual block accounting and RSS. Prefer fixed 1 MiB;
+      retain small timing tradeoffs and raw evidence in
+      [the decision report](docs/benchmarks/collection-arena-20261101.md).
+- [x] Adopt the measured lazy fixed 1 MiB collection text policy with its allocation/time/memory
+      tradeoffs; keep allocator accounting outside release timing binaries.
 
 - [x] Evaluate MBO SegmentedVector and Arena at pinned Git head; adopt measured collection storage
       improvements with lifetime tests and allocation/memory tradeoffs in `docs/performance-analysis.md`.

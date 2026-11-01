@@ -2793,3 +2793,29 @@ and small in-memory effects. The report gives absolute costs and session variati
 throughput gain, optimum for slow/network storage, or blanket memory reduction is claimed.
 The shipping worker budget/admission rules remain unchanged; the earlier shared-executor/planner
 stack is not promoted by these results.
+
+## Collection arena block sizing on current main
+
+The [two-platform arena experiment](benchmarks/collection-arena-20261101.md) compares the current
+4 KiB -> 64 KiB policy with 4 KiB -> 1 MiB, 64 KiB -> 1 MiB and fixed 1 MiB blocks on merged
+main `7b72a5f0a52e838dfe0b199ea0386c8e6b3dcd39`. All four policies pass collection ownership and
+budget tests on macOS and Linux. Native and in-memory timings use separate contracts; exact patches,
+binary identities, raw samples and isolated arena accounting are retained in the report's evidence.
+
+Fixed 1 MiB blocks reduce the 100k-entry long-root fixture from 442 arena allocations to 28.
+The extra reserved capacity is about 580 KiB; reserved bytes are not resident memory. Empty
+collections allocate nothing, and one arena serves all named collections in a run. A size-specific Linux
+1,000-entry long-root kernel improves 66.45% across all three sessions (roughly 56 us -> 19 us);
+this is repeated in-process collection construction, not a threefold command speedup, and its
+allocator-level cause remains unisolated. The 100k-entry
+long-root collection kernel improves 5.35% on macOS and 0.97% on Linux with one thread. Complete
+single-collection commands are mostly near baseline; four-collection 100k long-path commands improve
+about 1% on macOS and 3.5% on Linux with three workers. The Linux gain repeats at 3.65% in a
+separate confirmation. A +4.58% Linux 10k-file observation does not reproduce with a consistent sign.
+
+Small costs remain: macOS ten-file long-path commands increase 1.68%, and its largest initial
+paired increase is 2.22%. Do not claim universally faster commands or zero overhead. Neither growth
+alternative consistently dominates fixed blocks. Adopt the simpler fixed 1 MiB policy: these short-lived collection tests show no memory-pressure issue that justifies
+the smaller cap, but do not qualify constrained-memory services or many simultaneous processes.
+The shipping collection text arena now uses the measured fixed 1 MiB policy and still allocates
+only on its first nonempty text copy. Growth-policy controls remain separate evidence populations.

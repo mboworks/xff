@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Use lazy fixed 1 MiB blocks for retained collection text to reduce allocation overhead.
+
 - Bound speculative sibling-directory listings while preserving worker policy and traversal order.
 
 - Avoid temporary collection-name and comparison-category strings while retaining owned keys.
