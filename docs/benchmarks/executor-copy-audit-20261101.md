@@ -15,6 +15,15 @@ consistent benefit to justify adoption.
 
 The seven open runtime/measurement PRs were #991, #992, #996, #997, #998, #1000 and
 #1001. Their historical ancestry is not their minimal implementation dependency graph.
+
+A concurrent inventory review classified [PR #1036](https://github.com/mboworks/xff/pull/1036)
+as an independent parallel uploader component: published/local revision-overlap inventory
+and selection display. It adds one read-only scan of published batch/status files plus set
+intersections outside the xff CLI and benchmark measurement loop. It changes uploader
+documentation and Python tooling, with no C++ target, normalization or measurement-data
+write change. It needs no runtime timing and remains isolated in its existing PR; it is not
+absorbed into the seven-PR runtime graph or the measurements below.
+
 Experiments use main `974d137026818bba1c1deaf6cfc4fffe676b314e`, including #1034's
 `ABSL_USE_UNSCALED_CYCLECLOCK=0` for target and execution configurations. The macOS
 baseline executable uses the earlier clock-fix commit with the identical complete Git
@@ -254,10 +263,10 @@ independent dispatch checksums and changed-file clang-tidy pass. #1035's full CI
 its sole initial failure was runner disk exhaustion while unpacking unchanged LLVM,
 resolved by a targeted job retry without a source change.
 
-The copy candidates pass collection, matcher, rg and run tests on both platforms;
+The copy candidates pass collection, matcher, rg and run tests on both platforms.
 The six-translation-unit scoped clang-tidy run covered the retained C01/C03
 code in the recycler superset: collection source/test and all four matcher-header consumers.
-It was not a separate a49-only lint run; the early a49 hook had no compile database. Native and in-memory output checks validate the measured workloads, not every
+It was not a separate a49-only lint run; the early a49 hook had no compile database. The two retained production C++ files remain identical to the measured a49 candidate; the publication regression test uses matcher-only EqualsText style corrections, validated by a fresh focused collection test. The immutable archive retains the original measured test/source patches. Native and in-memory output checks validate the measured workloads, not every
 possible cancellation, storage, memory-budget or error condition. Unretained runtime
 snapshots are not presented as merge-ready implementations.
 
