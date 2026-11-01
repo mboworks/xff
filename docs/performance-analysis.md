@@ -2776,3 +2776,20 @@ repair and executor diagnostic use private test-only support. The shipping CLI i
 on Linux; all non-debug Mach-O sections match on macOS. Its pre-sync full CI passed after one targeted
 retry of a runner disk-capacity failure, with no source/head change. The subsequent main synchronization
 has a separate current-head CI context. Runtime experiments remain unmerged.
+
+## Bounded directory read-ahead on the existing pool
+
+A [fresh current-main experiment](benchmarks/bounded-read-ahead-20261101.md) isolates the
+bounded sibling-read window from shared executors and cost-based admission. Four pending listings
+per requested worker at each active recursion level gives roughly 13% faster Linux large-tree
+metadata scans and 61-64% lower peak RSS on both Linux/macOS in the measured 65,536-file
+metadata case with three workers. Native macOS timing stays close to baseline. The two-listing
+window's repeated 10% Linux nested-tree penalty is avoided; a custom compact ring has no
+consistent enough advantage to retain. Full raw samples, rejected controls and limitations are
+linked from the report. This is a per-level request bound, not a global byte limit.
+
+Small regressions remain observable: up to 4.8% in the Linux native matrix and 1.8% in macOS,
+and small in-memory effects. The report gives absolute costs and session variation. No universal
+throughput gain, optimum for slow/network storage, or blanket memory reduction is claimed.
+The shipping worker budget/admission rules remain unchanged; the earlier shared-executor/planner
+stack is not promoted by these results.

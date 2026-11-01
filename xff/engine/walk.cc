@@ -18,10 +18,12 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <deque>
 #include <functional>
 #include <future>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <queue>
 #include <ranges>
 #include <set>
@@ -364,6 +366,85 @@ class Walker {
     return pool_.Submit([this, dir] { return ReadDir(dir); });
   }
 
+  // Bound speculative listings without changing the existing leaf-worker pool.
+  // Each active recursion level owns at most four requests per available worker;
+  // this is a request bound, not a global byte budget for arbitrary tree shapes.
+  class ReadFrontier final {
+   public:
+    ReadFrontier(
+        Walker& walker,
+        const std::vector<Stated>& children,
+        int depth,
+        mbo::types::OptionalRef<const std::vector<bool>> pruned = std::nullopt)
+        : walker_(walker), children_(children), depth_(depth), pruned_(pruned) {
+      if (walker_.options_.workers <= 1) {
+        return;
+      }
+      const auto indices = std::views::iota(std::size_t{0}, children_.size());
+      const auto directories = static_cast<std::size_t>(
+          std::ranges::count_if(indices, [this](std::size_t index) { return Eligible(index); }));
+      if (directories < 2) {
+        return;
+      }
+      walker_.pool_.Start(directories);
+      window_ = std::min(directories, 4 * std::min(directories, walker_.options_.workers));
+      requests_.emplace();
+    }
+
+    ~ReadFrontier() = default;
+
+    ReadFrontier(const ReadFrontier&) = delete;
+    ReadFrontier& operator=(const ReadFrontier&) = delete;
+    ReadFrontier(ReadFrontier&&) = delete;
+    ReadFrontier& operator=(ReadFrontier&&) = delete;
+
+    std::future<Listing> Take(std::size_t index) {
+      if (!requests_) {
+        return {};
+      }
+      auto& requests = *requests_;
+      while (!requests.empty() && requests.front().index < index) {
+        requests.pop_front();
+      }
+      next_ = std::max(next_, index);
+      while (requests.size() < window_ && next_ < children_.size()) {
+        if (Eligible(next_)) {
+          requests.push_back({
+              .index = next_,
+              .read = walker_.SubmitRead(children_.at(next_).path),
+          });
+        }
+        ++next_;
+      }
+      if (requests.empty() || requests.front().index != index) {
+        return {};
+      }
+      auto read = std::move(requests.front().read);
+      requests.pop_front();
+      // Leave the released slot available for a deeper frontier until the next sibling.
+      return read;
+    }
+
+   private:
+    struct Request {
+      std::size_t index;
+      std::future<Listing> read;
+    };
+
+    bool Eligible(std::size_t index) const {
+      return (!pruned_ || !pruned_->at(index)) && walker_.Descendable(children_.at(index), depth_);
+    }
+
+    Walker& walker_;
+    const std::vector<Stated>& children_;
+    const int depth_;
+    const mbo::types::OptionalRef<const std::vector<bool>> pruned_;
+    std::size_t next_ = 0;
+    std::size_t window_ = 0;
+    // Avoid even the deque's initial allocation in serial and file-only directories.
+    std::optional<std::deque<Request>> requests_;
+  };
+
   bool Descendable(const Stated& stated, int depth) const {
     const bool is_dir = stated.ok && stated.metadata.type == vfs::FileType::kDirectory;
     const bool within_depth = options_.max_depth < 0 || depth < options_.max_depth;
@@ -491,22 +572,22 @@ class Walker {
   }
 
   // Recurses a directory's (already sorted) children. The sort modes differ only
-  // in how a subdirectory's entry is grouped relative to its subtree. Reads for
-  // the descendable subdirectories are submitted as a batch up front so the pool
-  // overlaps their IO while the coordinator visits in order.
+  // in how a subdirectory's entry is grouped relative to its subtree. A bounded
+  // window overlaps sibling reads while the coordinator visits in order.
   // NOLINTNEXTLINE(readability-function-cognitive-complexity): dispatching the ordering modes is cohesive.
   void HandleChildren(const std::vector<Stated>& children, int depth) {
     // Inline DFS at each entry's position. kTree emits a subtree in its sorted
     // place; post-order (`-depth`) always uses this shape (descend then visit).
     if (options_.sort == SortOrder::kTree || options_.sort == SortOrder::kGlobal || options_.post_order) {
-      std::vector<std::future<Listing>> reads = SubmitSubdirReads(children, depth);
+      ReadFrontier reads(*this, children, depth);
       for (std::size_t i = 0; i < children.size(); ++i) {
         if (stopped_) {
           return;
         }
+        auto read = reads.Take(i);
         VisitSubtree(
-            children[i], depth,
-            reads[i].valid() ? mbo::types::OptionalRef{reads[i]} : mbo::types::OptionalRef<std::future<Listing>>{});
+            children.at(i), depth,
+            read.valid() ? mbo::types::OptionalRef{read} : mbo::types::OptionalRef<std::future<Listing>>{});
       }
       return;
     }
@@ -522,15 +603,16 @@ class Walker {
           VisitOne(children[i], depth, options_.mount_before_visit && dived[i]);
         }
       }
-      std::vector<std::future<Listing>> reads = SubmitSubdirReads(children, depth);
+      ReadFrontier reads(*this, children, depth);
       for (std::size_t i = 0; i < children.size(); ++i) {
         if (stopped_) {
           return;
         }
         if (IsDir(children[i])) {
+          auto read = reads.Take(i);
           VisitSubtree(
-              children[i], depth,
-              reads[i].valid() ? mbo::types::OptionalRef{reads[i]} : mbo::types::OptionalRef<std::future<Listing>>{});
+              children.at(i), depth,
+              read.valid() ? mbo::types::OptionalRef{read} : mbo::types::OptionalRef<std::future<Listing>>{});
         } else if (dived[i]) {
           // A container groups its members like a directory, so under kSubtree it belongs in the
           // subtree block rather than the flat block its own entry was emitted in.
@@ -550,7 +632,7 @@ class Walker {
       dived[i] = WillDive(children[i], depth);
       pruned[i] = VisitOne(children[i], depth, options_.mount_before_visit && dived[i]) == WalkAction::kPrune;
     }
-    std::vector<std::future<Listing>> reads = SubmitSubdirReads(children, depth, pruned);
+    ReadFrontier reads(*this, children, depth, pruned);
     for (std::size_t i = 0; i < children.size(); ++i) {
       if (stopped_) {
         return;
@@ -559,44 +641,17 @@ class Walker {
         continue;
       }
       if (Descendable(children[i], depth)) {
+        auto read = reads.Take(i);
         Descend(
-            children[i], depth,
-            reads[i].valid() ? mbo::types::OptionalRef{reads[i]}
-                             : mbo::types::OptionalRef<std::future<Listing>>{});  // entry already visited above
+            children.at(i), depth,
+            read.valid() ? mbo::types::OptionalRef{read}
+                         : mbo::types::OptionalRef<std::future<Listing>>{});  // entry already visited above
       } else if (dived[i]) {
         // `--archive=all`: a container met mid-walk descends exactly where a directory would, and
         // after its own visit, so a prune on the container still skips its members.
         DescendContainer(children[i], depth);
       }
     }
-  }
-
-  // Submits a read for every descendable subdirectory in `children`, returning a
-  // vector aligned with `children` (an invalid future where there is no read), so
-  // the pool overlaps their IO. The sequential walk (no workers) reads lazily at
-  // descend time instead, so it never pre-reads siblings it might not reach.
-  std::vector<std::future<Listing>> SubmitSubdirReads(
-      const std::vector<Stated>& children,
-      int depth,
-      const std::vector<bool>& pruned = {}) {
-    std::vector<std::future<Listing>> reads(children.size());
-    if (options_.workers <= 1) {
-      return reads;
-    }
-    std::vector<std::size_t> directories;
-    for (std::size_t index = 0; index < children.size(); ++index) {
-      if ((pruned.empty() || !pruned[index]) && Descendable(children[index], depth)) {
-        directories.push_back(index);
-      }
-    }
-    if (directories.size() < 2) {
-      return reads;
-    }
-    pool_.Start(directories.size());
-    for (const std::size_t index : directories) {
-      reads[index] = SubmitRead(children[index].path);
-    }
-    return reads;
   }
 
   const vfs::FileSystem& fs_;
