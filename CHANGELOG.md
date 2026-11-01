@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Share collection basename and root text with the owned path where possible, reducing retained memory without changing buffer limits.
+
 - Use lazy fixed 1 MiB blocks for retained collection text to reduce allocation overhead.
 
 - Bound speculative sibling-directory listings while preserving worker policy and traversal order.

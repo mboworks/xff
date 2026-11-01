@@ -97,6 +97,22 @@ TEST_F(CollectTest, RepeatedLongNamesOwnTheirKeyBeyondCallerStorage) {
   EXPECT_THAT(collections.Entries(expected_name).back().path, EqualsText("./b"));
 }
 
+TEST_F(CollectTest, DistinctNameAndRootRetainTheirOwnValues) {
+  const vfs::Metadata metadata{.type = vfs::FileType::kRegular};
+  Collections collections;
+  {
+    const std::string path = "/root/leaf";
+    const std::string name = "other-leaf";
+    const std::string root = "/other-root";
+    EXPECT_THAT(collections.Add("keep", MakeVisit(path, name, root, metadata)), IsTrue());
+  }
+  ASSERT_THAT(collections.Entries("keep"), SizeIs(1));
+  const auto& entry = collections.Entries("keep").front();
+  EXPECT_THAT(entry.path, EqualsText("/root/leaf"));
+  EXPECT_THAT(entry.name, EqualsText("other-leaf"));
+  EXPECT_THAT(entry.root, EqualsText("/other-root"));
+}
+
 TEST_F(CollectTest, AsVisitRebuildsTheEntryForASink) {
   const vfs::Metadata md{.type = vfs::FileType::kRegular, .size = 7};
   Collections collections;
@@ -192,7 +208,8 @@ TEST_F(CollectTest, StoredVisitSurvivesSegmentAndArenaGrowthAndMove) {
   EXPECT_THAT(collections.Add("first", MakeVisit("first/path", "path", "first", metadata)), IsTrue());
   const Visit retained = collections.Entries("first").front().AsVisit();
   for (std::size_t index = 0; index < 1'025; ++index) {
-    const std::string path = std::string(150, 'p') + std::to_string(index);
+    // Two copies of each long path force text storage beyond one 1 MiB block.
+    const std::string path = std::string(600, 'p') + std::to_string(index);
     EXPECT_THAT(collections.Add("first", MakeVisit(path, "name", "root", metadata)), IsTrue());
     EXPECT_THAT(collections.Add(std::to_string(index), MakeVisit(path, "name", "root", metadata)), IsTrue());
   }
@@ -202,7 +219,7 @@ TEST_F(CollectTest, StoredVisitSurvivesSegmentAndArenaGrowthAndMove) {
   EXPECT_THAT(retained.root, Eq("first"));
   EXPECT_THAT(retained.metadata.size, Eq(73));
   EXPECT_THAT(moved.Entries("first"), SizeIs(1'026));
-  EXPECT_THAT(moved.Entries("first").back().path, Eq(std::string(150, 'p') + "1024"));
+  EXPECT_THAT(moved.Entries("first").back().path, Eq(std::string(600, 'p') + "1024"));
   Collections assigned;
   EXPECT_THAT(assigned.Add("old", MakeVisit("old", "old", "", metadata)), IsTrue());
   assigned = std::move(moved);

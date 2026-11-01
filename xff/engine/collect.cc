@@ -67,11 +67,12 @@ bool Collections::Add(std::string_view name, const Visit& visit) {
   }
   rows_ += 1;
   bytes_ += entry_bytes;
+  const std::string_view path = CopyText(visit.path);
   by_name_.try_emplace(name).first->second.push_back(
       Entry{
-          .path = CopyText(visit.path),
-          .name = CopyText(visit.name),
-          .root = CopyText(visit.root),
+          .path = path,
+          .name = path.ends_with(visit.name) ? path.substr(path.size() - visit.name.size()) : CopyText(visit.name),
+          .root = path.starts_with(visit.root) ? path.substr(0, visit.root.size()) : CopyText(visit.root),
           .depth = visit.depth,
           .metadata = visit.metadata,
           .fs = visit.fs,

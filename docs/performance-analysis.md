@@ -2819,3 +2819,254 @@ alternative consistently dominates fixed blocks. Adopt the simpler fixed 1 MiB p
 the smaller cap, but do not qualify constrained-memory services or many simultaneous processes.
 The shipping collection text arena now uses the measured fixed 1 MiB policy and still allocates
 only on its first nonempty text copy. Growth-policy controls remain separate evidence populations.
+
+## Reconciled cross-platform optimization audit after #1040
+
+Baseline: merged main `16e70cb97de93c7ab4ae8c9e990e1842d50cc528`. This is a code and evidence audit,
+not a speedup claim for every candidate. Only the collection text-sharing experiment below has new
+Linux/macOS timing evidence. Preserve the distinction between release timing, allocation accounting,
+in-memory kernels, and correctness tests.
+
+### Existing work and decisions
+
+This audit reconciles the existing plans rather than replacing them:
+
+- [Performance analysis](performance-analysis.md): compiler/allocator trials, metadata, collection
+  storage, P01-P08, startup, expression qualification, clock correction, executor audit and arenas.
+- [Expression plan](design-expression-program.md) and
+  [qualification inventory](expression-qualification-audit.md): preparation boundaries, effects,
+  operand/worker storage, dispatch and optimizer acceptance.
+- [Concurrency design](design-parallel.md) and TODO JC01-JC08: role budgets, reusable workers,
+  admission, cancellation, bounded queues, and separate diagnostics.
+- [Near-duplicate design](design-near-duplicates.md): reuse normalized shingles and exact verification;
+  candidate indexing is distinct from choosing clustering semantics.
+- [Benchmark comparison](benchmark-comparisons.md), [history](benchmark-history.md),
+  [correctness audit](benchmark-correctness-audit.md), and [backfill](benchmark-backfill.md): preserve
+  comparable case contracts, platform/CPU series, raw samples and reference normalization.
+- [Safety design](design-safety.md), [structured output](design-structured-output.md),
+  [rg design](design-rg.md), [field validation](design-field-validation.md), and
+  [summary scopes](design-summary-scopes.md): optimizations cannot change policy enforcement, parsing
+  modes, validation timing, output populations or formatting contracts.
+- TODO's startup, toolchain, regex, P01-P08, performance follow-up, EP01-EP07, operand qualification,
+  directory read-ahead and interner-revisit sections remain part of the inventory.
+
+Already implemented work is not a new recommendation: lazy metadata, birth-time demand, removal of
+whole-content stack-buffer zeroing, content snapshots/invalidation, streaming rg selection, compiled
+field transforms, prepared expression dispatch, private regex worker state, PCRE2 scratch/JIT,
+conditional timezone/framework startup, the Abseil clock correction, bounded directory read-ahead,
+owned collection keys and fixed 1 MiB text blocks. Some historical paragraphs and unchecked TODOs
+predate those implementations; qualify or narrow them instead of repeating completed work.
+
+The current rejected policies are also constraints on new experiments:
+
+- #991 is closed: the fixed admission/probe policy regressed slow Linux children by 27.8-59.0%
+  and macOS listings by 7.3-8.8%.
+- #1001 is closed: the remaining-work planner regressed nested content by 54.8% Linux / 35.2% macOS.
+- #1000 is closed as superseded by the diagnostics in #1035, not as a failed measurement technique.
+- #992/#996/#997/#998 remain unqualified. Shared execution, caller participation, cancellation,
+  byte reservations and fairness are not categorically rejected, but their current integrations
+  cannot be promoted past the recorded workload regressions.
+- The narrower read-ahead window, generic larger output batches, per-batch asynchronous overlap,
+  default allocator replacement and the previous recycling API have unfavorable or insufficient
+  evidence. Revisit only with a specific changed mechanism and new controls.
+
+### Exception and wrapper boundary
+
+`.bazelrc` selects `-fno-exceptions`. Inspecting actual full-release C++ actions on both platforms
+with `//xff/cli:xff_full --config=clang_release --config=xff_full` found no later `-fexceptions`:
+macOS had 131 XFF/extension and 191 dependency C++ actions; Linux had 262 and 382 respectively
+(the action totals include configurations, not necessarily unique source files). No unguarded
+`throw`, `try` or `catch` was found in XFF's own runtime C++ sources.
+
+This does not prove that system C++ libraries contain no exception machinery. Build-time execution
+configuration, prebuilt system runtimes, and foreign ABI callbacks are separate boundaries. Keep
+runtime status-based failures explicit. Do not add cleanup guards for impossible exception unwinding,
+throwing adapters around status values, or speculative exception containment in hot loops. A future
+exception-enabled dependency must be isolated and justified with effective compile/link evidence.
+
+`RunExecutor`, its lifecycle measurement support, iterative expression programs and qualification
+factories are test-only. Do not count their wrappers or allocations as shipping costs. The shipping
+expression adapter still has a polymorphic plan and worker state; inspect optimized code before
+claiming that ThinLTO failed to remove an indirect call. A small value, enum, span, index or
+worker-local buffer is the preferred initial representation. New type-erased tasks, shared ownership,
+virtual layers and generic executor hierarchies need an actual lifetime or extensibility requirement.
+
+### Prioritized candidates
+
+| ID  | Candidate                             | Current concrete cost / opportunity                                                 | Relation to existing work                  | First decision experiment                                    |
+| --- | ------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------ |
+| O01 | Share collection-owned path text      | Separate basename/root copies often duplicate bytes already in the owned path       | Extends collection ownership and #1040     | Native/kernel timing, RSS, growth/move/fallback/budget tests |
+| O02 | Avoid native glob argument copies     | `evaluate.cc::Fnmatch` constructs pattern and input strings on each call            | EP03 invariant preparation; name-txt cases | Owned-pattern reference first; simple glob plans separately  |
+| O03 | Reuse fuzzy scratch and self-scores   | `Score` allocates two rows; `Percent` scores the fixed pattern against itself again | Existing fuzzy optimization TODO           | Prepared ceiling plus worker scratch, exact ranking oracle   |
+| O04 | Render lexical path fields as views   | Name/stem/ext/etc. repeatedly construct path and string temporaries                 | P04 field rendering                        | POSIX lexical slices, multi-field output and edge cases      |
+| O05 | Remove transparent-lookup temporaries | Definition/capture field maps require temporary `std::string(key)`                  | C01 precedent; optional dynamic interning  | Transparent comparator plus borrowed lookup before interner  |
+| O06 | Avoid read-buffer zeroing             | Range reads and host cursor reads allocate zero-filled strings before OS fills them | Extends the already-fixed content buffer   | C++23 overwrite operation, short/EINTR/EOF/error boundaries  |
+| O07 | Reuse caller-owned stream buffers     | Large comparisons and range assembly allocate intermediate strings per chunk        | P04 incremental work; P05 cursors          | Simple span read API, two persistent comparison buffers      |
+| O08 | Simplify directory task handoff       | Shared packaged task, future state and erased queue callback per read/stat job      | JC04 and executor diagnostics              | Bounded typed reusable slots on the existing pool            |
+| O09 | Reduce batch input ownership          | `OwnVisit` copies path, name and root into each pending/deferred record             | C02 deferred pending stable gains          | Batch-owned bytes/offsets; immutable source ownership        |
+| O10 | Retain bounded result capacities      | Match/compare result clear/resize destroys reusable output string capacities        | P08 output-byte admission                  | Reuse slots with a retained-byte ceiling and giant-tail test |
+| O11 | Reduce idle worker participation      | Warm pools wake all started workers even when the current useful batch is smaller   | JC04/07, cold versus warm distinction      | Active worker IDs/generations; no clocks in per-file paths   |
+| O12 | Simplify shipping evaluator adapter   | Plan/state allocation and an indirect worker call may remain around prepared logic  | EP07 and recorded virtual-entry overhead   | Direct production value representation versus actual LTO     |
+| O13 | Carry derived values across stages    | Worker-filtered entries may be reread for coordinator hashes/line counts/output     | Explicit remaining P04 extension           | Requested values only; no unbounded raw-content batch        |
+| O14 | Build immutable catalogs once         | MIME/language core vocabularies and lookups have runtime construction paths         | Startup TODO; EP-S01                       | Generated flat tables plus lazy user overlays                |
+| O15 | Prepare remaining invariant operands  | Hash specs, diff options and template families retain qualification gaps            | EP03/EP07 operand inventory                | Audit actual production binding before adding a record       |
+| O16 | Stream the two-tree comparison merge  | Both trees accumulate in ordered maps before comparison and first status output     | Original directory-at-a-time design; P05   | Paired completed frontiers, ordering and ignore equivalence  |
+| O17 | Reuse stage workers within a command  | Traversal/matching/comparison have separate persistent pools and stage budgets      | JC01-JC08; open #992/#996/#997/#998        | Persistent role queues versus pools; shared CPU accounting   |
+| O18 | Add byte-bounded pipeline overlap     | Coordinator waits for matching batches; I/O and matching can have idle phases       | JC03/04; rejected per-batch async pilot    | Persistent workers, bounded completed output, backpressure   |
+| O19 | Amortize archive decoding/indexing    | Reopening/replaying members is expensive, especially the recorded ZIP cases         | P07 archive admission/indexing TODOs       | Indexed or serial decode feeding admitted byte queues        |
+| O20 | Bulk metadata where supported         | Metadata-heavy macOS directories could amortize per-entry syscalls                  | Existing bulk-stat investigation           | Optional VFS capability with basic/followed-link fallback    |
+| O21 | Reuse similarity representations      | Repeated shingle generation and pairwise verification dominate large document sets  | Existing near-duplicate design             | Cache reference shingles; exact verification after indexing  |
+| O22 | Reduce output construction churn      | Numeric/cell/JSON strings, row insertion and aligned-table retention allocate       | Existing output/scope contracts            | Append into reusable row buffers; stream machine formats     |
+
+All elapsed improvements in this table except O01 are hypotheses, not measured gains. Allocation
+sites are inspected code facts; an allocation's wall-time significance still requires profiling.
+
+### Small changes first
+
+O02 has a particularly small first step: all inspected native helper call sites pass the owned
+`expr.args.front()` pattern. Accept that existing string by const reference rather than copying it
+through a string view. Do not introduce a new prepared wrapper just to recover its `c_str()`.
+A larger literal/prefix/suffix strategy can later avoid the input materialization too, but must
+preserve escapes, bracket classes, case mode, locale and POSIX glob behavior; retain the existing
+fallback for unsupported patterns. The dedicated fnmatch regex backend already owns its pattern,
+so do not mistakenly claim that it copies the pattern too; it still materializes the input.
+
+O03 can cache the pattern-only normalization score in a parsed fuzzy term and reuse two plain
+worker-local rows. The first row does not need old data; later rows overwrite every result cell.
+Preserve all scoring weights, byte/case semantics, term negation and ranking ties. Do not share
+mutable scratch through the immutable query or add a lock. A global pool for two tiny vectors is
+more complicated than explicit per-worker storage.
+
+O04 should exploit the existing string-or-view return type. A whole new general path object is
+unnecessary. Test empty paths, `/`, repeated/trailing separators, `.`, `..`, leading dots, empty
+extensions, compound suffixes and virtual member paths against current behavior. Cache only if
+multiple fields justify it; a one-field render should not build an elaborate per-entry cache.
+
+O05 starts with heterogeneous lookup in the existing maps, including their owning declarations.
+Only then measure IDs/interning for captures/definitions or destination detection. The MBO interner
+remains an optional dependency experiment, not a reason to hash names that preparation can bind
+once. Avoid a second catalog or lookup structure with the same spellings.
+
+O06/O07 must consume exactly bytes returned by the read operation. Keep errors distinct from EOF,
+short reads and EINTR, preserve offsets and shared read-budget reservations, and retain VFS routing.
+`ReadSourceRange` already reserves its final result; eliminating its intermediate read/copy matters
+more than adding another reserve. A span-based read can reduce allocation and zeroing without a
+new ownership hierarchy. Use already-known sizes when useful, but do not call a generic source
+size method or perform another stat just to reserve: the default source size method scans content. Native compressed/archive readers need an honest fallback contract.
+
+### Worker and lifetime changes
+
+Current `ReadPool`, `ParallelMatch` and `ParallelCompare` retain threads after activation and join
+at lifetime end. Comparison has one `std::async` coordinator per two-tree command; that is not a
+fresh thread for every file or batch. Do not describe all existing threads as disposable.
+The rejected overlap pilot did create per-batch asynchronous work; do not bring that design back.
+
+O08 should first preserve the existing worker policy and leaf-job restriction. A slot can hold a
+job kind, owned input or borrowed stable input, result, generation and completion state. Bound it
+by the active frontier. Do not recycle it until both producer and consumer are finished; cancellation
+and destructor draining must remain safe. Replace shared/type-erased machinery only when native
+allocation and clean dispatch measurements show the slot representation is cheaper. Do not export
+a general-purpose executor API for this two-kind internal queue by default.
+
+O09 cannot simply replace strings with views into a movable `std::string`: short-string storage
+and vector relocation would dangle those views. Use stable owned bytes or offsets resolved on use,
+keep archive filesystem owners alive, and preserve all suspended/deferred lifetimes. Count known
+sizes and reserve where possible, but do not perform an extra directory/stat pass to guess capacity.
+The listing-to-walker conversion already reserves and moves strings; remove duplicate representations
+rather than adding redundant move calls or disabling return-value optimization.
+
+O10/O11 need explicit reset and generation contracts. Avoid preserving a giant output allocation
+forever after one outlier. Inactive workers must not decrement the current batch's completion count
+or miss a later activation. Reused threads and useful participants are different quantities; record
+both. Small tails, early quit, pool growth and heterogeneous batches are mandatory counterexamples.
+
+O16-O18 are larger changes with potentially larger wins. The current comparison stores both trees
+before merging. A bounded paired directory frontier could reduce retained paths and first-output
+latency; it must preserve sorted output, left/right selection, independent/union/explicit ignore
+rules, summaries, symlinks/type changes, errors and effects. Global sorting may still require
+retention. Likewise, overlapping stages require bounded input/output bytes and explicit backpressure,
+not merely two vectors. Reserve CPU capacity for useful work while readers block, and forbid a worker
+from waiting on nested work submitted to the same saturated pool.
+
+O17 must compare coordinated existing pools with a simpler shared pool. The earlier caller-inclusive
+budget and obsolete matcher gate changed work placement and caused regressions. Keep their mechanisms
+separate from task-storage improvements. No fixed millisecond admission delay, per-file timer, or
+lifetime file counter should be inferred from the current tmpfs/APFS results. Local, slow and network
+storage remain part of JC05/JC06 qualification.
+
+O19 retains serial archive admission until decoder memory and replay budgets are explicitly managed.
+The historical parallel TAR gains do not license enabling workers for ZIP or every mounted source.
+O20 is cross-platform by capability/fallback, not by pretending Linux and macOS expose the same bulk
+metadata operation. Keep metadata-free scans on directory-entry types; no extra stat for tuning.
+
+### Compiler, context and ownership follow-ups
+
+There are further experiments once profiles identify their cost, rather than reasons to change
+working defaults now:
+
+- Split truly immutable run options from resettable per-entry context if optimized code shows
+  significant context initialization or repeated copying. Keep a small reusable worker struct with
+  an explicit reset contract; captures, content invalidation, deferred state and effects must not
+  leak across entries. Most present fields are cheap observers, so inspect generated code before
+  inventing another context hierarchy. Make timezone construction explicit at the existing demand
+  boundary rather than accidentally reintroducing the already-fixed startup query.
+- Evaluate Clang profile-guided layout/optimization using a separate training build and a
+  representative mix of listing, content, fuzzy, compare and output. Measure only clean optimized
+  release binaries; do not use ASan or instrumented-profile execution times as production results.
+  Account for build/release complexity, profile portability, size and small-command startup.
+- Keep the measured `-O2` plus ThinLTO default. Prior allocator replacement and `-O3` trials are
+  not new wins. Revisit allocators only if new native profiles show allocator contention or a
+  materially different allocation regime; preserve small-process and binary-size controls.
+- ISA specialization and SIMD require portable baselines and deployment compatibility. Existing
+  PCRE2 JIT/SIMD and RE2 work is recorded already; repeat native x86 qualification still listed in
+  TODO instead of declaring another backend automatically faster. No `-march=native` release.
+- Do not substitute copy-on-write or an interner for every string. Share immutable compile-time
+  data and explicitly owned buffers where lifetime allows it. Archive filesystem owners and
+  asynchronous inputs still require real ownership. Atomic reference counting on every entry is
+  not a free alternative to copying; neither are dangling views.
+- Return values benefit from copy elision; adding `std::move` to every return can make them worse.
+  Known-size vectors already reserve in many paths. Focus on duplicate representations and
+  initialization, not a repository-wide mechanical move/reserve patch.
+
+### Measurement and implementation order
+
+1. Finish O01's measured ownership change and regression coverage independently of scheduling.
+2. Small independent experiments: O02, O03, O04, O05, O06, each against fresh merged main on both
+   platforms. Group only changes whose individual effect remains identifiable.
+3. Measure O07/O08/O09/O10 with allocation diagnostics separate from clean timing; reject a new
+   lifetime/API layer if the expected reduction fails to appear.
+4. Assess O12/O14/O15 using preparation versus hot-loop profiles and optimized call graphs.
+5. Design O16-O20 using the existing JC/EP contracts before implementation. Keep O13/O21/O22
+   attached to concrete consumers rather than introducing a universal per-entry cache.
+
+Use small/medium/large and broad/deep cases, 1/3/10 requested CPUs where feasible, and explicit
+read-only, summary, match-output, collection, compare and archive populations. Preserve warmup,
+interleaved participant order, nine rounds/fastest seven, multiple sessions, output oracles and
+raw provenance. Measure first output, wall/CPU time, peak/retained memory, allocation counts and
+actual worker creation separately. Reference-tool normalization is presentation-only and must not
+mask within-host paired regressions. Do not add benchmark instrumentation to shipping hot paths.
+
+The existing macrobenchmark suite alone cannot identify a per-entry allocation or lock. Conversely,
+a hot kernel alone cannot justify slowing small complete commands. Keep rejected controls and show
+absolute costs alongside percentages. Safety/effect correctness, output identity and stable source
+lifetimes remain acceptance requirements, not performance knobs.
+
+## Collection basename/root sharing on the fixed arena
+
+The [fresh ownership experiment](benchmarks/collection-text-sharing-20261101.md) compares merged
+main `16e70cb97de93c7ab4ae8c9e990e1842d50cc528` with a plain owned-path/suffix/prefix implementation.
+Copy noncontained fields independently, preserve logical budget accounting and stable text through
+moves/growth, and add no new interner, synchronization or ownership wrapper.
+
+At 100k long-root entries, retained text decreases from 28,677,780 to 14,388,890 bytes and fixed
+arena blocks from 28 to 14 on both platforms. One-thread collection kernels improve 17.22% on
+Linux and 25.68% on macOS. At 100k long-path files/three workers/four collections, native elapsed
+time improves 26.57% Linux and 8.08% macOS; median RSS falls 357.05 -> 225.41 MiB and
+364.36 -> 230.77 MiB respectively. These are particular retained-collection populations, not
+claims about ordinary non-collection listing or all filesystem workloads.
+
+Small native costs remain (up to +1.33% Linux and +1.64% macOS); kernel counterexamples reach
++4.08% Linux and +5.26% macOS. The report preserves all raw samples, independent native output
+checks, source/binary identities and separate untimed accounting. Both source variants pass
+collection and full-engine release tests on both platforms. This is qualified local evidence;
+a subsequent published PR head still needs its normal hooks and CI.

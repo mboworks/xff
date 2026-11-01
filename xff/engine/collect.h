@@ -81,7 +81,7 @@ class Collections {
   using EntriesType = mbo::container::SegmentedVector<Entry, {.segment_size = 64, .segment_reservation = 0}>;
 
   // The row / byte ceiling a collection may occupy, from `--buffer` (0 = no limit, the default).
-  // Bytes count the stored path, name and root text, which is what a collection actually holds on to.
+  // Bytes count logical path, name and root lengths even when their owned text shares storage.
   struct Budget {
     std::size_t rows = 0;
     std::size_t bytes = 0;
