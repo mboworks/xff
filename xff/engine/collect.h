@@ -124,9 +124,15 @@ class Collections {
 
  private:
   // Only the coordinator appends. The arena outlives all entries and adds no locks.
+  // Allocate lazily in fixed 1 MiB blocks; measured allocation savings outweigh small-run capacity slack.
   using TextArena = mbo::memory::Arena<
       mbo::memory::NewDeleteBlockSource,
-      {.initial_block_size = 4'096, .maximum_block_size = 65'536, .growth_numerator = 2, .growth_denominator = 1}>;
+      {
+          .initial_block_size = 1'048'576,
+          .maximum_block_size = 1'048'576,
+          .growth_numerator = 2,
+          .growth_denominator = 1,
+      }>;
   std::string_view CopyText(std::string_view text);
 
   TextArena text_;
