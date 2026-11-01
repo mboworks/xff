@@ -144,17 +144,19 @@ scope or declaring new flags implemented. See
       useful task size, throughput, first output, memory and actual thread/child counts. Include serial
       command/concurrent-discovery, strict dependent expressions and parallel command controls.
       Do not accept a default or performance claim from hosted correctness checks alone.
-- [ ] JC07: Separate directory-admission tuning from worker-budget tuning. PR #991 now evaluates
-      observed read cost and reuses warm workers instead of a fixed 64-sibling gate. Its 4 ms
-      estimated-savings budget and first-child sampling are still heuristics: the cheap-parent,
-      slow-child control pays one serial read before startup (about 17-30% for eight children).
-      Qualify heterogeneous later reads, real slow storage and native macOS performance; investigate
-      incidental Abseil clock calibration separately with single-worker controls. Measurements and
-      raw evidence are in docs/performance-analysis.md. Design explicit serial operation and
-      minimum independent-work/cost controls in the jobs family, preserving semantic/safety barriers
-      and command resource bounds. Distinguish cold start from warm dispatch, and qualify settings
-      on small slow frontiers as well as broad memory-backed workloads before choosing defaults.
-      Keep spellings unsettled until designed; follow JC01's unstable gate and self-documentation.
+- [ ] JC07: Separate directory-admission tuning from worker-budget tuning. After #1034 removed
+      Abseil clock calibration, #991's 4 ms saved-work gate and synchronous first-child sample
+      are not recommended: Linux cheap scans save about 0.21 ms, while slow-child controls regress
+      by 28-59%; macOS broad/nested 4,096-file scans regress by 7-9%. Current paired measurements,
+      raw evidence and the retention recommendation are in docs/performance-analysis.md. Keep
+      #991 draft; preserve its independent libpfm query-downloader repair if admission is discarded.
+      Investigate actual pool startup/queue cost and bounded run-owned worker reuse without
+      serializing small expensive frontiers. Qualify heterogeneous reads and real slow storage.
+      Design explicit serial operation and minimum independent-work/cost controls in the jobs
+      family, preserving semantic/safety barriers and command resource bounds. Distinguish cold
+      start from warm dispatch; qualify settings on small slow frontiers and broad memory-backed
+      workloads before choosing defaults. Keep spellings unsettled until designed; follow JC01's
+      unstable gate and self-documentation.
 - [ ] JC08: Add opt-in, super-low-overhead scheduling analysis for admission tuning. Select diagnostics
       once at command setup; keep disabled inner loops free of diagnostic checks, timers, counters,
       atomics and allocations. Use bounded per-role/worker aggregates from existing observations:

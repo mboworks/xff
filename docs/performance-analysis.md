@@ -2768,3 +2768,83 @@ results; all five macOS targets execute. Full CI remains required before merging
 The macOS samples, binary hashes, invocation settings, output oracles and probe
 source are retained in
 [`abseil-steady-clock-macos-20261031.json.gz`](benchmarks/abseil-steady-clock-macos-20261031.json.gz).
+
+## Directory admission after the clock fix: #991 reassessment (2026-11-01)
+
+**Recommendation: reject #991's current 4 ms admission policy.** Keep it draft;
+retain main's scheduling while any replacement is evaluated separately. The clock-only
+fix #1034 has removed the main source of the previous startup cliff. A small cheap-scan
+benefit remains, but synchronous child sampling still delays useful parallel reads.
+This rejects the measured policy, not the possibility of improving worker startup.
+
+The comparison uses current main `974d137026818bba1c1deaf6cfc4fffe676b314e` and
+synchronized #991 `d5cffe57b957266dc14bb301643bfa4e0b05525a`, both with the merged
+Abseil steady-clock setting and `--config=clang_release`. No threshold retuning or
+other implementation changes were made. The macOS baseline is built at the original
+#1034 head, whose complete Git tree is identical to the merged main tree; that
+provenance and tree ID are retained in the raw evidence. #991 also carries an
+independent libpfm source-query downloader repair. Preserve or extract that repair
+if the admission implementation is discarded.
+
+Linux runs on drogon (Ryzen 9950X KVM, ten vCPUs), with tmpfs fixtures and CPU affinity
+budgets 1/3/10. macOS runs on the Apple M5 Pro with warm APFS fixtures and worker
+budgets 1/3/10, without CPU pinning. Results are within-platform paired comparisons,
+not a comparison of the hardware or operating systems. Builds finish before timing.
+
+There are 72 ordinary listing/metadata/content cases per platform, over eight fixture
+shapes spanning 10 through 65,536 files. Linux additionally has ten controlled
+slow-read cases: uniform delayed directories, a cheap parent with slow children,
+and reuse of an existing metadata pool. The 2 ms/opendir injection models latency;
+it is not physical slow-storage evidence. Each case has a separate warmup per binary,
+nine interleaved samples, the mean fastest seven, and three differently ordered
+sessions. Native fork/exec/wait timing excludes Python startup, fixture construction
+and output verification. All 9,240 invocations pass independent output SHA256 oracles.
+
+Negative time change is faster. Times are medians of session estimates; percentages
+are medians of paired session changes, so ratios of displayed medians can differ.
+
+| Platform / case                    | Workers | Main ms | #991 ms | Time change |
+| :--------------------------------- | ------: | ------: | ------: | ----------: |
+| linux / broad8x1 / files           |       3 |   0.822 |   0.608 |     -25.94% |
+| linux / broad8x512 / files         |       3 |   1.472 |   1.357 |      -7.24% |
+| linux / broad128x512 / files       |       3 |  12.761 |  12.889 |      +1.07% |
+| linux / broad128x512 / content     |       3 |  51.053 |  50.554 |      -1.00% |
+| linux / uniform8 / files           |       3 |   9.359 |   9.346 |      -0.14% |
+| linux / child_only8 / files        |       3 |   7.325 |   9.361 |     +27.79% |
+| linux / child_only8 / files        |      10 |   3.411 |   5.447 |     +59.04% |
+| linux / child_only32 / files       |      10 |   9.628 |  11.688 |     +21.55% |
+| linux / warm_pool_eager / metadata |       3 |   7.753 |   7.858 |      +1.13% |
+| macos / broad8x1 / files           |       3 |   4.210 |   4.116 |      -3.06% |
+| macos / broad8x512 / files         |       3 |   6.311 |   6.798 |      +7.32% |
+| macos / broad128x512 / files       |       3 |  33.388 |  33.447 |      +0.29% |
+| macos / broad128x512 / content     |       3 | 820.325 | 819.365 |      -0.12% |
+| macos / nested8x8x64 / files       |       3 |   6.857 |   7.465 |      +8.85% |
+
+The Linux eight-file/three-worker gain is about 0.21 ms, down from the previous
+pre-clock-fix experiment's approximately 3.4 ms saving. The asymmetric eight-child
+case pays about 2 ms for its serial sample and regresses by 27.8% with three workers
+or 59.0% with ten. Thirty-two slow children still regress by 8.6%/21.6% respectively.
+Uniform slow reads stay near main, as does the existing-pool control. Ordinary
+65,536-file workloads show little benefit from the admission policy. On macOS, three-worker broad and nested 4,096-file listings consistently regress
+by 7.3% and 8.8% across all three sessions; metadata cases regress by 6.6% and
+8.5%. The tiny eight-file listing gains about 3.1% (roughly 0.1 ms), while large
+scans stay near main. These distinct populations must not be averaged into an
+unconditional improvement claim.
+
+A separate small-scan trace creates three workers on main and none under #991;
+neither trace requests the 1 ms/2 ms calibration sleeps. The remaining cheap-scan
+benefit is avoided pool startup/scheduling, not removal of calibration. Main's
+post-#1034 Test workflow `41247081300` succeeds. Output-oracle checks establish
+correctness for these benchmark cases, not full PR readiness or slow-storage safety.
+
+Next work should reduce actual worker startup/queue cost or reuse a bounded run-owned
+pool across eligible work. Preserve concurrency for small expensive frontiers; avoid
+placing a synchronous sample before all parallel work. Do not choose a new threshold
+by fitting this guest's measurements alone. JC07 stays open, including real slow
+storage and heterogeneous children, ordering, exactly-once effects, cancellation,
+metadata behavior, and cold versus warm dispatch. The first-child sample and the
+4 ms constant should not be accepted merely because pre-clock-fix timings looked good.
+
+Raw samples, output identities, binary hashes, source/build provenance, reproduction
+scripts, latency adapter and traces are retained in
+[directory-admission-post-clock-20261101.json.gz](benchmarks/directory-admission-post-clock-20261101.json.gz).
