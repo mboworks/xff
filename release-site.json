@@ -5,6 +5,7 @@
     "CONTRIBUTING.md": "CONTRIBUTING.html",
     "docs/benchmarks/execution-resources.md": "docs/benchmarks/execution-resources.html",
     "docs/benchmarks/executor-copy-audit-20261101.md": "docs/benchmarks/executor-copy-audit-20261101.html",
+    "docs/benchmarks/collection-text-sharing-20261101.md": "docs/benchmarks/collection-text-sharing-20261101.html",
     "docs/benchmarks/collection-arena-20261101.md": "docs/benchmarks/collection-arena-20261101.html",
     "docs/benchmarks/bounded-read-ahead-20261101.md": "docs/benchmarks/bounded-read-ahead-20261101.html",
     "docs/benchmarks/executor-dispatch-probe.md": "docs/benchmarks/executor-dispatch-probe.html",

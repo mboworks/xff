@@ -144,8 +144,8 @@ scope or declaring new flags implemented. See
       useful task size, throughput, first output, memory and actual thread/child counts. Include serial
       command/concurrent-discovery, strict dependent expressions and parallel command controls.
       Do not accept a default or performance claim from hosted correctness checks alone.
-- [ ] JC07: Separate directory-admission tuning from worker-budget tuning. PR #991's experimental
-      64-sibling gate is not an optimum across storage types. Design explicit serial operation and
+- [ ] JC07: Separate directory-admission tuning from worker-budget tuning. Closed PR #991's rejected timed/serial-probe policy and earlier
+      64-sibling gate are not optima across storage types. Design explicit serial operation and
       minimum independent-work/cost controls in the jobs family, preserving semantic/safety barriers
       and command resource bounds. Distinguish cold start from warm dispatch, and qualify settings
       on small slow frontiers as well as broad memory-backed workloads before choosing defaults.
@@ -360,6 +360,24 @@ Measured follow-ups (see the P07/P08 sections of `docs/performance-analysis.md`)
 - v0.7.0 is released. F10 competitor comparisons resumed; see `docs/benchmark-comparisons.md`.
 
 ## Performance optimization follow-up
+
+Current prioritized inventory and implementation/measurement boundaries:
+[the reconciled cross-platform audit](docs/performance-analysis.md#reconciled-cross-platform-optimization-audit-after-1040). O01-O22 map to the existing
+EP/JC/P work; candidates are not speedup claims until measured on both platforms.
+
+- [ ] O01: Adopt measured path-owned basename/root views with fallback copies, unchanged logical
+      budgets and ownership/growth/move coverage. Retain small regressions and Linux/macOS evidence
+      in [the collection-sharing report](docs/benchmarks/collection-text-sharing-20261101.md).
+- [ ] O02-O06: Independently qualify native glob argument-copy removal, fuzzy scratch/self-score
+      reuse, lexical field views, heterogeneous capture/definition lookup, and remaining read-buffer
+      zeroing. Prefer existing values and interfaces before adding prepared wrappers.
+- [ ] O07-O12: Profile and qualify caller-owned stream buffers, typed reusable directory task slots,
+      batch ownership, bounded result reuse, active-worker dispatch and direct production evaluation.
+      Preserve existing stage policy while isolating task storage and lifecycle costs.
+- [ ] O13-O22: Reconcile remaining derived-value handoff, static catalogs, invariant operands,
+      paired streaming compare, reusable stage pools, byte-bounded overlap, archive indexing/admission,
+      optional bulk metadata, similarity representations and output churn with EP/JC/P acceptance.
+      Keep macrobenchmark, kernel and diagnostic contracts separate.
 
 - [ ] Qualify executor admission after the clock correction with separate cold/warm controls and
       16/32/63/64-entry matching boundaries; check Linux and macOS workload regressions before
