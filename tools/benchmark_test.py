@@ -354,8 +354,8 @@ class BenchmarkTest(unittest.TestCase):
         with mock.patch('builtins.input', return_value='2'), \
                 contextlib.redirect_stdout(io.StringIO()) as output:
             self.assertEqual(cli.choose_upload(candidates), [Path('/second')])
-        self.assertIn('aaaaaaaaaaaa  linux-one  uploaded; 27/49 revisions complete', output.getvalue())
-        self.assertIn('bbbbbbbbbbbb  macos-two  ready; 8/8 revisions complete', output.getvalue())
+        self.assertIn('aaaaaaaaaaaa  linux-one  uploaded; 27/49 revisions complete; 0 already present', output.getvalue())
+        self.assertIn('bbbbbbbbbbbb  macos-two  ready; 8/8 revisions complete; 0 already present', output.getvalue())
         with mock.patch('builtins.input', return_value='a'), \
                 contextlib.redirect_stdout(io.StringIO()) as output:
             self.assertEqual(cli.choose_upload(candidates), [Path('/second'), Path('/third')])
@@ -386,10 +386,19 @@ class BenchmarkTest(unittest.TestCase):
             (pending_root / 'status.json').write_text(json.dumps({revision: {'status': 'pending'}}))
             pages = root / 'pages'
             (pages / 'local/macos-test' / value['identity']).mkdir(parents=True)
+            published = copy.deepcopy(value)
+            published['identity'] = 'd' * 64
+            published_root = pages / 'local/macos-test' / published['identity']
+            published_root.mkdir(parents=True)
+            (published_root / 'batch.json').write_text(json.dumps(published))
+            (published_root / 'status.json').write_text(
+                json.dumps({revision: {'status': 'complete'}}))
             candidates = cli.upload_candidates(root, pages)
             self.assertEqual(len(candidates), 1)
             self.assertEqual(candidates[0]['identity'], value['identity'])
             self.assertTrue(candidates[0]['uploaded'])
+            self.assertEqual(candidates[0]['present_revisions'], (revision,))
+            self.assertEqual(candidates[0]['published_series_revisions'], 1)
 
     def test_upload_requires_confirmation_before_commit_and_push(self):
         with tempfile.TemporaryDirectory() as temporary:
