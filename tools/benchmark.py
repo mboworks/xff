@@ -351,6 +351,19 @@ def upload_batches(root, selections):
 
 
 def upload_candidates(root, pages_root):
+    published_revisions = {}
+    for path in pages_root.glob('local/*/*/batch.json'):
+        try:
+            value = records.read(path)
+            contract = value['contract']
+            if contract['purpose'] != 'local-addition':
+                continue
+            status = records.read(path.parent / 'status.json')
+            published_revisions.setdefault(contract['series'], set()).update(
+                sha for sha, state in status.items() if state.get('status') == 'complete')
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+
     candidates = []
     for path in sorted(root.glob('batches/*/batch.json')):
         try:
@@ -363,9 +376,16 @@ def upload_candidates(root, pages_root):
                 continue
             destination = pages_root / 'local' / contract['series'] / value['identity']
             complete = sum(state.get('status') == 'complete' for state in status.values())
+            completed_revisions = tuple(sha for sha, state in status.items()
+                                       if state.get('status') == 'complete')
+            present_revisions = tuple(sorted(set(completed_revisions)
+                                             & published_revisions.get(contract['series'], set())))
             candidates.append(dict(directory=path.parent.resolve(), identity=value['identity'],
                                    series=contract['series'], complete=complete,
-                                   total=len(contract['revisions']), uploaded=destination.exists()))
+                                   total=len(contract['revisions']), uploaded=destination.exists(),
+                                   completed_revisions=completed_revisions,
+                                   present_revisions=present_revisions,
+                                   published_series_revisions=len(published_revisions.get(contract['series'], set()))))
         except (OSError, ValueError, KeyError, TypeError):
             continue
     return candidates
@@ -374,11 +394,21 @@ def upload_candidates(root, pages_root):
 def choose_upload(candidates):
     if not candidates:
         raise ValueError('no local datasets have completed observations to upload')
+    local_revisions = {sha for candidate in candidates for sha in candidate.get('completed_revisions', ())}
+    present_revisions = {sha for candidate in candidates for sha in candidate.get('present_revisions', ())}
+    published_by_series = {
+        candidate['series']: candidate.get('published_series_revisions', 0) for candidate in candidates
+    }
+    published_summary = ', '.join(f'{series}:{count}' for series, count in sorted(published_by_series.items()))
     print('Eligible local measurement batches:')
+    print(f'Local history: {len(candidates)} batches, {len(local_revisions)} unique completed revisions.')
+    print(f'Already present in Pages: {len(present_revisions)} of these {len(local_revisions)} completed revisions; '
+          f'published revisions by series: {published_summary or "none"}.')
     for number, candidate in enumerate(candidates, 1):
         state = 'uploaded' if candidate['uploaded'] else 'ready'
+        present = len(candidate.get('present_revisions', ()))
         print(f"  {number}. {candidate['identity'][:12]}  {candidate['series']}  {state}; "
-              f"{candidate['complete']}/{candidate['total']} revisions complete")
+              f"{candidate['complete']}/{candidate['total']} revisions complete; {present} already present")
     try:
         answer = input(f'Select batch to upload [1-{len(candidates)}, a for all ready, q to cancel]: ').strip().lower()
     except EOFError:

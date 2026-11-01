@@ -322,11 +322,14 @@ bazel run //tools:benchmark -- upload
 ```
 
 The command fetches `origin/coverage-pages`, creates a temporary detached worktree, and lists every
-local batch with completed observations. Each row shows whether its raw observations are ready or
-already uploaded and how many revisions completed. Pick one numbered batch, choose `a` to upload every
-listed ready batch, or cancel. The all-ready choice excludes batches already present in the Pages
-checkout; a numbered already-uploaded selection still dispatches publication, so retrying after an
-authentication or dispatch failure repairs the missing step. The selection authorizes validation,
+local batch with completed observations. It summarizes local history by batch count and unique
+completed revision count, including how many matching revision SHAs are already present in Pages.
+The published series count is shown separately, so a published observation count is not mistaken for
+the same local batch. Each row shows whether its raw observations are ready or already uploaded, how
+many revisions completed, and how many are already present. Pick one numbered batch, choose `a` to
+upload every listed ready batch, or cancel. The all-ready choice excludes batches already present in
+the Pages checkout; a numbered already-uploaded selection still dispatches publication, so retrying
+after an authentication or dispatch failure repairs the missing step. The selection authorizes validation,
 import, commit, push, and publication for all selected batches as one operation.
 
 For unattended operation, select batches explicitly by directory, batch JSON path, or unique identity
