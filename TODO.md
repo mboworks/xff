@@ -399,8 +399,12 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       vector relocation, opaque bytes, and archive ownership. Preserve allocation counts, modest
       gains and slower controls in [the two-host report](docs/benchmarks/packed-visit-snapshots-20261102.md).
       Keep the forced out-of-line constructor experimental; no batch-recycling API or worker change.
-- [ ] O10-O12: Profile and qualify bounded result reuse, active-worker dispatch and direct
-      production evaluation.
+- [x] O10: Qualify bounded matcher result-text reuse on macOS and Linux, including old matched
+      slots becoming unmatched, status/text reset, total/per-record reuse limits and giant tails.
+      [Full evidence and rejected controls](docs/benchmarks/bounded-match-results-20261102.md)
+      separate allocation savings from unrelated timing changes. Comparison payload reuse remains
+      a source-API question; retaining its result vector alone is rejected.
+- [ ] O11-O12: Profile and qualify active-worker dispatch and direct production evaluation.
       Preserve existing stage policy while isolating task storage and lifecycle costs.
 - [ ] O13-O22: Reconcile remaining derived-value handoff, static catalogs, invariant operands,
       paired streaming compare, reusable stage pools, byte-bounded overlap, archive indexing/admission,

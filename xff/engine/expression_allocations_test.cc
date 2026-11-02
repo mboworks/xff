@@ -28,6 +28,7 @@
 #include "xff/engine/expression_qualification.h"
 #include "xff/engine/owned_visit.h"
 #include "xff/engine/parallel_compare.h"
+#include "xff/engine/parallel_match.h"
 #include "xff/engine/walk.h"
 #include "xff/fuzzy/fuzzy.h"
 #include "xff/parser/parser.h"
@@ -213,6 +214,14 @@ class DirectoryAllocationFs final : public AllocationFs {
   std::size_t directories_;
 };
 
+class OutputAllocationFs final : public AllocationFs {
+ public:
+  absl::StatusOr<std::string> ReadContent(std::string_view) const override { return text_; }
+
+ private:
+  const std::string text_ = std::string(1'024, 'x') + "hit\n";
+};
+
 struct AllocationTest : ::testing::Test {
   void SetUp() override {
     const bool installed = InstallHooks();
@@ -379,6 +388,44 @@ TEST_F(AllocationTest, PackedVisitTextAvoidsIndependentLongStringAllocations) {
     }
   }
   // Isolated coordinator allocation counts only. Do not use sanitizer duration as timing evidence.
+}
+
+TEST_F(AllocationTest, RecordRepeatedMatcherOutputAllocationTraffic) {
+  const OutputAllocationFs fs;
+  const vfs::Metadata metadata{.type = vfs::FileType::kRegular};
+  const auto entries = [&] {
+    std::vector<OwnedVisit> result;
+    result.reserve(64);
+    for (std::size_t index = 0; index < 64; ++index) {
+      result.emplace_back(Visit{.path = "root/a", .name = "a", .root = "root", .metadata = metadata, .fs = fs});
+    }
+    return result;
+  };
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-content", "hit"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareMatchOutput(*command.expression));
+  ParallelMatch matcher(
+      *command.expression, 1, false,
+      ParallelContentOutput{
+          .output = prepared,
+          .grep = {.line_number = false, .filename = false},
+      });
+  EXPECT_THAT(matcher.Match(entries()), SizeIs(64));
+  for (const int repetition : {1, 2}) {
+    auto input = entries();
+    const auto measured = MeasureAllocations([&] {
+      std::size_t bytes = 0;
+      for (const auto& result : matcher.Match(std::move(input))) {
+        if (result.content) {
+          bytes += result.content->text.size();
+        }
+      }
+      return bytes;
+    });
+    EXPECT_THAT(measured.value, Eq(64 * 1'028));
+    RecordCounts(absl::StrCat("matcher_output_", repetition), measured.counts);
+  }
+  // Only the coordinator is recorded; one worker keeps content reads and output allocations here.
+  // Inputs, warmup, assertions and source-fixture construction are outside recording.
 }
 
 TEST_F(AllocationTest, ReusedFuzzyWorkspaceAvoidsHotScoreAllocations) {

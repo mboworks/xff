@@ -688,6 +688,7 @@ cc_test(
     size = "small",
     srcs = ["rg_test.cc"],
     deps = [
+        ":evaluate_cc",
         ":owned_visit_cc",
         ":parallel_match_cc",
         ":run_cc",
@@ -990,6 +991,7 @@ cc_test(
         ":expression_qualification_cc",
         ":owned_visit_cc",
         ":parallel_compare_cc",
+        ":parallel_match_cc",
         ":walk_cc",
         "//xff/fuzzy:fuzzy_cc",
         "//xff/parser:parser_cc",

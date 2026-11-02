@@ -64,8 +64,17 @@ bool ParallelMatch::Finished() const {
 const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<OwnedVisit> entries) {
   const absl::MutexLock lock(mutex_);
   entries_ = std::move(entries);
-  results_.clear();
   results_.resize(entries_.size());
+  if (output_ && !results_.empty()) {
+    const auto limit = std::min(kReusableRecordBytes, kReusableOutputBytes / results_.size());
+    // Release oversized old records before evaluating any new entry. Current output can still
+    // exceed this bound; only capacities retained from the consumed batch are restricted.
+    for (auto& result : results_) {
+      if (result.content && result.content->text.capacity() > limit) {
+        result.content.reset();
+      }
+    }
+  }
   next_.store(0, std::memory_order_relaxed);
   // Very small batches cannot amortize waking the pool.
   if (workers_ == 1 || entries_.size() < 16 || (threads_.empty() && entries_.size() < 64)) {
@@ -138,18 +147,22 @@ void ParallelMatch::EvaluateEntries(
     }
     const std::size_t end = std::min(first + kChunk, entries_.size());
     for (std::size_t index = first; index < end; ++index) {
-      results_.at(index) = EvaluateEntry(entries_.at(index).AsVisit(), workspace, output, matchers, evaluator);
+      EvaluateEntry(index, workspace, output, matchers, evaluator);
     }
   }
 }
 
-ParallelResult ParallelMatch::EvaluateEntry(
-    const Visit& visit,
+void ParallelMatch::EvaluateEntry(
+    std::size_t index,
     fuzzy::ScoreWorkspace& workspace,
     mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
     mbo::types::OptionalRef<const WorkerMatchers> matchers,
-    mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator) const {
-  ParallelResult result;
+    mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator) {
+  const Visit visit = entries_.at(index).AsVisit();
+  auto& result = results_.at(index);
+  if (result.content) {
+    result.content->text.clear();
+  }
   Control control;
   std::optional<int> fuzzy;
   const auto discard = [](std::string_view) {};
@@ -168,7 +181,8 @@ ParallelResult ParallelMatch::EvaluateEntry(
                       : expression_ ? EvaluateDeferred(*expression_, context)
                                     : EvaluationResult{.matched = true};
   if (result.evaluation.matched && output_) {
-    auto& content = result.content.emplace();
+    auto& content = result.content ? *result.content : result.content.emplace();
+    content.selected = true;
     // Forking is an optimization: retain the already validated shared matcher if it fails.
     const auto& prepared = output && output->ok() ? **output : output_->output;
     const auto buffer = [&](std::string_view text) { content.text.append(text); };
@@ -185,8 +199,9 @@ ParallelResult ParallelMatch::EvaluateEntry(
     } else {
       EmitMatchOutput(prepared, context);
     }
+  } else {
+    result.content.reset();
   }
-  return result;
 }
 
 }  // namespace xff::engine
