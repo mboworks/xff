@@ -8,6 +8,7 @@
 #include <ranges>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -39,6 +40,7 @@
 namespace xff::engine {
 namespace {
 
+using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
 using ::testing::Eq;
 using ::testing::Field;
@@ -60,16 +62,25 @@ struct AllocationRecording {
   AllocationCounts counts;
 };
 
-// Only this diagnostic executable installs hooks. Thread-local POD counters neither allocate
-// nor lock, and ignore allocations made by the test runner outside a measured operation.
+// Only this diagnostic executable installs hooks. One coordinator owns these POD counters;
+// worker callbacks are rejected before accessing state, avoiding lazy macOS TLS allocation
+// recursively entering an allocation hook. No recording path allocates or locks.
 AllocationRecording& Recording() {
-  static constinit thread_local AllocationRecording recording;
+  static constinit AllocationRecording recording;
   return recording;
 }
 
 #if defined(ABSL_HAVE_ADDRESS_SANITIZER)
+std::thread::id RecordingThread() {
+  static const auto kThread = std::this_thread::get_id();
+  return kThread;
+}
+
 // XFF_ABI_POINTER: sanitizer allocator-hook callback signature.
 void RecordAllocation(const volatile void*, std::size_t bytes) {
+  if (std::this_thread::get_id() != RecordingThread()) {
+    return;
+  }
   auto& recording = Recording();
   if (recording.enabled) {
     ++recording.counts.allocations;
@@ -79,6 +90,9 @@ void RecordAllocation(const volatile void*, std::size_t bytes) {
 
 // XFF_ABI_POINTER: sanitizer allocator-hook callback signature.
 void RecordFree(const volatile void*) {
+  if (std::this_thread::get_id() != RecordingThread()) {
+    return;
+  }
   auto& recording = Recording();
   if (recording.enabled) {
     ++recording.counts.frees;
@@ -88,7 +102,11 @@ void RecordFree(const volatile void*) {
 
 bool InstallHooks() {
 #if defined(ABSL_HAVE_ADDRESS_SANITIZER)
-  static const int kInstalled = __sanitizer_install_malloc_and_free_hooks(RecordAllocation, RecordFree);
+  static const int kInstalled = [] {
+    // Initialize the immutable owner identity before registration can invoke either callback.
+    (void)RecordingThread();
+    return __sanitizer_install_malloc_and_free_hooks(RecordAllocation, RecordFree);
+  }();
   return kInstalled > 0;
 #else
   return false;
@@ -137,7 +155,7 @@ auto MeasureAllocations(Action&& action) {
   return result;
 }
 
-class AllocationFs final : public vfs::FileSystem {
+class AllocationFs : public vfs::FileSystem {
  public:
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view) const override {
     return absl::FailedPreconditionError("allocation fixture must not traverse");
@@ -164,6 +182,33 @@ class AllocationFs final : public vfs::FileSystem {
   absl::StatusOr<std::string> FsType(std::string_view) const override { return std::string("memory"); }
 
   absl::StatusOr<bool> IsCaseSensitive(std::string_view) const override { return true; }
+};
+
+class DirectoryAllocationFs final : public AllocationFs {
+ public:
+  explicit DirectoryAllocationFs(std::size_t directories) : directories_(directories) {}
+
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override {
+    std::vector<vfs::Entry> entries;
+    if (path == "root") {
+      entries.reserve(directories_);
+      for (std::size_t index = 0; index < directories_; ++index) {
+        const auto name = "d" + std::to_string(index);
+        entries.push_back({.path = "root/" + name, .name = name, .type = vfs::FileType::kDirectory});
+      }
+    }
+    return entries;
+  }
+
+  absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool) const override {
+    return vfs::Metadata{
+        .type = vfs::FileType::kDirectory,
+        .ino = path == "root" ? 1UZ : 2UZ,
+    };
+  }
+
+ private:
+  std::size_t directories_;
 };
 
 struct AllocationTest : ::testing::Test {
@@ -196,6 +241,21 @@ TEST_F(AllocationTest, CounterObservesAllocationAndFreeWithoutCountingAssertions
   });
   EXPECT_THAT(released.counts.allocations, Eq(0));
   EXPECT_THAT(released.counts.frees, Ge(1));
+}
+
+TEST_F(AllocationTest, WorkerAllocationsDoNotInitializeOrAccessRecorderState) {
+  const auto measured = MeasureAllocations([] {
+    std::size_t size = 0;
+    std::thread worker([&] {
+      const std::vector<char> bytes(4'096, 'x');
+      size = bytes.size();
+    });
+    worker.join();
+    return size;
+  });
+  EXPECT_THAT(measured.value, Eq(4'096));
+  // Thread creation itself may allocate on the coordinator; only the worker payload is excluded.
+  RecordCounts("coordinator_thread_start", measured.counts);
 }
 
 TEST_F(AllocationTest, NativeComparisonAllocationsDoNotGrowWithChunkCount) {
@@ -232,6 +292,39 @@ TEST_F(AllocationTest, NativeComparisonAllocationsDoNotGrowWithChunkCount) {
   EXPECT_THAT(long_read.counts.requested_bytes, Eq(short_read.counts.requested_bytes));
   RecordCounts("two_chunks", short_read.counts);
   RecordCounts("sixteen_chunks", long_read.counts);
+}
+
+TEST_F(AllocationTest, RecordCoordinatorDirectoryTaskAllocationTraffic) {
+  struct Outcome {
+    absl::Status status;
+    std::size_t visits = 0;
+    std::size_t errors = 0;
+  };
+
+  static constexpr auto kDirectoryCounts = std::to_array<std::size_t>({16, 64, 256, 1'024});
+  const auto roots = std::to_array<std::string>({"root"});
+  for (const auto directories : kDirectoryCounts) {
+    const DirectoryAllocationFs fs(directories);
+    const auto run = [&] {
+      Outcome outcome;
+      outcome.status = Walk(
+          fs, roots, {.workers = 3, .metadata_fields = vfs::MetadataFields::kBasic},
+          [&](const Visit&) {
+            ++outcome.visits;
+            return WalkAction::kContinue;
+          },
+          [&](std::string_view, absl::Status) { ++outcome.errors; });
+      return outcome;
+    };
+    EXPECT_THAT(run().status, IsOk());
+    const auto measured = MeasureAllocations(run);
+    EXPECT_THAT(measured.value.status, IsOk());
+    EXPECT_THAT(measured.value.visits, Eq(directories + 1));
+    EXPECT_THAT(measured.value.errors, Eq(0));
+    RecordCounts(absl::StrCat(directories, "_directories"), measured.counts);
+  }
+  // Hooks accept only the coordinator: worker-side listing/stat allocations are excluded.
+  // This diagnostic reports coordinator traffic; sanitizer timing is never performance evidence.
 }
 
 TEST_F(AllocationTest, ReusedFuzzyWorkspaceAvoidsHotScoreAllocations) {

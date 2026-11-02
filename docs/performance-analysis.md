@@ -3207,3 +3207,36 @@ comparisons drop from 43 to 13 allocations, with total requested bytes about 2.1
 this is allocation traffic, not peak RSS. Both fully enabled 305-test suites and focused sanitizers
 pass. Initial and refined raw source/binary identities, all 10,800 oracle-checked invocations,
 memory fallback kernels and rejected variants are retained in the report artifacts.
+
+## O08: typed task leases and atomic completion
+
+The [directory-task report](benchmarks/directory-task-slots-20261102.md) replaces the existing
+pool's shared packaged tasks, futures and erased callbacks with reusable stable records and
+move-only consumer leases. This does not add worker threads or change the current admission,
+stat chunks, source restrictions, frontier width or ordering. Futures previously ran on the
+same persistent workers; do not describe this as removing one thread per file.
+
+The first typed candidate completed under the queue mutex and regressed important Linux
+controls by roughly 11-14%. Keep that implementation and its full matrix as a rejected control.
+The selected implementation uses a release/acquire Pending/Ready/Abandoned handshake for
+producer/consumer ownership and standard atomic wait. Only the second participant releases an
+abandoned result; slot addresses remain stable until all workers join. Queue admission and
+recycling keep the existing mutex, and discarded payload values die outside that lock.
+
+In refined native measurements, Linux's 1,024-directory listing improves 48.27% with three
+workers and 8.03% with ten; its three-worker metadata case improves 23.30%. macOS is mostly
+near baseline. Worst native paired medians remain +1.16% macOS / +3.40% Linux. Two initially
+noisy unpinned Linux rg-files kernels receive separate paired, CPU-pinned confirmation; the
+1,000/10,000-file four-worker medians are +2.79% / +1.40%, and those costs are retained.
+
+Coordinator-only ASan counts fall about 75% at 1,024 directories (4,145 to 1,056 macOS;
+4,137 to 1,056 Linux). This excludes worker allocations/frees and is neither release timing
+nor net live-memory accounting. The new actual-worker diagnostic exposed a macOS TLS-bootstrap
+recursion in the allocator hook; reject foreign-thread callbacks before touching coordinator-owned
+POD state, and retain a worker-start regression. No instrumented timings enter the decision.
+
+Both full all-extension suites pass 305/305, with FUSE required on Linux; focused ASan/TSan and
+scoped lint pass. The two three-way native phases preserve all 28,800 invocations, exact output
+oracles, fixture definitions, source/binary identities and slower cases. Slot metadata retains
+its high-water capacity until walker destruction; the per-level request frontier is not a global
+byte bound. Cache-line layout and wider scheduling changes remain separate, unmeasured follow-ups.
