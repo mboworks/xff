@@ -58,7 +58,7 @@ Retain the initial macOS 10,000-file/one-worker large-output control (+6.63%) an
 
 ## Correctness, ownership and footprint
 
-The native field test processes 128 files, including unselected entries, and observes exactly 128 VFS reads with serial and parallel execution while repeated digest/line fields produce identical output. A result limit preserves the lazy path and its single consumed output read. Snapshot tests prove that returned caches retain no bytes, do not initiate reads for unloaded sources, move only requested values and retain binary/read-failure null results. Pool tests cover unmatched, empty and inline regrowth without stale values. Rg summary tests exercise rejected content matches and read-error equivalence.
+The native field test processes 128 files, including unselected entries, and observes exactly 128 VFS reads with serial and parallel execution while repeated digest/line fields produce identical output. A result limit preserves the lazy path and its single consumed output read. Snapshot tests prove that returned caches retain no bytes, do not initiate reads for unloaded sources, move only requested values and retain binary/read-failure null results. Pool tests cover unmatched, empty and inline regrowth without stale values. Dedicated parallel column, summary, line-bucket histogram, line-sum histogram and count-only histogram cases match serial output and observe one read per file. Rg summary tests exercise rejected content matches and read-error equivalence.
 
 Derived storage is bounded by the current batch population and requested cache values, rather than total file bytes. It is not a new total-process memory cap. Hash strings/map nodes and snapshot metadata still use memory; ordinary searches requesting no such values allocate no side vector. No first-output or total-RSS improvement is inferred from elapsed time alone.
 
@@ -69,4 +69,4 @@ Both complete core/extension release suites pass 306/306, with required Linux FU
 
 ## Lossless evidence
 
-[derived-content-handoff-20261102.json.gz](derived-content-handoff-20261102.json.gz): 1,174,132 bytes; SHA-256 `f20812fb1eefddb9d9da9ed0e0530b5050dcdea0d3281c7d9834e3a26cf01f35`. Resolve fixtures through `fixtures[report.fixtures_ref]`; timed and final support sources are separate, and initial failure/confirmation logs remain distinct.
+[derived-content-handoff-20261102.json.gz](derived-content-handoff-20261102.json.gz): 1,176,635 bytes; SHA-256 `ad5f377bacbac56bf45aa504038db70f40893324d648e55c67580a1e1a478550`. Resolve fixtures through `fixtures[report.fixtures_ref]`; timed and final support sources are separate, and initial failure/confirmation logs remain distinct.

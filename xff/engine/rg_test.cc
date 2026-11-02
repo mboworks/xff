@@ -572,6 +572,31 @@ TEST_F(RgEngineTest, ParallelFieldRenderingReusesOnlyRequestedDerivedValues) {
   EXPECT_THAT(fs.reads.load(), Eq(129));
 }
 
+TEST_F(RgEngineTest, ParallelColumnsAndLineHistogramsReuseLoadedContent) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 128; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index), index % 2 == 0 ? "hit\nsecond\n" : "miss\n");
+  }
+  const std::vector<std::vector<std::string>> controls{
+      {"--columns=path,lines", "--format=csv"}, {"--summary={lines}", "--format=jsonl"},
+      {"--histogram=lines", "--format=jsonl"},  {"--histogram=ext:sum(lines)", "--format=jsonl"},
+      {"--histogram=ext", "--format=jsonl"},
+  };
+  for (const auto& output_controls : controls) {
+    auto arguments = output_controls;
+    arguments.insert(arguments.end(), {"--jobs=1", "tree", "-type", "f", "-content", "hit"});
+    fs.reads = 0;
+    EXPECT_THAT(Run(arguments, false).errors, Eq(0));
+    const auto serial = output;
+    EXPECT_THAT(fs.reads.load(), Eq(128));
+    arguments.at(output_controls.size()) = "--jobs=4";
+    fs.reads = 0;
+    EXPECT_THAT(Run(arguments, false).errors, Eq(0));
+    EXPECT_THAT(output, EqualsText(serial));
+    EXPECT_THAT(fs.reads.load(), Eq(128));
+  }
+}
+
 TEST_F(RgEngineTest, DerivedSummariesRespectRgSelectionAndReadFailures) {
   fs.files.clear();
   for (std::size_t index = 0; index < 128; ++index) {
