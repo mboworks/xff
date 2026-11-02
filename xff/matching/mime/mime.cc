@@ -4,6 +4,7 @@
 #include "xff/matching/mime/mime.h"
 
 #include <array>
+#include <cstddef>
 #include <filesystem>
 #include <map>
 #include <memory>
@@ -59,6 +60,8 @@ struct State {
   absl::Mutex mutex;
   std::vector<std::unique_ptr<const Vocabulary>> snapshots ABSL_GUARDED_BY(mutex);
   mbo::types::OptionalRef<const Vocabulary> active ABSL_GUARDED_BY(mutex);
+  mbo::types::OptionalRef<const Vocabulary> default_vocabulary ABSL_GUARDED_BY(mutex);
+  std::size_t default_database_count ABSL_GUARDED_BY(mutex) = 0;
 };
 
 State& GlobalState() {
@@ -343,13 +346,20 @@ void EnsureConfigured(State& state) ABSL_EXCLUSIVE_LOCKS_REQUIRED(state.mutex) {
   if (state.active.has_value()) {
     return;
   }
+  const auto databases = Databases();
+  if (state.default_vocabulary && state.default_database_count == databases.size()) {
+    state.active.set_ref(*state.default_vocabulary);
+    return;
+  }
   auto vocabulary = std::make_unique<Vocabulary>(CoreVocabulary());
-  for (const Database& database : Databases()) {
+  for (const Database& database : databases) {
     CHECK_OK(LayerProcessor(*vocabulary, database.name, ConflictPolicy::kLast).Apply(database.json));
   }
   Finalize(*vocabulary);
   state.snapshots.push_back(std::move(vocabulary));
-  state.active.set_ref(*state.snapshots.back());
+  state.default_vocabulary.set_ref(*state.snapshots.back());
+  state.default_database_count = databases.size();
+  state.active.set_ref(*state.default_vocabulary);
 }
 
 }  // namespace

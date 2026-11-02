@@ -2919,7 +2919,7 @@ virtual layers and generic executor hierarchies need an actual lifetime or exten
 | O22 | Reduce output construction churn      | Numeric/cell/JSON strings, row insertion and aligned-table retention allocate       | Existing output/scope contracts            | Append into reusable row buffers; stream machine formats     |
 
 O01-O04 and the selected O06-O11 mechanisms have qualified cross-platform reports below.
-O05 and O12 record rejected implementations. Other entries remain hypotheses until their individual report
+O05 and O12 record rejected implementations. O13 and the repeated-default subset of O14 have reports below. Other entries remain hypotheses until their individual report
 records a decision; inspected allocation sites alone do not establish elapsed gains.
 
 ### Small changes first
@@ -3341,3 +3341,24 @@ work, rather than proving that copies alone accounted for that time. The report 
 macOS output control (+6.63%) and its confirmation (-0.52%), identical-baseline participants, all
 slower samples, source identities and validation. This does not replace O14/O15 invariant/catalog
 work, O17/O18 scheduling or O22 output construction.
+
+### O14 decision: reuse immutable generated defaults between library runs
+
+[The two-platform report](benchmarks/immutable-default-catalogs-20261102.md) qualifies a narrow
+subset of the startup/catalog plan: retain the generated default vocabulary and filtering catalog
+across empty `Configure` resets. Append-only registration invalidates that default; custom files
+and type edits retain their existing fresh construction and validation. Published old views stay
+valid. Existing global lookup locks and per-entry behavior are unchanged.
+
+The real benefit is repeated library construction and retained memory, not first CLI startup.
+Warm reset/lookup kernels fall from milliseconds to sub-microsecond work, including loop/timer
+costs. Separate 54-reset child probes fall from roughly 82-99 MiB peak RSS to 5-7 MiB. Native
+fresh-process controls do not inherit those warm gains. The initial Linux metadata control's
++9.88% falls to +1.18% on confirmation; modest macOS costs up to about +1.94% remain recorded,
+alongside a byte-identical baseline participant. Full 308-test release suites pass on both hosts;
+focused ASan, Linux TSan and changed-unit clang-tidy pass.
+
+This preserves the earlier lazy-default and macOS fixup findings. Generated flat/offset tables,
+first JSON parsing, per-run MIME observers and broader immutable catalog binding remain follow-up
+hypotheses; do not call them implemented or infer gains from the warm reset kernel. No new
+wrapper, lock, per-file clock, thread or exception mechanism is introduced.
