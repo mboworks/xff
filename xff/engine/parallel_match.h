@@ -77,8 +77,9 @@ class ParallelMatch final {
   const std::vector<OwnedVisit>& Entries() const { return entries_; }
 
  private:
-  void Run();
-  bool Ready(std::size_t generation) const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  static constexpr std::size_t kChunkSize = 4;
+  void Run(std::size_t worker);
+  bool Ready(std::size_t generation, std::size_t worker) const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   bool Finished() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void EvaluateEntries(
       fuzzy::ScoreWorkspace& workspace,
@@ -104,6 +105,8 @@ class ParallelMatch final {
   absl::Mutex mutex_;
   bool stop_ ABSL_GUARDED_BY(mutex_) = false;
   std::size_t generation_ ABSL_GUARDED_BY(mutex_) = 0;
+  // Fixed for the generation; completion must not change eligibility for delayed participants.
+  std::size_t active_workers_ ABSL_GUARDED_BY(mutex_) = 0;
   std::size_t remaining_ ABSL_GUARDED_BY(mutex_) = 0;
   // Published under mutex_, immutable until all workers have completed the batch.
   std::vector<OwnedVisit> entries_;

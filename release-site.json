@@ -68,7 +68,8 @@
     "docs/benchmarks/cursor-owned-read-buffers-20261102.md": "docs/benchmarks/cursor-owned-read-buffers-20261102.html",
     "docs/benchmarks/directory-task-slots-20261102.md": "docs/benchmarks/directory-task-slots-20261102.html",
     "docs/benchmarks/packed-visit-snapshots-20261102.md": "docs/benchmarks/packed-visit-snapshots-20261102.html",
-    "docs/benchmarks/bounded-match-results-20261102.md": "docs/benchmarks/bounded-match-results-20261102.html"
+    "docs/benchmarks/bounded-match-results-20261102.md": "docs/benchmarks/bounded-match-results-20261102.html",
+    "docs/benchmarks/useful-match-workers-20261102.md": "docs/benchmarks/useful-match-workers-20261102.html"
   },
   "generated_html": {
     "XFF.md": {

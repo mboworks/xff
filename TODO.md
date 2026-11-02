@@ -404,7 +404,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       [Full evidence and rejected controls](docs/benchmarks/bounded-match-results-20261102.md)
       separate allocation savings from unrelated timing changes. Comparison payload reuse remains
       a source-API question; retaining its result vector alone is rejected.
-- [ ] O11-O12: Profile and qualify active-worker dispatch and direct production evaluation.
+- [x] O11: Qualify warmed matcher participation on macOS and Linux without changing worker creation
+      or chunk size. [Full evidence](docs/benchmarks/useful-match-workers-20261102.md) retains
+      native negative controls and rejects growth-quota throttling after delayed-read regressions.
+- [ ] O12: Profile and qualify direct production evaluation; preserve the EP07 decision boundaries.
       Preserve existing stage policy while isolating task storage and lifecycle costs.
 - [ ] O13-O22: Reconcile remaining derived-value handoff, static catalogs, invariant operands,
       paired streaming compare, reusable stage pools, byte-bounded overlap, archive indexing/admission,

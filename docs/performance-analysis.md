@@ -3292,3 +3292,18 @@ Generation barriers, worker admission/counts, source ownership and ordered consu
 unchanged. Tests cover retained matched slots becoming unmatched, false/error/true transitions,
 both capacity limits, oversized output followed by a short inline tail, empty batches and growth.
 Keep active-worker participation (O11) and budget-aware comparison source reuse separate.
+
+## Useful warmed matcher participation
+
+[Cross-platform evidence and rejected policy](benchmarks/useful-match-workers-20261102.md)
+qualifies O11 against the current O10 matcher. Persistent workers keep their creation/admission
+policy, but a later short batch has no more participants than available four-entry chunks. Eligibility
+stays fixed through the generation, and inactive workers still join shutdown. The warmed sixteen-entry,
+ten-worker kernel improves about 31% Linux / 51% macOS; complete-command changes are much smaller
+and include slower controls. Do not project kernel percentages onto end-to-end scans.
+
+The growth-quota alternative is faster for cheap tails but regresses controlled delayed reads
+by about 95-294%; reject it. The archive retains initial and five-session confirmation populations,
+a duplicate-baseline participant, and an invalid initial delay fixture separately. This addresses
+idle participation within JC04/JC07, not stage budgets, speculative I/O admission, cancellation or
+O17/O18 pipeline scheduling. O12 still needs actual production adapter/ThinLTO analysis.

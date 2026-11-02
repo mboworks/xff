@@ -725,6 +725,27 @@ cc_test(
     ],
 )
 
+# Isolated warmed-tail scheduling experiment, separate from whole-command startup.
+cc_binary(
+    name = "match_tail_benchmark",
+    srcs = ["match_tail_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        ":expression_execution_cc",
+        ":owned_visit_cc",
+        ":parallel_match_cc",
+        ":walk_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@com_github_google_benchmark//:benchmark",
+    ],
+)
+
 # Explicit in-memory experiment; correctness is checked before timing each case.
 cc_binary(
     name = "rg_benchmark",

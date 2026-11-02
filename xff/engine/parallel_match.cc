@@ -53,8 +53,8 @@ ParallelMatch::~ParallelMatch() {
   }
 }
 
-bool ParallelMatch::Ready(std::size_t generation) const {
-  return stop_ || generation_ != generation;
+bool ParallelMatch::Ready(std::size_t generation, std::size_t worker) const {
+  return stop_ || (generation_ != generation && worker < active_workers_);
 }
 
 bool ParallelMatch::Finished() const {
@@ -92,16 +92,19 @@ const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<OwnedVisit> 
   if (threads_.size() < count) {
     threads_.reserve(count);
     for (std::size_t index = threads_.size(); index < count; ++index) {
-      threads_.emplace_back([this] { Run(); });
+      threads_.emplace_back([this, index] { Run(index); });
     }
   }
-  remaining_ = threads_.size();
+  // Retain the creation policy and all useful parallelism. Once a pool has grown, only
+  // workers beyond the number of available chunks are redundant for a later short tail.
+  active_workers_ = std::min(threads_.size(), (entries_.size() + kChunkSize - 1) / kChunkSize);
+  remaining_ = active_workers_;
   ++generation_;
   mutex_.Await(absl::Condition(this, &ParallelMatch::Finished));
   return results_;
 }
 
-void ParallelMatch::Run() {
+void ParallelMatch::Run(std::size_t worker) {
   const auto local = output_ ? std::optional(ForkMatchOutput(output_->output)) : std::nullopt;
   WorkerMatchers matchers;
   if (expression_ && (!execution_ || !execution_->UsesIndexedMatchers())) {
@@ -112,7 +115,7 @@ void ParallelMatch::Run() {
   std::size_t generation = 0;
   for (;;) {
     {
-      const auto ready = [&] ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return Ready(generation); };
+      const auto ready = [&] ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return Ready(generation, worker); };
       const absl::MutexLock lock(mutex_, absl::Condition(&ready));
       if (stop_) {
         return;
@@ -139,13 +142,12 @@ void ParallelMatch::EvaluateEntries(
     mbo::types::OptionalRef<const WorkerMatchers> matchers,
     mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator) {
   // Small chunks spread clustered expensive entries while amortizing atomic scheduling.
-  constexpr std::size_t kChunk = 4;
   for (;;) {
-    const std::size_t first = next_.fetch_add(kChunk, std::memory_order_relaxed);
+    const std::size_t first = next_.fetch_add(kChunkSize, std::memory_order_relaxed);
     if (first >= entries_.size()) {
       return;
     }
-    const std::size_t end = std::min(first + kChunk, entries_.size());
+    const std::size_t end = std::min(first + kChunkSize, entries_.size());
     for (std::size_t index = first; index < end; ++index) {
       EvaluateEntry(index, workspace, output, matchers, evaluator);
     }
