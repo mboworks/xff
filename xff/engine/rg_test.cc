@@ -549,6 +549,103 @@ TEST_F(RgEngineTest, OrdinaryRgSearchUsesContentWorkersWithoutNativeExpression) 
   EXPECT_THAT(output, HasSubstr("tree/299:hit 299\n"));
 }
 
+TEST_F(RgEngineTest, ParallelFieldRenderingReusesOnlyRequestedDerivedValues) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 128; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index), index % 4 == 0 ? "miss\n" : "hit\nsecond\n");
+  }
+  const std::string field = "--template={path}:{hash:md5}:{hash:md5}:{lines}:{lines}";
+  EXPECT_THAT(Run({"--jobs=1", field, "tree", "-type", "f", "-content", "hit"}, false).errors, Eq(0));
+  const auto serial = output;
+  EXPECT_THAT(fs.reads.load(), Eq(128));
+  fs.reads = 0;
+  fs.track_threads = true;
+  fs.expected_threads = 4;
+  EXPECT_THAT(Run({"--jobs=4", field, "tree", "-type", "f", "-content", "hit"}, false).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText(serial));
+  EXPECT_THAT(fs.reads.load(), Eq(128));
+  EXPECT_THAT(fs.read_threads.size(), Gt(1));
+  fs.reads = 0;
+  EXPECT_THAT(
+      Run({"--jobs=4", "--max-results=1", field, "tree", "-type", "f", "-content", "hit"}, false).errors, Eq(0));
+  // A limit retains coordinator laziness instead of deriving hashes for unrendered matches.
+  EXPECT_THAT(fs.reads.load(), Eq(129));
+}
+
+TEST_F(RgEngineTest, ParallelColumnsAndLineHistogramsReuseLoadedContent) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 128; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index), index % 2 == 0 ? "hit\nsecond\n" : "miss\n");
+  }
+  const std::vector<std::vector<std::string>> controls{
+      {"--columns=path,lines", "--format=csv"}, {"--summary={lines}", "--format=jsonl"},
+      {"--histogram=lines", "--format=jsonl"},  {"--histogram=ext:sum(lines)", "--format=jsonl"},
+      {"--histogram=ext", "--format=jsonl"},
+  };
+  for (const auto& output_controls : controls) {
+    auto arguments = output_controls;
+    arguments.insert(arguments.end(), {"--jobs=1", "tree", "-type", "f", "-content", "hit"});
+    fs.reads = 0;
+    EXPECT_THAT(Run(arguments, false).errors, Eq(0));
+    const auto serial = output;
+    EXPECT_THAT(fs.reads.load(), Eq(128));
+    arguments.at(output_controls.size()) = "--jobs=4";
+    fs.reads = 0;
+    EXPECT_THAT(Run(arguments, false).errors, Eq(0));
+    EXPECT_THAT(output, EqualsText(serial));
+    EXPECT_THAT(fs.reads.load(), Eq(128));
+  }
+}
+
+TEST_F(RgEngineTest, DerivedSummariesRespectRgSelectionAndReadFailures) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 128; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index), index % 2 == 0 ? "hit needle\nsecond\n" : "hit other\n");
+  }
+  EXPECT_THAT(
+      Run({"--jobs=1", "--summary={lines}", "--format=jsonl", "needle", "tree", "--xff", "-content", "hit"}).errors,
+      Eq(0));
+  const auto serial = output;
+  EXPECT_THAT(
+      Run({"--jobs=4", "--summary={lines}", "--format=jsonl", "needle", "tree", "--xff", "-content", "hit"}).errors,
+      Eq(0));
+  EXPECT_THAT(output, EqualsText(serial));
+  fs.read_error_path = "tree/0";
+  // Rg encounters the failure itself when no native content predicate reads first.
+  const auto serial_failure = Run({"--jobs=1", "--summary={lines}", "--format=jsonl", "needle", "tree"});
+  const auto failed_output = output;
+  const auto serial_errors = errors;
+  EXPECT_THAT(serial_failure.errors, Gt(0));
+  const auto parallel_failure = Run({"--jobs=4", "--summary={lines}", "--format=jsonl", "needle", "tree"});
+  EXPECT_THAT(parallel_failure.errors, Eq(serial_failure.errors));
+  EXPECT_THAT(output, EqualsText(failed_output));
+  EXPECT_THAT(errors, Eq(serial_errors));
+}
+
+TEST_F(RgEngineTest, DerivedPoolSlotsClearAcrossUnmatchedEmptyAndInlineBatches) {
+  fs.files["tree/a"] = "hit\nsecond\nthird\n";
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
+  ParallelMatch matcher(*command.expression, 4, false, std::nullopt, {}, {.lines = true});
+  EXPECT_THAT(matcher.Match(RepeatedEntries(128)), SizeIs(128));
+  const auto first = matcher.TakeDerived(0);
+  EXPECT_THAT(first.Loaded(), IsFalse());
+  EXPECT_THAT(first.Lines(fs, "tree/a"), Optional(3));
+  EXPECT_THAT(fs.reads.load(), Eq(128));
+  fs.files["tree/a"] = "miss\n";
+  const auto& unmatched = matcher.Match(RepeatedEntries(128));
+  EXPECT_THAT(unmatched.front().evaluation.matched, IsFalse());
+  const auto second = matcher.TakeDerived(0);
+  EXPECT_THAT(second.Lines(fs, "tree/a"), Optional(1));
+  EXPECT_THAT(fs.reads.load(), Eq(257));
+  EXPECT_THAT(matcher.Match({}), IsEmpty());
+  fs.files["tree/a"] = "hit\nlast\n";
+  EXPECT_THAT(matcher.Match(RepeatedEntries(1)), SizeIs(1));
+  const auto last = matcher.TakeDerived(0);
+  EXPECT_THAT(last.Loaded(), IsFalse());
+  EXPECT_THAT(last.Lines(fs, "tree/a"), Optional(2));
+  EXPECT_THAT(fs.reads.load(), Eq(258));
+}
+
 TEST_F(RgEngineTest, MatcherPoolGrowsForLaterBatchesAndRunsShortTailsInline) {
   fs.files.clear();
   for (std::size_t index = 0; index < 256; ++index) {

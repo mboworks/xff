@@ -17,6 +17,7 @@
 #include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
 #include "mbo/types/optional_ref.h"
+#include "xff/content/snapshot.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/expression_execution.h"
 #include "xff/engine/owned_visit.h"
@@ -63,7 +64,8 @@ class ParallelMatch final {
       std::size_t workers,
       bool scores,
       std::optional<ParallelContentOutput> output = std::nullopt,
-      mbo::types::OptionalRef<const ExpressionExecution> execution = {});
+      mbo::types::OptionalRef<const ExpressionExecution> execution = {},
+      content::Derivation derivation = {});
   ~ParallelMatch();
   ParallelMatch(const ParallelMatch&) = delete;
   ParallelMatch& operator=(const ParallelMatch&) = delete;
@@ -75,6 +77,9 @@ class ParallelMatch final {
   const std::vector<ParallelResult>& Match(std::vector<OwnedVisit> entries);
 
   const std::vector<OwnedVisit>& Entries() const { return entries_; }
+
+  // Consume one ordered entry's derived caches. No snapshot storage exists without a request.
+  ContentSnapshot TakeDerived(std::size_t index);
 
  private:
   static constexpr std::size_t kChunkSize = 4;
@@ -99,6 +104,7 @@ class ParallelMatch final {
   const bool scores_;
   const std::optional<ParallelContentOutput> output_;
   const mbo::types::OptionalRef<const ExpressionExecution> execution_;
+  const content::Derivation derivation_;
   std::optional<ExpressionExecution::Worker> coordinator_;
   fuzzy::ScoreWorkspace coordinator_fuzzy_workspace_;
   std::vector<std::thread> threads_;
@@ -111,6 +117,7 @@ class ParallelMatch final {
   // Published under mutex_, immutable until all workers have completed the batch.
   std::vector<OwnedVisit> entries_;
   std::vector<ParallelResult> results_;
+  std::vector<ContentSnapshot> derived_;
   std::atomic<std::size_t> next_ = 0;
 };
 

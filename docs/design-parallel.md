@@ -68,7 +68,11 @@ A bounded directory-read worker pool with a single coordinator:
   does not disable host-file parallelism: mounted/archive-member entries flush pending host results
   and use the serial evaluator. Both paths keep the same VFS and safety preflight.
 - Workers own each entry's content snapshot and rendered output. Predicates and match output reuse
-  that snapshot; source bytes are released when evaluation finishes. The batch retains rendered
+  that snapshot; source bytes are released when evaluation finishes. When templates or histograms
+  request hashes or line counts, selected workers derive those values from bytes already loaded and
+  move only requested caches to the ordered coordinator. A separate result-indexed vector exists
+  only when values are requested; raw content never crosses this boundary. Streaming sources without
+  loaded snapshots and result-limited listings keep lazy coordinator reads. The batch retains rendered
   records for ordered emission. Full line/context output buffers each input; filename/count/quiet
   selection streams where the VFS supports it, retaining the longest line and draining the source
   for binary/error checks. Neither the entry-count batch bound nor streaming limits record size.

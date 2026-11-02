@@ -372,6 +372,7 @@ cc_library(
         ":evaluate_cc",
         ":expression_execution_cc",
         ":owned_visit_cc",
+        "//xff/content:snapshot_cc",
         "//xff/fuzzy:fuzzy_cc",
         "//xff/parser:parser_cc",
         "//xff/registry:registry_cc",

@@ -49,6 +49,7 @@ cc_test(
     srcs = ["fields_test.cc"],
     deps = [
         ":fields_cc",
+        "//xff/content:snapshot_cc",
         "//xff/env:env_cc",
         "//xff/vfs:vfs_cc",
         "@abseil-cpp//absl/time",

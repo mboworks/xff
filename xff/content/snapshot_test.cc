@@ -20,6 +20,7 @@ namespace {
 using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
+using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
@@ -58,6 +59,64 @@ struct SnapshotTest : ::testing::Test {
   ContentFs fs;
   Snapshot snapshot;
 };
+
+TEST_F(SnapshotTest, DerivedTransferRetainsRequestedValuesWithoutRetainingBytes) {
+  EXPECT_THAT(snapshot.Read(fs, "file"), IsOkAndHolds(EqualsText(fs.bytes)));
+  const auto digest = hash::HashData("md5", fs.bytes).value_or("unsupported");
+  Derivation request{.lines = true, .digests = {{.algorithm = "md5"}}};
+  request.Include({.digests = {{.algorithm = "md5"}}});
+  EXPECT_THAT(request.digests, ElementsAre(DigestRequest{.algorithm = "md5"}));
+  auto derived = std::move(snapshot).TakeDerived(request, fs, "file");
+  EXPECT_THAT(derived.Loaded(), IsFalse());
+  fs.bytes = "replacement";
+  EXPECT_THAT(derived.Lines(fs, "file"), Optional(2));
+  EXPECT_THAT(derived.Digest(fs, "file", {.algo = "md5"}), Optional(EqualsText(digest)));
+  EXPECT_THAT(fs.reads, Eq(1));
+  // Unrequested byte consumers still read lazily; no old raw content crossed the boundary.
+  EXPECT_THAT(derived.Read(fs, "file"), IsOkAndHolds(EqualsText("replacement")));
+  EXPECT_THAT(fs.reads, Eq(2));
+  derived.Invalidate();
+  EXPECT_THAT(derived.Lines(fs, "file"), Optional(1));
+  EXPECT_THAT(fs.reads, Eq(3));
+}
+
+TEST_F(SnapshotTest, UnrequestedCachesAreNotTransferredAndBinaryLineFailuresRemainCached) {
+  EXPECT_THAT(
+      snapshot.Digest(fs, "file", {.algo = "sha256"}),
+      Optional(EqualsText(hash::HashData("sha256", fs.bytes).value_or("unsupported"))));
+  const auto derived = std::move(snapshot).TakeDerived({.digests = {{.algorithm = "md5"}}}, fs, "file");
+  EXPECT_THAT(derived.Loaded(), IsFalse());
+  fs.bytes = "replacement";
+  EXPECT_THAT(
+      derived.Digest(fs, "file", {.algo = "sha256"}),
+      Optional(EqualsText(hash::HashData("sha256", fs.bytes).value_or("unsupported"))));
+  EXPECT_THAT(fs.reads, Eq(2));
+  Snapshot binary;
+  fs.bytes = std::string("one\0two", 7);
+  EXPECT_THAT(binary.Read(fs, "file"), IsOkAndHolds(EqualsText(fs.bytes)));
+  const auto binary_derived = std::move(binary).TakeDerived({.lines = true}, fs, "file");
+  EXPECT_THAT(binary_derived.Loaded(), IsFalse());
+  fs.bytes = "now text";
+  EXPECT_THAT(binary_derived.Lines(fs, "file"), Eq(std::nullopt));
+  EXPECT_THAT(fs.reads, Eq(3));
+}
+
+TEST_F(SnapshotTest, DerivationWithoutLoadedBytesDoesNotReadAndCachedFailuresStayFailures) {
+  const auto unloaded = std::move(snapshot).TakeDerived({.lines = true}, fs, "file");
+  EXPECT_THAT(unloaded.Loaded(), IsFalse());
+  EXPECT_THAT(fs.reads, Eq(0));
+  EXPECT_THAT(unloaded.Lines(fs, "file"), Optional(2));
+  EXPECT_THAT(fs.reads, Eq(1));
+  Snapshot failing;
+  fs.fail = true;
+  EXPECT_THAT(failing.Read(fs, "file"), StatusIs(absl::StatusCode::kPermissionDenied));
+  const auto failed = std::move(failing).TakeDerived({.lines = true, .digests = {{.algorithm = "md5"}}}, fs, "file");
+  fs.fail = false;
+  EXPECT_THAT(failed.Loaded(), IsFalse());
+  EXPECT_THAT(failed.Lines(fs, "file"), Eq(std::nullopt));
+  EXPECT_THAT(failed.Digest(fs, "file", {.algo = "md5"}), Eq(std::nullopt));
+  EXPECT_THAT(fs.reads, Eq(2));
+}
 
 TEST_F(SnapshotTest, ReusesBytesAndRequestedDerivedValuesUntilInvalidated) {
   EXPECT_THAT(snapshot.Loaded(), IsFalse());

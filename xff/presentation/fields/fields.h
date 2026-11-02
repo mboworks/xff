@@ -160,6 +160,9 @@ class Template {
   // This describes template structure, not observed reads or bytes.
   std::size_t ContentFieldCount() const;
 
+  // Resolve requested derived values once, including hash defaults and transformed fields.
+  content::Derivation ContentDerivation(std::string_view algorithm, hash::Encoding encoding) const;
+
   // Conservative object/record/text capacity budget. String capacity is counted even
   // when inline; copied templates each count shared transforms. Excludes regex backend,
   // diagnostic status payload, allocator and shared-ownership bookkeeping allocations.
