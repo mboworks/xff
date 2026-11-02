@@ -2918,8 +2918,8 @@ virtual layers and generic executor hierarchies need an actual lifetime or exten
 | O21 | Reuse similarity representations      | Repeated shingle generation and pairwise verification dominate large document sets  | Existing near-duplicate design             | Cache reference shingles; exact verification after indexing  |
 | O22 | Reduce output construction churn      | Numeric/cell/JSON strings, row insertion and aligned-table retention allocate       | Existing output/scope contracts            | Append into reusable row buffers; stream machine formats     |
 
-O01-O04 and the selected O06/O07 mechanisms have qualified cross-platform reports below.
-O05 records two rejected candidates. Other entries remain hypotheses until their individual report
+O01-O04 and the selected O06-O11 mechanisms have qualified cross-platform reports below.
+O05 and O12 record rejected implementations. Other entries remain hypotheses until their individual report
 records a decision; inspected allocation sites alone do not establish elapsed gains.
 
 ### Small changes first
@@ -3307,3 +3307,19 @@ by about 95-294%; reject it. The archive retains initial and five-session confir
 a duplicate-baseline participant, and an invalid initial delay fixture separately. This addresses
 idle participation within JC04/JC07, not stage budgets, speculative I/O admission, cancellation or
 O17/O18 pipeline scheduling. O12 still needs actual production adapter/ThinLTO analysis.
+
+## Direct evaluator worker storage: rejected
+
+[The O12 qualification report](benchmarks/direct-evaluator-workers-20261102.md) inspects the actual
+shipping ThinLTO matcher call site and retains a two-file implementation removing the allocated
+production worker wrapper. Coordinator creation drops from one allocation to zero; concurrent worker
+creation saves one allocation too. Existing qualification executors remain test-only. The stable
+prepared plan and its once-per-worker factory dispatch are not removed or called per file.
+
+Reject this variant: Linux early-difference comparison is +40.18% initially and +14.38% in a focused
+confirmation that includes a byte-identical baseline participant. Native comparison and line-output
+confirmations also retain modest costs. macOS is mostly near baseline. Allocation savings and fewer
+virtual calls alone do not establish an acceptable elapsed improvement. Preserve all samples and
+the rejected source rather than adding this representation to the shipping runtime. A deeper typed
+plan needs a separate lifetime-safe design and fresh profiles; O13 and the remaining candidates
+continue independently.
