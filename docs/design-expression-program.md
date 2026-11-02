@@ -867,5 +867,7 @@ rendered peer paths and failures. Native CI adds literal and transformed peer, s
 expected-hash preparation/kernels plus three whole-engine scenarios. No speedup or final retention
 claim precedes those measurements. The later [O15a qualification](benchmarks/prepared-diff-configuration-20261102.md)
 retains complete file-diff options/ignore-regex preparation at run scope, preserving direct-context
-fallback and conditional observations. Hash-spec/default resolution remains separate invariant work;
-this does not close EP03/EP07 or requalify every template family.
+fallback and conditional observations. The later [O15b qualification](benchmarks/prepared-hash-operands-20261102.md)
+retains compact hash-primary syntax/default binding, with explicit cold preparation costs and live
+context defaults. Field-hash rendering and broader template-family qualification remain separate;
+these results do not close EP03/EP07.

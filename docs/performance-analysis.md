@@ -3390,3 +3390,30 @@ Linux TSan. Shipping size, raw samples and development-oracle failures are recor
 This is only the diff subset of O15. Peer/expected-hash templates already bind through the existing
 prepared operand pool. Hash specification/default resolution remains a separate candidate; EP03
 and EP07 are not marked complete by this result.
+
+### O15b decision: compact prepared hash-primary operands
+
+[The final paired report](benchmarks/prepared-hash-operands-20261102.md) qualifies explicit
+algorithm/encoding binding for hash primaries. Compact records index the existing algorithm registry,
+retain encoding/default-use/validity bits, and reuse the expected template's unique owner. A compile-time
+size check keeps the record within the existing 24-byte operand alternative. The constexpr dispatch
+registers expression-aware preparation directly; argument-only families retain their missing-argument
+guard through one preparation adapter. No new spelling table, per-file lock, shared owner or clock
+is introduced.
+
+Explicit hash/equality hot work improves roughly 6-9% in confirmation on both platforms. Native
+commands remain near baseline because file reads dominate. Retain the actual preparation cost:
+roughly 50-70 ns additional work for a one-primary hash case, with separate percentages and absolute
+values in the report. The Linux name-preparation control also costs about 27 ns; do not hide it or
+project its percentage onto a full command. Duplicate baseline participants, unrelated name/diff
+controls and the initial private pilot have separate provenance. Faster unrelated controls are not
+credited to hash parsing.
+
+Direct contexts observe their current defaults when reached, including across moved/reused plans;
+expected-field reads and verification bookkeeping retain their prior order. Hash actions and
+verification remain coordinator work, so requested workers do not establish parallel hashing.
+All 322 extension-enabled release tests pass per host; scoped lint and focused sanitizer evidence
+are retained with compiler/link-action provenance. No toolchain/LTO change is part of this candidate.
+
+This closes the hash-primary subset of O15. Field-hash qualifier preparation and digest/output-copy
+work remain associated with O22, and broader EP03/EP07 template-family qualification stays open.

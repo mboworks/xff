@@ -423,8 +423,12 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O15a: Qualify invariant file-diff configuration without moving conditional peer/content
       observations. [Native, in-memory and slower controls](docs/benchmarks/prepared-diff-configuration-20261102.md)
       retain once-per-style options/regex records, direct-context fallback and cross-platform costs.
-- [ ] O15b: Qualify remaining hash-spec/default binding and template-family gaps against actual
-      production preparation; preserve dynamic defaults, conditional observations and EP03/EP07 gates.
+- [x] O15b: Qualify compact hash-primary syntax/default binding against actual production execution.
+      [Paired native/kernel/preparation evidence](docs/benchmarks/prepared-hash-operands-20261102.md)
+      retains hot explicit-spec gains, native controls and additional cold preparation costs.
+      Keep live direct-context defaults, expected-field observations and verification bookkeeping.
+      Field-hash qualifier binding and broader template-family qualification remain under EP03/EP07
+      and O22; this does not mark those wider plans complete.
 - [ ] O16-O22: Reconcile paired streaming compare, reusable stage pools, byte-bounded overlap, archive indexing/admission,
       optional bulk metadata, similarity representations and output churn with EP/JC/P acceptance.
       Keep macrobenchmark, kernel and diagnostic contracts separate.
