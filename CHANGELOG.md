@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Cache fuzzy normalization ceilings and reuse bounded per-worker scoring rows; retain valid ranked matches after long gaps.
+
 - Prepare simple case-sensitive name/path globs once and avoid copying owned native glob patterns; preserve native matching for complex and case-folded patterns.
 
 - Share collection basename and root text with the owned path where possible, reducing retained memory without changing buffer limits.

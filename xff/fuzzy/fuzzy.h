@@ -16,6 +16,7 @@
 #ifndef XFF_FUZZY_FUZZY_H_
 #define XFF_FUZZY_FUZZY_H_
 
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -36,6 +37,17 @@ namespace xff::fuzzy {
 // An EMPTY pattern matches everything, exactly as an empty glob would: it constrains nothing.
 [[nodiscard]] bool Matches(std::string_view pattern, std::string_view text, bool fold_case);
 
+// Thread-confined reusable score rows. No allocation until a nontrivial score needs them.
+// Each row retains at most 65,536 ints (512 KiB total); larger calls use temporary storage.
+// Independent workers own independent workspaces. Moving this value transfers its buffer.
+struct ScoreWorkspace final {
+  static constexpr std::size_t kMaxRetainedCharacters = 65'536;
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays): C++20 owning dynamic overwrite storage.
+  using Rows = std::unique_ptr<int[]>;
+  Rows rows;
+  std::size_t capacity = 0;
+};
+
 // How WELL `pattern` matches `text`, or nullopt when it does not match at all (so the boolean answer
 // is `Score(...).has_value()`, and a matching empty pattern scores 0 rather than being confused with
 // no match). Higher is better; the numbers have no meaning on their own, only against each other for
@@ -54,11 +66,21 @@ namespace xff::fuzzy {
 // earliest match for each character is always A match, but it is often not the BEST one, and a
 // ranking built on the greedy answer would rank by accident.
 [[nodiscard]] std::optional<int> Score(std::string_view pattern, std::string_view text, bool fold_case);
+[[nodiscard]] std::optional<int> Score(
+    std::string_view pattern,
+    std::string_view text,
+    bool fold_case,
+    ScoreWorkspace& workspace);
 
 // Returns Score normalized against the pattern's best possible self-match, as an
 // integer percentage in [0, 100]. This makes scores from different patterns
 // comparable when a boolean expression combines several fuzzy predicates.
 [[nodiscard]] std::optional<int> Percent(std::string_view pattern, std::string_view text, bool fold_case);
+[[nodiscard]] std::optional<int> Percent(
+    std::string_view pattern,
+    std::string_view text,
+    bool fold_case,
+    ScoreWorkspace& workspace);
 
 // Evaluates fzf's extended-search query language. Space-separated terms are ANDed, `|` joins OR
 // alternatives, and the `!`, `'`, `^`, and `$` operators select inverse, exact, prefix, and suffix
@@ -75,6 +97,7 @@ class FzfQuery final {
   explicit FzfQuery(std::string_view query);
   [[nodiscard]] bool Matches(std::string_view text, bool fold_case) const;
   [[nodiscard]] std::optional<int> Percent(std::string_view text, bool fold_case) const;
+  [[nodiscard]] std::optional<int> Percent(std::string_view text, bool fold_case, ScoreWorkspace& workspace) const;
 
  private:
   struct Impl;

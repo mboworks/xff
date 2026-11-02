@@ -28,6 +28,7 @@ cc_library(
     deps = [
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/strings",
+        "@mboworks_mbo//mbo/types:optional_ref_cc",
     ],
 )
 

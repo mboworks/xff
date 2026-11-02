@@ -60,7 +60,8 @@
     "NOTICE.lean.md": "NOTICE.lean.html",
     "docs/performance-analysis.md": "docs/performance-analysis.html",
     "docs/design-expression-program.md": "docs/design-expression-program.html",
-    "docs/expression-qualification-audit.md": "docs/expression-qualification-audit.html"
+    "docs/expression-qualification-audit.md": "docs/expression-qualification-audit.html",
+    "docs/benchmarks/fuzzy-score-workspace-20261102.md": "docs/benchmarks/fuzzy-score-workspace-20261102.html"
   },
   "generated_html": {
     "XFF.md": {

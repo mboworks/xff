@@ -73,7 +73,7 @@ const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEnt
       coordinator_.emplace(execution_->MakeWorker(ExpressionWorkerRole::kCoordinator));
     }
     EvaluateEntries(
-        {}, {},
+        coordinator_fuzzy_workspace_, {}, {},
         coordinator_ ? mbo::types::OptionalRef<const ExpressionExecution::Worker>{*coordinator_}
                      : mbo::types::OptionalRef<const ExpressionExecution::Worker>{});
     return results_;
@@ -99,6 +99,7 @@ void ParallelMatch::Run() {
     matchers.Bind(*expression_);
   }
   const auto evaluator = execution_ ? std::optional(execution_->MakeWorker()) : std::nullopt;
+  fuzzy::ScoreWorkspace fuzzy_workspace;
   std::size_t generation = 0;
   for (;;) {
     {
@@ -110,6 +111,7 @@ void ParallelMatch::Run() {
       generation = generation_;
     }
     EvaluateEntries(
+        fuzzy_workspace,
         local ? mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{*local}
               : mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{},
         matchers,
@@ -123,6 +125,7 @@ void ParallelMatch::Run() {
 }
 
 void ParallelMatch::EvaluateEntries(
+    fuzzy::ScoreWorkspace& workspace,
     mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
     mbo::types::OptionalRef<const WorkerMatchers> matchers,
     mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator) {
@@ -135,13 +138,14 @@ void ParallelMatch::EvaluateEntries(
     }
     const std::size_t end = std::min(first + kChunk, entries_.size());
     for (std::size_t index = first; index < end; ++index) {
-      results_.at(index) = EvaluateEntry(entries_.at(index).AsVisit(), output, matchers, evaluator);
+      results_.at(index) = EvaluateEntry(entries_.at(index).AsVisit(), workspace, output, matchers, evaluator);
     }
   }
 }
 
 ParallelResult ParallelMatch::EvaluateEntry(
     const Visit& visit,
+    fuzzy::ScoreWorkspace& workspace,
     mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
     mbo::types::OptionalRef<const WorkerMatchers> matchers,
     mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator) const {
@@ -156,6 +160,7 @@ ParallelResult ParallelMatch::EvaluateEntry(
       .now = absl::UnixEpoch(),
       .tz = absl::UTCTimeZone(),
       .fuzzy_score = scores_ ? mbo::types::OptionalRef{fuzzy} : mbo::types::OptionalRef<std::optional<int>>{},
+      .fuzzy_workspace = workspace,
       .worker_matchers = matchers,
       .control = control,
   };

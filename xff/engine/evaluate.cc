@@ -997,8 +997,13 @@ bool EvalFuzzyOn(const parser::Expr& expr, EvalContext& ctx, std::string_view su
   std::optional<int> percent;
   switch (expr.fuzzy_model) {
     case parser::FuzzyModel::kFzf:
-      percent = expr.fuzzy_query ? expr.fuzzy_query->Percent(subject, fold)
-                                 : fuzzy::FzfPercent(expr.args.front(), subject, fold);
+      if (ctx.fuzzy_workspace) {
+        percent = expr.fuzzy_query ? expr.fuzzy_query->Percent(subject, fold, *ctx.fuzzy_workspace)
+                                   : fuzzy::FzfQuery(expr.args.front()).Percent(subject, fold, *ctx.fuzzy_workspace);
+      } else {
+        percent = expr.fuzzy_query ? expr.fuzzy_query->Percent(subject, fold)
+                                   : fuzzy::FzfPercent(expr.args.front(), subject, fold);
+      }
       break;
     case parser::FuzzyModel::kSequence: percent = fuzzy::SequencePercent(expr.args.front(), subject, fold); break;
     case parser::FuzzyModel::kLevenshtein: percent = fuzzy::LevenshteinPercent(expr.args.front(), subject, fold); break;

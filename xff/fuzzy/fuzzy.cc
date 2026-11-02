@@ -17,7 +17,9 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -25,6 +27,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/strip.h"
+#include "mbo/types/optional_ref.h"
 
 namespace xff::fuzzy {
 
@@ -52,11 +55,13 @@ namespace {
 // The weights. Deliberately small integers with a wide gap between "a character matched" and the
 // bonuses, so a longer match always beats a shorter one and the bonuses only order matches of the
 // same length. Tuned by the cases in fuzzy_test.cc, which are the real specification.
-constexpr int kMatch = 16;          // per matched character
-constexpr int kWordStart = 8;       // the character begins a word
-constexpr int kConsecutive = 8;     // it follows the previous match immediately
-constexpr int kGap = 1;             // per character skipped before a match
-constexpr int kUnmatched = -1'000;  // "no alignment reaches here", never a real score
+constexpr int kMatch = 16;       // per matched character
+constexpr int kWordStart = 8;    // the character begins a word
+constexpr int kConsecutive = 8;  // it follows the previous match immediately
+constexpr int kGap = 1;          // per character skipped before a match
+// Leave enough headroom for the gap subtraction before the max with the prior row.
+// Valid long-gap scores can be below -1,000 and must remain distinct from no alignment.
+constexpr int kUnmatched = std::numeric_limits<int>::min() + kGap;
 
 bool IsSeparator(char chr) {
   return chr == '_' || chr == '-' || chr == '.' || chr == '/' || chr == ' ';
@@ -99,10 +104,46 @@ std::optional<std::size_t> FindText(std::string_view needle, std::string_view ha
   return std::nullopt;
 }
 
+// Matching every pattern byte against the same-length identical text has exactly one alignment.
+// Its word-start/consecutive bonuses are independent of case folding; no dynamic-programming
+// rows or alignment search are needed for this normalization ceiling.
+std::int64_t SelfScore(std::string_view pattern) {
+  std::int64_t result = 0;
+  for (std::size_t at = 0; at < pattern.size(); ++at) {
+    result += kMatch + (at == 0 ? 0 : kConsecutive) + (IsWordStart(pattern, at) ? kWordStart : 0);
+  }
+  return result;
+}
+
+int NormalizeScore(int score, std::int64_t ceiling) {
+  if (ceiling == 0) {
+    return 100;  // The empty pattern matches without expressing a quality preference.
+  }
+  const std::int64_t scaled = (static_cast<std::int64_t>(score) * 100) / ceiling;
+  return static_cast<int>(std::clamp<std::int64_t>(scaled, 0, 100));
+}
+
+ScoreWorkspace::Rows AllocateRows(std::size_t count) {
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays): C++20 owning dynamic overwrite storage.
+  return std::make_unique_for_overwrite<int[]>(count);
+}
+
+std::optional<int> PercentWithCeiling(
+    std::string_view pattern,
+    std::string_view text,
+    bool fold_case,
+    std::int64_t ceiling,
+    mbo::types::OptionalRef<ScoreWorkspace> workspace = {}) {
+  const std::optional<int> score =
+      workspace ? Score(pattern, text, fold_case, *workspace) : Score(pattern, text, fold_case);
+  return score.has_value() ? std::optional(NormalizeScore(*score, ceiling)) : std::nullopt;
+}
+
 enum class TermKind { kFuzzy, kExact, kBoundary, kPrefix, kSuffix, kEqual };
 
 struct QueryTerm {
   std::string text;
+  std::int64_t ceiling = 0;
   TermKind kind = TermKind::kFuzzy;
   bool inverse = false;
 };
@@ -157,6 +198,7 @@ QueryTerm ParseTerm(std::string word) {
     term.kind = suffix ? TermKind::kEqual : TermKind::kPrefix;
   }
   term.text = std::move(word);
+  term.ceiling = SelfScore(term.text);
   return term;
 }
 
@@ -204,10 +246,15 @@ std::string_view TrimAnchorWhitespace(std::string_view pattern, std::string_view
   return text;
 }
 
-std::optional<int> PositiveTermPercent(const QueryTerm& term, std::string_view text, bool fold_case, bool score) {
+std::optional<int> PositiveTermPercent(
+    const QueryTerm& term,
+    std::string_view text,
+    bool fold_case,
+    bool score,
+    mbo::types::OptionalRef<ScoreWorkspace> workspace = {}) {
   if (term.kind == TermKind::kFuzzy) {
     if (score) {
-      return Percent(term.text, text, fold_case);
+      return PercentWithCeiling(term.text, text, fold_case, term.ceiling, workspace);
     }
     return Matches(term.text, text, fold_case) ? std::optional(100) : std::nullopt;
   }
@@ -244,20 +291,30 @@ std::optional<int> PositiveTermPercent(const QueryTerm& term, std::string_view t
   if (!matched) {
     return std::nullopt;
   }
-  return score ? Percent(term.text, text, fold_case).value_or(100) : 100;
+  return score ? PercentWithCeiling(term.text, text, fold_case, term.ceiling, workspace).value_or(100) : 100;
 }
 
 // One row of the search: the best score for the pattern prefix whose LAST character is `want`, with
 // that character placed at each position of `text`. `previous` is the same row for the prefix one
-// character shorter (all kUnmatched when `want` is the first character), and the result lands in
-// `best`. Split out of Score because the nesting, not the idea, is what made it hard to read.
+// character shorter. The first character initializes `best` without reading `previous`. Split out of Score because the
+// nesting, not the idea, is what made it hard to read.
 void ScoreRow(
     std::string_view text,
     char want,
     bool fold_case,
     bool first,
-    const std::vector<int>& previous,
-    std::vector<int>& best) {
+    std::span<const int> previous,
+    std::span<int> best) {
+  if (first) {
+    // Initialize every result before it becomes the previous row. The uninitialized other
+    // half is never read here, so freshly allocated rows need no blanket initialization.
+    for (std::size_t at = 0; at < text.size(); ++at) {
+      best[at] = SameChar(text[at], want, fold_case)
+                     ? kMatch + (IsWordStart(text, at) ? kWordStart : 0) - (kGap * static_cast<int>(at))
+                     : kUnmatched;
+    }
+    return;
+  }
   // `reachable` carries the best score of any earlier alignment of the previous character, already
   // charged the gap penalty for the distance travelled. Updating it as the position advances is what
   // keeps this linear in the text rather than quadratic.
@@ -271,11 +328,6 @@ void ScoreRow(
       continue;
     }
     const int here = kMatch + (IsWordStart(text, at) ? kWordStart : 0);
-    if (first) {
-      // The first character may start anywhere, but the later it starts the worse it scores.
-      best[at] = here - (kGap * static_cast<int>(at));
-      continue;
-    }
     const int consecutive = at > 0 && previous[at - 1] != kUnmatched ? previous[at - 1] + kConsecutive : kUnmatched;
     const int from = std::max(reachable, consecutive);
     best[at] = from == kUnmatched ? kUnmatched : from + here;
@@ -285,6 +337,11 @@ void ScoreRow(
 }  // namespace
 
 std::optional<int> Score(std::string_view pattern, std::string_view text, bool fold_case) {
+  ScoreWorkspace workspace;
+  return Score(pattern, text, fold_case, workspace);
+}
+
+std::optional<int> Score(std::string_view pattern, std::string_view text, bool fold_case, ScoreWorkspace& workspace) {
   if (pattern.empty()) {
     return 0;  // matches, and says nothing about how well - see Matches
   }
@@ -292,11 +349,25 @@ std::optional<int> Score(std::string_view pattern, std::string_view text, bool f
     return std::nullopt;
   }
   // Two rows are enough, because a pattern character can only follow the one before it.
-  std::vector<int> previous(text.size(), kUnmatched);
-  std::vector<int> best(text.size(), kUnmatched);
+  ScoreWorkspace::Rows temporary;
+  std::span<int> rows;
+  if (text.size() > ScoreWorkspace::kMaxRetainedCharacters) {
+    temporary = AllocateRows(2 * text.size());
+    rows = {temporary.get(), 2 * text.size()};
+  } else {
+    if (!workspace.rows || workspace.capacity < text.size()) {
+      const std::size_t current = workspace.rows ? workspace.capacity : 0;
+      const std::size_t capacity = std::min(ScoreWorkspace::kMaxRetainedCharacters, std::max(text.size(), 2 * current));
+      workspace.rows = AllocateRows(2 * capacity);
+      workspace.capacity = capacity;
+    }
+    rows = {workspace.rows.get(), 2 * workspace.capacity};
+  }
+  auto previous = rows.first(text.size());
+  auto best = rows.subspan(text.size(), text.size());
   for (std::string_view::size_type i = 0; i < pattern.size(); ++i) {
     ScoreRow(text, pattern[i], fold_case, /*first=*/i == 0, previous, best);
-    previous.swap(best);
+    std::swap(previous, best);
   }
   const auto found = absl::c_max_element(previous);
   if (found == previous.end() || *found == kUnmatched) {
@@ -313,12 +384,11 @@ std::optional<int> Percent(std::string_view pattern, std::string_view text, bool
   if (pattern.empty()) {
     return 100;
   }
-  const std::optional<int> ceiling = Score(pattern, pattern, fold_case);
-  if (!ceiling.has_value() || *ceiling <= 0) {
-    return std::nullopt;
-  }
-  const std::int64_t scaled = (static_cast<std::int64_t>(*score) * 100) / *ceiling;
-  return static_cast<int>(std::clamp<std::int64_t>(scaled, 0, 100));
+  return NormalizeScore(*score, SelfScore(pattern));
+}
+
+std::optional<int> Percent(std::string_view pattern, std::string_view text, bool fold_case, ScoreWorkspace& workspace) {
+  return PercentWithCeiling(pattern, text, fold_case, SelfScore(pattern), workspace);
 }
 
 struct FzfQuery::Impl {
@@ -340,12 +410,17 @@ std::optional<int> FzfPercent(std::string_view query, std::string_view text, boo
 }
 
 std::optional<int> FzfQuery::Percent(std::string_view text, bool fold_case) const {
+  ScoreWorkspace workspace;
+  return Percent(text, fold_case, workspace);
+}
+
+std::optional<int> FzfQuery::Percent(std::string_view text, bool fold_case, ScoreWorkspace& workspace) const {
   int query_score = 100;
   for (const OrGroup& group : impl_->groups) {
     std::optional<int> group_score;
     bool matched = false;
     for (const QueryTerm& term : group) {
-      const std::optional<int> positive = PositiveTermPercent(term, text, fold_case, /*score=*/true);
+      const std::optional<int> positive = PositiveTermPercent(term, text, fold_case, /*score=*/true, workspace);
       const bool term_matches = term.inverse ? !positive.has_value() : positive.has_value();
       if (!term_matches) {
         continue;
