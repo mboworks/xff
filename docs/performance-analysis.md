@@ -3240,3 +3240,31 @@ scoped lint pass. The two three-way native phases preserve all 28,800 invocation
 oracles, fixture definitions, source/binary identities and slower cases. Slot metadata retains
 its high-water capacity until walker destruction; the per-level request frontier is not a global
 byte bound. Cache-line layout and wider scheduling changes remain separate, unmeasured follow-ups.
+
+## O09: packed matcher and deferred entry snapshots
+
+The collection arena in O01 does not own matcher/deferred input: those records formerly copied
+path, basename and root into three independent strings. The qualified replacement keeps one byte
+string plus offsets, sharing exact path suffix/prefix bytes and appending unrelated values. Views
+are reconstructed on access, so short-string moves and vector growth do not invalidate them.
+Metadata, root identity and archive filesystem owners retain their existing lifetimes.
+
+[The full decision and evidence](benchmarks/packed-visit-snapshots-20261102.md) separate native
+whole-command timing, in-memory controls and ASan allocation counters on macOS and Linux. Long
+overlapping 1,000-entry snapshots reduce allocation calls from 3,001 to 1,001; short strings retain
+their allocation-free text path. This is reduced allocation traffic with modest elapsed gains, not a
+universal scan speedup. Initial slower Linux comparison controls and duplicate-baseline confirmations
+remain in the evidence; do not replace the original samples with later results.
+
+Retain ordinary construction. A forced out-of-line constructor offers no consistent cross-platform
+advantage. The final direct-emplace call site has a distinct confirmation population. Preserve
+existing input-vector consumption, ordered output, logical text lengths, worker admission and
+collection budgets. No new batch arena, reference-counted text owner, interner or recycling API is
+introduced. O10's bounded result-capacity reuse remains a separate candidate.
+
+The O09 qualification-only driver exposed a measurement-order issue: rotating participants and
+reversing odd rounds cancel each other for two variants. Preserve the original samples as such;
+the corrected representative native confirmation rotates participants without that reversal. The
+published benchmark runner already uses rotation alone and is unaffected. Audit older two-variant
+qualification scripts before treating tiny historical differences as order-independent evidence.
+Allocation counters and correctness tests do not depend on participant timing order.

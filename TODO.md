@@ -395,8 +395,12 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O08: Qualify typed reusable directory-task slots without changing worker/admission policy.
       [Initial and refined evidence](docs/benchmarks/directory-task-slots-20261102.md) selects
       atomic ownership handoff, rejecting global completion locking and retaining small regressions.
-- [ ] O09-O12: Profile and qualify batch ownership, bounded result reuse, active-worker dispatch
-      and direct production evaluation.
+- [x] O09: Qualify packed independent matcher/deferred snapshots, including short-string moves,
+      vector relocation, opaque bytes, and archive ownership. Preserve allocation counts, modest
+      gains and slower controls in [the two-host report](docs/benchmarks/packed-visit-snapshots-20261102.md).
+      Keep the forced out-of-line constructor experimental; no batch-recycling API or worker change.
+- [ ] O10-O12: Profile and qualify bounded result reuse, active-worker dispatch and direct
+      production evaluation.
       Preserve existing stage policy while isolating task storage and lifecycle costs.
 - [ ] O13-O22: Reconcile remaining derived-value handoff, static catalogs, invariant operands,
       paired streaming compare, reusable stage pools, byte-bounded overlap, archive indexing/admission,
@@ -735,6 +739,12 @@ The safety model and directory-scoped permissions are tracked in
 [the implementation record](docs/history.md#directory-scoped-safety-controls).
 
 ## Active engineering priorities
+
+- [ ] Audit older two-variant qualification-only native drivers for participant-order bias. Rotating
+      then reversing odd rounds cancels rotation for two participants. Keep historical samples and
+      source identities; reconfirm small attributed gains with rotation alone before relying on them
+      for another policy decision. The published benchmark runner already rotates without reversal.
+      O09 records both the original populations and corrected 32-case confirmation on both hosts.
 
 - [ ] Make local clang-tidy header scope resolve Bazel `include_prefix` aliases. The physical
       `xff_extras_api/read_source.h` is included as `xff/vfs/read_source.h`, which the current

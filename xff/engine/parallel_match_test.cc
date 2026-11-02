@@ -11,6 +11,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/expression_execution.h"
@@ -21,6 +22,7 @@
 namespace xff::engine {
 namespace {
 
+using ::mbo::testing::EqualsText;
 using ::testing::Eq;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
@@ -30,15 +32,16 @@ struct ParallelMatchTest : ::testing::Test {
   // Type-only expressions never call this backend. No real paths are visited.
   const vfs::LocalFs fs;
 
-  std::vector<CollectedEntry> Entries(std::size_t count) const {
-    std::vector<CollectedEntry> entries;
+  std::vector<OwnedVisit> Entries(std::size_t count) const {
+    std::vector<OwnedVisit> entries;
     entries.reserve(count);
     for (std::size_t index = 0; index < count; ++index) {
-      entries.push_back({
-          .path = std::to_string(index),
-          .metadata = {.type = index % 2 == 0 ? vfs::FileType::kRegular : vfs::FileType::kDirectory},
-          .fs = fs,
-      });
+      entries.emplace_back(
+          Visit{
+              .path = std::to_string(index),
+              .metadata = {.type = index % 2 == 0 ? vfs::FileType::kRegular : vfs::FileType::kDirectory},
+              .fs = fs,
+          });
     }
     return entries;
   }
@@ -55,7 +58,7 @@ TEST_F(ParallelMatchTest, RepeatedBatchesRetainEntryOrderAndDoNotReuseOldResults
     EXPECT_THAT(matcher.Entries(), SizeIs(count));
     for (std::size_t index = 0; index < count; ++index) {
       EXPECT_THAT(results.at(index).evaluation.matched, Eq(index % 2 == 0));
-      EXPECT_THAT(matcher.Entries().at(index).path, Eq(std::to_string(index)));
+      EXPECT_THAT(matcher.Entries().at(index).Path(), EqualsText(std::to_string(index)));
     }
   }
 }

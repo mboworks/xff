@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Pack matcher and deferred entry text into one owned buffer while preserving moves, output order and filesystem lifetimes.
+
 - Reuse typed directory-task records and publish completion without the shared queue lock.
 
 - Reuse budgeted native comparison buffers across chunks while preserving legacy decoder reads.

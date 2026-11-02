@@ -17,9 +17,9 @@
 #include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
 #include "mbo/types/optional_ref.h"
-#include "xff/engine/collect.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/expression_execution.h"
+#include "xff/engine/owned_visit.h"
 #include "xff/fuzzy/fuzzy.h"
 #include "xff/parser/ast.h"
 
@@ -68,9 +68,9 @@ class ParallelMatch final {
 
   // Consumes a batch; entry filesystem observers must outlive this call. The
   // owning entries remain available for ordered output until the next call.
-  const std::vector<ParallelResult>& Match(std::vector<CollectedEntry> entries);
+  const std::vector<ParallelResult>& Match(std::vector<OwnedVisit> entries);
 
-  const std::vector<CollectedEntry>& Entries() const { return entries_; }
+  const std::vector<OwnedVisit>& Entries() const { return entries_; }
 
  private:
   void Run();
@@ -101,7 +101,7 @@ class ParallelMatch final {
   std::size_t generation_ ABSL_GUARDED_BY(mutex_) = 0;
   std::size_t remaining_ ABSL_GUARDED_BY(mutex_) = 0;
   // Published under mutex_, immutable until all workers have completed the batch.
-  std::vector<CollectedEntry> entries_;
+  std::vector<OwnedVisit> entries_;
   std::vector<ParallelResult> results_;
   std::atomic<std::size_t> next_ = 0;
 };

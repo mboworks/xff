@@ -70,6 +70,7 @@
 #include "xff/engine/evaluate.h"
 #include "xff/engine/extract.h"
 #include "xff/engine/mount.h"
+#include "xff/engine/owned_visit.h"
 #include "xff/engine/parallel_compare.h"
 #include "xff/engine/parallel_match.h"
 #include "xff/engine/walk.h"
@@ -1619,7 +1620,7 @@ bool ResultShapingIsValid(
 }
 
 struct DeferredCandidate {
-  CollectedEntry entry;
+  OwnedVisit entry;
   std::vector<std::string> captures;
   std::map<std::string, std::string> outputs;
   EvaluationMemo memo;
@@ -1629,19 +1630,6 @@ struct DeferredCandidate {
   int score = 0;
   std::size_t order = 0;
 };
-
-CollectedEntry OwnVisit(const Visit& visit) {
-  return CollectedEntry{
-      .path = std::string(visit.path),
-      .name = std::string(visit.name),
-      .root = std::string(visit.root),
-      .depth = visit.depth,
-      .metadata = visit.metadata,
-      .fs = visit.fs,
-      .fs_owner = visit.fs_owner,
-      .root_index = visit.root_index,
-  };
-}
 
 void AppendDeferredNodes(const parser::Expr& expr, std::vector<ExprIdentity>& nodes) {
   if (expr.kind == parser::Expr::Kind::kPredicate) {
@@ -1681,7 +1669,7 @@ using DeferredCandidateRefs = std::vector<std::reference_wrapper<DeferredCandida
 std::map<std::string, CandidateIndexes> IndexCandidatesByDirectory(const DeferredCandidateRefs& entries) {
   std::map<std::string, CandidateIndexes> result;
   for (std::size_t index = 0; index < entries.size(); ++index) {
-    const std::string_view path = entries[index].get().entry.path;
+    const std::string_view path = entries[index].get().entry.Path();
     const std::string_view::size_type slash = path.rfind('/');
     const std::string_view directory = slash == std::string_view::npos ? std::string_view() : path.substr(0, slash);
     result[std::string(directory)].push_back(index);
@@ -1706,14 +1694,15 @@ ShardStatusCohort MakeShardStatusCohort(
     if (candidate.entry.metadata.type != vfs::FileType::kRegular) {
       continue;
     }
-    const std::optional<shard::Match> decoded = shard_matcher.Decode(candidate.entry.name);
+    const std::optional<shard::Match> decoded = shard_matcher.Decode(candidate.entry.Name());
     if (!decoded.has_value() || !scheme_allowed(decoded->scheme)) {
       continue;
     }
-    CandidateIndexes& visits = cohort.by_name[candidate.entry.name];
+    const std::string_view name = candidate.entry.Name();
+    CandidateIndexes& visits = cohort.by_name[name];
     if (visits.empty()) {
       cohort.files.push_back({
-          .name = candidate.entry.name,
+          .name = name,
           .size = candidate.entry.metadata.size,
           .mode = candidate.entry.metadata.mode,
           .mtime = absl::ToUnixNanos(candidate.entry.metadata.mtime),
@@ -6061,7 +6050,7 @@ RunResult RunFindCore(
         parallel_expression, options.workers, full_metadata || rank_by_score, std::move(content_output),
         executions->Parallel());
   }
-  std::vector<CollectedEntry> pending_matches;
+  std::vector<OwnedVisit> pending_matches;
   // Decision-only batches retain no file bytes or rendered line records. Give them more work
   // between coordinator barriers; keep content-output batches smaller because a line is unbounded.
   const std::size_t match_batch_size = rg_output || match_output ? 256 : 1'024;
@@ -6180,7 +6169,7 @@ RunResult RunFindCore(
           return WalkAction::kContinue;
         }
         if (parallel_entry) {
-          pending_matches.push_back(OwnVisit(visit));
+          pending_matches.emplace_back(visit);
           if (pending_matches.size() >= match_batch_size) {
             flush_matches();
           }
@@ -6290,7 +6279,7 @@ RunResult RunFindCore(
         }
         if (evaluated.deferred) {
           deferred_candidates.push_back({
-              .entry = OwnVisit(visit),
+              .entry = OwnedVisit(visit),
               .captures = std::move(captures),
               .outputs = std::move(outputs),
               .memo = std::move(evaluation_memo),
