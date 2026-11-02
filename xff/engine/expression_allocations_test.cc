@@ -22,9 +22,11 @@
 #include "gtest/gtest.h"
 #include "mbo/status/status_macros.h"
 #include "mbo/testing/status.h"
+#include "xff/engine/collect.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/expression_execution.h"
 #include "xff/engine/expression_qualification.h"
+#include "xff/engine/owned_visit.h"
 #include "xff/engine/parallel_compare.h"
 #include "xff/engine/walk.h"
 #include "xff/fuzzy/fuzzy.h"
@@ -325,6 +327,58 @@ TEST_F(AllocationTest, RecordCoordinatorDirectoryTaskAllocationTraffic) {
   }
   // Hooks accept only the coordinator: worker-side listing/stat allocations are excluded.
   // This diagnostic reports coordinator traffic; sanitizer timing is never performance evidence.
+}
+
+TEST_F(AllocationTest, PackedVisitTextAvoidsIndependentLongStringAllocations) {
+  const vfs::Metadata metadata{.type = vfs::FileType::kRegular};
+  for (const std::size_t length : {1, 64, 1'024}) {
+    const std::string root(length, 'r');
+    const std::string name(length, 'n');
+    std::string path = root;
+    path += '/';
+    path += name;
+    for (const bool overlap : {true, false}) {
+      const Visit visit{
+          .path = overlap ? std::string_view(path) : std::string_view("independent"),
+          .name = name,
+          .root = root,
+          .metadata = metadata,
+      };
+      const auto separate = MeasureAllocations([&] {
+        std::vector<CollectedEntry> entries;
+        entries.reserve(1'000);
+        for (std::size_t index = 0; index < 1'000; ++index) {
+          entries.push_back({
+              .path = std::string(visit.path),
+              .name = std::string(visit.name),
+              .root = std::string(visit.root),
+              .metadata = metadata,
+          });
+        }
+        return entries;
+      });
+      const auto packed = MeasureAllocations([&] {
+        std::vector<OwnedVisit> entries;
+        entries.reserve(1'000);
+        for (std::size_t index = 0; index < 1'000; ++index) {
+          entries.emplace_back(visit);
+        }
+        return entries;
+      });
+      EXPECT_THAT(separate.value, SizeIs(1'000));
+      EXPECT_THAT(packed.value, SizeIs(1'000));
+      EXPECT_THAT(packed.value.back().LogicalTextBytes(), Eq(visit.path.size() + name.size() + root.size()));
+      if (length >= 64) {
+        EXPECT_THAT(separate.counts.allocations, Gt(packed.counts.allocations));
+      } else {
+        EXPECT_THAT(separate.counts.allocations, Eq(packed.counts.allocations));
+      }
+      const std::string phase = absl::StrCat(length, overlap ? "_overlap" : "_fallback");
+      RecordCounts(phase + "_separate", separate.counts);
+      RecordCounts(phase + "_packed", packed.counts);
+    }
+  }
+  // Isolated coordinator allocation counts only. Do not use sanitizer duration as timing evidence.
 }
 
 TEST_F(AllocationTest, ReusedFuzzyWorkspaceAvoidsHotScoreAllocations) {

@@ -1,0 +1,56 @@
+// SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+// SPDX-License-Identifier: Apache-2.0
+
+#ifndef XFF_ENGINE_OWNED_VISIT_H_
+#define XFF_ENGINE_OWNED_VISIT_H_
+
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <string_view>
+
+#include "mbo/types/optional_ref.h"
+#include "xff/engine/walk.h"
+#include "xff/vfs/filesystem.h"
+
+namespace xff::engine {
+
+// An independent snapshot of opaque path/name/root bytes and entry observations. Text shares
+// one owned allocation where the original values overlap, without encoding/path normalization.
+// Offsets, rather than stored views, survive short-string moves and vector relocation.
+struct OwnedVisit {
+  OwnedVisit() = default;
+  explicit OwnedVisit(const Visit& visit);
+  OwnedVisit(const OwnedVisit&) = default;
+  OwnedVisit(OwnedVisit&& other) noexcept;
+  OwnedVisit& operator=(const OwnedVisit&) = delete;
+  OwnedVisit& operator=(OwnedVisit&&) = delete;
+
+  int depth = 0;
+  vfs::Metadata metadata;
+  mbo::types::OptionalRef<const vfs::FileSystem> fs;
+  std::shared_ptr<const vfs::FileSystem> fs_owner;
+  std::size_t root_index = 0;
+
+  std::string_view Path() const;
+  std::string_view Name() const;
+  std::string_view Root() const;
+  // Logical lengths remain unchanged even when their physical byte ranges overlap.
+  std::size_t LogicalTextBytes() const;
+  Visit AsVisit() const;
+
+ private:
+  struct Slice {
+    std::size_t offset = 0;
+    std::size_t size = 0;
+  };
+
+  std::string bytes_;
+  std::size_t path_size_ = 0;
+  Slice name_;
+  Slice root_;
+};
+
+}  // namespace xff::engine
+
+#endif  // XFF_ENGINE_OWNED_VISIT_H_

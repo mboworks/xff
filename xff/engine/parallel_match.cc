@@ -61,7 +61,7 @@ bool ParallelMatch::Finished() const {
   return remaining_ == 0;
 }
 
-const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEntry> entries) {
+const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<OwnedVisit> entries) {
   const absl::MutexLock lock(mutex_);
   entries_ = std::move(entries);
   results_.clear();

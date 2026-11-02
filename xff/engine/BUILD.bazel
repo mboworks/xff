@@ -141,6 +141,31 @@ cc_test(
 )
 
 cc_library(
+    name = "owned_visit_cc",
+    srcs = ["owned_visit.cc"],
+    hdrs = ["owned_visit.h"],
+    deps = [
+        ":walk_cc",
+        "//xff/vfs:vfs_cc",
+        "@mboworks_mbo//mbo/types:optional_ref_cc",
+    ],
+)
+
+cc_test(
+    name = "owned_visit_test",
+    size = "small",
+    srcs = ["owned_visit_test.cc"],
+    deps = [
+        ":owned_visit_cc",
+        ":walk_cc",
+        "//xff/vfs:local_fs_cc",
+        "//xff/vfs:vfs_cc",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+    ],
+)
+
+cc_library(
     name = "collect_cc",
     srcs = ["collect.cc"],
     hdrs = ["collect.h"],
@@ -344,9 +369,9 @@ cc_library(
     srcs = ["parallel_match.cc"],
     hdrs = ["parallel_match.h"],
     deps = [
-        ":collect_cc",
         ":evaluate_cc",
         ":expression_execution_cc",
+        ":owned_visit_cc",
         "//xff/fuzzy:fuzzy_cc",
         "//xff/parser:parser_cc",
         "//xff/registry:registry_cc",
@@ -365,11 +390,13 @@ cc_test(
     deps = [
         ":evaluate_cc",
         ":expression_execution_cc",
+        ":owned_visit_cc",
         ":parallel_match_cc",
         "//xff/matching/regex:regex_cc",
         "//xff/parser:parser_cc",
         "//xff/vfs:local_fs_cc",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )
@@ -387,6 +414,7 @@ cc_library(
         ":expression_execution_cc",
         ":extract_cc",
         ":mount_cc",
+        ":owned_visit_cc",
         ":parallel_compare_cc",
         ":parallel_match_cc",
         ":walk_cc",
@@ -660,8 +688,10 @@ cc_test(
     size = "small",
     srcs = ["rg_test.cc"],
     deps = [
+        ":owned_visit_cc",
         ":parallel_match_cc",
         ":run_cc",
+        ":walk_cc",
         "//xff/parser:parser_cc",
         "//xff/vfs:local_fs_cc",
         "//xff/vfs:vfs_cc",
@@ -954,9 +984,11 @@ cc_test(
     size = "small",
     srcs = ["expression_allocations_test.cc"],
     deps = [
+        ":collect_cc",
         ":evaluate_cc",
         ":expression_execution_cc",
         ":expression_qualification_cc",
+        ":owned_visit_cc",
         ":parallel_compare_cc",
         ":walk_cc",
         "//xff/fuzzy:fuzzy_cc",

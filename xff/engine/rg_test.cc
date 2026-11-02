@@ -33,6 +33,7 @@
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
+#include "xff/engine/owned_visit.h"
 #include "xff/engine/parallel_match.h"
 #include "xff/engine/run.h"
 #include "xff/parser/parser.h"
@@ -442,14 +443,15 @@ TEST_F(RgEngineTest, MatcherPoolGrowsForLaterBatchesAndRunsShortTailsInline) {
     fs.files.emplace("tree/" + std::to_string(index), "hit\n");
   }
   const auto entries = [&](std::size_t count) {
-    std::vector<CollectedEntry> result;
+    std::vector<OwnedVisit> result;
     result.reserve(count);
     for (std::size_t index = 0; index < count; ++index) {
-      result.push_back({
-          .path = "tree/" + std::to_string(index),
-          .metadata = {.type = vfs::FileType::kRegular},
-          .fs = fs,
-      });
+      result.emplace_back(
+          Visit{
+              .path = "tree/" + std::to_string(index),
+              .metadata = {.type = vfs::FileType::kRegular},
+              .fs = fs,
+          });
     }
     return result;
   };
