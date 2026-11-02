@@ -3070,3 +3070,25 @@ Small native costs remain (up to +1.33% Linux and +1.64% macOS); kernel countere
 checks, source/binary identities and separate untimed accounting. Both source variants pass
 collection and full-engine release tests on both platforms. This is qualified local evidence;
 a subsequent published PR head still needs its normal hooks and CI.
+
+## Native glob preparation and filesystem-native case cost
+
+O02 now has [separate owned-pattern and prepared-glob measurements](benchmarks/native-glob-preparation-20261101.md).
+Reuse the AST-owned pattern string for libc calls. In the existing operand pool, prepare simple
+ASCII literal/prefix/suffix/contains/interior-star patterns once. Byte-slice matching is restricted
+to case-sensitive ASCII input; folded case, multibyte/invalid bytes, escapes, classes and complex
+patterns retain libc behavior. No new mutable shared state or wrapper hierarchy is needed.
+
+The one-predicate/1,000-entry in-memory kernel improves about 42% on Linux and 74% on macOS.
+Whole commands improve much less: at 100,000 files, Linux default suffix matching improves
+1.3-1.8%; macOS `--case=sensitive --exact` improves 5.1-6.8%. Default APFS folding keeps the
+native fallback, so those runs are controls rather than claimed case-sensitive gains. Preparation
+is slower, operand storage is added once, and slower native cases remain in the report.
+
+Keep the documented difference between `--case=sensitive` and `--exact`: the former alone does
+not disable filesystem-native folding. Existing `RunFindCore` uses filesystem-native probing as
+a reason for full entry metadata and serial matching. O11/O20 should examine carrying a validated
+per-directory filesystem case decision instead of forcing full regular-file metadata. Test roots,
+mount boundaries, followed links and virtual filesystems before changing that policy; cross-series
+exact/default timings conflate metadata, matching admission and case behavior and cannot isolate
+one of them.

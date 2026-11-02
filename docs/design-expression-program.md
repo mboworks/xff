@@ -568,7 +568,7 @@ ordinary dispatcher; parser/traversal-only primaries preserve their existing tru
 | :------------------------------------------------------------- | :---------------------------------------------- | :----------------------------------------------------------------------------- |
 | `-true`, `-false`                                              | None                                            | Whole-command effects of surrounding syntax still apply                        |
 | `-type`, `-xtype`                                              | Type-list decoding                              | Entry type; `-xtype` may observe the link target and fail                      |
-| `-name`, `-iname`, path/wholename variants                     | Pattern bytes; case selection                   | Entry name/path and filesystem case policy                                     |
+| `-name`, `-iname`, path/wholename variants                     | ASCII simple-glob shape; case selection         | Entry name/path and filesystem case policy                                     |
 | `-lname`, `-ilname`                                            | Link glob and case policy                       | VFS link read and failure                                                      |
 | `-regex`, `-iregex`, `-rxc`, `-irxc`                           | Matcher already compiled                        | Entry bytes, optional captures, backend worker scratch                         |
 | `-content`, `-icontent`, `-text`, `-binary`, `-eof*`           | Literal/flavor interpretation                   | Content reads, cache invalidation, unsupported/error outcomes                  |

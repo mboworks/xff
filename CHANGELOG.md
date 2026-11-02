@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Prepare simple case-sensitive name/path globs once and avoid copying owned native glob patterns; preserve native matching for complex and case-folded patterns.
+
 - Share collection basename and root text with the owned path where possible, reducing retained memory without changing buffer limits.
 
 - Use lazy fixed 1 MiB blocks for retained collection text to reduce allocation overhead.

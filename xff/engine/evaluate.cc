@@ -115,8 +115,8 @@ mbo::types::OptionalRef<const T> AsConstOptionalRef(const mbo::types::OptionalRe
 // agree and the platform choice lives in one place.
 constexpr std::string_view kOsLineEnding = "\n";
 
-bool Fnmatch(std::string_view pattern, std::string_view text, int flags) {
-  return ::fnmatch(std::string(pattern).c_str(), std::string(text).c_str(), flags) == 0;
+bool Fnmatch(const std::string& pattern, std::string_view text, int flags) {
+  return ::fnmatch(pattern.c_str(), std::string(text).c_str(), flags) == 0;
 }
 
 // The (letter, type) pairs find's -type/-xtype letters denote, alphabetical by
@@ -2935,6 +2935,16 @@ struct MimePattern {
   std::vector<char> bytes;
 };
 
+enum class GlobKind : std::uint8_t { kFallback, kLiteral, kPrefix, kSuffix, kContains, kPrefixSuffix };
+
+struct GlobPattern {
+  // The immutable AST owns the pattern. Store its C-string length and star position, with
+  // no duplicated pointer and no artificial size restriction on an in-process argument.
+  std::size_t length = 0;
+  std::size_t star = 0;
+  GlobKind kind = GlobKind::kFallback;
+};
+
 struct FieldTemplate {
   // Keep the compiled program out of the hot operand variant. No shared ownership or
   // reference counting: workers borrow this immutable program through the owning plan.
@@ -2953,9 +2963,97 @@ using PreparedOperand = std::variant<
     CalendarAge,
     FirstLimit,
     MimePattern,
+    GlobPattern,
     FieldTemplate>;
 using PreparedEvalFn = bool (*)(const parser::Expr&, const PreparedOperand&, MatcherSlots, EvalContext&);
 using PrepareOperandFn = PreparedOperand (*)(std::string_view);
+
+PreparedOperand PrepareGlobOperand(std::string_view argument) {
+  // Match the original C-string boundary, including callers that supply embedded NUL bytes.
+  argument = argument.substr(0, argument.find('\0'));
+  GlobPattern result{.length = argument.size()};
+  for (const unsigned char byte : argument) {
+    if (byte >= 128 || byte == '\\' || byte == '?' || byte == '[') {
+      return result;
+    }
+  }
+  const auto first = argument.find('*');
+  if (first == std::string_view::npos) {
+    result.kind = GlobKind::kLiteral;
+    return result;
+  }
+  result.star = first;
+  const auto second = argument.find('*', first + 1);
+  if (second == std::string_view::npos) {
+    result.kind = first == 0                     ? GlobKind::kSuffix
+                  : first + 1 == argument.size() ? GlobKind::kPrefix
+                                                 : GlobKind::kPrefixSuffix;
+  } else if (first == 0 && second + 1 == argument.size()) {
+    result.kind = GlobKind::kContains;
+  }
+  return result;
+}
+
+bool MatchesPreparedGlob(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    std::string_view text,
+    int flags) {
+  if (expression.args.empty()) {
+    return false;
+  }
+  if (flags != 0 || !std::holds_alternative<GlobPattern>(operand)) {
+    return Fnmatch(expression.args.front(), text, flags);
+  }
+  const auto& pattern = std::get<GlobPattern>(operand);
+  if (pattern.kind != GlobKind::kFallback) {
+    // Locale-sensitive/multibyte behavior remains with libc. ASCII and zero flags use byte slices.
+    for (std::size_t index = 0; index < text.size(); ++index) {
+      const auto byte = static_cast<unsigned char>(text[index]);
+      if (byte == 0) {
+        text = text.substr(0, index);
+        break;
+      }
+      if (byte >= 128) {
+        return Fnmatch(expression.args.front(), text, flags);
+      }
+    }
+  }
+  const std::string_view literal(expression.args.front().data(), pattern.length);
+  switch (pattern.kind) {
+    case GlobKind::kLiteral: return text == literal;
+    case GlobKind::kPrefix: return text.starts_with(literal.substr(0, pattern.star));
+    case GlobKind::kSuffix: return text.ends_with(literal.substr(1));
+    case GlobKind::kContains: return text.contains(literal.substr(1, literal.size() - 2));
+    case GlobKind::kPrefixSuffix:
+      return text.size() >= literal.size() - 1 && text.starts_with(literal.substr(0, pattern.star))
+             && text.ends_with(literal.substr(pattern.star + 1));
+    case GlobKind::kFallback: return Fnmatch(expression.args.front(), text, flags);
+  }
+  std::unreachable();  // LCOV_EXCL_LINE: every internally prepared glob kind is handled above.
+}
+
+bool EvalPreparedName(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    MatcherSlots,
+    // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+    EvalContext& context) {
+  const int flags =
+      (expression.descriptor->fold_case || context.fold_name_case || expression.case_fold) ? FNM_CASEFOLD : 0;
+  return MatchesPreparedGlob(expression, operand, context.visit.name, flags);
+}
+
+bool EvalPreparedPath(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    MatcherSlots,
+    // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+    EvalContext& context) {
+  const int flags =
+      (expression.descriptor->fold_case || context.fold_name_case || expression.case_fold) ? FNM_CASEFOLD : 0;
+  return MatchesPreparedGlob(expression, operand, context.visit.path, flags);
+}
 
 PreparedOperand PrepareTypeOperand(std::string_view argument) {
   TypeSpec result;
@@ -3256,12 +3354,12 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     },
     DispatchPair{"-icontent", MakeEvalEntry<&EvalContent>()},
     DispatchPair{"-ilname", MakeEvalEntry<&EvalLname>()},
-    DispatchPair{"-iname", MakeEvalEntry<&EvalName>()},
+    DispatchPair{"-iname", MakeEvalEntry<&EvalName>(&PrepareGlobOperand, &EvalPreparedName)},
     DispatchPair{"-inum", MakeEvalEntry<&EvalInum>(&PrepareNumericOperand, &EvalPreparedNumeric<&vfs::Metadata::ino>)},
-    DispatchPair{"-ipath", MakeEvalEntry<&EvalPath>()},
+    DispatchPair{"-ipath", MakeEvalEntry<&EvalPath>(&PrepareGlobOperand, &EvalPreparedPath)},
     DispatchPair{"-iregex", MakeEvalEntry<&EvalRegex>(nullptr, &EvalPreparedRegex, true)},
     DispatchPair{"-irxc", MakeEvalEntry<&EvalRxc>(nullptr, &EvalPreparedRxc, true)},
-    DispatchPair{"-iwholename", MakeEvalEntry<&EvalPath>()},
+    DispatchPair{"-iwholename", MakeEvalEntry<&EvalPath>(&PrepareGlobOperand, &EvalPreparedPath)},
     DispatchPair{"-lang", MakeEvalEntry<&EvalLang>()},
     DispatchPair{
         "-links", MakeEvalEntry<&EvalLinks>(&PrepareNumericOperand, &EvalPreparedNumeric<&vfs::Metadata::nlink>)},
@@ -3275,7 +3373,7 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-fuzzypath", MakeEvalEntry<&EvalFuzzyPath>()},
     DispatchPair{"-ifuzzy", MakeEvalEntry<&EvalFuzzy>()},
     DispatchPair{"-ifuzzypath", MakeEvalEntry<&EvalFuzzyPath>()},
-    DispatchPair{"-name", MakeEvalEntry<&EvalName>()},
+    DispatchPair{"-name", MakeEvalEntry<&EvalName>(&PrepareGlobOperand, &EvalPreparedName)},
     DispatchPair{"-newer", MakeEvalEntry<&EvalNewer>()},
     DispatchPair{"-newerBB", MakeEvalEntry<&EvalNewerXY>()},  // birthtime -newerXY combos (BSD-compat)
     DispatchPair{"-newerBa", MakeEvalEntry<&EvalNewerXY>()},
@@ -3301,7 +3399,7 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-nouser", MakeEvalEntry<&EvalNouser>()},
     DispatchPair{"-ok", MakeEvalEntry<&EvalOk>()},
     DispatchPair{"-okdir", MakeEvalEntry<&EvalOkdir>()},
-    DispatchPair{"-path", MakeEvalEntry<&EvalPath>()},
+    DispatchPair{"-path", MakeEvalEntry<&EvalPath>(&PrepareGlobOperand, &EvalPreparedPath)},
     DispatchPair{"-perm", MakeEvalEntry<&EvalPerm>(&PreparePermissionOperand, &EvalPreparedPermission)},
     DispatchPair{"-print", MakeEvalEntry<&EvalPrint>()},
     DispatchPair{"-print0", MakeEvalEntry<&EvalPrint0>()},
@@ -3330,7 +3428,7 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-uid", MakeEvalEntry<&EvalUid>(&PrepareNumericOperand, &EvalPreparedNumeric<&vfs::Metadata::uid>)},
     DispatchPair{"-used", MakeEvalEntry<&EvalUsed>(&PrepareSignedNumericOperand, &EvalPreparedUsed)},
     DispatchPair{"-user", MakeEvalEntry<&EvalUser>()},
-    DispatchPair{"-wholename", MakeEvalEntry<&EvalPath>()},
+    DispatchPair{"-wholename", MakeEvalEntry<&EvalPath>(&PrepareGlobOperand, &EvalPreparedPath)},
     DispatchPair{"-writable", MakeEvalEntry<&EvalWritable>()},
     DispatchPair{"-xtype", MakeEvalEntry<&EvalXtype>(&PrepareTypeOperand, &EvalPreparedXtype)});
 
