@@ -19,14 +19,18 @@
 #include "absl/time/time.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/status/status_macros.h"
 #include "mbo/testing/status.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/expression_execution.h"
 #include "xff/engine/expression_qualification.h"
+#include "xff/engine/parallel_compare.h"
 #include "xff/engine/walk.h"
 #include "xff/fuzzy/fuzzy.h"
 #include "xff/parser/parser.h"
 #include "xff/vfs/filesystem.h"
+#include "xff/vfs/local_fs.h"
+#include "xff/vfs/mutations.h"
 
 #if defined(ABSL_HAVE_ADDRESS_SANITIZER)
 # include <sanitizer/allocator_interface.h>
@@ -35,7 +39,9 @@
 namespace xff::engine {
 namespace {
 
+using ::mbo::testing::IsOkAndHolds;
 using ::testing::Eq;
+using ::testing::Field;
 using ::testing::Ge;
 using ::testing::Gt;
 using ::testing::IsFalse;
@@ -190,6 +196,42 @@ TEST_F(AllocationTest, CounterObservesAllocationAndFreeWithoutCountingAssertions
   });
   EXPECT_THAT(released.counts.allocations, Eq(0));
   EXPECT_THAT(released.counts.frees, Ge(1));
+}
+
+TEST_F(AllocationTest, NativeComparisonAllocationsDoNotGrowWithChunkCount) {
+  const vfs::LocalFs fs;
+  const auto measure =
+      [&](std::size_t size) -> absl::StatusOr<AllocationMeasurement<absl::StatusOr<ComparisonResult>>> {
+    MBO_ASSIGN_OR_RETURN(auto left_file, vfs::TemporaryOutput::Create(::testing::TempDir() + "compare-left", {}));
+    MBO_ASSIGN_OR_RETURN(auto right_file, vfs::TemporaryOutput::Create(::testing::TempDir() + "compare-right", {}));
+    const std::string bytes(size, 'a');
+    MBO_RETURN_IF_ERROR(left_file->Write(bytes));
+    MBO_RETURN_IF_ERROR(right_file->Write(bytes));
+    const TreeCompareEntry left{
+        .path = left_file->Path(),
+        .metadata = {.type = vfs::FileType::kRegular, .size = size},
+        .fs = fs,
+    };
+    const TreeCompareEntry right{
+        .path = right_file->Path(),
+        .metadata = left.metadata,
+        .fs = fs,
+    };
+    ParallelCompare compare(1);
+    const std::vector<ComparisonPair> pairs{{.left = left, .right = right}};
+    // Warm up one pair outside recording; assertions and fixture writes are never counted.
+    MBO_RETURN_IF_ERROR(compare.Compare(pairs).front().status());
+    return MeasureAllocations([&] { return compare.Compare(pairs).front(); });
+  };
+  MBO_ASSERT_OK_AND_ASSIGN(const auto short_read, measure(ParallelCompare::kRetainedFileBytes + 1));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto long_read, measure(16 * ParallelCompare::kRetainedFileBytes));
+  EXPECT_THAT(short_read.value, IsOkAndHolds(Field(&ComparisonResult::same, IsTrue())));
+  EXPECT_THAT(long_read.value, IsOkAndHolds(Field(&ComparisonResult::same, IsTrue())));
+  EXPECT_THAT(short_read.counts.allocations, Ge(2));
+  EXPECT_THAT(long_read.counts.allocations, Eq(short_read.counts.allocations));
+  EXPECT_THAT(long_read.counts.requested_bytes, Eq(short_read.counts.requested_bytes));
+  RecordCounts("two_chunks", short_read.counts);
+  RecordCounts("sixteen_chunks", long_read.counts);
 }
 
 TEST_F(AllocationTest, ReusedFuzzyWorkspaceAvoidsHotScoreAllocations) {

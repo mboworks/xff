@@ -5,8 +5,10 @@
 
 #include <limits>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/status/status.h"
 #include "gmock/gmock.h"
@@ -24,9 +26,53 @@ using ::mbo::testing::StatusIs;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::IsEmpty;
+using ::testing::IsFalse;
+using ::testing::IsTrue;
 using ::testing::Optional;
 
 struct ReadSourceTest : ::testing::Test {};
+
+TEST_F(ReadSourceTest, UnsupportedReadIntoNeitherConsumesNorCopiesMemorySource) {
+  MBO_ASSERT_OK_AND_ASSIGN(auto stream, MemoryReadSource("abcdef")->Open());
+  EXPECT_THAT(stream->SupportsReadInto(), IsFalse());
+  std::string buffer = "unchanged";
+  EXPECT_THAT(stream->ReadInto(std::span<char>(buffer)), StatusIs(absl::StatusCode::kUnimplemented));
+  EXPECT_THAT(buffer, EqualsText("unchanged"));
+  EXPECT_THAT(stream->Read(6), IsOkAndHolds(EqualsText("abcdef")));
+}
+
+TEST_F(ReadSourceTest, HostReadIntoCapsChunksPreservesTailAndSharesCursorPosition) {
+  MBO_ASSERT_OK_AND_ASSIGN(auto directory, TemporaryDirectory::Create(::testing::TempDir() + "read-into", {}));
+  MBO_ASSERT_OK_AND_ASSIGN(auto output, TemporaryOutput::Create(directory->Path() + "/file", {}));
+  std::string bytes((2UZ * 64 * 1'024) + 17, 'a');
+  for (std::size_t at = 0; at < bytes.size(); ++at) {
+    bytes.at(at) = static_cast<char>('a' + (at % 26));
+  }
+  ASSERT_THAT(output->Write(bytes), IsOk());
+  const auto source = HostReadSource(output->Path());
+  MBO_ASSERT_OK_AND_ASSIGN(auto stream, source->Open());
+  EXPECT_THAT(stream->SupportsReadInto(), IsTrue());
+  std::vector<char> storage(70'000, '!');
+  const std::span buffer(storage);
+  EXPECT_THAT(stream->ReadInto(buffer.first(0)), IsOkAndHolds(Eq(0)));
+  EXPECT_THAT(stream->ReadInto(buffer), IsOkAndHolds(Eq(64UZ * 1'024)));
+  EXPECT_THAT(std::string_view(buffer.data(), 64UZ * 1'024), EqualsText(bytes.substr(0, 64UZ * 1'024)));
+  const auto unused = buffer.subspan(64UZ * 1'024);
+  EXPECT_THAT(
+      std::string_view(unused.data(), unused.size()), EqualsText(std::string(buffer.size() - (64UZ * 1'024), '!')));
+  EXPECT_THAT(stream->Read(3), IsOkAndHolds(EqualsText(bytes.substr(64UZ * 1'024, 3))));
+  const auto remaining = bytes.substr((64UZ * 1'024) + 3);
+  EXPECT_THAT(stream->ReadInto(buffer), IsOkAndHolds(Eq(64UZ * 1'024)));
+  EXPECT_THAT(std::string_view(buffer.data(), 64UZ * 1'024), EqualsText(remaining.substr(0, 64UZ * 1'024)));
+  EXPECT_THAT(stream->ReadInto(buffer), IsOkAndHolds(Eq(14)));
+  EXPECT_THAT(std::string_view(buffer.data(), 14), EqualsText(bytes.substr(bytes.size() - 14)));
+  EXPECT_THAT(stream->ReadInto(buffer), IsOkAndHolds(Eq(0)));
+  MBO_ASSERT_OK_AND_ASSIGN(auto partial, source->OpenAt(bytes.size() - 3));
+  EXPECT_THAT(partial->ReadInto(buffer), IsOkAndHolds(Eq(3)));
+  EXPECT_THAT(std::string_view(buffer.data(), 3), EqualsText(bytes.substr(bytes.size() - 3)));
+  MBO_ASSERT_OK_AND_ASSIGN(auto unreadable, HostReadSource(directory->Path())->Open());
+  EXPECT_THAT(unreadable->ReadInto(buffer), StatusIs(absl::StatusCode::kDataLoss));
+}
 
 TEST_F(ReadSourceTest, HostIdentityIsAbsentForVirtualSources) {
   EXPECT_THAT(MemoryReadSource("content")->HostPath(), Eq(std::nullopt));

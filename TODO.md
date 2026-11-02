@@ -389,8 +389,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       [Select native range reads only](docs/benchmarks/host-range-overwrite-20261102.md); preserve
       VFS and memory-budget boundaries. Cursor zeroing stays unchanged after a repeated Linux
       ten-worker early-difference regression; revisit it under O07 buffer ownership/reuse.
-- [ ] O07-O12: Profile and qualify caller-owned stream buffers, typed reusable directory task slots,
-      batch ownership, bounded result reuse, active-worker dispatch and direct production evaluation.
+- [x] O07: Qualify cursor-owned native buffers, preserving budget lifetimes and legacy streams.
+      [Native/fallback evidence](docs/benchmarks/cursor-owned-read-buffers-20261102.md) selects one
+      initial clear plus reuse; reject uninitialized Linux regressions and the first shared fallback loop.
+- [ ] O08-O12: Profile and qualify typed reusable directory task slots, batch ownership,
+      bounded result reuse, active-worker dispatch and direct production evaluation.
       Preserve existing stage policy while isolating task storage and lifecycle costs.
 - [ ] O13-O22: Reconcile remaining derived-value handoff, static catalogs, invariant operands,
       paired streaming compare, reusable stage pools, byte-bounded overlap, archive indexing/admission,
@@ -729,6 +732,13 @@ The safety model and directory-scoped permissions are tracked in
 [the implementation record](docs/history.md#directory-scoped-safety-controls).
 
 ## Active engineering priorities
+
+- [ ] Make local clang-tidy header scope resolve Bazel `include_prefix` aliases. The physical
+      `xff_extras_api/read_source.h` is included as `xff/vfs/read_source.h`, which the current
+      workspace-only include graph silently misses. Add build-metadata-derived mappings and
+      regression tests, without a second hand-maintained alias catalog. O07 verification explicitly
+      resolves those BUILD declarations and lints the affected translation units; keep that evidence
+      with its report.
 
 1. **Fuzzing.** The parser-through-evaluator, matcher, template, PHAR, and ASAR targets now have
    committed seed corpora, semantic invariants, ordinary-CI replay, and automatically discovered
