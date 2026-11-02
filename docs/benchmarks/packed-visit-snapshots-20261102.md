@@ -118,6 +118,11 @@ Executable sizes below are the original build outputs before release stripping/c
 - linux: 12,295,424 -> 12,296,208 bytes (+784).
 - macos: 4,051,984 -> 4,051,440 bytes (-544).
 
+Final direct-construction build outputs are a separate population:
+
+- linux: 12,295,424 -> 12,294,864 bytes (-560).
+- macos: 4,052,000 -> 4,051,440 bytes (-560).
+
 ## Validation and limits
 
 Both complete core/extension release suites pass 306/306. Linux uses the required-FUSE configuration. Focused ASan includes ownership/move tests, repeated batches, actual rg workers, deferred shard processing and the isolated allocation diagnostic. Linux TSan passes ownership, matcher and rg worker suites. Scoped clang-tidy covers the modified sources and dependent translation units; normal commit/push hooks and current-head CI remain required before merge.
@@ -128,4 +133,4 @@ The main benefit is reduced allocation traffic and snapshot bytes, with modest e
 
 ## Lossless evidence
 
-[packed-visit-snapshots-20261102.json.gz](packed-visit-snapshots-20261102.json.gz): 1,676,050 bytes; SHA-256 `c94a7ff384386e4fbbe0cc329b10096d9701a56978ca0d16ec3e7636093e571d`. Native fixture dictionaries are restored from `fixtures[report.fixtures_ref]`. Initial, duplicate-baseline, constructor, kernel and allocation populations retain their distinct provenance.
+[packed-visit-snapshots-20261102.json.gz](packed-visit-snapshots-20261102.json.gz): 1,676,099 bytes; SHA-256 `c841d5d9d961838f776a2b88c663a6d44270b47b273b5db8c455a1943b6764ec`. Native fixture dictionaries are restored from `fixtures[report.fixtures_ref]`. Initial, duplicate-baseline, constructor, kernel and allocation populations retain their distinct provenance.
