@@ -2822,10 +2822,10 @@ only on its first nonempty text copy. Growth-policy controls remain separate evi
 
 ## Reconciled cross-platform optimization audit after #1040
 
-Baseline: merged main `16e70cb97de93c7ab4ae8c9e990e1842d50cc528`. This is a code and evidence audit,
-not a speedup claim for every candidate. Only the collection text-sharing experiment below has new
-Linux/macOS timing evidence. Preserve the distinction between release timing, allocation accounting,
-in-memory kernels, and correctness tests.
+Initial audit baseline: merged main `16e70cb97de93c7ab4ae8c9e990e1842d50cc528`. The inventory is
+not a speedup claim for every candidate. The decision sections below record subsequent independent
+Linux/macOS qualification, including rejected candidates. Preserve the distinction between release
+timing, allocation accounting, in-memory kernels, and correctness tests.
 
 ### Existing work and decisions
 
@@ -3417,3 +3417,40 @@ are retained with compiler/link-action provenance. No toolchain/LTO change is pa
 
 This closes the hash-primary subset of O15. Field-hash qualifier preparation and digest/output-copy
 work remain associated with O22, and broader EP03/EP07 template-family qualification stays open.
+
+### O16a: aggregate ordinary comparison side totals
+
+Default `left-total`/`right-total` summaries previously retained per-path summary vectors and maps,
+then reconstructed side totals through a second category map. Ordinary `overall`, `type` and `ext`
+summary sinks can aggregate directly when no category scope is requested and the expression is absent
+or passes the existing independent-filter audit. Category/mixed scopes, complex summaries and
+expressions with actions, traversal controls, collection or verification keep the existing path.
+No worker, lock, clock, flag or observation moves.
+
+[The qualification report](benchmarks/aggregate-comparison-totals-20261102.md) separates native
+commands, in-memory whole-engine timing, memory, identical-baseline controls and footprint. This is
+retention of duplicate summary storage only: both complete tree maps remain, and first-output latency
+is unchanged. O16b, O17/O18 and the broader JC plans remain open.
+
+### O16b/O17/O18: completed-frontier integration remains open
+
+The current walker exposes visits, not completed-directory events or a resumable cursor. Absence
+from a filtered matched-entry callback cannot prove directory completion. Its directory-block and
+subtree traversal orders are not uniformly global lexicographic streams, so wrapping callbacks in
+bounded queues cannot by itself classify unmatched entries or guarantee progress.
+
+`RunTreeCompare` also completes both walks before emitting comparison records and emits none if a
+walk fails. Moving comparison ahead of later expressions can change the observed file bytes when
+those expressions have effects. A streaming implementation must explicitly retain or qualify these
+error/effect semantics, plus ignore inheritance, archive owners, depth/limits, deferred selections
+and ordering. Repeated shallow `RunFindCore` calls are unsuitable: they repeat preparation and lose
+root-relative traversal/ignore context.
+
+A preparatory interface needs coordinator-owned completed-frontier events, including positive
+completion for empty, ignored and unmatched directories, after pending matching results publish.
+Then matching frontiers can release retained entries when both sides prove that no counterpart can
+arrive later. Qualify a serial cursor first; separately measure persistent role coordination and
+byte-bounded queues. Directory jobs must remain leaf work and never wait for nested tasks on their
+own saturated pool. O08 task storage and O11 warm participation do not establish that a shared
+executor is faster. Global sorting/effects/deferred/archive cases need explicit fallback contracts
+until independently qualified.

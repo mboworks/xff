@@ -429,7 +429,14 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       Keep live direct-context defaults, expected-field observations and verification bookkeeping.
       Field-hash qualifier binding and broader template-family qualification remain under EP03/EP07
       and O22; this does not mark those wider plans complete.
-- [ ] O16-O22: Reconcile paired streaming compare, reusable stage pools, byte-bounded overlap, archive indexing/admission,
+- [x] O16a: Qualify direct aggregation of ordinary comparison side totals against native/in-memory
+      output, memory and unchanged category/action controls on Linux and macOS.
+      Keep [the narrower retention change](docs/benchmarks/aggregate-comparison-totals-20261102.md)
+      separate from actual completed-frontier streaming; both full tree maps remain.
+- [ ] O16b: Add and qualify completed-directory/frontier traversal before enabling bounded paired
+      comparison. Preserve empty/ignored completion, ordering, ignore inheritance, errors, effects,
+      archives and deferred selections; retain explicit fallbacks and avoid repeated shallow scans.
+- [ ] O17-O22: Reconcile reusable stage pools, byte-bounded overlap, archive indexing/admission,
       optional bulk metadata, similarity representations and output churn with EP/JC/P acceptance.
       Keep macrobenchmark, kernel and diagnostic contracts separate.
 

@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Aggregate ordinary comparison side totals without retaining duplicate per-path summary tables; category and effect-sensitive summaries keep their existing behavior.
+
 - Prepare explicit hash-primary algorithms and encodings once while preserving per-context defaults and conditional expected-hash templates.
 
 - Prepare file-diff normalization once per action style during a run instead of recompiling ignored-line regexes for every file pair.
