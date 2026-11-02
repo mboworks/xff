@@ -61,7 +61,8 @@
     "docs/performance-analysis.md": "docs/performance-analysis.html",
     "docs/design-expression-program.md": "docs/design-expression-program.html",
     "docs/expression-qualification-audit.md": "docs/expression-qualification-audit.html",
-    "docs/benchmarks/fuzzy-score-workspace-20261102.md": "docs/benchmarks/fuzzy-score-workspace-20261102.html"
+    "docs/benchmarks/fuzzy-score-workspace-20261102.md": "docs/benchmarks/fuzzy-score-workspace-20261102.html",
+    "docs/benchmarks/lexical-field-views-20261102.md": "docs/benchmarks/lexical-field-views-20261102.html"
   },
   "generated_html": {
     "XFF.md": {

@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Render lexical filename fields and path qualifiers from borrowed input slices instead of temporary path objects.
+
 - Cache fuzzy normalization ceilings and reuse bounded per-worker scoring rows; retain valid ranked matches after long gaps.
 
 - Prepare simple case-sensitive name/path globs once and avoid copying owned native glob patterns; preserve native matching for complex and case-folded patterns.

@@ -2918,8 +2918,8 @@ virtual layers and generic executor hierarchies need an actual lifetime or exten
 | O21 | Reuse similarity representations      | Repeated shingle generation and pairwise verification dominate large document sets  | Existing near-duplicate design             | Cache reference shingles; exact verification after indexing  |
 | O22 | Reduce output construction churn      | Numeric/cell/JSON strings, row insertion and aligned-table retention allocate       | Existing output/scope contracts            | Append into reusable row buffers; stream machine formats     |
 
-All elapsed improvements in this table except O01 are hypotheses, not measured gains. Allocation
-sites are inspected code facts; an allocation's wall-time significance still requires profiling.
+O01-O03 have qualified cross-platform reports below. Other entries remain hypotheses until their
+individual report records a decision; inspected allocation sites alone do not establish elapsed gains.
 
 ### Small changes first
 
@@ -3130,3 +3130,23 @@ Linux. These are component/whole-engine fixtures, not filesystem throughput clai
 and scoring input; bare/control cases stay near baseline. Scored kernels improve 29-54%, while
 unrelated bare kernels include 3-4% slower cases and preparation is slightly slower. Keep these
 counterexamples and all raw data in the report; the result is not a claim about every fuzzy model.
+
+## O04 borrowed lexical field components
+
+The [cross-platform field experiment](benchmarks/lexical-field-views-20261102.md) reuses
+`StringOrView` for filename, stem, final/all suffixes and core fields, their path qualifiers and
+language/MIME filename lookup. Native directory spelling remains unchanged; repeated separators
+make parent rendering observably different from a raw slice. No new cache or path wrapper is needed.
+
+Differential field and fuzz tests pass on both hosts. The six-field in-memory kernel improves
+26-60% depending on host/path length; 100,000-file native output improves about 9-11% with one
+worker on Linux and 8.5% on macOS. Linux three/ten-worker cases improve further, while macOS
+three-worker native results remain near baseline or slightly slower. Preserve small regressions,
+the unchanged directory control and all source/binary identities; do not generalize kernel gains
+into filesystem speedups. Complete release/extension suites and scoped lint remain required.
+
+O05 should also test the existing ownership boundary before changing every map declaration:
+`Template::Segment` already owns its compiled key. Passing that key to field callbacks by const
+string reference can avoid the temporary lookup string in definition/capture rendering without
+adding another map, interner or lookup layer. General heterogeneous maps remain useful where the
+caller genuinely has only a view; distinguish those callers from an avoidable view conversion.
