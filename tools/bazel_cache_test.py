@@ -85,6 +85,31 @@ class BazelCacheTest(unittest.TestCase):
             self.assertEqual(bazel_cache.trim(root, 0), (0, 0, 0))
             self.assertEqual((root / "keep").read_bytes(), b"untouched")
 
+    def test_hosted_linux_build_space_is_reclaimed_before_cache_expansion(self):
+        action = repository_file(".github/actions/bazel-cache-restore/action.yml").read_text()
+        cleanup, restore = action.split("    - id: restore", 1)
+        self.assertIn("runner.os == 'Linux' && runner.environment == 'github-hosted'", cleanup)
+        self.assertIn("sudo rm -rf -- /usr/local/lib/android", cleanup)
+        self.assertNotIn("rm -rf", restore)
+        self.assertEqual(cleanup.count('df -h -- "${GITHUB_WORKSPACE}"'), 2)
+        # The fixed unused SDK is the only deletion target; preserve repository/action
+        # caches, installed Java/Python/Node tools and any self-hosted runner state.
+        deletion = next(line.strip() for line in cleanup.splitlines() if "rm -rf" in line)
+        self.assertEqual(deletion, "sudo rm -rf -- /usr/local/lib/android")
+        for variable in ("ANDROID_HOME", "ANDROID_SDK_ROOT", "ANDROID_NDK_HOME", "ANDROID_NDK_ROOT"):
+            self.assertIn(f"'{variable}='", cleanup)
+        self.assertIn('>>"${GITHUB_ENV}"', cleanup)
+
+        command = next(line.strip() for line in cleanup.splitlines() if line.strip().startswith("printf "))
+        with tempfile.TemporaryDirectory() as directory:
+            environment = Path(directory) / "github-env"
+            subprocess.run(["bash", "-e", "-c", command],
+                           env=dict(os.environ, GITHUB_ENV=str(environment)), check=True)
+            self.assertEqual(environment.read_text().splitlines(),
+                             ["ANDROID_HOME=", "ANDROID_SDK_ROOT=", "ANDROID_NDK_HOME=", "ANDROID_NDK_ROOT="])
+
+
+
     def test_workflows_refresh_only_main_and_release_only_restores(self):
         root = repository_file("")
         workflow = (root / ".github/workflows/main.yml").read_text()
