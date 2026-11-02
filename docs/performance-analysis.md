@@ -3268,3 +3268,27 @@ the corrected representative native confirmation rotates participants without th
 published benchmark runner already uses rotation alone and is unaffected. Audit older two-variant
 qualification scripts before treating tiny historical differences as order-independent evidence.
 Allocation counters and correctness tests do not depend on participant timing order.
+
+## O10: bounded matcher result capacity reuse
+
+The selected matcher pool keeps reusable output strings in its existing exclusively claimed result
+slots. It releases oversized old buffers before starting another batch and resets text, selection
+status and absent-content state per entry. Reusable text capacities are limited to the smaller of
+64 KiB per record and 1 MiB divided by the current batch size. This is a retention policy between
+batches, not a limit on current rendered output, status-message storage or total memory.
+
+[The decision report](benchmarks/bounded-match-results-20261102.md) preserves native timing,
+case-interleaved kernels, targeted noisy controls and allocation counters on both hosts. A warmed
+64-entry output batch reduces coordinator allocations from 320 to 256 and requested bytes by about
+25%. macOS/Linux elapsed gains are modest and not universal; the report retains slower cells.
+
+Reject the direct-write/reset-only control as a separate optimization because it does not save
+output allocations. Reject comparison-vector retention: VFS range reads still return fresh owned
+strings, and retaining old result slots can prolong old small patch payloads without reusing input
+buffers. Its unrelated matcher timing changes are not evidence of saved matcher allocations; their
+cause is not established. Release binaries were checked for mutable project shared-library inputs.
+
+Generation barriers, worker admission/counts, source ownership and ordered consumption remain
+unchanged. Tests cover retained matched slots becoming unmatched, false/error/true transitions,
+both capacity limits, oversized output followed by a short inline tail, empty batches and growth.
+Keep active-worker participation (O11) and budget-aware comparison source reuse separate.

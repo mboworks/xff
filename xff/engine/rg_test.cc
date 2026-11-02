@@ -21,6 +21,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <string>
 #include <string_view>
@@ -33,6 +34,7 @@
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
+#include "xff/engine/evaluate.h"
 #include "xff/engine/owned_visit.h"
 #include "xff/engine/parallel_match.h"
 #include "xff/engine/run.h"
@@ -46,15 +48,22 @@ using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
 using ::mbo::testing::WithDropIndent;
+using ::testing::AllOf;
 using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::Eq;
+using ::testing::Field;
+using ::testing::Ge;
 using ::testing::Gt;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
+using ::testing::Le;
 using ::testing::Not;
+using ::testing::Optional;
+using ::testing::Property;
+using ::testing::SizeIs;
 
 // A restarted cursor reports a failure after an otherwise selected line.
 class FailingSource final : public vfs::ReadSource {
@@ -206,6 +215,16 @@ struct RgEngineTest : ::testing::Test {
   std::vector<std::string> errors;
   std::function<void()> after_emit;
 
+  std::vector<OwnedVisit> RepeatedEntries(std::size_t count) const {
+    const vfs::Metadata metadata{.type = vfs::FileType::kRegular};
+    std::vector<OwnedVisit> entries;
+    entries.reserve(count);
+    for (std::size_t index = 0; index < count; ++index) {
+      entries.emplace_back(Visit{.path = "tree/a", .name = "a", .root = "tree", .metadata = metadata, .fs = fs});
+    }
+    return entries;
+  }
+
   RunResult Run(std::vector<std::string> args, bool rg = true) {
     // Keep record identity explicit here; CLI integration covers automatic filename prefixes.
     if (rg) {
@@ -262,6 +281,99 @@ TEST_F(RgEngineTest, NativeMatchOutputReusesContentWithinEachEntry) {
         0);
     EXPECT_THAT(output, EqualsText("tree/a:1:hit\n"));
     EXPECT_THAT(fs.reads.load(), 2);  // One read for each visited regular file, including the rejected file.
+  }
+}
+
+TEST_F(RgEngineTest, ResultBuffersReuseSmallOutputAndDiscardGiantAndTruncatedTails) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareMatchOutput(*command.expression));
+  ParallelMatch matcher(
+      *command.expression, 4, false,
+      ParallelContentOutput{
+          .output = prepared,
+          .grep = {.line_number = false, .filename = false},
+      });
+  fs.files["tree/a"] = std::string(1'024, 'x') + "hit\n";
+  const auto& initial = matcher.Match(RepeatedEntries(64));
+  EXPECT_THAT(initial, SizeIs(64));
+  fs.files["tree/a"] = "hit\n";
+  const auto& reused = matcher.Match(RepeatedEntries(64));
+  for (const auto& result : reused) {
+    EXPECT_THAT(
+        result.content,
+        Optional(AllOf(
+            Field(&ContentResult::selected, IsOkAndHolds(IsTrue())),
+            Field(&ContentResult::text, AllOf(EqualsText("hit\n"), Property(&std::string::capacity, Ge(1'024)))))));
+  }
+  fs.files["tree/a"] = std::string((ParallelMatch::kReusableOutputBytes / 64) + 100, 'x') + "hit\n";
+  EXPECT_THAT(matcher.Match(RepeatedEntries(64)), SizeIs(64));
+  fs.files["tree/a"] = "hit\n";
+  for (const auto& result : matcher.Match(RepeatedEntries(64))) {
+    EXPECT_THAT(
+        result.content,
+        Optional(Field(
+            &ContentResult::text,
+            AllOf(
+                EqualsText("hit\n"), Property(&std::string::capacity, Le(ParallelMatch::kReusableOutputBytes / 64))))));
+  }
+  fs.files["tree/a"] = std::string(2 * ParallelMatch::kReusableRecordBytes, 'x') + "hit\n";
+  EXPECT_THAT(matcher.Match(RepeatedEntries(64)), SizeIs(64));
+  fs.files["tree/a"] = "hit\n";
+  const auto& tail = matcher.Match(RepeatedEntries(1));
+  ASSERT_THAT(tail, SizeIs(1));
+  EXPECT_THAT(
+      tail.front().content,
+      Optional(Field(
+          &ContentResult::text,
+          AllOf(EqualsText("hit\n"), Property(&std::string::capacity, Le(ParallelMatch::kReusableRecordBytes))))));
+  fs.files["tree/a"] = "miss\n";
+  for (const auto& result : matcher.Match(RepeatedEntries(1))) {
+    EXPECT_THAT(result.evaluation.matched, IsFalse());
+    EXPECT_THAT(result.content, Eq(std::nullopt));
+  }
+  EXPECT_THAT(matcher.Match(RepeatedEntries(0)), IsEmpty());
+  fs.files["tree/a"] = "hit\n";
+  for (const auto& result : matcher.Match(RepeatedEntries(128))) {
+    EXPECT_THAT(result.evaluation.matched, IsTrue());
+    EXPECT_THAT(result.content, Optional(Field(&ContentResult::text, EqualsText("hit\n"))));
+  }
+}
+
+TEST_F(RgEngineTest, ReusedRgResultSlotsClearSelectionErrorsAndOldOutput) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--rg", "hit", "tree"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareRgOutput(command, fs, false, false));
+  const auto search = command.rg.value_or(parser::RgSearch{});
+  ParallelMatch matcher(
+      {}, 4, false,
+      ParallelContentOutput{
+          .output = prepared,
+          .rg = search,
+          .grep = {.match_output = true, .line_number = false, .filename = false},
+      });
+  for (const bool fail : {true, false, true, false}) {
+    fs.read_error = fail;
+    fs.files["tree/a"] = "hit\n";
+    const auto& results = matcher.Match(RepeatedEntries(64));
+    for (const auto& result : results) {
+      if (fail) {
+        EXPECT_THAT(
+            result.content,
+            Optional(
+                Field(&ContentResult::selected, StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("denied")))));
+      } else {
+        EXPECT_THAT(
+            result.content, Optional(AllOf(
+                                Field(&ContentResult::selected, IsOkAndHolds(IsTrue())),
+                                Field(&ContentResult::text, EqualsText("hit\n")))));
+      }
+    }
+  }
+  fs.files["tree/a"] = "miss\n";
+  for (const auto& result : matcher.Match(RepeatedEntries(1))) {
+    EXPECT_THAT(
+        result.content,
+        Optional(
+            AllOf(Field(&ContentResult::selected, IsOkAndHolds(IsFalse())), Field(&ContentResult::text, IsEmpty()))));
   }
 }
 

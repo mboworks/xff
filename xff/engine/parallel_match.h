@@ -54,6 +54,10 @@ bool HasContentMatch(const parser::Expr& expression);
 
 class ParallelMatch final {
  public:
+  // Reuse limits apply between batches, not to the current output returned to the caller.
+  static constexpr std::size_t kReusableOutputBytes = 1'048'576;
+  static constexpr std::size_t kReusableRecordBytes = 65'536;
+
   ParallelMatch(
       mbo::types::OptionalRef<const parser::Expr> expression,
       std::size_t workers,
@@ -81,12 +85,13 @@ class ParallelMatch final {
       mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output = {},
       mbo::types::OptionalRef<const WorkerMatchers> matchers = {},
       mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator = {});
-  ParallelResult EvaluateEntry(
-      const Visit& visit,
+  // Each worker exclusively owns the claimed result slot until this batch completes.
+  void EvaluateEntry(
+      std::size_t index,
       fuzzy::ScoreWorkspace& workspace,
       mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
       mbo::types::OptionalRef<const WorkerMatchers> matchers,
-      mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator) const;
+      mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator);
 
   const mbo::types::OptionalRef<const parser::Expr> expression_;
   const std::size_t workers_;

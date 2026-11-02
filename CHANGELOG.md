@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse bounded matcher output buffers between batches while clearing stale selection/error state and releasing oversized old output.
+
 - Pack matcher and deferred entry text into one owned buffer while preserving moves, output order and filesystem lifetimes.
 
 - Reuse typed directory-task records and publish completion without the shared queue lock.
