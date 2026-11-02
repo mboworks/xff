@@ -3145,8 +3145,21 @@ three-worker native results remain near baseline or slightly slower. Preserve sm
 the unchanged directory control and all source/binary identities; do not generalize kernel gains
 into filesystem speedups. Complete release/extension suites and scoped lint remain required.
 
-O05 should also test the existing ownership boundary before changing every map declaration:
-`Template::Segment` already owns its compiled key. Passing that key to field callbacks by const
-string reference can avoid the temporary lookup string in definition/capture rendering without
-adding another map, interner or lookup layer. General heterogeneous maps remain useful where the
-caller genuinely has only a view; distinguish those callers from an avoidable view conversion.
+## O05 lookup allocation experiments: retain the existing runtime
+
+The [two-phase lookup report](benchmarks/field-lookup-controls-20261102.md) qualifies two fully
+implemented alternatives: borrowing the compiled string in callbacks, and transparent ordered-map
+lookups preserving the callback interface. Both remove 2,000 temporary-key allocations in a
+1,000-render isolated diagnostic and improve focused long-key kernels. Neither passes the
+whole-command controls on both hosts. Keep them as rejected experiments, not shipping changes.
+
+The controlled three-way confirmation retains Linux multi-field regressions of 6.40% for the
+owned-key callback ABI and 8.18% for transparent maps at 100,000 files/ten workers. Some macOS
+long-key cases improve, but no consistent Linux native gain offsets these controls. This is not
+proof of an intrinsic comparator or ABI cost: layout and scheduling effects remain possible.
+Do not turn allocation counts or a kernel result into a command-level claim. Preserve all
+10,800 native invocations, raw repetitions, binary/source identities and the rejected code.
+
+Future prepared key bindings belong with O13/O15 and need fresh lifetime, missing-value, cold/hot
+and native controls. The current result does not justify adding an interner, second catalog or
+per-entry ownership layer. Read-buffer qualification (O06) continues independently.
