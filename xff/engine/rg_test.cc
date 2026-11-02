@@ -570,7 +570,22 @@ TEST_F(RgEngineTest, MatcherPoolGrowsForLaterBatchesAndRunsShortTailsInline) {
   MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
   ParallelMatch matcher(*command.expression, 12, false);
   fs.track_threads = true;
-  for (const auto& [count, workers] : {std::pair{64UZ, 4UZ}, {256UZ, 12UZ}, {8UZ, 1UZ}}) {
+  // Keep twelve useful workers for sixty-four entries; only tails with fewer chunks
+  // restrict participation. Inactive threads must rejoin later generations and stop cleanly.
+  static constexpr auto kBatches = std::to_array<std::pair<std::size_t, std::size_t>>({
+      {64, 4},
+      {256, 12},
+      {64, 12},
+      {16, 4},
+      {32, 8},
+      {0, 0},
+      {256, 12},
+      {15, 1},
+      {64, 12},
+      {16, 4},
+      {8, 1},
+  });
+  for (const auto& [count, workers] : kBatches) {
     fs.expected_threads = workers;
     fs.read_threads.clear();
     const auto& results = matcher.Match(entries(count));

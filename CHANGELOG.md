@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Limit warmed matcher participation to available work chunks while retaining useful read concurrency and persistent workers.
+
 - Reuse bounded matcher output buffers between batches while clearing stale selection/error state and releasing oversized old output.
 
 - Pack matcher and deferred entry text into one owned buffer while preserving moves, output order and filesystem lifetimes.
