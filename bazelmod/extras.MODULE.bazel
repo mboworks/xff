@@ -78,20 +78,11 @@ local_path_override(
 bazel_dep(name = "libexpat", version = "2.9.0")
 
 # XAR is always available in the archive extra. Select only Mbed TLS's Apache-2.0 arm;
-# XML parsing uses current Expat with entities disabled. These overrides disappear with extras.
+# XML parsing uses the registry Expat package. This override disappears with extras.
 single_version_override(
     module_name = "libarchive",
     patch_strip = 1,
     patches = ["//bazelmod:libarchive-xar.patch"],
-)
-
-archive_override(
-    module_name = "libexpat",
-    integrity = "sha256-bozntS67qkI8Wb7MfPHmh1xC5JIowGKsgSPBDnAM7Cc=",
-    patch_strip = 1,
-    patches = ["//bazelmod:expat-build.patch"],
-    strip_prefix = "libexpat-R_2_9_0",
-    urls = ["https://github.com/libexpat/libexpat/archive/refs/tags/R_2_9_0.tar.gz"],
 )
 
 bazel_dep(name = "xff_apple", version = "0.0.0")
