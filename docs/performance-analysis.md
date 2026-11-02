@@ -3362,3 +3362,31 @@ This preserves the earlier lazy-default and macOS fixup findings. Generated flat
 first JSON parsing, per-run MIME observers and broader immutable catalog binding remain follow-up
 hypotheses; do not call them implemented or infer gains from the warm reset kernel. No new
 wrapper, lock, per-file clock, thread or exception mechanism is introduced.
+
+### O15a decision: prepare complete file-diff options once per style
+
+[The cross-platform report](benchmarks/prepared-diff-configuration-20261102.md) qualifies immutable
+style-keyed options for file-diff actions. Algorithm/style/default selection, normalization tokens
+and ignored-line RE2 compilation move to run preparation after the existing validation. File reads,
+peer field rendering, exact equality, binary handling, short-circuiting and ordered output retain
+their previous timing. Direct contexts retain a lazy fallback. No new shared executor, ownership
+wrapper, lock, per-file clock or mutation route is added.
+
+On 1,000-10,000 normalized native pairs, initial gains are about 19% on Linux and 6% on macOS;
+five-session confirmation retains those gains. Separate 10,000-entry in-memory whole-run kernels
+improve about 87%/88%. Those kernels include option preparation and teardown, and do not describe
+external command startup or parallel diff execution. Plain/equal/skipped and ordinary listing
+controls remain separate. The final confirmation retains about 19-21% Linux / 4-6% macOS gains, with Linux tiny-listing
++3.59% and macOS tiny-listing +1.53% costs. Preserve the earlier prototype's Linux listing +3.67%,
+tiny plain-diff +2.75%, and macOS tiny plain-diff +1.69% costs separately, alongside identical
+baseline participants and the full sessions.
+
+The run owns one ordinary unique record per distinct action style. Noncopyable `DiffOptions`
+embeds RE2; per-entry callbacks borrow the complete record rather than creating another regex or
+reference-counted wrapper. A simple ordered style lookup also works for cloned/deferred AST nodes.
+The complete extension-enabled suites pass 321/321 on both hosts, plus focused ASan on both and
+Linux TSan. Shipping size, raw samples and development-oracle failures are recorded in the report.
+
+This is only the diff subset of O15. Peer/expected-hash templates already bind through the existing
+prepared operand pool. Hash specification/default resolution remains a separate candidate; EP03
+and EP07 are not marked complete by this result.

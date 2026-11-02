@@ -60,6 +60,23 @@ namespace xff::engine {
 // (path plus terminator -- "p\n" for -print, "p\0" for -print0).
 using EmitFn = absl::FunctionRef<void(std::string_view)>;
 
+// Immutable complete options for each distinct action style. The run owns these records;
+// callbacks borrow them after their existing conditional reads. Direct evaluator users may
+// leave the observer empty and retain context-dependent option construction.
+using DiffConfigurations = std::map<std::string, std::unique_ptr<const mbo::diff::DiffOptions>, std::less<>>;
+
+struct DiffDefaults {
+  std::string_view algorithm;
+  std::string_view ignore;
+  std::string_view ignore_matching;
+  mbo::diff::DiffOptions::OutputFormat format = mbo::diff::DiffOptions::OutputFormat::kUnified;
+  std::size_t context = 3;
+};
+
+// Performs syntax preparation only, with no VFS/content/template observations. Call after
+// existing whole-command validation, which remains responsible for error ordering.
+absl::StatusOr<DiffConfigurations> PrepareDiffConfigurations(const parser::Expr& expression, DiffDefaults defaults);
+
 // Traversal-control side-channel, set by control actions during evaluation and
 // read by the driver: -prune asks the walk not to descend into the current
 // directory; -quit asks it to stop the traversal entirely. Like `emit`, these
@@ -240,8 +257,8 @@ struct EvalContext {
   // --diff-ignore=<tokens>: comma-separated normalization tokens for -diff (ws / change /
   // trail / blank / case), validated once before the walk. Empty -> exact. Only -diff reads it.
   std::string_view diff_ignore;
-  // --diff-ignore-matching=REGEX: -diff ignores lines matching this RE2 (compiled per -diff
-  // entry; the pattern is validated once before the walk). Empty -> no line filter.
+  // --diff-ignore-matching=REGEX fallback for direct evaluator contexts. Whole runs borrow
+  // the immutable options below; direct calls compile when reached. Empty -> no line filter.
   std::string_view diff_ignore_matching;
   // --diff-format=u|c|n|y|...: the default -diff output format (built-in unified). A per-action
   // -diff:STYLE letter overrides it. Resolved once before the walk; only -diff reads it.
@@ -250,6 +267,7 @@ struct EvalContext {
   // --context feeds it only when before==after; --diff-context overrides --context. A per-action
   // -diff:uN overrides both. Resolved once before the walk; only -diff reads it.
   std::size_t diff_context = 3;
+  mbo::types::OptionalRef<const DiffConfigurations> diff_configurations;
   mbo::types::OptionalRef<const patch::Paths> diff_paths;
   mbo::types::OptionalRef<PatchDestinations> diff_destinations;
   // --hash-algorithm=ALGO / --hash-encoding=hex|base64: the default digest for a bare -hash
