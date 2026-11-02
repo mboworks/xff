@@ -379,14 +379,16 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] Reproduce O03's long-gap sentinel defect with an explicit regression: a valid fuzzy match
       after 1,500 bytes was incorrectly absent. Keep the fix in O03 qualification; the existing
       general fuzz input cap is too small for this case.
-- [ ] O04: Adopt qualified lexical field views in #1044. Retain native dirname spelling,
+- [x] O04: Adopt qualified lexical field views in #1044. Retain native dirname spelling,
       [exact output and slower controls](docs/benchmarks/lexical-field-views-20261102.md).
 - [x] O05: Implement and qualify owned-key callback references and transparent map lookup.
       [Both are rejected](docs/benchmarks/field-lookup-controls-20261102.md): allocation/kernel
       improvements do not pass ordinary Linux command controls. Preserve source and all samples;
       future prepared bindings require new O13/O15 evidence before any runtime adoption.
-- [ ] O06: Qualify remaining read-buffer zeroing with short-read/EOF/error/offset/lifetime tests.
-      Prefer the standard overwrite operation; preserve existing VFS and memory-budget boundaries.
+- [x] O06: Qualify range-buffer overwrite with short-read/EOF/error/offset/lifetime tests.
+      [Select native range reads only](docs/benchmarks/host-range-overwrite-20261102.md); preserve
+      VFS and memory-budget boundaries. Cursor zeroing stays unchanged after a repeated Linux
+      ten-worker early-difference regression; revisit it under O07 buffer ownership/reuse.
 - [ ] O07-O12: Profile and qualify caller-owned stream buffers, typed reusable directory task slots,
       batch ownership, bounded result reuse, active-worker dispatch and direct production evaluation.
       Preserve existing stage policy while isolating task storage and lifecycle costs.

@@ -36,13 +36,16 @@
 #include "absl/time/time.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/vfs/entry.h"
+#include "xff/vfs/mutations.h"
 
 namespace xff::vfs {
 namespace {
 
 namespace fs = ::std::filesystem;
+using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
@@ -287,6 +290,35 @@ TEST_F(LocalFsTest, ReadContentRangeReturnsOnlyTheRequestedBytes) {
   EXPECT_THAT(local_fs_.ReadContentRange(Path("file.txt"), 3, 10), IsOkAndHolds("lo"));
   EXPECT_THAT(local_fs_.ReadContentRange(Path("file.txt"), 5, 10), IsOkAndHolds(IsEmpty()));
   EXPECT_THAT(local_fs_.ReadContentRange(Path("file.txt"), 0, 0), IsOkAndHolds(IsEmpty()));
+}
+
+TEST_F(LocalFsTest, RangeReadReturnsOnlyInitializedBytesAcrossChunkAndEofBoundaries) {
+  std::string bytes((3UZ * 64 * 1'024) + 17, 'a');
+  for (std::size_t at = 0; at < bytes.size(); ++at) {
+    bytes.at(at) = static_cast<char>('a' + (at % 26));
+  }
+  MBO_ASSERT_OK_AND_ASSIGN(auto output, TemporaryOutput::Create(Path("range.bin"), {}));
+  EXPECT_THAT(output->Write(bytes), IsOk());
+
+  struct Range final {
+    std::size_t offset;
+    std::size_t length;
+  };
+
+  const auto ranges = std::to_array<Range>({
+      {.offset = 0, .length = 0},
+      {.offset = 0, .length = 1},
+      {.offset = 3, .length = 64UZ * 1'024},
+      {.offset = 64UZ * 1'024, .length = 2UZ * 64 * 1'024},
+      {.offset = bytes.size() - 17, .length = 1'024UZ * 1'024},
+      {.offset = bytes.size(), .length = 10},
+      {.offset = bytes.size() + 10, .length = 10},
+  });
+  for (const Range& range : ranges) {
+    const std::string expected = range.offset >= bytes.size() ? "" : bytes.substr(range.offset, range.length);
+    EXPECT_THAT(
+        local_fs_.ReadContentRange(output->Path(), range.offset, range.length), IsOkAndHolds(EqualsText(expected)));
+  }
 }
 
 TEST_F(LocalFsTest, ReadContentRangeReportsOpenAndOffsetErrors) {
