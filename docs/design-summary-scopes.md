@@ -74,7 +74,8 @@ xff --compare LEFT RIGHT --summary --summary-scope=diff
 Repeating `--summary` with another grouping produces another table.
 
 Accumulation retains the existing archive, collection, shard, and verification feeds. Combined
-and root scopes aggregate during traversal. Category scopes retain per-entry contributions until
+and root scopes aggregate during traversal. Ordinary overall/type/extension side totals also aggregate
+directly for independently audited filters when no category columns are requested. Category scopes retain per-entry contributions until
 pairing assigns categories, without replaying expressions or executing actions again. Entries
 without a comparison category do not enter category tables, even if a special reduction feed
 (such as failed hash verification) counted them in a whole-root table.

@@ -4351,16 +4351,53 @@ SummaryTables PairSummaryContributions(const SummaryTables& left, const SummaryT
   return result;
 }
 
+// Ordinary side totals do not consume pair categories. Keep the per-entry path for
+// category scopes and for reductions/effects outside the existing independent-filter audit.
+bool CanAggregateComparisonTotals(
+    const std::vector<std::string>& scopes,
+    const std::vector<SummarySpec>& summaries,
+    mbo::types::OptionalRef<const parser::Expr> expression) {
+  return absl::c_none_of(
+             scopes, [](std::string_view scope) { return absl::c_linear_search(kComparisonCategories, scope); })
+         && absl::c_all_of(
+             summaries,
+             [](const SummarySpec& summary) {
+               return summary.mode == SummaryMode::kOverall || summary.mode == SummaryMode::kType
+                      || summary.mode == SummaryMode::kExt;
+             })
+         && (!expression || CanParallelMatch(*expression));
+}
+
+SummaryTables AggregatedComparisonColumn(
+    std::string_view scope,
+    const std::array<SummaryAccumulator, 2>& sides,
+    std::size_t sinks) {
+  if (scope == "left-total") {
+    return CombinedSummaryTables(sides.at(0));
+  }
+  if (scope == "right-total") {
+    return CombinedSummaryTables(sides.at(1));
+  }
+  return SummaryTables(sinks);
+}
+
 std::vector<SummaryScopeColumn> ComparisonScopeColumns(
     const std::vector<std::string>& scopes,
     const std::array<SummaryAccumulator, 2>& sides,
     const std::map<std::string, std::string>& categories,
     std::size_t sinks) {
+  const bool aggregated = !sides.at(0).per_entry && !sides.at(1).per_entry;
   std::vector<SummaryScopeColumn> columns;
   for (const auto& scope : scopes) {
     if (scope != "all" && scope != "root") {
-      columns.push_back({.scope = scope, .tables = SummaryTables(sinks)});
+      columns.push_back({
+          .scope = scope,
+          .tables = aggregated ? AggregatedComparisonColumn(scope, sides, sinks) : SummaryTables(sinks),
+      });
     }
+  }
+  if (aggregated) {
+    return columns;
   }
   for (const auto& [path, category] : categories) {
     const auto left = ComparisonContribution(sides.at(0), path);
@@ -5267,7 +5304,8 @@ RunResult RunFindCore(
       .sinks = summaries.size(),
       .per_root = compare_listing || absl::c_linear_search(scopes, "root"),
       .per_entry = !summaries.empty() && compare_listing
-                   && absl::c_any_of(scopes, [](std::string_view scope) { return scope != "all" && scope != "root"; }),
+                   && absl::c_any_of(scopes, [](std::string_view scope) { return scope != "all" && scope != "root"; })
+                   && !CanAggregateComparisonTotals(scopes, summaries, expression),
   };
   // --histogram (repeatable): a bar chart of the count per bucket, alongside or instead of
   // --summary. Both are reductions fed by one walk; a run with either suppresses the listing.

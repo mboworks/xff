@@ -126,6 +126,46 @@ void Compare(benchmark::State& state, std::size_t bytes, bool different, bool pa
   }
   state.SetItemsProcessed(state.iterations() * state.range(0));
 }
+
+void CompareTotals(benchmark::State& state, std::string_view summary, std::string_view scopes) {
+  const CompareTree tree(static_cast<std::size_t>(state.range(0)), 8, true);
+  const std::vector<std::string> arguments{
+      "--compare=summary",
+      "--summary=" + std::string(summary),
+      "--summary-scope=" + std::string(scopes),
+      "--jobs=" + std::to_string(state.range(1)),
+      "--archive=none",
+      "--sort=none",
+      "left",
+      "right",
+      "-type",
+      "f",
+  };
+  auto command = xff::parser::Parse(arguments);
+  if (!command.ok()) {
+    state.SkipWithError(command.status().ToString());
+    return;
+  }
+  std::size_t output_bytes = 0;
+  const auto emit = [&](std::string_view text) { output_bytes += text.size(); };
+  const auto error = [](std::string_view, absl::Status) {};
+  const auto initial = xff::engine::RunFind(*command, tree, emit, error);
+  if (initial.errors != 0 || output_bytes == 0) {
+    state.SkipWithError("incorrect comparison summary output");
+    return;
+  }
+  for (auto iteration : state) {
+    benchmark::DoNotOptimize(iteration);
+    output_bytes = 0;
+    const auto result = xff::engine::RunFind(*command, tree, emit, error);
+    if (result.errors != 0) {
+      state.SkipWithError("comparison summary failed");
+      break;
+    }
+    benchmark::DoNotOptimize(output_bytes);
+  }
+  state.SetItemsProcessed(state.iterations() * state.range(0));
+}
 }  // namespace
 
 // XFF_ABI_POINTER: Google Benchmark's process argument interface.
@@ -149,6 +189,27 @@ int main(int argc, char** argv) {
     benchmark::RegisterBenchmark(
         std::string(scenario.name), Compare, scenario.bytes, scenario.different, scenario.patch)
         ->ArgsProduct({{10, 100, 1'000, 10'000}, {1, 4}})
+        ->UseRealTime()
+        ->Unit(benchmark::kMicrosecond);
+  }
+
+  struct TotalsScenario {
+    std::string_view summary;
+    std::string_view scopes;
+  };
+
+  constexpr auto kTotals = std::to_array<TotalsScenario>({
+      {.summary = "overall", .scopes = "compare"},
+      {.summary = "type", .scopes = "compare"},
+      {.summary = "ext", .scopes = "compare"},
+      {.summary = "overall", .scopes = "left-only,right-only,different,identical"},
+      {.summary = "ext", .scopes = "left-total,left-only"},
+  });
+  for (const auto& scenario : kTotals) {
+    benchmark::RegisterBenchmark(
+        "totals/" + std::string(scenario.summary) + "/" + std::string(scenario.scopes), CompareTotals, scenario.summary,
+        scenario.scopes)
+        ->ArgsProduct({{10, 100, 1'000, 10'000}, {1, 3}})
         ->UseRealTime()
         ->Unit(benchmark::kMicrosecond);
   }
