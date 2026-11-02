@@ -36,12 +36,14 @@ ParallelMatch::ParallelMatch(
     std::size_t workers,
     bool scores,
     std::optional<ParallelContentOutput> output,
-    mbo::types::OptionalRef<const ExpressionExecution> execution)
+    mbo::types::OptionalRef<const ExpressionExecution> execution,
+    content::Derivation derivation)
     : expression_(expression),
       workers_(std::max(workers, std::size_t{1})),
       scores_(scores),
       output_(std::move(output)),
-      execution_(execution) {}
+      execution_(execution),
+      derivation_(std::move(derivation)) {}
 
 ParallelMatch::~ParallelMatch() {
   {
@@ -51,6 +53,10 @@ ParallelMatch::~ParallelMatch() {
   for (auto& thread : threads_) {
     thread.join();
   }
+}
+
+ContentSnapshot ParallelMatch::TakeDerived(std::size_t index) {
+  return derivation_.Empty() ? ContentSnapshot{} : std::move(derived_.at(index));
 }
 
 bool ParallelMatch::Ready(std::size_t generation, std::size_t worker) const {
@@ -65,6 +71,10 @@ const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<OwnedVisit> 
   const absl::MutexLock lock(mutex_);
   entries_ = std::move(entries);
   results_.resize(entries_.size());
+  if (!derivation_.Empty()) {
+    derived_.clear();
+    derived_.resize(entries_.size());
+  }
   if (output_ && !results_.empty()) {
     const auto limit = std::min(kReusableRecordBytes, kReusableOutputBytes / results_.size());
     // Release oversized old records before evaluating any new entry. Current output can still
@@ -203,6 +213,10 @@ void ParallelMatch::EvaluateEntry(
     }
   } else {
     result.content.reset();
+  }
+  if (!derivation_.Empty() && result.evaluation.matched
+      && (!result.content || (result.content->selected.ok() && *result.content->selected))) {
+    derived_.at(index) = std::move(context.content).TakeDerived(derivation_, *visit.fs, visit.path);
   }
 }
 

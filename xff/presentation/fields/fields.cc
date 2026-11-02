@@ -1275,6 +1275,23 @@ hash::DefaultUsage Template::HashDefaultsUsed() const {
   return usage;
 }
 
+content::Derivation Template::ContentDerivation(std::string_view algorithm, hash::Encoding encoding) const {
+  content::Derivation request;
+  for (const Segment& segment : segments_) {
+    if (segment.fn == &LinesField) {
+      request.lines = true;
+    } else if (segment.fn == &HashField) {
+      const std::string_view qualifier =
+          segment.post == Segment::PostProcess::kNone ? segment.qualifier : std::string_view{};
+      const auto spec = hash::ParseSpec(qualifier, algorithm.empty() ? "sha256" : algorithm, encoding);
+      if (spec) {
+        request.Include({.digests = {{.algorithm = std::string(spec->algo), .encoding = spec->encoding}}});
+      }
+    }
+  }
+  return request;
+}
+
 std::size_t Template::ContentFieldCount() const {
   return static_cast<std::size_t>(absl::c_count_if(
       segments_, [](const Segment& segment) { return segment.fn == &HashField || segment.fn == &LinesField; }));

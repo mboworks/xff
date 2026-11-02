@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse requested hashes and line counts from content already loaded by workers, without retaining file bytes between stages.
+
 - Limit warmed matcher participation to available work chunks while retaining useful read concurrency and persistent workers.
 
 - Reuse bounded matcher output buffers between batches while clearing stale selection/error state and releasing oversized old output.

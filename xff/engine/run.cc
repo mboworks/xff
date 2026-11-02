@@ -64,6 +64,7 @@
 #include "xff/cli/globals.h"
 #include "xff/config/safety.h"
 #include "xff/content/line_match.h"
+#include "xff/content/snapshot.h"
 #include "xff/datetime/datetime.h"
 #include "xff/engine/collect.h"
 #include "xff/engine/consumers.h"
@@ -6046,9 +6047,33 @@ RunResult RunFindCore(
         content_output->grep.quiet = true;
       }
     }
+    content::Derivation derivation;
+    // Preserve lazy work for outputs that may never be consumed. A worker only derives from
+    // bytes it already loaded; streaming and serial/archive paths keep their existing reads.
+    if (!max_results->has_value()) {
+      const auto encoding = hash::ParseEncoding(hash_encoding).value_or(hash::Encoding::kHex);
+      if (any_reduction && !shards.enabled && !collections.Active()) {
+        for (const auto& field : summary_templates) {
+          if (field) {
+            derivation.Include(field->ContentDerivation(hash_algorithm, encoding));
+          }
+        }
+        derivation.lines |= std::ranges::any_of(histograms, [](const HistogramSpec& spec) {
+          return spec.bucket == HistBucket::kLinesRange
+                 || (spec.agg != HistAgg::kCount && spec.metric == HistMetric::kLines);
+        });
+      } else if (implicit_print && !is_tree && !match_output && !(rg_output && grep_options.match_output)) {
+        if (column_templates.empty() && compiled_tmpl) {
+          derivation.Include(compiled_tmpl->ContentDerivation(hash_algorithm, encoding));
+        }
+        for (const auto& field : column_templates) {
+          derivation.Include(field.ContentDerivation(hash_algorithm, encoding));
+        }
+      }
+    }
     parallel_match.emplace(
         parallel_expression, options.workers, full_metadata || rank_by_score, std::move(content_output),
-        executions->Parallel());
+        executions->Parallel(), std::move(derivation));
   }
   std::vector<OwnedVisit> pending_matches;
   // Decision-only batches retain no file bytes or rendered line records. Give them more work
@@ -6083,7 +6108,7 @@ RunResult RunFindCore(
       }
       std::map<std::string, std::string> outputs;
       finish_entry(
-          visit, outputs, evaluated.matched, std::nullopt, {},
+          visit, outputs, evaluated.matched, std::nullopt, parallel_match->TakeDerived(index),
           result.content ? mbo::types::OptionalRef<const ContentResult>{*result.content}
                          : mbo::types::OptionalRef<const ContentResult>{});
     }

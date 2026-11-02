@@ -412,7 +412,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       retain real allocation savings alongside unacceptable Linux comparison regressions.
       A deeper typed-plan representation remains unqualified; EP07 boundaries still apply.
       Preserve existing stage policy while isolating task storage and lifecycle costs.
-- [ ] O13-O22: Reconcile remaining derived-value handoff, static catalogs, invariant operands,
+- [x] O13: Qualify requested derived-value handoff from matching workers to ordered consumers.
+      [Cross-platform evidence](docs/benchmarks/derived-content-handoff-20261102.md) retains
+      read-count, lifetime/error/limit tests, large field-workload gains and slower controls.
+      Transfer requested hashes/line values only; keep raw bytes confined to each evaluator.
+- [ ] O14-O22: Reconcile remaining static catalogs, invariant operands,
       paired streaming compare, reusable stage pools, byte-bounded overlap, archive indexing/admission,
       optional bulk metadata, similarity representations and output churn with EP/JC/P acceptance.
       Keep macrobenchmark, kernel and diagnostic contracts separate.

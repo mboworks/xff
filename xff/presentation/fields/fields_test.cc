@@ -30,6 +30,7 @@
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
+#include "xff/content/snapshot.h"
 #include "xff/env/env.h"
 #include "xff/vfs/entry.h"
 
@@ -153,6 +154,27 @@ TEST_F(FieldsTest, TimeZoneDemandIncludesTransformedTimeFields) {
     EXPECT_THAT(Template::Compile(text).NeedsTimeZone(), IsTrue()) << text;
   }
   EXPECT_THAT(Template::Compile("{{mtime}} {name} {size} {text}").NeedsTimeZone(), IsFalse());
+}
+
+TEST_F(FieldsTest, ContentDerivationUsesCompiledFieldsDefaultsAndTransforms) {
+  const auto request =
+      Template::Compile("{{hash}} {name} {hash} {hash:sha256} {hash:md5/base64} {lines:s/2/two/} {hash:s/a/b/}")
+          .ContentDerivation("sha256", hash::Encoding::kHex);
+  EXPECT_THAT(request.lines, IsTrue());
+  EXPECT_THAT(
+      request.digests, ElementsAre(
+                           content::DigestRequest{.algorithm = "sha256"},
+                           content::DigestRequest{.algorithm = "md5", .encoding = hash::Encoding::kBase64}));
+  EXPECT_THAT(
+      Template::Compile("{{lines}} {name} {text}").ContentDerivation("", hash::Encoding::kHex).Empty(), IsTrue());
+}
+
+TEST_F(FieldsTest, ContentDerivationKeepsDefaultEncodingAndSkipsInvalidHashFields) {
+  EXPECT_THAT(
+      Template::Compile("{hash}").ContentDerivation("", hash::Encoding::kBase64).digests,
+      ElementsAre(content::DigestRequest{.algorithm = "sha256", .encoding = hash::Encoding::kBase64}));
+  EXPECT_THAT(
+      Template::Compile("{hash:not-an-algorithm}").ContentDerivation("", hash::Encoding::kHex).Empty(), IsTrue());
 }
 
 TEST_F(FieldsTest, ContentFieldCountInspectsCompiledFieldsWithoutRendering) {

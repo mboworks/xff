@@ -3323,3 +3323,21 @@ virtual calls alone do not establish an acceptable elapsed improvement. Preserve
 the rejected source rather than adding this representation to the shipping runtime. A deeper typed
 plan needs a separate lifetime-safe design and fresh profiles; O13 and the remaining candidates
 continue independently.
+
+## Requested content values across the stage boundary
+
+[The O13 report and raw evidence](benchmarks/derived-content-handoff-20261102.md) qualify requested
+derived caches from content already loaded by matching workers. Existing snapshots already cache
+within one evaluator; this removes the later coordinator reread and computes requested digests/line
+counts using existing workers. Compiled fields and histogram enums define demand once per run.
+Only requested derived values move to ordered consumers, not raw file bytes or a shared cache.
+Ordinary filters allocate no side vector and keep their result layout. Result limits and streaming
+sources without loaded snapshots retain the lazy path.
+
+Four-worker content-field kernels confirm roughly 67-70% lower elapsed time on Linux and 72-73%
+on macOS for the larger populations. Heavy native ten-worker hash cases improve about 73-74%.
+One-worker cases stay near baseline. These gains combine avoided reads/copies with parallel derived
+work, rather than proving that copies alone accounted for that time. The report keeps the initial
+macOS output control (+6.63%) and its confirmation (-0.52%), identical-baseline participants, all
+slower samples, source identities and validation. This does not replace O14/O15 invariant/catalog
+work, O17/O18 scheduling or O22 output construction.
