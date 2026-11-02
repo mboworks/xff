@@ -11,6 +11,7 @@
 #include <cerrno>
 #include <limits>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
 
@@ -75,6 +76,17 @@ class HostStream final : public ReadStream {
     }
     result.resize(static_cast<std::size_t>(count));
     return result;
+  }
+
+  bool SupportsReadInto() const noexcept override { return true; }
+
+  // XFF_HOST_IO: reads into the cursor owner's reserved storage using its read-only descriptor.
+  absl::StatusOr<std::size_t> ReadInto(std::span<char> buffer) override {
+    const auto count = ::read(fd_, buffer.data(), std::min(buffer.size(), 64UZ * 1'024));
+    if (count < 0) {
+      return absl::DataLossError(absl::ErrnoToStatus(errno, "reading container source failed").message());
+    }
+    return static_cast<std::size_t>(count);
   }
 
  private:

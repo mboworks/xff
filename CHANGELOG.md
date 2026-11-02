@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse budgeted native comparison buffers across chunks while preserving legacy decoder reads.
+
 - Avoid redundant zeroing in native bounded range reads while preserving short-read, EOF and error handling.
 
 - Render lexical filename fields and path qualifiers from borrowed input slices instead of temporary path objects.

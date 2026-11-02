@@ -2918,8 +2918,9 @@ virtual layers and generic executor hierarchies need an actual lifetime or exten
 | O21 | Reuse similarity representations      | Repeated shingle generation and pairwise verification dominate large document sets  | Existing near-duplicate design             | Cache reference shingles; exact verification after indexing  |
 | O22 | Reduce output construction churn      | Numeric/cell/JSON strings, row insertion and aligned-table retention allocate       | Existing output/scope contracts            | Append into reusable row buffers; stream machine formats     |
 
-O01-O03 have qualified cross-platform reports below. Other entries remain hypotheses until their
-individual report records a decision; inspected allocation sites alone do not establish elapsed gains.
+O01-O04 and the selected O06/O07 mechanisms have qualified cross-platform reports below.
+O05 records two rejected candidates. Other entries remain hypotheses until their individual report
+records a decision; inspected allocation sites alone do not establish elapsed gains.
 
 ### Small changes first
 
@@ -3183,3 +3184,26 @@ not proven mechanisms. A reusable buffer must remain covered by its applicable r
 retain worker storage after a cursor budget dies. A generic span-read fallback may add copy/allocation
 cost for archived/decoded sources. Prefer cursor-scoped reuse first or establish a capability/budget
 contract and native plus archive controls before introducing persistent worker buffers.
+
+## O07: cursor-owned native comparison buffers
+
+The [cursor-buffer qualification report](benchmarks/cursor-owned-read-buffers-20261102.md) selects
+one reusable 64 KiB buffer per native cursor, inside its existing reservation. Clear once on
+allocation, then overwrite only the initialized bytes reported by the host adapter. The entirely
+uninitialized variant repeatedly regresses Linux ten-worker early differences (+6.88%, +8.84%);
+keep those controls and avoid claiming a proven allocator/page-fault mechanism.
+
+An optional native `ReadInto` span capability leaves the existing owned `Read` interface unchanged.
+Its unsupported default neither allocates nor advances input. Keep memory/decoder/archive loops
+on their original owning-chunk path: the first combined loop slowed one macOS memory control
+29.36%, while compile-time-separated loops remove that large regression. Mixed-capability tests,
+short reads, EOF, invalid counts, errors, reservation release and left-read precedence remain covered.
+No global buffer pool, new thread, lock, dependency, stat, flag or exception wrapper is added.
+
+The refined 100-file/1 MiB matrix improves complete reads about 14% (one worker) and 9% (three) on
+macOS, and 5-10% on Linux. Keep ten-file controls and all slower medians: the worst refined native
+case is +0.93% macOS / +3.37% Linux. The isolated ASan counter is diagnostic only: sixteen-chunk
+comparisons drop from 43 to 13 allocations, with total requested bytes about 2.10 MB to 132 kB;
+this is allocation traffic, not peak RSS. Both fully enabled 305-test suites and focused sanitizers
+pass. Initial and refined raw source/binary identities, all 10,800 oracle-checked invocations,
+memory fallback kernels and rejected variants are retained in the report artifacts.

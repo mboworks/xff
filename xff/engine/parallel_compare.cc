@@ -4,7 +4,9 @@
 #include "xff/engine/parallel_compare.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
+#include <span>
 #include <utility>
 
 #include "mbo/status/status_macros.h"
@@ -31,15 +33,53 @@ absl::StatusOr<std::string> ReadChunk(vfs::ReadStream& stream, std::size_t lengt
 }
 
 struct Cursor {
+  using Buffer = std::array<char, ParallelCompare::kRetainedFileBytes>;
+
+  // Destroy backing storage before releasing the reservation that covers it.
   vfs::ReadBudget::Reservation reservation;
   std::unique_ptr<vfs::ReadStream> stream;
+  std::unique_ptr<Buffer> buffer;
+  std::string legacy_bytes;
+  bool direct_read = false;
+
+  void ReleaseLegacyBytes() { std::string{}.swap(legacy_bytes); }
+
+  absl::StatusOr<std::string_view> Read(std::size_t length) {
+    if (!direct_read) {
+      MBO_ASSIGN_OR_RETURN(legacy_bytes, ReadChunk(*stream, length));
+      return legacy_bytes;
+    }
+    if (!buffer) {
+      // Reuse this allocation for every chunk. The one initial clear is a measured policy:
+      // removing it regresses Linux early-difference workloads with many workers.
+      buffer = std::make_unique<Buffer>();
+    }
+    std::size_t total = 0;
+    while (total < length) {
+      const auto remaining = std::span<char>(*buffer).first(length).subspan(total);
+      MBO_ASSIGN_OR_RETURN(const auto count, stream->ReadInto(remaining));
+      if (count > remaining.size()) {
+        return absl::DataLossError("cursor returned more bytes than requested");
+      }
+      if (count == 0) {
+        break;
+      }
+      total += count;
+    }
+    return std::string_view(buffer->data(), total);
+  }
 };
 
 absl::StatusOr<Cursor> OpenEntry(const TreeCompareEntry& entry) {
   MBO_ASSIGN_OR_RETURN(const auto source, entry.fs->ContentSource(entry.path));
   MBO_ASSIGN_OR_RETURN(auto reservation, source->Budget()->Reserve(ParallelCompare::kRetainedFileBytes));
   MBO_ASSIGN_OR_RETURN(auto stream, source->Open());
-  return Cursor{.reservation = std::move(reservation), .stream = std::move(stream)};
+  const bool direct_read = stream->SupportsReadInto();
+  return Cursor{
+      .reservation = std::move(reservation),
+      .stream = std::move(stream),
+      .direct_read = direct_read,
+  };
 }
 
 absl::StatusOr<ComparisonResult> CompareSmall(
@@ -60,6 +100,48 @@ absl::StatusOr<ComparisonResult> CompareSmall(
   return result;
 }
 
+template<bool kCallerOwned>
+auto ReadComparisonChunk(Cursor& cursor, std::size_t length) {
+  if constexpr (kCallerOwned) {
+    return cursor.Read(length);
+  } else {
+    return ReadChunk(*cursor.stream, length);
+  }
+}
+
+template<bool kCallerOwned>
+absl::StatusOr<ComparisonResult> CompareStreams(
+    Cursor& left_stream,
+    const TreeCompareEntry& right,
+    std::uint64_t size) {
+  std::optional<Cursor> right_stream;
+  constexpr std::size_t kChunk = ParallelCompare::kRetainedFileBytes;
+  for (std::uint64_t offset = 0; offset < size; offset += kChunk) {
+    const auto length = static_cast<std::size_t>(std::min<std::uint64_t>(kChunk, size - offset));
+    // Legacy strings previously died at the end of each iteration. Release both before the
+    // next read so fallback decoders do not retain an extra, unreserved previous chunk.
+    if constexpr (kCallerOwned) {
+      left_stream.ReleaseLegacyBytes();
+      if (right_stream) {
+        right_stream->ReleaseLegacyBytes();
+      }
+    }
+    MBO_ASSIGN_OR_RETURN(const auto left_bytes, ReadComparisonChunk<kCallerOwned>(left_stream, length));
+    if (!right_stream) {
+      MBO_ASSIGN_OR_RETURN(auto cursor, OpenEntry(right));
+      right_stream.emplace(std::move(cursor));
+    }
+    MBO_ASSIGN_OR_RETURN(const auto right_bytes, ReadComparisonChunk<kCallerOwned>(*right_stream, length));
+    if (left_bytes != right_bytes) {
+      return ComparisonResult{};
+    }
+    if (left_bytes.size() < length) {
+      break;  // Both cursors reached EOF at the same offset.
+    }
+  }
+  return ComparisonResult{.same = true};
+}
+
 absl::StatusOr<ComparisonResult> CompareRegular(
     const TreeCompareEntry& left,
     const TreeCompareEntry& right,
@@ -74,24 +156,10 @@ absl::StatusOr<ComparisonResult> CompareRegular(
     return CompareSmall(left, right, retain);
   }
   MBO_ASSIGN_OR_RETURN(auto left_stream, OpenEntry(left));
-  std::optional<Cursor> right_stream;
-  constexpr std::size_t kChunk = ParallelCompare::kRetainedFileBytes;
-  for (std::uint64_t offset = 0; offset < left.metadata.size; offset += kChunk) {
-    const auto length = static_cast<std::size_t>(std::min<std::uint64_t>(kChunk, left.metadata.size - offset));
-    MBO_ASSIGN_OR_RETURN(const auto left_bytes, ReadChunk(*left_stream.stream, length));
-    if (!right_stream) {
-      MBO_ASSIGN_OR_RETURN(auto cursor, OpenEntry(right));
-      right_stream.emplace(std::move(cursor));
-    }
-    MBO_ASSIGN_OR_RETURN(const auto right_bytes, ReadChunk(*right_stream->stream, length));
-    if (left_bytes != right_bytes) {
-      return ComparisonResult{};
-    }
-    if (left_bytes.size() < length) {
-      break;  // Both cursors reached EOF at the same offset.
-    }
-  }
-  return ComparisonResult{.same = true};
+  // Keep decoded/memory-source chunks as local owning values, exactly as before. The native
+  // buffer path must not add per-chunk ownership or dispatch work to legacy streams.
+  return left_stream.direct_read ? CompareStreams<true>(left_stream, right, left.metadata.size)
+                                 : CompareStreams<false>(left_stream, right, left.metadata.size);
 }
 
 absl::StatusOr<ComparisonResult> ComparePair(const ComparisonPair& pair, bool retain) {

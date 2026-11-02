@@ -11,6 +11,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
+#include <span>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -42,35 +43,64 @@ using ::testing::SizeIs;
 
 class ShortSource final : public vfs::ReadSource {
  public:
+  explicit ShortSource(std::shared_ptr<vfs::ReadBudget> budget = std::make_shared<vfs::ReadBudget>())
+      : ReadSource(std::move(budget)) {}
+
   std::string bytes = "abcdef";
   bool fail_open = false;
   std::size_t fail_at = 100;
+  bool direct_read = false;
+  bool oversized_read = false;
+  std::size_t maximum_chunk = 2;
 
   absl::StatusOr<std::unique_ptr<vfs::ReadStream>> Open() const override {
     if (fail_open) {
       return absl::PermissionDeniedError("cursor open");
     }
-    return std::make_unique<Stream>(bytes, fail_at);
+    return std::make_unique<Stream>(bytes, fail_at, direct_read, oversized_read, maximum_chunk);
   }
 
  private:
   class Stream final : public vfs::ReadStream {
    public:
-    Stream(std::string bytes, std::size_t fail_at) : bytes_(std::move(bytes)), fail_at_(fail_at) {}
+    Stream(std::string bytes, std::size_t fail_at, bool direct_read, bool oversized_read, std::size_t maximum_chunk)
+        : bytes_(std::move(bytes)),
+          fail_at_(fail_at),
+          direct_read_(direct_read),
+          oversized_read_(oversized_read),
+          maximum_chunk_(maximum_chunk) {}
 
     absl::StatusOr<std::string> Read(std::size_t maximum) override {
       if (offset_ >= fail_at_) {
         return absl::DataLossError("cursor read");
       }
-      const auto chunk = std::string_view(bytes_).substr(offset_, std::min(std::size_t{2}, maximum));
+      const auto chunk = std::string_view(bytes_).substr(offset_, std::min(maximum_chunk_, maximum));
       offset_ += chunk.size();
       return std::string(chunk);
+    }
+
+    bool SupportsReadInto() const noexcept override { return direct_read_; }
+
+    absl::StatusOr<std::size_t> ReadInto(std::span<char> buffer) override {
+      if (oversized_read_) {
+        return buffer.size() + 1;
+      }
+      if (offset_ >= fail_at_) {
+        return absl::DataLossError("cursor read");
+      }
+      const auto chunk = std::string_view(bytes_).substr(offset_, std::min(maximum_chunk_, buffer.size()));
+      std::ranges::copy(chunk, buffer.begin());
+      offset_ += chunk.size();
+      return chunk.size();
     }
 
    private:
     std::string bytes_;
     std::size_t fail_at_;
     std::size_t offset_ = 0;
+    bool direct_read_;
+    bool oversized_read_;
+    std::size_t maximum_chunk_;
   };
 };
 
@@ -244,6 +274,62 @@ TEST_F(ParallelCompareTest, CursorFailuresRemainErrors) {
   EXPECT_THAT(compare.Compare({{.left = left, .right = right}}).front(), StatusIs(absl::StatusCode::kDataLoss));
 }
 
+TEST_F(ParallelCompareTest, CallerOwnedReadsHandleShortChunksEofAndLegacyPeers) {
+  const auto source = std::make_shared<ShortSource>();
+  source->direct_read = true;
+  fs.source_override = source;
+  left.metadata.size = right.metadata.size = 262'144;
+  ParallelCompare compare(1);
+  EXPECT_THAT(
+      compare.Compare({{.left = left, .right = right}}).front(),
+      IsOkAndHolds(Field(&ComparisonResult::same, IsTrue())));
+  source->bytes.clear();
+  EXPECT_THAT(
+      compare.Compare({{.left = left, .right = right}}).front(),
+      IsOkAndHolds(Field(&ComparisonResult::same, IsTrue())));
+
+  CompareFs other_fs;
+  right.fs.set_ref(other_fs);
+  source->bytes.assign(200'017, 'a');
+  source->fail_at = source->bytes.size() + 1;
+  source->maximum_chunk = 17'003;
+  other_fs.files.at("right") = source->bytes;
+  EXPECT_THAT(
+      compare.Compare({{.left = left, .right = right}}).front(),
+      IsOkAndHolds(Field(&ComparisonResult::same, IsTrue())));
+  other_fs.files.at("right").back() = 'b';
+  EXPECT_THAT(
+      compare.Compare({{.left = left, .right = right}}).front(),
+      IsOkAndHolds(Field(&ComparisonResult::same, IsFalse())));
+  // Reverse the capability mix: the left stream now uses the legacy owned-string path.
+  const auto right_source = std::make_shared<ShortSource>();
+  right_source->bytes = source->bytes;
+  right_source->fail_at = source->fail_at;
+  right_source->maximum_chunk = source->maximum_chunk;
+  right_source->direct_read = true;
+  source->direct_read = false;
+  other_fs.source_override = right_source;
+  EXPECT_THAT(
+      compare.Compare({{.left = left, .right = right}}).front(),
+      IsOkAndHolds(Field(&ComparisonResult::same, IsTrue())));
+}
+
+TEST_F(ParallelCompareTest, CallerOwnedErrorsAndInvalidCountsDoNotOpenRightSide) {
+  const auto source = std::make_shared<ShortSource>();
+  source->direct_read = true;
+  fs.source_override = source;
+  const CompareFs other_fs;
+  right.fs.set_ref(other_fs);
+  left.metadata.size = right.metadata.size = 262'144;
+  ParallelCompare compare(1);
+  source->fail_at = 2;
+  EXPECT_THAT(compare.Compare({{.left = left, .right = right}}).front(), StatusIs(absl::StatusCode::kDataLoss));
+  EXPECT_THAT(other_fs.sources.load(), Eq(0));
+  source->oversized_read = true;
+  EXPECT_THAT(compare.Compare({{.left = left, .right = right}}).front(), StatusIs(absl::StatusCode::kDataLoss));
+  EXPECT_THAT(other_fs.sources.load(), Eq(0));
+}
+
 TEST_F(ParallelCompareTest, EmptyFilesNeedNoCursorAndOwnedSourcesStaySerial) {
   left.metadata.size = right.metadata.size = 0;
   ParallelCompare compare(4);
@@ -355,6 +441,29 @@ TEST_F(ParallelCompareTest, CursorBuffersRespectAndReleaseSourceBudget) {
   EXPECT_THAT(
       compare.Compare({{.left = left, .right = right}}).front(),
       IsOkAndHolds(Field(&ComparisonResult::same, IsTrue())));
+  EXPECT_THAT(enough->MemoryUsed(), Eq(0));
+}
+
+TEST_F(ParallelCompareTest, CallerOwnedBuffersReleaseReservationsOnSuccessAndErrors) {
+  left.metadata.size = right.metadata.size = 262'144;
+  ParallelCompare compare(1);
+  const auto insufficient = std::make_shared<vfs::ReadBudget>(ParallelCompare::kRetainedFileBytes);
+  const auto source = std::make_shared<ShortSource>(insufficient);
+  source->direct_read = true;
+  fs.source_override = source;
+  EXPECT_THAT(
+      compare.Compare({{.left = left, .right = right}}).front(), StatusIs(absl::StatusCode::kResourceExhausted));
+  EXPECT_THAT(insufficient->MemoryUsed(), Eq(0));
+  const auto enough = std::make_shared<vfs::ReadBudget>(2 * ParallelCompare::kRetainedFileBytes);
+  const auto complete = std::make_shared<ShortSource>(enough);
+  complete->direct_read = true;
+  fs.source_override = complete;
+  EXPECT_THAT(
+      compare.Compare({{.left = left, .right = right}}).front(),
+      IsOkAndHolds(Field(&ComparisonResult::same, IsTrue())));
+  EXPECT_THAT(enough->MemoryUsed(), Eq(0));
+  complete->fail_at = 2;
+  EXPECT_THAT(compare.Compare({{.left = left, .right = right}}).front(), StatusIs(absl::StatusCode::kDataLoss));
   EXPECT_THAT(enough->MemoryUsed(), Eq(0));
 }
 
