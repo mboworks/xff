@@ -405,31 +405,40 @@ absl::StatusOr<std::string> LocalFs::ReadContentRange(std::string_view path, std
     return absl::OutOfRangeError(absl::StrCat("read offset is not representable for '", path, "': ", offset));
   }
 
-  std::string content(length, '\0');
-  std::size_t total = 0;
-  while (total < length) {
-    const auto max_offset = static_cast<std::uint64_t>(std::numeric_limits<off_t>::max());
-    if (total > max_offset - offset) {
-      break;
-    }
-    const std::size_t chunk = std::min(length - total, static_cast<std::size_t>(std::numeric_limits<ssize_t>::max()));
-    const ssize_t count =
-        ::pread(fd, std::span<char>(content).subspan(total).data(), chunk, static_cast<off_t>(offset + total));
-    if (count < 0) {
-      if (errno == EINTR) {  // LCOV_EXCL_BR_LINE: requires interrupting the individual pread syscall.
-        continue;            // LCOV_EXCL_LINE
+  std::string content;
+  int read_error = 0;
+  // XFF_ABI_POINTER: std::string::resize_and_overwrite requires this writable buffer callback.
+  content.resize_and_overwrite(length, [&](char* buffer, std::size_t) noexcept -> std::size_t {
+    std::size_t total = 0;
+    while (total < length) {
+      const auto max_offset = static_cast<std::uint64_t>(std::numeric_limits<off_t>::max());
+      // LCOV_EXCL_START: a host file cannot supply bytes past off_t's maximum offset.
+      // Keep this defensive addition-overflow guard even though real pread cannot reach it.
+      if (total > max_offset - offset) {
+        break;
       }
-      const int read_errno = errno;
-      ::close(fd);
-      return absl::ErrnoToStatus(read_errno, absl::StrCat("pread('", path, "')"));
+      // LCOV_EXCL_STOP
+      const std::size_t chunk = std::min(length - total, static_cast<std::size_t>(std::numeric_limits<ssize_t>::max()));
+      const ssize_t count =
+          ::pread(fd, std::span<char>(buffer, length).subspan(total).data(), chunk, static_cast<off_t>(offset + total));
+      if (count < 0) {
+        if (errno == EINTR) {  // LCOV_EXCL_BR_LINE: requires interrupting the individual pread syscall.
+          continue;            // LCOV_EXCL_LINE
+        }
+        read_error = errno;
+        break;
+      }
+      if (count == 0) {
+        break;
+      }
+      total += static_cast<std::size_t>(count);
     }
-    if (count == 0) {
-      break;
-    }
-    total += static_cast<std::size_t>(count);
-  }
+    return total;  // Only initialized bytes become string content, including short reads and EOF.
+  });
   ::close(fd);
-  content.resize(total);
+  if (read_error != 0) {
+    return absl::ErrnoToStatus(read_error, absl::StrCat("pread('", path, "')"));
+  }
   return content;
 }
 

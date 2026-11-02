@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Avoid redundant zeroing in native bounded range reads while preserving short-read, EOF and error handling.
+
 - Render lexical filename fields and path qualifiers from borrowed input slices instead of temporary path objects.
 
 - Cache fuzzy normalization ceilings and reuse bounded per-worker scoring rows; retain valid ranked matches after long gaps.

@@ -146,5 +146,29 @@ TEST_F(ReadSourceTest, HostRangesHaveIndependentNativeOffsets) {
   EXPECT_THAT(source->OpenAt(std::numeric_limits<std::uint64_t>::max()), StatusIs(absl::StatusCode::kOutOfRange));
 }
 
+TEST_F(ReadSourceTest, HostCursorExposesOnlyInitializedBytesAndRetainsEarlierChunks) {
+  MBO_ASSERT_OK_AND_ASSIGN(auto directory, TemporaryDirectory::Create(::testing::TempDir() + "host-chunks", {}));
+  MBO_ASSERT_OK_AND_ASSIGN(auto output, TemporaryOutput::Create(directory->Path() + "/file", {}));
+  std::string bytes((2UZ * 64 * 1'024) + 17, 'a');
+  for (std::size_t at = 0; at < bytes.size(); ++at) {
+    bytes.at(at) = static_cast<char>('a' + (at % 26));
+  }
+  EXPECT_THAT(output->Write(bytes), IsOk());
+  const auto source = HostReadSource(output->Path());
+  MBO_ASSERT_OK_AND_ASSIGN(auto stream, source->Open());
+  EXPECT_THAT(stream->Read(0), IsOkAndHolds(IsEmpty()));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto first, stream->Read(1'024UZ * 1'024));
+  EXPECT_THAT(first, EqualsText(bytes.substr(0, 64UZ * 1'024)));
+  EXPECT_THAT(stream->Read(1'024UZ * 1'024), IsOkAndHolds(EqualsText(bytes.substr(64UZ * 1'024, 64UZ * 1'024))));
+  EXPECT_THAT(stream->Read(1'024UZ * 1'024), IsOkAndHolds(EqualsText(bytes.substr(2UZ * 64 * 1'024))));
+  EXPECT_THAT(stream->Read(1), IsOkAndHolds(IsEmpty()));
+  EXPECT_THAT(first, EqualsText(bytes.substr(0, 64UZ * 1'024)));
+  MBO_ASSERT_OK_AND_ASSIGN(auto partial, source->OpenAt(bytes.size() - 3));
+  EXPECT_THAT(partial->Read(64UZ * 1'024), IsOkAndHolds(EqualsText(bytes.substr(bytes.size() - 3))));
+  EXPECT_THAT(partial->Read(1), IsOkAndHolds(IsEmpty()));
+  MBO_ASSERT_OK_AND_ASSIGN(auto unreadable, HostReadSource(directory->Path())->Open());
+  EXPECT_THAT(unreadable->Read(1), StatusIs(absl::StatusCode::kDataLoss));
+}
+
 }  // namespace
 }  // namespace xff::vfs

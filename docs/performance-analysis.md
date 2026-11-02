@@ -3163,3 +3163,23 @@ Do not turn allocation counts or a kernel result into a command-level claim. Pre
 Future prepared key bindings belong with O13/O15 and need fresh lifetime, missing-value, cold/hot
 and native controls. The current result does not justify adding an interner, second catalog or
 per-entry ownership layer. Read-buffer qualification (O06) continues independently.
+
+## O06 selected range-read overwrite and deferred cursor change
+
+The [three-phase read experiment](benchmarks/host-range-overwrite-20261102.md) removes redundant
+zeroing only from `LocalFs::ReadContentRange`, using the standard overwrite operation and publishing
+only bytes initialized by successful reads. Preserve EOF, short reads, offsets, EINTR and errors;
+add no stat, lock, wrapper, public API or exception cleanup. Existing read budgets are unchanged.
+
+Final current-parent native qualification shows about 4-7% improvement in the principal 64 KiB
+comparison cases on both hosts. Retain the full 4 KiB/64 KiB/1 MiB matrices, 1/3/10-worker controls,
+all slower cases and all 22,560 fresh invocations across qualification phases. Direct OS adapters
+need native cached-file measurements; an in-memory filesystem would bypass this changed code.
+
+The combined cursor-zeroing prototype improves long one-worker reads but repeatedly regresses
+Linux ten-worker early differences (6.28%, then 8.76%). Keep `HostStream::Read` unchanged and retain
+that prototype as deferred O07 evidence. Page faults/allocation/scheduling are possible explanations,
+not proven mechanisms. A reusable buffer must remain covered by its applicable reservation; do not
+retain worker storage after a cursor budget dies. A generic span-read fallback may add copy/allocation
+cost for archived/decoded sources. Prefer cursor-scoped reuse first or establish a capability/budget
+contract and native plus archive controls before introducing persistent worker buffers.
