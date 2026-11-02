@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -84,6 +85,9 @@ struct State {
   std::vector<std::unique_ptr<const LanguageVocabulary>> snapshots ABSL_GUARDED_BY(mutex);
   mbo::types::OptionalRef<const LanguageVocabulary> active ABSL_GUARDED_BY(mutex);
   std::optional<Catalog> catalog ABSL_GUARDED_BY(mutex);
+  mbo::types::OptionalRef<const LanguageVocabulary> default_vocabulary ABSL_GUARDED_BY(mutex);
+  std::size_t default_database_count ABSL_GUARDED_BY(mutex) = 0;
+  std::optional<Catalog> default_catalog ABSL_GUARDED_BY(mutex);
 };
 
 State& GlobalState() {
@@ -612,13 +616,23 @@ void EnsureConfigured(State& state) ABSL_EXCLUSIVE_LOCKS_REQUIRED(state.mutex) {
   if (state.active.has_value()) {
     return;
   }
+  const auto databases = Databases();
+  // Registration is append-only. Reuse immutable generated defaults, while a later
+  // registration still becomes visible after the next Configure reset.
+  if (state.default_vocabulary && state.default_database_count == databases.size()) {
+    state.active.set_ref(*state.default_vocabulary);
+    return;
+  }
   auto vocabulary = std::make_unique<LanguageVocabulary>(CoreVocabulary());
-  for (const Database& database : Databases()) {
+  for (const Database& database : databases) {
     CHECK_OK(LayerProcessor(*vocabulary, database.name, ConflictPolicy::kLast).Apply(database.json()));
   }
   Finalize(*vocabulary);
   state.snapshots.push_back(std::move(vocabulary));
-  state.active.set_ref(*state.snapshots.back());
+  state.default_vocabulary.set_ref(*state.snapshots.back());
+  state.default_database_count = databases.size();
+  state.default_catalog.reset();
+  state.active.set_ref(*state.default_vocabulary);
 }
 
 }  // namespace
@@ -665,9 +679,14 @@ Catalog ActiveCatalog() {
   const absl::MutexLock lock(state.mutex);
   EnsureConfigured(state);
   if (!state.catalog) {
-    auto catalog = Catalog::Compile(LanguageSnapshot(*state.active), {});
-    CHECK_OK(catalog.status());
-    state.catalog.emplace(*std::move(catalog));
+    // Custom configurations publish their catalog eagerly. A missing catalog here
+    // belongs to the generated default selected by EnsureConfigured.
+    if (!state.default_catalog) {
+      auto catalog = Catalog::Compile(LanguageSnapshot(*state.active), {});
+      CHECK_OK(catalog.status());
+      state.default_catalog.emplace(*std::move(catalog));
+    }
+    state.catalog.emplace(*state.default_catalog);
   }
   return *state.catalog;
 }

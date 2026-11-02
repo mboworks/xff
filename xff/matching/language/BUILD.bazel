@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//xff:cc.bzl", "cc_library", "cc_test")
+load("//xff:cc.bzl", "cc_binary", "cc_library", "cc_test")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -83,5 +83,35 @@ cc_test(
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:status_cc",
         "@xff_language_db//:language_db_register_cc",
+    ],
+)
+
+cc_test(
+    name = "default_cache_test",
+    size = "small",
+    srcs = ["default_cache_test.cc"],
+    deps = [
+        ":language_cc",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+        "@xff_extras_api//:language_database_cc",
+    ],
+)
+
+cc_binary(
+    name = "default_cache_benchmark",
+    srcs = ["default_cache_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        ":language_cc",
+        "//xff/matching/mime:mime_cc",
+        "@com_github_google_benchmark//:benchmark",
+        "@xff_language_db//:language_db_register_cc",
+        "@xff_mime_db//:mime_db_register_cc",
     ],
 )

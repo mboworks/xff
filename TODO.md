@@ -416,7 +416,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       [Cross-platform evidence](docs/benchmarks/derived-content-handoff-20261102.md) retains
       read-count, lifetime/error/limit tests, large field-workload gains and slower controls.
       Transfer requested hashes/line values only; keep raw bytes confined to each evaluator.
-- [ ] O14-O22: Reconcile remaining static catalogs, invariant operands,
+- [x] O14: Reuse immutable generated defaults across repeated language/MIME configurations,
+      refreshing after append-only registration and preserving custom overlays and old views.
+      [Warm construction, RSS and native controls](docs/benchmarks/immutable-default-catalogs-20261102.md)
+      qualify reuse only; first-parse generated tables and per-run MIME binding remain unqualified.
+- [ ] O15-O22: Reconcile remaining invariant operands,
       paired streaming compare, reusable stage pools, byte-bounded overlap, archive indexing/admission,
       optional bulk metadata, similarity representations and output churn with EP/JC/P acceptance.
       Keep macrobenchmark, kernel and diagnostic contracts separate.
