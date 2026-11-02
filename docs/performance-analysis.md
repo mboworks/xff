@@ -3092,3 +3092,41 @@ per-directory filesystem case decision instead of forcing full regular-file meta
 mount boundaries, followed links and virtual filesystems before changing that policy; cross-series
 exact/default timings conflate metadata, matching admission and case behavior and cannot isolate
 one of them.
+
+## O03 fuzzy normalization and workspace experiment
+
+The [qualified experiment](benchmarks/fuzzy-score-workspace-20261102.md) separates the pattern-only
+normalization ceiling from alignment search.
+An identical, equal-length self-match has one alignment; its consecutive and word-start bonuses
+can be computed in linear time without allocating dynamic-programming rows. Parsed immutable
+Fzf terms cache that ceiling. Coordinator and persistent-worker-owned score workspaces reuse one
+uninitialized allocation for two rows, with a 512 KiB retained bound and temporary storage for
+larger inputs. Existing pools/threads remain unchanged. The selected implementation passes paired cross-platform
+measurements and isolated allocation diagnostics; publication still requires normal hooks and CI.
+
+A deterministic test also reproduced an existing correctness problem: matching `x` after 1,500
+`a` bytes succeeds as a subsequence, but the ranked query returned no match. Its valid raw score
+is -1,484, below the old -1,000 unmatched sentinel. Use the lowest representable int plus one gap
+penalty for the sentinel, preserving headroom in the recurrence; the match then has normalized
+quality zero instead of disappearing. Test both first-row and later-row long gaps. The general
+fuzz harness caps input at 1,024 bytes, so it cannot cover this counterexample; keep an explicit
+long-input regression instead of multiplying the quadratic model campaign cost.
+
+The score rows use the C++20 owning dynamic-array overwrite allocation API. Two narrow lint
+annotations document its required array-specialization syntax. The first row writes every cell
+before it can be read; no blanket zeroing, lock, reference counting or exception cleanup is added.
+The public workspace remains thread-confined, reusable after moving, and isolated across workers.
+
+### O03 initial-row capacity decision
+
+The first 64-input-byte minimum reduced allocation calls but made the tiny fresh-workspace kernel
+slower than ceiling caching alone. Three-session in-memory controls on both hosts support allocating
+exactly the first input size and doubling only for later growth, within the existing retained bound.
+The one-predicate/1,000-entry scored kernel improves about 51% on macOS and 33% on Linux versus the
+original implementation. In-memory 10,000-entry scored selection improves about 14% macOS and 5-6%
+Linux. These are component/whole-engine fixtures, not filesystem throughput claims. Preserve the
+64-byte-minimum control and all native samples. Final parent-based native qualification shows
+100,000-file ranked-name/path improvements of about 4-9% macOS and 1-6% Linux depending on workers
+and scoring input; bare/control cases stay near baseline. Scored kernels improve 29-54%, while
+unrelated bare kernels include 3-4% slower cases and preparation is slightly slower. Keep these
+counterexamples and all raw data in the report; the result is not a claim about every fuzzy model.

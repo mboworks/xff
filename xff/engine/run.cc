@@ -77,6 +77,7 @@
 #include "xff/exec/exec.h"
 #include "xff/filesystem/ignore/ignore.h"
 #include "xff/filesystem/repo/repo.h"
+#include "xff/fuzzy/fuzzy.h"
 #include "xff/hash/hash.h"
 #include "xff/matching/language/catalog.h"
 #include "xff/matching/language/language.h"
@@ -5484,6 +5485,7 @@ RunResult RunFindCore(
   // The normalized fuzzy quality composed by the evaluator and read by {fuzzy} / --sort=score.
   // Run-scoped rather than per-entry so the phases can share it; cleared before each evaluation.
   std::optional<int> fuzzy_score;
+  fuzzy::ScoreWorkspace fuzzy_workspace;
   // The -hasheq verdict for the entry currently being evaluated. Kept independently from matched:
   // a failed check must still reach --summary=hash-verification.
   std::optional<bool> hash_verification;
@@ -6234,6 +6236,7 @@ RunResult RunFindCore(
             .fold_name_case = fold_name_case,
             .fuzzy_score = full_metadata || rank_by_score ? mbo::types::OptionalRef{fuzzy_score}
                                                           : mbo::types::OptionalRef<std::optional<int>>{},
+            .fuzzy_workspace = fuzzy_workspace,
             .hash_verification = hash_verification_summary ? mbo::types::OptionalRef{hash_verification}
                                                            : mbo::types::OptionalRef<std::optional<bool>>{},
             .deferred = deferred_nodes.empty() ? mbo::types::OptionalRef<DeferredEvaluation>{}
@@ -6392,6 +6395,7 @@ RunResult RunFindCore(
           .block_size = block_size,
           .fold_name_case = fold_name_case,
           .fuzzy_score = fuzzy_score,
+          .fuzzy_workspace = fuzzy_workspace,
           .hash_verification = hash_verification_summary ? mbo::types::OptionalRef{candidate.hash_verification}
                                                          : mbo::types::OptionalRef<std::optional<bool>>{},
           .deferred = deferred,

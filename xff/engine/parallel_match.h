@@ -20,6 +20,7 @@
 #include "xff/engine/collect.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/expression_execution.h"
+#include "xff/fuzzy/fuzzy.h"
 #include "xff/parser/ast.h"
 
 namespace xff::engine {
@@ -76,11 +77,13 @@ class ParallelMatch final {
   bool Ready(std::size_t generation) const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   bool Finished() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void EvaluateEntries(
+      fuzzy::ScoreWorkspace& workspace,
       mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output = {},
       mbo::types::OptionalRef<const WorkerMatchers> matchers = {},
       mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator = {});
   ParallelResult EvaluateEntry(
       const Visit& visit,
+      fuzzy::ScoreWorkspace& workspace,
       mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
       mbo::types::OptionalRef<const WorkerMatchers> matchers,
       mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator) const;
@@ -91,6 +94,7 @@ class ParallelMatch final {
   const std::optional<ParallelContentOutput> output_;
   const mbo::types::OptionalRef<const ExpressionExecution> execution_;
   std::optional<ExpressionExecution::Worker> coordinator_;
+  fuzzy::ScoreWorkspace coordinator_fuzzy_workspace_;
   std::vector<std::thread> threads_;
   absl::Mutex mutex_;
   bool stop_ ABSL_GUARDED_BY(mutex_) = false;

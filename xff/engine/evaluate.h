@@ -50,6 +50,10 @@ namespace xff::exec {
 class ParallelExec;  // bounded concurrent `-exec/-execdir ... ;` runner (xff/exec/exec.h)
 }  // namespace xff::exec
 
+namespace xff::fuzzy {
+struct ScoreWorkspace;
+}  // namespace xff::fuzzy
+
 namespace xff::engine {
 
 // Output sink for actions: receives one fully-formed record per action firing
@@ -206,6 +210,8 @@ struct EvalContext {
   // The normalized 0..100 fuzzy quality composed across the expression for {fuzzy}, --sort=score,
   // and -top. Null when no consumer needs it; reset by the driver per entry.
   mbo::types::OptionalRef<std::optional<int>> fuzzy_score;
+  // Owned by this coordinator/worker, reused across entries; never shared between threads.
+  mbo::types::OptionalRef<fuzzy::ScoreWorkspace> fuzzy_workspace;
   // --summary=hash-verification: the verdict produced when this entry reaches its -hasheq predicate.
   // Null when that reduction is inactive; an empty optional means short-circuiting has not reached
   // -hasheq, while true / false records the predicate's actual result independent of the expression's

@@ -24,6 +24,7 @@
 #include "xff/engine/expression_execution.h"
 #include "xff/engine/expression_qualification.h"
 #include "xff/engine/walk.h"
+#include "xff/fuzzy/fuzzy.h"
 #include "xff/parser/parser.h"
 #include "xff/vfs/filesystem.h"
 
@@ -189,6 +190,33 @@ TEST_F(AllocationTest, CounterObservesAllocationAndFreeWithoutCountingAssertions
   });
   EXPECT_THAT(released.counts.allocations, Eq(0));
   EXPECT_THAT(released.counts.frees, Ge(1));
+}
+
+TEST_F(AllocationTest, ReusedFuzzyWorkspaceAvoidsHotScoreAllocations) {
+  const fuzzy::FzfQuery query("fl");
+  fuzzy::ScoreWorkspace workspace;
+  const int score = query.Percent("file.txt", false, workspace).value_or(-1);
+  const auto fresh = MeasureAllocations([&] {
+    int total = 0;
+    for (int repeat = 0; repeat < 1'000; ++repeat) {
+      total += query.Percent("file.txt", false).value_or(-1);
+    }
+    return total;
+  });
+  const auto reused = MeasureAllocations([&] {
+    int total = 0;
+    for (int repeat = 0; repeat < 1'000; ++repeat) {
+      total += query.Percent("file.txt", false, workspace).value_or(-1);
+    }
+    return total;
+  });
+  EXPECT_THAT(fresh.value, Eq(1'000 * score));
+  EXPECT_THAT(reused.value, Eq(fresh.value));
+  EXPECT_THAT(fresh.counts.allocations, Eq(1'000));
+  EXPECT_THAT(reused.counts.allocations, Eq(0));
+  EXPECT_THAT(reused.counts.requested_bytes, Eq(0));
+  RecordCounts("fuzzy_fresh_rows", fresh.counts);
+  RecordCounts("fuzzy_reused_rows", reused.counts);
 }
 
 struct AllocationCase {

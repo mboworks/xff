@@ -15,10 +15,13 @@
 
 #include "xff/fuzzy/fuzzy.h"
 
+#include <algorithm>
 #include <array>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -34,9 +37,11 @@ using ::testing::Eq;
 using ::testing::Ge;
 using ::testing::Gt;
 using ::testing::IsFalse;
+using ::testing::IsNull;
 using ::testing::IsTrue;
 using ::testing::Le;
 using ::testing::Lt;
+using ::testing::NotNull;
 using ::testing::Optional;
 
 struct FuzzyTest : ::testing::Test {};
@@ -72,7 +77,7 @@ TEST_F(FuzzyTest, CompiledExtendedQueryTruthAgreesWithRankedResults) {
         const auto ranked = compiled.Percent(candidate, fold);
         EXPECT_THAT(ranked, Eq(FzfPercent(query, candidate, fold)));
         if (compiled.Matches(candidate, fold)) {
-          EXPECT_THAT(ranked, Optional(::testing::_));
+          EXPECT_THAT(ranked, Optional(_));
         } else {
           EXPECT_THAT(ranked, Eq(std::nullopt));
         }
@@ -144,6 +149,141 @@ TEST_F(FuzzyScoreTest, PercentNormalizesScoresAcrossPatterns) {
   EXPECT_THAT(Percent("", "anything", false), Optional(Eq(100)));
   EXPECT_THAT(Percent("zzz", "anything", false), Eq(std::nullopt));
   EXPECT_THAT(Percent("foo", "far_out_of", false), Optional(AllOf(Ge(0), Lt(100))));
+}
+
+// The unchanged full alignment scorer is the normalization oracle. This intentionally pays
+// for the old pattern-against-itself search instead of repeating the new closed-form ceiling.
+std::optional<int> AlignmentNormalizedPercent(std::string_view pattern, std::string_view text, bool fold) {
+  const auto score = Score(pattern, text, fold);
+  if (!score.has_value()) {
+    return std::nullopt;
+  }
+  if (pattern.empty()) {
+    return 100;
+  }
+  const int ceiling = Score(pattern, pattern, fold).value_or(0);
+  if (ceiling <= 0) {
+    return std::nullopt;
+  }
+  const auto scaled = (static_cast<std::int64_t>(*score) * 100) / ceiling;
+  return static_cast<int>(std::clamp<std::int64_t>(scaled, 0, 100));
+}
+
+TEST_F(FuzzyScoreTest, PreparedCeilingsRetainAlignmentScoresAndCaseSemantics) {
+  // Repeated letters, camel-case boundaries and all separator kinds affect the bonus ceiling.
+  std::vector<std::string> patterns{""};
+  std::vector<std::string> frontier{""};
+  static constexpr auto kAlphabet = std::to_array<char>({'a', 'A', '_', '.', '/'});
+  for (int length = 0; length < 4; ++length) {
+    std::vector<std::string> next;
+    next.reserve(frontier.size() * kAlphabet.size());
+    for (const std::string& prefix : frontier) {
+      for (const char byte : kAlphabet) {
+        next.push_back(prefix + byte);
+      }
+    }
+    patterns.insert(patterns.end(), next.begin(), next.end());
+    frontier = std::move(next);
+  }
+  patterns.push_back("a-b c");
+  patterns.push_back("path/fileName.cc");
+  patterns.push_back(std::string(160, 'a') + "_Tail");
+  for (const std::string& pattern : patterns) {
+    const FzfQuery compiled(pattern);
+    const std::vector<std::string> texts{pattern, "a_A/a.a", "", "x" + pattern, pattern + "extra"};
+    for (const std::string& text : texts) {
+      for (const bool fold : {false, true}) {
+        SCOPED_TRACE(pattern);
+        SCOPED_TRACE(text);
+        const auto expected = AlignmentNormalizedPercent(pattern, text, fold);
+        EXPECT_THAT(Percent(pattern, text, fold), Eq(expected));
+        // A space changes extended-query syntax, so only the plain term has this same oracle.
+        if (!pattern.contains(' ')) {
+          EXPECT_THAT(compiled.Percent(text, fold), Eq(expected));
+        }
+      }
+    }
+  }
+}
+
+TEST_F(FuzzyScoreTest, WorkspaceReusesRowsAcrossPatternsLengthsAndMoves) {
+  ScoreWorkspace workspace;
+  EXPECT_THAT(Score("", "empty needs no rows", false, workspace), Optional(Eq(0)));
+  EXPECT_THAT(workspace.rows, IsNull());
+  EXPECT_THAT(workspace.capacity, Eq(0));
+  const FzfQuery query("fl | ^file .txt$");
+  static constexpr auto kTexts = std::to_array<std::string_view>({
+      "file.txt",
+      "a/long_path/fileName.txt",
+      "not-a-match",
+      "",
+      "FILE.TXT",
+      "fl.txt",
+  });
+  static constexpr auto kPatterns = std::to_array<std::string_view>({"", "fl", "file", "F", "z", "aa"});
+  for (int repeat = 0; repeat < 3; ++repeat) {
+    for (const std::string_view text : kTexts) {
+      for (const bool fold : {false, true}) {
+        for (const std::string_view pattern : kPatterns) {
+          SCOPED_TRACE(pattern);
+          SCOPED_TRACE(text);
+          EXPECT_THAT(Score(pattern, text, fold, workspace), Eq(Score(pattern, text, fold)));
+          EXPECT_THAT(Percent(pattern, text, fold, workspace), Eq(AlignmentNormalizedPercent(pattern, text, fold)));
+        }
+        EXPECT_THAT(query.Percent(text, fold, workspace), Eq(query.Percent(text, fold)));
+      }
+    }
+  }
+  EXPECT_THAT(workspace.rows, NotNull());
+  const std::size_t capacity = workspace.capacity;
+  EXPECT_THAT(Score("f", "file", false, workspace), Optional(Eq(24)));
+  EXPECT_THAT(workspace.capacity, Eq(capacity));
+  auto moved = std::move(workspace);
+  EXPECT_THAT(Score("fl", "file", false, moved), Eq(Score("fl", "file", false)));
+  // A moved-from workspace can be used again; its retained scalar capacity must not mask an empty buffer.
+  EXPECT_THAT(Score("a", "a", false, workspace), Optional(Eq(24)));
+}
+
+TEST_F(FuzzyScoreTest, ImmutableQuerySharesNoWorkspaceBetweenThreads) {
+  const FzfQuery query("fl | foo");
+  std::array<ScoreWorkspace, 2> workspaces;
+  std::array<std::optional<int>, 2> observed;
+  const auto evaluate = [&](std::size_t side, std::string_view text) {
+    for (int repeat = 0; repeat < 1'000; ++repeat) {
+      observed.at(side) = query.Percent(text, true, workspaces.at(side));
+    }
+  };
+  std::thread left(evaluate, 0, "fileName.txt");
+  std::thread right(evaluate, 1, "a/long/path/foo.cc");
+  left.join();
+  right.join();
+  EXPECT_THAT(observed.at(0), Eq(query.Percent("fileName.txt", true)));
+  EXPECT_THAT(observed.at(1), Eq(query.Percent("a/long/path/foo.cc", true)));
+}
+
+TEST_F(FuzzyScoreTest, LongCandidateGapsRetainLowQualityMatches) {
+  const std::string prefix(1'500, 'a');
+  const std::string text = prefix + "x";
+  ScoreWorkspace workspace;
+  EXPECT_THAT(Matches("x", text, false), IsTrue());
+  EXPECT_THAT(Score("x", text, false, workspace), Optional(Eq(-1'484)));
+  EXPECT_THAT(Percent("x", text, false, workspace), Optional(Eq(0)));
+  const FzfQuery query("x");
+  EXPECT_THAT(query.Matches(text, false), IsTrue());
+  EXPECT_THAT(query.Percent(text, false, workspace), Optional(Eq(0)));
+  const std::string separated = text + std::string(100, 'a') + "y";
+  EXPECT_THAT(Score("xy", separated, false, workspace), Optional(Eq(-1'568)));
+}
+
+TEST_F(FuzzyScoreTest, GiantInputDoesNotIncreaseRetainedWorkspaceMemory) {
+  ScoreWorkspace workspace;
+  EXPECT_THAT(Score("a", "abc", false, workspace), Optional(Eq(24)));
+  const std::size_t capacity = workspace.capacity;
+  const std::string giant(ScoreWorkspace::kMaxRetainedCharacters + 1, 'a');
+  EXPECT_THAT(Score("a", giant, false, workspace), Optional(Eq(24)));
+  EXPECT_THAT(workspace.capacity, Eq(capacity));
+  EXPECT_THAT(Score("ab", "a-b", false, workspace), Eq(Score("ab", "a-b", false)));
+  EXPECT_THAT(workspace.capacity, Le(ScoreWorkspace::kMaxRetainedCharacters));
 }
 
 TEST_F(FuzzyScoreTest, FzfExtendedSearchCombinesSpaceSeparatedTerms) {

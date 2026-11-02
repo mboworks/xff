@@ -365,15 +365,22 @@ Current prioritized inventory and implementation/measurement boundaries:
 [the reconciled cross-platform audit](docs/performance-analysis.md#reconciled-cross-platform-optimization-audit-after-1040). O01-O22 map to the existing
 EP/JC/P work; candidates are not speedup claims until measured on both platforms.
 
-- [ ] O01: Adopt measured path-owned basename/root views with fallback copies, unchanged logical
+- [x] O01: Adopt measured path-owned basename/root views with fallback copies, unchanged logical
       budgets and ownership/growth/move coverage. Retain small regressions and Linux/macOS evidence
       in [the collection-sharing report](docs/benchmarks/collection-text-sharing-20261101.md).
-- [ ] O02: Qualify owned-pattern references and prepared simple ASCII glob operands.
+- [x] O02: Qualify owned-pattern references and prepared simple ASCII glob operands (#1042).
       [Cross-platform measurements](docs/benchmarks/native-glob-preparation-20261101.md) preserve
       case-folded/complex fallbacks, native controls and preparation costs.
-- [ ] O03-O06: Independently qualify fuzzy scratch/self-score
-      reuse, lexical field views, heterogeneous capture/definition lookup, and remaining read-buffer
-      zeroing. Prefer existing values and interfaces before adding prepared wrappers.
+- [ ] O03: Qualify cached fuzzy self-score ceilings and bounded per-worker score rows on macOS
+      and Linux. Preserve ranking/negation/case semantics and measure allocation counts separately.
+      [Selected policy and full evidence](docs/benchmarks/fuzzy-score-workspace-20261102.md): exact
+      initial allocation beats the rejected 64-character minimum; full release suites and scoped lint
+      are recorded before PR publication.
+- [x] Reproduce O03's long-gap sentinel defect with an explicit regression: a valid fuzzy match
+      after 1,500 bytes was incorrectly absent. Keep the fix in O03 qualification; the existing
+      general fuzz input cap is too small for this case.
+- [ ] O04-O06: Independently qualify lexical field views, heterogeneous capture/definition lookup,
+      and remaining read-buffer zeroing. Prefer existing values and interfaces before adding prepared wrappers.
 - [ ] O07-O12: Profile and qualify caller-owned stream buffers, typed reusable directory task slots,
       batch ownership, bounded result reuse, active-worker dispatch and direct production evaluation.
       Preserve existing stage policy while isolating task storage and lifecycle costs.
