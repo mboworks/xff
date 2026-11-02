@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Prepare explicit hash-primary algorithms and encodings once while preserving per-context defaults and conditional expected-hash templates.
+
 - Prepare file-diff normalization once per action style during a run instead of recompiling ignored-line regexes for every file pair.
 
 - Reuse immutable default language and MIME catalogs across repeated library runs while preserving custom configurations and later registrations.

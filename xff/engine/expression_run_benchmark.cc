@@ -171,6 +171,22 @@ int main(int argc, char** argv) {
           .arguments = {"--diff-ignore-matching=^(needle|absent|reference)$", "-false", "-diff", "peer/diff-control"},
       },
       {.name = "diff-template", .arguments = {"-type", "f", "-diff", "peer/{relpath}"}},
+      {
+          .name = "hash-explicit",
+          .arguments = {"-type", "f", "-hash:md5/base64"},
+      },
+      {
+          .name = "hash-default",
+          .arguments = {"-type", "f", "-hash"},
+      },
+      {
+          .name = "hasheq-explicit",
+          .arguments = {"-type", "f", "-hasheq:md5/base64", "V2pFZbcPWkwaCSXKvbWHpg=="},
+      },
+      {
+          .name = "hasheq-default",
+          .arguments = {"-type", "f", "-hasheq", "{hash}"},
+      },
       {.name = "hash-template", .arguments = {"-type", "f", "-hasheq", "{hash}"}},
       {.name = "first-limit", .arguments = {"-type", "f", "-first", "3", "-print"}},
       {.name = "mime", .arguments = {"-type", "f", "-mime", "TEXT/*"}},

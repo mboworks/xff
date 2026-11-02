@@ -1049,3 +1049,22 @@ cc_test(
         "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )
+
+cc_test(
+    name = "hash_pattern_test",
+    size = "small",
+    srcs = ["hash_pattern_test.cc"],
+    deps = [
+        ":evaluate_cc",
+        ":walk_cc",
+        "//xff/hash:hash_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)

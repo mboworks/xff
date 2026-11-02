@@ -79,3 +79,13 @@ dedicated direct-context tests separately compare prepared and unprepared option
 Retain the documented native costs as well as normalized-pair gains. This closes that subset of
 acceptance item 1; hash specification/default binding and remaining template-family qualification
 stay open. It is not evidence for an additional executor representation, optimizer or shared pool.
+
+## Later invariant-family qualification: O15b
+
+[O15b's paired report](benchmarks/prepared-hash-operands-20261102.md) qualifies compact hash-primary
+algorithm/encoding preparation in the existing dispatch/operand representation. Expected fields
+retain their existing template owner and conditional rendering; direct contexts retain live defaults
+and malformed/missing-operand behavior. Explicit-spec hot-loop gains coexist with extra preparation
+work, and native commands remain dominated by I/O. The record fits the existing operand maximum;
+its creation still needs pool capacity. No new per-entry ownership wrapper or hash vocabulary is
+introduced. Field-hash rendering/borrowing and the wider template/executor qualifications remain open.

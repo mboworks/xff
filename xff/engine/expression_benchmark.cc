@@ -133,6 +133,29 @@ constexpr auto kCases = std::to_array<ExpressionCase>({
     {.name = "compare-template", .primary = "-cmp", .argument = "peer/{name:s/file/copy/}"},
     {.name = "similar-template", .primary = "-similar", .argument = "peer/{name}"},
     {.name = "diff-template", .primary = "-diff", .argument = "peer/{name}"},
+    {
+        .name = "hash-explicit",
+        .primary = "-hash:md5/base64",
+    },
+    {
+        .name = "hash-default",
+        .primary = "-hash",
+    },
+    {
+        .name = "hasheq-explicit",
+        .primary = "-hasheq:md5/base64",
+        .argument = "V2pFZbcPWkwaCSXKvbWHpg==",
+    },
+    {
+        .name = "hasheq-encoding-default",
+        .primary = "-hasheq:md5",
+        .argument = "576a4565b70f5a4c1a0925cabdb587a6",
+    },
+    {
+        .name = "hasheq-algorithm-default",
+        .primary = "-hasheq:/base64",
+        .argument = "0pIQd3d32sCz0S9qZWoHPJunF89pMtvAGwzG3B53ebg=",
+    },
     {.name = "hash-template", .primary = "-hasheq", .argument = "{hash}"},
     {.name = "first-limit", .primary = "-first", .argument = "2147483647"},
     {.name = "mime", .primary = "-mime", .argument = "TEXT/*"},

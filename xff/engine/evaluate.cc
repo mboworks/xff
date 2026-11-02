@@ -1619,6 +1619,46 @@ bool EvalDiff(const parser::Expr& expr, EvalContext& ctx) {
   return EvalDiffWithTemplate(expr, ctx, {});
 }
 
+// Compact IDs borrow the single hash registry, never source/default string storage.
+// The expected template reuses the one owner already needed by -hasheq preparation.
+struct HashPattern {
+  std::size_t algorithm = 0;
+  hash::Encoding encoding = hash::Encoding::kHex;
+  hash::DefaultUsage defaults;
+  bool valid = false;
+  std::unique_ptr<const fields::Template> expected;
+};
+
+std::optional<hash::AlgoEncoding> ResolveHashPattern(const HashPattern& pattern, const EvalContext& context) {
+  if (!pattern.valid) {
+    return std::nullopt;
+  }
+  const std::string_view algorithm = pattern.defaults.algorithm
+                                         ? (context.hash_algorithm.empty() ? "sha256" : context.hash_algorithm)
+                                         : hash::AlgorithmNames().at(pattern.algorithm);
+  if (pattern.defaults.algorithm && !hash::IsAlgorithm(algorithm)) {
+    return std::nullopt;
+  }
+  return hash::AlgoEncoding{
+      .algo = algorithm,
+      .encoding = pattern.defaults.encoding ? hash::ParseEncoding(context.hash_encoding).value_or(hash::Encoding::kHex)
+                                            : pattern.encoding,
+      .defaults = pattern.defaults,
+  };
+}
+
+std::optional<hash::AlgoEncoding> ResolveHashRequest(
+    const parser::Expr& expression,
+    const EvalContext& context,
+    mbo::types::OptionalRef<const HashPattern> prepared) {
+  if (prepared) {
+    return ResolveHashPattern(*prepared, context);
+  }
+  const std::string_view algorithm = context.hash_algorithm.empty() ? "sha256" : context.hash_algorithm;
+  const auto encoding = hash::ParseEncoding(context.hash_encoding).value_or(hash::Encoding::kHex);
+  return hash::ParseSpec(expression.hash_spec, algorithm, encoding);
+}
+
 // The entry's digest, read through the filesystem the entry came FROM. That indirection is what
 // lets -hash / -hasheq work on an archive member: hashing by path would look for `a.tar!x` on the
 // real filesystem and find nothing. Both routes read the whole entry anyway.
@@ -1632,11 +1672,11 @@ std::optional<std::string> DigestOfEntry(const EvalContext& ctx, const hash::Alg
 // --hash-encoding (sha256 / hex). Reads the file (Cost::kExpensive); an unreadable file emits
 // nothing. Like -print it is always true. The spec was validated before the walk
 // (ValidateHashArgs), so a parse failure here defensively no-ops.
-// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
-bool EvalHash(const parser::Expr& expr, EvalContext& ctx) {
-  const std::string_view default_algo = ctx.hash_algorithm.empty() ? "sha256" : ctx.hash_algorithm;
-  const hash::Encoding default_encoding = hash::ParseEncoding(ctx.hash_encoding).value_or(hash::Encoding::kHex);
-  const std::optional<hash::AlgoEncoding> spec = hash::ParseSpec(expr.hash_spec, default_algo, default_encoding);
+bool EvalHashWithOperand(
+    const parser::Expr& expr,
+    const EvalContext& ctx,
+    mbo::types::OptionalRef<const HashPattern> prepared) {
+  const auto spec = ResolveHashRequest(expr, ctx, prepared);
   if (!spec.has_value()) {
     return true;
   }
@@ -1647,6 +1687,11 @@ bool EvalHash(const parser::Expr& expr, EvalContext& ctx) {
   return true;
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
+bool EvalHash(const parser::Expr& expression, EvalContext& context) {
+  return EvalHashWithOperand(expression, context, {});
+}
+
 // xff -hasheq EXPECTED: TRUE when the entry's digest equals EXPECTED, the manifest-verification
 // companion of -hash. EXPECTED is a field template rendered per entry (so `-hasheq {def.SUMS}`
 // checks against a sidecar value, and `! -hasheq {def.SUMS}` lists drift). The algorithm / encoding
@@ -1655,10 +1700,11 @@ bool EvalHash(const parser::Expr& expr, EvalContext& ctx) {
 // EXPECTED, an unreadable file, or a bad spec is FALSE (no match), so drift-selection is safe.
 // Cost::kExpensive (reads the whole file).
 // NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
-bool EvalHasheqWithTemplate(
+bool EvalHasheqWithOperand(
     const parser::Expr& expr,
     EvalContext& ctx,
-    mbo::types::OptionalRef<const fields::Template> prepared) {
+    mbo::types::OptionalRef<const fields::Template> prepared,
+    mbo::types::OptionalRef<const HashPattern> pattern) {
   const auto verdict = [&](bool matched) {
     if (ctx.hash_verification.has_value()) {
       *ctx.hash_verification = matched;
@@ -1672,9 +1718,7 @@ bool EvalHasheqWithTemplate(
   if (expected.empty()) {
     return verdict(false);  // no expected hash resolved (e.g. an unset {def.X}) -> mismatch
   }
-  const std::string_view default_algo = ctx.hash_algorithm.empty() ? "sha256" : ctx.hash_algorithm;
-  const hash::Encoding default_encoding = hash::ParseEncoding(ctx.hash_encoding).value_or(hash::Encoding::kHex);
-  const std::optional<hash::AlgoEncoding> spec = hash::ParseSpec(expr.hash_spec, default_algo, default_encoding);
+  const auto spec = ResolveHashRequest(expr, ctx, pattern);
   if (!spec.has_value()) {
     return verdict(false);  // defensively no-op; ValidateHashArgs rejects a bad spec before the walk
   }
@@ -1689,7 +1733,7 @@ bool EvalHasheqWithTemplate(
 }
 
 bool EvalHasheq(const parser::Expr& expr, EvalContext& ctx) {
-  return EvalHasheqWithTemplate(expr, ctx, {});
+  return EvalHasheqWithOperand(expr, ctx, {}, {});
 }
 
 // A view over one explicit grep pattern or the union used by default match output.
@@ -2978,9 +3022,66 @@ using PreparedOperand = std::variant<
     FirstLimit,
     MimePattern,
     GlobPattern,
-    FieldTemplate>;
+    FieldTemplate,
+    HashPattern>;
+
+static_assert(sizeof(HashPattern) <= sizeof(MimePattern));
 using PreparedEvalFn = bool (*)(const parser::Expr&, const PreparedOperand&, MatcherSlots, EvalContext&);
-using PrepareOperandFn = PreparedOperand (*)(std::string_view);
+using PrepareOperandFn = PreparedOperand (*)(const parser::Expr&);
+
+template<PreparedOperand (*Prepare)(std::string_view)>
+PreparedOperand PrepareArgument(const parser::Expr& expression) {
+  return Prepare(expression.args.front());
+}
+
+HashPattern ParseHashPattern(std::string_view specification) {
+  const auto spec = hash::ParseSpec(specification, "sha256");
+  if (!spec) {
+    return {};
+  }
+  const auto names = hash::AlgorithmNames();
+  return HashPattern{
+      .algorithm = static_cast<std::size_t>(std::ranges::find(names, spec->algo) - names.begin()),
+      .encoding = spec->encoding,
+      .defaults = spec->defaults,
+      .valid = true,
+  };
+}
+
+PreparedOperand PrepareHashOperand(const parser::Expr& expression) {
+  return ParseHashPattern(expression.hash_spec);
+}
+
+PreparedOperand PrepareExpectedHashOperand(const parser::Expr& expression) {
+  auto pattern = ParseHashPattern(expression.hash_spec);
+  pattern.expected = std::make_unique<const fields::Template>(fields::Template::Compile(expression.args.front()));
+  return pattern;
+}
+
+bool EvalPreparedHash(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    MatcherSlots,
+    // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
+    EvalContext& context) {
+  return EvalHashWithOperand(
+      expression, context,
+      std::holds_alternative<HashPattern>(operand)
+          ? mbo::types::OptionalRef<const HashPattern>{std::get<HashPattern>(operand)}
+          : mbo::types::OptionalRef<const HashPattern>{});
+}
+
+bool EvalPreparedExpectedHash(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    MatcherSlots,
+    EvalContext& context) {
+  if (!std::holds_alternative<HashPattern>(operand)) {
+    return EvalHasheq(expression, context);
+  }
+  const auto& pattern = std::get<HashPattern>(operand);
+  return EvalHasheqWithOperand(expression, context, *pattern.expected, pattern);
+}
 
 PreparedOperand PrepareGlobOperand(std::string_view argument) {
   // Match the original C-string boundary, including callers that supply embedded NUL bytes.
@@ -3292,6 +3393,7 @@ struct EvalEntry {
   PrepareOperandFn prepare = nullptr;
   PreparedEvalFn prepared_eval = nullptr;
   bool indexed_matcher = false;
+  bool prepare_without_argument = false;
 };
 
 template<EvalFn Function>
@@ -3303,12 +3405,14 @@ template<EvalFn Function>
 consteval EvalEntry MakeEvalEntry(
     PrepareOperandFn prepare = nullptr,
     PreparedEvalFn prepared_eval = nullptr,
-    bool indexed_matcher = false) {
+    bool indexed_matcher = false,
+    bool prepare_without_argument = false) {
   return {
       .eval = Function,
       .prepare = prepare,
       .prepared_eval = prepared_eval == nullptr ? &EvalOriginalOperand<Function> : prepared_eval,
       .indexed_matcher = indexed_matcher,
+      .prepare_without_argument = prepare_without_argument,
   };
 }
 
@@ -3316,32 +3420,40 @@ using DispatchPair = std::pair<std::string_view, EvalEntry>;
 constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{
         "-Bmin",
-        MakeEvalEntry<&EvalBmin>(&PrepareTimeOperand<60, false>, &EvalPreparedTime<'B'>),
+        MakeEvalEntry<&EvalBmin>(&PrepareArgument<&PrepareTimeOperand<60, false>>, &EvalPreparedTime<'B'>),
     },
     DispatchPair{
         "-Btime",
-        MakeEvalEntry<&EvalBtime>(&PrepareTimeOperand<86'400, true>, &EvalPreparedTime<'B'>),
+        MakeEvalEntry<&EvalBtime>(&PrepareArgument<&PrepareTimeOperand<86'400, true>>, &EvalPreparedTime<'B'>),
     },
-    DispatchPair{"-amin", MakeEvalEntry<&EvalAmin>(&PrepareTimeOperand<60, false>, &EvalPreparedTime<'a'>)},
+    DispatchPair{
+        "-amin", MakeEvalEntry<&EvalAmin>(&PrepareArgument<&PrepareTimeOperand<60, false>>, &EvalPreparedTime<'a'>)},
     DispatchPair{"-anewer", MakeEvalEntry<&EvalAnewer>()},
-    DispatchPair{"-atime", MakeEvalEntry<&EvalAtime>(&PrepareTimeOperand<86'400, true>, &EvalPreparedTime<'a'>)},
+    DispatchPair{
+        "-atime",
+        MakeEvalEntry<&EvalAtime>(&PrepareArgument<&PrepareTimeOperand<86'400, true>>, &EvalPreparedTime<'a'>)},
     DispatchPair{"-binary", MakeEvalEntry<&EvalBinary>()},
-    DispatchPair{"-blocks", MakeEvalEntry<&EvalBlocks>(&PrepareSizeOperand, &EvalPreparedBlocks)},
+    DispatchPair{"-blocks", MakeEvalEntry<&EvalBlocks>(&PrepareArgument<&PrepareSizeOperand>, &EvalPreparedBlocks)},
     DispatchPair{"-capture", MakeEvalEntry<&EvalCapture>()},
     DispatchPair{"-capturedir", MakeEvalEntry<&EvalCapturedir>()},
-    DispatchPair{"-cmin", MakeEvalEntry<&EvalCmin>(&PrepareTimeOperand<60, false>, &EvalPreparedTime<'c'>)},
+    DispatchPair{
+        "-cmin", MakeEvalEntry<&EvalCmin>(&PrepareArgument<&PrepareTimeOperand<60, false>>, &EvalPreparedTime<'c'>)},
     DispatchPair{
         "-cmp",
-        MakeEvalEntry<&EvalCmp>(&PrepareTemplateOperand, &EvalPreparedTemplate<&EvalCmpWithTemplate>),
+        MakeEvalEntry<&EvalCmp>(&PrepareArgument<&PrepareTemplateOperand>, &EvalPreparedTemplate<&EvalCmpWithTemplate>),
     },
     DispatchPair{"-cnewer", MakeEvalEntry<&EvalCnewer>()},
     DispatchPair{"-collect", MakeEvalEntry<&EvalCollect>()},
     DispatchPair{"-content", MakeEvalEntry<&EvalContent>()},
-    DispatchPair{"-ctime", MakeEvalEntry<&EvalCtime>(&PrepareTimeOperand<86'400, true>, &EvalPreparedTime<'c'>)},
+    DispatchPair{
+        "-ctime",
+        MakeEvalEntry<&EvalCtime>(&PrepareArgument<&PrepareTimeOperand<86'400, true>>, &EvalPreparedTime<'c'>)},
     DispatchPair{"-delete", MakeEvalEntry<&EvalDelete>()},
     DispatchPair{
         "-diff",
-        MakeEvalEntry<&EvalDiff>(&PrepareTemplateOperand, &EvalPreparedTemplate<&EvalDiffWithTemplate>),
+        MakeEvalEntry<&EvalDiff>(
+            &PrepareArgument<&PrepareTemplateOperand>,
+            &EvalPreparedTemplate<&EvalDiffWithTemplate>),
     },
     DispatchPair{"-empty", MakeEvalEntry<&EvalEmpty>()},
     DispatchPair{"-eofcr", MakeEvalEntry<&EvalEofcr>()},
@@ -3358,36 +3470,45 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-fprintfln", MakeEvalEntry<&EvalFprintfln>()},
     DispatchPair{"-fprintln", MakeEvalEntry<&EvalFprintln>()},
     DispatchPair{"-fstype", MakeEvalEntry<&EvalFstype>()},
-    DispatchPair{"-gid", MakeEvalEntry<&EvalGid>(&PrepareNumericOperand, &EvalPreparedNumeric<&vfs::Metadata::gid>)},
+    DispatchPair{
+        "-gid",
+        MakeEvalEntry<&EvalGid>(&PrepareArgument<&PrepareNumericOperand>, &EvalPreparedNumeric<&vfs::Metadata::gid>)},
     DispatchPair{"-grep", MakeEvalEntry<&EvalGrep>()},
     DispatchPair{"-group", MakeEvalEntry<&EvalGroup>()},
-    DispatchPair{"-hash", MakeEvalEntry<&EvalHash>()},
+    DispatchPair{"-hash", MakeEvalEntry<&EvalHash>(&PrepareHashOperand, &EvalPreparedHash, false, true)},
     DispatchPair{
         "-hasheq",
-        MakeEvalEntry<&EvalHasheq>(&PrepareTemplateOperand, &EvalPreparedTemplate<&EvalHasheqWithTemplate>),
+        MakeEvalEntry<&EvalHasheq>(&PrepareExpectedHashOperand, &EvalPreparedExpectedHash),
     },
     DispatchPair{"-icontent", MakeEvalEntry<&EvalContent>()},
     DispatchPair{"-ilname", MakeEvalEntry<&EvalLname>()},
-    DispatchPair{"-iname", MakeEvalEntry<&EvalName>(&PrepareGlobOperand, &EvalPreparedName)},
-    DispatchPair{"-inum", MakeEvalEntry<&EvalInum>(&PrepareNumericOperand, &EvalPreparedNumeric<&vfs::Metadata::ino>)},
-    DispatchPair{"-ipath", MakeEvalEntry<&EvalPath>(&PrepareGlobOperand, &EvalPreparedPath)},
+    DispatchPair{"-iname", MakeEvalEntry<&EvalName>(&PrepareArgument<&PrepareGlobOperand>, &EvalPreparedName)},
+    DispatchPair{
+        "-inum",
+        MakeEvalEntry<&EvalInum>(&PrepareArgument<&PrepareNumericOperand>, &EvalPreparedNumeric<&vfs::Metadata::ino>)},
+    DispatchPair{"-ipath", MakeEvalEntry<&EvalPath>(&PrepareArgument<&PrepareGlobOperand>, &EvalPreparedPath)},
     DispatchPair{"-iregex", MakeEvalEntry<&EvalRegex>(nullptr, &EvalPreparedRegex, true)},
     DispatchPair{"-irxc", MakeEvalEntry<&EvalRxc>(nullptr, &EvalPreparedRxc, true)},
-    DispatchPair{"-iwholename", MakeEvalEntry<&EvalPath>(&PrepareGlobOperand, &EvalPreparedPath)},
+    DispatchPair{"-iwholename", MakeEvalEntry<&EvalPath>(&PrepareArgument<&PrepareGlobOperand>, &EvalPreparedPath)},
     DispatchPair{"-lang", MakeEvalEntry<&EvalLang>()},
     DispatchPair{
-        "-links", MakeEvalEntry<&EvalLinks>(&PrepareNumericOperand, &EvalPreparedNumeric<&vfs::Metadata::nlink>)},
+        "-links", MakeEvalEntry<&EvalLinks>(
+                      &PrepareArgument<&PrepareNumericOperand>,
+                      &EvalPreparedNumeric<&vfs::Metadata::nlink>)},
     DispatchPair{"-lname", MakeEvalEntry<&EvalLname>()},
     DispatchPair{"-ls", MakeEvalEntry<&EvalLs>()},
-    DispatchPair{"-mime", MakeEvalEntry<&EvalMime>(&PrepareMimeOperand, &EvalPreparedMime)},
-    DispatchPair{"-mmin", MakeEvalEntry<&EvalMmin>(&PrepareTimeOperand<60, false>, &EvalPreparedTime<'m'>)},
-    DispatchPair{"-mtime", MakeEvalEntry<&EvalMtime>(&PrepareTimeOperand<86'400, true>, &EvalPreparedTime<'m'>)},
-    DispatchPair{"-first", MakeEvalEntry<&EvalFirst>(&PrepareFirstOperand, &EvalPreparedFirst)},
+    DispatchPair{"-mime", MakeEvalEntry<&EvalMime>(&PrepareArgument<&PrepareMimeOperand>, &EvalPreparedMime)},
+    DispatchPair{
+        "-mmin", MakeEvalEntry<&EvalMmin>(&PrepareArgument<&PrepareTimeOperand<60, false>>, &EvalPreparedTime<'m'>)},
+    DispatchPair{
+        "-mtime",
+        MakeEvalEntry<&EvalMtime>(&PrepareArgument<&PrepareTimeOperand<86'400, true>>, &EvalPreparedTime<'m'>)},
+    DispatchPair{"-first", MakeEvalEntry<&EvalFirst>(&PrepareArgument<&PrepareFirstOperand>, &EvalPreparedFirst)},
     DispatchPair{"-fuzzy", MakeEvalEntry<&EvalFuzzy>()},
     DispatchPair{"-fuzzypath", MakeEvalEntry<&EvalFuzzyPath>()},
     DispatchPair{"-ifuzzy", MakeEvalEntry<&EvalFuzzy>()},
     DispatchPair{"-ifuzzypath", MakeEvalEntry<&EvalFuzzyPath>()},
-    DispatchPair{"-name", MakeEvalEntry<&EvalName>(&PrepareGlobOperand, &EvalPreparedName)},
+    DispatchPair{"-name", MakeEvalEntry<&EvalName>(&PrepareArgument<&PrepareGlobOperand>, &EvalPreparedName)},
     DispatchPair{"-newer", MakeEvalEntry<&EvalNewer>()},
     DispatchPair{"-newerBB", MakeEvalEntry<&EvalNewerXY>()},  // birthtime -newerXY combos (BSD-compat)
     DispatchPair{"-newerBa", MakeEvalEntry<&EvalNewerXY>()},
@@ -3413,8 +3534,9 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-nouser", MakeEvalEntry<&EvalNouser>()},
     DispatchPair{"-ok", MakeEvalEntry<&EvalOk>()},
     DispatchPair{"-okdir", MakeEvalEntry<&EvalOkdir>()},
-    DispatchPair{"-path", MakeEvalEntry<&EvalPath>(&PrepareGlobOperand, &EvalPreparedPath)},
-    DispatchPair{"-perm", MakeEvalEntry<&EvalPerm>(&PreparePermissionOperand, &EvalPreparedPermission)},
+    DispatchPair{"-path", MakeEvalEntry<&EvalPath>(&PrepareArgument<&PrepareGlobOperand>, &EvalPreparedPath)},
+    DispatchPair{
+        "-perm", MakeEvalEntry<&EvalPerm>(&PrepareArgument<&PreparePermissionOperand>, &EvalPreparedPermission)},
     DispatchPair{"-print", MakeEvalEntry<&EvalPrint>()},
     DispatchPair{"-print0", MakeEvalEntry<&EvalPrint0>()},
     DispatchPair{"-printf", MakeEvalEntry<&EvalPrintf>()},
@@ -3424,7 +3546,9 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-quit", MakeEvalEntry<&EvalQuit>()},
     DispatchPair{
         "-rdiff",
-        MakeEvalEntry<&EvalDiff>(&PrepareTemplateOperand, &EvalPreparedTemplate<&EvalDiffWithTemplate>),
+        MakeEvalEntry<&EvalDiff>(
+            &PrepareArgument<&PrepareTemplateOperand>,
+            &EvalPreparedTemplate<&EvalDiffWithTemplate>),
     },
     DispatchPair{"-readable", MakeEvalEntry<&EvalReadable>()},
     DispatchPair{"-regex", MakeEvalEntry<&EvalRegex>(nullptr, &EvalPreparedRegex, true)},
@@ -3432,19 +3556,23 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
     DispatchPair{"-samefile", MakeEvalEntry<&EvalSamefile>()},
     DispatchPair{
         "-similar",
-        MakeEvalEntry<&EvalSimilar>(&PrepareTemplateOperand, &EvalPreparedTemplate<&EvalSimilarWithTemplate>),
+        MakeEvalEntry<&EvalSimilar>(
+            &PrepareArgument<&PrepareTemplateOperand>,
+            &EvalPreparedTemplate<&EvalSimilarWithTemplate>),
     },
-    DispatchPair{"-size", MakeEvalEntry<&EvalSize>(&PrepareSizeOperand, &EvalPreparedSize)},
+    DispatchPair{"-size", MakeEvalEntry<&EvalSize>(&PrepareArgument<&PrepareSizeOperand>, &EvalPreparedSize)},
     DispatchPair{"-sparse", MakeEvalEntry<&EvalSparse>()},
     DispatchPair{"-text", MakeEvalEntry<&EvalText>()},
     DispatchPair{"-true", MakeEvalEntry<&EvalTrue>()},
-    DispatchPair{"-type", MakeEvalEntry<&EvalType>(&PrepareTypeOperand, &EvalPreparedType)},
-    DispatchPair{"-uid", MakeEvalEntry<&EvalUid>(&PrepareNumericOperand, &EvalPreparedNumeric<&vfs::Metadata::uid>)},
-    DispatchPair{"-used", MakeEvalEntry<&EvalUsed>(&PrepareSignedNumericOperand, &EvalPreparedUsed)},
+    DispatchPair{"-type", MakeEvalEntry<&EvalType>(&PrepareArgument<&PrepareTypeOperand>, &EvalPreparedType)},
+    DispatchPair{
+        "-uid",
+        MakeEvalEntry<&EvalUid>(&PrepareArgument<&PrepareNumericOperand>, &EvalPreparedNumeric<&vfs::Metadata::uid>)},
+    DispatchPair{"-used", MakeEvalEntry<&EvalUsed>(&PrepareArgument<&PrepareSignedNumericOperand>, &EvalPreparedUsed)},
     DispatchPair{"-user", MakeEvalEntry<&EvalUser>()},
-    DispatchPair{"-wholename", MakeEvalEntry<&EvalPath>(&PrepareGlobOperand, &EvalPreparedPath)},
+    DispatchPair{"-wholename", MakeEvalEntry<&EvalPath>(&PrepareArgument<&PrepareGlobOperand>, &EvalPreparedPath)},
     DispatchPair{"-writable", MakeEvalEntry<&EvalWritable>()},
-    DispatchPair{"-xtype", MakeEvalEntry<&EvalXtype>(&PrepareTypeOperand, &EvalPreparedXtype)});
+    DispatchPair{"-xtype", MakeEvalEntry<&EvalXtype>(&PrepareArgument<&PrepareTypeOperand>, &EvalPreparedXtype)});
 
 absl::StatusOr<EvalEntry> ResolveEvaluation(const parser::Expr& expression) {
   if (expression.kind != parser::Expr::Kind::kPredicate) {
@@ -3916,7 +4044,8 @@ absl::StatusOr<PreparedExpression> PreparedExpression::Prepare(const parser::Exp
         .expression = source.expression,
         .evaluate = binding.prepared_eval,
     };
-    if (binding.indexed_matcher || (binding.prepare != nullptr && !expr.args.empty())) {
+    if (binding.indexed_matcher
+        || (binding.prepare != nullptr && (!expr.args.empty() || binding.prepare_without_argument))) {
       if (data->operands.size() == 1) {
         data->operands.reserve(1 + static_cast<std::size_t>(predicates));
       }
@@ -3925,7 +4054,7 @@ absl::StatusOr<PreparedExpression> PreparedExpression::Prepare(const parser::Exp
         data->operands.emplace_back(MatcherSlotId{data->matcher_sources.size()});
         data->matcher_sources.push_back(source.expression);
       } else {
-        data->operands.push_back(binding.prepare(expr.args.front()));
+        data->operands.push_back(binding.prepare(expr));
       }
     }
     data->nodes.push_back(node);
@@ -3986,6 +4115,11 @@ std::size_t PreparedExpression::StorageBytes() const {
       text_bytes += std::get<MimePattern>(operand).bytes.capacity();
     } else if (std::holds_alternative<FieldTemplate>(operand)) {
       text_bytes += std::get<FieldTemplate>(operand).value->StorageBytes();
+    } else if (std::holds_alternative<HashPattern>(operand)) {
+      const auto& pattern = std::get<HashPattern>(operand);
+      if (pattern.expected) {
+        text_bytes += pattern.expected->StorageBytes();
+      }
     }
   }
   return sizeof(*this) + sizeof(Data) + (data_->nodes.capacity() * sizeof(Data::Node))
