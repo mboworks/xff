@@ -412,9 +412,12 @@ absl::StatusOr<std::string> LocalFs::ReadContentRange(std::string_view path, std
     std::size_t total = 0;
     while (total < length) {
       const auto max_offset = static_cast<std::uint64_t>(std::numeric_limits<off_t>::max());
+      // LCOV_EXCL_START: a host file cannot supply bytes past off_t's maximum offset.
+      // Keep this defensive addition-overflow guard even though real pread cannot reach it.
       if (total > max_offset - offset) {
         break;
       }
+      // LCOV_EXCL_STOP
       const std::size_t chunk = std::min(length - total, static_cast<std::size_t>(std::numeric_limits<ssize_t>::max()));
       const ssize_t count =
           ::pread(fd, std::span<char>(buffer, length).subspan(total).data(), chunk, static_cast<off_t>(offset + total));
