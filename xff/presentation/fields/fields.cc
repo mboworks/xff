@@ -178,7 +178,7 @@ std::string HumanSize(std::uint64_t bytes) {
 // Per-field renderers. The signature is uniform so they can share one dispatch
 // table: (key, qualifier, ctx). `key` is the bound argument for dynamic fields
 // (a capture index, an {env.NAME} var, ...), unused (unnamed) by the builtins.
-// `path`-derived fields build their own std::filesystem::path.
+// Lexical filename fields borrow path slices; directory spelling keeps native path semantics.
 StringOrView PathField(std::string_view, std::string_view, const RenderContext& ctx) {
   return ctx.path;
 }
@@ -215,6 +215,26 @@ StringOrView RelpathField(std::string_view, std::string_view, const RenderContex
   return path;  // not root-prefixed (should not happen from the walk)
 }
 
+// Both supported hosts use POSIX separators. These slices retain the caller's path lifetime,
+// including embedded NULs and virtual archive member names; no filesystem lookup is involved.
+std::string_view Filename(std::string_view path) {
+  const std::size_t slash = path.rfind('/');
+  return slash == std::string_view::npos ? path : path.substr(slash + 1);
+}
+
+std::string_view Extension(std::string_view filename) {
+  if (filename == "." || filename == "..") {
+    return {};
+  }
+  const std::size_t dot = filename.rfind('.');
+  return dot == std::string_view::npos || dot == 0 ? std::string_view{} : filename.substr(dot);
+}
+
+std::string_view AllSuffixes(std::string_view filename) {
+  const std::size_t dot = filename.find('.', 1);
+  return dot == std::string_view::npos ? std::string_view{} : filename.substr(dot);
+}
+
 StringOrView DirField(std::string_view, std::string_view, const RenderContext& ctx) {
   std::string parent = stdfs::path(std::string(ctx.path)).parent_path().string();
   if (parent.empty()) {
@@ -224,46 +244,32 @@ StringOrView DirField(std::string_view, std::string_view, const RenderContext& c
 }
 
 StringOrView NameField(std::string_view, std::string_view, const RenderContext& ctx) {
-  return stdfs::path(std::string(ctx.path)).filename().string();
+  return Filename(ctx.path);
 }
 
 StringOrView StemField(std::string_view, std::string_view, const RenderContext& ctx) {
-  return stdfs::path(std::string(ctx.path)).stem().string();
+  const std::string_view filename = Filename(ctx.path);
+  return filename.substr(0, filename.size() - Extension(filename).size());
 }
 
 StringOrView ExtField(std::string_view, std::string_view, const RenderContext& ctx) {
-  std::string ext = stdfs::path(std::string(ctx.path)).extension().string();  // includes the leading '.'
-  if (!ext.empty()) {
-    ext.erase(0, 1);
-  }
-  return {std::move(ext)};
+  const std::string_view extension = Extension(Filename(ctx.path));
+  return extension.empty() ? extension : extension.substr(1);
 }
 
 StringOrView SuffixesField(std::string_view, std::string_view, const RenderContext& ctx) {
-  std::string filename = stdfs::path(std::string(ctx.path)).filename().string();
-  const std::string::size_type dot = filename.find('.', 1);  // all extensions; a leading dot is not one
-  if (dot == std::string::npos) {
-    return "";
-  }
-  filename.erase(0, dot);
-  return {std::move(filename)};
+  return AllSuffixes(Filename(ctx.path));
 }
 
-// {suffix}: the LAST extension WITH its leading dot (pathlib's .suffix: ".gz"),
-// complementing {ext} (no dot: "gz") and {suffixes} (all of them: ".tar.gz").
+// {suffix} includes the final extension's dot; {ext} omits it.
 StringOrView SuffixField(std::string_view, std::string_view, const RenderContext& ctx) {
-  return stdfs::path(std::string(ctx.path)).extension().string();  // ".gz", or "" when none
+  return Extension(Filename(ctx.path));
 }
 
-// {core}: the filename with ALL extensions removed (foo.tar.gz -> foo), the complement
-// of {suffixes} ({core} + {suffixes} == {name}, as {stem} + {suffix} == {name}).
+// {core} + {suffixes} reconstructs {name}, including a leading dot in the core.
 StringOrView CoreField(std::string_view, std::string_view, const RenderContext& ctx) {
-  std::string filename = stdfs::path(std::string(ctx.path)).filename().string();
-  const std::string::size_type dot = filename.find('.', 1);  // first extension; a leading dot is not one
-  if (dot != std::string::npos) {
-    filename.erase(dot);
-  }
-  return {std::move(filename)};
+  const std::string_view filename = Filename(ctx.path);
+  return filename.substr(0, filename.size() - AllSuffixes(filename).size());
 }
 
 StringOrView DepthField(std::string_view, std::string_view, const RenderContext& ctx) {
@@ -354,12 +360,12 @@ StringOrView FuzzyField(std::string_view, std::string_view, const RenderContext&
 // "Python"), from its filename/extension via the language table; empty when unrecognized. Content
 // is not read, so it is cheap; composes with --summary group-by to tally files per language.
 StringOrView LanguageField(std::string_view, std::string_view, const RenderContext& ctx) {
-  const std::string name = stdfs::path(std::string(ctx.path)).filename().string();
+  const std::string_view name = Filename(ctx.path);
   return language::LanguageForName(name);
 }
 
 std::optional<language::LanguageInfo> LanguageInfo(const RenderContext& ctx) {
-  return language::InfoForName(stdfs::path(std::string(ctx.path)).filename().string());
+  return language::InfoForName(Filename(ctx.path));
 }
 
 StringOrView LanguageTypeField(std::string_view, std::string_view, const RenderContext& ctx) {
@@ -383,12 +389,12 @@ StringOrView LanguageSourceField(std::string_view, std::string_view, const Rende
 }
 
 StringOrView MimeField(std::string_view, std::string_view, const RenderContext& ctx) {
-  const std::string name = stdfs::path(std::string(ctx.path)).filename().string();
+  const std::string_view name = Filename(ctx.path);
   return mime::TypeForName(name);
 }
 
 mime::TypeInfo MimeInfo(const RenderContext& ctx) {
-  return mime::InfoForName(stdfs::path(std::string(ctx.path)).filename().string());
+  return mime::InfoForName(Filename(ctx.path));
 }
 
 StringOrView MimeCategoryField(std::string_view, std::string_view, const RenderContext& ctx) {
@@ -909,34 +915,34 @@ bool IsPathComponent(std::string_view qualifier) {
 // so any path-valued field composes: {target:stem}, {path:name}, {def.B:dir}, ...
 // {core} = the filename with ALL extensions removed (foo.tar.gz -> foo), the
 // complement of {suffixes}; {path} (and any unknown keyword) is the identity.
-std::string PathComponent(std::string_view value, std::string_view component) {
-  const stdfs::path path{std::string(value)};
+StringOrView PathComponent(std::string_view value, std::string_view component) {
   if (component == "dir") {
-    const std::string parent = path.parent_path().string();
-    return parent.empty() ? "." : parent;
+    // parent_path can normalize repeated separators; keep the native spelling contract here.
+    std::string parent = stdfs::path(std::string(value)).parent_path().string();
+    return parent.empty() ? StringOrView(".") : StringOrView(std::move(parent));
   }
+  const std::string_view filename = Filename(value);
   if (component == "name" || component == "basename" || component == "file") {
-    return path.filename().string();
+    return filename;
   }
+  const std::string_view extension = Extension(filename);
   if (component == "stem") {
-    return path.stem().string();
+    return filename.substr(0, filename.size() - extension.size());
   }
   if (component == "ext" || component == "extension") {
-    const std::string ext = path.extension().string();  // includes the leading '.'
-    return ext.empty() ? ext : ext.substr(1);
+    return extension.empty() ? extension : extension.substr(1);
   }
   if (component == "suffix") {
-    return path.extension().string();  // last extension WITH its dot
+    return extension;
   }
-  const std::string filename = path.filename().string();
-  const std::string::size_type dot = filename.find('.', 1);  // first extension; a leading dot is not one
+  const std::string_view suffixes = AllSuffixes(filename);
   if (component == "suffixes") {
-    return dot == std::string::npos ? "" : filename.substr(dot);
+    return suffixes;
   }
   if (component == "core") {
-    return dot == std::string::npos ? filename : filename.substr(0, dot);
+    return filename.substr(0, filename.size() - suffixes.size());
   }
-  return std::string(value);  // "path" (whole) or an unrecognised keyword -> identity
+  return value;  // "path" (whole) or an unrecognised keyword -> identity
 }
 
 absl::Status ValidateRewriteChain(std::string_view spec) {
@@ -1291,7 +1297,7 @@ std::string Template::Render(const RenderContext& context) const {
           segment.fn(segment.key, transform ? std::string_view{} : segment.qualifier, entry);
       const std::string_view value = field_value.view();
       switch (segment.post) {
-        case Segment::PostProcess::kComponent: out.append(PathComponent(value, segment.qualifier)); break;
+        case Segment::PostProcess::kComponent: out.append(PathComponent(value, segment.qualifier).view()); break;
         case Segment::PostProcess::kNone: out.append(value); break;
         case Segment::PostProcess::kRewrite: out.append(segment.transform->Rewrite(value)); break;
         // A per-line extraction is a value stream. A terminal reducer (`;join(...)`) collapses it to

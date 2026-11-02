@@ -14,7 +14,7 @@
 # limitations under the License.
 
 load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
-load("//xff:cc.bzl", "cc_library", "cc_test")
+load("//xff:cc.bzl", "cc_binary", "cc_library", "cc_test")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -59,6 +59,19 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "lexical_fields_test",
+    size = "small",
+    srcs = ["lexical_fields_test.cc"],
+    deps = [
+        ":fields_cc",
+        "//xff/vfs:vfs_cc",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+    ],
+)
+
 # Compile and render arbitrary field templates against a deterministic context. The driver checks
 # the context-free extraction classification against the actual extraction API.
 cc_fuzz_test(
@@ -74,5 +87,17 @@ cc_fuzz_test(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/time",
+    ],
+)
+
+# Test-only compiled template kernel; inputs are in memory and never read the host filesystem.
+cc_binary(
+    name = "fields_benchmark",
+    testonly = True,
+    srcs = ["fields_benchmark.cc"],
+    deps = [
+        ":fields_cc",
+        "//xff/vfs:vfs_cc",
+        "@com_github_google_benchmark//:benchmark",
     ],
 )
