@@ -8,10 +8,12 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
 
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "xff/vfs/read_budget.h"
 
@@ -23,6 +25,15 @@ class ReadStream {
  public:
   virtual ~ReadStream() = default;
   virtual absl::StatusOr<std::string> Read(std::size_t max_bytes) = 0;
+
+  // Optional allocation-free reads into caller-owned storage. Only [0, returned count) is
+  // initialized; zero means EOF and a short read need not mean EOF. The default never reads
+  // or allocates, so sequential decoders keep their existing owned Read path.
+  virtual bool SupportsReadInto() const noexcept { return false; }
+
+  virtual absl::StatusOr<std::size_t> ReadInto(std::span<char>) {
+    return absl::UnimplementedError("cursor does not support caller-owned read buffers");
+  }
 };
 
 // An immutable, restartable source. Open can be called concurrently; each cursor owns everything
