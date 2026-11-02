@@ -65,7 +65,8 @@
     "docs/benchmarks/lexical-field-views-20261102.md": "docs/benchmarks/lexical-field-views-20261102.html",
     "docs/benchmarks/field-lookup-controls-20261102.md": "docs/benchmarks/field-lookup-controls-20261102.html",
     "docs/benchmarks/host-range-overwrite-20261102.md": "docs/benchmarks/host-range-overwrite-20261102.html",
-    "docs/benchmarks/cursor-owned-read-buffers-20261102.md": "docs/benchmarks/cursor-owned-read-buffers-20261102.html"
+    "docs/benchmarks/cursor-owned-read-buffers-20261102.md": "docs/benchmarks/cursor-owned-read-buffers-20261102.html",
+    "docs/benchmarks/directory-task-slots-20261102.md": "docs/benchmarks/directory-task-slots-20261102.html"
   },
   "generated_html": {
     "XFF.md": {

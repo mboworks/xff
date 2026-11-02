@@ -392,8 +392,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O07: Qualify cursor-owned native buffers, preserving budget lifetimes and legacy streams.
       [Native/fallback evidence](docs/benchmarks/cursor-owned-read-buffers-20261102.md) selects one
       initial clear plus reuse; reject uninitialized Linux regressions and the first shared fallback loop.
-- [ ] O08-O12: Profile and qualify typed reusable directory task slots, batch ownership,
-      bounded result reuse, active-worker dispatch and direct production evaluation.
+- [x] O08: Qualify typed reusable directory-task slots without changing worker/admission policy.
+      [Initial and refined evidence](docs/benchmarks/directory-task-slots-20261102.md) selects
+      atomic ownership handoff, rejecting global completion locking and retaining small regressions.
+- [ ] O09-O12: Profile and qualify batch ownership, bounded result reuse, active-worker dispatch
+      and direct production evaluation.
       Preserve existing stage policy while isolating task storage and lifecycle costs.
 - [ ] O13-O22: Reconcile remaining derived-value handoff, static catalogs, invariant operands,
       paired streaming compare, reusable stage pools, byte-bounded overlap, archive indexing/admission,

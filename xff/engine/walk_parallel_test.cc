@@ -41,7 +41,7 @@ struct StatTrace {
   bool await_peer = false;
 };
 
-struct WideFs final : vfs::FileSystem {
+struct WideFs : vfs::FileSystem {
   explicit WideFs(std::shared_ptr<StatTrace> trace = std::make_shared<StatTrace>()) : trace(std::move(trace)) {}
 
   std::shared_ptr<StatTrace> trace;
@@ -101,13 +101,49 @@ struct WideFs final : vfs::FileSystem {
   absl::StatusOr<bool> IsCaseSensitive(std::string_view) const override { return true; }
 };
 
+struct DirectoryFs final : WideFs {
+  DirectoryFs() { count = 4; }
+
+  std::size_t directories = 513;
+  std::set<std::string> unreadable;
+  mutable std::map<std::string, std::size_t> reads;
+
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override {
+    {
+      const std::scoped_lock lock(trace->mutex);
+      ++reads[std::string(path)];
+    }
+    if (unreadable.contains(std::string(path))) {
+      return absl::PermissionDeniedError(path);
+    }
+    if (path != "root") {
+      return WideFs::ReadDir(path);
+    }
+    std::vector<vfs::Entry> entries;
+    entries.reserve(directories);
+    for (std::size_t index = 0; index < directories; ++index) {
+      const auto name = "d" + std::to_string(index);
+      entries.push_back({.path = "root/" + name, .name = name, .type = vfs::FileType::kDirectory});
+    }
+    return entries;
+  }
+
+  absl::StatusOr<vfs::Metadata> StatFields(std::string_view path, bool follow, vfs::MetadataFields fields)
+      const override {
+    if (path != "root" && path.find('/', 5) == std::string_view::npos) {
+      return vfs::Metadata{.type = vfs::FileType::kDirectory, .ino = 2};
+    }
+    return WideFs::StatFields(path, follow, fields);
+  }
+};
+
 struct WalkLog {
   std::vector<std::pair<std::string, std::uint64_t>> visits;
   std::vector<std::pair<std::string, absl::StatusCode>> errors;
   std::set<std::thread::id> visitors;
 };
 
-WalkLog Record(const WideFs& fs, const WalkOptions& options) {
+WalkLog Record(const WideFs& fs, const WalkOptions& options, std::size_t stop_after = 0) {
   WalkLog log;
   const auto roots = std::to_array<std::string>({"root"});
   EXPECT_THAT(
@@ -116,7 +152,7 @@ WalkLog Record(const WideFs& fs, const WalkOptions& options) {
           [&](const Visit& visit) {
             log.visits.emplace_back(visit.path, visit.metadata.size);
             log.visitors.insert(std::this_thread::get_id());
-            return WalkAction::kContinue;
+            return stop_after != 0 && log.visits.size() >= stop_after ? WalkAction::kStop : WalkAction::kContinue;
           },
           [&](std::string_view path, const absl::Status& status) { log.errors.emplace_back(path, status.code()); }),
       IsOk());
@@ -198,6 +234,59 @@ TEST_F(WalkParallelTest, OwnedMountRemainsSerialWithoutArchiveSourceHints) {
       IsOk());
   EXPECT_THAT(visited, Eq(1'025));
   EXPECT_THAT(trace->threads, ElementsAre(std::this_thread::get_id()));
+}
+
+TEST_F(WalkParallelTest, ReusedDirectoryAndStatRequestsKeepExactResultsAndReadCounts) {
+  static constexpr auto kOrders = std::to_array({
+      SortOrder::kNone,
+      SortOrder::kDir,
+      SortOrder::kTree,
+      SortOrder::kGlobal,
+      SortOrder::kSubtree,
+  });
+  for (const auto order : kOrders) {
+    SCOPED_TRACE(static_cast<int>(order));
+    const DirectoryFs serial;
+    const DirectoryFs parallel;
+    const auto expected = Record(serial, {.sort = order, .workers = 1});
+    const auto actual = Record(parallel, {.sort = order, .workers = 3});
+    EXPECT_THAT(actual.visits, Eq(expected.visits));
+    EXPECT_THAT(actual.errors, IsEmpty());
+    EXPECT_THAT(actual.visitors, ElementsAre(std::this_thread::get_id()));
+    EXPECT_THAT(parallel.reads, SizeIs(parallel.directories + 1));
+    EXPECT_THAT(parallel.trace->children, Eq(parallel.directories * parallel.count));
+    for (const auto& [path, count] : parallel.reads) {
+      SCOPED_TRACE(path);
+      EXPECT_THAT(count, Eq(1));
+    }
+  }
+}
+
+TEST_F(WalkParallelTest, ReusedRequestsPreserveDirectoryErrorPublicationOrder) {
+  DirectoryFs serial;
+  DirectoryFs parallel;
+  serial.unreadable = parallel.unreadable = {"root/d100", "root/d17", "root/d3"};
+  const auto expected = Record(serial, {.sort = SortOrder::kTree, .workers = 1});
+  const auto actual = Record(parallel, {.sort = SortOrder::kTree, .workers = 4});
+  EXPECT_THAT(actual.visits, Eq(expected.visits));
+  EXPECT_THAT(actual.errors, Eq(expected.errors));
+  EXPECT_THAT(actual.errors, SizeIs(3));
+  EXPECT_THAT(parallel.reads, SizeIs(parallel.directories + 1));
+}
+
+TEST_F(WalkParallelTest, AbandonedRequestsDrainWithoutPublishingUnvisitedErrors) {
+  DirectoryFs serial;
+  DirectoryFs parallel;
+  serial.unreadable = parallel.unreadable = {"root/d100"};
+  // Under directory-first order, all root directories are visited before the first leaf.
+  // Stop within the second child's leaves, leaving prefetched siblings without consumers.
+  const std::size_t stop_after = 1 + parallel.directories + parallel.count + 1;
+  const auto expected = Record(serial, {.sort = SortOrder::kDir, .workers = 1}, stop_after);
+  const auto actual = Record(parallel, {.sort = SortOrder::kDir, .workers = 3}, stop_after);
+  EXPECT_THAT(actual.visits, Eq(expected.visits));
+  EXPECT_THAT(actual.errors, IsEmpty());
+  // Walk joins the workers before returning, including already queued abandoned reads.
+  EXPECT_THAT(parallel.reads.at("root/d100"), Eq(1));
 }
 
 }  // namespace

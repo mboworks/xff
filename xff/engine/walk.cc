@@ -16,11 +16,11 @@
 #include "xff/engine/walk.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <functional>
-#include <future>
 #include <memory>
 #include <numeric>
 #include <optional>
@@ -73,85 +73,258 @@ struct Stated {
 // The result of reading one directory: its children, or a ReadDir error.
 using Listing = absl::StatusOr<std::vector<Stated>>;
 
-// A fixed pool of worker threads running leaf directory or stat jobs.
-// Workers touch only their job's inputs and the (thread-safe) FileSystem and the
-// task queue; they never call back into the walk, so no job can wait on another
-// and there is no shared walk state to race (the coordinator runs everything
-// else on one thread). With zero workers, `Submit` runs the job inline.
-class ReadPool {
- public:
-  explicit ReadPool(std::size_t workers) : max_workers_(workers) {}
-
-  // Start only when sibling directories or eager stat chunks provide independent work.
-  void Start(std::size_t directories) {
-    const std::size_t count = std::min(max_workers_, directories);
-    threads_.reserve(count);
-    while (threads_.size() < count) {
-      threads_.emplace_back([this] { Run(); });
-    }
-  }
-
-  ~ReadPool() {
-    {
-      const absl::MutexLock lock(mutex_);
-      stop_ = true;  // turns Pending() true, so every worker's Await wakes
-    }
-    for (std::thread& thread : threads_) {
-      thread.join();
-    }
-  }
-
-  ReadPool(const ReadPool&) = delete;
-  ReadPool& operator=(const ReadPool&) = delete;
-  ReadPool(ReadPool&&) = delete;
-  ReadPool& operator=(ReadPool&&) = delete;
-
-  // Enqueues a read job (or runs it inline with no workers). Caller must NOT
-  // hold `mutex_`.
-  template<typename Job>
-  auto Submit(Job job) ABSL_LOCKS_EXCLUDED(mutex_) {
-    using Result = std::invoke_result_t<Job>;
-    const auto task = std::make_shared<std::packaged_task<Result()>>(std::move(job));
-    std::future<Result> future = task->get_future();
-    if (threads_.empty()) {
-      (*task)();  // sequential: run inline
-      return future;
-    }
-    const absl::MutexLock lock(mutex_);
-    queue_.emplace([task] { (*task)(); });
-    return future;
-  }
-
- private:
-  // A job is ready or the pool is stopping. `absl::Mutex::Await` evaluates this
-  // with `mutex_` held, so it requires the lock.
-  bool Pending() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return stop_ || !queue_.empty(); }
-
-  // Worker loop: drain jobs until stopped and the queue is empty. Caller (the
-  // worker thread) must NOT hold `mutex_`.
-  void Run() ABSL_LOCKS_EXCLUDED(mutex_) {
-    for (;;) {
-      std::function<void()> job;
-      {
-        const absl::MutexLock lock(mutex_, absl::Condition(this, &ReadPool::Pending));
-        if (stop_ && queue_.empty()) {
-          return;
-        }
-        job = std::move(queue_.front());
-        queue_.pop();
-      }
-      job();
-    }
-  }
-
-  const std::size_t max_workers_;
-  mutable absl::Mutex mutex_;
-  std::queue<std::function<void()>> queue_ ABSL_GUARDED_BY(mutex_);
-  bool stop_ ABSL_GUARDED_BY(mutex_) = false;
-  std::vector<std::thread> threads_;  // started on demand, joined in the dtor; not shared otherwise
-};
-
 class Walker {
+  // Typed leaf jobs share the existing persistent workers. A request owns a slot until its
+  // result is consumed, or marks it abandoned so the worker can release it after completion.
+  class ReadPool {
+   public:
+    enum class Kind { kDirectory, kStat };
+
+   private:
+    enum class TaskState { kPending, kReady, kAbandoned };
+
+    struct Storage;
+
+    struct Task {
+      Task(Storage& storage, std::size_t index) : storage(storage), index(index) {}
+
+      Storage& storage;
+      std::size_t index = 0;
+      Kind kind = Kind::kDirectory;
+      std::string directory;
+      absl::Span<vfs::Entry> entries;
+      Listing listing;
+      std::vector<Stated> stated;
+      std::atomic<TaskState> state{TaskState::kPending};
+    };
+
+    struct Storage {
+      explicit Storage(ReadPool& pool) : pool(pool) {}
+
+      ReadPool& pool;
+      std::deque<Task> tasks;
+      std::queue<std::size_t> pending;
+      std::vector<std::size_t> free;
+    };
+
+   public:
+    template<Kind kKind>
+    class Request {
+     public:
+      using Result = std::conditional_t<kKind == Kind::kDirectory, Listing, std::vector<Stated>>;
+      Request() = default;
+
+      explicit Request(Task& task) : task_(task) {}
+
+      ~Request() { Reset(); }
+
+      Request(const Request&) = delete;
+      Request& operator=(const Request&) = delete;
+
+      Request(Request&& other) noexcept : task_(other.task_) { other.task_.reset(); }
+
+      Request& operator=(Request&& other) noexcept {
+        if (this != &other) {
+          Reset();
+          if (other.task_) {
+            task_.set_ref(*other.task_);
+          }
+          other.task_.reset();
+        }
+        return *this;
+      }
+
+      bool Valid() const { return task_.has_value(); }
+
+      Result Take() {
+        auto result = task_->storage.pool.template Take<kKind>(*task_);
+        task_.reset();
+        return result;
+      }
+
+     private:
+      void Reset() {
+        if (task_) {
+          task_->storage.pool.Abandon(*task_);
+          task_.reset();
+        }
+      }
+
+      mbo::types::OptionalRef<Task> task_;
+    };
+
+    ReadPool(Walker& walker, std::size_t workers) : walker_(walker), max_workers_(workers) {}
+
+    ReadPool(const ReadPool&) = delete;
+    ReadPool& operator=(const ReadPool&) = delete;
+    ReadPool(ReadPool&&) = delete;
+    ReadPool& operator=(ReadPool&&) = delete;
+
+    void Start(std::size_t directories) {
+      const std::size_t count = std::min(max_workers_, directories);
+      threads_.reserve(count);
+      while (threads_.size() < count) {
+        threads_.emplace_back([this] { Run(); });
+      }
+    }
+
+    ~ReadPool() {
+      {
+        const absl::MutexLock lock(mutex_);
+        stop_ = true;
+      }
+      for (auto& thread : threads_) {
+        thread.join();
+      }
+    }
+
+    Request<Kind::kDirectory> SubmitDirectory(std::string_view directory) {
+      return Request<Kind::kDirectory>(Submit(Kind::kDirectory, directory, {}));
+    }
+
+    Request<Kind::kStat> SubmitStats(absl::Span<vfs::Entry> entries) {
+      return Request<Kind::kStat>(Submit(Kind::kStat, {}, entries));
+    }
+
+   private:
+    Task& Submit(Kind kind, std::string_view directory, absl::Span<vfs::Entry> entries) {
+      Task& task = [&] -> Task& {
+        const absl::MutexLock lock(mutex_);
+        if (!storage_) {
+          storage_.emplace(*this);
+        }
+        std::size_t index = 0;
+        if (storage_->free.empty()) {
+          index = storage_->tasks.size();
+          storage_->tasks.emplace_back(*storage_, index);
+        } else {
+          index = storage_->free.back();
+          storage_->free.pop_back();
+        }
+        auto& selected = storage_->tasks.at(index);
+        selected.kind = kind;
+        selected.directory = directory;
+        selected.entries = entries;
+        selected.state.store(TaskState::kPending, std::memory_order_relaxed);
+        if (!threads_.empty()) {
+          storage_->pending.push(index);
+        }
+        return selected;
+      }();
+      if (threads_.empty()) {
+        Execute(task);
+      }
+      return task;
+    }
+
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static): lock contract uses this pool's mutex.
+    void Recycle(Task& task) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
+      std::string{}.swap(task.directory);
+      task.entries = {};
+      task.listing = absl::UnknownError("");
+      std::vector<Stated>{}.swap(task.stated);
+      task.storage.free.push_back(task.index);
+    }
+
+    template<Kind kKind>
+    Request<kKind>::Result Take(Task& task) {
+      // Exactly one consumer owns this lease. Ready publishes the completed payload;
+      // only its consumer can take it, so an abandoned state cannot reach this wait.
+      task.state.wait(TaskState::kPending, std::memory_order_acquire);
+      auto result = [&] {
+        if constexpr (kKind == Kind::kDirectory) {
+          return std::move(task.listing);
+        } else {
+          return std::move(task.stated);
+        }
+      }();
+      {
+        const absl::MutexLock lock(mutex_);
+        Recycle(task);
+      }
+      return result;
+    }
+
+    void ReleaseCompleted(Task& task) {
+      struct Payload {
+        std::string directory;
+        Listing listing;
+        std::vector<Stated> stated;
+      };
+
+      // Declare the moved payload before the lock so its allocations die after unlocking.
+      const Payload released{
+          .directory = std::move(task.directory),
+          .listing = std::move(task.listing),
+          .stated = std::move(task.stated),
+      };
+      const absl::MutexLock lock(mutex_);
+      Recycle(task);
+    }
+
+    void Abandon(Task& task) {
+      // The second participant releases an unused payload: either this consumer observes
+      // Ready, or the producer observes Abandoned when publishing its result.
+      if (task.state.exchange(TaskState::kAbandoned, std::memory_order_acq_rel) == TaskState::kReady) {
+        ReleaseCompleted(task);
+      }
+    }
+
+    template<typename Result>
+    void Complete(Task& task, Result result) {
+      if constexpr (std::is_same_v<Result, Listing>) {
+        task.listing = std::move(result);
+      } else {
+        task.stated = std::move(result);
+      }
+      if (task.state.exchange(TaskState::kReady, std::memory_order_acq_rel) == TaskState::kAbandoned) {
+        ReleaseCompleted(task);
+      } else {
+        // Storage remains stable until every worker joins. A late notification after
+        // recycling is harmless: wait rechecks the new generation's atomic value.
+        task.state.notify_one();
+      }
+    }
+
+    void Execute(Task& task) {
+      if (task.kind == Kind::kDirectory) {
+        Complete(task, walker_.ReadDir(task.directory));
+      } else {
+        Complete(task, walker_.StatEntries(task.entries));
+      }
+    }
+
+    bool Pending() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
+      return stop_ || (storage_ && !storage_->pending.empty());
+    }
+
+    mbo::types::OptionalRef<Task> Next() {
+      const absl::MutexLock lock(mutex_, absl::Condition(this, &ReadPool::Pending));
+      if (!storage_ || storage_->pending.empty()) {
+        return std::nullopt;
+      }
+      const auto index = storage_->pending.front();
+      storage_->pending.pop();
+      return storage_->tasks.at(index);
+    }
+
+    void Run() {
+      while (auto task = Next()) {
+        Execute(*task);
+      }
+    }
+
+    Walker& walker_;
+    const std::size_t max_workers_;
+    mutable absl::Mutex mutex_;
+    std::optional<Storage> storage_ ABSL_GUARDED_BY(mutex_);
+    bool stop_ ABSL_GUARDED_BY(mutex_) = false;
+    std::vector<std::thread> threads_;
+  };
+
+  using ReadRequest = ReadPool::Request<ReadPool::Kind::kDirectory>;
+  using StatRequest = ReadPool::Request<ReadPool::Kind::kStat>;
+
  public:
   Walker(
       const vfs::FileSystem& fs,
@@ -165,7 +338,7 @@ class Walker {
         on_error_(on_error),
         mount_container_(mount_container),
         follow_children_(options.symlinks == SymlinkMode::kAll),
-        pool_(options.workers > 1 ? options.workers : std::size_t{0}) {}
+        pool_(*this, options.workers > 1 ? options.workers : std::size_t{0}) {}
 
   // Whether `stated` is a FILE this walk should try to open as a container. `kRoots` offers only the
   // paths named on the command line (depth 0), `kAll` offers every file met; `kNone` never asks.
@@ -343,9 +516,9 @@ class Walker {
     const auto submit = [&](std::size_t index) {
       const auto offset = index * kChunk;
       const auto chunk = all_entries.subspan(offset, std::min(kChunk, entries.size() - offset));
-      return pool_.Submit([this, chunk] { return StatEntries(chunk); });
+      return pool_.SubmitStats(chunk);
     };
-    std::vector<std::future<std::vector<Stated>>> reads;
+    std::vector<StatRequest> reads;
     reads.reserve(pending);
     for (std::size_t index = 0; index < pending; ++index) {
       reads.push_back(submit(index));
@@ -354,7 +527,7 @@ class Walker {
     children.reserve(entries.size());
     for (std::size_t index = 0; index < chunks; ++index) {
       auto& read = reads.at(index % pending);
-      children.append_range(read.get() | std::views::as_rvalue);
+      children.append_range(read.Take() | std::views::as_rvalue);
       if (index + pending < chunks) {
         read = submit(index + pending);
       }
@@ -362,9 +535,7 @@ class Walker {
     return children;
   }
 
-  std::future<Listing> SubmitRead(const std::string& dir) {
-    return pool_.Submit([this, dir] { return ReadDir(dir); });
-  }
+  ReadRequest SubmitRead(const std::string& dir) { return pool_.SubmitDirectory(dir); }
 
   // Bound speculative listings without changing the existing leaf-worker pool.
   // Each active recursion level owns at most four requests per available worker;
@@ -398,7 +569,7 @@ class Walker {
     ReadFrontier(ReadFrontier&&) = delete;
     ReadFrontier& operator=(ReadFrontier&&) = delete;
 
-    std::future<Listing> Take(std::size_t index) {
+    ReadRequest Take(std::size_t index) {
       if (!requests_) {
         return {};
       }
@@ -428,7 +599,7 @@ class Walker {
    private:
     struct Request {
       std::size_t index;
-      std::future<Listing> read;
+      ReadRequest read;
     };
 
     bool Eligible(std::size_t index) const {
@@ -452,7 +623,7 @@ class Walker {
     return is_dir && within_depth && on_root_fs;
   }
 
-  // Only the coordinator accesses this record after its listing future completes. Exclusive
+  // Only the coordinator accesses this record after its listing request completes. Exclusive
   // ownership makes the lazy cache lock-free; it is never shared with matcher workers.
   absl::Status LoadMetadata(const Stated& stated) const {
     if (!stated.metadata_loaded) {
@@ -507,7 +678,7 @@ class Walker {
   // Pre-order by default; post-order (`-depth`) descends first, then visits, and
   // `-prune` has no effect (matching find). `prefetched` is the directory's
   // already-submitted listing read (from the parent's batch), or empty to read now.
-  void VisitSubtree(const Stated& stated, int depth, mbo::types::OptionalRef<std::future<Listing>> prefetched) {
+  void VisitSubtree(const Stated& stated, int depth, mbo::types::OptionalRef<ReadRequest> prefetched) {
     if (stopped_) {
       return;
     }
@@ -547,15 +718,15 @@ class Walker {
     }
   }
 
-  // Reads `dir` (from its prefetched future, or now) and recurses its children,
+  // Reads `dir` (from its prefetched request, or now) and recurses its children,
   // guarding against filesystem loops (only possible when following symlinks).
-  void Descend(const Stated& dir, int depth, mbo::types::OptionalRef<std::future<Listing>> prefetched) {
+  void Descend(const Stated& dir, int depth, mbo::types::OptionalRef<ReadRequest> prefetched) {
     const std::pair<std::uint64_t, std::uint64_t> id{dir.metadata.dev, dir.metadata.ino};
     if (!ancestors_.insert(id).second) {
       on_error_(dir.path, absl::FailedPreconditionError("filesystem loop detected"));
       return;
     }
-    Listing listing = prefetched.has_value() ? prefetched->get() : ReadNow(dir.path);
+    Listing listing = prefetched.has_value() ? prefetched->Take() : ReadNow(dir.path);
     if (!listing.ok()) {
       // A directory that vanished before we could read it is the same readdir race.
       if (!(options_.ignore_readdir_race && absl::IsNotFound(listing.status()))) {
@@ -587,7 +758,7 @@ class Walker {
         auto read = reads.Take(i);
         VisitSubtree(
             children.at(i), depth,
-            read.valid() ? mbo::types::OptionalRef{read} : mbo::types::OptionalRef<std::future<Listing>>{});
+            read.Valid() ? mbo::types::OptionalRef{read} : mbo::types::OptionalRef<ReadRequest>{});
       }
       return;
     }
@@ -612,7 +783,7 @@ class Walker {
           auto read = reads.Take(i);
           VisitSubtree(
               children.at(i), depth,
-              read.valid() ? mbo::types::OptionalRef{read} : mbo::types::OptionalRef<std::future<Listing>>{});
+              read.Valid() ? mbo::types::OptionalRef{read} : mbo::types::OptionalRef<ReadRequest>{});
         } else if (dived[i]) {
           // A container groups its members like a directory, so under kSubtree it belongs in the
           // subtree block rather than the flat block its own entry was emitted in.
@@ -644,8 +815,8 @@ class Walker {
         auto read = reads.Take(i);
         Descend(
             children.at(i), depth,
-            read.valid() ? mbo::types::OptionalRef{read}
-                         : mbo::types::OptionalRef<std::future<Listing>>{});  // entry already visited above
+            read.Valid() ? mbo::types::OptionalRef{read}
+                         : mbo::types::OptionalRef<ReadRequest>{});  // entry already visited above
       } else if (dived[i]) {
         // `--archive=all`: a container met mid-walk descends exactly where a directory would, and
         // after its own visit, so a prune on the container still skips its members.

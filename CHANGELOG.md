@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse typed directory-task records and publish completion without the shared queue lock.
+
 - Reuse budgeted native comparison buffers across chunks while preserving legacy decoder reads.
 
 - Avoid redundant zeroing in native bounded range reads while preserving short-read, EOF and error handling.
