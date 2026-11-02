@@ -22,6 +22,8 @@ runs:
       run: |
         df -h -- "${GITHUB_WORKSPACE}"
         sudo rm -rf -- /usr/local/lib/android
+        # Transitive Android rules inspect these even for native-only builds.
+        printf '%s\n' 'ANDROID_HOME=' 'ANDROID_SDK_ROOT=' 'ANDROID_NDK_HOME=' 'ANDROID_NDK_ROOT=' >>"${GITHUB_ENV}"
         df -h -- "${GITHUB_WORKSPACE}"
     - id: restore
       uses: actions/cache/restore@v6

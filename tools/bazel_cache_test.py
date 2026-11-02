@@ -96,6 +96,19 @@ class BazelCacheTest(unittest.TestCase):
         # caches, installed Java/Python/Node tools and any self-hosted runner state.
         deletion = next(line.strip() for line in cleanup.splitlines() if "rm -rf" in line)
         self.assertEqual(deletion, "sudo rm -rf -- /usr/local/lib/android")
+        for variable in ("ANDROID_HOME", "ANDROID_SDK_ROOT", "ANDROID_NDK_HOME", "ANDROID_NDK_ROOT"):
+            self.assertIn(f"'{variable}='", cleanup)
+        self.assertIn('>>"${GITHUB_ENV}"', cleanup)
+
+        command = next(line.strip() for line in cleanup.splitlines() if line.strip().startswith("printf "))
+        with tempfile.TemporaryDirectory() as directory:
+            environment = Path(directory) / "github-env"
+            subprocess.run(["bash", "-e", "-c", command],
+                           env=dict(os.environ, GITHUB_ENV=str(environment)), check=True)
+            self.assertEqual(environment.read_text().splitlines(),
+                             ["ANDROID_HOME=", "ANDROID_SDK_ROOT=", "ANDROID_NDK_HOME=", "ANDROID_NDK_ROOT="])
+
+
 
     def test_workflows_refresh_only_main_and_release_only_restores(self):
         root = repository_file("")
