@@ -1415,7 +1415,7 @@ constexpr auto kDiffIgnoreTokens = mbo::container::MakeLimitedMap(
 // Each token runs its setter via kDiffIgnoreTokens; an unknown token is an InvalidArgument
 // (naming it). A non-empty `matching` is compiled into options.ignore_matching_lines; a
 // regex that does not compile is an InvalidArgument (carrying RE2's diagnostic). Shared by
-// EvalDiff (per entry) and ValidateDiffIgnore (once, pre-walk, to reject a bad value early).
+// run preparation, direct EvalDiff fallbacks, and pre-walk validation.
 absl::Status ApplyDiffIgnore(std::string_view tokens, std::string_view matching, mbo::diff::DiffOptions& options) {
   for (const std::string_view token : absl::StrSplit(tokens, ',', absl::SkipEmpty())) {
     const auto it = kDiffIgnoreTokens.find(token);
@@ -1523,6 +1523,18 @@ bool EmitAbsentPatch(const parser::Expr& expr, EvalContext& ctx, bool reverse) {
 }
 }  // namespace
 
+mbo::types::OptionalRef<const mbo::diff::DiffOptions> ConfiguredDiffOptions(
+    const parser::Expr& expression,
+    const EvalContext& context) {
+  if (!context.diff_configurations) {
+    return {};
+  }
+  const auto found = context.diff_configurations->find(expression.diff_style);
+  return found == context.diff_configurations->end()
+             ? mbo::types::OptionalRef<const mbo::diff::DiffOptions>{}
+             : mbo::types::OptionalRef<const mbo::diff::DiffOptions>{*found->second};
+}
+
 // xff -diff[:STYLE] TARGET: an ACTION that diffs the entry against TARGET (a field template,
 // like -cmp) via mbo::diff and returns TRUE = same (silent when equal; prints the diff and is
 // false on a difference). STYLE picks the output (u3 default / c / n / y / none = silent). A
@@ -1568,25 +1580,22 @@ bool EvalDiffWithTemplate(
     }
     return false;
   }
-  mbo::diff::DiffOptions options;  // default-constructed (myers, unified, ctx 3) then tuned
-  // A -diff:STYLE token overrides only the parts it names; an omitted format/context falls back to
-  // the resolved global default (--diff-format / --diff-context / --context, else unified / 3).
-  options.output_format = style.format.value_or(ctx.diff_format);
-  options.context_size = style.context.value_or(ctx.diff_context);
-  // Git-style header: an empty time_format omits the per-file mtime (`--- a/one.txt`), so the
-  // output is reproducible regardless of the compared files' timestamps or the local time zone.
-  options.time_format = "";
-  if (const std::optional<mbo::diff::DiffOptions::Algorithm> algo =
-          mbo::diff::DiffOptions::ParseAlgorithmFlag(ctx.diff_algorithm);
-      algo.has_value()) {
-    options.algorithm = *algo;
+  // Run-prepared records contain the complete style/default configuration. Keep the direct
+  // evaluator fallback lazy so its caller-selected context is still observed when reached.
+  std::optional<mbo::diff::DiffOptions> fallback;
+  auto configured = ConfiguredDiffOptions(expr, ctx);
+  if (!configured) {
+    fallback.emplace();
+    fallback->output_format = style.format.value_or(ctx.diff_format);
+    fallback->context_size = style.context.value_or(ctx.diff_context);
+    fallback->time_format.clear();
+    fallback->algorithm = mbo::diff::DiffOptions::ParseAlgorithmFlag(ctx.diff_algorithm).value_or(fallback->algorithm);
+    ApplyDiffIgnore(ctx.diff_ignore, ctx.diff_ignore_matching, *fallback).IgnoreError();
+    configured.set_ref(*fallback);
   }
-  // --diff-ignore / --diff-ignore-matching normalization. The values were validated before
-  // the walk (ValidateDiffIgnore), so this only configures; the returned status is ignored.
-  ApplyDiffIgnore(ctx.diff_ignore, ctx.diff_ignore_matching, options).IgnoreError();
   const absl::StatusOr<std::string> diff = mbo::diff::Diff::FileDiff(
       mbo::file::Artefact{.data = *lhs_data, .name = names.ok() ? patch::HeaderName(names->left) : ""},
-      mbo::file::Artefact{.data = *rhs_data, .name = names.ok() ? patch::HeaderName(names->right) : ""}, options);
+      mbo::file::Artefact{.data = *rhs_data, .name = names.ok() ? patch::HeaderName(names->right) : ""}, *configured);
   if (!diff.ok()) {
     return false;  // a diff failure -> treat as differing
   }
@@ -4540,9 +4549,43 @@ std::optional<mbo::diff::DiffOptions::OutputFormat> ParseDiffFormatFlag(std::str
   return it->second;
 }
 
-// Pre-walk validation of the --diff-ignore / --diff-ignore-matching values: runs the same
-// ApplyDiffIgnore the per-entry -diff uses against a throwaway DiffOptions, so the token set and
-// the regex share one source of truth with the apply path. See the header for the contract.
+// Populate immutable records without moving conditional file/template observations.
+namespace {
+absl::Status AddDiffConfigurations(
+    const parser::Expr& expression,
+    DiffDefaults defaults,
+    DiffConfigurations& configurations) {
+  if (expression.descriptor && expression.descriptor->modifier_consumer == registry::ModifierConsumer::kFileDiff
+      && !configurations.contains(expression.diff_style)) {
+    const auto style = ParseDiffStyle(expression.diff_style);
+    auto options = std::make_unique<mbo::diff::DiffOptions>();
+    options->output_format = style.format.value_or(defaults.format);
+    options->context_size = style.context.value_or(defaults.context);
+    options->time_format.clear();
+    if (const auto algorithm = mbo::diff::DiffOptions::ParseAlgorithmFlag(defaults.algorithm)) {
+      options->algorithm = *algorithm;
+    }
+    MBO_RETURN_IF_ERROR(ApplyDiffIgnore(defaults.ignore, defaults.ignore_matching, *options));
+    configurations.emplace(expression.diff_style, std::move(options));
+  }
+  if (expression.lhs) {
+    MBO_RETURN_IF_ERROR(AddDiffConfigurations(*expression.lhs, defaults, configurations));
+  }
+  if (expression.rhs) {
+    MBO_RETURN_IF_ERROR(AddDiffConfigurations(*expression.rhs, defaults, configurations));
+  }
+  return absl::OkStatus();
+}
+}  // namespace
+
+absl::StatusOr<DiffConfigurations> PrepareDiffConfigurations(const parser::Expr& expression, DiffDefaults defaults) {
+  DiffConfigurations result;
+  MBO_RETURN_IF_ERROR(AddDiffConfigurations(expression, defaults, result));
+  return result;
+}
+
+// Whole-command validation keeps the existing diagnostic order independently of
+// whether execution later needs a prepared action configuration.
 absl::Status ValidateDiffIgnore(std::string_view tokens, std::string_view matching) {
   mbo::diff::DiffOptions options;
   return ApplyDiffIgnore(tokens, matching, options);

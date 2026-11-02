@@ -5133,6 +5133,22 @@ RunResult RunFindCore(
       }
     }
   }
+  DiffConfigurations diff_configurations;
+  if (expression) {
+    auto prepared = PrepareDiffConfigurations(
+        *expression, DiffDefaults{
+                         .algorithm = diff_algorithm,
+                         .ignore = diff_ignore,
+                         .ignore_matching = diff_ignore_matching,
+                         .format = diff_format,
+                         .context = diff_context,
+                     });
+    if (!prepared.ok()) {
+      on_error("--diff-ignore", prepared.status());
+      return RunResult{.errors = 2};
+    }
+    diff_configurations = *std::move(prepared);
+  }
   // The whole --archive surface, resolved as one value before the walk consumes it.
   const absl::StatusOr<ResolvedArchiveOptions> archive_options = ResolveArchiveOptions(command.globals, style);
   if (!archive_options.ok()) {
@@ -6264,6 +6280,7 @@ RunResult RunFindCore(
             .diff_ignore_matching = diff_ignore_matching,
             .diff_format = diff_format,
             .diff_context = diff_context,
+            .diff_configurations = diff_configurations,
             .diff_paths = *diff_paths,
             .diff_destinations = diff_destinations,
             .hash_algorithm = hash_algorithm,
@@ -6422,6 +6439,7 @@ RunResult RunFindCore(
           .diff_ignore_matching = diff_ignore_matching,
           .diff_format = diff_format,
           .diff_context = diff_context,
+          .diff_configurations = diff_configurations,
           .diff_paths = *diff_paths,
           .diff_destinations = diff_destinations,
           .hash_algorithm = hash_algorithm,

@@ -865,5 +865,7 @@ Differential cases cover dynamic definitions, link/content failures, content fie
 missing/empty arguments, moved owners and repeated workers. Whole-run cases cover final hash defaults,
 rendered peer paths and failures. Native CI adds literal and transformed peer, similarity, diff and
 expected-hash preparation/kernels plus three whole-engine scenarios. No speedup or final retention
-claim precedes those measurements. Hash-spec resolution and diff option/ignore-regex preparation
-remain separate invariant-work candidates.
+claim precedes those measurements. The later [O15a qualification](benchmarks/prepared-diff-configuration-20261102.md)
+retains complete file-diff options/ignore-regex preparation at run scope, preserving direct-context
+fallback and conditional observations. Hash-spec/default resolution remains separate invariant work;
+this does not close EP03/EP07 or requalify every template family.

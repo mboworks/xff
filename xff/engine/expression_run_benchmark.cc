@@ -49,6 +49,9 @@ class RunFs final : public xff::vfs::FileSystem {
   }
 
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override {
+    if (path == "peer/diff-control") {
+      return "reference\n";
+    }
     return path.ends_with(".txt") ? "needle\n" : "absent\n";
   }
 
@@ -147,6 +150,26 @@ int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
   const auto scenarios = std::to_array<Scenario>({
       {.name = "compare-template", .arguments = {"-type", "f", "-cmp", "peer/{relpath:s/file/copy/}"}},
+      {
+          .name = "diff-normalized",
+          .arguments =
+              {
+                  "--diff-ignore-matching=^(needle|absent|reference)$",
+                  "-type",
+                  "f",
+                  "-diff:none",
+                  "peer/diff-control",
+                  "-print",
+              },
+      },
+      {
+          .name = "diff-plain",
+          .arguments = {"-type", "f", "-diff", "peer/diff-control"},
+      },
+      {
+          .name = "diff-skipped",
+          .arguments = {"--diff-ignore-matching=^(needle|absent|reference)$", "-false", "-diff", "peer/diff-control"},
+      },
       {.name = "diff-template", .arguments = {"-type", "f", "-diff", "peer/{relpath}"}},
       {.name = "hash-template", .arguments = {"-type", "f", "-hasheq", "{hash}"}},
       {.name = "first-limit", .arguments = {"-type", "f", "-first", "3", "-print"}},

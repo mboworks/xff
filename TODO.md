@@ -420,8 +420,12 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       refreshing after append-only registration and preserving custom overlays and old views.
       [Warm construction, RSS and native controls](docs/benchmarks/immutable-default-catalogs-20261102.md)
       qualify reuse only; first-parse generated tables and per-run MIME binding remain unqualified.
-- [ ] O15-O22: Reconcile remaining invariant operands,
-      paired streaming compare, reusable stage pools, byte-bounded overlap, archive indexing/admission,
+- [x] O15a: Qualify invariant file-diff configuration without moving conditional peer/content
+      observations. [Native, in-memory and slower controls](docs/benchmarks/prepared-diff-configuration-20261102.md)
+      retain once-per-style options/regex records, direct-context fallback and cross-platform costs.
+- [ ] O15b: Qualify remaining hash-spec/default binding and template-family gaps against actual
+      production preparation; preserve dynamic defaults, conditional observations and EP03/EP07 gates.
+- [ ] O16-O22: Reconcile paired streaming compare, reusable stage pools, byte-bounded overlap, archive indexing/admission,
       optional bulk metadata, similarity representations and output churn with EP/JC/P acceptance.
       Keep macrobenchmark, kernel and diagnostic contracts separate.
 

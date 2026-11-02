@@ -68,3 +68,14 @@ FrozenMap/Set lookup experiments, dynamic interning and adaptive worker activati
 tracked opportunities. They do not justify delaying the already qualified production stack or
 silently expanding the acceptance gate. The toolchains_llvm 1.11.1 evaluation is also isolated from
 these changes, so its build/performance effects remain attributable to the version pin.
+
+## Later invariant-family qualification: O15a
+
+[O15a's two-platform evidence](benchmarks/prepared-diff-configuration-20261102.md) qualifies
+complete per-style file-diff options/ignored-line regexes once per run. Conditional peer/template
+rendering, reads, output/error ordering and direct-context fallback retain their existing behavior.
+The production and original-tree whole-run factories receive the same immutable run configuration;
+dedicated direct-context tests separately compare prepared and unprepared option construction.
+Retain the documented native costs as well as normalized-pair gains. This closes that subset of
+acceptance item 1; hash specification/default binding and remaining template-family qualification
+stay open. It is not evidence for an additional executor representation, optimizer or shared pool.
