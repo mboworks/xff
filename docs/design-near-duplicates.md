@@ -4,6 +4,12 @@
 run-wide grouping operation has a different scaling problem: comparing every pair is quadratic before
 the exact verifier has learned anything about either document.
 
+The current exact primitive is byte based: words contain ASCII alphanumerics or high-bit bytes,
+and only ASCII case folds. It does not decode Unicode or fold non-ASCII letters. Per-comparison
+representation improvements preserve that contract. Reusing a peer representation across entries
+requires an immutable source or an explicit mutation/invalidation contract; a dynamic target template
+alone does not establish either.
+
 ## Fixed correctness boundary
 
 Candidate generation may over-select. It must never emit a relationship. Every candidate pair passes

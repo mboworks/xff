@@ -436,9 +436,27 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [ ] O16b: Add and qualify completed-directory/frontier traversal before enabling bounded paired
       comparison. Preserve empty/ignored completion, ordering, ignore inheritance, errors, effects,
       archives and deferred selections; retain explicit fallbacks and avoid repeated shallow scans.
-- [ ] O17-O22: Reconcile reusable stage pools, byte-bounded overlap, archive indexing/admission,
-      optional bulk metadata, similarity representations and output churn with EP/JC/P acceptance.
-      Keep macrobenchmark, kernel and diagnostic contracts separate.
+- [ ] Benchmark history: precompute a shared task order from compatible merged revisions for the
+      whole series. Current per-revision/per-CPU similarity ordering can visually exaggerate or
+      hide changes. Compare robust median adjacency distances across revisions, orient once from
+      series-wide performance, retain missing-task gaps, and reuse positions across the version,
+      CPU-pair and scale selectors. Recompute on publication; keep Alphabetical available and
+      verify hover/tick mapping. Judge performance from matched cells, not surface geometry.
+- [ ] O17: Qualify coordinated persistent stage workers against existing pools and prior rejected
+      caller-inclusive/admission policies. Preserve leaf jobs, explicit CPU/role accounting and JC gates.
+- [ ] O18: Qualify byte-bounded overlap with backpressure, ordered publication and cancellation;
+      avoid per-batch throwaway threads and nested waits on the same saturated pool.
+- [ ] O19: Qualify archive seeking/index/replay and decoder admission independently. Investigate
+      native/memory ZIP seeking before concurrency; preserve sequential-source and shared-budget fallbacks.
+- [ ] O20: Qualify optional bulk metadata by backend capability with precise fallback, while
+      keeping metadata-free traversal free of extra probes and extended-stat work.
+- [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte
+      equality shortcut on Linux/macOS. Preserve [rejected width-one paths and all controls](docs/benchmarks/byte-shingle-representations-20261102.md).
+- [ ] O21b: Reuse immutable-source/reference representations and exact candidate indexes only after
+      resolving dynamic target/invalidation and retained-byte contracts; keep run-wide grouping semantics explicit.
+- [ ] O22: Qualify snapshot-owned digest observers, invariant field-hash qualifiers and output
+      construction separately. Preserve lifetime/invalidation, direct fallback and formatting contracts.
+      Do not revive O05's rejected generic lookup change without new consumer-specific evidence.
 
 - [ ] Qualify executor admission after the clock correction with separate cold/warm controls and
       16/32/63/64-entry matching boundaries; check Linux and macOS workload regressions before

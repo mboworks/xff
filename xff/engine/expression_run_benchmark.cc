@@ -149,6 +149,18 @@ void Measure(benchmark::State& state, const Scenario& scenario, ExpressionExecut
 int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
   const auto scenarios = std::to_array<Scenario>({
+      {
+          .name = "similar-equal",
+          .arguments = {"-type", "f", "-similar:3:100%", "{path}"},
+      },
+      {
+          .name = "similar-disjoint",
+          .arguments = {"-type", "f", "-similar:3:50%", "peer/diff-control"},
+      },
+      {
+          .name = "similar-zero",
+          .arguments = {"-type", "f", "-similar:3:0%", "peer/diff-control"},
+      },
       {.name = "compare-template", .arguments = {"-type", "f", "-cmp", "peer/{relpath:s/file/copy/}"}},
       {
           .name = "diff-normalized",
