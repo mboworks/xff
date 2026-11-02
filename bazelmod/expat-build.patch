@@ -3,7 +3,7 @@ new file mode 100644
 --- /dev/null
 +++ b/MODULE.bazel
 @@ -0,0 +1,2 @@
-+module(name = "libexpat", version = "2.8.4")
++module(name = "libexpat", version = "2.9.0")
 +bazel_dep(name = "rules_cc", version = "0.2.22")
 diff --git a/BUILD.bazel b/BUILD.bazel
 new file mode 100644
@@ -14,7 +14,7 @@ new file mode 100644
 +package(default_visibility = ["//visibility:private"])
 +cc_library(
 +    name = "libexpat",
-+    srcs = ["expat/lib/xmlparse.c", "expat/lib/xmlrole.c", "expat/lib/xmltok.c", "expat/lib/random_dev_urandom.c"],
++    srcs = ["expat/lib/xmlparse.c", "expat/lib/xmlrole.c", "expat/lib/xmltok.c", "expat/lib/xcs.c", "expat/lib/random_dev_urandom.c"],
 +    hdrs = glob(["expat/lib/*.h", "expat/lib/*.c"]) + ["expat_config.h"],
 +    includes = [".", "expat/lib"],
 +    visibility = ["//visibility:public"],

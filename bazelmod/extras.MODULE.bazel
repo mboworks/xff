@@ -87,11 +87,11 @@ single_version_override(
 
 archive_override(
     module_name = "libexpat",
-    integrity = "sha256-qKnFy7qREAALE8yZQ/UPzX5VKly61JyxkRQsUAoKEbc=",
+    integrity = "sha256-bozntS67qkI8Wb7MfPHmh1xC5JIowGKsgSPBDnAM7Cc=",
     patch_strip = 1,
     patches = ["//bazelmod:expat-build.patch"],
-    strip_prefix = "libexpat-R_2_8_4",
-    urls = ["https://github.com/libexpat/libexpat/archive/refs/tags/R_2_8_4.tar.gz"],
+    strip_prefix = "libexpat-R_2_9_0",
+    urls = ["https://github.com/libexpat/libexpat/archive/refs/tags/R_2_9_0.tar.gz"],
 )
 
 bazel_dep(name = "xff_apple", version = "0.0.0")
