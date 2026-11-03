@@ -15,13 +15,14 @@ runs:
   using: composite
   steps:
     # LLVM extraction temporarily needs both its compressed archive and unpacked tree.
-    # XFF never uses the hosted Android SDK; leave macOS and self-hosted machines alone.
-    - name: Free unused Android SDK space for LLVM
+    # MSan needs LLVM 22 plus LLVM 23 for execution tools. XFF uses none of these SDKs.
+    # Restrict fixed-path cleanup to disposable hosted Linux runners.
+    - name: Free unused hosted SDK space for LLVM
       if: runner.os == 'Linux' && runner.environment == 'github-hosted'
       shell: bash
       run: |
         df -h -- "${GITHUB_WORKSPACE}"
-        sudo rm -rf -- /usr/local/lib/android
+        sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /usr/local/.ghcup /opt/ghc
         # Transitive Android rules inspect these even for native-only builds.
         printf '%s\n' 'ANDROID_HOME=' 'ANDROID_SDK_ROOT=' 'ANDROID_NDK_HOME=' 'ANDROID_NDK_ROOT=' >>"${GITHUB_ENV}"
         df -h -- "${GITHUB_WORKSPACE}"

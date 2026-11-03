@@ -192,6 +192,12 @@ many smaller compilation outputs over large linked executables; ties evict older
 This is a size heuristic, not action-type classification: large object files can also be evicted.
 The weekly deep-fuzz workflow shares the ordinary fuzz cache and main-only refresh policy.
 LLVM downloads remain uncached.
+Before restoring compiled outputs on GitHub-hosted Linux, CI removes the unused Android,
+.NET, and GHC SDK installations at four fixed paths. This leaves extraction space for
+both MSan's LLVM 22 and LLVM 23 execution tools, including the compressed downloads.
+The cleanup preserves Bazel caches, the workspace, Java/Python/Node tools, macOS, and
+self-hosted runners; it does not increase any cache-storage budget.
+
 Cleanup retains ASan/TSan/coverage uploads up to 1,000,000,000 compressed bytes and MSan uploads up to
 1,200,000,000 bytes; other entries keep
 the existing 700,000,000-byte ceiling. The repository storage limit remains 10 GB.

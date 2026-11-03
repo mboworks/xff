@@ -5,6 +5,7 @@
 
 import os
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -92,10 +93,21 @@ class BazelCacheTest(unittest.TestCase):
         self.assertIn("sudo rm -rf -- /usr/local/lib/android", cleanup)
         self.assertNotIn("rm -rf", restore)
         self.assertEqual(cleanup.count('df -h -- "${GITHUB_WORKSPACE}"'), 2)
-        # The fixed unused SDK is the only deletion target; preserve repository/action
-        # caches, installed Java/Python/Node tools and any self-hosted runner state.
+        # Only these unused SDKs may be removed. Preserve workspace/action caches,
+        # installed Java/Python/Node tools and every self-hosted runner.
         deletion = next(line.strip() for line in cleanup.splitlines() if "rm -rf" in line)
-        self.assertEqual(deletion, "sudo rm -rf -- /usr/local/lib/android")
+        expected = ["sudo", "rm", "-rf", "--", "/usr/local/lib/android", "/usr/share/dotnet",
+                    "/usr/local/.ghcup", "/opt/ghc"]
+        self.assertEqual(shlex.split(deletion), expected)
+        # Exercise argument expansion without allowing any real deletion.
+        with tempfile.TemporaryDirectory() as directory:
+            fake_sudo = Path(directory) / "sudo"
+            fake_sudo.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n')
+            fake_sudo.chmod(0o755)
+            result = subprocess.run(["bash", "-e", "-c", deletion],
+                                    env=dict(os.environ, PATH=directory + os.pathsep + os.environ["PATH"]),
+                                    text=True, capture_output=True, check=True)
+            self.assertEqual(result.stdout.splitlines(), expected[1:])
         for variable in ("ANDROID_HOME", "ANDROID_SDK_ROOT", "ANDROID_NDK_HOME", "ANDROID_NDK_ROOT"):
             self.assertIn(f"'{variable}='", cleanup)
         self.assertIn('>>"${GITHUB_ENV}"', cleanup)
