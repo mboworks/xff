@@ -38,10 +38,10 @@ std::vector<std::string> OwnedByteWords(std::string_view text) {
 }
 
 absl::flat_hash_set<std::string> OwnedSingleByteShingles(std::string_view text) {
-  const auto words = OwnedByteWords(text);
+  auto words = OwnedByteWords(text);
   absl::flat_hash_set<std::string> result;
-  for (const auto& word : words) {
-    result.insert(word);
+  for (auto& word : words) {
+    result.insert(std::move(word));
   }
   return result;
 }

@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Move already-owned single-word similarity keys instead of copying their buffers; retain exact scores and duplicate handling.
+
 - Reuse literal similarity reference shingles after validating fresh bytes, preserving dynamic targets and large-file comparison.
 
 - Scan similarity reference prefixes without copying them, preserving binary detection and fresh reference reads.

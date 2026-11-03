@@ -20,29 +20,46 @@ namespace {
 
 // NOLINTBEGIN(*-magic-numbers)
 
-std::string Document(std::size_t words, std::size_t changed_every) {
+std::string Document(std::size_t words, std::size_t changed_every, std::size_t padding = 0) {
   std::string result;
-  result.reserve(words * 12);
+  result.reserve(words * (padding + 12));
   for (std::size_t index = 0; index < words; ++index) {
     if (changed_every != 0 && index % changed_every == 0) {
-      absl::StrAppend(&result, "changed", index, " ");
+      absl::StrAppend(&result, "changed", index);
     } else {
-      absl::StrAppend(&result, "token", index % 257, " ");
+      absl::StrAppend(&result, "token", index % 257);
     }
+    result.append(padding, 'x');
+    result.push_back(' ');
   }
   return result;
 }
 
-void BmWordShinglePercent(benchmark::State& state, std::size_t changed_every) {
+void BmWordShinglePercent(benchmark::State& state, std::size_t changed_every, std::size_t padding = 0) {
   const auto words = static_cast<std::size_t>(state.range(0));
   const auto width = static_cast<std::size_t>(state.range(1));
-  const std::string lhs = Document(words, 0);
-  const std::string rhs = Document(words, changed_every);
+  const std::string lhs = Document(words, 0, padding);
+  const std::string rhs = Document(words, changed_every, padding);
   // google-benchmark's loop value drives iteration and is deliberately not read.
   // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
   for (const auto unused : state) {
     benchmark::DoNotOptimize(WordShinglePercent(lhs, rhs, width));
   }
+  state.SetItemsProcessed(state.iterations() * static_cast<std::int64_t>(words * 2));
+}
+
+void BmReferencePercent(benchmark::State& state, std::size_t changed_every, std::size_t padding = 0) {
+  const auto words = static_cast<std::size_t>(state.range(0));
+  const auto width = static_cast<std::size_t>(state.range(1));
+  const std::string lhs = Document(words, 0, padding);
+  const std::string rhs = Document(words, changed_every, padding);
+  const ByteWordShingleReference reference(rhs, width);
+  // google-benchmark's loop value drives iteration and is deliberately not read.
+  // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
+  for (const auto unused : state) {
+    benchmark::DoNotOptimize(reference.Percent(lhs));
+  }
+  state.counters["reference_tracked_capacity"] = static_cast<double>(reference.StorageBytes());
   state.SetItemsProcessed(state.iterations() * static_cast<std::int64_t>(words * 2));
 }
 
@@ -61,17 +78,30 @@ void RegisterAll() {
   struct Shape {
     std::string_view name;
     std::size_t changed_every;
+    std::size_t padding = 0;
   };
 
   static constexpr std::array kShapes = std::to_array<Shape>({
       {.name = "equal", .changed_every = 0},
       {.name = "nearby", .changed_every = 16},
       {.name = "disjoint", .changed_every = 1},
+      {.name = "nearby-padding64", .changed_every = 16, .padding = 64},
+      {.name = "disjoint-padding64", .changed_every = 1, .padding = 64},
+      {.name = "nearby-padding256", .changed_every = 16, .padding = 256},
+      {.name = "disjoint-padding256", .changed_every = 1, .padding = 256},
   });
   for (const Shape& shape : kShapes) {
     benchmark::RegisterBenchmark(
         absl::StrCat("BmWordShinglePercent/", shape.name),
-        [changed_every = shape.changed_every](benchmark::State& state) { BmWordShinglePercent(state, changed_every); })
+        [changed_every = shape.changed_every, padding = shape.padding](benchmark::State& state) {
+          BmWordShinglePercent(state, changed_every, padding);
+        })
+        ->Apply(Args);
+    benchmark::RegisterBenchmark(
+        absl::StrCat("BmReferencePercent/", shape.name),
+        [changed_every = shape.changed_every, padding = shape.padding](benchmark::State& state) {
+          BmReferencePercent(state, changed_every, padding);
+        })
         ->Apply(Args);
   }
 }

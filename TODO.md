@@ -477,8 +477,14 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O21b1: Reuse literal-reference byte-word representations only after validating every fresh
       read; keep dynamic targets unchanged and bound retained per-slot storage. Qualification and
       rejected admission policies: `docs/benchmarks/similarity-reference-reuse-20261103.md`.
-- [ ] Qualify moving width-one owned words into their shingle set, and independently probing the
-      smaller shingle set; preserve the already-qualified representation and tiny balanced controls.
+- [x] O21b2: Move already-owned width-one keys after cross-platform qualification, preserving
+      vector-first tokenization. Record retained-capacity growth and short-word controls in
+      `docs/benchmarks/owned-word-moves-20261103.md`.
+- [ ] Qualify probing the smaller shingle set in both asymmetric directions; preserve the
+      already-qualified representation and tiny balanced controls.
+- [ ] Investigate threshold-aware boolean similarity verification, including cardinality bounds
+      and bounded intersection checks. Preserve the exact-score API, integer rounding, conditional
+      I/O and near/full-match controls; qualify separately from key ownership and probe direction.
 - [ ] O21b: Reuse immutable-source/reference representations and exact candidate indexes only after
       resolving dynamic target/invalidation and retained-byte contracts; keep run-wide grouping semantics explicit.
 - [x] O22a: Qualify snapshot-owned digest observers against owning consumption, preserving cache

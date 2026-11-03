@@ -1299,9 +1299,10 @@ TEST_F(PreparedOperandTest, SimilarityCacheReleasesOversizedShingleRepresentatio
   ASSERT_OK_AND_ASSIGN(const auto prepared, PreparedExpression::Prepare(expression));
   const auto worker = prepared.MakeWorker();
   const auto cold_storage = worker.StorageBytes();
+  constexpr std::size_t kUniqueWords = 120'000;
   std::string reference;
-  reference.reserve(1'000'000);
-  for (std::size_t index = 0; index < 200'000; ++index) {
+  reference.reserve(kUniqueWords * 5);
+  for (std::size_t index = 0; index < kUniqueWords; ++index) {
     std::size_t code = index;
     for (const auto digit : {0, 1, 2, 3}) {
       (void)digit;
@@ -1324,11 +1325,11 @@ TEST_F(PreparedOperandTest, SimilarityCacheReleasesOversizedShingleRepresentatio
     SCOPED_TRACE(round);
     context.content.Invalidate();
     fs.events.clear();
-    const auto expected = EvaluateDeferred(expression, context);
-    const auto events = std::exchange(fs.events, {});
-    context.content.Invalidate();
-    EXPECT_THAT(worker.Evaluate(context).matched, Eq(expected.matched));
-    EXPECT_THAT(fs.events, Eq(events));
+    // One matching word among 120,000 unique words rounds to zero percent.
+    // The independent score/oracle tests cover set arithmetic; this case isolates
+    // real cache admission/release without rebuilding the large reference twice.
+    EXPECT_THAT(worker.Evaluate(context).matched, IsFalse());
+    EXPECT_THAT(fs.events, ElementsAre("read file", "read reference"));
     if (round % 2 == 0) {
       EXPECT_THAT(worker.StorageBytes(), Gt(cold_storage));
     } else {
