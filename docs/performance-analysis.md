@@ -3805,3 +3805,25 @@ This accepts a measured asymmetric-input gain with disclosed small-control costs
 that all similarity workloads improve. Threshold-aware boolean rejection, exact candidate indexes,
 and grouping remain independent open candidates. ZIP seeking and decoder admission also remain
 open; no archive-policy change is included here.
+
+### O19b2: uncached native ZIP seeking rejected
+
+The optional native-cursor implementation and conservative index-admission policy are fully
+implemented and tested in [the retained experiment](benchmarks/native-zip-seek-evaluation-20261103.md).
+Both platforms pass all release and affected sanitizer/lint checks. The trial preserves sequential
+fallbacks, XAR source errors, resource-fork member visibility and admitted source extents.
+
+It does not qualify as a general performance improvement. Native CLI gains reach 8.4% on macOS
+and 40.7% on Linux for selected large compressed cases, while ordinary first-member workloads
+regress up to 138.1% and 91.7%. The direct API exposes the larger cost of building the entire
+central index for an early member. Untimed counters show 696,372 native versus 65,540 sequential
+input bytes for the 10,000-entry first-read fixture, with thirteen versus one seek calls. The
+reader already consumes nearby headers forward; a simple seek-buffer cache is not an established
+fix. Keep immutable index/locator reuse and metadata demand as separate open architecture work.
+
+The manual archive benchmark now retains 150 ZIP cases alongside its 96 TAR controls, including
+stored/deflate, sequential/nested sources, first/last/cycled reads, names-only listing and oversized
+source-budget fallback. Descriptor-size differences are reported explicitly; sequential/fallback
+size correctness remains open. The full rejected implementation and 17,640 native invocations plus
+2,952 direct case/participant/session records are archived. No product reader change is accepted
+from this trial.
