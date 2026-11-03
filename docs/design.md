@@ -115,6 +115,10 @@ and defines the measurements needed before optimizing them.
 
 Streaming, aligned, structured, and aggregate output modes have explicit buffering controls.
 Plain output preserves path bytes by default; `--path-encoding=escape` escapes controls.
+Implicit raw plain/NUL listings reuse coordinator-owned record storage. Consumers finish using
+borrowed bytes synchronously; ranked output retains owning copies. Oversized buffers release their
+capacity after consumption. [Qualification](benchmarks/raw-record-reuse-20261103.md) records costs
+and lifetime limits; the stateless owning renderer and other formats retain their contracts.
 `-print0` preserves exact path bytes with NUL separators. Structured formats escape their delimiters,
 but arbitrary non-UTF-8 paths can still produce invalid Unicode text: no general transcoding guarantee
 is made. [The help model](design-help-model.md) describes generated plain, Markdown, HTML, and roff help.
