@@ -188,6 +188,27 @@ TEST_F(SimilarityTest, NormalizedSeparatorsAndLongWordsRetainExactSetSemantics) 
   }
 }
 
+TEST_F(SimilarityTest, AsymmetricSetsKeepScoresInBothProbeDirections) {
+  for (const auto count : {8, 32, 1'000}) {
+    SCOPED_TRACE(count);
+    std::string large;
+    for (int index = 0; index < count; ++index) {
+      large.append("token").append(std::to_string(index)).push_back(' ');
+    }
+    constexpr std::string_view kSmall = "TOKEN0 token1 TOKEN2 token3";
+    for (const auto width : {1UZ, 3UZ, 5UZ}) {
+      SCOPED_TRACE(width);
+      const auto expected = ReferenceBytePercent(large, kSmall, width);
+      EXPECT_THAT(WordShinglePercent(large, kSmall, width), Eq(expected));
+      EXPECT_THAT(WordShinglePercent(kSmall, large, width), Eq(expected));
+      const ByteWordShingleReference large_reference(large, width);
+      const ByteWordShingleReference small_reference(std::string(kSmall), width);
+      EXPECT_THAT(large_reference.Percent(kSmall), Eq(expected));
+      EXPECT_THAT(small_reference.Percent(large), Eq(expected));
+    }
+  }
+}
+
 TEST_F(SimilarityTest, DuplicateAndUniqueLongWordsPreserveIndependentSetScores) {
   static constexpr auto kPaddingBytes = std::to_array<std::size_t>({0, 15, 16, 22, 23, 64, 256});
   for (const auto padding : kPaddingBytes) {

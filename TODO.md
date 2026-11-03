@@ -480,8 +480,9 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O21b2: Move already-owned width-one keys after cross-platform qualification, preserving
       vector-first tokenization. Record retained-capacity growth and short-word controls in
       `docs/benchmarks/owned-word-moves-20261103.md`.
-- [ ] Qualify probing the smaller shingle set in both asymmetric directions; preserve the
-      already-qualified representation and tiny balanced controls.
+- [x] O21b3: Qualify probing the smaller shingle set in both asymmetric directions, preserving the
+      representation and exact scores. Retain dynamic targets, tiny/balanced controls, slower cells
+      and rejected loop forms in `docs/benchmarks/smaller-shingle-probes-20261103.md`.
 - [ ] Investigate threshold-aware boolean similarity verification, including cardinality bounds
       and bounded intersection checks. Preserve the exact-score API, integer rounding, conditional
       I/O and near/full-match controls; qualify separately from key ownership and probe direction.

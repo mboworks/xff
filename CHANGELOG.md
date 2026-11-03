@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Probe the smaller similarity shingle set while preserving exact scores, fresh-reference checks and dynamic targets.
+
 - Move already-owned single-word similarity keys instead of copying their buffers; retain exact scores and duplicate handling.
 
 - Reuse literal similarity reference shingles after validating fresh bytes, preserving dynamic targets and large-file comparison.

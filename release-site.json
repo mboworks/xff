@@ -87,7 +87,8 @@
     "docs/benchmarks/raw-record-reuse-20261103.md": "docs/benchmarks/raw-record-reuse-20261103.html",
     "docs/benchmarks/similarity-prefix-view-20261103.md": "docs/benchmarks/similarity-prefix-view-20261103.html",
     "docs/benchmarks/similarity-reference-reuse-20261103.md": "docs/benchmarks/similarity-reference-reuse-20261103.html",
-    "docs/benchmarks/owned-word-moves-20261103.md": "docs/benchmarks/owned-word-moves-20261103.html"
+    "docs/benchmarks/owned-word-moves-20261103.md": "docs/benchmarks/owned-word-moves-20261103.html",
+    "docs/benchmarks/smaller-shingle-probes-20261103.md": "docs/benchmarks/smaller-shingle-probes-20261103.html"
   },
   "generated_html": {
     "XFF.md": {
