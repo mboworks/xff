@@ -79,6 +79,101 @@ int ReferenceBytePercent(std::string_view left, std::string_view right, std::siz
 
 struct SimilarityTest : ::testing::Test {};
 
+TEST_F(SimilarityTest, BooleanThresholdMatchesExactRoundedScoresForSmallSetShapes) {
+  const auto words = [](std::size_t common, std::size_t unique, std::string_view prefix) {
+    std::string text;
+    for (std::size_t i = 0; i < common; ++i) {
+      text.append(" shared").append(std::to_string(i));
+    }
+    for (std::size_t i = 0; i < unique; ++i) {
+      text.append(" ").append(prefix).append(std::to_string(i));
+    }
+    return text;
+  };
+  for (std::size_t left_size = 0; left_size <= 10; ++left_size) {
+    for (std::size_t right_size = 0; right_size <= 10; ++right_size) {
+      for (std::size_t common = 0; common <= std::min(left_size, right_size); ++common) {
+        const auto left = words(common, left_size - common, "left");
+        const auto right = words(common, right_size - common, "right");
+        const ByteWordShingleReference reference(right, 1);
+        const int score = ReferenceBytePercent(left, right, 1);
+        SCOPED_TRACE(left_size);
+        SCOPED_TRACE(right_size);
+        SCOPED_TRACE(common);
+        for (int threshold = -1; threshold <= 101; ++threshold) {
+          SCOPED_TRACE(threshold);
+          EXPECT_THAT(WordShingleAtLeast(left, right, 1, threshold), Eq(score >= threshold));
+          EXPECT_THAT(reference.AtLeast(left, threshold), Eq(score >= threshold));
+        }
+      }
+    }
+  }
+}
+
+TEST_F(SimilarityTest, BatchedThresholdBoundsMatchExactScoresForLargeBalancedSets) {
+  static constexpr auto kWidths = std::to_array<std::size_t>({1, 3});
+  static constexpr auto kSharedCounts = std::to_array<std::size_t>({0, 100, 199, 200});
+  static constexpr auto kThresholds = std::to_array<int>({1, 50, 99, 100});
+  std::string left;
+  for (std::size_t i = 0; i < 200; ++i) {
+    left.append(" shared").append(std::to_string(i));
+  }
+  for (const auto width : kWidths) {
+    for (const auto shared : kSharedCounts) {
+      std::string right;
+      for (std::size_t i = 0; i < 200; ++i) {
+        right.append(i < shared ? ",shared" : ",other").append(std::to_string(i));
+      }
+      const ByteWordShingleReference reference(right, width);
+      const int score = ReferenceBytePercent(left, right, width);
+      for (const int threshold : kThresholds) {
+        SCOPED_TRACE(width);
+        SCOPED_TRACE(shared);
+        SCOPED_TRACE(threshold);
+        EXPECT_THAT(WordShingleAtLeast(left, right, width, threshold), Eq(score >= threshold));
+        EXPECT_THAT(reference.AtLeast(left, threshold), Eq(score >= threshold));
+      }
+    }
+  }
+}
+
+TEST_F(SimilarityTest, BooleanThresholdPreservesWidthsRoundingAndMovedOwnerSemantics) {
+  static constexpr auto kTexts = std::to_array<std::string_view>({
+      "",
+      "alpha",
+      "ALPHA beta gamma",
+      "alpha beta delta",
+      "one one two two three",
+      " , ! ",
+  });
+  const ByteWordShingleReference empty_reference;
+  static constexpr auto kWidths = std::to_array<std::size_t>({0, 1, 3, 5, 100});
+  for (const auto width : kWidths) {
+    for (const auto right : kTexts) {
+      ByteWordShingleReference source(std::string(right), width);
+      const ByteWordShingleReference reference(std::move(source));
+      for (const auto left : kTexts) {
+        const int score = ReferenceBytePercent(left, right, width);
+        for (int threshold = -1; threshold <= 101; ++threshold) {
+          EXPECT_THAT(WordShingleAtLeast(left, right, width, threshold), Eq(score >= threshold));
+          EXPECT_THAT(reference.AtLeast(left, threshold), Eq(score >= threshold));
+          EXPECT_THAT(empty_reference.AtLeast(left, threshold), Eq(0 >= threshold));
+        }
+      }
+    }
+  }
+  std::string left;
+  for (std::size_t i = 0; i < 200; ++i) {
+    left.append(" shared").append(std::to_string(i));
+  }
+  const std::string right = left + " extra";
+  // 200/201 rounds to100, while200/202 rounds to99: a set mismatch alone cannot reject100.
+  EXPECT_THAT(WordShingleAtLeast(left, right, 1, 100), IsTrue());
+  EXPECT_THAT(WordShingleAtLeast(left, right + " another", 1, 100), IsFalse());
+  const ByteWordShingleReference reference(right, 1);
+  EXPECT_THAT(reference.AtLeast(left, 100), IsTrue());
+}
+
 TEST_F(SimilarityTest, ReusableReferenceMatchesIndependentByteWordOracle) {
   static constexpr auto kTexts = std::to_array<std::string_view>({
       "",

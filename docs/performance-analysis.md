@@ -3841,3 +3841,22 @@ Tiny direct encodings can cost extra nanoseconds despite saving allocations for 
 the report retains those cases rather than treating allocation removal alone as an elapsed win.
 No new worker, lock, host-I/O path, CLI flag or default output byte is introduced. Structured
 column/summary cell and row reuse remains open under O22c2, as do streaming/backpressure contracts.
+
+### O21b4: exact threshold-aware similarity verification
+
+The boolean `-similar` path now uses an exact required-intersection bound and checks progress
+in batches of 32 probes. The [paired qualification report](benchmarks/threshold-aware-similarity-20261103.md)
+compares cardinality-only, per-element and batched strategies on both platforms. Exact percentage
+APIs remain unchanged; fresh candidate/reference reads, failures, binary checks and cache admission
+still occur before the boolean shortcut. No new worker, shared state, allocation wrapper or flag.
+
+The selected policy improves native larger partial-match cases by up to about 10% on macOS and
+23% on Linux. Full-match costs reach about 3% on macOS and about 2% in comparable Linux cases;
+all slower cells and unchanged-format controls remain in the evidence. Per-element checks help
+some small cases but introduce substantial Linux regressions, so those are not selected.
+
+The integer bound preserves the original half-up rounding, including 200/201 rounding to 100.
+Deterministic tests cover success/failure checkpoints for both representations, all small set
+shapes and thresholds, invalid widths, absent/moved owners and fresh-reference failure/recovery.
+Opaque-byte differential fuzzing also compares both boolean APIs against unchanged exact scores.
+Reference indexing/grouping and independent direct word insertion remain open under O21b.

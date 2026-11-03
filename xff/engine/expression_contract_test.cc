@@ -1236,6 +1236,98 @@ TEST_F(PreparedOperandTest, SimilarityReferencesPreserveFreshReadsAndWorkerIsola
   }
 }
 
+TEST_F(PreparedOperandTest, ExtremeSimilarityThresholdsPreserveFreshReferenceFailuresAndRecovery) {
+  static constexpr auto kThresholds = std::to_array<int>({-1, 0, 101});
+  const auto descriptor = registry::Lookup("-similar");
+  ASSERT_THAT(descriptor, Optional(_));
+  for (const int threshold : kThresholds) {
+    SCOPED_TRACE(threshold);
+    const parser::Expr expression{
+        .kind = parser::Expr::Kind::kPredicate,
+        .descriptor = descriptor,
+        .args = {"peer"},
+        .similarity_width = 3,
+        .similarity_threshold = threshold,
+    };
+    ASSERT_OK_AND_ASSIGN(const auto prepared, PreparedExpression::Prepare(expression));
+    const auto worker = prepared.MakeWorker();
+    ASSERT_OK_AND_ASSIGN(const auto execution, PrepareExpressionExecution(expression));
+    const auto coordinator = execution.MakeWorker(ExpressionWorkerRole::kCoordinator);
+    fs.content_overrides["file"] = "alpha beta gamma";
+    EvalContext context{
+        .visit = visit,
+        .emit = IgnoreOutput,
+        .fs = fs,
+        .now = absl::UnixEpoch(),
+        .tz = absl::UTCTimeZone(),
+        .control = control,
+    };
+
+    struct Case {
+      std::string_view label;
+      std::string bytes;
+      bool failed;
+      bool match;
+    };
+
+    const auto cases = std::to_array<Case>({
+        {
+            .label = "first",
+            .bytes = "alpha beta gamma",
+            .failed = false,
+            .match = threshold <= 100,
+        },
+        {
+            .label = "repeat",
+            .bytes = "alpha beta gamma",
+            .failed = false,
+            .match = threshold <= 100,
+        },
+        {
+            .label = "changed",
+            .bytes = "unrelated words now",
+            .failed = false,
+            .match = threshold <= 0,
+        },
+        {
+            .label = "binary",
+            .bytes = std::string("a\0b", 3),
+            .failed = false,
+            .match = false,
+        },
+        {
+            .label = "failed read",
+            .bytes = "alpha beta gamma",
+            .failed = true,
+            .match = false,
+        },
+        {
+            .label = "recovery",
+            .bytes = "alpha beta gamma",
+            .failed = false,
+            .match = threshold <= 100,
+        },
+    });
+    for (const auto& test_case : cases) {
+      SCOPED_TRACE(test_case.label);
+      fs.content_overrides["peer"] = test_case.bytes;
+      fs.failed_content = test_case.failed ? std::optional<std::string>("peer") : std::nullopt;
+      context.content.Invalidate();
+      fs.events.clear();
+      EXPECT_THAT(EvaluateDeferred(expression, context).matched, Eq(test_case.match));
+      const auto expected_events = std::exchange(fs.events, {});
+      EXPECT_THAT(expected_events, ElementsAre(EqualsText("read file"), EqualsText("read peer")));
+      context.content.Invalidate();
+      EXPECT_THAT(worker.Evaluate(context).matched, Eq(test_case.match));
+      EXPECT_THAT(fs.events, Eq(expected_events));
+      context.content.Invalidate();
+      fs.events.clear();
+      EXPECT_THAT(coordinator.Evaluate(context).matched, Eq(test_case.match));
+      EXPECT_THAT(fs.events, Eq(expected_events));
+    }
+  }
+}
+
 TEST_F(PreparedOperandTest, SimilarityCacheAdmissionDoesNotLimitReferenceFiles) {
   constexpr std::size_t kInputLimit = 1UZ << 20U;
   const auto descriptor = registry::Lookup("-similar");
