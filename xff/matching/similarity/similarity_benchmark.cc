@@ -35,11 +35,15 @@ std::string Document(std::size_t words, std::size_t changed_every, std::size_t p
   return result;
 }
 
-void BmWordShinglePercent(benchmark::State& state, std::size_t changed_every, std::size_t padding = 0) {
+void BmWordShinglePercent(
+    benchmark::State& state,
+    std::size_t changed_every,
+    std::size_t padding = 0,
+    bool reverse = false) {
   const auto words = static_cast<std::size_t>(state.range(0));
   const auto width = static_cast<std::size_t>(state.range(1));
-  const std::string lhs = Document(words, 0, padding);
-  const std::string rhs = Document(words, changed_every, padding);
+  const std::string lhs = Document(words, reverse ? changed_every : 0, padding);
+  const std::string rhs = Document(words, reverse ? 0 : changed_every, padding);
   // google-benchmark's loop value drives iteration and is deliberately not read.
   // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
   for (const auto unused : state) {
@@ -48,11 +52,15 @@ void BmWordShinglePercent(benchmark::State& state, std::size_t changed_every, st
   state.SetItemsProcessed(state.iterations() * static_cast<std::int64_t>(words * 2));
 }
 
-void BmReferencePercent(benchmark::State& state, std::size_t changed_every, std::size_t padding = 0) {
+void BmReferencePercent(
+    benchmark::State& state,
+    std::size_t changed_every,
+    std::size_t padding = 0,
+    bool reverse = false) {
   const auto words = static_cast<std::size_t>(state.range(0));
   const auto width = static_cast<std::size_t>(state.range(1));
-  const std::string lhs = Document(words, 0, padding);
-  const std::string rhs = Document(words, changed_every, padding);
+  const std::string lhs = Document(words, reverse ? changed_every : 0, padding);
+  const std::string rhs = Document(words, reverse ? 0 : changed_every, padding);
   const ByteWordShingleReference reference(rhs, width);
   // google-benchmark's loop value drives iteration and is deliberately not read.
   // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
@@ -79,6 +87,7 @@ void RegisterAll() {
     std::string_view name;
     std::size_t changed_every;
     std::size_t padding = 0;
+    bool reverse = false;
   };
 
   static constexpr std::array kShapes = std::to_array<Shape>({
@@ -89,19 +98,23 @@ void RegisterAll() {
       {.name = "disjoint-padding64", .changed_every = 1, .padding = 64},
       {.name = "nearby-padding256", .changed_every = 16, .padding = 256},
       {.name = "disjoint-padding256", .changed_every = 1, .padding = 256},
+      {.name = "nearby-reversed", .changed_every = 16, .padding = 0, .reverse = true},
+      {.name = "disjoint-reversed", .changed_every = 1, .padding = 0, .reverse = true},
+      {.name = "nearby-padding64-reversed", .changed_every = 16, .padding = 64, .reverse = true},
+      {.name = "disjoint-padding64-reversed", .changed_every = 1, .padding = 64, .reverse = true},
+      {.name = "nearby-padding256-reversed", .changed_every = 16, .padding = 256, .reverse = true},
+      {.name = "disjoint-padding256-reversed", .changed_every = 1, .padding = 256, .reverse = true},
   });
   for (const Shape& shape : kShapes) {
     benchmark::RegisterBenchmark(
         absl::StrCat("BmWordShinglePercent/", shape.name),
-        [changed_every = shape.changed_every, padding = shape.padding](benchmark::State& state) {
-          BmWordShinglePercent(state, changed_every, padding);
-        })
+        [changed_every = shape.changed_every, padding = shape.padding, reverse = shape.reverse](
+            benchmark::State& state) { BmWordShinglePercent(state, changed_every, padding, reverse); })
         ->Apply(Args);
     benchmark::RegisterBenchmark(
         absl::StrCat("BmReferencePercent/", shape.name),
-        [changed_every = shape.changed_every, padding = shape.padding](benchmark::State& state) {
-          BmReferencePercent(state, changed_every, padding);
-        })
+        [changed_every = shape.changed_every, padding = shape.padding, reverse = shape.reverse](
+            benchmark::State& state) { BmReferencePercent(state, changed_every, padding, reverse); })
         ->Apply(Args);
   }
 }

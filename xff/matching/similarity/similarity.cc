@@ -3,6 +3,7 @@
 
 #include "xff/matching/similarity/similarity.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <memory>
 #include <string>
@@ -110,10 +111,11 @@ int ShinglePercent(const ShingleSet& left, const ShingleSet& right) {
   if (left.empty() && right.empty()) {
     return 100;
   }
-  std::size_t intersection = 0;
-  for (const auto& shingle : left) {
-    intersection += right.contains(shingle) ? 1 : 0;
-  }
+  const auto count_shared = [](const ShingleSet& probe, const ShingleSet& stored) {
+    return static_cast<std::size_t>(
+        std::ranges::count_if(probe, [&stored](const auto& shingle) { return stored.contains(shingle); }));
+  };
+  const std::size_t intersection = left.size() <= right.size() ? count_shared(left, right) : count_shared(right, left);
   const std::size_t union_size = left.size() + right.size() - intersection;
   return static_cast<int>(((100 * intersection) + (union_size / 2)) / union_size);
 }

@@ -3784,3 +3784,24 @@ Abseil's supported `NDEBUG_SANITIZER` switch only for that diagnostic; ordinary 
 full checks. `NDEBUG` alone does not disable this instrumentation. Earlier counter observations and
 the scope-annotation correction remain in the evidence. Probing the smaller set and threshold-aware
 boolean rejection remain separate candidates; preserve exact integer rounding and balanced controls.
+
+### O21b3: probe the smaller shingle set
+
+Intersection membership checks now walk the smaller of the two existing sets. Normalization,
+key ownership, duplicate removal, empty/equal behavior and integer half-up score rounding stay
+unchanged. Fresh I/O, byte validation, dynamic targets and cache admission are unaffected.
+No allocation, lock or retained state is added to the intersection loop.
+
+[The qualification report](benchmarks/smaller-shingle-probes-20261103.md) retains 20,520 checked
+native invocations across both hosts, 2,952 direct/engine case/participant/session records, complete
+release/sanitizer/scoped-lint qualification and every rejected loop experiment. The strongest
+asymmetric 1,000-file native case improves 18.3% on macOS and 26.6% on Linux. Balanced width-three
+Linux native cases cost up to 2.7%; a small cached-reference kernel costs 5.0%. Dynamic-reference
+cells remain near baseline, while tiny equal-input kernel noise is preserved explicitly. The
+selected `count_if` formulation avoids the larger repeated long-word costs of other loop forms.
+The full Linux executable grows 6,224 bytes; the macOS size is unchanged.
+
+This accepts a measured asymmetric-input gain with disclosed small-control costs, not a claim
+that all similarity workloads improve. Threshold-aware boolean rejection, exact candidate indexes,
+and grouping remain independent open candidates. ZIP seeking and decoder admission also remain
+open; no archive-policy change is included here.
