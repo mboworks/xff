@@ -1,18 +1,18 @@
 {
   "schema": 1,
-  "total_bytes": 572479058,
+  "total_bytes": 573461190,
   "sections": {
     "root": {
       "files": 34,
       "bytes": 543465
     },
     "coverage": {
-      "files": 8685,
-      "bytes": 96744988
+      "files": 8684,
+      "bytes": 96318165
     },
     "benchmarks": {
-      "files": 4206,
-      "bytes": 448256166
+      "files": 4216,
+      "bytes": 449665121
     },
     "xff_extras_api": {
       "files": 21,
