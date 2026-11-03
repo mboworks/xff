@@ -21,6 +21,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "benchmark/benchmark.h"
+#include "mbo/status/status_macros.h"
 #include "xff/archive/archive_reader.h"
 #include "xff/vfs/read_source.h"
 
@@ -29,7 +30,8 @@ namespace {
 
 class MemoryCursor final : public vfs::ReadStream {
  public:
-  explicit MemoryCursor(std::shared_ptr<const std::string> bytes) : bytes_(std::move(bytes)) {}
+  MemoryCursor(std::shared_ptr<const std::string> bytes, bool caller_owned)
+      : bytes_(std::move(bytes)), caller_owned_(caller_owned) {}
 
   absl::StatusOr<std::string> Read(std::size_t max_bytes) override {
     auto result = bytes_->substr(offset_, std::min(max_bytes, bytes_->size() - offset_));
@@ -37,7 +39,7 @@ class MemoryCursor final : public vfs::ReadStream {
     return result;
   }
 
-  bool SupportsReadInto() const noexcept override { return true; }
+  bool SupportsReadInto() const noexcept override { return caller_owned_; }
 
   absl::StatusOr<std::size_t> ReadInto(std::span<char> buffer) override {
     const std::size_t count = std::min(buffer.size(), bytes_->size() - offset_);
@@ -49,26 +51,30 @@ class MemoryCursor final : public vfs::ReadStream {
  private:
   std::shared_ptr<const std::string> bytes_;
   std::size_t offset_ = 0;
+  bool caller_owned_;
 };
 
-class CallerOwnedSource final : public vfs::ReadSource {
+class BenchmarkSource final : public vfs::ReadSource {
  public:
-  explicit CallerOwnedSource(std::string bytes) : bytes_(std::make_shared<const std::string>(std::move(bytes))) {}
+  BenchmarkSource(std::string bytes, bool caller_owned)
+      : bytes_(std::make_shared<const std::string>(std::move(bytes))), caller_owned_(caller_owned) {}
 
   absl::StatusOr<std::unique_ptr<vfs::ReadStream>> Open() const override {
-    return std::make_unique<MemoryCursor>(bytes_);
+    return std::make_unique<MemoryCursor>(bytes_, caller_owned_);
   }
 
  private:
   std::shared_ptr<const std::string> bytes_;
+  bool caller_owned_;
 };
 
-absl::StatusOr<std::string> MakeTar(std::size_t members, std::size_t payload) {
+absl::StatusOr<std::string> MakeTar(std::size_t members, std::size_t payload, std::string_view entry_content = {}) {
   // XFF_ABI_POINTER: libarchive's C writer handle is released before this function returns.
   struct ::archive* writer = ::archive_write_new();
   ::archive_write_set_format_pax_restricted(writer);
-  const std::string content(payload, 'x');
-  std::string bytes((members * (payload + 1'024)) + 16'384, '\0');
+  const std::string generated = entry_content.empty() ? std::string(payload, 'x') : std::string();
+  const std::string_view content = entry_content.empty() ? std::string_view(generated) : entry_content;
+  std::string bytes((members * (content.size() + 1'024)) + 16'384, '\0');
   std::size_t used = 0;
   ::archive_write_open_memory(writer, bytes.data(), bytes.size(), &used);
   bool valid = true;
@@ -77,11 +83,11 @@ absl::StatusOr<std::string> MakeTar(std::size_t members, std::size_t payload) {
     struct ::archive_entry* entry = ::archive_entry_new();
     const std::string name = absl::StrCat("file-", index);
     ::archive_entry_set_pathname(entry, name.c_str());
-    ::archive_entry_set_size(entry, static_cast<la_int64_t>(payload));
+    ::archive_entry_set_size(entry, static_cast<la_int64_t>(content.size()));
     ::archive_entry_set_filetype(entry, AE_IFREG);
     ::archive_entry_set_perm(entry, 0644);
     valid &= ::archive_write_header(writer, entry) == ARCHIVE_OK;
-    valid &= ::archive_write_data(writer, content.data(), content.size()) == static_cast<la_ssize_t>(payload);
+    valid &= ::archive_write_data(writer, content.data(), content.size()) == static_cast<la_ssize_t>(content.size());
     ::archive_entry_free(entry);
   }
   valid &= ::archive_write_close(writer) == ARCHIVE_OK;
@@ -93,7 +99,22 @@ absl::StatusOr<std::string> MakeTar(std::size_t members, std::size_t payload) {
   return bytes;
 }
 
-void Measure(benchmark::State& state, bool caller_owned, bool read_last) {
+enum class SourceKind { kLegacy, kCallerOwned, kMemory, kNestedMemory };
+
+absl::StatusOr<vfs::SharedReadSource> MakeSource(SourceKind kind, std::string bytes) {
+  switch (kind) {
+    case SourceKind::kLegacy: return std::make_shared<BenchmarkSource>(std::move(bytes), false);
+    case SourceKind::kCallerOwned: return std::make_shared<BenchmarkSource>(std::move(bytes), true);
+    case SourceKind::kMemory: return vfs::MemoryReadSource(std::move(bytes));
+    case SourceKind::kNestedMemory: {
+      MBO_ASSIGN_OR_RETURN(auto outer, MakeTar(1, bytes.size(), bytes));
+      return MemberReadSource(vfs::MemoryReadSource(std::move(outer)), "file-0");
+    }
+  }
+  return absl::InvalidArgumentError("unknown archive benchmark source");
+}
+
+void Measure(benchmark::State& state, SourceKind kind, bool read_last) {
   const auto members = static_cast<std::size_t>(state.range(0));
   const auto payload = static_cast<std::size_t>(state.range(1));
   auto bytes = MakeTar(members, payload);
@@ -101,8 +122,13 @@ void Measure(benchmark::State& state, bool caller_owned, bool read_last) {
     state.SkipWithError(bytes.status().ToString());
     return;
   }
-  const vfs::SharedReadSource source =
-      caller_owned ? std::make_shared<CallerOwnedSource>(std::move(*bytes)) : vfs::MemoryReadSource(std::move(*bytes));
+  // Keep legacy controls explicitly incapable; exercise actual memory/member sources separately.
+  auto built_source = MakeSource(kind, std::move(*bytes));
+  if (!built_source.ok()) {
+    state.SkipWithError(built_source.status().ToString());
+    return;
+  }
+  const auto source = std::move(*built_source);
   const auto member = MemberReadSource(source, absl::StrCat("file-", members - 1));
   const std::string expected(payload, 'x');
   // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores): benchmark loop controls the measured iterations.
@@ -127,20 +153,30 @@ void Measure(benchmark::State& state, bool caller_owned, bool read_last) {
 }
 
 void RegisterAll() {
+  struct SourceCase {
+    std::string_view name;
+    SourceKind kind;
+  };
+
+  constexpr auto kSources = std::to_array<SourceCase>({
+      {.name = "legacy", .kind = SourceKind::kLegacy},
+      {.name = "caller-owned", .kind = SourceKind::kCallerOwned},
+      {.name = "memory", .kind = SourceKind::kMemory},
+      {.name = "nested-memory", .kind = SourceKind::kNestedMemory},
+  });
   constexpr auto kCounts = std::to_array<std::int64_t>({10, 1'000, 10'000});
   constexpr auto kPayloads = std::to_array<std::int64_t>({128, 4'096});
-  for (const bool caller_owned : {false, true}) {
+  for (const auto& source : kSources) {
     for (const bool read_last : {false, true}) {
-      const std::string name =
-          absl::StrCat("archive/", caller_owned ? "caller-owned/" : "legacy/", read_last ? "last" : "list");
+      const std::string name = absl::StrCat("archive/", source.name, "/", read_last ? "last" : "list");
       // XFF_ABI_POINTER: google-benchmark returns a borrowed mutable registration object.
-      auto* registration = benchmark::RegisterBenchmark(name, Measure, caller_owned, read_last);
+      auto* registration = benchmark::RegisterBenchmark(name, Measure, source.kind, read_last);
       for (const auto count : kCounts) {
         for (const auto payload : kPayloads) {
           registration->Args({count, payload});
         }
       }
-      registration->Unit(benchmark::kMicrosecond)->UseRealTime();
+      registration->Unit(benchmark::kMicrosecond)->UseRealTime()->MinTime(0.02)->MinWarmUpTime(0.01)->Repetitions(9);
     }
   }
 }
@@ -148,6 +184,7 @@ void RegisterAll() {
 }  // namespace
 }  // namespace xff::archive
 
+// XFF_ABI_POINTER: Google Benchmark's process argument interface.
 int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
   xff::archive::RegisterAll();

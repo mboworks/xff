@@ -310,13 +310,20 @@ class MemberStream final : public vfs::ReadStream {
 
   absl::StatusOr<std::string> Read(std::size_t max_bytes) override {
     std::string result(std::min(max_bytes, kBlockSize), '\0');
-    const auto count = ::archive_read_data(session_->handle.get(), result.data(), result.size());
+    MBO_ASSIGN_OR_RETURN(const auto count, ReadInto(std::span<char>(result)));
+    result.resize(count);
+    return result;
+  }
+
+  bool SupportsReadInto() const noexcept override { return true; }
+
+  absl::StatusOr<std::size_t> ReadInto(std::span<char> buffer) override {
+    const auto count = ::archive_read_data(session_->handle.get(), buffer.data(), std::min(buffer.size(), kBlockSize));
     if (count < 0) {
       MBO_RETURN_IF_ERROR(session_->error);
       return absl::DataLossError(LastError(session_->handle.get()));
     }
-    result.resize(static_cast<std::size_t>(count));
-    return result;
+    return static_cast<std::size_t>(count);
   }
 
  private:

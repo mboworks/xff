@@ -3553,3 +3553,34 @@ APIs intact; a private stateful record writer could reuse capacity on the coordi
 view only during the synchronous sink call. Audit aliasing, reentrant callbacks, cancellation and
 worker/result lifetimes. Worker-produced output must stay owned or have a separately proven batch
 lifetime. This is separate from O18 byte backpressure and ordered pipeline publication.
+
+### O19c: caller-owned memory and member cursors
+
+Immutable memory and archive-member cursors now expose the existing `ReadInto` capability. O19a
+can reuse its reserved buffer rather than asking these sources for a new owned string per callback.
+Only initialized bytes become visible. Memory reads preserve independent offsets and source
+ownership; member reads retain their 64 KiB cap, sparse holes, positive short reads, errors and
+parent/budget lifetime. The owned API remains available and uses the same checked decoder path.
+
+[The cross-platform report](benchmarks/caller-owned-streams-20261103.md) isolates memory-only,
+member-only and combined changes on the dependency set including #1065. Actual memory and nested
+member families are separate from explicitly incapable legacy and custom caller-owned controls.
+Native nested TAR gains are small; macOS nested in-memory gains are larger. Preserve slower cells:
+confirmation includes roughly 2-4% ordinary/small command movements and Linux small kernel costs.
+A 10,000-member nested listing reduces cumulative requested allocation bytes from about 97 MB to
+5 MB; this is not a claim of peak-memory or RSS savings. A tiny memory source can instead request
+about 54 KiB more while retaining the same allocation count and existing read reservation.
+
+Short macOS kernel runs showed large reference-repeat movement. A separate fixed-100,000-iteration
+check on the same binaries brought the tiny memory and legacy cases within 0.3% of baseline there;
+Linux retained about 3.6-3.7% movement. Keep these populations separate, with their controls, rather
+than replacing or pooling inconvenient samples. A later pilot of byte-identical baseline/selected
+binaries also moved the controls; small percentage changes have limited causal attribution.
+
+A rewrite that duplicated the original owned member-read path did not consistently improve the
+cross-platform controls and was rejected. Its 24 native rows and 72 memory runs per host remain
+in the raw artifact. The frozen formatter, source guards, independent full-output fixture oracle,
+all selected root/extension release tests and focused sanitizers remain part of qualification.
+The initial nested fixture command missed `--archive-depth=2`; its warmup oracle failed before
+accepting any native row. The corrected matrix uses explicit depth two. O19b seeking/index/replay
+and admission, and O19d direct final-buffer materialization, remain open.

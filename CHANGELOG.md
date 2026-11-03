@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse caller-owned input storage for memory-backed and nested archive-member streams while preserving read errors, sparse content and shared budgets.
+
 - Reduce cached-digest copies and plain/escaped output allocation churn while preserving snapshot lifetimes and exact output bytes.
 
 - Reuse a session-owned archive input buffer when the source supports caller-owned reads, preserving decoder fallbacks and read budgets.
