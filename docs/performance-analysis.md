@@ -3631,7 +3631,9 @@ preserving changed defaults on every render, copies/moves, invalid specification
 transforms and snapshot ownership/invalidation. No borrowed qualifier view is retained.
 
 Compilation validates the binding once. Bare/transformed defaults bind directly, and rendering
-reuses the existing field function to classify hash fields. The first prototype duplicated static
+uses the existing nonzero binding tag to classify hash fields; ordinary renderers retain their direct calls.
+A coverage-driven refinement removes an obsolete parser that had served only as a function-identity
+tag. The first prototype duplicated static
 validation and read a separate tag for every field. It increased hash compilation costs by about
 30-50% and is not selected; complete first/refined populations remain separate.
 
@@ -3649,3 +3651,9 @@ accounting, not an allocator or RSS claim. Full CLI footprint increases 1,440 by
 algorithms and invalid dynamic defaults with independent explicit choices. Existing derivation,
 extraction, snapshot, output and fuzz suites remain; complete release and focused sanitizer
 qualification passes both hosts. O22c2 command-owned buffers and streaming rows remain open.
+
+The [direct-tag confirmation](benchmarks/hash-field-binding-tag-20261103.md) retains old/tag sources
+and three-session cross-platform measurements. Sixteen warm explicit fields improve another 7-8%,
+while small ordinary kernels and one Linux single-hash cell retain costs. Native differences remain
+small, and the full CLI decreases 4,896 bytes on Linux and 208 bytes on macOS relative to the prior
+binding implementation. A structural regression preserves literal/hash/extraction distinctions.

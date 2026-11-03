@@ -24,8 +24,12 @@ namespace {
 
 using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
+using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::Eq;
+using ::testing::Field;
+using ::testing::IsFalse;
+using ::testing::IsTrue;
 using ::testing::Optional;
 
 struct HashFs final : vfs::FileSystem {
@@ -109,6 +113,39 @@ TEST_F(HashSnapshotTest, ExtractionWithoutASuppliedSnapshotRetainsTheLocalDigest
     EXPECT_THAT(compiled.AsExtraction(Context(supplied)), Optional(ElementsAre(EqualsText(expected))));
   }
   EXPECT_THAT(fs.reads, Eq(2));
+}
+
+TEST_F(HashSnapshotTest, BoundHashTagsRemainDistinctFromLiteralAndUnknownSegments) {
+  const auto compiled = Template::Compile("literal {{hash}} {name} [{hash:md5/hex}] {unknown}");
+  EXPECT_THAT(IsKnownField("hash"), IsTrue());
+  EXPECT_THAT(IsKnownField("unknown"), IsFalse());
+  EXPECT_THAT(compiled.ContentFieldCount(), Eq(1));
+  EXPECT_THAT(Template::Compile("literal {{hash}} {name} {unknown}").ContentFieldCount(), Eq(0));
+  const auto digest = hash::HashData("md5", fs.bytes).value_or("unsupported");
+  EXPECT_THAT(compiled.Render(Context(true)), EqualsText("literal {hash} file [" + digest + "] "));
+  EXPECT_THAT(compiled.IsExtraction(), IsFalse());
+  EXPECT_THAT(compiled.HasUnreducedExtraction(), IsFalse());
+  EXPECT_THAT(compiled.AsExtraction(Context(true)), Eq(std::nullopt));
+}
+
+TEST_F(HashSnapshotTest, DefaultUsageFollowsBoundHashTagsWithoutCountingLiteralOrInvalidFields) {
+  const auto algorithm = &hash::DefaultUsage::algorithm;
+  const auto encoding = &hash::DefaultUsage::encoding;
+  EXPECT_THAT(
+      Template::Compile("literal {{hash}} {name} {unknown} {hash:md5/hex} {hash:unknown}").HashDefaultsUsed(),
+      AllOf(Field("algorithm", algorithm, IsFalse()), Field("encoding", encoding, IsFalse())));
+  EXPECT_THAT(
+      Template::Compile("{hash}").HashDefaultsUsed(),
+      AllOf(Field("algorithm", algorithm, IsTrue()), Field("encoding", encoding, IsTrue())));
+  EXPECT_THAT(
+      Template::Compile("{hash:md5}").HashDefaultsUsed(),
+      AllOf(Field("algorithm", algorithm, IsFalse()), Field("encoding", encoding, IsTrue())));
+  EXPECT_THAT(
+      Template::Compile("{hash:/base64}").HashDefaultsUsed(),
+      AllOf(Field("algorithm", algorithm, IsTrue()), Field("encoding", encoding, IsFalse())));
+  EXPECT_THAT(
+      Template::Compile("{hash:s/^/SUM-/}").HashDefaultsUsed(),
+      AllOf(Field("algorithm", algorithm, IsTrue()), Field("encoding", encoding, IsTrue())));
 }
 
 TEST_F(HashSnapshotTest, BoundHashFieldsKeepContextDefaultsDynamicAcrossCopiesAndMoves) {

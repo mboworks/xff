@@ -192,3 +192,11 @@ O22c2 reusable command output and the other performance candidates remain open.
 ## Lossless evidence
 
 [hash-field-binding-20261103.json.gz](hash-field-binding-20261103.json.gz): 1,148,942 bytes; SHA-256 `e5e1a4c0468510bcb2daaf2dda872405513435e51c7475f60c3e594e7aa5db35`.
+
+## Coverage-driven dispatch refinement
+
+The final main-based CI run exposed the obsolete parser used only as a function-identity tag.
+The [direct-tag refinement](hash-field-binding-tag-20261103.md) removes it and qualifies the
+result against the exact pushed implementation. The original populations and footprint above
+remain unchanged evidence for the earlier implementation; the linked report records the final
+refinement, its mixed small-kernel costs and updated binary-size deltas separately.

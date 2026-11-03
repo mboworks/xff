@@ -185,7 +185,7 @@ class Template {
     std::uint8_t encoding = 0;
   };
 
-  // A literal run (fn == nullptr -> emit `literal`) or a field reference: fn is
+  // A literal run (no renderer or hash binding) or a field reference: fn is
   // the renderer and `key` its bound argument (capture index, {env.NAME} var, ...).
   struct Segment {
     // How the qualifier transforms the rendered value: none (the qualifier is the
@@ -202,6 +202,8 @@ class Template {
     PostProcess post = PostProcess::kNone;
     HashBinding hash_binding;
     std::shared_ptr<const Transform> transform;
+
+    bool IsField() const { return fn != nullptr || hash_binding.algorithm != 0; }
 
     mbo::StringOrView Value(const RenderContext& context) const;
   };
