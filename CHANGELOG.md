@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Skip discarded large archive payloads through eligible memory and read-only native cursors while preserving sequential fallbacks, errors and shared read budgets.
+
 - Bind explicit hash-field qualifiers once while preserving dynamic defaults, copied templates and snapshot lifetimes.
 
 - Fill bounded source ranges directly into final storage and reuse owned decoder blocks during materialization, preserving read limits, errors and budgets.

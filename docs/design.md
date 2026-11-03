@@ -124,6 +124,11 @@ Exit status is `0` for successful execution and `2` for errors. With `--quiet` o
 
 ## Specialized features and development
 
+Read-only archive cursors may skip discarded large payloads without reading them when their backend
+supports bounded forward advancement. Sequential fallbacks, cursor ownership, failures and shared
+budgets remain explicit; [the cursor qualification](benchmarks/forward-cursor-skipping-20261103.md)
+records the contract and limits. This does not enable parallel decoding or a new retained index.
+
 Archives and compressed streams are composable extras; virtual entries retain their source identity
 and host extraction/writing requires the corresponding capabilities. `--shards` supports the documented
 `of`, `dotnum`, and `underscore` schemes, with custom `--shard-pattern` definitions and explicit display

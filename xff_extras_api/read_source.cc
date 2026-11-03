@@ -72,6 +72,12 @@ class MemoryStream final : public ReadStream {
     return count;
   }
 
+  absl::StatusOr<std::optional<std::uint64_t>> Skip(std::uint64_t requested) override {
+    const auto count = std::min<std::uint64_t>(requested, bytes_->size() - offset_);
+    offset_ += static_cast<std::size_t>(count);
+    return std::optional<std::uint64_t>(count);
+  }
+
  private:
   std::shared_ptr<const std::string> bytes_;
   std::size_t offset_ = 0;
@@ -94,9 +100,14 @@ class MemorySource final : public ReadSource {
   std::shared_ptr<const std::string> bytes_;
 };
 
+// XFF_HOST_IO: translate an immediately preceding read-only syscall; errno is read only on failure.
+absl::Status HostReadStatus(std::int64_t result, std::string_view operation) {
+  return result < 0 ? absl::ErrnoToStatus(errno, operation) : absl::OkStatus();
+}
+
 class HostStream final : public ReadStream {
  public:
-  explicit HostStream(int fd) : fd_(fd) {}
+  HostStream(int fd, std::uint64_t offset) : fd_(fd), position_(offset) {}
 
   // XFF_HOST_IO: releases the exclusively owned read-only descriptor.
   ~HostStream() override { ::close(fd_); }
@@ -114,6 +125,7 @@ class HostStream final : public ReadStream {
       return absl::DataLossError(absl::ErrnoToStatus(errno, "reading container source failed").message());
     }
     result.resize(static_cast<std::size_t>(count));
+    position_ += static_cast<std::uint64_t>(count);
     return result;
   }
 
@@ -125,11 +137,44 @@ class HostStream final : public ReadStream {
     if (count < 0) {
       return absl::DataLossError(absl::ErrnoToStatus(errno, "reading container source failed").message());
     }
+    position_ += static_cast<std::uint64_t>(count);
     return static_cast<std::size_t>(count);
   }
 
+  // XFF_HOST_IO: queries and advances only this exclusively owned read-only descriptor.
+  absl::StatusOr<std::optional<std::uint64_t>> Skip(std::uint64_t requested) override {
+    if (requested == 0) {
+      return std::optional<std::uint64_t>(0);
+    }
+    if (access_ == Access::kUnknown) {
+      // XFF_HOST_IO: descriptor metadata is queried lazily only for an eligible forward skip.
+      struct stat metadata{};
+      // XFF_HOST_IO: inspect the owned descriptor, rather than reopening or probing its path.
+      MBO_RETURN_IF_ERROR(HostReadStatus(::fstat(fd_, &metadata), "cannot stat container cursor"));
+      access_ = S_ISREG(metadata.st_mode) ? Access::kRegular : Access::kSequential;
+      size_ = static_cast<std::uint64_t>(metadata.st_size);
+    }
+    if (access_ != Access::kRegular) {
+      return std::nullopt;
+    }
+    if (position_ >= size_) {
+      return std::optional<std::uint64_t>(0);
+    }
+    const std::uint64_t count = std::min(requested, size_ - position_);
+    // Both the current offset and cached regular-file size fit off_t; count is bounded by size.
+    // XFF_HOST_IO: change the read cursor position without modifying any host bytes.
+    MBO_RETURN_IF_ERROR(HostReadStatus(
+        ::lseek(fd_, static_cast<off_t>(position_ + count), SEEK_SET), "cannot advance container cursor"));
+    position_ += count;
+    return std::optional<std::uint64_t>(count);
+  }
+
  private:
+  enum class Access { kUnknown, kSequential, kRegular };
   int fd_;
+  Access access_ = Access::kUnknown;
+  std::uint64_t position_ = 0;
+  std::uint64_t size_ = 0;
 };
 
 class HostSource final : public ReadSource {
@@ -144,9 +189,7 @@ class HostSource final : public ReadSource {
     // XFF_HOST_IO: local metadata record for this read-only host adapter.
     struct stat metadata{};
     // XFF_HOST_IO: query metadata for the read-only source path.
-    if (::stat(path_.c_str(), &metadata) != 0) {
-      return absl::ErrnoToStatus(errno, "cannot stat container source");
-    }
+    MBO_RETURN_IF_ERROR(HostReadStatus(::stat(path_.c_str(), &metadata), "cannot stat container source"));
     return static_cast<std::uint64_t>(metadata.st_size);
   }
 
@@ -163,7 +206,7 @@ class HostSource final : public ReadSource {
     if (fd < 0) {
       return absl::ErrnoToStatus(errno, absl::StrCat("cannot open container source: ", path_));
     }
-    auto stream = std::make_unique<HostStream>(fd);
+    auto stream = std::make_unique<HostStream>(fd, offset);
     if (offset != 0 && ::lseek(fd, static_cast<off_t>(offset), SEEK_SET) < 0) {
       return absl::ErrnoToStatus(errno, "cannot seek container source");
     }

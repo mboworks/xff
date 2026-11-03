@@ -45,6 +45,7 @@ namespace {
 // The streaming block size for both the header walk and the content read: one value, so the two
 // entry points cannot drift apart.
 constexpr std::size_t kBlockSize = std::size_t{64} * 1'024;
+constexpr std::uint64_t kMinimumSkipSize = 64UZ * 1'024;
 
 // `archive_read_free` for a unique_ptr, so every early return releases the reader.
 struct ArchiveDeleter {
@@ -212,6 +213,28 @@ struct SourceSession {
   // Declared last so the reader is released before its callback state.
   ArchivePtr handle;
 
+  // XFF_ABI_POINTER: libarchive requests forward byte skips through this C callback.
+  static la_int64_t Skip(struct ::archive*, void* data, la_int64_t requested) {
+    // libarchive's client_skip_proxy invokes this callback only for positive requests.
+    const auto limit = static_cast<std::uint64_t>(requested);
+    if (limit < kMinimumSkipSize) {
+      return 0;
+    }
+    auto& self = *static_cast<SourceSession*>(data);
+    const auto skipped = self.stream->Skip(limit);
+    if (!skipped.ok()) {
+      self.error = skipped.status();
+      // Return zero to leave the skip proxy; its fallback Read propagates the latched error.
+      return 0;
+    }
+    const std::uint64_t count = skipped->value_or(0);
+    if (count > limit) {
+      self.error = absl::DataLossError("archive cursor skipped more bytes than requested");
+      return 0;
+    }
+    return static_cast<la_int64_t>(count);
+  }
+
   // Views remain valid until the next refill or session destruction.
   absl::StatusOr<std::string_view> Refill() {
     if (!stream->SupportsReadInto()) {
@@ -264,6 +287,9 @@ struct SourceSession {
   // XFF_ABI_POINTER: libarchive's input callback uses opaque state and a borrowed byte buffer.
   static la_ssize_t Read(struct ::archive*, void* data, const void** buffer) {
     auto& self = *static_cast<SourceSession*>(data);
+    if (!self.error.ok()) {
+      return -1;
+    }
     auto result = self.Refill();
     if (!result.ok()) {
       self.error = result.status();
@@ -291,7 +317,9 @@ absl::StatusOr<std::unique_ptr<SourceSession>> OpenSourceSession(const vfs::Shar
   if (prefix.bytes == "xar!") {
     ::archive_read_set_seek_callback(session->handle.get(), &SourceSession::Seek);
   }
-  if (::archive_read_open(session->handle.get(), session.get(), nullptr, &SourceSession::Read, nullptr) != ARCHIVE_OK) {
+  if (::archive_read_open2(
+          session->handle.get(), session.get(), nullptr, &SourceSession::Read, &SourceSession::Skip, nullptr)
+      != ARCHIVE_OK) {
     MBO_RETURN_IF_ERROR(session->error);
     if (session->prefix == "xar!") {
       return absl::DataLossError(LastError(session->handle.get()));

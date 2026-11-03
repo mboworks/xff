@@ -82,7 +82,8 @@
     "docs/benchmarks/caller-owned-streams-20261103.md": "docs/benchmarks/caller-owned-streams-20261103.html",
     "docs/benchmarks/direct-source-materialization-20261103.md": "docs/benchmarks/direct-source-materialization-20261103.html",
     "docs/benchmarks/hash-field-binding-20261103.md": "docs/benchmarks/hash-field-binding-20261103.html",
-    "docs/benchmarks/hash-field-binding-tag-20261103.md": "docs/benchmarks/hash-field-binding-tag-20261103.html"
+    "docs/benchmarks/hash-field-binding-tag-20261103.md": "docs/benchmarks/hash-field-binding-tag-20261103.html",
+    "docs/benchmarks/forward-cursor-skipping-20261103.md": "docs/benchmarks/forward-cursor-skipping-20261103.html"
   },
   "generated_html": {
     "XFF.md": {
