@@ -20,6 +20,30 @@ using ::testing::Eq;
 // Unicode-specific rendering tests. Ordinary rendering fixtures remain ASCII.
 struct UnicodeRenderTest : ::testing::Test {};
 
+TEST_F(UnicodeRenderTest, EncodedRecordReusePreservesUtf8AndTheLosslessFallbackAcrossCalls) {
+  EncodedRecordBuffer buffer(Format::kJsonl, PathEncoding::kRaw);
+  buffer.EmitRecord("café", [&](std::string_view value) { EXPECT_THAT(value, EqualsText("{\"path\":\"café\"}\n")); });
+  // Invalid UTF-8 byte sequences must retain the existing base64 object representation.
+  static constexpr auto kMalformed = std::to_array<std::string_view>({
+      "\x80",
+      "\xc0\xaf",
+      "\xed\xa0\x80",
+      "\xf4\x90\x80\x80",
+      "\xe2\x82",
+  });
+  for (const auto bytes : kMalformed) {
+    buffer.EmitRecord(
+        bytes, [&](std::string_view value) { EXPECT_THAT(value, EqualsText(Renderer(Format::kJsonl).Record(bytes))); });
+  }
+  buffer.EmitRecord(std::string("x\xff", 2), [&](std::string_view value) {
+    EXPECT_THAT(
+        value, EqualsText(
+                   R"({"path":{"encoding":"base64","data":"eP8="}})"
+                   "\n"));
+  });
+  buffer.EmitRecord("café", [&](std::string_view value) { EXPECT_THAT(value, EqualsText("{\"path\":\"café\"}\n")); });
+}
+
 TEST_F(UnicodeRenderTest, MultibyteLabelsSurviveTableBufferingAndTreeRendering) {
   // U+00E9 is Latin e with acute; this test exercises UTF-8 preservation only.
   for (const std::size_t window : std::to_array<std::size_t>({0, 1, TableStream::kAll})) {
