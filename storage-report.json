@@ -1,42 +1,42 @@
 {
   "schema": 1,
-  "total_bytes": 553619438,
+  "total_bytes": 554694958,
   "sections": {
     "root": {
       "files": 34,
       "bytes": 543465
     },
-    "xff_extras_api": {
-      "files": 21,
-      "bytes": 126921
-    },
-    ".trunk": {
-      "files": 4,
-      "bytes": 3761
-    },
-    "bazelmod": {
-      "files": 4,
-      "bytes": 9173
-    },
-    "tools": {
-      "files": 40,
-      "bytes": 200238
-    },
-    "xff": {
-      "files": 248,
-      "bytes": 2147842
+    "coverage": {
+      "files": 8479,
+      "bytes": 84612743
     },
     "benchmarks": {
       "files": 4161,
       "bytes": 442604311
     },
-    "coverage": {
-      "files": 8465,
-      "bytes": 83537223
+    "xff_extras_api": {
+      "files": 21,
+      "bytes": 126921
+    },
+    "bazelmod": {
+      "files": 4,
+      "bytes": 9173
+    },
+    ".trunk": {
+      "files": 4,
+      "bytes": 3761
+    },
+    "xff": {
+      "files": 248,
+      "bytes": 2147842
     },
     "docs": {
       "files": 7,
       "bytes": 79309
+    },
+    "tools": {
+      "files": 40,
+      "bytes": 200238
     },
     ".github": {
       "files": 2,
