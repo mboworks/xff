@@ -470,6 +470,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       keeping metadata-free traversal free of extra probes and extended-stat work.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte
       equality shortcut on Linux/macOS. Preserve [rejected width-one paths and all controls](docs/benchmarks/byte-shingle-representations-20261102.md).
+- [x] O21b0: Remove the owning similarity binary-sniff prefix while preserving the exact window,
+      conditional fresh reads and rejection/error semantics. Keep
+      [paired cross-platform results, allocations and controls](docs/benchmarks/similarity-prefix-view-20261103.md)
+      separate from reference representation reuse.
 - [ ] O21b: Reuse immutable-source/reference representations and exact candidate indexes only after
       resolving dynamic target/invalidation and retained-byte contracts; keep run-wide grouping semantics explicit.
 - [x] O22a: Qualify snapshot-owned digest observers against owning consumption, preserving cache

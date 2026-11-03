@@ -3704,3 +3704,25 @@ short Linux NUL kernels retain a small absolute cost. Preserve all populations a
 nanoseconds rather than claiming every output is faster. Full CLI grows 4,472 bytes Linux / 640
 bytes macOS. Broader O22c2 cell/row reuse, JSON scratch storage and streaming remain open, as do
 O18 pipeline backpressure and ordered publication.
+
+### O21b0: borrow the similarity sniff window
+
+`EvalSimilarWithTemplate` read the reference freshly, then allocated/copied up to 8,000 bytes solely
+to scan for a NUL. Constructing a string view before taking that prefix removes the temporary,
+without changing read order, failures, binary rejection, the sniff boundary, target templates or
+word-shingle calculations. No cache or shared mutable state is introduced.
+
+[Cross-platform qualification](benchmarks/similarity-prefix-view-20261103.md) covers 48 production
+in-memory cases and 70 native cases per host in three sessions. Native cases verify complete
+independent output and zero exits and retain byte-identical parent-copy controls. Larger 8,000-byte
+reference workloads improve about 11-12% in memory on both platforms; native gains are smaller,
+and slower/unchanged controls and reference-copy movement remain visible. Separate actual-engine
+ASan allocation counts remove exactly 1,000 allocations and about 8 MB of allocator requests for
+1,000 large-reference checks. Short-reference and name-only counts remain unchanged.
+
+Scoped lint found inherited redundant typename/special-member declarations. The correction
+preserves abstract-base copy/move availability and produces identical text/selected constant-data
+sections in both baseline and selected binaries, on both hosts. Final full tests and changed-header
+lint pass without suppressions. CLI shrinks 1,384 bytes on Linux and is unchanged on macOS.
+A committed CLI boundary case verifies reference NULs inside and just beyond the sniff window.
+O21b representation reuse, identity/invalidation, indexing and grouping remain open.

@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Scan similarity reference prefixes without copying them, preserving binary detection and fresh reference reads.
+
 - Reuse coordinator-owned storage for implicit raw and NUL path listings while preserving exact bytes and queued output ownership.
 
 - Skip discarded large archive payloads through eligible memory and read-only native cursors while preserving sequential fallbacks, errors and shared read budgets.
