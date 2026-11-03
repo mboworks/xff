@@ -3764,3 +3764,23 @@ cross the same exact 1 MiB boundary with whitespace padding and a small unchange
 Fresh-read, recovery, width, worker-isolation, over-limit evaluation and retained-storage checks
 remain; the distinct-word test still exercises the independent 8 MiB representation bound.
 The subprocess-progress test uses explicit completion ordering rather than assumed sleep timing.
+
+### O21b2: move already-owned width-one keys
+
+`OwnedSingleByteShingles` keeps its vector-first tokenization and moves its existing words into
+unique set keys, avoiding a second heap-string allocation. The established width-one algorithm,
+exact byte-word scores and wider shingle representations remain unchanged. No new API, thread,
+lock, clock, dependency or filesystem operation is introduced.
+
+[The qualification report](benchmarks/owned-word-moves-20261103.md) retains direct and whole-engine
+controls, 9,000 exact-output native invocations across both hosts, allocator diagnostics and full
+qualification. Long-word native cases improve about 6-7% on macOS and 9% on Linux; short-word
+commands remain near baseline. Moving also retains tokenizer string capacity: one reference grows
+about 19% in tracked capacity, so fewer requests do not imply lower retained memory or RSS. Existing
+cache accounting still uses actual capacities. Small direct-kernel regressions remain visible.
+
+ASan hash-generation checks can trigger artificial rehashes. The final allocation-count probe uses
+Abseil's supported `NDEBUG_SANITIZER` switch only for that diagnostic; ordinary sanitizer tests keep
+full checks. `NDEBUG` alone does not disable this instrumentation. Earlier counter observations and
+the scope-annotation correction remain in the evidence. Probing the smaller set and threshold-aware
+boolean rejection remain separate candidates; preserve exact integer rounding and balanced controls.

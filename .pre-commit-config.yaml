@@ -24,7 +24,7 @@ repos:
     hooks:
       - id: check-added-large-files
         # Retain the exact lossless cross-platform performance evidence archives.
-        exclude: ^docs/benchmarks/((executor-copy-audit|bounded-read-ahead)-20261101|(directory-task-slots|packed-visit-snapshots|bounded-match-results|useful-match-workers|direct-evaluator-workers|derived-content-handoff|immutable-default-catalogs|prepared-diff-configuration|prepared-hash-operands|aggregate-comparison-totals|byte-shingle-representations|archive-input-buffers)-20261102|(digest-and-record-storage|caller-owned-streams|direct-source-materialization|hash-field-binding|hash-field-binding-tag|forward-cursor-skipping|raw-record-reuse|similarity-prefix-view|similarity-reference-reuse)-20261103)\.json\.gz$
+        exclude: ^docs/benchmarks/((executor-copy-audit|bounded-read-ahead)-20261101|(directory-task-slots|packed-visit-snapshots|bounded-match-results|useful-match-workers|direct-evaluator-workers|derived-content-handoff|immutable-default-catalogs|prepared-diff-configuration|prepared-hash-operands|aggregate-comparison-totals|byte-shingle-representations|archive-input-buffers)-20261102|(digest-and-record-storage|caller-owned-streams|direct-source-materialization|hash-field-binding|hash-field-binding-tag|forward-cursor-skipping|raw-record-reuse|similarity-prefix-view|similarity-reference-reuse|owned-word-moves)-20261103)\.json\.gz$
       - id: check-merge-conflict
       - id: check-yaml
       # BINARY_TYPES below: archive containers are binary but can START with text (a phar begins with

@@ -188,6 +188,26 @@ TEST_F(SimilarityTest, NormalizedSeparatorsAndLongWordsRetainExactSetSemantics) 
   }
 }
 
+TEST_F(SimilarityTest, DuplicateAndUniqueLongWordsPreserveIndependentSetScores) {
+  static constexpr auto kPaddingBytes = std::to_array<std::size_t>({0, 15, 16, 22, 23, 64, 256});
+  for (const auto padding : kPaddingBytes) {
+    SCOPED_TRACE(padding);
+    std::string left;
+    std::string right;
+    for (const auto index : {0, 1, 2, 3, 4, 5, 6, 7}) {
+      const std::string prefix(padding, 'a');
+      const std::string word = prefix + std::to_string(index);
+      left.append(word).append(" ").append(word).append(" ");
+      right.append(prefix).append(std::to_string(index + 1)).append(" ");
+    }
+    const auto expected = ReferenceBytePercent(left, right, 1);
+    EXPECT_THAT(WordShinglePercent(left, right, 1), Eq(expected));
+    const ByteWordShingleReference reference(right, 1);
+    EXPECT_THAT(reference.Percent(left), Eq(expected));
+    EXPECT_THAT(reference.Matches(right, 1), IsTrue());
+  }
+}
+
 TEST_F(SimilarityTest, SeededOpaqueByteInputsMatchTheIndependentReference) {
   // This is a byte-tokenization test, not a Unicode case-folding test. All high-bit
   // bytes are word constituents, including byte sequences that are not valid UTF-8.
