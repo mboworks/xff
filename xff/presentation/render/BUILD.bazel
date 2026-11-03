@@ -26,6 +26,7 @@ cc_binary(
         "manual",
     ],
     deps = [
+        ":record_buffer_cc",
         ":render_cc",
         "//xff/content:snapshot_cc",
         "//xff/hash:hash_cc",
@@ -35,6 +36,24 @@ cc_binary(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/time",
         "@com_github_google_benchmark//:benchmark",
+    ],
+)
+
+cc_library(
+    name = "record_buffer_cc",
+    hdrs = ["record_buffer.h"],
+    visibility = ["//xff/engine:__pkg__"],
+)
+
+cc_test(
+    name = "record_buffer_test",
+    size = "small",
+    srcs = ["record_buffer_test.cc"],
+    deps = [
+        ":record_buffer_cc",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
     ],
 )
 

@@ -3682,3 +3682,25 @@ warning and duplicate native syscall status handling are corrected without weake
 The exact member-size oracle also reproduces an existing streamed-ZIP data-descriptor limitation
 on the unchanged parent. Keep that correctness task separate. O19b ZIP seeking/indexing, repeated
 member/replay reuse and decoder admission remain open; forward skipping does not qualify them.
+
+### O22c2a: coordinator-owned raw listing records
+
+Implicit raw plain/NUL output now reuses one coordinator-owned string. Its single-fill callback
+copies path bytes and writes the terminator without zero-initializing a destination. Existing
+stateless owning rendering, explicit actions, escaping/color, structured output and table windows
+remain unchanged. Synchronous consumers must consume/copy before returning; score-ranked records
+still own their bytes. Workers share no new state, and capacity above 1 MiB is released after use.
+
+[Cross-platform qualification](benchmarks/raw-record-reuse-20261103.md) separates the initial
+reserve/assign/append prototype and selected single-fill variant, 68 direct record cases, 32 actual
+production in-memory cases, 38 native cases and independent byte-identical-baseline confirmation.
+Native checks preserve complete independently generated stdout, relative-root prefixes and NULs.
+Heap-sized records avoid 1,000 allocations per 1,000 warmed emissions in separate ASan diagnostics.
+Those diagnostics are not release timing or RSS evidence.
+
+Native effects are modest: confirmed 10,000-file absolute raw listing improves about 1-2% Linux
+and 2% macOS. Some small controls remain slower and comparable to identical-copy movement; very
+short Linux NUL kernels retain a small absolute cost. Preserve all populations and absolute kernel
+nanoseconds rather than claiming every output is faster. Full CLI grows 4,472 bytes Linux / 640
+bytes macOS. Broader O22c2 cell/row reuse, JSON scratch storage and streaming remain open, as do
+O18 pipeline backpressure and ordered publication.

@@ -15,6 +15,7 @@
 #include "xff/content/snapshot.h"
 #include "xff/hash/hash.h"
 #include "xff/presentation/fields/fields.h"
+#include "xff/presentation/render/record_buffer.h"
 #include "xff/presentation/render/render.h"
 #include "xff/vfs/filesystem.h"
 
@@ -59,6 +60,39 @@ void Record(benchmark::State& state) {
     benchmark::DoNotOptimize(iteration);
     auto record = renderer.Record(path, color);
     benchmark::DoNotOptimize(record);
+  }
+}
+
+void RawRecord(benchmark::State& state) {
+  const std::string path = std::string(static_cast<std::size_t>(state.range(0)), 'x') + "\n\\\t";
+  const char terminator = state.range(1) == 0 ? '\n' : '\0';
+  const bool reuse = state.range(2) != 0;
+  RawRecordBuffer buffer(terminator);
+  const Renderer renderer(terminator == '\0' ? Format::kNul : Format::kPlain);
+  std::string expected = path;
+  expected.push_back(terminator);
+  std::string actual;
+  if (reuse) {
+    buffer.EmitRecord(path, [&](std::string_view text) { actual.assign(text); });
+  } else {
+    actual = renderer.Record(path);
+  }
+  if (actual != expected) {
+    state.SkipWithError("raw record differs from independent byte expectation");
+    return;
+  }
+  const auto consume = [](std::string_view text) { benchmark::DoNotOptimize(text); };
+  if (reuse) {
+    for (auto iteration : state) {
+      benchmark::DoNotOptimize(iteration);
+      buffer.EmitRecord(path, consume);
+    }
+  } else {
+    for (auto iteration : state) {
+      benchmark::DoNotOptimize(iteration);
+      const auto record = renderer.Record(path);
+      consume(record);
+    }
   }
 }
 
@@ -181,6 +215,13 @@ int main(int argc, char** argv) {
   }
   benchmark::RegisterBenchmark("output/record", xff::render::Record)
       ->ArgsProduct({{1, 15, 22, 23, 64, 160, 4'096}, {0, 1}, {0, 1}})
+      ->UseRealTime()
+      ->Unit(benchmark::kNanosecond)
+      ->Repetitions(9)
+      ->MinTime(0.02)
+      ->MinWarmUpTime(0.01);
+  benchmark::RegisterBenchmark("output/raw-record", xff::render::RawRecord)
+      ->ArgsProduct({{0, 1, 8, 12, 15, 18, 22, 23, 160, 4'096}, {0, 1}, {0, 1}})
       ->UseRealTime()
       ->Unit(benchmark::kNanosecond)
       ->Repetitions(9)

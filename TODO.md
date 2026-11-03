@@ -480,7 +480,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       [the binding report](docs/benchmarks/hash-field-binding-20261103.md), including rejected setup work.
 - [x] O22c1: Qualify direct plain-record construction and bulk C-escaping on both hosts, retaining
       tiny colored controls and shared display/tree consumers in the O22a report.
-- [ ] O22c2: Qualify command-owned reusable record/row buffers and streaming machine formats.
+- [x] O22c2a: Qualify coordinator-owned raw plain/NUL record reuse on both hosts, including
+      short-string costs, queued ownership and bounded retention.
+      [Paired experiments and unchanged-format controls](docs/benchmarks/raw-record-reuse-20261103.md)
+      retain the first prototype and independent identical-baseline confirmation.
+- [ ] O22c2: Qualify remaining reusable structured cell/row storage and streaming machine formats.
       Preserve synchronous view lifetimes, reentrant callbacks, coordinator ownership and ordered
       publication. Do not add a buffer/destructor to every existing stateless renderer by default.
       O22a/c1 do not complete this work or revive O05's rejected generic lookup change.

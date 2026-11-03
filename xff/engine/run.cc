@@ -92,6 +92,7 @@
 #include "xff/presentation/fields/fields.h"
 #include "xff/presentation/format/format.h"
 #include "xff/presentation/patch/patch.h"
+#include "xff/presentation/render/record_buffer.h"
 #include "xff/presentation/render/render.h"
 #include "xff/presentation/render/scoped_table.h"
 #include "xff/presentation/render/summary_export.h"
@@ -5746,6 +5747,11 @@ RunResult RunFindCore(
       emit(text);
     }
   };
+  std::optional<render::RawRecordBuffer> raw_records;
+  if (format == render::Format::kNul
+      || (format == render::Format::kPlain && path_encoding == render::PathEncoding::kRaw && !colorize)) {
+    raw_records.emplace(format == render::Format::kNul ? '\0' : '\n');
+  }
   std::optional<render::TableStream> table_stream;
   if (buffered) {
     std::vector<std::string> table_columns = columns.empty() ? std::vector<std::string>{"path"} : columns;
@@ -6014,6 +6020,8 @@ RunResult RunFindCore(
         } else {
           emit_entry(compiled_tmpl->Render(ctx) + "\n");
         }
+      } else if (raw_records) {
+        raw_records->EmitRecord(visit.path, emit_entry);
       } else {
         emit_entry(render::Renderer(format, path_encoding).Record(visit.path, entry_color));
       }
