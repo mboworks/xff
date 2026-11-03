@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <limits>
 #include <memory>
@@ -21,6 +22,35 @@
 
 namespace xff::vfs {
 namespace {
+// Keep capability changes and owned-only decoders valid for every individual read.
+absl::StatusOr<std::size_t> ReadStreamInto(ReadStream& stream, std::span<char> buffer, bool caller_owned) {
+  if (caller_owned) {
+    MBO_ASSIGN_OR_RETURN(const auto count, stream.ReadInto(buffer));
+    if (count > buffer.size()) {
+      return absl::DataLossError("read source returned more bytes than requested");
+    }
+    return count;
+  }
+  MBO_ASSIGN_OR_RETURN(const auto bytes, stream.Read(buffer.size()));
+  if (bytes.size() > buffer.size()) {
+    return absl::DataLossError("read source returned more bytes than requested");
+  }
+  std::ranges::copy(bytes, buffer.begin());
+  return bytes.size();
+}
+
+absl::StatusOr<std::size_t> ReadStreamFullyInto(ReadStream& stream, std::span<char> buffer) {
+  std::size_t filled = 0;
+  while (filled < buffer.size()) {
+    MBO_ASSIGN_OR_RETURN(const auto count, ReadStreamInto(stream, buffer.subspan(filled), stream.SupportsReadInto()));
+    if (count == 0) {
+      break;
+    }
+    filled += count;
+  }
+  return filled;
+}
+
 class MemoryStream final : public ReadStream {
  public:
   MemoryStream(std::shared_ptr<const std::string> bytes, std::size_t offset)
@@ -192,29 +222,65 @@ absl::StatusOr<ReadBlock> ReadSourceRange(const ReadSource& source, std::uint64_
     return result;
   }
   MBO_ASSIGN_OR_RETURN(auto stream, source.OpenAt(offset));
-  result.bytes.reserve(count);
-  while (result.bytes.size() < count) {
-    MBO_ASSIGN_OR_RETURN(const auto bytes, stream->Read(count - result.bytes.size()));
-    if (bytes.empty()) {
-      break;
-    }
-    result.bytes += bytes;
-  }
+  absl::StatusOr<std::size_t> transferred = 0;
+  // XFF_ABI_POINTER: std::string::resize_and_overwrite requires this writable buffer callback.
+  result.bytes.resize_and_overwrite(count, [&](char* bytes, std::size_t) noexcept -> std::size_t {
+    transferred = ReadStreamFullyInto(*stream, std::span<char>(bytes, count));
+    // Callback errors remain in transferred; no uninitialized bytes become string content.
+    return transferred.value_or(0);
+  });
+  MBO_RETURN_IF_ERROR(transferred.status());
   return result;
 }
 
 absl::StatusOr<std::string> ReadSourceBytes(const ReadSource& source, std::size_t max_bytes) {
   MBO_ASSIGN_OR_RETURN(auto stream, source.Open());
   std::string result;
+  const std::size_t limit = std::min(max_bytes, result.max_size());
   while (true) {
-    MBO_ASSIGN_OR_RETURN(const std::string block, stream->Read(64UZ * 1'024));
-    if (block.empty()) {
-      return result;
-    }
-    if (block.size() > max_bytes - result.size()) {
+    if (result.size() == limit) {
+      // A positive-sized read distinguishes exact EOF from overflow, including a zero limit.
+      std::array<char, 1> probe;
+      MBO_ASSIGN_OR_RETURN(const auto count, ReadStreamInto(*stream, probe, stream->SupportsReadInto()));
+      if (count == 0) {
+        return result;
+      }
       return absl::ResourceExhaustedError("container exceeds materialization limit");
     }
-    result += block;
+    const std::size_t previous = result.size();
+    if (!stream->SupportsReadInto()) {
+      const std::size_t request = std::min(64UZ * 1'024, limit - previous);
+      MBO_ASSIGN_OR_RETURN(auto bytes, stream->Read(request));
+      if (bytes.size() > request) {
+        return absl::DataLossError("read source returned more bytes than requested");
+      }
+      if (bytes.empty()) {
+        return result;
+      }
+      if (previous == 0) {
+        result = std::move(bytes);
+        continue;
+      }
+      result += bytes;
+      continue;
+    }
+    std::size_t request = std::min(64UZ * 1'024, limit - previous);
+    if (previous < result.capacity()) {
+      // Reuse spare storage after a short read, including SSO; probing EOF must not grow it.
+      request = std::min(request, result.capacity() - previous);
+    }
+    absl::StatusOr<std::size_t> transferred = 0;
+    // XFF_ABI_POINTER: std::string::resize_and_overwrite requires this writable buffer callback.
+    result.resize_and_overwrite(previous + request, [&](char* bytes, std::size_t) noexcept -> std::size_t {
+      transferred = ReadStreamInto(*stream, std::span<char>(bytes, previous + request).subspan(previous), true);
+      // Preserve errors separately because this standard callback returns only the initialized size.
+      return previous + transferred.value_or(0);
+    });
+    MBO_ASSIGN_OR_RETURN(const auto count, std::move(transferred));
+    if (count == 0) {
+      return result;
+    }
   }
 }
+
 }  // namespace xff::vfs

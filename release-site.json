@@ -79,7 +79,8 @@
     "docs/benchmarks/byte-shingle-representations-20261102.md": "docs/benchmarks/byte-shingle-representations-20261102.html",
     "docs/benchmarks/archive-input-buffers-20261102.md": "docs/benchmarks/archive-input-buffers-20261102.html",
     "docs/benchmarks/digest-and-record-storage-20261103.md": "docs/benchmarks/digest-and-record-storage-20261103.html",
-    "docs/benchmarks/caller-owned-streams-20261103.md": "docs/benchmarks/caller-owned-streams-20261103.html"
+    "docs/benchmarks/caller-owned-streams-20261103.md": "docs/benchmarks/caller-owned-streams-20261103.html",
+    "docs/benchmarks/direct-source-materialization-20261103.md": "docs/benchmarks/direct-source-materialization-20261103.html"
   },
   "generated_html": {
     "XFF.md": {

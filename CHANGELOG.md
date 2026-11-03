@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Fill bounded source ranges directly into final storage and reuse owned decoder blocks during materialization, preserving read limits, errors and budgets.
+
 - Reuse caller-owned input storage for memory-backed and nested archive-member streams while preserving read errors, sparse content and shared budgets.
 
 - Reduce cached-digest copies and plain/escaped output allocation churn while preserving snapshot lifetimes and exact output bytes.

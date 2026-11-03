@@ -169,7 +169,7 @@ TEST_F(ArchiveSourceBufferTest, ReusesTheCallerOwnedBufferForFullAndShortBlocks)
   const auto source =
       std::make_shared<CountingSource>(MakeTar(std::string(3 * kReadBlock, 'x')), ReadOptions{}, counts);
   EXPECT_THAT(ListMembersOfSource(source), IsOkAndHolds(ElementsAre(Field(&Member::path, EqualsText("data.txt")))));
-  EXPECT_THAT(counts->owned, Eq(1));  // Only the independent four-byte format probe owns its result.
+  EXPECT_THAT(counts->owned, Eq(0));  // The independent format probe also fills its reserved storage directly.
   EXPECT_THAT(counts->caller_owned, Gt(3));
   EXPECT_THAT(counts->stable_storage, IsTrue());
 }

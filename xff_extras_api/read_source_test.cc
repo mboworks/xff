@@ -3,6 +3,8 @@
 
 #include "xff/vfs/read_source.h"
 
+#include <algorithm>
+#include <array>
 #include <limits>
 #include <memory>
 #include <span>
@@ -13,6 +15,7 @@
 #include "absl/status/status.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/status/status_macros.h"
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/vfs/mutations.h"
@@ -23,8 +26,10 @@ using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
+using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
+using ::testing::FieldsAre;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
@@ -265,6 +270,192 @@ TEST_F(ReadSourceTest, HostCursorExposesOnlyInitializedBytesAndRetainsEarlierChu
   EXPECT_THAT(partial->Read(1), IsOkAndHolds(IsEmpty()));
   MBO_ASSERT_OK_AND_ASSIGN(auto unreadable, HostReadSource(directory->Path())->Open());
   EXPECT_THAT(unreadable->Read(1), StatusIs(absl::StatusCode::kDataLoss));
+}
+
+enum class ProbeReadKind { kOwned, kInto };
+
+struct ProbeReadRequest {
+  ProbeReadKind kind;
+  std::size_t count;
+};
+
+struct ProbeReadState {
+  std::string bytes = "abcdefg";
+  std::vector<ProbeReadKind> kinds = {ProbeReadKind::kInto, ProbeReadKind::kOwned};
+  std::size_t chunk = 2;
+  std::size_t fail_call = std::numeric_limits<std::size_t>::max();
+  bool oversized = false;
+  std::vector<ProbeReadRequest> requests;
+};
+
+class ProbeReadStream final : public ReadStream {
+ public:
+  explicit ProbeReadStream(std::shared_ptr<ProbeReadState> state) : state_(std::move(state)) {}
+
+  bool SupportsReadInto() const noexcept override {
+    return state_->kinds.at(state_->requests.size() % state_->kinds.size()) == ProbeReadKind::kInto;
+  }
+
+  absl::StatusOr<std::string> Read(std::size_t max_bytes) override {
+    MBO_ASSIGN_OR_RETURN(const auto count, Count(max_bytes, ProbeReadKind::kOwned));
+    if (state_->oversized) {
+      return std::string(max_bytes + 1, '!');
+    }
+    auto bytes = state_->bytes.substr(offset_, count);
+    offset_ += count;
+    return bytes;
+  }
+
+  absl::StatusOr<std::size_t> ReadInto(std::span<char> buffer) override {
+    MBO_ASSIGN_OR_RETURN(const auto count, Count(buffer.size(), ProbeReadKind::kInto));
+    if (state_->oversized) {
+      return buffer.size() + 1;
+    }
+    std::ranges::copy(std::string_view(state_->bytes).substr(offset_, count), buffer.begin());
+    offset_ += count;
+    return count;
+  }
+
+ private:
+  absl::StatusOr<std::size_t> Count(std::size_t requested, ProbeReadKind kind) {
+    const auto call = state_->requests.size();
+    state_->requests.push_back({.kind = kind, .count = requested});
+    if (call == state_->fail_call) {
+      return absl::DataLossError("injected source failure");
+    }
+    return std::min({requested, state_->chunk, state_->bytes.size() - offset_});
+  }
+
+  std::shared_ptr<ProbeReadState> state_;
+  std::size_t offset_ = 0;
+};
+
+class ProbeReadSource final : public ReadSource {
+ public:
+  explicit ProbeReadSource(std::shared_ptr<ProbeReadState> state)
+      : ReadSource(std::make_shared<ReadBudget>(128, 128)), state_(std::move(state)) {}
+
+  absl::StatusOr<std::unique_ptr<ReadStream>> Open() const override {
+    return std::make_unique<ProbeReadStream>(state_);
+  }
+
+ private:
+  std::shared_ptr<ProbeReadState> state_;
+};
+
+TEST_F(ReadSourceTest, DirectRangePreservesShortReadsAndChangingCapabilities) {
+  const auto state = std::make_shared<ProbeReadState>();
+  state->bytes = "abcdefgh";
+  const ProbeReadSource source(state);
+  {
+    MBO_ASSERT_OK_AND_ASSIGN(const auto block, ReadSourceRange(source, 0, 8));
+    EXPECT_THAT(block.bytes, EqualsText("abcdefgh"));
+    EXPECT_THAT(source.Budget()->MemoryUsed(), Eq(8));
+    EXPECT_THAT(
+        state->requests, ElementsAre(
+                             FieldsAre(Eq(ProbeReadKind::kInto), Eq(8)), FieldsAre(Eq(ProbeReadKind::kOwned), Eq(6)),
+                             FieldsAre(Eq(ProbeReadKind::kInto), Eq(4)), FieldsAre(Eq(ProbeReadKind::kOwned), Eq(2))));
+  }
+  EXPECT_THAT(source.Budget()->MemoryUsed(), Eq(0));
+}
+
+TEST_F(ReadSourceTest, DirectRangeRetainsReservationAndOnlyInitializedPrefixAtEarlyEof) {
+  const auto state = std::make_shared<ProbeReadState>();
+  state->bytes = "abc";
+  const ProbeReadSource source(state);
+  MBO_ASSERT_OK_AND_ASSIGN(const auto block, ReadSourceRange(source, 0, 10));
+  EXPECT_THAT(block.bytes, EqualsText("abc"));
+  EXPECT_THAT(source.Budget()->MemoryUsed(), Eq(10));
+  EXPECT_THAT(
+      state->requests, ElementsAre(
+                           FieldsAre(Eq(ProbeReadKind::kInto), Eq(10)), FieldsAre(Eq(ProbeReadKind::kOwned), Eq(8)),
+                           FieldsAre(Eq(ProbeReadKind::kInto), Eq(7))));
+}
+
+TEST_F(ReadSourceTest, MaterializationUsesPositiveProbeAtExactLimitWithChangingCapabilities) {
+  const auto state = std::make_shared<ProbeReadState>();
+  EXPECT_THAT(ReadSourceBytes(ProbeReadSource(state), 7), IsOkAndHolds(EqualsText("abcdefg")));
+  EXPECT_THAT(
+      state->requests, ElementsAre(
+                           FieldsAre(Eq(ProbeReadKind::kInto), Eq(7)), FieldsAre(Eq(ProbeReadKind::kOwned), Eq(5)),
+                           FieldsAre(Eq(ProbeReadKind::kInto), Eq(3)), FieldsAre(Eq(ProbeReadKind::kOwned), Eq(1)),
+                           FieldsAre(Eq(ProbeReadKind::kInto), Eq(1))));
+}
+
+TEST_F(ReadSourceTest, ZeroMaterializationLimitProbesOneByteForEitherCapability) {
+  constexpr auto kKinds = std::to_array<ProbeReadKind>({ProbeReadKind::kOwned, ProbeReadKind::kInto});
+  for (const auto kind : kKinds) {
+    const auto state = std::make_shared<ProbeReadState>();
+    state->kinds = {kind};
+    EXPECT_THAT(ReadSourceBytes(ProbeReadSource(state), 0), StatusIs(absl::StatusCode::kResourceExhausted));
+    EXPECT_THAT(state->requests, ElementsAre(FieldsAre(Eq(kind), Eq(1))));
+    state->bytes.clear();
+    state->requests.clear();
+    EXPECT_THAT(ReadSourceBytes(ProbeReadSource(state), 0), IsOkAndHolds(IsEmpty()));
+    EXPECT_THAT(state->requests, ElementsAre(FieldsAre(Eq(kind), Eq(1))));
+  }
+}
+
+TEST_F(ReadSourceTest, OversizedOwnedAndBorrowedReadsFailBeforeExposingData) {
+  constexpr auto kKinds = std::to_array<ProbeReadKind>({ProbeReadKind::kOwned, ProbeReadKind::kInto});
+  for (const auto kind : kKinds) {
+    const auto state = std::make_shared<ProbeReadState>();
+    state->kinds = {kind};
+    state->oversized = true;
+    const ProbeReadSource source(state);
+    EXPECT_THAT(ReadSourceRange(source, 0, 4), StatusIs(absl::StatusCode::kDataLoss));
+    EXPECT_THAT(source.Budget()->MemoryUsed(), Eq(0));
+    EXPECT_THAT(ReadSourceBytes(source, 4), StatusIs(absl::StatusCode::kDataLoss));
+    EXPECT_THAT(ReadSourceBytes(source, 0), StatusIs(absl::StatusCode::kDataLoss));
+  }
+}
+
+TEST_F(ReadSourceTest, LateReadAndLimitProbeErrorsStayErrorsAndReleaseRangeReservation) {
+  constexpr auto kCalls = std::to_array<std::size_t>({0, 1});
+  for (const auto call : kCalls) {
+    const auto state = std::make_shared<ProbeReadState>();
+    state->fail_call = call;
+    const ProbeReadSource source(state);
+    EXPECT_THAT(ReadSourceRange(source, 0, 4), StatusIs(absl::StatusCode::kDataLoss));
+    EXPECT_THAT(source.Budget()->MemoryUsed(), Eq(0));
+    state->requests.clear();
+    EXPECT_THAT(ReadSourceBytes(source, 4), StatusIs(absl::StatusCode::kDataLoss));
+  }
+  const auto state = std::make_shared<ProbeReadState>();
+  state->bytes = "ab";
+  state->fail_call = 1;
+  EXPECT_THAT(ReadSourceBytes(ProbeReadSource(state), 2), StatusIs(absl::StatusCode::kDataLoss));
+  EXPECT_THAT(
+      state->requests,
+      ElementsAre(FieldsAre(Eq(ProbeReadKind::kInto), Eq(2)), FieldsAre(Eq(ProbeReadKind::kOwned), Eq(1))));
+}
+
+TEST_F(ReadSourceTest, MaximumMaterializationLimitDoesNotOverflowRequestArithmetic) {
+  const auto state = std::make_shared<ProbeReadState>();
+  state->bytes = "abc";
+  EXPECT_THAT(
+      ReadSourceBytes(ProbeReadSource(state), std::numeric_limits<std::size_t>::max()),
+      IsOkAndHolds(EqualsText("abc")));
+}
+
+TEST_F(ReadSourceTest, OwnedOnlyMaterializationPreservesBothSmallAndMultiChunkResults) {
+  constexpr auto kSizes = std::to_array<std::size_t>({10, 512});
+  for (const auto size : kSizes) {
+    const auto state = std::make_shared<ProbeReadState>();
+    state->bytes = std::string(size, 'x');
+    state->bytes.front() = 'a';
+    state->bytes.back() = 'z';
+    state->chunk = 31;
+    state->kinds = {ProbeReadKind::kOwned};
+    const ProbeReadSource source(state);
+    EXPECT_THAT(ReadSourceBytes(source, size), IsOkAndHolds(EqualsText(state->bytes)));
+    state->requests.clear();
+    EXPECT_THAT(ReadSourceBytes(source, size + 7), IsOkAndHolds(EqualsText(state->bytes)));
+    state->requests.clear();
+    state->fail_call = 1;
+    state->chunk = 2;
+    EXPECT_THAT(ReadSourceBytes(source, size), StatusIs(absl::StatusCode::kDataLoss));
+  }
 }
 
 }  // namespace
