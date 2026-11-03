@@ -3622,3 +3622,31 @@ reserved storage directly; its expected owned-read counter changes from one to z
 parent lifetimes, content and shared-budget tests remain. No new public flag, external dependency,
 worker, lock, metadata probe or host-I/O bypass is introduced. O19b seeking/index/replay/admission
 remains open.
+
+### O22b: bind hash fields without growing unrelated segments
+
+A private two-byte binding fits beside the existing post-processing enum. Algorithm IDs derive
+from the existing `hash::AlgorithmNames` catalog; encoding choices distinguish explicit values
+from context defaults. This avoids qualifier parsing and default work for explicit choices while
+preserving changed defaults on every render, copies/moves, invalid specifications, post-render
+transforms and snapshot ownership/invalidation. No borrowed qualifier view is retained.
+
+Compilation validates the binding once. Bare/transformed defaults bind directly, and rendering
+reuses the existing field function to classify hash fields. The first prototype duplicated static
+validation and read a separate tag for every field. It increased hash compilation costs by about
+30-50% and is not selected; complete first/refined populations remain separate.
+
+[Cross-platform qualification](benchmarks/hash-field-binding-20261103.md) includes warm/cold
+explicit, partial and default specs, compilation, ordinary fields, whole-engine in-memory runs and
+native listing/hash-field commands. Explicit cached kernels improve about 41-56% in independent
+confirmation; larger in-memory commands improve about 2-5%. Native gains are smaller. The Linux
+simple-name field kernel retains about a 2% cost, roughly one nanosecond per entry; cold and Mac
+controls vary across populations. Preserve their absolute times and identical-baseline movement;
+this is not a universal rendering speedup.
+
+Tracked template storage is unchanged across measured shapes. This is conservative capacity
+accounting, not an allocator or RSS claim. Full CLI footprint increases 1,440 bytes on Linux and
+368 bytes on macOS. Three new tests cover changing defaults across copies/moves, all shared-catalog
+algorithms and invalid dynamic defaults with independent explicit choices. Existing derivation,
+extraction, snapshot, output and fuzz suites remain; complete release and focused sanitizer
+qualification passes both hosts. O22c2 command-owned buffers and streaming rows remain open.

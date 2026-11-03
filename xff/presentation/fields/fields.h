@@ -171,6 +171,20 @@ class Template {
  private:
   struct Transform;
 
+  // Two bytes fit beside PostProcess without adding a view or allocation to each segment.
+  // Algorithm IDs come from hash::AlgorithmNames, never a second algorithm catalog.
+  struct HashBinding {
+    static HashBinding Bind(FieldFn fn, std::string_view qualifier, bool native_qualifier);
+    std::optional<hash::AlgoEncoding> Resolve(std::string_view default_algorithm, hash::Encoding default_encoding)
+        const;
+    hash::DefaultUsage DefaultsUsed() const;
+
+    // Zero: unrelated field; one: context default; other values index the shared catalog.
+    std::uint8_t algorithm = 0;
+    // Zero: context default; one: hex; two: base64.
+    std::uint8_t encoding = 0;
+  };
+
   // A literal run (fn == nullptr -> emit `literal`) or a field reference: fn is
   // the renderer and `key` its bound argument (capture index, {env.NAME} var, ...).
   struct Segment {
@@ -186,7 +200,10 @@ class Template {
     std::string key;
     std::string qualifier;
     PostProcess post = PostProcess::kNone;
+    HashBinding hash_binding;
     std::shared_ptr<const Transform> transform;
+
+    mbo::StringOrView Value(const RenderContext& context) const;
   };
 
   std::vector<Segment> segments_;
