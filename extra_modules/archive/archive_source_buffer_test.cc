@@ -6,12 +6,15 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -29,6 +32,7 @@ namespace {
 using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
+using ::testing::Each;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
@@ -38,6 +42,8 @@ using ::testing::IsEmpty;
 using ::testing::IsTrue;
 using ::testing::Le;
 using ::testing::Lt;
+using ::testing::Not;
+using ::testing::Optional;
 
 constexpr std::size_t kReadBlock = 64UZ * 1'024;
 
@@ -47,6 +53,9 @@ struct ReadOptions {
   std::size_t fail_at = std::numeric_limits<std::size_t>::max();
   bool oversized_count = false;
   bool alternate_capability = false;
+  bool direct_skip = false;
+  bool fail_skip = false;
+  bool oversized_skip = false;
 };
 
 struct ReadCounts {
@@ -54,12 +63,20 @@ struct ReadCounts {
   std::size_t caller_owned = 0;
   std::size_t eof = 0;
   bool stable_storage = true;
+  std::size_t bytes_read = 0;
+  std::size_t skip_calls = 0;
+  std::vector<std::uint64_t> positions;
+  std::optional<std::size_t> reads_at_error;
 };
 
 class CountingStream final : public vfs::ReadStream {
  public:
-  CountingStream(std::shared_ptr<const std::string> bytes, ReadOptions options, std::shared_ptr<ReadCounts> counts)
-      : bytes_(std::move(bytes)), options_(options), counts_(std::move(counts)) {}
+  CountingStream(
+      std::shared_ptr<const std::string> bytes,
+      ReadOptions options,
+      std::shared_ptr<ReadCounts> counts,
+      std::size_t offset = 0)
+      : bytes_(std::move(bytes)), options_(options), counts_(std::move(counts)), offset_(offset) {}
 
   absl::StatusOr<std::string> Read(std::size_t max_bytes) override {
     ++counts_->owned;
@@ -70,6 +87,7 @@ class CountingStream final : public vfs::ReadStream {
     const auto count = std::min({max_bytes, options_.chunk, bytes_->size() - offset_});
     auto result = bytes_->substr(offset_, count);
     offset_ += count;
+    counts_->bytes_read += count;
     return result;
   }
 
@@ -97,8 +115,28 @@ class CountingStream final : public vfs::ReadStream {
     const auto count = std::min({buffer.size(), options_.chunk, bytes_->size() - offset_});
     std::ranges::copy(std::string_view(*bytes_).substr(offset_, count), buffer.begin());
     offset_ += count;
+    counts_->bytes_read += count;
     counts_->eof += count == 0 ? 1 : 0;
     return count;
+  }
+
+  absl::StatusOr<std::optional<std::uint64_t>> Skip(std::uint64_t requested) override {
+    ++counts_->skip_calls;
+    if (!options_.direct_skip) {
+      return std::nullopt;
+    }
+    if (options_.fail_skip) {
+      counts_->reads_at_error = counts_->owned + counts_->caller_owned;
+      return absl::DataLossError("injected cursor skip failure");
+    }
+    if (options_.oversized_skip) {
+      counts_->reads_at_error = counts_->owned + counts_->caller_owned;
+      return std::optional<std::uint64_t>(requested + 1);
+    }
+    const auto count = std::min<std::uint64_t>(requested, bytes_->size() - offset_);
+    offset_ += static_cast<std::size_t>(count);
+    counts_->positions.push_back(offset_);
+    return std::optional<std::uint64_t>(count);
   }
 
  private:
@@ -163,6 +201,94 @@ struct ArchiveSourceBufferTest : ::testing::Test {
     return bytes;
   }
 };
+
+TEST_F(ArchiveSourceBufferTest, ListingSkipsLargeDirectPayloadAndReleasesTheSessionReservation) {
+  const auto counts = std::make_shared<ReadCounts>();
+  const auto budget = std::make_shared<vfs::ReadBudget>(2 * kReadBlock, 0);
+  const std::string content(4 * kReadBlock, 'x');
+  const auto source =
+      std::make_shared<CountingSource>(MakeTar(content), ReadOptions{.direct_skip = true}, counts, budget);
+  EXPECT_THAT(
+      ListMembersOfSource(source), IsOkAndHolds(ElementsAre(Field("path", &Member::path, EqualsText("data.txt")))));
+  EXPECT_THAT(counts->skip_calls, Eq(1));
+  EXPECT_THAT(counts->positions, Not(IsEmpty()));
+  EXPECT_THAT(counts->bytes_read, Lt(content.size() / 2));
+  EXPECT_THAT(budget->MemoryUsed(), Eq(0));
+}
+
+TEST_F(ArchiveSourceBufferTest, DirectSkippingAlsoRetainsOwnedBufferCursors) {
+  const auto counts = std::make_shared<ReadCounts>();
+  const std::string content(4 * kReadBlock, 'x');
+  const auto source = std::make_shared<CountingSource>(
+      MakeTar(content), ReadOptions{.caller_owned = false, .direct_skip = true}, counts);
+  EXPECT_THAT(
+      ListMembersOfSource(source), IsOkAndHolds(ElementsAre(Field("path", &Member::path, EqualsText("data.txt")))));
+  EXPECT_THAT(counts->owned, Gt(0));
+  EXPECT_THAT(counts->caller_owned, Eq(0));
+  EXPECT_THAT(counts->bytes_read, Lt(content.size() / 2));
+}
+
+TEST_F(ArchiveSourceBufferTest, ReadingSelectedContentDoesNotSkipItsBytes) {
+  for (const bool caller_owned : {false, true}) {
+    const auto counts = std::make_shared<ReadCounts>();
+    const std::string content(4 * kReadBlock, 'x');
+    const auto source = std::make_shared<CountingSource>(
+        MakeTar(content), ReadOptions{.caller_owned = caller_owned, .direct_skip = true}, counts);
+    const auto member = MemberReadSource(source, "data.txt");
+    EXPECT_THAT(vfs::ReadSourceBytes(*member, content.size()), IsOkAndHolds(EqualsText(content)));
+    EXPECT_THAT(counts->skip_calls, Eq(0));
+  }
+}
+
+TEST_F(ArchiveSourceBufferTest, SmallAndCompressedInputsAvoidOptionalSkipCalls) {
+  for (const bool compressed : {false, true}) {
+    const auto counts = std::make_shared<ReadCounts>();
+    const auto source =
+        std::make_shared<CountingSource>(MakeTar("small", compressed), ReadOptions{.direct_skip = true}, counts);
+    EXPECT_THAT(
+        ListMembersOfSource(source), IsOkAndHolds(ElementsAre(Field("path", &Member::path, EqualsText("data.txt")))));
+    EXPECT_THAT(counts->skip_calls, Eq(0));
+  }
+}
+
+TEST_F(ArchiveSourceBufferTest, UnsupportedSourcesReadSequentiallyWithoutSizeScansOrReplay) {
+  const auto counts = std::make_shared<ReadCounts>();
+  const auto budget = std::make_shared<vfs::ReadBudget>(2 * kReadBlock, 0);
+  const std::string content(4 * kReadBlock, 'x');
+  const auto source = std::make_shared<CountingSource>(MakeTar(content), ReadOptions{}, counts, budget);
+  EXPECT_THAT(
+      ListMembersOfSource(source), IsOkAndHolds(ElementsAre(Field("path", &Member::path, EqualsText("data.txt")))));
+  EXPECT_THAT(counts->skip_calls, Eq(1));
+  EXPECT_THAT(counts->positions, IsEmpty());
+  EXPECT_THAT(counts->bytes_read, Gt(content.size()));
+  EXPECT_THAT(budget->MemoryUsed(), Eq(0));
+}
+
+TEST_F(ArchiveSourceBufferTest, SkipFailureIsLatchedBeforeTheFallbackReadsAgain) {
+  const auto counts = std::make_shared<ReadCounts>();
+  const auto source = std::make_shared<CountingSource>(
+      MakeTar(std::string(4 * kReadBlock, 'x')), ReadOptions{.direct_skip = true, .fail_skip = true}, counts);
+  EXPECT_THAT(ListMembersOfSource(source), StatusIs(absl::StatusCode::kDataLoss, HasSubstr("cursor skip failure")));
+  EXPECT_THAT(counts->reads_at_error, Optional(Eq(counts->owned + counts->caller_owned)));
+}
+
+TEST_F(ArchiveSourceBufferTest, OversizedSkipCountIsRejectedBeforeTheFallbackReadsAgain) {
+  const auto counts = std::make_shared<ReadCounts>();
+  const auto source = std::make_shared<CountingSource>(
+      MakeTar(std::string(4 * kReadBlock, 'x')), ReadOptions{.direct_skip = true, .oversized_skip = true}, counts);
+  EXPECT_THAT(ListMembersOfSource(source), StatusIs(absl::StatusCode::kDataLoss, HasSubstr("skipped more bytes")));
+  EXPECT_THAT(counts->reads_at_error, Optional(Eq(counts->owned + counts->caller_owned)));
+}
+
+TEST_F(ArchiveSourceBufferTest, DirectSkipStopsAtPhysicalBoundsAndRetainsTruncationErrors) {
+  std::string bytes = MakeTar(std::string(4 * kReadBlock, 'x'));
+  bytes.resize((2 * kReadBlock) + 123);
+  const auto length = bytes.size();
+  const auto counts = std::make_shared<ReadCounts>();
+  const auto source = std::make_shared<CountingSource>(std::move(bytes), ReadOptions{.direct_skip = true}, counts);
+  EXPECT_THAT(ListMembersOfSource(source), StatusIs(absl::StatusCode::kDataLoss));
+  EXPECT_THAT(counts->positions, Each(Le(length)));
+}
 
 TEST_F(ArchiveSourceBufferTest, ReusesTheCallerOwnedBufferForFullAndShortBlocks) {
   const auto counts = std::make_shared<ReadCounts>();

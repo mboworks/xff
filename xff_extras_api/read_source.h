@@ -23,7 +23,12 @@ namespace xff::vfs {
 // Cursors are independent and single-threaded. Read must return at most max_bytes bytes.
 class ReadStream {
  public:
+  ReadStream() = default;
   virtual ~ReadStream() = default;
+  ReadStream(const ReadStream&) = delete;
+  ReadStream& operator=(const ReadStream&) = delete;
+  ReadStream(ReadStream&&) = delete;
+  ReadStream& operator=(ReadStream&&) = delete;
   virtual absl::StatusOr<std::string> Read(std::size_t max_bytes) = 0;
 
   // Optional allocation-free reads into caller-owned storage. Only [0, returned count) is
@@ -34,6 +39,11 @@ class ReadStream {
   virtual absl::StatusOr<std::size_t> ReadInto(std::span<char>) {
     return absl::UnimplementedError("cursor does not support caller-owned read buffers");
   }
+
+  // Optional forward skipping without reading/discarding bytes. A present count is at most
+  // requested and may be short; zero alone does not prove EOF. Absence means unsupported.
+  // All operations share this cursor's position. The default never reads or advances.
+  virtual absl::StatusOr<std::optional<std::uint64_t>> Skip(std::uint64_t) { return std::nullopt; }
 };
 
 // An immutable, restartable source. Open can be called concurrently; each cursor owns everything
@@ -44,6 +54,10 @@ class ReadSource {
       : budget_(std::move(budget)) {}
 
   virtual ~ReadSource() = default;
+  ReadSource(const ReadSource&) = default;
+  ReadSource& operator=(const ReadSource&) = default;
+  ReadSource(ReadSource&&) noexcept = default;
+  ReadSource& operator=(ReadSource&&) noexcept = default;
   virtual absl::StatusOr<std::unique_ptr<ReadStream>> Open() const = 0;
   // Native sources seek directly; sequential sources replay within the shared work budget.
   // Positions beyond EOF yield an empty stream. Failures remain errors.

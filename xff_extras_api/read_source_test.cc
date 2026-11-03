@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <span>
@@ -49,6 +50,51 @@ class OwnedOnlyStream final : public ReadStream {
   const std::string bytes_ = "abcdef";
   std::size_t offset_ = 0;
 };
+
+// Cursor ownership transfers through unique_ptr; duplicating the object can duplicate a native descriptor.
+static_assert(!std::is_copy_constructible_v<OwnedOnlyStream>);
+static_assert(!std::is_move_constructible_v<OwnedOnlyStream>);
+
+TEST_F(ReadSourceTest, UnsupportedSkipNeverConsumesOwnedOnlyStream) {
+  OwnedOnlyStream stream;
+  EXPECT_THAT(stream.Skip(3), IsOkAndHolds(Eq(std::nullopt)));
+  EXPECT_THAT(stream.Read(6), IsOkAndHolds(EqualsText("abcdef")));
+}
+
+TEST_F(ReadSourceTest, MemorySkipSharesReadPositionAndBoundsCountsWithoutLosingOwners) {
+  auto source = MemoryReadSource("abcdef");
+  MBO_ASSERT_OK_AND_ASSIGN(auto cursor, source->Open());
+  MBO_ASSERT_OK_AND_ASSIGN(auto second, source->OpenAt(1));
+  source.reset();
+  EXPECT_THAT(cursor->Skip(0), IsOkAndHolds(Optional(Eq(0))));
+  EXPECT_THAT(cursor->Read(1), IsOkAndHolds(EqualsText("a")));
+  EXPECT_THAT(cursor->Skip(2), IsOkAndHolds(Optional(Eq(2))));
+  std::array<char, 3> buffer;
+  EXPECT_THAT(cursor->ReadInto(buffer), IsOkAndHolds(Eq(3)));
+  EXPECT_THAT(std::string_view(buffer.data(), buffer.size()), EqualsText("def"));
+  EXPECT_THAT(cursor->Skip(std::numeric_limits<std::uint64_t>::max()), IsOkAndHolds(Optional(Eq(0))));
+  EXPECT_THAT(second->Skip(std::numeric_limits<std::uint64_t>::max()), IsOkAndHolds(Optional(Eq(5))));
+  EXPECT_THAT(second->Read(1), IsOkAndHolds(IsEmpty()));
+}
+
+TEST_F(ReadSourceTest, HostSkipUsesTheOwnedDescriptorAndPreservesUnsupportedReadErrors) {
+  MBO_ASSERT_OK_AND_ASSIGN(auto directory, TemporaryDirectory::Create(::testing::TempDir() + "skip-source", {}));
+  MBO_ASSERT_OK_AND_ASSIGN(auto output, TemporaryOutput::Create(directory->Path() + "/file", {}));
+  ASSERT_THAT(output->Write("abcdef"), IsOk());
+  MBO_ASSERT_OK_AND_ASSIGN(auto cursor, HostReadSource(output->Path())->OpenAt(1));
+  MBO_ASSERT_OK_AND_ASSIGN(auto sequential, HostReadSource(directory->Path())->Open());
+  output.reset();
+  directory.reset();
+  EXPECT_THAT(cursor->Skip(0), IsOkAndHolds(Optional(Eq(0))));
+  EXPECT_THAT(cursor->Skip(2), IsOkAndHolds(Optional(Eq(2))));
+  EXPECT_THAT(cursor->Read(1), IsOkAndHolds(EqualsText("d")));
+  EXPECT_THAT(cursor->Skip(std::numeric_limits<std::uint64_t>::max()), IsOkAndHolds(Optional(Eq(2))));
+  EXPECT_THAT(cursor->Read(1), IsOkAndHolds(IsEmpty()));
+  EXPECT_THAT(cursor->Skip(1), IsOkAndHolds(Optional(Eq(0))));
+  EXPECT_THAT(sequential->Skip(10), IsOkAndHolds(Eq(std::nullopt)));
+  EXPECT_THAT(sequential->Skip(10), IsOkAndHolds(Eq(std::nullopt)));
+  EXPECT_THAT(sequential->Read(1), StatusIs(absl::StatusCode::kDataLoss));
+}
 
 TEST_F(ReadSourceTest, UnsupportedReadIntoNeitherConsumesNorCopiesOwnedOnlyStream) {
   OwnedOnlyStream stream;

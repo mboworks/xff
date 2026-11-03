@@ -131,6 +131,21 @@ void Measure(benchmark::State& state, SourceKind kind, bool read_last) {
   const auto source = std::move(*built_source);
   const auto member = MemberReadSource(source, absl::StrCat("file-", members - 1));
   const std::string expected(payload, 'x');
+  const auto listing = ListMembersOfSource(source);
+  if (!listing.ok() || listing->size() != members) {
+    state.SkipWithError("initial archive listing differs from fixture");
+    return;
+  }
+  for (std::size_t index = 0; index < members; ++index) {
+    const auto& entry = listing->at(index);
+    if (entry.path != absl::StrCat("file-", index) || std::cmp_not_equal(entry.size, payload)) {
+      const auto error = absl::StrCat(
+          "archive listing differs at ", index, ": path=", entry.path, " size=", entry.size,
+          " expected-size=", payload);
+      state.SkipWithError(error);
+      return;
+    }
+  }
   // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores): benchmark loop controls the measured iterations.
   for (const auto unused : state) {
     if (read_last) {
@@ -152,12 +167,28 @@ void Measure(benchmark::State& state, SourceKind kind, bool read_last) {
   state.SetItemsProcessed(state.iterations() * static_cast<std::int64_t>(members));
 }
 
-void RegisterAll() {
-  struct SourceCase {
-    std::string_view name;
-    SourceKind kind;
-  };
+struct SourceCase {
+  std::string_view name;
+  SourceKind kind;
+};
 
+void RegisterLarge(std::span<const SourceCase> sources) {
+  for (const auto& source : sources) {
+    for (const bool read_last : {false, true}) {
+      const std::string name = absl::StrCat("archive-large/tar/", source.name, "/", read_last ? "last" : "list");
+      // XFF_ABI_POINTER: Google Benchmark returns a borrowed mutable registration object.
+      auto* registration = benchmark::RegisterBenchmark(name, Measure, source.kind, read_last);
+      for (const auto count : {10, 100}) {
+        for (const auto payload : {4'096, 65'536, 1'048'576}) {
+          registration->Args({count, payload});
+        }
+      }
+      registration->Unit(benchmark::kMicrosecond)->UseRealTime()->MinTime(0.02)->MinWarmUpTime(0.01)->Repetitions(9);
+    }
+  }
+}
+
+void RegisterAll() {
   constexpr auto kSources = std::to_array<SourceCase>({
       {.name = "legacy", .kind = SourceKind::kLegacy},
       {.name = "caller-owned", .kind = SourceKind::kCallerOwned},
@@ -179,6 +210,7 @@ void RegisterAll() {
       registration->Unit(benchmark::kMicrosecond)->UseRealTime()->MinTime(0.02)->MinWarmUpTime(0.01)->Repetitions(9);
     }
   }
+  RegisterLarge(kSources);
 }
 
 }  // namespace

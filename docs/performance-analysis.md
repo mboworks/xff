@@ -3657,3 +3657,28 @@ and three-session cross-platform measurements. Sixteen warm explicit fields impr
 while small ordinary kernels and one Linux single-hash cell retain costs. Native differences remain
 small, and the full CLI decreases 4,896 bytes on Linux and 208 bytes on macOS relative to the prior
 binding implementation. A structural regression preserves literal/hash/extraction distinctions.
+
+### O19b1: bounded forward cursor skipping
+
+Archive readers now request optional cursor skipping only for unread spans of at least 64 KiB.
+Memory cursors advance offsets; native cursors lazily bound a seek using their owned descriptor.
+Sequential/member decoders keep their read fallback, and skip failures/oversized counts are latched
+before another read. Borrowed buffers, selected content, truncation errors, shared reservations and
+replay accounting remain explicit. Cursor objects cannot duplicate their owned state; sources retain
+ordinary copy/move operations. No new output path, worker, lock or decoder admission is introduced.
+
+[Cross-platform qualification](benchmarks/forward-cursor-skipping-20261103.md) retains the earlier
+source-reopen design, separate four-variant pilots, the final 37-memory/40-native matrix and an
+independent identical-reference confirmation. Large native uncompressed TAR/stored-ZIP cases improve
+about 79-87% on Linux and 50-65% on macOS. Ordinary/boundary native controls remain within roughly
+0.8%; virtual-only controls retain some costs, and unstable tiny macOS cells stay visible.
+
+Final full CLI increases 6,712 bytes Linux / 17,040 bytes macOS. Complete release suites and focused
+sanitizers pass both hosts; all five actual modified TUs receive explicit changed-header checks,
+including physical and include-prefix aliases. Full Linux coverage passes every category and the
+candidate's own changed-line/branch gates (61/61 and 28/28). An inherited missing special-member
+warning and duplicate native syscall status handling are corrected without weakening policy.
+
+The exact member-size oracle also reproduces an existing streamed-ZIP data-descriptor limitation
+on the unchanged parent. Keep that correctness task separate. O19b ZIP seeking/indexing, repeated
+member/replay reuse and decoder admission remain open; forward skipping does not qualify them.

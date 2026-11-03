@@ -449,6 +449,13 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O19a: Qualify reusable session-owned archive input buffers on Linux/macOS, retaining short
       reads, errors, decoder fallbacks and shared reservations. Preserve all representation trials
       and controls in [the qualification report](docs/benchmarks/archive-input-buffers-20261102.md).
+- [x] O19b1: Qualify bounded forward cursor skipping on native/memory sources with sequential
+      fallbacks, latched errors, unchanged buffer lifetimes, shared budgets and physical bounds.
+      Keep [all source/cursor trials and slower controls](docs/benchmarks/forward-cursor-skipping-20261103.md).
+- [ ] Streamed ZIP sizes: fix member metadata for ZIP inputs whose local headers defer sizes to
+      data descriptors. A nonseekable libarchive memory-writer fixture reproduces zero size for
+      a 1 MiB member on the unchanged parent. Preserve the exact size oracle and parent proof in
+      the O19b1 artifact; do not silently admit an unbudgeted seekable central-directory index.
 - [ ] O19b: Qualify archive seeking/index/replay and decoder admission independently. Investigate
       native/memory ZIP seeking before concurrency; preserve sequential-source and shared-budget fallbacks.
 - [x] O19c: Qualify caller-owned reads for immutable memory and archive-member cursors, including
