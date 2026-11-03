@@ -736,7 +736,7 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
-            timeout: 30
+            timeout: 60
           - os: macos-latest
             platform: macos
             timeout: 60
