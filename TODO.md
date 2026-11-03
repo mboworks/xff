@@ -457,9 +457,17 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       equality shortcut on Linux/macOS. Preserve [rejected width-one paths and all controls](docs/benchmarks/byte-shingle-representations-20261102.md).
 - [ ] O21b: Reuse immutable-source/reference representations and exact candidate indexes only after
       resolving dynamic target/invalidation and retained-byte contracts; keep run-wide grouping semantics explicit.
-- [ ] O22: Qualify snapshot-owned digest observers, invariant field-hash qualifiers and output
-      construction separately. Preserve lifetime/invalidation, direct fallback and formatting contracts.
-      Do not revive O05's rejected generic lookup change without new consumer-specific evidence.
+- [x] O22a: Qualify snapshot-owned digest observers against owning consumption, preserving cache
+      insertion stability, invalidation, local-snapshot fallback, read errors and derived handoff.
+      Keep [the separate mechanisms and controls](docs/benchmarks/digest-and-record-storage-20261103.md).
+- [ ] O22b: Qualify invariant field-hash binding without enlarging every unrelated template segment
+      or hiding typed state in strings. Preserve dynamic defaults and cold/non-hash controls.
+- [x] O22c1: Qualify direct plain-record construction and bulk C-escaping on both hosts, retaining
+      tiny colored controls and shared display/tree consumers in the O22a report.
+- [ ] O22c2: Qualify command-owned reusable record/row buffers and streaming machine formats.
+      Preserve synchronous view lifetimes, reentrant callbacks, coordinator ownership and ordered
+      publication. Do not add a buffer/destructor to every existing stateless renderer by default.
+      O22a/c1 do not complete this work or revive O05's rejected generic lookup change.
 
 - [ ] Qualify executor admission after the clock correction with separate cold/warm controls and
       16/32/63/64-entry matching boundaries; check Linux and macOS workload regressions before

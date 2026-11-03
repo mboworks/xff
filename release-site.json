@@ -77,7 +77,8 @@
     "docs/benchmarks/prepared-hash-operands-20261102.md": "docs/benchmarks/prepared-hash-operands-20261102.html",
     "docs/benchmarks/aggregate-comparison-totals-20261102.md": "docs/benchmarks/aggregate-comparison-totals-20261102.html",
     "docs/benchmarks/byte-shingle-representations-20261102.md": "docs/benchmarks/byte-shingle-representations-20261102.html",
-    "docs/benchmarks/archive-input-buffers-20261102.md": "docs/benchmarks/archive-input-buffers-20261102.html"
+    "docs/benchmarks/archive-input-buffers-20261102.md": "docs/benchmarks/archive-input-buffers-20261102.html",
+    "docs/benchmarks/digest-and-record-storage-20261103.md": "docs/benchmarks/digest-and-record-storage-20261103.html"
   },
   "generated_html": {
     "XFF.md": {

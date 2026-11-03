@@ -13,9 +13,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//xff:cc.bzl", "cc_library", "cc_test")
+load("//xff:cc.bzl", "cc_binary", "cc_library", "cc_test")
 
 package(default_visibility = ["//visibility:private"])
+
+cc_binary(
+    name = "output_benchmark",
+    testonly = True,
+    srcs = ["output_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        ":render_cc",
+        "//xff/content:snapshot_cc",
+        "//xff/hash:hash_cc",
+        "//xff/presentation/fields:fields_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
+        "@com_github_google_benchmark//:benchmark",
+    ],
+)
 
 # Output record formatting for matched paths: plain (\n), NUL (\0), JSONL.
 cc_library(

@@ -192,6 +192,18 @@ int main(int argc, char** argv) {
           .arguments = {"-type", "f", "-hash"},
       },
       {
+          .name = "hash-repeat",
+          .arguments = {"-type", "f", "-hash", "-hash", "-hash"},
+      },
+      {
+          .name = "hash-fields-repeat",
+          .arguments = {"-type", "f", "--template={hash}|{hash}|{hash:md5/base64}|{hash:sha256/base64}"},
+      },
+      {
+          .name = "hash-fields-transform",
+          .arguments = {"-type", "f", "--template={hash:s/^/SUM-/}|{hash}|{hash:md5/base64}"},
+      },
+      {
           .name = "hasheq-explicit",
           .arguments = {"-type", "f", "-hasheq:md5/base64", "V2pFZbcPWkwaCSXKvbWHpg=="},
       },

@@ -61,6 +61,25 @@ cc_test(
 )
 
 cc_test(
+    name = "hash_snapshot_test",
+    size = "small",
+    srcs = ["hash_snapshot_test.cc"],
+    deps = [
+        ":fields_cc",
+        "//xff/content:snapshot_cc",
+        "//xff/hash:hash_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_test(
     name = "lexical_fields_test",
     size = "small",
     srcs = ["lexical_fields_test.cc"],

@@ -1662,8 +1662,8 @@ std::optional<hash::AlgoEncoding> ResolveHashRequest(
 // The entry's digest, read through the filesystem the entry came FROM. That indirection is what
 // lets -hash / -hasheq work on an archive member: hashing by path would look for `a.tar!x` on the
 // real filesystem and find nothing. Both routes read the whole entry anyway.
-std::optional<std::string> DigestOfEntry(const EvalContext& ctx, const hash::AlgoEncoding& spec) {
-  return ctx.content.Digest(ctx.fs, ctx.visit.path, spec);
+std::optional<std::string_view> DigestOfEntry(const EvalContext& ctx, const hash::AlgoEncoding& spec) {
+  return ctx.content.DigestView(ctx.fs, ctx.visit.path, spec);
 }
 
 // xff -hash[:ALGO[/ENCODING]]: an ACTION that prints the entry's digest and path as
@@ -1680,7 +1680,7 @@ bool EvalHashWithOperand(
   if (!spec.has_value()) {
     return true;
   }
-  const std::optional<std::string> digest = DigestOfEntry(ctx, *spec);
+  const std::optional<std::string_view> digest = DigestOfEntry(ctx, *spec);
   if (digest.has_value()) {
     ctx.emit(absl::StrCat(*digest, "  ", ctx.visit.path, "\n"));
   }
@@ -1722,7 +1722,7 @@ bool EvalHasheqWithOperand(
   if (!spec.has_value()) {
     return verdict(false);  // defensively no-op; ValidateHashArgs rejects a bad spec before the walk
   }
-  const std::optional<std::string> digest = DigestOfEntry(ctx, *spec);
+  const std::optional<std::string_view> digest = DigestOfEntry(ctx, *spec);
   if (!digest.has_value()) {
     return verdict(false);  // unreadable / non-regular file -> mismatch (selected by `! -hasheq`)
   }
