@@ -6,7 +6,7 @@ diff --git a/MODULE.bazel b/MODULE.bazel
  bazel_dep(name = "bazel_skylib", version = "1.6.1")
  bazel_dep(name = "mbedtls", version = "3.6.0.bcr.1")
 +
-+bazel_dep(name = "libexpat", version = "2.8.4")
++bazel_dep(name = "libexpat", version = "2.9.0")
 diff --git a/libarchive/BUILD.bazel b/libarchive/BUILD.bazel
 --- a/libarchive/BUILD.bazel
 +++ b/libarchive/BUILD.bazel
