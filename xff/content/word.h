@@ -52,7 +52,7 @@ struct Utf32 {
 
 // This contract covers word classification, not transcoding or file decoding.
 template<typename Classifier>
-concept WordClassifier = requires(typename Classifier::View text, std::size_t offset) {
+concept WordClassifier = requires(Classifier::View text, std::size_t offset) {
   requires std::same_as<typename Classifier::View, std::basic_string_view<typename Classifier::Char>>;
   { Classifier::WordBefore(text, offset) } -> std::same_as<bool>;
   { Classifier::WordAfter(text, offset) } -> std::same_as<bool>;

@@ -1334,7 +1334,7 @@ bool EvalSimilarWithTemplate(
     return false;
   }
   const absl::StatusOr<std::string> rhs = ctx.fs.ReadContent(target);
-  if (!rhs.ok() || absl::StrContains(rhs->substr(0, content::kBinaryNulSniffBytes), '\0')) {
+  if (!rhs.ok() || absl::StrContains(std::string_view(*rhs).substr(0, content::kBinaryNulSniffBytes), '\0')) {
     return false;
   }
   return similarity::WordShinglePercent(*lhs, *rhs, expr.similarity_width) >= expr.similarity_threshold;

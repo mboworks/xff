@@ -55,6 +55,21 @@ test::binary_content_never_matches_even_at_zero_percent() {
   expect_output_not_contains 'binary.dat' "${out}"
 }
 
+test::reference_binary_sniff_keeps_the_exact_prefix_boundary() {
+  local root out offset
+  root="$(_make_tree)"
+  for offset in 0 7 7999 8000; do
+    printf '%*s' "${offset}" '' >"${root}/peer.dat"
+    printf '\0tail' >>"${root}/peer.dat"
+    out="$("$(_xff_bin)" "${root}" -name close.txt -similar:1:0% "${root}/peer.dat" 2>&1)"
+    if ((offset < 8000)); then
+      expect_eq '' "${out}"
+    else
+      expect_output_contains 'close.txt' "${out}"
+    fi
+  done
+}
+
 test::find_style_rejects_similarity_and_help_documents_the_full_boundary() {
   local root rc help
   root="$(_make_tree)"

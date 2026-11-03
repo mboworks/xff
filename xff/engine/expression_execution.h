@@ -35,6 +35,11 @@ class ExpressionExecution final {
   class Worker final {
    public:
     struct State {
+      State() = default;
+      State(const State&) = default;
+      State& operator=(const State&) = default;
+      State(State&&) noexcept = default;
+      State& operator=(State&&) noexcept = default;
       virtual ~State() = default;
       virtual EvaluationResult Evaluate(EvalContext& context) const = 0;
     };
@@ -54,6 +59,11 @@ class ExpressionExecution final {
   };
 
   struct Plan {
+    Plan() = default;
+    Plan(const Plan&) = default;
+    Plan& operator=(const Plan&) = default;
+    Plan(Plan&&) noexcept = default;
+    Plan& operator=(Plan&&) noexcept = default;
     virtual ~Plan() = default;
     [[nodiscard]] virtual Worker MakeWorker(ExpressionWorkerRole role) const = 0;
     [[nodiscard]] virtual bool UsesIndexedMatchers() const = 0;

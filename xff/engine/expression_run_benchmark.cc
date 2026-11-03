@@ -25,7 +25,7 @@ using ::xff::engine::ExpressionExecutor;
 
 class RunFs final : public xff::vfs::FileSystem {
  public:
-  explicit RunFs(std::size_t count) {
+  explicit RunFs(std::size_t count, std::size_t content_bytes = 0) : content_(content_bytes, 'x') {
     entries_.reserve(count);
     for (std::size_t index = 0; index < count; ++index) {
       std::string name = "file" + std::to_string(index) + (index % 2 == 0 ? ".txt" : ".cc");
@@ -43,12 +43,15 @@ class RunFs final : public xff::vfs::FileSystem {
   absl::StatusOr<xff::vfs::Metadata> Stat(std::string_view path, bool) const override {
     return xff::vfs::Metadata{
         .type = path == "root" ? xff::vfs::FileType::kDirectory : xff::vfs::FileType::kRegular,
-        .size = 7,
+        .size = content_.empty() ? 7 : content_.size(),
         .mode = 0644,
     };
   }
 
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override {
+    if (!content_.empty()) {
+      return content_;
+    }
     if (path == "peer/diff-control") {
       return "reference\n";
     }
@@ -67,11 +70,13 @@ class RunFs final : public xff::vfs::FileSystem {
 
  private:
   std::vector<xff::vfs::Entry> entries_;
+  std::string content_;
 };
 
 struct Scenario {
   std::string_view name;
   std::vector<std::string> arguments;
+  std::size_t content_bytes = 0;
 };
 
 struct Executor {
@@ -100,7 +105,7 @@ double FastestSeven(const std::vector<double>& times) {
 
 void Measure(benchmark::State& state, const Scenario& scenario, ExpressionExecutor executor) {
   const auto factory = xff::engine::QualifiedExpressionFactory(executor);
-  const RunFs fs(static_cast<std::size_t>(state.range(0)));
+  const RunFs fs(static_cast<std::size_t>(state.range(0)), scenario.content_bytes);
   std::vector<std::string> arguments{
       "--exact", "--color=never", "--sort=dir", "--jobs=" + std::to_string(state.range(1)), "root",
   };
@@ -149,6 +154,16 @@ void Measure(benchmark::State& state, const Scenario& scenario, ExpressionExecut
 int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
   const auto scenarios = std::to_array<Scenario>({
+      {
+          .name = "similar-equal-8000",
+          .arguments = {"-type", "f", "-similar:3:100%", "{path}"},
+          .content_bytes = 8'000,
+      },
+      {
+          .name = "similar-equal-65536",
+          .arguments = {"-type", "f", "-similar:3:100%", "{path}"},
+          .content_bytes = 65'536,
+      },
       {
           .name = "similar-equal",
           .arguments = {"-type", "f", "-similar:3:100%", "{path}"},
