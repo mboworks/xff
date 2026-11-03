@@ -456,6 +456,13 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       data descriptors. A nonseekable libarchive memory-writer fixture reproduces zero size for
       a 1 MiB member on the unchanged parent. Preserve the exact size oracle and parent proof in
       the O19b1 artifact; do not silently admit an unbudgeted seekable central-directory index.
+- [x] O19b2: Implement and qualify native ZIP seeking with conservative index admission, bounded
+      source extents and sequential fallbacks. Reject the uncached policy after repeatable first-read
+      regressions; retain all variants and the manual ZIP benchmark in
+      `docs/benchmarks/native-zip-seek-evaluation-20261103.md`.
+- [ ] O19b3: Investigate immutable ZIP index/locator reuse and metadata-demand-aware reading before
+      another general native-index policy. Avoid rebuilding the complete index for a first-member
+      read; preserve format coverage, source identity, all visible members, exact sizes and budgets.
 - [ ] O19b: Qualify archive seeking/index/replay and decoder admission independently. Investigate
       native/memory ZIP seeking before concurrency; preserve sequential-source and shared-budget fallbacks.
 - [x] O19c: Qualify caller-owned reads for immutable memory and archive-member cursors, including

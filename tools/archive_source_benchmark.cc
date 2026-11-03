@@ -16,6 +16,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -188,6 +189,192 @@ void RegisterLarge(std::span<const SourceCase> sources) {
   }
 }
 
+// NOLINTBEGIN(*-magic-numbers)
+struct FileSpec {
+  std::string path;
+  std::string content;
+};
+
+// Produces data-descriptor ZIP entries in memory, independently of the reader implementation.
+absl::StatusOr<std::string> MakeSourceZip(const std::vector<FileSpec>& files, bool stored, bool force_zip64 = false) {
+  using Writer = std::unique_ptr<struct ::archive, decltype(&::archive_write_free)>;
+  using Entry = std::unique_ptr<struct ::archive_entry, decltype(&::archive_entry_free)>;
+  // The memory-writer callbacks borrow both objects until writer destruction, including failures.
+  std::string bytes;
+  std::size_t written = 0;
+  const Writer writer(::archive_write_new(), &::archive_write_free);
+  if (!writer || ::archive_write_set_format_zip(writer.get()) != ARCHIVE_OK
+      || ::archive_write_set_options(writer.get(), stored ? "zip:compression=store" : "zip:compression=deflate")
+             != ARCHIVE_OK) {
+    return absl::InternalError("cannot configure in-memory ZIP fixture");
+  }
+  if (force_zip64 && ::archive_write_set_format_option(writer.get(), "zip", "zip64", "1") != ARCHIVE_OK) {
+    return absl::InternalError("cannot force Zip64 fixture headers");
+  }
+  std::size_t capacity = 64UZ * 1'024;
+  for (const auto& file : files) {
+    capacity += file.content.size() + file.path.size() + 512;
+  }
+  bytes.resize(capacity, '\0');
+  if (::archive_write_open_memory(writer.get(), bytes.data(), bytes.size(), &written) != ARCHIVE_OK) {
+    return absl::InternalError("cannot open in-memory ZIP fixture");
+  }
+  for (const auto& file : files) {
+    const Entry entry(::archive_entry_new(), &::archive_entry_free);
+    if (!entry) {
+      return absl::InternalError("cannot allocate ZIP fixture entry");
+    }
+    ::archive_entry_set_pathname(entry.get(), file.path.c_str());
+    ::archive_entry_set_size(entry.get(), static_cast<std::int64_t>(file.content.size()));
+    ::archive_entry_set_filetype(entry.get(), AE_IFREG);
+    ::archive_entry_set_perm(entry.get(), 0644);
+    if (::archive_write_header(writer.get(), entry.get()) != ARCHIVE_OK
+        || ::archive_write_data(writer.get(), file.content.data(), file.content.size())
+               != static_cast<la_ssize_t>(file.content.size())) {
+      return absl::InternalError("cannot write ZIP fixture entry");
+    }
+  }
+  if (::archive_write_close(writer.get()) != ARCHIVE_OK) {
+    return absl::InternalError("cannot finish ZIP fixture");
+  }
+  bytes.resize(written);
+  return bytes;
+}
+
+enum class ZipTask { kNames, kFirst, kLast, kCycle };
+
+std::string ZipContent(std::size_t index, std::size_t payload) {
+  std::string result(payload, static_cast<char>('a' + (index % 26)));
+  const std::string prefix = absl::StrCat("entry ", index, "\n");
+  result.replace(0, std::min(payload, prefix.size()), prefix, 0, std::min(payload, prefix.size()));
+  return result;
+}
+
+void MeasureZip(benchmark::State& state, SourceKind kind, ZipTask task, bool stored) {
+  const auto members = static_cast<std::size_t>(state.range(0));
+  const auto payload = static_cast<std::size_t>(state.range(1));
+  std::vector<FileSpec> files;
+  files.reserve(members);
+  for (std::size_t index = 0; index < members; ++index) {
+    files.push_back({.path = absl::StrCat("file-", index), .content = ZipContent(index, payload)});
+  }
+  auto bytes = MakeSourceZip(files, stored);
+  if (!bytes.ok()) {
+    state.SkipWithError(bytes.status().ToString());
+    return;
+  }
+  state.counters["source_bytes"] = static_cast<double>(bytes->size());
+  auto built_source = MakeSource(kind, std::move(*bytes));
+  if (!built_source.ok()) {
+    state.SkipWithError(built_source.status().ToString());
+    return;
+  }
+  const auto source = std::move(*built_source);
+  const auto listing = ListMembersOfSource(source);
+  if (!listing.ok() || listing->size() != members) {
+    state.SkipWithError("ZIP listing count differs from independent fixture");
+    return;
+  }
+  std::size_t size_differences = 0;
+  for (std::size_t index = 0; index < members; ++index) {
+    if (listing->at(index).path != files.at(index).path) {
+      state.SkipWithError("ZIP names/order differ from independent fixture");
+      return;
+    }
+    size_differences += std::cmp_not_equal(listing->at(index).size, files.at(index).content.size()) ? 1 : 0;
+  }
+  // The parent's streaming descriptor-size bug is reported, never silently presented as correct.
+  // The names-only timing compares counts/names; exact metadata has separate committed tests.
+  state.counters["descriptor_size_differences"] = static_cast<double>(size_differences);
+  std::vector<std::size_t> indices;
+  switch (task) {
+    case ZipTask::kNames: break;
+    case ZipTask::kFirst: indices.push_back(0); break;
+    case ZipTask::kLast: indices.push_back(members - 1); break;
+    case ZipTask::kCycle: indices = {0, members / 2, members - 1}; break;
+  }
+  std::vector<vfs::SharedReadSource> targets;
+  targets.reserve(indices.size());
+  for (const auto index : indices) {
+    targets.push_back(MemberReadSource(source, files.at(index).path));
+  }
+  // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores): benchmark loop controls measured iterations.
+  for (const auto unused : state) {
+    if (task == ZipTask::kNames) {
+      auto result = ListMembersOfSource(source);
+      if (!result.ok() || result->size() != members || result->back().path != files.back().path) {
+        state.SkipWithError("ZIP names-only result differs from fixture");
+        return;
+      }
+      benchmark::DoNotOptimize(result);
+    } else {
+      for (std::size_t at = 0; at < targets.size(); ++at) {
+        auto result = vfs::ReadSourceBytes(*targets.at(at), payload);
+        if (!result.ok() || *result != files.at(indices.at(at)).content) {
+          state.SkipWithError("ZIP target bytes differ from independent fixture");
+          return;
+        }
+        benchmark::DoNotOptimize(result);
+      }
+    }
+  }
+  state.SetItemsProcessed(
+      state.iterations() * static_cast<std::int64_t>(task == ZipTask::kNames ? members : indices.size()));
+}
+
+void RegisterZip() {
+  static constexpr auto kSources = std::to_array<SourceCase>({
+      {.name = "sequential", .kind = SourceKind::kCallerOwned},
+      {.name = "memory", .kind = SourceKind::kMemory},
+      {.name = "nested", .kind = SourceKind::kNestedMemory},
+  });
+
+  struct TaskCase {
+    std::string_view name;
+    ZipTask task;
+  };
+
+  static constexpr auto kTasks = std::to_array<TaskCase>({
+      {.name = "names-only", .task = ZipTask::kNames},
+      {.name = "first", .task = ZipTask::kFirst},
+      {.name = "last", .task = ZipTask::kLast},
+      {.name = "cycle", .task = ZipTask::kCycle},
+  });
+
+  struct Fixture {
+    std::int64_t count;
+    std::int64_t payload;
+  };
+
+  static constexpr auto kFixtures = std::to_array<Fixture>({
+      {.count = 10, .payload = 128},
+      {.count = 1'000, .payload = 128},
+      {.count = 10'000, .payload = 128},
+      {.count = 1'000, .payload = 4'096},
+      {.count = 100, .payload = 65'536},
+      {.count = 10, .payload = 1'048'576},
+  });
+  for (const auto& source : kSources) {
+    for (const bool stored : {false, true}) {
+      for (const auto& task : kTasks) {
+        const std::string name = absl::StrCat("zip/", stored ? "stored/" : "deflate/", source.name, "/", task.name);
+        // XFF_ABI_POINTER: Google Benchmark returns its borrowed registration object.
+        auto* registration = benchmark::RegisterBenchmark(name, MeasureZip, source.kind, task.task, stored);
+        for (const auto& fixture : kFixtures) {
+          registration->Args({fixture.count, fixture.payload});
+        }
+        // Stored source exceeds default conservative admission; retain a source-size fallback control.
+        if (stored && source.kind != SourceKind::kNestedMemory && task.task != ZipTask::kCycle) {
+          registration->Args({40, 1'048'576});
+        }
+        registration->Unit(benchmark::kMicrosecond)->UseRealTime()->MinTime(0.02)->MinWarmUpTime(0.01)->Repetitions(9);
+      }
+    }
+  }
+}
+
+// NOLINTEND(*-magic-numbers)
+
 void RegisterAll() {
   constexpr auto kSources = std::to_array<SourceCase>({
       {.name = "legacy", .kind = SourceKind::kLegacy},
@@ -211,6 +398,7 @@ void RegisterAll() {
     }
   }
   RegisterLarge(kSources);
+  RegisterZip();
 }
 
 }  // namespace
