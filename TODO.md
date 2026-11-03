@@ -455,9 +455,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       nested containers, short reads, errors, cursor interleaving and budget/owner lifetimes. Keep an
       explicitly incapable legacy benchmark control and separately exercise actual memory/member sources.
       [Qualification, costs and rejected rewrite](docs/benchmarks/caller-owned-streams-20261103.md) retain all four variants and duplicate-baseline controls.
-- [ ] O19d: Qualify direct filling of materialized ranges/results through caller-owned reads, with
+- [x] O19d: Qualify direct filling of materialized ranges/results through caller-owned reads, with
       exact overflow/limit probes, EOF, changing capabilities and owned fallback. Keep range memory
       reservations and replay accounting; do not silently treat a zero-length read as proof of EOF.
+      Keep [qualification, rejected fallback and slower controls](docs/benchmarks/direct-source-materialization-20261103.md).
 - [ ] O20: Qualify optional bulk metadata by backend capability with precise fallback, while
       keeping metadata-free traversal free of extra probes and extended-stat work.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte

@@ -3584,3 +3584,41 @@ all selected root/extension release tests and focused sanitizers remain part of 
 The initial nested fixture command missed `--archive-depth=2`; its warmup oracle failed before
 accepting any native row. The corrected matrix uses explicit depth two. O19b seeking/index/replay
 and admission, and O19d direct final-buffer materialization, remain open.
+
+### O19d: fill final range and materialization storage
+
+`ReadSourceRange` already reserves its bounded result, but previously allocated owned intermediate
+blocks and copied them into that result. The selected path fills uninitialized final storage and
+commits only initialized bytes. It retains the exact range reservation, offset-overflow/64 MiB
+checks, zero-range behavior and sequential `OpenAt` replay accounting. Positive short reads
+continue; failures never become EOF.
+
+`ReadSourceBytes` uses the same checked span path when supported, reusing spare capacity and SSO.
+Incapable decoders keep direct owned reads and append; the first owned block transfers into the
+empty result, avoiding another allocation/copy. Observe capability once for each read, rather than
+caching it across cursor progress. At an exact limit, including zero, request one positive byte to
+distinguish EOF from overflow. Clamp logical length to the string maximum before arithmetic and
+reject impossible counts before committing string size. String capacity can still grow beyond
+logical size; this is not an RSS or total-process-memory limit.
+
+[The cross-platform qualification](benchmarks/direct-source-materialization-20261103.md) separates
+range-only, bytes-only and combined variants, direct-source and archive kernels, native commands,
+identical-baseline confirmation, fixed-iteration tiny cases, allocation diagnostics and footprint.
+Actual memory sources and explicitly incapable legacy sources are distinct. Caller-owned storage
+removes copies and intermediate allocations; virtual dispatch, cursor creation, archive indexing
+and decoder work remain. An SSO-sized first read may add a backend read for a larger source; its
+cost is included rather than assumed free.
+
+The first generalized span fallback regressed a legacy 4 KiB materialization by about 24% on Linux.
+It is rejected. Its complete source/data populations and the separate three-variant refinement
+pilot remain in the raw archive. The selected direct owned path and first-block transfer remove
+that regression. Keep slower tiny/native controls, their absolute times and reference-repeat
+movement visible; do not pool populations or infer universal speedups from favorable large cells.
+
+Nine committed cases cover changing capability, partial/early EOF, range reservation lifetime,
+exact/zero-limit positive probes, malformed counts from both read APIs, late/probe errors, maximum
+arithmetic and owned-only small/multiple-chunk results. The archive format probe now also fills
+reserved storage directly; its expected owned-read counter changes from one to zero. Sparse holes,
+parent lifetimes, content and shared-budget tests remain. No new public flag, external dependency,
+worker, lock, metadata probe or host-I/O bypass is introduced. O19b seeking/index/replay/admission
+remains open.
