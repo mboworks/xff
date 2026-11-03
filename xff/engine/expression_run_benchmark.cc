@@ -23,9 +23,26 @@ namespace {
 
 using ::xff::engine::ExpressionExecutor;
 
+enum class ReferenceFixture { kNone, kShared, kDistinct };
+
 class RunFs final : public xff::vfs::FileSystem {
  public:
-  explicit RunFs(std::size_t count, std::size_t content_bytes = 0) : content_(content_bytes, 'x') {
+  explicit RunFs(std::size_t count, std::size_t content_bytes = 0, ReferenceFixture reference = ReferenceFixture::kNone)
+      : content_(content_bytes, 'x'), reference_fixture_(reference) {
+    if (reference != ReferenceFixture::kNone) {
+      content_.clear();
+      content_.reserve(content_bytes);
+      for (std::size_t index = 0; content_.size() < content_bytes; ++index) {
+        absl::StrAppend(&content_, "token", index % 257, " ");
+      }
+      content_.resize(content_bytes);
+      reference_ = content_;
+      for (char& byte : reference_) {
+        if (byte >= 'a' && byte <= 'z') {
+          byte = static_cast<char>(byte - 'a' + 'A');
+        }
+      }
+    }
     entries_.reserve(count);
     for (std::size_t index = 0; index < count; ++index) {
       std::string name = "file" + std::to_string(index) + (index % 2 == 0 ? ".txt" : ".cc");
@@ -49,6 +66,18 @@ class RunFs final : public xff::vfs::FileSystem {
   }
 
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override {
+    if (reference_fixture_ != ReferenceFixture::kNone && path.starts_with("peer/")) {
+      std::string bytes = reference_;
+      if (reference_fixture_ == ReferenceFixture::kDistinct) {
+        // A unique punctuation-only suffix changes bytes without changing the word-shingle set.
+        for (const unsigned char byte : path) {
+          for (unsigned bit = 0; bit < 8; ++bit) {
+            bytes.push_back((byte & (1U << bit)) != 0 ? '.' : ',');
+          }
+        }
+      }
+      return bytes;
+    }
     if (!content_.empty()) {
       return content_;
     }
@@ -71,12 +100,15 @@ class RunFs final : public xff::vfs::FileSystem {
  private:
   std::vector<xff::vfs::Entry> entries_;
   std::string content_;
+  std::string reference_;
+  ReferenceFixture reference_fixture_;
 };
 
 struct Scenario {
   std::string_view name;
   std::vector<std::string> arguments;
   std::size_t content_bytes = 0;
+  ReferenceFixture reference = ReferenceFixture::kNone;
 };
 
 struct Executor {
@@ -105,7 +137,7 @@ double FastestSeven(const std::vector<double>& times) {
 
 void Measure(benchmark::State& state, const Scenario& scenario, ExpressionExecutor executor) {
   const auto factory = xff::engine::QualifiedExpressionFactory(executor);
-  const RunFs fs(static_cast<std::size_t>(state.range(0)), scenario.content_bytes);
+  const RunFs fs(static_cast<std::size_t>(state.range(0)), scenario.content_bytes, scenario.reference);
   std::vector<std::string> arguments{
       "--exact", "--color=never", "--sort=dir", "--jobs=" + std::to_string(state.range(1)), "root",
   };
@@ -153,90 +185,225 @@ void Measure(benchmark::State& state, const Scenario& scenario, ExpressionExecut
 // XFF_ABI_POINTER: Google Benchmark's process argument interface.
 int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
-  const auto scenarios = std::to_array<Scenario>({
-      {
-          .name = "similar-equal-8000",
-          .arguments = {"-type", "f", "-similar:3:100%", "{path}"},
-          .content_bytes = 8'000,
-      },
-      {
-          .name = "similar-equal-65536",
-          .arguments = {"-type", "f", "-similar:3:100%", "{path}"},
-          .content_bytes = 65'536,
-      },
-      {
-          .name = "similar-equal",
-          .arguments = {"-type", "f", "-similar:3:100%", "{path}"},
-      },
-      {
-          .name = "similar-disjoint",
-          .arguments = {"-type", "f", "-similar:3:50%", "peer/diff-control"},
-      },
-      {
-          .name = "similar-zero",
-          .arguments = {"-type", "f", "-similar:3:0%", "peer/diff-control"},
-      },
-      {.name = "compare-template", .arguments = {"-type", "f", "-cmp", "peer/{relpath:s/file/copy/}"}},
-      {
-          .name = "diff-normalized",
-          .arguments =
+  const auto
+      scenarios =
+          std::to_array<Scenario>(
               {
-                  "--diff-ignore-matching=^(needle|absent|reference)$",
-                  "-type",
-                  "f",
-                  "-diff:none",
-                  "peer/diff-control",
-                  "-print",
-              },
-      },
-      {
-          .name = "diff-plain",
-          .arguments = {"-type", "f", "-diff", "peer/diff-control"},
-      },
-      {
-          .name = "diff-skipped",
-          .arguments = {"--diff-ignore-matching=^(needle|absent|reference)$", "-false", "-diff", "peer/diff-control"},
-      },
-      {.name = "diff-template", .arguments = {"-type", "f", "-diff", "peer/{relpath}"}},
-      {
-          .name = "hash-explicit",
-          .arguments = {"-type", "f", "-hash:md5/base64"},
-      },
-      {
-          .name = "hash-default",
-          .arguments = {"-type", "f", "-hash"},
-      },
-      {
-          .name = "hash-repeat",
-          .arguments = {"-type", "f", "-hash", "-hash", "-hash"},
-      },
-      {
-          .name = "hash-fields-repeat",
-          .arguments = {"-type", "f", "--template={hash}|{hash}|{hash:md5/base64}|{hash:sha256/base64}"},
-      },
-      {
-          .name = "hash-fields-transform",
-          .arguments = {"-type", "f", "--template={hash:s/^/SUM-/}|{hash}|{hash:md5/base64}"},
-      },
-      {
-          .name = "hasheq-explicit",
-          .arguments = {"-type", "f", "-hasheq:md5/base64", "V2pFZbcPWkwaCSXKvbWHpg=="},
-      },
-      {
-          .name = "hasheq-default",
-          .arguments = {"-type", "f", "-hasheq", "{hash}"},
-      },
-      {.name = "hash-template", .arguments = {"-type", "f", "-hasheq", "{hash}"}},
-      {.name = "first-limit", .arguments = {"-type", "f", "-first", "3", "-print"}},
-      {.name = "mime", .arguments = {"-type", "f", "-mime", "TEXT/*"}},
-      {.name = "name", .arguments = {"-name", "*.txt"}},
-      {.name = "scalar", .arguments = {"-type", "f", "-size", "+2c", "-perm", "0644", "-name", "*.txt"}},
-      {.name = "age", .arguments = {"-type", "f", "-mtime", "+2d", "-mmin", "+1", "-used", "0", "-name", "*.txt"}},
-      {.name = "regex-output", .arguments = {"-type", "f", "-rxc", "needle", "-print"}},
-      {.name = "regex-unreached", .arguments = {"-type", "f", "-name", "*.missing", "-rxc", "needle"}},
-      {.name = "summary", .arguments = {"-type", "f", "-name", "*.txt", "--summary=ext"}},
-      {.name = "scored-replay", .arguments = {"-type", "f", "-fuzzy", "file", "-top", "3", "-print"}},
-  });
+                  {
+                      .name = "similar-shared-64",
+                      .arguments = {"-type", "f", "-similar:3:100%", "peer/reference"},
+                      .content_bytes = 64,
+                      .reference = ReferenceFixture::kShared,
+                  },
+                  {
+                      .name = "similar-distinct-64",
+                      .arguments = {"-type", "f", "-similar:3:100%", "peer/{name}"},
+                      .content_bytes = 64,
+                      .reference = ReferenceFixture::kDistinct,
+                  },
+                  {
+                      .name = "similar-shared-4096",
+                      .arguments = {"-type", "f", "-similar:3:100%", "peer/reference"},
+                      .content_bytes = 4'096,
+                      .reference = ReferenceFixture::kShared,
+                  },
+                  {
+                      .name = "similar-distinct-4096",
+                      .arguments = {"-type", "f", "-similar:3:100%", "peer/{name}"},
+                      .content_bytes = 4'096,
+                      .reference = ReferenceFixture::kDistinct,
+                  },
+                  {
+                      .name = "similar-shared-16384",
+                      .arguments = {"-type", "f", "-similar:3:100%", "peer/reference"},
+                      .content_bytes = 16'384,
+                      .reference = ReferenceFixture::kShared,
+                  },
+                  {
+                      .name = "similar-distinct-16384",
+                      .arguments = {"-type", "f", "-similar:3:100%", "peer/{name}"},
+                      .content_bytes = 16'384,
+                      .reference = ReferenceFixture::kDistinct,
+                  },
+                  {
+                      .name = "similar-shared-131072",
+                      .arguments = {"-type", "f", "-similar:3:100%", "peer/reference"},
+                      .content_bytes = 131'072,
+                      .reference = ReferenceFixture::kShared,
+                  },
+                  {
+                      .name = "similar-distinct-131072",
+                      .arguments = {"-type", "f", "-similar:3:100%", "peer/{name}"},
+                      .content_bytes = 131'072,
+                      .reference = ReferenceFixture::kDistinct,
+                  },
+                  {
+                      .name = "similar-shared-w1-4096",
+                      .arguments = {"-type", "f", "-similar:1:100%", "peer/reference"},
+                      .content_bytes = 4'096,
+                      .reference = ReferenceFixture::kShared,
+                  },
+                  {
+                      .name = "similar-distinct-w1-4096",
+                      .arguments = {"-type", "f", "-similar:1:100%", "peer/{name}"},
+                      .content_bytes = 4'096,
+                      .reference = ReferenceFixture::kDistinct,
+                  },
+                  {
+                      .name = "similar-shared-w5-4096",
+                      .arguments = {"-type", "f", "-similar:5:100%", "peer/reference"},
+                      .content_bytes = 4'096,
+                      .reference = ReferenceFixture::kShared,
+                  },
+                  {
+                      .name = "similar-distinct-w5-4096",
+                      .arguments = {"-type", "f", "-similar:5:100%", "peer/{name}"},
+                      .content_bytes = 4'096,
+                      .reference = ReferenceFixture::kDistinct,
+                  },
+                  {
+                      .name = "similar-equal-8000",
+                      .arguments = {"-type", "f", "-similar:3:100%", "{path}"},
+                      .content_bytes = 8'000,
+                  },
+                  {
+                      .name = "similar-equal-65536",
+                      .arguments = {"-type", "f", "-similar:3:100%", "{path}"},
+                      .content_bytes = 65'536,
+                  },
+                  {
+                      .name = "similar-equal",
+                      .arguments = {"-type", "f", "-similar:3:100%", "{path}"},
+                  },
+                  {
+                      .name = "similar-disjoint",
+                      .arguments =
+                          {
+                              "-type",
+                              "f",
+                              "-similar:3:50%",
+                              "peer/diff-control",
+                          },
+                  },
+                  {
+                      .name = "similar-zero",
+                      .arguments =
+                          {
+                              "-type",
+                              "f",
+                              "-similar:3:0%",
+                              "peer/diff-control",
+                          },
+                  },
+                  {
+                      .name = "compare-template",
+                      .arguments = {"-type", "f", "-cmp", "peer/{relpath:s/file/copy/}"},
+                  },
+                  {
+                      .name = "diff-normalized",
+                      .arguments =
+                          {
+                              "--diff-ignore-matching=^(needle|absent|reference)$",
+                              "-type",
+                              "f",
+                              "-diff:none",
+                              "peer/diff-control",
+                              "-print",
+                          },
+                  },
+                  {
+                      .name = "diff-plain",
+                      .arguments =
+                          {
+                              "-type",
+                              "f",
+                              "-diff",
+                              "peer/diff-control",
+                          },
+                  },
+                  {
+                      .name = "diff-skipped",
+                      .arguments =
+                          {
+                              "--diff-ignore-matching=^(needle|absent|reference)$",
+                              "-false",
+                              "-diff",
+                              "peer/diff-control",
+                          },
+                  },
+                  {
+                      .name = "diff-template",
+                      .arguments = {"-type", "f", "-diff", "peer/{relpath}"},
+                  },
+                  {
+                      .name = "hash-explicit",
+                      .arguments = {"-type", "f", "-hash:md5/base64"},
+                  },
+                  {
+                      .name = "hash-default",
+                      .arguments = {"-type", "f", "-hash"},
+                  },
+                  {
+                      .name = "hash-repeat",
+                      .arguments = {"-type", "f", "-hash", "-hash", "-hash"},
+                  },
+                  {
+                      .name = "hash-fields-repeat",
+                      .arguments = {"-type", "f", "--template={hash}|{hash}|{hash:md5/base64}|{hash:sha256/base64}"},
+                  },
+                  {
+                      .name = "hash-fields-transform",
+                      .arguments = {"-type", "f", "--template={hash:s/^/SUM-/}|{hash}|{hash:md5/base64}"},
+                  },
+                  {
+                      .name = "hasheq-explicit",
+                      .arguments = {"-type", "f", "-hasheq:md5/base64", "V2pFZbcPWkwaCSXKvbWHpg=="},
+                  },
+                  {
+                      .name = "hasheq-default",
+                      .arguments = {"-type", "f", "-hasheq", "{hash}"},
+                  },
+                  {
+                      .name = "hash-template",
+                      .arguments = {"-type", "f", "-hasheq", "{hash}"},
+                  },
+                  {
+                      .name = "first-limit",
+                      .arguments = {"-type", "f", "-first", "3", "-print"},
+                  },
+                  {
+                      .name = "mime",
+                      .arguments = {"-type", "f", "-mime", "TEXT/*"},
+                  },
+                  {
+                      .name = "name",
+                      .arguments = {"-name", "*.txt"},
+                  },
+                  {
+                      .name = "scalar",
+                      .arguments = {"-type", "f", "-size", "+2c", "-perm", "0644", "-name", "*.txt"},
+                  },
+                  {
+                      .name = "age",
+                      .arguments = {"-type", "f", "-mtime", "+2d", "-mmin", "+1", "-used", "0", "-name", "*.txt"},
+                  },
+                  {
+                      .name = "regex-output",
+                      .arguments = {"-type", "f", "-rxc", "needle", "-print"},
+                  },
+                  {
+                      .name = "regex-unreached",
+                      .arguments = {"-type", "f", "-name", "*.missing", "-rxc", "needle"},
+                  },
+                  {
+                      .name = "summary",
+                      .arguments = {"-type", "f", "-name", "*.txt", "--summary=ext"},
+                  },
+                  {
+                      .name = "scored-replay",
+                      .arguments = {"-type", "f", "-fuzzy", "file", "-top", "3", "-print"},
+                  },
+              });
   for (const auto& scenario : scenarios) {
     for (const auto& executor : kExecutors) {
       benchmark::RegisterBenchmark(

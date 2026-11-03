@@ -474,6 +474,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       conditional fresh reads and rejection/error semantics. Keep
       [paired cross-platform results, allocations and controls](docs/benchmarks/similarity-prefix-view-20261103.md)
       separate from reference representation reuse.
+- [x] O21b1: Reuse literal-reference byte-word representations only after validating every fresh
+      read; keep dynamic targets unchanged and bound retained per-slot storage. Qualification and
+      rejected admission policies: `docs/benchmarks/similarity-reference-reuse-20261103.md`.
+- [ ] Qualify moving width-one owned words into their shingle set, and independently probing the
+      smaller shingle set; preserve the already-qualified representation and tiny balanced controls.
 - [ ] O21b: Reuse immutable-source/reference representations and exact candidate indexes only after
       resolving dynamic target/invalidation and retained-byte contracts; keep run-wide grouping semantics explicit.
 - [x] O22a: Qualify snapshot-owned digest observers against owning consumption, preserving cache

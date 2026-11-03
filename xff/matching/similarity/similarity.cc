@@ -4,6 +4,7 @@
 #include "xff/matching/similarity/similarity.h"
 
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -132,6 +133,66 @@ int WordShinglePercent(std::string_view lhs, std::string_view rhs, std::size_t w
   const auto left_words = NormalizeByteWords(lhs);
   const auto right_words = NormalizeByteWords(rhs);
   return ShinglePercent(ByteWordShingles(left_words, width), ByteWordShingles(right_words, width));
+}
+
+struct ByteWordShingleReference::Data {
+  std::string source;
+  std::size_t width;
+  absl::flat_hash_set<std::string> single;
+  NormalizedByteWords words;
+  absl::flat_hash_set<std::string_view> windows;
+  std::size_t storage_bytes = 0;
+
+  ~Data() = default;
+  Data(const Data&) = delete;
+  Data& operator=(const Data&) = delete;
+  Data(Data&&) = delete;
+  Data& operator=(Data&&) = delete;
+
+  Data(std::string bytes, std::size_t requested_width)
+      : source(std::move(bytes)),
+        width(requested_width),
+        single(width == 1 ? OwnedSingleByteShingles(source) : absl::flat_hash_set<std::string>{}),
+        words(width > 1 ? NormalizeByteWords(source) : NormalizedByteWords{}),
+        windows(width > 1 ? ByteWordShingles(words, width) : absl::flat_hash_set<std::string_view>{}),
+        storage_bytes(
+            sizeof(Data) + source.capacity() + 1 + words.bytes.capacity() + 1
+            + (single.capacity() * sizeof(std::string)) + (windows.capacity() * sizeof(std::string_view))) {
+    for (const auto& word : single) {
+      storage_bytes += word.capacity() + 1;
+    }
+  }
+};
+
+ByteWordShingleReference::ByteWordShingleReference() noexcept = default;
+
+ByteWordShingleReference::ByteWordShingleReference(std::string bytes, std::size_t width)
+    : data_(std::make_unique<const Data>(std::move(bytes), width)) {}
+
+ByteWordShingleReference::~ByteWordShingleReference() = default;
+ByteWordShingleReference::ByteWordShingleReference(ByteWordShingleReference&&) noexcept = default;
+ByteWordShingleReference& ByteWordShingleReference::operator=(ByteWordShingleReference&&) noexcept = default;
+
+bool ByteWordShingleReference::Matches(std::string_view bytes, std::size_t width) const {
+  return data_ && data_->width == width && data_->source == bytes;
+}
+
+int ByteWordShingleReference::Percent(std::string_view candidate) const {
+  if (!data_ || data_->width == 0) {
+    return 0;
+  }
+  if (candidate == data_->source) {
+    return 100;
+  }
+  if (data_->width == 1) {
+    return ShinglePercent(OwnedSingleByteShingles(candidate), data_->single);
+  }
+  const auto words = NormalizeByteWords(candidate);
+  return ShinglePercent(ByteWordShingles(words, data_->width), data_->windows);
+}
+
+std::size_t ByteWordShingleReference::StorageBytes() const {
+  return data_ ? data_->storage_bytes : 0;
 }
 
 }  // namespace xff::similarity

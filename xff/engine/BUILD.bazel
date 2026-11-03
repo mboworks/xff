@@ -842,10 +842,13 @@ cc_library(
 cc_test(
     name = "expression_contract_test",
     size = "small",
+    # Fresh-reference and cache-budget cases exceed 60 seconds under MSan origin tracking.
+    timeout = "moderate",
     srcs = ["expression_contract_test.cc"],
     deps = [
         ":evaluate_cc",
         ":expression_contract_cc",
+        ":expression_execution_cc",
         ":expression_program_cc",
         ":walk_cc",
         "//xff/parser:parser_cc",

@@ -3726,3 +3726,22 @@ sections in both baseline and selected binaries, on both hosts. Final full tests
 lint pass without suppressions. CLI shrinks 1,384 bytes on Linux and is unchanged on macOS.
 A committed CLI boundary case verifies reference NULs inside and just beyond the sniff window.
 O21b representation reuse, identity/invalidation, indexing and grouping remain open.
+
+### O21b1: reuse literal similarity reference representations
+
+Literal `-similar` targets can retain worker-owned byte-word shingles after a second equal fresh
+reference read. Every evaluated entry still renders its target, reads current bytes and checks
+binary/error behavior. Changed bytes invalidate the old representation; dynamic templates retain
+the original evaluator. References above 1 MiB are fully compared without caching; more than 8 MiB
+tracked retained capacity releases the cache. These bounds are neither file-size nor peak-memory
+limits, and each slot has its own retention. Stable ownership protects wider borrowed windows;
+width one retains the previously selected owning-word algorithm. No locks or new workers are added.
+
+[The qualification report](benchmarks/similarity-reference-reuse-20261103.md) retains the worker-only
+placement failure, rejected eager/all-target policies, source/slot controls, complete native and
+in-memory matrices, noisy ordinary-control confirmation, allocation diagnostics and binary sizes.
+Repeated 4 KiB native comparisons improve about 27% on macOS and 38% on Linux. Dynamic/ordinary
+Linux controls can cost about 2-2.5%; the worst native macOS cell is about +1.4%. Fresh reads are
+not removed, and candidate indexing/grouping remain open. Additional independent candidates are
+moving owned width-one words into their set and probing the smaller shingle set; qualify those
+separately rather than hiding them in reference reuse.

@@ -1324,6 +1324,70 @@ bool EvalCmp(const parser::Expr& expr, EvalContext& ctx) {
 // xff -similar[:WIDTH[:PCT%]] TARGET: compare text as unique contiguous word shingles. This is an
 // exact Jaccard calculation for one reference, not the MinHash approximation needed by a future
 // all-pairs clustering reduction.
+struct SimilarityReferenceCache {
+  std::string pending;
+  std::size_t pending_width = 0;
+  similarity::ByteWordShingleReference prepared;
+
+  int Percent(std::string_view candidate, std::string fresh, std::size_t width) {
+    if (prepared.Matches(fresh, width)) {
+      return prepared.Percent(candidate);
+    }
+    // A changed observation invalidates the old representation before any rebuild.
+    prepared = similarity::ByteWordShingleReference{};
+    if (pending_width == width && pending == fresh) {
+      prepared = similarity::ByteWordShingleReference(std::move(pending), width);
+      pending_width = 0;
+      return prepared.Percent(candidate);
+    }
+    const int percent = similarity::WordShinglePercent(candidate, fresh, width);
+    pending = std::move(fresh);
+    pending_width = width;
+    return percent;
+  }
+
+  std::size_t StorageBytes() const { return sizeof(*this) + pending.capacity() + 1 + prepared.StorageBytes(); }
+};
+
+using SimilarityReferenceOwner = std::unique_ptr<SimilarityReferenceCache>;
+
+bool EvalSimilarWithReference(
+    const parser::Expr& expr,
+    EvalContext& ctx,
+    mbo::types::OptionalRef<const fields::Template> prepared,
+    SimilarityReferenceOwner& reference) {
+  const auto lhs = ContentToSearch(ctx);
+  const std::string target = RenderTarget(expr, ctx, prepared);
+  if (!lhs.has_value() || target.empty()) {
+    return false;
+  }
+  absl::StatusOr<std::string> rhs = ctx.fs.ReadContent(target);
+  if (!rhs.ok() || absl::StrContains(std::string_view(*rhs).substr(0, content::kBinaryNulSniffBytes), '\0')) {
+    return false;
+  }
+  constexpr std::size_t kMaxReferenceBytes = 1UZ << 20U;
+  constexpr std::size_t kMaxTrackedStorageBytes = 8UZ << 20U;
+  if (expr.similarity_width == 0) {
+    return similarity::WordShinglePercent(*lhs, *rhs, expr.similarity_width) >= expr.similarity_threshold;
+  }
+  if (*lhs == *rhs) {
+    return 100 >= expr.similarity_threshold;
+  }
+  auto& owner = reference;
+  if (rhs->size() > kMaxReferenceBytes) {
+    owner.reset();
+    return similarity::WordShinglePercent(*lhs, *rhs, expr.similarity_width) >= expr.similarity_threshold;
+  }
+  if (!owner) {
+    owner = std::make_unique<SimilarityReferenceCache>();
+  }
+  const int percent = owner->Percent(*lhs, std::move(*rhs), expr.similarity_width);
+  if (owner->StorageBytes() > kMaxTrackedStorageBytes) {
+    owner.reset();
+  }
+  return percent >= expr.similarity_threshold;
+}
+
 bool EvalSimilarWithTemplate(
     const parser::Expr& expr,
     EvalContext& ctx,
@@ -2956,20 +3020,22 @@ struct TypeSpec {
   std::uint32_t mask = 0;
 };
 
-struct MatcherSlotTag {};
+struct ExecutionSlotTag {};
 
-using MatcherSlotId = mbo::types::ConstStrongId<MatcherSlotTag, std::size_t>;
+using ExecutionSlotId = mbo::types::ConstStrongId<ExecutionSlotTag, std::size_t>;
 
-struct MatcherSlot {
+struct ExecutionSlot {
   std::optional<regex::Matcher> matcher;
   bool initialized = false;
+  bool use_original = false;
+  SimilarityReferenceOwner similarity;
 
   void Initialize(const parser::Expr& expression) {
     if (initialized) {
       return;
     }
     initialized = true;
-    if (expression.matcher) {
+    if (!use_original && expression.matcher) {
       if (auto fork = expression.matcher->ForkForWorker(); fork.ok()) {
         matcher.emplace(std::move(*fork));
       }
@@ -2978,7 +3044,7 @@ struct MatcherSlot {
 };
 
 // Mutable execution state belongs exclusively to one worker. Shared plans contain no slots.
-using MatcherSlots = absl::Span<MatcherSlot>;
+using ExecutionSlots = absl::Span<ExecutionSlot>;
 
 // Calendar/word ages need the current evaluation clock/timezone, not preparation-time observations.
 struct CalendarAge {};
@@ -3009,13 +3075,20 @@ struct FieldTemplate {
   std::unique_ptr<const fields::Template> value;
 };
 
+struct SimilarityOperand {
+  std::unique_ptr<const fields::Template> value;
+  ExecutionSlotId slot{0};
+};
+
+static_assert(sizeof(SimilarityOperand) <= sizeof(MimePattern));
+
 using PreparedOperand = std::variant<
     std::monostate,
     TypeSpec,
     SizeSpec,
     NumericSpec,
     PermissionSpec,
-    MatcherSlotId,
+    ExecutionSlotId,
     SignedNumericSpec,
     TimeSpec,
     CalendarAge,
@@ -3023,10 +3096,11 @@ using PreparedOperand = std::variant<
     MimePattern,
     GlobPattern,
     FieldTemplate,
-    HashPattern>;
+    HashPattern,
+    SimilarityOperand>;
 
 static_assert(sizeof(HashPattern) <= sizeof(MimePattern));
-using PreparedEvalFn = bool (*)(const parser::Expr&, const PreparedOperand&, MatcherSlots, EvalContext&);
+using PreparedEvalFn = bool (*)(const parser::Expr&, const PreparedOperand&, ExecutionSlots, EvalContext&);
 using PrepareOperandFn = PreparedOperand (*)(const parser::Expr&);
 
 template<PreparedOperand (*Prepare)(std::string_view)>
@@ -3061,7 +3135,7 @@ PreparedOperand PrepareExpectedHashOperand(const parser::Expr& expression) {
 bool EvalPreparedHash(
     const parser::Expr& expression,
     const PreparedOperand& operand,
-    MatcherSlots,
+    ExecutionSlots,
     // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
     EvalContext& context) {
   return EvalHashWithOperand(
@@ -3074,7 +3148,7 @@ bool EvalPreparedHash(
 bool EvalPreparedExpectedHash(
     const parser::Expr& expression,
     const PreparedOperand& operand,
-    MatcherSlots,
+    ExecutionSlots,
     EvalContext& context) {
   if (!std::holds_alternative<HashPattern>(operand)) {
     return EvalHasheq(expression, context);
@@ -3151,7 +3225,7 @@ bool MatchesPreparedGlob(
 bool EvalPreparedName(
     const parser::Expr& expression,
     const PreparedOperand& operand,
-    MatcherSlots,
+    ExecutionSlots,
     // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
     EvalContext& context) {
   const int flags =
@@ -3162,7 +3236,7 @@ bool EvalPreparedName(
 bool EvalPreparedPath(
     const parser::Expr& expression,
     const PreparedOperand& operand,
-    MatcherSlots,
+    ExecutionSlots,
     // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
     EvalContext& context) {
   const int flags =
@@ -3223,7 +3297,7 @@ template<TemplateEvalFn Function>
 bool EvalPreparedTemplate(
     const parser::Expr& expression,
     const PreparedOperand& operand,
-    MatcherSlots,
+    ExecutionSlots,
     EvalContext& context) {
   if (std::holds_alternative<FieldTemplate>(operand)) {
     return Function(expression, context, *std::get<FieldTemplate>(operand).value);
@@ -3244,7 +3318,7 @@ PreparedOperand PrepareMimeOperand(std::string_view argument) {
 bool EvalPreparedFirst(
     const parser::Expr& expression,
     const PreparedOperand& operand,
-    MatcherSlots,
+    ExecutionSlots,
     // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
     EvalContext& context) {
   return std::holds_alternative<FirstLimit>(operand) && context.first_counts.has_value()
@@ -3252,7 +3326,7 @@ bool EvalPreparedFirst(
 }
 
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
-bool EvalPreparedMime(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+bool EvalPreparedMime(const parser::Expr&, const PreparedOperand& operand, ExecutionSlots, EvalContext& context) {
   if (!std::holds_alternative<MimePattern>(operand)) {
     return false;
   }
@@ -3271,7 +3345,7 @@ PreparedOperand PrepareTimeOperand(std::string_view argument) {
 }
 
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
-bool EvalPreparedUsed(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+bool EvalPreparedUsed(const parser::Expr&, const PreparedOperand& operand, ExecutionSlots, EvalContext& context) {
   if (!std::holds_alternative<SignedNumericSpec>(operand)) {
     return false;
   }
@@ -3283,7 +3357,7 @@ template<char Field>
 bool EvalPreparedTime(
     const parser::Expr& expression,
     const PreparedOperand& operand,
-    MatcherSlots,
+    ExecutionSlots,
     EvalContext& context) {
   if (expression.args.empty()) {
     return false;
@@ -3299,13 +3373,13 @@ bool EvalPreparedTime(
 }
 
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
-bool EvalPreparedType(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+bool EvalPreparedType(const parser::Expr&, const PreparedOperand& operand, ExecutionSlots, EvalContext& context) {
   return std::holds_alternative<TypeSpec>(operand)
          && MatchesTypeSpec(std::get<TypeSpec>(operand), context.visit.metadata.type);
 }
 
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
-bool EvalPreparedXtype(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+bool EvalPreparedXtype(const parser::Expr&, const PreparedOperand& operand, ExecutionSlots, EvalContext& context) {
   if (!std::holds_alternative<TypeSpec>(operand)) {
     return false;
   }
@@ -3328,31 +3402,31 @@ bool MatchesPreparedSize(const PreparedOperand& operand, std::uint64_t bytes, st
 }
 
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
-bool EvalPreparedSize(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+bool EvalPreparedSize(const parser::Expr&, const PreparedOperand& operand, ExecutionSlots, EvalContext& context) {
   return MatchesPreparedSize(operand, context.visit.metadata.size, context.block_size);
 }
 
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
-bool EvalPreparedBlocks(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+bool EvalPreparedBlocks(const parser::Expr&, const PreparedOperand& operand, ExecutionSlots, EvalContext& context) {
   return MatchesPreparedSize(operand, context.visit.metadata.blocks * 512U, context.block_size);
 }
 
 template<auto Field>
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
-bool EvalPreparedNumeric(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+bool EvalPreparedNumeric(const parser::Expr&, const PreparedOperand& operand, ExecutionSlots, EvalContext& context) {
   return std::holds_alternative<NumericSpec>(operand)
          && MatchesNumericSpec(std::get<NumericSpec>(operand), context.visit.metadata.*Field);
 }
 
 // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
-bool EvalPreparedPermission(const parser::Expr&, const PreparedOperand& operand, MatcherSlots, EvalContext& context) {
+bool EvalPreparedPermission(const parser::Expr&, const PreparedOperand& operand, ExecutionSlots, EvalContext& context) {
   return std::holds_alternative<PermissionSpec>(operand)
          && MatchesPermissionSpec(std::get<PermissionSpec>(operand), context.visit.metadata.mode);
 }
 
-MatcherRef PreparedMatcherFor(const parser::Expr& expression, const PreparedOperand& operand, MatcherSlots slots) {
+MatcherRef PreparedMatcherFor(const parser::Expr& expression, const PreparedOperand& operand, ExecutionSlots slots) {
   if (!slots.empty()) {
-    auto& local = slots.at(std::get<MatcherSlotId>(operand).value());
+    auto& local = slots.at(std::get<ExecutionSlotId>(operand).value());
     local.Initialize(expression);
     if (local.matcher.has_value()) {
       return std::cref(*local.matcher);
@@ -3364,7 +3438,7 @@ MatcherRef PreparedMatcherFor(const parser::Expr& expression, const PreparedOper
 bool EvalPreparedRegex(
     const parser::Expr& expression,
     const PreparedOperand& operand,
-    MatcherSlots slots,
+    ExecutionSlots slots,
     // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
     EvalContext& context) {
   return MatchesRegex(PreparedMatcherFor(expression, operand, slots), context.visit.path, context.captures);
@@ -3373,11 +3447,30 @@ bool EvalPreparedRegex(
 bool EvalPreparedRxc(
     const parser::Expr& expression,
     const PreparedOperand& operand,
-    MatcherSlots slots,
+    ExecutionSlots slots,
     // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
     EvalContext& context) {
   return MatchesContentRegex(PreparedMatcherFor(expression, operand, slots), context);
 }
+
+bool EvalPreparedSimilar(
+    const parser::Expr& expression,
+    const PreparedOperand& operand,
+    ExecutionSlots slots,
+    EvalContext& context) {
+  if (!std::holds_alternative<SimilarityOperand>(operand)) {
+    return EvalSimilarWithTemplate(expression, context, {});
+  }
+  const auto& pattern = std::get<SimilarityOperand>(operand);
+  const auto prepared = pattern.value ? mbo::types::OptionalRef<const fields::Template>{*pattern.value}
+                                      : mbo::types::OptionalRef<const fields::Template>{};
+  if (slots.empty()) {
+    return EvalSimilarWithTemplate(expression, context, prepared);
+  }
+  return EvalSimilarWithReference(expression, context, prepared, slots.at(pattern.slot.value()).similarity);
+}
+
+enum class WorkerSlotKind : std::uint8_t { kNone, kMatcher, kSimilarity };
 
 // Engine-side dispatch entry for one primary. A struct (not a bare function
 // pointer) so per-primary engine config can be added here as it is designed,
@@ -3392,12 +3485,12 @@ struct EvalEntry {
   EvalFn eval = nullptr;
   PrepareOperandFn prepare = nullptr;
   PreparedEvalFn prepared_eval = nullptr;
-  bool indexed_matcher = false;
+  WorkerSlotKind slot_kind = WorkerSlotKind::kNone;
   bool prepare_without_argument = false;
 };
 
 template<EvalFn Function>
-bool EvalOriginalOperand(const parser::Expr& expression, const PreparedOperand&, MatcherSlots, EvalContext& context) {
+bool EvalOriginalOperand(const parser::Expr& expression, const PreparedOperand&, ExecutionSlots, EvalContext& context) {
   return Function(expression, context);
 }
 
@@ -3405,13 +3498,13 @@ template<EvalFn Function>
 consteval EvalEntry MakeEvalEntry(
     PrepareOperandFn prepare = nullptr,
     PreparedEvalFn prepared_eval = nullptr,
-    bool indexed_matcher = false,
+    WorkerSlotKind slot_kind = WorkerSlotKind::kNone,
     bool prepare_without_argument = false) {
   return {
       .eval = Function,
       .prepare = prepare,
       .prepared_eval = prepared_eval == nullptr ? &EvalOriginalOperand<Function> : prepared_eval,
-      .indexed_matcher = indexed_matcher,
+      .slot_kind = slot_kind,
       .prepare_without_argument = prepare_without_argument,
   };
 }
@@ -3475,7 +3568,8 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
         MakeEvalEntry<&EvalGid>(&PrepareArgument<&PrepareNumericOperand>, &EvalPreparedNumeric<&vfs::Metadata::gid>)},
     DispatchPair{"-grep", MakeEvalEntry<&EvalGrep>()},
     DispatchPair{"-group", MakeEvalEntry<&EvalGroup>()},
-    DispatchPair{"-hash", MakeEvalEntry<&EvalHash>(&PrepareHashOperand, &EvalPreparedHash, false, true)},
+    DispatchPair{
+        "-hash", MakeEvalEntry<&EvalHash>(&PrepareHashOperand, &EvalPreparedHash, WorkerSlotKind::kNone, true)},
     DispatchPair{
         "-hasheq",
         MakeEvalEntry<&EvalHasheq>(&PrepareExpectedHashOperand, &EvalPreparedExpectedHash),
@@ -3487,8 +3581,8 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
         "-inum",
         MakeEvalEntry<&EvalInum>(&PrepareArgument<&PrepareNumericOperand>, &EvalPreparedNumeric<&vfs::Metadata::ino>)},
     DispatchPair{"-ipath", MakeEvalEntry<&EvalPath>(&PrepareArgument<&PrepareGlobOperand>, &EvalPreparedPath)},
-    DispatchPair{"-iregex", MakeEvalEntry<&EvalRegex>(nullptr, &EvalPreparedRegex, true)},
-    DispatchPair{"-irxc", MakeEvalEntry<&EvalRxc>(nullptr, &EvalPreparedRxc, true)},
+    DispatchPair{"-iregex", MakeEvalEntry<&EvalRegex>(nullptr, &EvalPreparedRegex, WorkerSlotKind::kMatcher)},
+    DispatchPair{"-irxc", MakeEvalEntry<&EvalRxc>(nullptr, &EvalPreparedRxc, WorkerSlotKind::kMatcher)},
     DispatchPair{"-iwholename", MakeEvalEntry<&EvalPath>(&PrepareArgument<&PrepareGlobOperand>, &EvalPreparedPath)},
     DispatchPair{"-lang", MakeEvalEntry<&EvalLang>()},
     DispatchPair{
@@ -3551,14 +3645,15 @@ constexpr auto kDispatch = mbo::container::MakeLimitedMap(
             &EvalPreparedTemplate<&EvalDiffWithTemplate>),
     },
     DispatchPair{"-readable", MakeEvalEntry<&EvalReadable>()},
-    DispatchPair{"-regex", MakeEvalEntry<&EvalRegex>(nullptr, &EvalPreparedRegex, true)},
-    DispatchPair{"-rxc", MakeEvalEntry<&EvalRxc>(nullptr, &EvalPreparedRxc, true)},
+    DispatchPair{"-regex", MakeEvalEntry<&EvalRegex>(nullptr, &EvalPreparedRegex, WorkerSlotKind::kMatcher)},
+    DispatchPair{"-rxc", MakeEvalEntry<&EvalRxc>(nullptr, &EvalPreparedRxc, WorkerSlotKind::kMatcher)},
     DispatchPair{"-samefile", MakeEvalEntry<&EvalSamefile>()},
     DispatchPair{
         "-similar",
         MakeEvalEntry<&EvalSimilar>(
             &PrepareArgument<&PrepareTemplateOperand>,
-            &EvalPreparedTemplate<&EvalSimilarWithTemplate>),
+            &EvalPreparedSimilar,
+            WorkerSlotKind::kSimilarity),
     },
     DispatchPair{"-size", MakeEvalEntry<&EvalSize>(&PrepareArgument<&PrepareSizeOperand>, &EvalPreparedSize)},
     DispatchPair{"-sparse", MakeEvalEntry<&EvalSparse>()},
@@ -3994,13 +4089,63 @@ struct PreparedExpression::Data {
   std::vector<Node> nodes;
   // Slot zero is shared by ordinary callbacks and carries no prepared operand.
   std::vector<PreparedOperand> operands = std::vector<PreparedOperand>(1);
-  std::vector<std::reference_wrapper<const parser::Expr>> matcher_sources;
+
+  struct SlotSource {
+    std::reference_wrapper<const parser::Expr> expression;
+    WorkerSlotKind kind;
+  };
+
+  std::vector<SlotSource> slot_sources;
+  std::size_t matcher_count = 0;
+
+  Node PrepareNode(const ExpressionSource& source, const EvalEntry& binding, std::size_t predicates) {
+    const auto& expr = source.expression.get();
+    Node node{
+        .expression = source.expression,
+        .evaluate = binding.prepared_eval,
+    };
+    if (binding.slot_kind == WorkerSlotKind::kMatcher
+        || (binding.prepare != nullptr && (!expr.args.empty() || binding.prepare_without_argument))) {
+      if (operands.size() == 1) {
+        operands.reserve(1 + predicates);
+      }
+      node.operand = Data::OperandId{operands.size()};
+      if (binding.slot_kind == WorkerSlotKind::kMatcher) {
+        operands.emplace_back(ExecutionSlotId{slot_sources.size()});
+        slot_sources.push_back({.expression = source.expression, .kind = binding.slot_kind});
+        ++matcher_count;
+      } else if (binding.slot_kind == WorkerSlotKind::kSimilarity) {
+        std::unique_ptr<const fields::Template> prepared;
+        if (!expr.args.empty()) {
+          auto operand = binding.prepare(expr);
+          if (std::holds_alternative<FieldTemplate>(operand)) {
+            prepared = std::move(std::get<FieldTemplate>(operand).value);
+          }
+        }
+        if (prepared && prepared->IsLiteral()) {
+          operands.emplace_back(
+              SimilarityOperand{
+                  .value = std::move(prepared),
+                  .slot = ExecutionSlotId{slot_sources.size()},
+              });
+          slot_sources.push_back({.expression = source.expression, .kind = binding.slot_kind});
+        } else {
+          // Dynamic targets keep the original callback and do not allocate reference state.
+          node.evaluate = &EvalPreparedTemplate<&EvalSimilarWithTemplate>;
+          operands.emplace_back(FieldTemplate{.value = std::move(prepared)});
+        }
+      } else {
+        operands.push_back(binding.prepare(expr));
+      }
+    }
+    return node;
+  }
 };
 
 struct PreparedExpression::Cursor {
   struct Environment {
     const Data& data;
-    MatcherSlots matchers;
+    ExecutionSlots slots;
   };
 
   // Keep the recursively copied cursor at two references. The matcher span belongs to the
@@ -4015,7 +4160,7 @@ struct PreparedExpression::Cursor {
   Cursor Right() const { return {.environment = environment, .node = environment.data.nodes.at(node.rhs.value())}; }
 
   bool Predicate(EvalContext& context) const {
-    return node.evaluate(Get(), environment.data.operands.at(node.operand.value()), environment.matchers, context);
+    return node.evaluate(Get(), environment.data.operands.at(node.operand.value()), environment.slots, context);
   }
 
   bool FuzzyOnly() const { return node.fuzzy_only; }
@@ -4036,28 +4181,11 @@ absl::StatusOr<PreparedExpression> PreparedExpression::Prepare(const parser::Exp
   });
   const auto matcher_count = std::ranges::count_if(
       sources, [](const ExpressionSource& source) { return source.expression.get().matcher != nullptr; });
-  data->matcher_sources.reserve(static_cast<std::size_t>(matcher_count));
+  data->slot_sources.reserve(static_cast<std::size_t>(matcher_count));
   for (const auto& source : sources) {
     const auto& expr = source.expression.get();
     MBO_ASSIGN_OR_RETURN(const auto binding, ResolveEvaluation(expr));
-    Data::Node node{
-        .expression = source.expression,
-        .evaluate = binding.prepared_eval,
-    };
-    if (binding.indexed_matcher
-        || (binding.prepare != nullptr && (!expr.args.empty() || binding.prepare_without_argument))) {
-      if (data->operands.size() == 1) {
-        data->operands.reserve(1 + static_cast<std::size_t>(predicates));
-      }
-      node.operand = Data::OperandId{data->operands.size()};
-      if (binding.indexed_matcher) {
-        data->operands.emplace_back(MatcherSlotId{data->matcher_sources.size()});
-        data->matcher_sources.push_back(source.expression);
-      } else {
-        data->operands.push_back(binding.prepare(expr));
-      }
-    }
-    data->nodes.push_back(node);
+    data->nodes.push_back(data->PrepareNode(source, binding, static_cast<std::size_t>(predicates)));
   }
   std::vector<std::size_t> sizes(data->nodes.size(), 1);
   for (std::size_t offset = data->nodes.size(); offset > 0; --offset) {
@@ -4105,7 +4233,11 @@ std::size_t PreparedExpression::OperandCount() const {
 }
 
 std::size_t PreparedExpression::MatcherCount() const {
-  return data_->matcher_sources.size();
+  return data_->matcher_count;
+}
+
+bool PreparedExpression::RequiresCoordinatorState() const {
+  return data_->slot_sources.size() != data_->matcher_count;
 }
 
 std::size_t PreparedExpression::StorageBytes() const {
@@ -4115,6 +4247,11 @@ std::size_t PreparedExpression::StorageBytes() const {
       text_bytes += std::get<MimePattern>(operand).bytes.capacity();
     } else if (std::holds_alternative<FieldTemplate>(operand)) {
       text_bytes += std::get<FieldTemplate>(operand).value->StorageBytes();
+    } else if (std::holds_alternative<SimilarityOperand>(operand)) {
+      const auto& pattern = std::get<SimilarityOperand>(operand);
+      if (pattern.value) {
+        text_bytes += pattern.value->StorageBytes();
+      }
     } else if (std::holds_alternative<HashPattern>(operand)) {
       const auto& pattern = std::get<HashPattern>(operand);
       if (pattern.expected) {
@@ -4124,7 +4261,7 @@ std::size_t PreparedExpression::StorageBytes() const {
   }
   return sizeof(*this) + sizeof(Data) + (data_->nodes.capacity() * sizeof(Data::Node))
          + (data_->operands.capacity() * sizeof(PreparedOperand))
-         + (data_->matcher_sources.capacity() * sizeof(std::reference_wrapper<const parser::Expr>)) + text_bytes;
+         + (data_->slot_sources.capacity() * sizeof(Data::SlotSource)) + text_bytes;
 }
 
 struct PreparedExpression::Worker::State {
@@ -4139,7 +4276,7 @@ struct PreparedExpression::Worker::State {
   };
 
   Cursor::Environment environment;
-  std::vector<MatcherSlot> matchers;
+  std::vector<ExecutionSlot> slots;
   // Only contexts requiring score/replay state reserve this scratch, once per worker. A
   // suspended entry retains the existing sparse memo, never a copy of these worker frames.
   std::vector<Frame> frames;
@@ -4299,16 +4436,24 @@ PreparedExpression::Worker::~Worker() = default;
 PreparedExpression::Worker PreparedExpression::MakeWorker(MatcherInitialization initialization) const {
   auto state = std::make_unique<Worker::State>(Worker::State{
       .environment = {.data = *data_},
-      .matchers = std::vector<MatcherSlot>(data_->matcher_sources.size()),
+      .slots = std::vector<ExecutionSlot>(data_->slot_sources.size()),
   });
-  if (initialization == MatcherInitialization::kEager) {
-    for (std::size_t index = 0; index < state->matchers.size(); ++index) {
-      state->matchers.at(index).Initialize(data_->matcher_sources.at(index).get());
+  if (initialization != MatcherInitialization::kOnDemand) {
+    for (std::size_t index = 0; index < state->slots.size(); ++index) {
+      const auto& source = data_->slot_sources.at(index);
+      if (source.kind != WorkerSlotKind::kMatcher) {
+        continue;
+      }
+      if (initialization == MatcherInitialization::kOriginal) {
+        state->slots.at(index).use_original = true;
+      } else {
+        state->slots.at(index).Initialize(source.expression.get());
+      }
     }
   }
   // Unused slots allocate no backend. Reached slots remember even a failed or absent fork,
   // falling back to the original immutable matcher without retrying on subsequent entries.
-  state->environment.matchers = MatcherSlots(state->matchers);
+  state->environment.slots = ExecutionSlots(state->slots);
   return Worker(std::move(state));
 }
 
@@ -4337,16 +4482,22 @@ EvaluationResult PreparedExpression::Worker::EvaluateIterative(EvalContext& cont
 }
 
 std::size_t PreparedExpression::Worker::MatcherCount() const {
-  return state_->matchers.size();
+  return state_->environment.data.matcher_count;
 }
 
 std::size_t PreparedExpression::Worker::InitializedMatcherCount() const {
-  return static_cast<std::size_t>(std::ranges::count(state_->matchers, true, &MatcherSlot::initialized));
+  return static_cast<std::size_t>(std::ranges::count(state_->slots, true, &ExecutionSlot::initialized));
 }
 
 std::size_t PreparedExpression::Worker::StorageBytes() const {
-  return sizeof(*this) + sizeof(State) + (state_->matchers.capacity() * sizeof(MatcherSlot))
-         + (state_->frames.capacity() * sizeof(State::Frame));
+  std::size_t reference_bytes = 0;
+  for (const auto& slot : state_->slots) {
+    if (slot.similarity) {
+      reference_bytes += slot.similarity->StorageBytes();
+    }
+  }
+  return sizeof(*this) + sizeof(State) + (state_->slots.capacity() * sizeof(ExecutionSlot))
+         + (state_->frames.capacity() * sizeof(State::Frame)) + reference_bytes;
 }
 
 absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression) {

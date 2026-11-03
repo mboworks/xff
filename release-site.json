@@ -85,7 +85,8 @@
     "docs/benchmarks/hash-field-binding-tag-20261103.md": "docs/benchmarks/hash-field-binding-tag-20261103.html",
     "docs/benchmarks/forward-cursor-skipping-20261103.md": "docs/benchmarks/forward-cursor-skipping-20261103.html",
     "docs/benchmarks/raw-record-reuse-20261103.md": "docs/benchmarks/raw-record-reuse-20261103.html",
-    "docs/benchmarks/similarity-prefix-view-20261103.md": "docs/benchmarks/similarity-prefix-view-20261103.html"
+    "docs/benchmarks/similarity-prefix-view-20261103.md": "docs/benchmarks/similarity-prefix-view-20261103.html",
+    "docs/benchmarks/similarity-reference-reuse-20261103.md": "docs/benchmarks/similarity-reference-reuse-20261103.html"
   },
   "generated_html": {
     "XFF.md": {

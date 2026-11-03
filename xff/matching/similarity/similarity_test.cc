@@ -21,6 +21,9 @@ namespace xff::similarity {
 namespace {
 
 using ::testing::Eq;
+using ::testing::Ge;
+using ::testing::IsFalse;
+using ::testing::IsTrue;
 
 // Independent, deliberately allocating reference for the existing byte-word contract.
 std::set<std::string> ReferenceByteShingles(std::string_view text, std::size_t width) {
@@ -75,6 +78,58 @@ int ReferenceBytePercent(std::string_view left, std::string_view right, std::siz
 }
 
 struct SimilarityTest : ::testing::Test {};
+
+TEST_F(SimilarityTest, ReusableReferenceMatchesIndependentByteWordOracle) {
+  static constexpr auto kTexts = std::to_array<std::string_view>({
+      "",
+      "alpha",
+      "Alpha beta",
+      "alpha BETA! gamma delta",
+      "other gamma delta",
+      "one one two two three",
+      " , ! ",
+  });
+  static constexpr auto kWidths = std::to_array<std::size_t>({0, 1, 3, 5, 100});
+  for (const auto width : kWidths) {
+    for (const auto right : kTexts) {
+      const ByteWordShingleReference reference(std::string(right), width);
+      EXPECT_THAT(reference.Matches(right, width), IsTrue());
+      EXPECT_THAT(reference.Matches(right, width + 1), IsFalse());
+      EXPECT_THAT(reference.StorageBytes(), Ge(right.size()));
+      for (const auto left : kTexts) {
+        SCOPED_TRACE(left);
+        SCOPED_TRACE(right);
+        SCOPED_TRACE(width);
+        EXPECT_THAT(reference.Percent(left), Eq(ReferenceBytePercent(left, right, width)));
+      }
+    }
+  }
+}
+
+TEST_F(SimilarityTest, ReusableReferenceKeepsShortAndLongBackingStorageAcrossOwnerMoves) {
+  std::vector<ByteWordShingleReference> references;
+  static constexpr auto kReferences = std::to_array<std::string_view>({
+      "a b c",
+      "one two three four five six seven eight nine ten eleven twelve",
+  });
+  references.reserve(kReferences.size());
+  for (const auto text : kReferences) {
+    references.emplace_back(std::string(text), 3);
+  }
+  for (std::size_t index = 0; index < kReferences.size(); ++index) {
+    const std::string_view text = kReferences.at(index);
+    ByteWordShingleReference moved(std::move(references.at(index)));
+    EXPECT_THAT(moved.Matches(text, 3), IsTrue());
+    EXPECT_THAT(moved.Percent(text), Eq(100));
+    EXPECT_THAT(moved.Percent("a b other"), Eq(ReferenceBytePercent("a b other", text, 3)));
+    EXPECT_THAT(references.at(index).Matches(text, 3), IsFalse());
+    EXPECT_THAT(references.at(index).StorageBytes(), Eq(0));
+    references.at(index) = std::move(moved);
+    EXPECT_THAT(references.at(index).Percent(text), Eq(100));
+    // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move): verify the explicit moved-from contract.
+    EXPECT_THAT(moved.Percent(text), Eq(0));
+  }
+}
 
 TEST_F(SimilarityTest, IdenticalWordShinglesScoreOneHundred) {
   EXPECT_THAT(WordShinglePercent("one two three four five six", "one two three four five six", 5), Eq(100));
@@ -152,6 +207,9 @@ TEST_F(SimilarityTest, SeededOpaqueByteInputsMatchTheIndependentReference) {
       SCOPED_TRACE(width);
       const auto expected = ReferenceBytePercent(left, right, width);
       EXPECT_THAT(WordShinglePercent(left, right, width), Eq(expected));
+      const ByteWordShingleReference reference(right, width);
+      EXPECT_THAT(reference.Percent(left), Eq(expected));
+      EXPECT_THAT(reference.Matches(right, width), IsTrue());
       EXPECT_THAT(WordShinglePercent(right, left, width), Eq(expected));
       EXPECT_THAT(WordShinglePercent(left, left, width), Eq(width == 0 ? 0 : 100));
     }

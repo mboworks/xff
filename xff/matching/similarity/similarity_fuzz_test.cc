@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <span>
+#include <string>
 #include <string_view>
 
 #include "xff/matching/similarity/similarity.h"
@@ -34,7 +35,9 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
   // Deliberately reverse the arguments: symmetry is one of the public score contracts under test.
   // NOLINTNEXTLINE(readability-suspicious-call-argument)
   const int reverse = xff::similarity::WordShinglePercent(rhs, lhs, width);
-  if (forward < 0 || forward > 100 || forward != reverse) {
+  const xff::similarity::ByteWordShingleReference reference(std::string(rhs), width);
+  if (forward < 0 || forward > 100 || forward != reverse || reference.Percent(lhs) != forward
+      || !reference.Matches(rhs, width)) {
     std::abort();
   }
   if (width == 0) {
