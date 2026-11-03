@@ -26,6 +26,7 @@
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/engine/evaluate.h"
+#include "xff/engine/expression_execution.h"
 #include "xff/engine/expression_program.h"
 #include "xff/engine/walk.h"
 #include "xff/parser/parser.h"
@@ -42,6 +43,7 @@ using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Ge;
+using ::testing::Gt;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
@@ -55,6 +57,7 @@ class RecordingExpressionFs final : public vfs::FileSystem {
   mutable std::vector<std::string> events;
   std::optional<vfs::Metadata> target_metadata;
   std::optional<std::string> failed_content;
+  std::map<std::string, std::string> content_overrides;
 
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override {
     events.push_back("readdir " + std::string(path));
@@ -92,6 +95,9 @@ class RecordingExpressionFs final : public vfs::FileSystem {
     events.push_back("read " + std::string(path));
     if (failed_content == path) {
       return absl::PermissionDeniedError("recorded content failure");
+    }
+    if (const auto found = content_overrides.find(std::string(path)); found != content_overrides.end()) {
+      return found->second;
     }
     return std::string("needle\n");
   }
@@ -1050,6 +1056,285 @@ TEST_F(PreparedOperandTest, MimePatternSurvivesMovesAndKeepsCaseAndGlobSemantics
     EXPECT_THAT(moved.StorageBytes(), Eq(storage));
   }
   EXPECT_THAT(fs.events, IsEmpty());
+}
+
+TEST_F(PreparedOperandTest, SimilarityReferencesPreserveFreshReadsAndWorkerIsolationAcrossChanges) {
+  static constexpr auto kWidths = std::to_array<std::size_t>({1, 3, 5});
+  for (const auto width : kWidths) {
+    SCOPED_TRACE(width);
+    for (const bool dynamic_target : {false, true}) {
+      SCOPED_TRACE(dynamic_target);
+      const auto repeat = [](std::string_view text, std::size_t count) {
+        std::string result;
+        result.reserve(text.size() * count);
+        for (std::size_t index = 0; index < count; ++index) {
+          result.append(text);
+        }
+        return result;
+      };
+      const std::string candidate = repeat("alpha beta gamma delta\n", 8);
+      const std::string matching = repeat("ALPHA BETA GAMMA DELTA\n", 8);
+      const std::string different = repeat("other unrelated words\n", 8);
+      std::string binary = matching;
+      binary.front() = '\0';
+      // Cross the byte admission boundary without millions of duplicate word insertions.
+      const std::string oversized = matching + std::string(1UZ << 20U, ' ');
+      const auto descriptor = registry::Lookup("-similar");
+      ASSERT_THAT(descriptor, Optional(_));
+      const parser::Expr expression{
+          .kind = parser::Expr::Kind::kPredicate,
+          .descriptor = descriptor,
+          .args = {dynamic_target ? "{def.PEER}" : "peer-one"},
+          .similarity_width = width,
+          .similarity_threshold = 100,
+      };
+      ASSERT_OK_AND_ASSIGN(const auto prepared, PreparedExpression::Prepare(expression));
+      EXPECT_THAT(prepared.RequiresCoordinatorState(), Eq(!dynamic_target));
+      ASSERT_OK_AND_ASSIGN(const auto execution, PrepareExpressionExecution(expression));
+      const auto coordinator = execution.MakeWorker(ExpressionWorkerRole::kCoordinator);
+      const auto worker = prepared.MakeWorker(PreparedExpression::MatcherInitialization::kEager);
+      const auto other_worker = prepared.MakeWorker();
+      const auto cold_storage = worker.StorageBytes();
+      EXPECT_THAT(worker.MatcherCount(), Eq(0));
+      EXPECT_THAT(worker.InitializedMatcherCount(), Eq(0));
+      fs.content_overrides["file"] = candidate;
+      std::map<std::string, std::string> defines;
+      EvalContext context{
+          .visit = visit,
+          .emit = IgnoreOutput,
+          .fs = fs,
+          .now = absl::UnixEpoch(),
+          .tz = absl::UTCTimeZone(),
+          .control = control,
+          .defines = defines,
+      };
+
+      struct Case {
+        std::string_view label;
+        std::string_view peer;
+        std::string bytes;
+        bool failure;
+        bool match;
+        bool retained;
+      };
+
+      const auto cases = std::to_array<Case>({
+          {
+              .label = "first reference",
+              .peer = "peer-one",
+              .bytes = matching,
+              .failure = false,
+              .match = true,
+              .retained = true,
+          },
+          {
+              .label = "repeat",
+              .peer = "peer-one",
+              .bytes = matching,
+              .failure = false,
+              .match = true,
+              .retained = true,
+          },
+          {
+              .label = "same bytes at another path",
+              .peer = "peer-two",
+              .bytes = matching,
+              .failure = false,
+              .match = true,
+              .retained = true,
+          },
+          {
+              .label = "changed bytes",
+              .peer = "peer-two",
+              .bytes = different,
+              .failure = false,
+              .match = false,
+              .retained = true,
+          },
+          {
+              .label = "read failure",
+              .peer = "peer-two",
+              .bytes = different,
+              .failure = true,
+              .match = false,
+              .retained = true,
+          },
+          {
+              .label = "read recovery",
+              .peer = "peer-two",
+              .bytes = matching,
+              .failure = false,
+              .match = true,
+              .retained = true,
+          },
+          {
+              .label = "binary reference",
+              .peer = "peer-two",
+              .bytes = binary,
+              .failure = false,
+              .match = false,
+              .retained = true,
+          },
+          {
+              .label = "oversized fallback",
+              .peer = "peer-two",
+              .bytes = oversized,
+              .failure = false,
+              .match = true,
+              .retained = false,
+          },
+          {
+              .label = "small reference after fallback",
+              .peer = "peer-two",
+              .bytes = matching,
+              .failure = false,
+              .match = true,
+              .retained = true,
+          },
+          {
+              .label = "empty target",
+              .peer = "",
+              .bytes = "",
+              .failure = false,
+              .match = false,
+              .retained = true,
+          },
+      });
+      for (const auto& test_case : cases) {
+        SCOPED_TRACE(test_case.label);
+        if (!dynamic_target && test_case.peer.empty()) {
+          continue;
+        }
+        const std::string_view peer = dynamic_target ? test_case.peer : "peer-one";
+        defines["PEER"] = peer;
+        fs.content_overrides[std::string(peer)] = test_case.bytes;
+        fs.failed_content = test_case.failure ? std::optional<std::string>(peer) : std::nullopt;
+        context.content.Invalidate();
+        fs.events.clear();
+        const auto expected = EvaluateDeferred(expression, context);
+        EXPECT_THAT(expected.matched, Eq(test_case.match));
+        const auto expected_events = std::exchange(fs.events, {});
+        context.content.Invalidate();
+        const auto actual = worker.Evaluate(context);
+        EXPECT_THAT(actual.matched, Eq(test_case.match));
+        EXPECT_THAT(fs.events, Eq(expected_events));
+        ASSERT_THAT(fs.events, SizeIs(peer.empty() ? 1 : 2));
+        EXPECT_THAT(fs.events.front(), EqualsText("read file"));
+        if (!dynamic_target && test_case.retained) {
+          EXPECT_THAT(worker.StorageBytes(), Gt(cold_storage));
+        } else {
+          EXPECT_THAT(worker.StorageBytes(), Eq(cold_storage));
+        }
+        EXPECT_THAT(other_worker.StorageBytes(), Eq(cold_storage));
+        EXPECT_THAT(worker.InitializedMatcherCount(), Eq(0));
+        context.content.Invalidate();
+        fs.events.clear();
+        EXPECT_THAT(coordinator.Evaluate(context).matched, Eq(test_case.match));
+        EXPECT_THAT(fs.events, Eq(expected_events));
+      }
+    }
+  }
+}
+
+TEST_F(PreparedOperandTest, SimilarityCacheAdmissionDoesNotLimitReferenceFiles) {
+  constexpr std::size_t kInputLimit = 1UZ << 20U;
+  const auto descriptor = registry::Lookup("-similar");
+  ASSERT_THAT(descriptor, Optional(_));
+  const parser::Expr expression{
+      .kind = parser::Expr::Kind::kPredicate,
+      .descriptor = descriptor,
+      .args = {"reference"},
+      .similarity_width = 1,
+      .similarity_threshold = 100,
+  };
+  ASSERT_OK_AND_ASSIGN(const auto prepared, PreparedExpression::Prepare(expression));
+  const auto worker = prepared.MakeWorker();
+  const auto cold_storage = worker.StorageBytes();
+  fs.content_overrides["file"] = "a";
+  EvalContext context{
+      .visit = visit,
+      .emit = IgnoreOutput,
+      .fs = fs,
+      .now = absl::UnixEpoch(),
+      .tz = absl::UTCTimeZone(),
+      .control = control,
+  };
+  std::string reference(kInputLimit, ' ');
+  reference.front() = 'A';
+  const auto check = [&](std::string_view bytes, bool retained) {
+    fs.content_overrides["reference"] = bytes;
+    for (const auto round : {0, 1, 2}) {
+      SCOPED_TRACE(round);
+      context.content.Invalidate();
+      fs.events.clear();
+      const auto expected = EvaluateDeferred(expression, context);
+      EXPECT_THAT(expected.matched, IsTrue());
+      const auto events = std::exchange(fs.events, {});
+      context.content.Invalidate();
+      EXPECT_THAT(worker.Evaluate(context).matched, Eq(expected.matched));
+      EXPECT_THAT(fs.events, Eq(events));
+      if (retained) {
+        EXPECT_THAT(worker.StorageBytes(), Gt(cold_storage));
+      } else {
+        EXPECT_THAT(worker.StorageBytes(), Eq(cold_storage));
+      }
+    }
+  };
+  check(reference, true);
+  reference.push_back(' ');
+  check(reference, false);
+  check("A", true);
+}
+
+TEST_F(PreparedOperandTest, SimilarityCacheReleasesOversizedShingleRepresentation) {
+  const auto descriptor = registry::Lookup("-similar");
+  ASSERT_THAT(descriptor, Optional(_));
+  const parser::Expr expression{
+      .kind = parser::Expr::Kind::kPredicate,
+      .descriptor = descriptor,
+      .args = {"reference"},
+      .similarity_width = 1,
+      .similarity_threshold = 100,
+  };
+  ASSERT_OK_AND_ASSIGN(const auto prepared, PreparedExpression::Prepare(expression));
+  const auto worker = prepared.MakeWorker();
+  const auto cold_storage = worker.StorageBytes();
+  std::string reference;
+  reference.reserve(1'000'000);
+  for (std::size_t index = 0; index < 200'000; ++index) {
+    std::size_t code = index;
+    for (const auto digit : {0, 1, 2, 3}) {
+      (void)digit;
+      reference.push_back(static_cast<char>('A' + (code % 26)));
+      code /= 26;
+    }
+    reference.push_back(' ');
+  }
+  fs.content_overrides["file"] = "aaaa";
+  fs.content_overrides["reference"] = reference;
+  EvalContext context{
+      .visit = visit,
+      .emit = IgnoreOutput,
+      .fs = fs,
+      .now = absl::UnixEpoch(),
+      .tz = absl::UTCTimeZone(),
+      .control = control,
+  };
+  for (const auto round : {0, 1}) {
+    SCOPED_TRACE(round);
+    context.content.Invalidate();
+    fs.events.clear();
+    const auto expected = EvaluateDeferred(expression, context);
+    const auto events = std::exchange(fs.events, {});
+    context.content.Invalidate();
+    EXPECT_THAT(worker.Evaluate(context).matched, Eq(expected.matched));
+    EXPECT_THAT(fs.events, Eq(events));
+    if (round % 2 == 0) {
+      EXPECT_THAT(worker.StorageBytes(), Gt(cold_storage));
+    } else {
+      EXPECT_THAT(worker.StorageBytes(), Eq(cold_storage));
+    }
+  }
 }
 
 TEST_F(PreparedOperandTest, FieldTemplatesKeepDynamicValuesObservationsAndMovedOwnership) {

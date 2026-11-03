@@ -138,6 +138,9 @@ class Template {
   // context). False once a terminal reducer (`;join(...)`) collapses it to a scalar.
   bool IsExtraction() const;
 
+  // True when compiled segments contain literal text only, with no per-entry field evaluation.
+  bool IsLiteral() const;
+
   // True when ANY segment is an UNREDUCED m// extraction (a value stream, including mid-template). A
   // scalar-output context (-printf / --format / --template / --columns / -exec) uses this to reject a
   // list-valued template up front. An m// pipeline that ends in a reducer (`;join(...)`) is scalar-

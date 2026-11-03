@@ -1407,6 +1407,10 @@ std::optional<std::vector<std::string>> Template::AsExtraction(const RenderConte
   return segment.transform->Extract(value.view());
 }
 
+bool Template::IsLiteral() const {
+  return std::ranges::none_of(segments_, &Segment::IsField);
+}
+
 bool Template::IsExtraction() const {
   return segments_.size() == 1 && segments_.front().IsField()
          && segments_.front().post == Segment::PostProcess::kExtract

@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse literal similarity reference shingles after validating fresh bytes, preserving dynamic targets and large-file comparison.
+
 - Scan similarity reference prefixes without copying them, preserving binary detection and fresh reference reads.
 
 - Reuse coordinator-owned storage for implicit raw and NUL path listings while preserving exact bytes and queued output ownership.

@@ -52,10 +52,8 @@ class ClangTidyRunnerTest(unittest.TestCase):
                     #!/usr/bin/env python3
                     import pathlib
                     import sys
-                    import time
 
                     path = pathlib.Path(sys.argv[-1]).name
-                    time.sleep(0.05 if path == "slow.cc" else 0.01)
                     if path == "bad.cc":
                         print("bad.cc:1:1: error: finding")
                         raise SystemExit(1)
@@ -83,7 +81,7 @@ class ClangTidyRunnerTest(unittest.TestCase):
             rendered = stream.getvalue()
             self.assertEqual(status, 1)
             self.assertIn("clang-tidy: 3 translation unit(s), 2 worker(s)", rendered)
-            self.assertIn("[1/3  33.3%] PASS good.cc", rendered)
+            self.assertIn("PASS good.cc", rendered)
             self.assertIn("PASS slow.cc", rendered)
             self.assertIn("[3/3 100.0%]", rendered)
             self.assertIn("FAIL bad.cc", rendered)
@@ -91,6 +89,34 @@ class ClangTidyRunnerTest(unittest.TestCase):
             self.assertIn("bad.cc:1:1: error: finding", output.read_text(encoding="utf-8"))
             self.assertNotIn("routine successful output", rendered)
             self.assertIn("routine successful output", output.read_text(encoding="utf-8"))
+
+    def test_progress_follows_completion_order_not_submission_order(self):
+        tasks = [clang_tidy_runner.Task(name) for name in ("slow.cc", "good.cc", "last.cc")]
+        futures = [mock.Mock() for _ in tasks]
+        for future, task in zip(futures, tasks):
+            future.result.return_value = clang_tidy_runner.Result(task, 0, "", 0.0)
+        stream = io.StringIO()
+        with tempfile.TemporaryDirectory() as directory, mock.patch.object(
+            clang_tidy_runner.concurrent.futures, "ThreadPoolExecutor"
+        ) as executor, mock.patch.object(
+            clang_tidy_runner.concurrent.futures, "as_completed",
+            return_value=(futures[1], futures[2], futures[0]),
+        ) as completed:
+            executor.return_value.__enter__.return_value.submit.side_effect = futures
+            status = clang_tidy_runner.run_all(
+                tasks, "unused-tool", ".", 2, str(pathlib.Path(directory) / "diagnostics.txt"), stream
+            )
+
+        self.assertEqual(status, 0)
+        executor.assert_called_once_with(max_workers=2)
+        completed.assert_called_once()
+        self.assertEqual(list(completed.call_args.args[0]), futures)
+        progress = [line for line in stream.getvalue().splitlines() if line.startswith("[")]
+        self.assertEqual(progress, [
+            "[1/3  33.3%] PASS good.cc (0.0s)",
+            "[2/3  66.7%] PASS last.cc (0.0s)",
+            "[3/3 100.0%] PASS slow.cc (0.0s)",
+        ])
 
     def test_registry_terminates_active_children(self):
         registry = clang_tidy_runner.ProcessRegistry()

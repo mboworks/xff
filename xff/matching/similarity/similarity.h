@@ -5,6 +5,8 @@
 #define XFF_MATCHING_SIMILARITY_SIMILARITY_H_
 
 #include <cstddef>
+#include <memory>
+#include <string>
 #include <string_view>
 
 namespace xff::similarity {
@@ -15,6 +17,28 @@ namespace xff::similarity {
 // shorter than `width` contributes one shingle containing all its words, so short files remain meaningfully comparable.
 // Width zero is invalid and returns 0.
 [[nodiscard]] int WordShinglePercent(std::string_view lhs, std::string_view rhs, std::size_t width);
+
+// A stable immutable byte-word representation. Moving the owner preserves its backing storage;
+// copying is deliberately unavailable. This is not a filesystem cache or Unicode decoding.
+class ByteWordShingleReference final {
+ public:
+  ByteWordShingleReference() noexcept;
+  ByteWordShingleReference(std::string bytes, std::size_t width);
+  ~ByteWordShingleReference();
+  ByteWordShingleReference(ByteWordShingleReference&&) noexcept;
+  ByteWordShingleReference& operator=(ByteWordShingleReference&&) noexcept;
+  ByteWordShingleReference(const ByteWordShingleReference&) = delete;
+  ByteWordShingleReference& operator=(const ByteWordShingleReference&) = delete;
+
+  [[nodiscard]] bool Matches(std::string_view bytes, std::size_t width) const;
+  [[nodiscard]] int Percent(std::string_view candidate) const;
+  // Tracked capacity only: excludes allocator metadata and hash-table control bytes, not RSS.
+  [[nodiscard]] std::size_t StorageBytes() const;
+
+ private:
+  struct Data;
+  std::unique_ptr<const Data> data_;
+};
 
 }  // namespace xff::similarity
 

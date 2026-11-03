@@ -18,6 +18,15 @@ struct CoordinatorState final : ExpressionExecution::Worker::State {
   const PreparedExpression& expression;
 };
 
+struct ReferenceCoordinatorState final : ExpressionExecution::Worker::State {
+  explicit ReferenceCoordinatorState(const PreparedExpression& prepared)
+      : worker(prepared.MakeWorker(PreparedExpression::MatcherInitialization::kOriginal)) {}
+
+  EvaluationResult Evaluate(EvalContext& context) const override { return worker.Evaluate(context); }
+
+  PreparedExpression::Worker worker;
+};
+
 struct ConcurrentState final : ExpressionExecution::Worker::State {
   explicit ConcurrentState(const PreparedExpression& prepared) : worker(prepared.MakeWorker()) {}
 
@@ -31,6 +40,9 @@ struct PreparedPlan final : ExpressionExecution::Plan {
 
   ExpressionExecution::Worker MakeWorker(ExpressionWorkerRole role) const override {
     if (role == ExpressionWorkerRole::kCoordinator) {
+      if (expression.RequiresCoordinatorState()) {
+        return ExpressionExecution::Worker(std::make_unique<ReferenceCoordinatorState>(expression));
+      }
       return ExpressionExecution::Worker(std::make_unique<CoordinatorState>(expression));
     }
     return ExpressionExecution::Worker(std::make_unique<ConcurrentState>(expression));

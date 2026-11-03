@@ -375,9 +375,13 @@ class PreparedExpression final {
 
  public:
   // Eager construction remains available for qualification against on-demand worker slots.
-  enum class MatcherInitialization { kOnDemand, kEager };
+  enum class MatcherInitialization {
+    kOnDemand,
+    kEager,
+    kOriginal,  // Coordinator use: resolve original matchers without backend forks.
+  };
 
-  // Owns one worker's mutable matcher state. The prepared expression (including across a move)
+  // Owns one worker's mutable execution state. The prepared expression (including across a move)
   // and its source AST must outlive this worker. Do not evaluate one worker concurrently.
   class Worker final {
    public:
@@ -397,7 +401,8 @@ class PreparedExpression final {
     [[nodiscard]] std::size_t MatcherCount() const;
     // Includes absent/failed forks: each slot is resolved at most once per worker.
     [[nodiscard]] std::size_t InitializedMatcherCount() const;
-    // Slot capacity only; regex backend allocations and the shared expression are excluded.
+    // Slot and reference-representation tracked capacity; regex backend allocations and
+    // the shared expression are excluded. This is not allocator/RSS accounting.
     [[nodiscard]] std::size_t StorageBytes() const;
 
    private:
@@ -419,6 +424,7 @@ class PreparedExpression final {
   [[nodiscard]] std::size_t NodeCount() const;
   [[nodiscard]] std::size_t OperandCount() const;
   [[nodiscard]] std::size_t MatcherCount() const;
+  [[nodiscard]] bool RequiresCoordinatorState() const;
   // Object and owned buffer capacities, excluding allocator headers and the shared source AST.
   // Field-template capacity budgets are conservative; their regex backend/status payloads
   // and shared-ownership bookkeeping are excluded, like ordinary matcher backends.

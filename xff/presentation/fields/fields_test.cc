@@ -67,6 +67,26 @@ struct FieldsTest : ::testing::Test {
   }
 };
 
+TEST_F(FieldsTest, LiteralClassificationUsesCompiledSegmentsIncludingHashBindings) {
+  static constexpr auto kLiterals = std::to_array<std::string_view>({"", "peer/reference", "{{literal}}"});
+  static constexpr auto kFields = std::to_array<std::string_view>({
+      "{path}",
+      "peer/{name}",
+      "{def.PEER}",
+      "{hash}",
+      "{hash:sha256/hex}",
+      "{hash:s/^/PREFIX-/}",
+  });
+  for (const auto text : kLiterals) {
+    SCOPED_TRACE(text);
+    EXPECT_THAT(Template::Compile(text).IsLiteral(), IsTrue());
+  }
+  for (const auto text : kFields) {
+    SCOPED_TRACE(text);
+    EXPECT_THAT(Template::Compile(text).IsLiteral(), IsFalse());
+  }
+}
+
 TEST_F(FieldsTest, StandaloneRewriteOwnsProgramsAndUsesFieldSubstitutionSemantics) {
   std::string spec = R"(s|([a-z]+)-([0-9]+)|\2_\1|gi;s|^|prefix/|)";
   ASSERT_OK_AND_ASSIGN(auto original, RewriteProgram::Compile(spec));
