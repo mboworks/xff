@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Bind explicit hash-field qualifiers once while preserving dynamic defaults, copied templates and snapshot lifetimes.
+
 - Fill bounded source ranges directly into final storage and reuse owned decoder blocks during materialization, preserving read limits, errors and budgets.
 
 - Reuse caller-owned input storage for memory-backed and nested archive-member streams while preserving read errors, sparse content and shared budgets.

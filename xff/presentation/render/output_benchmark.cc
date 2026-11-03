@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Isolate record construction and cached digest consumption from host filesystem costs.
+#include <array>
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -96,6 +97,79 @@ void HashFields(benchmark::State& state) {
   }
 }
 
+// Explicit/partial/default specs isolate binding from digest work, with invalid context defaults
+// proving that independent fields do not accidentally consume those defaults.
+void HashBindingFields(benchmark::State& state) {
+  struct Scenario {
+    std::string_view format;
+    std::string_view algorithm;
+    std::string_view encoding;
+    std::string_view prefix;
+  };
+
+  static constexpr auto kScenarios = std::to_array<Scenario>({
+      {.format = "{hash}", .algorithm = "md5", .encoding = "base64"},
+      {.format = "{hash:md5/base64}", .algorithm = "invalid", .encoding = "invalid"},
+      {.format = "{hash:md5}", .algorithm = "invalid", .encoding = "base64"},
+      {.format = "{hash:/base64}", .algorithm = "md5", .encoding = "invalid"},
+      {.format = "{hash:s/^/SUM-/}", .algorithm = "md5", .encoding = "base64", .prefix = "SUM-"},
+  });
+  const auto& scenario = kScenarios.at(static_cast<std::size_t>(state.range(2)));
+  const auto count = static_cast<std::size_t>(state.range(0));
+  const bool warm = state.range(1) != 0;
+  const OutputFs fs;
+  const vfs::Metadata metadata;
+  content::Snapshot snapshot;
+  const fields::RenderContext context{
+      .path = "virtual/file",
+      .metadata = metadata,
+      .fs = fs,
+      .content = snapshot,
+      .tz = absl::UTCTimeZone(),
+      .hash_algorithm = scenario.algorithm,
+      .hash_encoding = scenario.encoding,
+  };
+  std::string format;
+  std::string expected;
+  const auto digest = hash::HashData("md5", "alpha\nbeta\n", hash::Encoding::kBase64).value_or("unsupported");
+  for (std::size_t index = 0; index < count; ++index) {
+    format.append(scenario.format).push_back('|');
+    expected.append(scenario.prefix).append(digest).push_back('|');
+  }
+  const auto compiled = fields::Template::Compile(format);
+  if (!compiled.Validate().ok() || compiled.Render(context) != expected) {
+    state.SkipWithError("bound digest field differs from known fixture");
+    return;
+  }
+  state.counters["template_storage_bytes"] = static_cast<double>(compiled.StorageBytes());
+  for (auto iteration : state) {
+    benchmark::DoNotOptimize(iteration);
+    if (!warm) {
+      snapshot.Invalidate();
+    }
+    auto rendered = compiled.Render(context);
+    benchmark::DoNotOptimize(rendered);
+  }
+}
+
+void CompileFields(benchmark::State& state) {
+  static constexpr auto kFormats = std::to_array<std::string_view>({
+      "{name}",
+      "literal-{path}-{name}-{size}",
+      "{hash}",
+      "{hash:md5/base64}",
+      "{hash:s/^/SUM-/}|{hash:sha256/hex}|{hash:/base64}",
+  });
+  const auto format = kFormats.at(static_cast<std::size_t>(state.range(0)));
+  const auto expected = fields::Template::Compile(format).StorageBytes();
+  state.counters["template_storage_bytes"] = static_cast<double>(expected);
+  for (auto iteration : state) {
+    benchmark::DoNotOptimize(iteration);
+    auto compiled = fields::Template::Compile(format);
+    benchmark::DoNotOptimize(compiled);
+  }
+}
+
 }  // namespace
 }  // namespace xff::render
 
@@ -114,6 +188,20 @@ int main(int argc, char** argv) {
       ->MinWarmUpTime(0.01);
   benchmark::RegisterBenchmark("output/hash-fields", xff::render::HashFields)
       ->ArgsProduct({{1, 4, 16}, {0, 1}})
+      ->UseRealTime()
+      ->Unit(benchmark::kNanosecond)
+      ->Repetitions(9)
+      ->MinTime(0.02)
+      ->MinWarmUpTime(0.01);
+  benchmark::RegisterBenchmark("output/hash-binding", xff::render::HashBindingFields)
+      ->ArgsProduct({{1, 16}, {0, 1}, {0, 1, 2, 3, 4}})
+      ->UseRealTime()
+      ->Unit(benchmark::kNanosecond)
+      ->Repetitions(9)
+      ->MinTime(0.02)
+      ->MinWarmUpTime(0.01);
+  benchmark::RegisterBenchmark("output/compile-fields", xff::render::CompileFields)
+      ->DenseRange(0, 4)
       ->UseRealTime()
       ->Unit(benchmark::kNanosecond)
       ->Repetitions(9)

@@ -3543,10 +3543,9 @@ own warmup, nine repetitions and fastest-seven selection with rotating participa
 The Linux case-isolated matrix remains separate; compare within a recorded protocol rather than
 silently treating absolute measurements from different protocols as interchangeable.
 
-O22b still needs typed field-hash binding. Compact IDs/default-use bits may fit existing segment
-padding, but actual layout, renderer-call overhead, changing context defaults and cold/non-hash
-controls must be qualified before using that space. Do not encode binding state in arbitrary
-strings or add a view-rich allocation to every segment.
+O22b's compact field-hash binding is qualified below, including layout, renderer-call overhead,
+changing defaults and cold/non-hash controls. It uses existing segment padding without encoding
+state in strings or adding a view-rich allocation to every segment.
 
 O22c2 still needs command-owned reusable output buffers and streaming rows. Keep owning/stateless
 APIs intact; a private stateful record writer could reuse capacity on the coordinator and lend a
@@ -3583,7 +3582,7 @@ in the raw artifact. The frozen formatter, source guards, independent full-outpu
 all selected root/extension release tests and focused sanitizers remain part of qualification.
 The initial nested fixture command missed `--archive-depth=2`; its warmup oracle failed before
 accepting any native row. The corrected matrix uses explicit depth two. O19b seeking/index/replay
-and admission, and O19d direct final-buffer materialization, remain open.
+and admission remain open; O19d direct final-buffer materialization is qualified below.
 
 ### O19d: fill final range and materialization storage
 
@@ -3622,3 +3621,39 @@ reserved storage directly; its expected owned-read counter changes from one to z
 parent lifetimes, content and shared-budget tests remain. No new public flag, external dependency,
 worker, lock, metadata probe or host-I/O bypass is introduced. O19b seeking/index/replay/admission
 remains open.
+
+### O22b: bind hash fields without growing unrelated segments
+
+A private two-byte binding fits beside the existing post-processing enum. Algorithm IDs derive
+from the existing `hash::AlgorithmNames` catalog; encoding choices distinguish explicit values
+from context defaults. This avoids qualifier parsing and default work for explicit choices while
+preserving changed defaults on every render, copies/moves, invalid specifications, post-render
+transforms and snapshot ownership/invalidation. No borrowed qualifier view is retained.
+
+Compilation validates the binding once. Bare/transformed defaults bind directly, and rendering
+uses the existing nonzero binding tag to classify hash fields; ordinary renderers retain their direct calls.
+A coverage-driven refinement removes an obsolete parser that had served only as a function-identity
+tag. The first prototype duplicated static
+validation and read a separate tag for every field. It increased hash compilation costs by about
+30-50% and is not selected; complete first/refined populations remain separate.
+
+[Cross-platform qualification](benchmarks/hash-field-binding-20261103.md) includes warm/cold
+explicit, partial and default specs, compilation, ordinary fields, whole-engine in-memory runs and
+native listing/hash-field commands. Explicit cached kernels improve about 41-56% in independent
+confirmation; larger in-memory commands improve about 2-5%. Native gains are smaller. The Linux
+simple-name field kernel retains about a 2% cost, roughly one nanosecond per entry; cold and Mac
+controls vary across populations. Preserve their absolute times and identical-baseline movement;
+this is not a universal rendering speedup.
+
+Tracked template storage is unchanged across measured shapes. This is conservative capacity
+accounting, not an allocator or RSS claim. Full CLI footprint increases 1,440 bytes on Linux and
+368 bytes on macOS. Three new tests cover changing defaults across copies/moves, all shared-catalog
+algorithms and invalid dynamic defaults with independent explicit choices. Existing derivation,
+extraction, snapshot, output and fuzz suites remain; complete release and focused sanitizer
+qualification passes both hosts. O22c2 command-owned buffers and streaming rows remain open.
+
+The [direct-tag confirmation](benchmarks/hash-field-binding-tag-20261103.md) retains old/tag sources
+and three-session cross-platform measurements. Sixteen warm explicit fields improve another 7-8%,
+while small ordinary kernels and one Linux single-hash cell retain costs. Native differences remain
+small, and the full CLI decreases 4,896 bytes on Linux and 208 bytes on macOS relative to the prior
+binding implementation. A structural regression preserves literal/hash/extraction distinctions.

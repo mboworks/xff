@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "absl/status/status.h"
@@ -23,8 +24,12 @@ namespace {
 
 using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
+using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::Eq;
+using ::testing::Field;
+using ::testing::IsFalse;
+using ::testing::IsTrue;
 using ::testing::Optional;
 
 struct HashFs final : vfs::FileSystem {
@@ -108,6 +113,97 @@ TEST_F(HashSnapshotTest, ExtractionWithoutASuppliedSnapshotRetainsTheLocalDigest
     EXPECT_THAT(compiled.AsExtraction(Context(supplied)), Optional(ElementsAre(EqualsText(expected))));
   }
   EXPECT_THAT(fs.reads, Eq(2));
+}
+
+TEST_F(HashSnapshotTest, BoundHashTagsRemainDistinctFromLiteralAndUnknownSegments) {
+  const auto compiled = Template::Compile("literal {{hash}} {name} [{hash:md5/hex}] {unknown}");
+  EXPECT_THAT(IsKnownField("hash"), IsTrue());
+  EXPECT_THAT(IsKnownField("unknown"), IsFalse());
+  EXPECT_THAT(compiled.ContentFieldCount(), Eq(1));
+  EXPECT_THAT(Template::Compile("literal {{hash}} {name} {unknown}").ContentFieldCount(), Eq(0));
+  const auto digest = hash::HashData("md5", fs.bytes).value_or("unsupported");
+  EXPECT_THAT(compiled.Render(Context(true)), EqualsText("literal {hash} file [" + digest + "] "));
+  EXPECT_THAT(compiled.IsExtraction(), IsFalse());
+  EXPECT_THAT(compiled.HasUnreducedExtraction(), IsFalse());
+  EXPECT_THAT(compiled.AsExtraction(Context(true)), Eq(std::nullopt));
+}
+
+TEST_F(HashSnapshotTest, DefaultUsageFollowsBoundHashTagsWithoutCountingLiteralOrInvalidFields) {
+  const auto algorithm = &hash::DefaultUsage::algorithm;
+  const auto encoding = &hash::DefaultUsage::encoding;
+  EXPECT_THAT(
+      Template::Compile("literal {{hash}} {name} {unknown} {hash:md5/hex} {hash:unknown}").HashDefaultsUsed(),
+      AllOf(Field("algorithm", algorithm, IsFalse()), Field("encoding", encoding, IsFalse())));
+  EXPECT_THAT(
+      Template::Compile("{hash}").HashDefaultsUsed(),
+      AllOf(Field("algorithm", algorithm, IsTrue()), Field("encoding", encoding, IsTrue())));
+  EXPECT_THAT(
+      Template::Compile("{hash:md5}").HashDefaultsUsed(),
+      AllOf(Field("algorithm", algorithm, IsFalse()), Field("encoding", encoding, IsTrue())));
+  EXPECT_THAT(
+      Template::Compile("{hash:/base64}").HashDefaultsUsed(),
+      AllOf(Field("algorithm", algorithm, IsTrue()), Field("encoding", encoding, IsFalse())));
+  EXPECT_THAT(
+      Template::Compile("{hash:s/^/SUM-/}").HashDefaultsUsed(),
+      AllOf(Field("algorithm", algorithm, IsTrue()), Field("encoding", encoding, IsTrue())));
+}
+
+TEST_F(HashSnapshotTest, BoundHashFieldsKeepContextDefaultsDynamicAcrossCopiesAndMoves) {
+  const auto compiled = Template::Compile("{hash}|{hash:md5}|{hash:/base64}|{hash:sha256/hex}");
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization): exercise independent copied template storage.
+  const auto copy = compiled;
+  auto moved_from = copy;
+  const auto moved = std::move(moved_from);
+  for (const std::string_view algorithm : {"md5", "sha256", ""}) {
+    for (const std::string_view encoding : {"hex", "base64", "invalid", ""}) {
+      SCOPED_TRACE(algorithm);
+      SCOPED_TRACE(encoding);
+      auto context = Context(true);
+      context.hash_algorithm = algorithm;
+      context.hash_encoding = encoding;
+      const auto selected_algorithm = algorithm.empty() ? std::string_view("sha256") : algorithm;
+      const auto selected_encoding = encoding == "base64" ? hash::Encoding::kBase64 : hash::Encoding::kHex;
+      const auto digest = [&](std::string_view name, hash::Encoding output) {
+        return hash::HashData(name, fs.bytes, output).value_or("unsupported");
+      };
+      const std::string expected =
+          digest(selected_algorithm, selected_encoding) + "|" + digest("md5", selected_encoding) + "|"
+          + digest(selected_algorithm, hash::Encoding::kBase64) + "|" + digest("sha256", hash::Encoding::kHex);
+      EXPECT_THAT(compiled.Render(context), EqualsText(expected));
+      EXPECT_THAT(copy.Render(context), EqualsText(expected));
+      EXPECT_THAT(moved.Render(context), EqualsText(expected));
+    }
+  }
+  EXPECT_THAT(fs.reads, Eq(1));
+}
+
+TEST_F(HashSnapshotTest, EveryCatalogAlgorithmBindsWithoutDependingOnQualifierStringStorage) {
+  for (const std::string_view algorithm : hash::AlgorithmNames()) {
+    SCOPED_TRACE(algorithm);
+    const auto compiled = Template::Compile("{hash:" + std::string(algorithm) + "/base64}");
+    auto context = Context(true);
+    context.hash_algorithm = "invalid-default";
+    context.hash_encoding = "invalid-default";
+    EXPECT_THAT(
+        compiled.Render(context),
+        EqualsText(hash::HashData(algorithm, fs.bytes, hash::Encoding::kBase64).value_or("unsupported")));
+  }
+  EXPECT_THAT(fs.reads, Eq(1));
+}
+
+TEST_F(HashSnapshotTest, InvalidDynamicAlgorithmOnlyEmptiesFieldsWhichConsumeIt) {
+  const auto compiled = Template::Compile("[{hash}][{hash:/base64}][{hash:md5/hex}][{hash:s/^/SUM-/}]");
+  auto context = Context(true);
+  context.hash_algorithm = "invalid-default";
+  const auto md5 = hash::HashData("md5", fs.bytes).value_or("unsupported");
+  EXPECT_THAT(compiled.Render(context), EqualsText("[][][" + md5 + "][SUM-]"));
+  context.hash_algorithm = "md5";
+  EXPECT_THAT(
+      compiled.Render(context),
+      EqualsText(
+          "[" + md5 + "][" + hash::HashData("md5", fs.bytes, hash::Encoding::kBase64).value_or("") + "][" + md5
+          + "][SUM-" + md5 + "]"));
+  EXPECT_THAT(fs.reads, Eq(1));
 }
 
 TEST_F(HashSnapshotTest, UnknownAlgorithmsAndReadFailuresStayEmptyUntilInvalidation) {

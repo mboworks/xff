@@ -306,12 +306,9 @@ const vfs::FileSystem& ContentFileSystem(const RenderContext& ctx) {
 // {hash:/base64}); empty parts fall back to the --hash-algorithm / --hash-encoding defaults
 // (sha256 / hex when unset). An unknown algorithm or encoding, or an unreadable file, renders
 // empty (the field convention). Reads the file, so it is expensive.
-StringOrView HashField(std::string_view, std::string_view qualifier, const RenderContext& ctx) {
-  const std::string_view default_algo = ctx.hash_algorithm.empty() ? "sha256" : ctx.hash_algorithm;
-  const hash::Encoding default_encoding = hash::ParseEncoding(ctx.hash_encoding).value_or(hash::Encoding::kHex);
-  const std::optional<hash::AlgoEncoding> spec = hash::ParseSpec(qualifier, default_algo, default_encoding);
-  if (!spec.has_value()) {
-    return "";  // unknown algorithm or encoding -> empty, like an unknown field
+StringOrView HashValue(const std::optional<hash::AlgoEncoding>& spec, const RenderContext& ctx) {
+  if (!spec) {
+    return "";
   }
   if (ctx.content) {
     return ctx.content->DigestView(ContentFileSystem(ctx), ctx.path, *spec).value_or("");
@@ -524,7 +521,7 @@ constexpr auto kFieldTable = mbo::container::MakeLimitedMap(
     FieldEntry{"fuzzy", &FuzzyField},
     FieldEntry{"gid", &GidField},
     FieldEntry{"group", &GroupField},
-    FieldEntry{"hash", &HashField},
+    FieldEntry{"hash", nullptr},  // Bound by HashBinding; no generic per-entry parser.
     FieldEntry{"inode", &InodeField},
     FieldEntry{"lang", &LanguageField},
     FieldEntry{"lang-color", &LanguageColorField},
@@ -1006,7 +1003,7 @@ absl::Status ValidateFieldName(std::string_view name) {
   return IsKnownField(name) ? absl::OkStatus() : absl::InvalidArgumentError(absl::StrCat("unknown field '", name, "'"));
 }
 
-absl::Status ValidateNativeQualifier(FieldFn renderer, std::string_view qualifier) {
+absl::Status ValidateNativeQualifier(FieldFn renderer, std::string_view qualifier, bool valid_hash) {
   if (IsRewriteQualifier(qualifier) || IsExtractQualifier(qualifier)) {
     return ValidateTransform(qualifier);
   }
@@ -1016,8 +1013,8 @@ absl::Status ValidateNativeQualifier(FieldFn renderer, std::string_view qualifie
   if (renderer == &MtimeField || renderer == &AtimeField || renderer == &CtimeField || renderer == &BtimeField) {
     return absl::OkStatus();  // Custom time patterns may contain arbitrary literal text.
   }
-  if (renderer == &HashField) {
-    return hash::ParseSpec(qualifier, "sha256").has_value()
+  if (renderer == nullptr) {
+    return valid_hash
                ? absl::OkStatus()
                : absl::InvalidArgumentError(absl::StrCat("invalid hash algorithm or encoding '", qualifier, "'"));
   }
@@ -1135,6 +1132,66 @@ struct Template::Transform {
   std::vector<Operation> scalar;
 };
 
+Template::HashBinding Template::HashBinding::Bind(FieldFn fn, std::string_view qualifier, bool native_qualifier) {
+  if (fn != nullptr) {
+    return {};
+  }
+  if (!native_qualifier || qualifier.empty()) {
+    return {.algorithm = 1};
+  }
+  static constexpr std::uint8_t kInvalid = std::numeric_limits<std::uint8_t>::max();
+  const auto spec = hash::ParseSpec(qualifier, "sha256");
+  if (!spec) {
+    return {.algorithm = kInvalid};
+  }
+  const auto names = hash::AlgorithmNames();
+  if (names.size() >= kInvalid - 1) {
+    return {.algorithm = kInvalid};
+  }
+  const auto position = std::ranges::distance(names.begin(), std::ranges::find(names, spec->algo));
+  return {
+      .algorithm = spec->defaults.algorithm ? std::uint8_t{1} : static_cast<std::uint8_t>(position + 2),
+      .encoding = spec->defaults.encoding ? std::uint8_t{0}
+                                          : static_cast<std::uint8_t>(spec->encoding == hash::Encoding::kHex ? 1 : 2),
+  };
+}
+
+std::optional<hash::AlgoEncoding> Template::HashBinding::Resolve(
+    std::string_view default_algorithm,
+    hash::Encoding default_encoding) const {
+  std::string_view name;
+  if (algorithm == 1) {
+    name = default_algorithm.empty() ? "sha256" : default_algorithm;
+    if (!hash::IsAlgorithm(name)) {
+      return std::nullopt;
+    }
+  } else {
+    const auto names = hash::AlgorithmNames();
+    if (algorithm < 2 || static_cast<std::size_t>(algorithm - 2) >= names.size()) {
+      return std::nullopt;
+    }
+    name = names.at(algorithm - 2);
+  }
+  const hash::Encoding resolved_encoding = encoding == 0   ? default_encoding
+                                           : encoding == 1 ? hash::Encoding::kHex
+                                                           : hash::Encoding::kBase64;
+  return hash::AlgoEncoding{.algo = name, .encoding = resolved_encoding, .defaults = DefaultsUsed()};
+}
+
+hash::DefaultUsage Template::HashBinding::DefaultsUsed() const {
+  return {.algorithm = algorithm == 1, .encoding = encoding == 0};
+}
+
+StringOrView Template::Segment::Value(const RenderContext& context) const {
+  if (hash_binding.algorithm != 0) {
+    const hash::Encoding encoding = hash_binding.encoding == 0
+                                        ? hash::ParseEncoding(context.hash_encoding).value_or(hash::Encoding::kHex)
+                                        : hash::Encoding::kHex;
+    return HashValue(hash_binding.Resolve(context.hash_algorithm, encoding), context);
+  }
+  return fn(key, post == PostProcess::kNone ? std::string_view(qualifier) : std::string_view{}, context);
+}
+
 std::size_t Template::StorageBytes() const {
   const auto operations_bytes = [](const std::vector<Transform::Operation>& operations) {
     std::size_t bytes = operations.capacity() * sizeof(Transform::Operation);
@@ -1215,7 +1272,6 @@ Template Template::Compile(std::string_view tmpl) {
       compiled.validation_.Update(ValidateFieldName(field->name));
       auto [fn, key] = ResolveName(field->name);  // builtin field, {0}..{N} capture, or {env.NAME}
       std::string& qualifier = field->qualifier;
-      compiled.validation_.Update(ValidateNativeQualifier(fn, qualifier));
       // Classify the qualifier: an s/// rewrite, an m/// per-line extraction, or a path-component
       // extraction is a post-render transform; anything else is the field's own format argument.
       const Segment::PostProcess post = IsRewriteQualifier(qualifier)   ? Segment::PostProcess::kRewrite
@@ -1223,8 +1279,17 @@ Template Template::Compile(std::string_view tmpl) {
                                         : IsPathComponent(qualifier)    ? Segment::PostProcess::kComponent
                                                                         : Segment::PostProcess::kNone;
       const auto transform = Transform::Bind(qualifier);
-      compiled.segments_.push_back(
-          {.fn = fn, .key = std::move(key), .qualifier = std::move(qualifier), .post = post, .transform = transform});
+      const HashBinding binding = HashBinding::Bind(fn, qualifier, post == Segment::PostProcess::kNone);
+      compiled.validation_.Update(
+          ValidateNativeQualifier(fn, qualifier, binding.algorithm != std::numeric_limits<std::uint8_t>::max()));
+      compiled.segments_.push_back({
+          .fn = fn,
+          .key = std::move(key),
+          .qualifier = std::move(qualifier),
+          .post = post,
+          .hash_binding = binding,
+          .transform = transform,
+      });
       i = field->next;
     } else {
       if (ch == '}') {
@@ -1262,15 +1327,13 @@ bool Template::NeedsTimeZone() const {
 hash::DefaultUsage Template::HashDefaultsUsed() const {
   hash::DefaultUsage usage;
   for (const Segment& segment : segments_) {
-    if (segment.fn != &HashField) {
+    if (segment.hash_binding.algorithm == 0) {
       continue;
     }
-    const std::string_view qualifier =
-        segment.post == Segment::PostProcess::kNone ? segment.qualifier : std::string_view{};
-    const auto spec = hash::ParseSpec(qualifier, "sha256");
-    if (spec.has_value()) {
-      usage.algorithm |= spec->defaults.algorithm;
-      usage.encoding |= spec->defaults.encoding;
+    if (segment.hash_binding.algorithm != std::numeric_limits<std::uint8_t>::max()) {
+      const auto defaults = segment.hash_binding.DefaultsUsed();
+      usage.algorithm |= defaults.algorithm;
+      usage.encoding |= defaults.encoding;
     }
   }
   return usage;
@@ -1281,10 +1344,8 @@ content::Derivation Template::ContentDerivation(std::string_view algorithm, hash
   for (const Segment& segment : segments_) {
     if (segment.fn == &LinesField) {
       request.lines = true;
-    } else if (segment.fn == &HashField) {
-      const std::string_view qualifier =
-          segment.post == Segment::PostProcess::kNone ? segment.qualifier : std::string_view{};
-      const auto spec = hash::ParseSpec(qualifier, algorithm.empty() ? "sha256" : algorithm, encoding);
+    } else if (segment.hash_binding.algorithm != 0) {
+      const auto spec = segment.hash_binding.Resolve(algorithm, encoding);
       if (spec) {
         request.Include({.digests = {{.algorithm = std::string(spec->algo), .encoding = spec->encoding}}});
       }
@@ -1294,8 +1355,9 @@ content::Derivation Template::ContentDerivation(std::string_view algorithm, hash
 }
 
 std::size_t Template::ContentFieldCount() const {
-  return static_cast<std::size_t>(absl::c_count_if(
-      segments_, [](const Segment& segment) { return segment.fn == &HashField || segment.fn == &LinesField; }));
+  return static_cast<std::size_t>(absl::c_count_if(segments_, [](const Segment& segment) {
+    return segment.hash_binding.algorithm != 0 || segment.fn == &LinesField;
+  }));
 }
 
 std::string Template::Render(const RenderContext& context) const {
@@ -1306,13 +1368,11 @@ std::string Template::Render(const RenderContext& context) const {
   }
   std::string out;
   for (const Segment& segment : segments_) {
-    if (segment.fn != nullptr) {
+    if (segment.IsField()) {
       // A post-render transform (s/// rewrite or path-component) renders the field
       // with no qualifier, then transforms the value; otherwise the qualifier is the
       // field's own format argument.
-      const bool transform = segment.post != Segment::PostProcess::kNone;
-      const StringOrView field_value =
-          segment.fn(segment.key, transform ? std::string_view{} : segment.qualifier, entry);
+      const StringOrView field_value = segment.Value(entry);
       const std::string_view value = field_value.view();
       switch (segment.post) {
         case Segment::PostProcess::kComponent: out.append(PathComponent(value, segment.qualifier).view()); break;
@@ -1339,23 +1399,23 @@ std::optional<std::vector<std::string>> Template::AsExtraction(const RenderConte
     return std::nullopt;
   }
   const Segment& segment = segments_.front();
-  if (segment.fn == nullptr || segment.post != Segment::PostProcess::kExtract
+  if (!segment.IsField() || segment.post != Segment::PostProcess::kExtract
       || segment.transform->separator.has_value()) {
     return std::nullopt;
   }
-  const StringOrView value = segment.fn(segment.key, std::string_view{}, context);  // base value, no qualifier
+  const StringOrView value = segment.Value(context);  // base value, no qualifier
   return segment.transform->Extract(value.view());
 }
 
 bool Template::IsExtraction() const {
-  return segments_.size() == 1 && segments_.front().fn != nullptr
+  return segments_.size() == 1 && segments_.front().IsField()
          && segments_.front().post == Segment::PostProcess::kExtract
          && !segments_.front().transform->separator.has_value();
 }
 
 bool Template::HasUnreducedExtraction() const {
   return absl::c_any_of(segments_, [](const Segment& segment) {
-    return segment.fn != nullptr && segment.post == Segment::PostProcess::kExtract
+    return segment.IsField() && segment.post == Segment::PostProcess::kExtract
            && !segment.transform->separator.has_value();
   });
 }

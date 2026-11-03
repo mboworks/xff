@@ -468,8 +468,9 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O22a: Qualify snapshot-owned digest observers against owning consumption, preserving cache
       insertion stability, invalidation, local-snapshot fallback, read errors and derived handoff.
       Keep [the separate mechanisms and controls](docs/benchmarks/digest-and-record-storage-20261103.md).
-- [ ] O22b: Qualify invariant field-hash binding without enlarging every unrelated template segment
-      or hiding typed state in strings. Preserve dynamic defaults and cold/non-hash controls.
+- [x] O22b: Qualify invariant field-hash binding without enlarging every unrelated template segment
+      or hiding typed state in strings. Preserve dynamic defaults and cold/non-hash controls in
+      [the binding report](docs/benchmarks/hash-field-binding-20261103.md), including rejected setup work.
 - [x] O22c1: Qualify direct plain-record construction and bulk C-escaping on both hosts, retaining
       tiny colored controls and shared display/tree consumers in the O22a report.
 - [ ] O22c2: Qualify command-owned reusable record/row buffers and streaming machine formats.
