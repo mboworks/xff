@@ -36,6 +36,8 @@ using ::testing::Gt;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsTrue;
+using ::testing::Le;
+using ::testing::Lt;
 
 constexpr std::size_t kReadBlock = 64UZ * 1'024;
 
@@ -131,10 +133,12 @@ class CountingSource final : public vfs::ReadSource {
 };
 
 struct ArchiveSourceBufferTest : ::testing::Test {
-  static std::string MakeTar(std::string_view content, bool compressed = false) {
+  static std::string MakeTar(std::string_view content, bool compressed = false, bool sparse = false) {
     // XFF_ABI_POINTER: libarchive owns its C writer handle until archive_write_free.
     struct ::archive* writer = ::archive_write_new();
-    EXPECT_THAT(::archive_write_set_format_pax_restricted(writer), Eq(ARCHIVE_OK));
+    EXPECT_THAT(
+        sparse ? ::archive_write_set_format_pax(writer) : ::archive_write_set_format_pax_restricted(writer),
+        Eq(ARCHIVE_OK));
     if (compressed) {
       EXPECT_THAT(::archive_write_add_filter_gzip(writer), Eq(ARCHIVE_OK));
     }
@@ -147,6 +151,9 @@ struct ArchiveSourceBufferTest : ::testing::Test {
     ::archive_entry_set_size(entry, static_cast<la_int64_t>(content.size()));
     ::archive_entry_set_filetype(entry, AE_IFREG);
     ::archive_entry_set_perm(entry, 0644);
+    if (sparse) {
+      ::archive_entry_sparse_add_entry(entry, static_cast<la_int64_t>(kReadBlock), 4);
+    }
     EXPECT_THAT(::archive_write_header(writer, entry), Eq(ARCHIVE_OK));
     EXPECT_THAT(::archive_write_data(writer, content.data(), content.size()), Eq(content.size()));
     ::archive_entry_free(entry);
@@ -244,6 +251,98 @@ TEST_F(ArchiveSourceBufferTest, RetainsExactlyOneSessionReservationAndReleasesIt
   EXPECT_THAT(second->Read(7), IsOkAndHolds(IsEmpty()));
   second.reset();
   EXPECT_THAT(budget->MemoryUsed(), Eq(0));
+}
+
+TEST_F(ArchiveSourceBufferTest, MemberReadIntoCapsChunksPreservesTailAndSharesOwnedReadPosition) {
+  std::string content((2 * kReadBlock) + 17, 'x');
+  for (std::size_t at = 0; at < content.size(); ++at) {
+    content.at(at) = static_cast<char>('a' + (at % 26));
+  }
+  const auto budget = std::make_shared<vfs::ReadBudget>(kReadBlock + 4);
+  auto source = vfs::MemoryReadSource(MakeTar(content), budget);
+  auto member = MemberReadSource(source, "data.txt");
+  MBO_ASSERT_OK_AND_ASSIGN(auto cursor, member->Open());
+  source.reset();
+  member.reset();
+  EXPECT_THAT(cursor->SupportsReadInto(), IsTrue());
+  std::string buffer(70'000, '!');
+  const std::span span(buffer);
+  EXPECT_THAT(cursor->ReadInto(std::span<char>()), IsOkAndHolds(Eq(0)));
+  EXPECT_THAT(cursor->ReadInto(span.first(0)), IsOkAndHolds(Eq(0)));
+  EXPECT_THAT(cursor->ReadInto(span), IsOkAndHolds(Eq(kReadBlock)));
+  EXPECT_THAT(std::string_view(buffer).substr(0, kReadBlock), EqualsText(content.substr(0, kReadBlock)));
+  EXPECT_THAT(std::string_view(buffer).substr(kReadBlock), EqualsText(std::string(buffer.size() - kReadBlock, '!')));
+  EXPECT_THAT(cursor->Read(3), IsOkAndHolds(EqualsText(content.substr(kReadBlock, 3))));
+  EXPECT_THAT(cursor->ReadInto(span), IsOkAndHolds(Eq(kReadBlock)));
+  EXPECT_THAT(std::string_view(buffer).substr(0, kReadBlock), EqualsText(content.substr(kReadBlock + 3, kReadBlock)));
+  EXPECT_THAT(cursor->ReadInto(span), IsOkAndHolds(Eq(14)));
+  EXPECT_THAT(std::string_view(buffer).substr(0, 14), EqualsText(content.substr(content.size() - 14)));
+  EXPECT_THAT(cursor->ReadInto(span), IsOkAndHolds(Eq(0)));
+  EXPECT_THAT(budget->MemoryUsed(), Eq(kReadBlock));
+  cursor.reset();
+  EXPECT_THAT(budget->MemoryUsed(), Eq(0));
+}
+
+TEST_F(ArchiveSourceBufferTest, MemberReadIntoPreservesLateSourceFailures) {
+  const auto source = std::make_shared<CountingSource>(
+      MakeTar(std::string(3 * kReadBlock, 'x')), ReadOptions{.fail_at = kReadBlock}, std::make_shared<ReadCounts>());
+  MBO_ASSERT_OK_AND_ASSIGN(auto cursor, MemberReadSource(source, "data.txt")->Open());
+  std::string buffer(kReadBlock, '!');
+  EXPECT_THAT(cursor->ReadInto(std::span<char>(buffer)), StatusIs(absl::StatusCode::kDataLoss, HasSubstr("injected")));
+}
+
+TEST_F(ArchiveSourceBufferTest, SparseMemberReadIntoInitializesHolesInPreviouslyUsedStorage) {
+  std::string content(2 * kReadBlock, '\0');
+  content.replace(kReadBlock, 4, "data");
+  for (const bool compressed : {false, true}) {
+    SCOPED_TRACE(compressed);
+    const std::string bytes = MakeTar(content, compressed, true);
+    // The uncompressed archive is smaller than the logical member, proving it stores holes.
+    EXPECT_THAT(bytes.size(), Lt(content.size()));
+    MBO_ASSERT_OK_AND_ASSIGN(auto cursor, MemberReadSource(vfs::MemoryReadSource(bytes), "data.txt")->Open());
+    std::string buffer(kReadBlock, '!');
+    const std::span span(buffer);
+    // Sparse extents can yield short reads; verify only each returned prefix, then continue.
+    for (std::size_t position = 0; position < content.size();) {
+      std::ranges::fill(buffer, '!');
+      MBO_ASSERT_OK_AND_ASSIGN(const auto count, cursor->ReadInto(span));
+      ASSERT_THAT(count, Gt(0));
+      ASSERT_THAT(count, Le(buffer.size()));
+      EXPECT_THAT(std::string_view(buffer).substr(0, count), EqualsText(content.substr(position, count)));
+      EXPECT_THAT(std::string_view(buffer).substr(count), EqualsText(std::string(buffer.size() - count, '!')));
+      position += count;
+    }
+    EXPECT_THAT(cursor->ReadInto(span), IsOkAndHolds(Eq(0)));
+  }
+}
+
+TEST_F(ArchiveSourceBufferTest, NestedMemberBuffersRetainParentsAndReleaseSharedReservations) {
+  for (const bool outer_compressed : {false, true}) {
+    for (const bool inner_compressed : {false, true}) {
+      SCOPED_TRACE(outer_compressed);
+      SCOPED_TRACE(inner_compressed);
+      const std::string content(20'000, 'x');
+      // The temporary prefix reader and both four-byte format probes can overlap.
+      const auto budget = std::make_shared<vfs::ReadBudget>((3 * kReadBlock) + 8);
+      auto source = vfs::MemoryReadSource(MakeTar(MakeTar(content, inner_compressed), outer_compressed), budget);
+      auto nested = MemberReadSource(source, "data.txt");
+      auto member = MemberReadSource(nested, "data.txt");
+      MBO_ASSERT_OK_AND_ASSIGN(auto cursor, member->Open());
+      source.reset();
+      nested.reset();
+      member.reset();
+      EXPECT_THAT(cursor->SupportsReadInto(), IsTrue());
+      std::string buffer(content.size() + 8, '!');
+      const std::span span(buffer);
+      EXPECT_THAT(cursor->ReadInto(span), IsOkAndHolds(Eq(content.size())));
+      EXPECT_THAT(std::string_view(buffer).substr(0, content.size()), EqualsText(content));
+      EXPECT_THAT(std::string_view(buffer).substr(content.size()), EqualsText("!!!!!!!!"));
+      EXPECT_THAT(cursor->ReadInto(span), IsOkAndHolds(Eq(0)));
+      EXPECT_THAT(budget->MemoryUsed(), Eq(2 * kReadBlock));
+      cursor.reset();
+      EXPECT_THAT(budget->MemoryUsed(), Eq(0));
+    }
+  }
 }
 
 }  // namespace

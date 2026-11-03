@@ -33,6 +33,15 @@ class MemoryStream final : public ReadStream {
     return result;
   }
 
+  bool SupportsReadInto() const noexcept override { return true; }
+
+  absl::StatusOr<std::size_t> ReadInto(std::span<char> buffer) override {
+    const std::size_t count = std::min(buffer.size(), bytes_->size() - offset_);
+    std::ranges::copy(std::string_view(*bytes_).substr(offset_, count), buffer.begin());
+    offset_ += count;
+    return count;
+  }
+
  private:
   std::shared_ptr<const std::string> bytes_;
   std::size_t offset_ = 0;

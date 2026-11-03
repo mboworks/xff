@@ -32,13 +32,64 @@ using ::testing::Optional;
 
 struct ReadSourceTest : ::testing::Test {};
 
-TEST_F(ReadSourceTest, UnsupportedReadIntoNeitherConsumesNorCopiesMemorySource) {
-  MBO_ASSERT_OK_AND_ASSIGN(auto stream, MemoryReadSource("abcdef")->Open());
-  EXPECT_THAT(stream->SupportsReadInto(), IsFalse());
+class OwnedOnlyStream final : public ReadStream {
+ public:
+  absl::StatusOr<std::string> Read(std::size_t max_bytes) override {
+    auto result = bytes_.substr(offset_, max_bytes);
+    offset_ += result.size();
+    return result;
+  }
+
+ private:
+  const std::string bytes_ = "abcdef";
+  std::size_t offset_ = 0;
+};
+
+TEST_F(ReadSourceTest, UnsupportedReadIntoNeitherConsumesNorCopiesOwnedOnlyStream) {
+  OwnedOnlyStream stream;
+  EXPECT_THAT(stream.SupportsReadInto(), IsFalse());
   std::string buffer = "unchanged";
-  EXPECT_THAT(stream->ReadInto(std::span<char>(buffer)), StatusIs(absl::StatusCode::kUnimplemented));
+  EXPECT_THAT(stream.ReadInto(std::span<char>(buffer)), StatusIs(absl::StatusCode::kUnimplemented));
   EXPECT_THAT(buffer, EqualsText("unchanged"));
-  EXPECT_THAT(stream->Read(6), IsOkAndHolds(EqualsText("abcdef")));
+  EXPECT_THAT(stream.Read(6), IsOkAndHolds(EqualsText("abcdef")));
+}
+
+TEST_F(ReadSourceTest, MemoryReadIntoSharesOwnedReadPositionAndRetainsSourceBytes) {
+  auto source = MemoryReadSource("abcdef");
+  MBO_ASSERT_OK_AND_ASSIGN(auto stream, source->Open());
+  MBO_ASSERT_OK_AND_ASSIGN(auto suffix, source->OpenAt(2));
+  MBO_ASSERT_OK_AND_ASSIGN(auto beyond, source->OpenAt(99));
+  source.reset();
+  EXPECT_THAT(stream->SupportsReadInto(), IsTrue());
+  std::string buffer(8, '!');
+  const std::span span(buffer);
+  EXPECT_THAT(stream->ReadInto(span.first(0)), IsOkAndHolds(Eq(0)));
+  EXPECT_THAT(stream->Read(2), IsOkAndHolds(EqualsText("ab")));
+  EXPECT_THAT(stream->ReadInto(span.first(3)), IsOkAndHolds(Eq(3)));
+  EXPECT_THAT(buffer, EqualsText("cde!!!!!"));
+  EXPECT_THAT(stream->Read(99), IsOkAndHolds(EqualsText("f")));
+  EXPECT_THAT(stream->ReadInto(span), IsOkAndHolds(Eq(0)));
+  EXPECT_THAT(buffer, EqualsText("cde!!!!!"));
+  EXPECT_THAT(suffix->ReadInto(span), IsOkAndHolds(Eq(4)));
+  EXPECT_THAT(buffer, EqualsText("cdef!!!!"));
+  EXPECT_THAT(beyond->ReadInto(span), IsOkAndHolds(Eq(0)));
+  EXPECT_THAT(buffer, EqualsText("cdef!!!!"));
+}
+
+TEST_F(ReadSourceTest, MemoryReadIntoPreservesBinaryBytesAndHandlesEmptySpansAndSources) {
+  const std::string bytes("a\0b\xff", 4);
+  MBO_ASSERT_OK_AND_ASSIGN(auto cursor, MemoryReadSource(bytes)->Open());
+  std::string buffer(8, '!');
+  EXPECT_THAT(cursor->ReadInto(std::span<char>()), IsOkAndHolds(Eq(0)));
+  EXPECT_THAT(buffer, EqualsText("!!!!!!!!"));
+  EXPECT_THAT(cursor->ReadInto(std::span<char>(buffer)), IsOkAndHolds(Eq(bytes.size())));
+  EXPECT_THAT(std::string_view(buffer).substr(0, bytes.size()), EqualsText(bytes));
+  EXPECT_THAT(std::string_view(buffer).substr(bytes.size()), EqualsText("!!!!"));
+  const std::string previous = buffer;
+  EXPECT_THAT(cursor->ReadInto(std::span<char>(buffer)), IsOkAndHolds(Eq(0)));
+  MBO_ASSERT_OK_AND_ASSIGN(auto empty, MemoryReadSource("")->Open());
+  EXPECT_THAT(empty->ReadInto(std::span<char>(buffer)), IsOkAndHolds(Eq(0)));
+  EXPECT_THAT(buffer, EqualsText(previous));
 }
 
 TEST_F(ReadSourceTest, HostReadIntoCapsChunksPreservesTailAndSharesCursorPosition) {

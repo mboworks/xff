@@ -451,6 +451,13 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       and controls in [the qualification report](docs/benchmarks/archive-input-buffers-20261102.md).
 - [ ] O19b: Qualify archive seeking/index/replay and decoder admission independently. Investigate
       native/memory ZIP seeking before concurrency; preserve sequential-source and shared-budget fallbacks.
+- [x] O19c: Qualify caller-owned reads for immutable memory and archive-member cursors, including
+      nested containers, short reads, errors, cursor interleaving and budget/owner lifetimes. Keep an
+      explicitly incapable legacy benchmark control and separately exercise actual memory/member sources.
+      [Qualification, costs and rejected rewrite](docs/benchmarks/caller-owned-streams-20261103.md) retain all four variants and duplicate-baseline controls.
+- [ ] O19d: Qualify direct filling of materialized ranges/results through caller-owned reads, with
+      exact overflow/limit probes, EOF, changing capabilities and owned fallback. Keep range memory
+      reservations and replay accounting; do not silently treat a zero-length read as proof of EOF.
 - [ ] O20: Qualify optional bulk metadata by backend capability with precise fallback, while
       keeping metadata-free traversal free of extra probes and extended-stat work.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte
