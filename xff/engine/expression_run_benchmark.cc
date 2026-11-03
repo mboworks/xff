@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -406,16 +407,27 @@ int main(int argc, char** argv) {
               });
   for (const auto& scenario : scenarios) {
     for (const auto& executor : kExecutors) {
-      benchmark::RegisterBenchmark(
-          "engine/" + std::string(executor.name) + "/" + std::string(scenario.name), Measure, scenario,
-          executor.executor)
-          ->ArgsProduct({{0, 1, 10, 1'000, 10'000}, {1, 3}})
-          ->UseRealTime()
-          ->Unit(benchmark::kMicrosecond)
-          ->Repetitions(9)
-          ->MinTime(0.01)
-          ->MinWarmUpTime(0.01)
-          ->ComputeStatistics("fastest7of9", FastestSeven);
+      auto& registration = *benchmark::RegisterBenchmark(
+                                "engine/" + std::string(executor.name) + "/" + std::string(scenario.name), Measure,
+                                scenario, executor.executor)
+                                ->UseRealTime()
+                                ->Unit(benchmark::kMicrosecond)
+                                ->Repetitions(9)
+                                ->MinTime(0.01)
+                                ->MinWarmUpTime(0.01)
+                                ->ComputeStatistics("fastest7of9", FastestSeven);
+      // Keep the complete executor/worker matrix, but avoid multiplying the largest
+      // content fixtures by 10,000 entries. Each case still has its own full oracle,
+      // warmup and nine measured rounds. Metadata-sized workloads retain every scale.
+      constexpr auto kCounts = std::to_array<std::size_t>({0, 1, 10, 1'000, 10'000});
+      constexpr std::size_t kContentBytesPerRun = 4UZ << 20U;
+      for (const auto count : kCounts) {
+        if (scenario.content_bytes != 0 && count > kContentBytesPerRun / scenario.content_bytes) {
+          continue;
+        }
+        registration.Args({static_cast<std::int64_t>(count), 1});
+        registration.Args({static_cast<std::int64_t>(count), 3});
+      }
     }
   }
   benchmark::RunSpecifiedBenchmarks();

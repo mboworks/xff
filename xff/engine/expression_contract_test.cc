@@ -1072,12 +1072,13 @@ TEST_F(PreparedOperandTest, SimilarityReferencesPreserveFreshReadsAndWorkerIsola
         }
         return result;
       };
-      const std::string candidate = repeat("alpha beta gamma delta\n", 512);
-      const std::string matching = repeat("ALPHA BETA GAMMA DELTA\n", 512);
-      const std::string different = repeat("other unrelated words\n", 512);
+      const std::string candidate = repeat("alpha beta gamma delta\n", 8);
+      const std::string matching = repeat("ALPHA BETA GAMMA DELTA\n", 8);
+      const std::string different = repeat("other unrelated words\n", 8);
       std::string binary = matching;
       binary.front() = '\0';
-      const std::string oversized = repeat(matching, 128);
+      // Cross the byte admission boundary without millions of duplicate word insertions.
+      const std::string oversized = matching + std::string(1UZ << 20U, ' ');
       const auto descriptor = registry::Lookup("-similar");
       ASSERT_THAT(descriptor, Optional(_));
       const parser::Expr expression{
@@ -1258,10 +1259,8 @@ TEST_F(PreparedOperandTest, SimilarityCacheAdmissionDoesNotLimitReferenceFiles) 
       .tz = absl::UTCTimeZone(),
       .control = control,
   };
-  std::string reference(kInputLimit, 'A');
-  for (std::size_t index = 1; index < reference.size(); index += 2) {
-    reference.at(index) = ' ';
-  }
+  std::string reference(kInputLimit, ' ');
+  reference.front() = 'A';
   const auto check = [&](std::string_view bytes, bool retained) {
     fs.content_overrides["reference"] = bytes;
     for (const auto round : {0, 1, 2}) {
@@ -1269,6 +1268,7 @@ TEST_F(PreparedOperandTest, SimilarityCacheAdmissionDoesNotLimitReferenceFiles) 
       context.content.Invalidate();
       fs.events.clear();
       const auto expected = EvaluateDeferred(expression, context);
+      EXPECT_THAT(expected.matched, IsTrue());
       const auto events = std::exchange(fs.events, {});
       context.content.Invalidate();
       EXPECT_THAT(worker.Evaluate(context).matched, Eq(expected.matched));
@@ -1281,7 +1281,7 @@ TEST_F(PreparedOperandTest, SimilarityCacheAdmissionDoesNotLimitReferenceFiles) 
     }
   };
   check(reference, true);
-  reference.push_back('A');
+  reference.push_back(' ');
   check(reference, false);
   check("A", true);
 }

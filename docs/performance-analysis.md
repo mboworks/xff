@@ -3745,3 +3745,22 @@ Linux controls can cost about 2-2.5%; the worst native macOS cell is about +1.4%
 not removed, and candidate indexing/grouping remain open. Additional independent candidates are
 moving owned width-one words into their set and probing the smaller shingle set; qualify those
 separately rather than hiding them in reference reuse.
+
+### Similarity qualification CI workload bounds
+
+The literal-reference change exposed two qualification costs on hosted CI. Both benchmark-build
+jobs exceeded their 60-minute limits while measuring the whole-engine matrix: the Cartesian
+product multiplied 128 KiB content by 10,000 entries, eight executors and nine repetitions, in
+addition to each case's oracle checks and warmup. Engine registration now bounds declared
+content to 4 MiB per traversal. All eight executors, both worker counts, independent output
+checks, warmups and nine raw repetitions remain. Zero-content/metadata workloads retain the
+full 0/1/10/1,000/10,000 scale set; larger content fixtures retain the applicable smaller scales.
+This bounds a benchmark fixture, not input accepted by xff or the separately retained native
+performance evidence. Historical rows remain comparable only where their case identity matches.
+
+An MSan retry passed the pre-existing subprocess-order test but timed out after a new cache test
+spent 265 seconds repeatedly tokenizing a megabyte of duplicate words. Byte admission tests now
+cross the same exact 1 MiB boundary with whitespace padding and a small unchanged word set.
+Fresh-read, recovery, width, worker-isolation, over-limit evaluation and retained-storage checks
+remain; the distinct-word test still exercises the independent 8 MiB representation bound.
+The subprocess-progress test uses explicit completion ordering rather than assumed sleep timing.
