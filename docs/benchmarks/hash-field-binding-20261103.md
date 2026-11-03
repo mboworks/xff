@@ -177,8 +177,11 @@ extraction, lifetime, invalidation, output and fuzz tests remain.
 Both hosts pass 313 selected root-and-extension release suites and nine focused ASan suites.
 Linux also passes nine MSan and nine TSan suites; its complete release selection requires working
 FUSE. Actual scoped lint passes the changed implementation, test and common benchmark on both hosts;
-the refined implementation passes a focused recheck. Source guards preserve exactly the selected
-four production/test/benchmark files after source-swapping builds and before/after validation.
+the refined implementation passes a focused recheck. Separate three-TU checks explicitly include
+the changed XFF header on each host because the inherited coordinator still filters for MBO headers;
+that existing tooling defect remains tracked independently in TODO.md. All six explicit header checks
+pass. Source guards preserve exactly the selected four production/test/benchmark files after
+source-swapping builds and before/after validation.
 Normal enforcing hooks and current-head GitHub checks remain required for merge readiness.
 
 - linux: unstripped full CLI 18,159,248 -> 18,160,688 bytes (+1,440).
@@ -188,4 +191,4 @@ O22c2 reusable command output and the other performance candidates remain open.
 
 ## Lossless evidence
 
-[hash-field-binding-20261103.json.gz](hash-field-binding-20261103.json.gz): 1,146,277 bytes; SHA-256 `83957c3fc83b46c62a95544a4b0b89a9eef9392a061be4637d66b3f452686ec1`.
+[hash-field-binding-20261103.json.gz](hash-field-binding-20261103.json.gz): 1,148,942 bytes; SHA-256 `e5e1a4c0468510bcb2daaf2dda872405513435e51c7475f60c3e594e7aa5db35`.

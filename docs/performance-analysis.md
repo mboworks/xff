@@ -3543,10 +3543,9 @@ own warmup, nine repetitions and fastest-seven selection with rotating participa
 The Linux case-isolated matrix remains separate; compare within a recorded protocol rather than
 silently treating absolute measurements from different protocols as interchangeable.
 
-O22b still needs typed field-hash binding. Compact IDs/default-use bits may fit existing segment
-padding, but actual layout, renderer-call overhead, changing context defaults and cold/non-hash
-controls must be qualified before using that space. Do not encode binding state in arbitrary
-strings or add a view-rich allocation to every segment.
+O22b's compact field-hash binding is qualified below, including layout, renderer-call overhead,
+changing defaults and cold/non-hash controls. It uses existing segment padding without encoding
+state in strings or adding a view-rich allocation to every segment.
 
 O22c2 still needs command-owned reusable output buffers and streaming rows. Keep owning/stateless
 APIs intact; a private stateful record writer could reuse capacity on the coordinator and lend a
@@ -3583,7 +3582,7 @@ in the raw artifact. The frozen formatter, source guards, independent full-outpu
 all selected root/extension release tests and focused sanitizers remain part of qualification.
 The initial nested fixture command missed `--archive-depth=2`; its warmup oracle failed before
 accepting any native row. The corrected matrix uses explicit depth two. O19b seeking/index/replay
-and admission, and O19d direct final-buffer materialization, remain open.
+and admission remain open; O19d direct final-buffer materialization is qualified below.
 
 ### O19d: fill final range and materialization storage
 
