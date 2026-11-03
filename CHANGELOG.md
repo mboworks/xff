@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse a session-owned archive input buffer when the source supports caller-owned reads, preserving decoder fallbacks and read budgets.
+
 - Avoid repeated word-window string construction in text similarity checks while preserving exact byte-word scores.
 
 - Aggregate ordinary comparison side totals without retaining duplicate per-path summary tables; category and effect-sensitive summaries keep their existing behavior.

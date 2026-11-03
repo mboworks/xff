@@ -23,6 +23,23 @@ load(":compile_sources_test.bzl", "compile_sources_tests")
 
 package(default_visibility = ["//visibility:private"])
 
+cc_binary(
+    name = "archive_source_benchmark",
+    srcs = ["archive_source_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@com_github_google_benchmark//:benchmark",
+        "@xff_archive//:archive_reader_cc",
+        "@xff_extras_api//:read_source_cc",
+    ],
+)
+
 py_library(
     name = "release_backfill_lib",
     srcs = ["release_backfill.py"],

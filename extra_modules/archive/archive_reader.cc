@@ -25,6 +25,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -204,11 +205,30 @@ struct SourceSession {
   vfs::ReadBudget::Reservation reservation;
   std::unique_ptr<vfs::ReadStream> stream;
   std::string buffer;
+  std::unique_ptr<std::array<char, kBlockSize>> read_buffer;
   std::string prefix;
   absl::Status error;
   std::optional<std::uint64_t> size;
   // Declared last so the reader is released before its callback state.
   ArchivePtr handle;
+
+  // Views remain valid until the next refill or session destruction.
+  absl::StatusOr<std::string_view> Refill() {
+    if (!stream->SupportsReadInto()) {
+      read_buffer.reset();
+      MBO_ASSIGN_OR_RETURN(buffer, stream->Read(kBlockSize));
+      return std::string_view(buffer);
+    }
+    if (!read_buffer) {
+      std::string{}.swap(buffer);
+      read_buffer = std::make_unique_for_overwrite<std::array<char, kBlockSize>>();
+    }
+    MBO_ASSIGN_OR_RETURN(const auto count, stream->ReadInto(std::span<char>(*read_buffer)));
+    if (count > kBlockSize) {
+      return absl::DataLossError("archive source returned more bytes than its read buffer");
+    }
+    return std::string_view(read_buffer->data(), count);
+  }
 
   // XFF_ABI_POINTER: XAR requests absolute heap positions through libarchive's C callback.
   static la_int64_t Seek(struct ::archive*, void* data, la_int64_t offset, int whence) {
@@ -244,17 +264,16 @@ struct SourceSession {
   // XFF_ABI_POINTER: libarchive's input callback uses opaque state and a borrowed byte buffer.
   static la_ssize_t Read(struct ::archive*, void* data, const void** buffer) {
     auto& self = *static_cast<SourceSession*>(data);
-    auto result = self.stream->Read(kBlockSize);
+    auto result = self.Refill();
     if (!result.ok()) {
       self.error = result.status();
       return -1;
     }
-    self.buffer = std::move(*result);
     if (self.prefix.size() < 4) {
-      self.prefix.append(self.buffer, 0, 4 - self.prefix.size());
+      self.prefix.append(*result, 0, 4 - self.prefix.size());
     }
-    *buffer = self.buffer.data();
-    return static_cast<la_ssize_t>(self.buffer.size());
+    *buffer = result->data();
+    return static_cast<la_ssize_t>(result->size());
   }
 };
 

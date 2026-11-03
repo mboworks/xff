@@ -446,7 +446,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       caller-inclusive/admission policies. Preserve leaf jobs, explicit CPU/role accounting and JC gates.
 - [ ] O18: Qualify byte-bounded overlap with backpressure, ordered publication and cancellation;
       avoid per-batch throwaway threads and nested waits on the same saturated pool.
-- [ ] O19: Qualify archive seeking/index/replay and decoder admission independently. Investigate
+- [x] O19a: Qualify reusable session-owned archive input buffers on Linux/macOS, retaining short
+      reads, errors, decoder fallbacks and shared reservations. Preserve all representation trials
+      and controls in [the qualification report](docs/benchmarks/archive-input-buffers-20261102.md).
+- [ ] O19b: Qualify archive seeking/index/replay and decoder admission independently. Investigate
       native/memory ZIP seeking before concurrency; preserve sequential-source and shared-budget fallbacks.
 - [ ] O20: Qualify optional bulk metadata by backend capability with precise fallback, while
       keeping metadata-free traversal free of extra probes and extended-stat work.

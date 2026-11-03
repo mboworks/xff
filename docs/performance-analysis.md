@@ -3455,6 +3455,33 @@ own saturated pool. O08 task storage and O11 warm participation do not establish
 executor is faster. Global sorting/effects/deferred/archive cases need explicit fallback contracts
 until independently qualified.
 
+### O19a: reuse archive input storage
+
+`SourceSession::Read` previously requested a new owned string on each raw 64 KiB callback even
+when its cursor supported caller-owned reads. The selected path lazily owns one uninitialized
+`std::array` and passes only initialized bytes to libarchive. Its existing shared memory reservation
+is unchanged. Sequential decoders without that capability retain their owned-string fallback;
+short reads remain distinct from EOF, and impossible counts fail before exposing the buffer.
+If a cursor changes its advertised read capability, release the inactive buffer before switching
+storage forms so the single reservation does not retain both allocations.
+
+[The qualification report](benchmarks/archive-input-buffers-20261102.md) keeps native TAR/gzip/ZIP
+workloads, in-memory caller-owned and legacy controls, identical-baseline confirmation, allocation
+diagnostics, exact source identities and binary sizes separate. The reusable-string prototype and
+the simpler owned-array pilot are retained. Removing allocation churn does not remove header,
+index or decoder costs, and ordinary/small controls can remain slower. Requested workers do not
+mean archive decoding became parallel.
+
+Format each frozen variant with its actual filename before building. Formatting standard input
+without that filename can change main-header ordering; in this experiment it changed the binary
+hashes. The canonical matrix and confirmation are rerun rather than transferring old timing claims.
+The builder now verifies filename-aware formatting before any variant build, and final correctness
+validation checks the exact restored source. Counts from instrumented allocators remain diagnostics,
+never release timing or peak-memory evidence.
+
+O19b random-access capability, ZIP seeking/indexing, nested replay and decoder admission remain
+open. This change adds none of them and does not claim constant-time member lookup.
+
 ### O21a: byte-word shingle representations
 
 The exact verifier previously built a vector of owning words and another owning string for every

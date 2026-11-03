@@ -345,6 +345,24 @@ cc_test(
 # the format/filter detection works, and the header fields map correctly - without committing binary
 # fixtures. Also pins the two distinct error states (not an archive vs. corrupt archive).
 cc_test(
+    name = "archive_source_buffer_test",
+    size = "small",
+    srcs = ["archive_source_buffer_test.cc"],
+    deps = [
+        ":archive_reader_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@libarchive//libarchive",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+        "@xff_extras_api//:read_budget_cc",
+        "@xff_extras_api//:read_source_cc",
+    ],
+)
+
+cc_test(
     name = "archive_reader_test",
     size = "small",
     srcs = ["archive_reader_test.cc"],
