@@ -75,7 +75,8 @@
     "docs/benchmarks/immutable-default-catalogs-20261102.md": "docs/benchmarks/immutable-default-catalogs-20261102.html",
     "docs/benchmarks/prepared-diff-configuration-20261102.md": "docs/benchmarks/prepared-diff-configuration-20261102.html",
     "docs/benchmarks/prepared-hash-operands-20261102.md": "docs/benchmarks/prepared-hash-operands-20261102.html",
-    "docs/benchmarks/aggregate-comparison-totals-20261102.md": "docs/benchmarks/aggregate-comparison-totals-20261102.html"
+    "docs/benchmarks/aggregate-comparison-totals-20261102.md": "docs/benchmarks/aggregate-comparison-totals-20261102.html",
+    "docs/benchmarks/byte-shingle-representations-20261102.md": "docs/benchmarks/byte-shingle-representations-20261102.html"
   },
   "generated_html": {
     "XFF.md": {

@@ -3454,3 +3454,31 @@ byte-bounded queues. Directory jobs must remain leaf work and never wait for nes
 own saturated pool. O08 task storage and O11 warm participation do not establish that a shared
 executor is faster. Global sorting/effects/deferred/archive cases need explicit fallback contracts
 until independently qualified.
+
+### O21a: byte-word shingle representations
+
+The exact verifier previously built a vector of owning words and another owning string for every
+shingle window. Initial all-view prototypes replace those with normalized buffers and borrowed
+windows. An equality-only counterfactual isolates the fast byte-equality check. Crucially, the
+all-view width-one path regresses larger macOS kernels by about 26-33%, despite favorable mixed
+native command results; those samples must remain visible and do not qualify that implementation.
+Direct word-to-set insertion also needs a distinct decision rather than being assumed faster.
+
+The staged candidate retains the original word-vector construction for width one, removes the
+unnecessary singleton join and retains owning word keys. Wider shingles borrow spans from final,
+local normalized buffers. The score helper takes keys by reference; normalized buffers never move
+or grow after views exist. ASCII folding, opaque high-bit bytes, separator boundaries, unique sets,
+Jaccard rounding, width-zero behavior and conditional file observations are unchanged. This is not
+Unicode decoding or a new text mode. No worker, lock, shared cache, exception path or flag is added.
+
+[The qualification report](benchmarks/byte-shingle-representations-20261102.md) separates the rejected
+all-view/direct-insertion experiments, isolated equality counterfactual, final native and virtual
+whole-engine/kernel populations, duplicate-baseline confirmation, allocation diagnostics and footprint.
+Pure disjoint and case-only corpora prevent mixed-input averages from concealing width-one costs.
+Allocation counts are collected separately under instrumentation; its times are never release
+performance results.
+
+This covers O21a's per-comparison representations only. O21b reference reuse and candidate indexing
+remain open: dynamic peer templates, content mutation/invalidation, immutable-source identity,
+retained-byte bounds and grouping semantics require their own qualification. No source-independent
+cross-file cache or approximate relationship is introduced.

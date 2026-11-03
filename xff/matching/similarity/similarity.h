@@ -10,10 +10,10 @@
 namespace xff::similarity {
 
 // Jaccard similarity of the unique contiguous word-shingle sets, rounded to an integer percentage
-// in [0, 100]. Words are maximal runs of ASCII alphanumerics or UTF-8 bytes; ASCII case is folded,
-// and punctuation/whitespace are separators. A non-empty input shorter than `width` contributes one
-// shingle containing all its words, so short files remain meaningfully comparable. Width zero is
-// invalid and returns 0.
+// in [0, 100]. Words are maximal runs of ASCII alphanumerics or bytes >= 0x80; ASCII case is folded,
+// with no Unicode decoding or non-ASCII case folding. ASCII punctuation/whitespace are separators. A non-empty input
+// shorter than `width` contributes one shingle containing all its words, so short files remain meaningfully comparable.
+// Width zero is invalid and returns 0.
 [[nodiscard]] int WordShinglePercent(std::string_view lhs, std::string_view rhs, std::size_t width);
 
 }  // namespace xff::similarity

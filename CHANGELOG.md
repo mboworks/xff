@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Avoid repeated word-window string construction in text similarity checks while preserving exact byte-word scores.
+
 - Aggregate ordinary comparison side totals without retaining duplicate per-path summary tables; category and effect-sensitive summaries keep their existing behavior.
 
 - Prepare explicit hash-primary algorithms and encodings once while preserving per-context defaults and conditional expected-hash templates.
