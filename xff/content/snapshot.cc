@@ -36,6 +36,14 @@ std::optional<std::string> Snapshot::Digest(
   return DigestValue(fs, path, spec);
 }
 
+std::optional<std::string_view> Snapshot::DigestView(
+    const vfs::FileSystem& fs,
+    std::string_view path,
+    const hash::AlgoEncoding& spec) const {
+  const auto& value = DigestValue(fs, path, spec);
+  return value ? std::optional<std::string_view>(*value) : std::nullopt;
+}
+
 const std::optional<std::string>& Snapshot::DigestValue(
     const vfs::FileSystem& fs,
     std::string_view path,

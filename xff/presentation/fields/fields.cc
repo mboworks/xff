@@ -314,8 +314,9 @@ StringOrView HashField(std::string_view, std::string_view qualifier, const Rende
     return "";  // unknown algorithm or encoding -> empty, like an unknown field
   }
   if (ctx.content) {
-    return ctx.content->Digest(ContentFileSystem(ctx), ctx.path, *spec).value_or("");
+    return ctx.content->DigestView(ContentFileSystem(ctx), ctx.path, *spec).value_or("");
   }
+  // This local snapshot dies on return, so the fallback must retain an owned digest.
   const content::Snapshot content;
   return content.Digest(ContentFileSystem(ctx), ctx.path, *spec).value_or("");
 }

@@ -69,6 +69,40 @@ TEST_F(RenderTest, PlainAppendsNewline) {
   EXPECT_THAT(Renderer(Format::kPlain).Record("a/b/c"), "a/b/c\n");
 }
 
+TEST_F(RenderTest, PlainRecordsPreserveBytesAcrossStorageAndEscapeGrowthBoundaries) {
+  constexpr auto kLengths = std::to_array<std::size_t>({0, 1, 15, 22, 23, 31, 32, 63, 64, 4'096});
+  for (const auto length : kLengths) {
+    SCOPED_TRACE(length);
+    const std::string prefix(length, 'x');
+    const std::string path = prefix + "\n\\\t";
+    EXPECT_THAT(Renderer(Format::kPlain).Record(path), EqualsText(path + "\n"));
+    EXPECT_THAT(Renderer(Format::kPlain).Record(path, "1;34"), EqualsText("\x1b[1;34m" + path + "\x1b[0m\n"));
+    EXPECT_THAT(
+        Renderer(Format::kPlain, PathEncoding::kEscape).Record(path, "1;34"),
+        EqualsText("\x1b[1;34m" + prefix + "\\n\\\\\\t\x1b[0m\n"));
+  }
+}
+
+TEST_F(RenderTest, CEscapingCopiesPrintableRunsAroundAdjacentControls) {
+  constexpr auto kLengths = std::to_array<std::size_t>({0, 1, 31, 4'096});
+  const std::string controls("\0\t\n\r\\\x1F\x7F", 7);
+  constexpr std::string_view kEscaped = R"(\x00\t\n\r\\\x1F\x7F)";
+  for (const auto length : kLengths) {
+    SCOPED_TRACE(length);
+    const std::string run(length, 'x');
+    std::string path(controls);
+    path.append(run).append(controls).append(run).append(controls);
+    std::string expected(kEscaped);
+    expected.append(run).append(kEscaped).append(run).append(kEscaped);
+    EXPECT_THAT(EscapeDisplayText(run), EqualsText(run));
+    EXPECT_THAT(EscapeDisplayText(path), EqualsText(expected));
+    EXPECT_THAT(Renderer(Format::kPlain, PathEncoding::kEscape).Record(path), EqualsText(expected + "\n"));
+    Tree tree(false);
+    tree.Add("root/" + path);
+    EXPECT_THAT(tree.Render(), EqualsText("root\n`-- " + expected + "\n"));
+  }
+}
+
 TEST_F(RenderTest, NulAppendsNulTerminator) {
   EXPECT_THAT(Renderer(Format::kNul).Record("a/b/c"), std::string("a/b/c\0", 6));
 }

@@ -42,6 +42,13 @@ class Snapshot final {
   absl::StatusOr<std::string_view> Read(const vfs::FileSystem& fs, std::string_view path) const;
   std::optional<std::string> Digest(const vfs::FileSystem& fs, std::string_view path, const hash::AlgoEncoding& spec)
       const;
+  // Borrow a cached digest without copying its string. Inserting other digests preserves the
+  // view; invalidating, transferring, moving or destroying this snapshot ends the borrow.
+  // Read failures and unsupported algorithms remain absent, as with the owning Digest form.
+  std::optional<std::string_view> DigestView(
+      const vfs::FileSystem& fs,
+      std::string_view path,
+      const hash::AlgoEncoding& spec) const;
   std::optional<std::size_t> Lines(const vfs::FileSystem& fs, std::string_view path) const;
   void Invalidate();
 

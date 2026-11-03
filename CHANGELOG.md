@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reduce cached-digest copies and plain/escaped output allocation churn while preserving snapshot lifetimes and exact output bytes.
+
 - Reuse a session-owned archive input buffer when the source supports caller-owned reads, preserving decoder fallbacks and read budgets.
 
 - Avoid repeated word-window string construction in text similarity checks while preserving exact byte-word scores.

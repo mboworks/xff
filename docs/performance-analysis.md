@@ -3509,3 +3509,47 @@ This covers O21a's per-comparison representations only. O21b reference reuse and
 remain open: dynamic peer templates, content mutation/invalidation, immutable-source identity,
 retained-byte bounds and grouping semantics require their own qualification. No source-independent
 cross-file cache or approximate relationship is introduced.
+
+### O22a/O22c1: digest observers and record construction
+
+Hash actions, equality checks and fields previously copied strings that the entry snapshot already
+owned. `DigestView` exposes those immutable bytes without changing the map or its lookup policy.
+Other digest insertions preserve storage; invalidation, transfer, moving and destruction end the
+borrow contract. Actions own their final emitted text before calling the sink. Supplied-snapshot
+fields consume views while their owner lives; an extraction with a local snapshot retains its
+owning digest fallback. The owning API remains available. This does not add a cross-file cache,
+shared state, locks or worker admission.
+
+Plain records previously constructed a path body and a second final string. The selected path
+builds the final record directly. C-escaping appends printable runs in bulk instead of mutating the
+string for every byte. Exact control-byte escapes, high bytes, color/reset/newline behavior and
+shared display/tree consumers remain unchanged. Escape expansion can still grow storage; do not
+claim one allocation for every output shape.
+
+[The qualification report](benchmarks/digest-and-record-storage-20261103.md) separates digest-only,
+record-only and combined variants, native and in-memory work, duplicate-baseline controls,
+allocation diagnostics and footprint. The first combined prototype regressed escaped records on
+Linux and is not selected. Its completed populations, including explicitly partial Mac memory
+measurements stopped after rejection, remain separate from the revised bulk-append candidate.
+Tiny colored records retain slower isolated cells; absolute nanoseconds and percentages accompany
+the favorable larger-record and repeated-field measurements. These are not universal speedups.
+
+The qualification driver also exposed an untimed Google Benchmark 1.9.5 startup cost on this Mac:
+missing `hw.cpufrequency` makes `GetCPUCyclesPerSecond` run a one-second busy estimate in every
+fresh process. The reported 24 MHz describes the ARM counter, not CPU core frequency. This is
+measurement-tool metadata overhead, not XFF startup or measured iteration time. Final memory
+qualification batches at most eight same-family/same-CPU cases per process, retaining each case's
+own warmup, nine repetitions and fastest-seven selection with rotating participant/block order.
+The Linux case-isolated matrix remains separate; compare within a recorded protocol rather than
+silently treating absolute measurements from different protocols as interchangeable.
+
+O22b still needs typed field-hash binding. Compact IDs/default-use bits may fit existing segment
+padding, but actual layout, renderer-call overhead, changing context defaults and cold/non-hash
+controls must be qualified before using that space. Do not encode binding state in arbitrary
+strings or add a view-rich allocation to every segment.
+
+O22c2 still needs command-owned reusable output buffers and streaming rows. Keep owning/stateless
+APIs intact; a private stateful record writer could reuse capacity on the coordinator and lend a
+view only during the synchronous sink call. Audit aliasing, reentrant callbacks, cancellation and
+worker/result lifetimes. Worker-produced output must stay owned or have a separately proven batch
+lifetime. This is separate from O18 byte backpressure and ordered pipeline publication.

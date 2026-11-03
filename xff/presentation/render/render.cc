@@ -63,23 +63,27 @@ void AppendJsonEscaped(std::string_view path, std::string& out) {
 // ASCII and high (UTF-8) bytes pass through verbatim.
 void AppendCEscaped(std::string_view path, std::string& out) {
   static constexpr std::string_view kHex = "0123456789ABCDEF";
-  for (const char ch : path) {
+  std::size_t first = 0;
+  for (std::size_t position = 0; position < path.size(); ++position) {
+    const char ch = path[position];
     const auto byte = static_cast<unsigned char>(ch);
+    if (byte >= 0x20 && byte != 0x7F && ch != '\\') {
+      continue;
+    }
+    out.append(path.substr(first, position - first));
     switch (ch) {
       case '\\': out.append("\\\\"); break;
       case '\n': out.append("\\n"); break;
       case '\t': out.append("\\t"); break;
       case '\r': out.append("\\r"); break;
       default:
-        if (byte < 0x20 || byte == 0x7F) {
-          out.append("\\x");
-          out.push_back(kHex[static_cast<unsigned>(byte) >> 4U]);
-          out.push_back(kHex[static_cast<unsigned>(byte) & 0x0FU]);
-        } else {
-          out.push_back(ch);
-        }
+        out.append("\\x");
+        out.push_back(kHex[static_cast<unsigned>(byte) >> 4U]);
+        out.push_back(kHex[static_cast<unsigned>(byte) & 0x0FU]);
     }
+    first = position + 1;
   }
+  out.append(path.substr(first));
 }
 
 // Appends `field` to `out` as one RFC-4180 CSV field: quoted only when it contains a
@@ -173,16 +177,22 @@ std::string Renderer::Record(std::string_view path, std::string_view color) cons
       return record;
     }
     case Format::kPlain: {
-      std::string body;  // the path bytes (raw or C-escaped), before color + newline
+      std::string record;
+      // SGR prefix/suffix plus newline need eight bytes in addition to the color parameter.
+      record.reserve(path.size() + (color.empty() ? 1 : color.size() + 8));
+      if (!color.empty()) {
+        absl::StrAppend(&record, "\x1b[", color, "m");
+      }
       if (encoding_ == PathEncoding::kEscape) {
-        AppendCEscaped(path, body);
+        AppendCEscaped(path, record);
       } else {
-        body = std::string(path);
+        record.append(path);
       }
-      if (color.empty()) {
-        return absl::StrCat(body, "\n");
+      if (!color.empty()) {
+        record.append("\x1b[0m");
       }
-      return absl::StrCat("\x1b[", color, "m", body, "\x1b[0m\n");
+      record.push_back('\n');
+      return record;
     }
     case Format::kTsv: {
       std::string record;

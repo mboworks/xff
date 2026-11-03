@@ -168,5 +168,79 @@ TEST_F(SnapshotTest, KeepsBinaryClassificationAndMovesOwnedState) {
   EXPECT_THAT(moved.Lines(fs, "file"), Eq(std::nullopt));
   EXPECT_THAT(fs.reads, Eq(1));
 }
+
+TEST_F(SnapshotTest, DigestViewsBorrowStableCacheStorageAcrossOtherDigestInsertions) {
+  const auto first = snapshot.DigestView(fs, "file", {.algo = "sha256"});
+  const auto expected = hash::HashData("sha256", fs.bytes).value_or("unsupported");
+  ASSERT_THAT(first, Optional(EqualsText(expected)));
+  EXPECT_THAT(
+      snapshot.DigestView(fs, "file", {.algo = "md5"}),
+      Optional(EqualsText(hash::HashData("md5", fs.bytes).value_or("unsupported"))));
+  EXPECT_THAT(
+      snapshot.DigestView(fs, "file", {.algo = "sha256", .encoding = hash::Encoding::kBase64}),
+      Optional(EqualsText(hash::HashData("sha256", fs.bytes, hash::Encoding::kBase64).value_or("unsupported"))));
+  const auto repeated = snapshot.DigestView(fs, "file", {.algo = "sha256"});
+  EXPECT_THAT(first, Optional(EqualsText(expected)));
+  EXPECT_THAT(repeated, Optional(EqualsText(expected)));
+  EXPECT_THAT(first.value_or("").begin(), Eq(repeated.value_or("").begin()));
+  EXPECT_THAT(fs.reads, Eq(1));
+}
+
+TEST_F(SnapshotTest, OwnedDigestsSurviveInvalidationWhileFreshViewsObserveReplacementBytes) {
+  const auto original = hash::HashData("sha256", fs.bytes).value_or("unsupported");
+  const auto owned = snapshot.Digest(fs, "file", {.algo = "sha256"});
+  EXPECT_THAT(snapshot.DigestView(fs, "file", {.algo = "sha256"}), Optional(EqualsText(original)));
+  fs.bytes = "replacement";
+  snapshot.Invalidate();
+  EXPECT_THAT(owned, Optional(EqualsText(original)));
+  EXPECT_THAT(
+      snapshot.DigestView(fs, "file", {.algo = "sha256"}),
+      Optional(EqualsText(hash::HashData("sha256", fs.bytes).value_or("unsupported"))));
+  EXPECT_THAT(fs.reads, Eq(2));
+}
+
+TEST_F(SnapshotTest, DigestViewsPreserveBinaryEmptyAndFailedReadContracts) {
+  for (const auto& bytes : {std::string(), std::string("a\0b", 3)}) {
+    fs.bytes = bytes;
+    snapshot.Invalidate();
+    for (const auto encoding : {hash::Encoding::kHex, hash::Encoding::kBase64}) {
+      for (const std::string_view algorithm : {"md5", "sha256"}) {
+        const hash::AlgoEncoding spec{.algo = algorithm, .encoding = encoding};
+        EXPECT_THAT(
+            snapshot.DigestView(fs, "file", spec),
+            Optional(EqualsText(hash::HashData(algorithm, bytes, encoding).value_or("unsupported"))));
+        EXPECT_THAT(
+            snapshot.Digest(fs, "file", spec),
+            Optional(EqualsText(snapshot.DigestView(fs, "file", spec).value_or(""))));
+      }
+    }
+  }
+  EXPECT_THAT(snapshot.DigestView(fs, "file", {.algo = "unsupported"}), Eq(std::nullopt));
+  fs.fail = true;
+  snapshot.Invalidate();
+  EXPECT_THAT(snapshot.DigestView(fs, "file", {.algo = "sha256"}), Eq(std::nullopt));
+  EXPECT_THAT(snapshot.Digest(fs, "file", {.algo = "sha256"}), Eq(std::nullopt));
+  fs.fail = false;
+  EXPECT_THAT(snapshot.DigestView(fs, "file", {.algo = "sha256"}), Eq(std::nullopt));
+  snapshot.Invalidate();
+  EXPECT_THAT(
+      snapshot.DigestView(fs, "file", {.algo = "sha256"}),
+      Optional(EqualsText(hash::HashData("sha256", fs.bytes).value_or("unsupported"))));
+}
+
+TEST_F(SnapshotTest, TransferredDerivedDigestsOfferViewsWithoutReadingChangedEntryContent) {
+  const auto expected = hash::HashData("sha256", fs.bytes).value_or("unsupported");
+  EXPECT_THAT(snapshot.DigestView(fs, "file", {.algo = "sha256"}), Optional(EqualsText(expected)));
+  auto derived = std::move(snapshot).TakeDerived({.digests = {{.algorithm = "sha256"}}}, fs, "file");
+  fs.bytes = "replacement";
+  EXPECT_THAT(derived.DigestView(fs, "file", {.algo = "sha256"}), Optional(EqualsText(expected)));
+  EXPECT_THAT(derived.Loaded(), IsFalse());
+  EXPECT_THAT(fs.reads, Eq(1));
+  derived.Invalidate();
+  EXPECT_THAT(
+      derived.DigestView(fs, "file", {.algo = "sha256"}),
+      Optional(EqualsText(hash::HashData("sha256", fs.bytes).value_or("unsupported"))));
+  EXPECT_THAT(fs.reads, Eq(2));
+}
 }  // namespace
 }  // namespace xff::content
