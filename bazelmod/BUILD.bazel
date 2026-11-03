@@ -18,7 +18,6 @@ package(default_visibility = ["//visibility:private"])
 exports_files([
     "abseil-lazy-corefoundation.patch",
     "dev.MODULE.bazel",
-    "expat-build.patch",
     "libarchive-xar.patch",
     "extras.MODULE.bazel",
     "llvm.MODULE.bazel",
