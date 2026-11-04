@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse bounded coordinator-owned storage for escaped, colored, CSV, TSV and JSON-lines path records while preserving exact bytes and queued ownership.
+
 - Probe the smaller similarity shingle set while preserving exact scores, fresh-reference checks and dynamic targets.
 
 - Move already-owned single-word similarity keys instead of copying their buffers; retain exact scores and duplicate handling.

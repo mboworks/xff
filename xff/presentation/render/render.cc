@@ -204,6 +204,58 @@ std::string Renderer::Record(std::string_view path, std::string_view color) cons
   return absl::StrCat(path, "\n");  // unreachable: every Format returns above
 }
 
+void EncodedRecordBuffer::Encode(std::string_view path, std::string_view color) {
+  bytes_.clear();
+  switch (format_) {
+    case Format::kAligned:
+    case Format::kMarkdown:
+    case Format::kTree: bytes_.append(path).push_back('\n'); return;
+    case Format::kCsv:
+      bytes_.reserve(path.size() + 1);
+      AppendCsvField(path, bytes_);
+      bytes_.push_back('\n');
+      return;
+    case Format::kTsv:
+      bytes_.reserve(path.size() + 1);
+      AppendTsvField(path, bytes_);
+      bytes_.push_back('\n');
+      return;
+    case Format::kNul: bytes_.append(path).push_back('\0'); return;
+    case Format::kPlain:
+      bytes_.reserve(path.size() + (color.empty() ? 1 : color.size() + 8));
+      if (!color.empty()) {
+        absl::StrAppend(&bytes_, "\x1b[", color, "m");
+      }
+      if (encoding_ == PathEncoding::kEscape) {
+        AppendCEscaped(path, bytes_);
+      } else {
+        bytes_.append(path);
+      }
+      if (!color.empty()) {
+        bytes_.append("\x1b[0m");
+      }
+      bytes_.push_back('\n');
+      return;
+    case Format::kJsonl: {
+      bytes_.reserve(path.size() + 12);
+      bytes_.assign("{\"path\":");
+      const auto quoted_begin = bytes_.size();
+      bytes_.push_back('"');
+      AppendJsonEscaped(path, bytes_);
+      bytes_.push_back('"');
+      const bool ascii = std::ranges::all_of(path, [](char byte) { return static_cast<unsigned char>(byte) < 0x80; });
+      if (!ascii && !nlohmann::json::accept(std::string_view(bytes_).substr(quoted_begin))) {
+        bytes_.resize(quoted_begin);
+        // Preserve the existing lossless fallback; the rare base64 temporary is not cached.
+        absl::StrAppend(&bytes_, R"({"encoding":"base64","data":")", absl::Base64Escape(path), R"("})");
+      }
+      bytes_.append("}\n");
+      return;
+    }
+  }
+  bytes_.append(path).push_back('\n');
+}
+
 std::string EncodeTabularRow(Format format, const std::vector<std::string>& cells) {
   switch (format) {
     case Format::kCsv:

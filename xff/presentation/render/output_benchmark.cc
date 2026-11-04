@@ -4,8 +4,10 @@
 // Isolate record construction and cached digest consumption from host filesystem costs.
 #include <array>
 #include <cstddef>
+#include <functional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "absl/status/status.h"
@@ -93,6 +95,85 @@ void RawRecord(benchmark::State& state) {
       const auto record = renderer.Record(path);
       consume(record);
     }
+  }
+}
+
+struct EncodedProfile {
+  std::string_view name;
+  Format format;
+  PathEncoding encoding = PathEncoding::kRaw;
+  std::string_view color;
+};
+
+void EncodedRecord(benchmark::State& state, const EncodedProfile& profile) {
+  const std::string path = std::string(static_cast<std::size_t>(state.range(0)), 'x') + ",\"\\\n\t";
+  const bool reuse = state.range(1) != 0;
+  EncodedRecordBuffer buffer(profile.format, profile.encoding);
+  const Renderer renderer(profile.format, profile.encoding);
+  const std::string expected = renderer.Record(path, profile.color);
+  std::string actual;
+  buffer.EmitRecord(path, [&](std::string_view text) { actual.assign(text); }, profile.color);
+  if (actual != expected) {
+    state.SkipWithError("encoded record differs from stateless byte reference");
+    return;
+  }
+  const auto consume = [](std::string_view text) { benchmark::DoNotOptimize(text); };
+  if (reuse) {
+    for (auto iteration : state) {
+      benchmark::DoNotOptimize(iteration);
+      buffer.EmitRecord(path, consume, profile.color);
+    }
+  } else {
+    for (auto iteration : state) {
+      benchmark::DoNotOptimize(iteration);
+      const auto record = renderer.Record(path, profile.color);
+      consume(record);
+    }
+  }
+}
+
+void RegisterEncodedRecords() {
+  static constexpr auto kProfiles = std::to_array<EncodedProfile>({
+      {
+          .name = "plain",
+          .format = Format::kPlain,
+      },
+      {
+          .name = "escaped",
+          .format = Format::kPlain,
+          .encoding = PathEncoding::kEscape,
+      },
+      {
+          .name = "colored",
+          .format = Format::kPlain,
+          .color = "1;34",
+      },
+      {
+          .name = "nul",
+          .format = Format::kNul,
+      },
+      {
+          .name = "csv",
+          .format = Format::kCsv,
+      },
+      {
+          .name = "tsv",
+          .format = Format::kTsv,
+      },
+      {
+          .name = "jsonl",
+          .format = Format::kJsonl,
+      },
+  });
+  for (const auto& profile : kProfiles) {
+    const std::string name = "output/encoded-record/" + std::string(profile.name);
+    benchmark::RegisterBenchmark(name, [profile](benchmark::State& state) { EncodedRecord(state, profile); })
+        ->ArgsProduct({{0, 1, 15, 22, 23, 64, 160, 4'096}, {0, 1}})
+        ->UseRealTime()
+        ->Unit(benchmark::kNanosecond)
+        ->Repetitions(9)
+        ->MinTime(0.02)
+        ->MinWarmUpTime(0.01);
   }
 }
 
@@ -248,6 +329,7 @@ int main(int argc, char** argv) {
       ->Repetitions(9)
       ->MinTime(0.02)
       ->MinWarmUpTime(0.01);
+  xff::render::RegisterEncodedRecords();
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();
 }

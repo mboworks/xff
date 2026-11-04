@@ -181,6 +181,50 @@ void Measure(benchmark::State& state, const Scenario& scenario, ExpressionExecut
   state.counters["workers"] = static_cast<double>(state.range(1));
 }
 
+void RegisterEncodedOutput() {
+  const auto profiles = std::to_array<Scenario>({
+      {
+          .name = "plain",
+          .arguments = {"-type", "f"},
+      },
+      {
+          .name = "escaped",
+          .arguments = {"--path-encoding=escape", "-type", "f"},
+      },
+      {
+          .name = "nul",
+          .arguments = {"--format=nul", "-type", "f"},
+      },
+      {
+          .name = "csv",
+          .arguments = {"--format=csv", "--no-header", "-type", "f"},
+      },
+      {
+          .name = "tsv",
+          .arguments = {"--format=tsv", "--no-header", "-type", "f"},
+      },
+      {
+          .name = "jsonl",
+          .arguments = {"--format=jsonl", "-type", "f"},
+      },
+      {
+          .name = "csv-columns",
+          .arguments = {"--format=csv", "--no-header", "--columns=path", "-type", "f"},
+      },
+  });
+  for (const auto& profile : profiles) {
+    const std::string name = "engine/encoded-output/" + std::string(profile.name);
+    benchmark::RegisterBenchmark(
+        name, [profile](benchmark::State& state) { Measure(state, profile, ExpressionExecutor::kProduction); })
+        ->ArgsProduct({{0, 10, 1'000, 10'000}, {1, 3}})
+        ->UseRealTime()
+        ->Unit(benchmark::kMicrosecond)
+        ->Repetitions(9)
+        ->MinTime(0.02)
+        ->MinWarmUpTime(0.01);
+  }
+}
+
 }  // namespace
 
 // XFF_ABI_POINTER: Google Benchmark's process argument interface.
@@ -430,6 +474,7 @@ int main(int argc, char** argv) {
       }
     }
   }
+  RegisterEncodedOutput();
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();
 }

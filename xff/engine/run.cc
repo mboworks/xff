@@ -5752,6 +5752,10 @@ RunResult RunFindCore(
       || (format == render::Format::kPlain && path_encoding == render::PathEncoding::kRaw && !colorize)) {
     raw_records.emplace(format == render::Format::kNul ? '\0' : '\n');
   }
+  std::optional<render::EncodedRecordBuffer> encoded_records;
+  if (!raw_records) {
+    encoded_records.emplace(format, path_encoding);
+  }
   std::optional<render::TableStream> table_stream;
   if (buffered) {
     std::vector<std::string> table_columns = columns.empty() ? std::vector<std::string>{"path"} : columns;
@@ -6022,8 +6026,8 @@ RunResult RunFindCore(
         }
       } else if (raw_records) {
         raw_records->EmitRecord(visit.path, emit_entry);
-      } else {
-        emit_entry(render::Renderer(format, path_encoding).Record(visit.path, entry_color));
+      } else if (encoded_records) {
+        encoded_records->EmitRecord(visit.path, emit_entry, entry_color);
       }
     }
   };

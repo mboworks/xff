@@ -3827,3 +3827,17 @@ source-budget fallback. Descriptor-size differences are reported explicitly; seq
 size correctness remains open. The full rejected implementation and 17,640 native invocations plus
 2,952 direct case/participant/session records are archived. No product reader change is accepted
 from this trial.
+
+### O22c2b: coordinator-owned encoded records
+
+Implicit escaped/colored plain, CSV, TSV and JSON-lines path listings reuse one coordinator-owned
+string through synchronous consumption. The [paired qualification report](benchmarks/encoded-record-reuse-20261103.md)
+retains exact output, queued/ranked ownership, short-string costs, raw/NUL controls and bounded
+retention. Valid UTF-8 and malformed-byte/base64 behavior remain covered in dedicated Unicode tests.
+The stateless renderer remains available; raw/NUL output keeps its separately qualified buffer.
+
+Native gains reach about 7% macOS and 8-9% Linux in the measured machine-readable workloads.
+Tiny direct encodings can cost extra nanoseconds despite saving allocations for larger paths;
+the report retains those cases rather than treating allocation removal alone as an elapsed win.
+No new worker, lock, host-I/O path, CLI flag or default output byte is introduced. Structured
+column/summary cell and row reuse remains open under O22c2, as do streaming/backpressure contracts.
