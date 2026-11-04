@@ -225,6 +225,79 @@ void RegisterEncodedOutput() {
   }
 }
 
+void RegisterColumnRows() {
+  struct Columns {
+    std::string_view name;
+    std::string_view format;
+    std::string_view columns;
+  };
+
+  static constexpr auto kColumns = std::to_array<Columns>({
+      {
+          .name = "csv1",
+          .format = "csv",
+          .columns = "path",
+      },
+      {
+          .name = "csv4",
+          .format = "csv",
+          .columns = "path,name,stem,ext",
+      },
+      {
+          .name = "csv16",
+          .format = "csv",
+          .columns = "path,path,path,path,path,path,path,path,path,path,path,path,path,path,path,path",
+      },
+      {
+          .name = "tsv1",
+          .format = "tsv",
+          .columns = "path",
+      },
+      {
+          .name = "tsv4",
+          .format = "tsv",
+          .columns = "path,name,stem,ext",
+      },
+      {
+          .name = "tsv16",
+          .format = "tsv",
+          .columns = "path,path,path,path,path,path,path,path,path,path,path,path,path,path,path,path",
+      },
+      {
+          .name = "aligned4",
+          .format = "aligned",
+          .columns = "path,name,stem,ext",
+      },
+      {
+          .name = "markdown4",
+          .format = "markdown",
+          .columns = "path,name,stem,ext",
+      },
+  });
+  for (const auto& columns : kColumns) {
+    const Scenario scenario{
+        .name = columns.name,
+        .arguments =
+            {
+                "--format=" + std::string(columns.format),
+                "--columns=" + std::string(columns.columns),
+                "--no-header",
+                "-type",
+                "f",
+            },
+    };
+    benchmark::RegisterBenchmark(
+        "engine/column-rows/" + std::string(columns.name),
+        [scenario](benchmark::State& state) { Measure(state, scenario, ExpressionExecutor::kProduction); })
+        ->ArgsProduct({{0, 10, 1'000, 10'000}, {1, 3}})
+        ->UseRealTime()
+        ->Unit(benchmark::kMicrosecond)
+        ->Repetitions(9)
+        ->MinTime(0.02)
+        ->MinWarmUpTime(0.01);
+  }
+}
+
 }  // namespace
 
 // XFF_ABI_POINTER: Google Benchmark's process argument interface.
@@ -475,6 +548,7 @@ int main(int argc, char** argv) {
     }
   }
   RegisterEncodedOutput();
+  RegisterColumnRows();
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();
 }

@@ -177,6 +177,63 @@ void RegisterEncodedRecords() {
   }
 }
 
+void EncodedRow(benchmark::State& state, Format format) {
+  const auto count = static_cast<std::size_t>(state.range(0));
+  const auto prefix = static_cast<std::size_t>(state.range(1));
+  const bool reuse = state.range(2) != 0;
+  const std::string cell = std::string(prefix, 'x') + ",\"\n\t\\";
+  const std::vector<std::string> cells(count, cell);
+  EncodedRecordBuffer buffer(format, PathEncoding::kRaw);
+  const std::string expected = EncodeTabularRow(format, cells);
+  std::string actual;
+  buffer.EmitRow(cells, [&](std::string_view bytes) { actual.assign(bytes); });
+  if (actual != expected) {
+    state.SkipWithError("row differs from stateless byte reference");
+    return;
+  }
+  const auto consume = [](std::string_view bytes) { benchmark::DoNotOptimize(bytes); };
+  if (reuse) {
+    for (auto iteration : state) {
+      benchmark::DoNotOptimize(iteration);
+      buffer.EmitRow(cells, consume);
+    }
+  } else {
+    for (auto iteration : state) {
+      benchmark::DoNotOptimize(iteration);
+      const auto bytes = EncodeTabularRow(format, cells);
+      consume(bytes);
+    }
+  }
+}
+
+void RegisterEncodedRows() {
+  struct RowFormat {
+    std::string_view name;
+    Format format;
+  };
+
+  static constexpr auto kFormats = std::to_array<RowFormat>({
+      {
+          .name = "csv",
+          .format = Format::kCsv,
+      },
+      {
+          .name = "tsv",
+          .format = Format::kTsv,
+      },
+  });
+  for (const auto& entry : kFormats) {
+    const std::string name = "output/encoded-row/" + std::string(entry.name);
+    benchmark::RegisterBenchmark(name, [format = entry.format](benchmark::State& state) { EncodedRow(state, format); })
+        ->ArgsProduct({{0, 1, 4, 16}, {0, 8, 64, 4'096}, {0, 1}})
+        ->UseRealTime()
+        ->Unit(benchmark::kNanosecond)
+        ->Repetitions(9)
+        ->MinTime(0.02)
+        ->MinWarmUpTime(0.01);
+  }
+}
+
 void HashFields(benchmark::State& state) {
   const auto count = static_cast<std::size_t>(state.range(0));
   const bool warm = state.range(1) != 0;
@@ -330,6 +387,7 @@ int main(int argc, char** argv) {
       ->MinTime(0.02)
       ->MinWarmUpTime(0.01);
   xff::render::RegisterEncodedRecords();
+  xff::render::RegisterEncodedRows();
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();
 }

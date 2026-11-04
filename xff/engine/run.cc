@@ -5756,6 +5756,8 @@ RunResult RunFindCore(
   if (!raw_records) {
     encoded_records.emplace(format, path_encoding);
   }
+  // Retain only the cell-vector allocation; individual values are released immediately after emission.
+  std::vector<std::string> column_cells;
   std::optional<render::TableStream> table_stream;
   if (buffered) {
     std::vector<std::string> table_columns = columns.empty() ? std::vector<std::string>{"path"} : columns;
@@ -6011,16 +6013,19 @@ RunResult RunFindCore(
             .fuzzy_score = fuzzy_score,
         };
         if (!column_templates.empty()) {
-          std::vector<std::string> cells;
-          cells.reserve(column_templates.size());
+          column_cells.reserve(column_templates.size());
           for (const fields::Template& column : column_templates) {
-            cells.push_back(column.Render(ctx));
+            column_cells.push_back(column.Render(ctx));
           }
           if (buffered) {
-            emit(table_stream->Add(cells));
+            emit(table_stream->Add(column_cells));
+          } else if (encoded_records) {
+            encoded_records->EmitRow(column_cells, emit_entry);
           } else {
-            emit_entry(render::EncodeTabularRow(format, cells));
+            // Preserve the existing empty-record callback for non-tabular API configurations.
+            emit_entry(render::EncodeTabularRow(format, column_cells));
           }
+          column_cells.clear();
         } else {
           emit_entry(compiled_tmpl->Render(ctx) + "\n");
         }
