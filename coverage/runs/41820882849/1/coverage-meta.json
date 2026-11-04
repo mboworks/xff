@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "target": "pr/1087",
+  "source": {
+    "created_at": "2026-11-04T11:26:29Z",
+    "started_at": "2026-11-04T11:26:29Z",
+    "completed_at": "2026-11-04T12:24:34Z",
+    "run_id": 41820882849,
+    "run_attempt": 1,
+    "head_sha": "53c611a6a65c98740bec8060e11b3021186abb29"
+  },
+  "coverage": {
+    "lines": {
+      "covered": 30625,
+      "total": 31501,
+      "percent": 97.22
+    },
+    "functions": {
+      "covered": 2861,
+      "total": 2915,
+      "percent": 98.15
+    },
+    "branches": {
+      "covered": 15948,
+      "total": 17266,
+      "percent": 92.37
+    }
+  }
+}
