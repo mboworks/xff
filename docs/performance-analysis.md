@@ -2910,7 +2910,7 @@ virtual layers and generic executor hierarchies need an actual lifetime or exten
 | O13 | Carry derived values across stages    | Worker-filtered entries may be reread for coordinator hashes/line counts/output     | Explicit remaining P04 extension           | Requested values only; no unbounded raw-content batch        |
 | O14 | Build immutable catalogs once         | MIME/language core vocabularies and lookups have runtime construction paths         | Startup TODO; EP-S01                       | Generated flat tables plus lazy user overlays                |
 | O15 | Prepare remaining invariant operands  | Hash specs, diff options and template families retain qualification gaps            | EP03/EP07 operand inventory                | Audit actual production binding before adding a record       |
-| O16 | Stream the two-tree comparison merge  | Both trees accumulate in ordered maps before comparison and first status output     | Original directory-at-a-time design; P05   | Paired completed frontiers, ordering and ignore equivalence  |
+| O16 | Stream the two-tree comparison merge  | Both complete trees remain retained before comparison and first status output       | Original directory-at-a-time design; P05   | Paired completed frontiers, ordering and ignore equivalence  |
 | O17 | Reuse stage workers within a command  | Traversal/matching/comparison have separate persistent pools and stage budgets      | JC01-JC08; open #992/#996/#997/#998        | Persistent role queues versus pools; shared CPU accounting   |
 | O18 | Add byte-bounded pipeline overlap     | Coordinator waits for matching batches; I/O and matching can have idle phases       | JC03/04; rejected per-batch async pilot    | Persistent workers, bounded completed output, backpressure   |
 | O19 | Amortize archive decoding/indexing    | Reopening/replaying members is expensive, especially the recorded ZIP cases         | P07 archive admission/indexing TODOs       | Indexed or serial decode feeding admitted byte queues        |
@@ -3429,8 +3429,28 @@ No worker, lock, clock, flag or observation moves.
 
 [The qualification report](benchmarks/aggregate-comparison-totals-20261102.md) separates native
 commands, in-memory whole-engine timing, memory, identical-baseline controls and footprint. This is
-retention of duplicate summary storage only: both complete tree maps remain, and first-output latency
+retention of duplicate summary storage only: both complete trees remain retained, and first-output latency
 is unchanged. O16b, O17/O18 and the broader JC plans remain open.
+
+### O16a2: compact complete-tree comparison storage
+
+Retain arena-owned path bytes, compact type/source/size/mode metadata, stable segmented records
+and sorted key/index identities. Full metadata stays available during matching and summary collection;
+backend owners and first-wins duplicates survive the completed scans. Comparison order, reads, errors,
+patches and effects keep their existing timing. This reduces retention without claiming streaming.
+
+[The two-host report](benchmarks/compact-comparison-entries-20261104.md) retains all native and
+in-memory rounds, the metadata-only alternative, unchanged-copy controls, repeated small-case costs,
+RSS, binary growth and 100k totals. Mac ordinary-summary controls are broadly neutral; Linux has
+small costs while larger comparisons improve. Do not infer universal gains or ignore the drifting
+Mac 100k controls. Seven scoped TUs, complete release suites and affected sanitizers qualify the
+change. A test-only BUILD formatting adjustment preserves exact Linux runtime binaries; Mac differs
+only in symbol-table sandbox IDs and their valid dependent signatures, with all other bytes equal.
+
+Next evaluate an append-only borrowed category sequence: pairs arrive exactly once in sorted order
+and the only category-map consumer iterates. Preserve exact merge/accumulation order instead of
+replacing it with hash iteration. Moving temporary archive-owner records and smaller initial arena
+blocks remain separate measured policies, not assumed wins. O16b/O17/O18 remain open.
 
 ### O16b/O17/O18: completed-frontier integration remains open
 

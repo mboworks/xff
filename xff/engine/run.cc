@@ -68,6 +68,7 @@
 #include "xff/content/snapshot.h"
 #include "xff/datetime/datetime.h"
 #include "xff/engine/collect.h"
+#include "xff/engine/comparison_entries.h"
 #include "xff/engine/consumers.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/extract.h"
@@ -4153,8 +4154,6 @@ int FinishCollections(
 
 namespace {
 
-using TreeCompareEntries = std::map<std::string, TreeCompareEntry>;
-
 enum class TreeCompareOutput { kStatus, kDiff };
 
 enum class CompareIgnorePolicy { kRespective, kNone, kLeft, kRight, kUnion };
@@ -4613,17 +4612,23 @@ RunResult RunTreeCompare(
   }
   std::array<SummaryAccumulator, 2> side_summaries;
   std::map<std::string, std::string> categories;
-  std::array<TreeCompareEntries, 2> entries;
+  std::array<ComparisonEntries, 2> entries;
   std::mutex callback_mutex;
   std::set<std::string> reported_errors;
   const auto run_side = [&](std::size_t side) {
     const auto collect_callback = [&](const Visit& visit) {
       const std::string_view relative = RelativeTo(visit.path, visit.root);
-      entries.at(side).emplace(
-          relative.empty() ? "." : std::string(relative),
+      entries.at(side).Add(
+          relative.empty() ? "." : relative,
           TreeCompareEntry{
-              .path = std::string(visit.path),
-              .metadata = visit.metadata,
+              .path = visit.path,
+              .metadata =
+                  {
+                      .type = visit.metadata.type,
+                      .source = visit.metadata.source,
+                      .size = visit.metadata.size,
+                      .mode = visit.metadata.mode,
+                  },
               .fs = visit.fs_owner ? visit.fs : mbo::types::OptionalRef<const vfs::FileSystem>(fs),
               .fs_owner = visit.fs_owner,
           });
@@ -4673,20 +4678,24 @@ RunResult RunTreeCompare(
   ParallelCompare comparisons(
       ResolveJobs(command.globals, style).value_or(1), output == TreeCompareOutput::kDiff && selection.different);
   const auto selected = std::array{selection.left_only, selection.right_only, selection.different, selection.identical};
-  auto left = entries[0].begin();
-  auto right = entries[1].begin();
-  while (left != entries[0].end() || right != entries[1].end()) {
+  const auto& left_entries = entries[0].Ordered();
+  const auto& right_entries = entries[1].Ordered();
+  auto left = left_entries.begin();
+  auto right = right_entries.begin();
+  while (left != left_entries.end() || right != right_entries.end()) {
     std::vector<ComparisonPair> inputs;
     inputs.reserve(ParallelCompare::kBatchSize);
-    while (inputs.size() < ParallelCompare::kBatchSize && (left != entries[0].end() || right != entries[1].end())) {
-      if (right == entries[1].end() || (left != entries[0].end() && left->first < right->first)) {
-        inputs.push_back({.path = left->first, .left = left->second});
+    while (inputs.size() < ParallelCompare::kBatchSize
+           && (left != left_entries.end() || right != right_entries.end())) {
+      if (right == right_entries.end() || (left != left_entries.end() && left->first < right->first)) {
+        inputs.push_back({.path = left->first, .left = entries[0].Get(left->second)});
         ++left;
-      } else if (left == entries[0].end() || right->first < left->first) {
-        inputs.push_back({.path = right->first, .right = right->second});
+      } else if (left == left_entries.end() || right->first < left->first) {
+        inputs.push_back({.path = right->first, .right = entries[1].Get(right->second)});
         ++right;
       } else {
-        inputs.push_back({.path = left->first, .left = left->second, .right = right->second});
+        inputs.push_back(
+            {.path = left->first, .left = entries[0].Get(left->second), .right = entries[1].Get(right->second)});
         ++left;
         ++right;
       }

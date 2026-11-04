@@ -128,7 +128,7 @@ repeated content consumers, time to first output, and peak RSS with those limita
 ## Directory-at-a-time comparison investigation
 
 The current implementation has two explicit barriers in `RunTreeCompare`: both `RunFindCore`
-invocations finish, then the ordered maps of matched entries are merged. `Walk` exposes entry
+invocations finish, then compact retained entries are sorted by relative path and merged. `Walk` exposes entry
 visits and traversal errors, but no callback saying that a directory's complete child listing
 has been evaluated. A directory entry being visited is therefore not a completion signal.
 
