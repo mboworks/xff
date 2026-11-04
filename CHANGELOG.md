@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Retain comparison-summary categories as ordered borrowed records and avoid temporary contribution lookup keys, preserving exact summaries while reducing allocation.
+
 - Retain compact comparison paths and metadata, reducing allocation and memory while preserving status, patch and summary behavior.
 
 - Encode CSV/TSV summary cells directly, reducing intermediate allocations while preserving exact output and borrowed-value lifetimes.

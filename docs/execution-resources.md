@@ -131,6 +131,8 @@ The current implementation has two explicit barriers in `RunTreeCompare`: both `
 invocations finish, then compact retained entries are sorted by relative path and merged. `Walk` exposes entry
 visits and traversal errors, but no callback saying that a directory's complete child listing
 has been evaluated. A directory entry being visited is therefore not a completion signal.
+Comparison-summary categories borrow path/static-label bytes in merge order; retained trees stay
+alive through final summary consumption. Releasing frontiers early requires a separate ownership contract.
 
 A future streaming implementation needs a paired-directory coordinator. Each side may read ahead,
 but the coordinator must know when both corresponding listings are complete before deciding
