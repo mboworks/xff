@@ -93,8 +93,13 @@ It is not an allocation count or a proof that reserved capacity was fully touche
 | Linux | deep / 100,000  |      6.730 |           6.691 |           6.711 |
 
 Release CLI sizes are macOS 8,247,352 -> 8,248,056 bytes (+704) and Linux
-18,359,008 -> 18,370,664 bytes (+11,656). Rebuilt release binaries exactly match the frozen timed
-4,096-entry binaries on both hosts. The later committed regression adds no runtime changes.
+18,359,008 -> 18,370,664 bytes (+11,656). Rebuilds before final digit-separator formatting exactly
+match the frozen timed binaries. Final `4096` -> `4'096` formatting changes debug information and
+dependent build identity, not runtime instructions: Linux sections differ only in `.debug_info`,
+`.debug_line` and `.note.gnu.build-id`; macOS runtime code/data and resolved symbols are exact after
+normalizing sandbox debug paths and their dependent identity/signature fields. Original Mach-O
+signatures validate. Both unmodified binaries and strict proofs are retained. The committed
+regression adds no runtime changes.
 
 All 316 enabled release targets passed on both hosts; Linux includes required real FUSE tests.
 Eight affected targets passed ASan on both hosts and MSan/TSan on Linux. The added 5,003-entry
