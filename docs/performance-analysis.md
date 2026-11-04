@@ -4072,6 +4072,23 @@ EvalContext before admitting known-policy name filters. Preserve serialization f
 backends and existing safety, metadata, collection and deferred gates; test both sensitive and
 insensitive guarantees. This PR does not enable those workers or claim their prospective gain.
 
+### O20e: segmented native directory accumulation
+
+Native `ReadDirectory` now appends to stable 4,096-entry MBO segments before one exact-sized move
+into the existing VFS vector result. This removes repeated growth relocation without changing
+entry ownership, order, paths, type hints, errors or safety. Segments and the result coexist during
+conversion; small directories reserve more initial capacity. No archive-interface rewrite, new
+thread, lock or host-I/O route is introduced.
+
+The [paired native report](benchmarks/segmented-native-listings-20261104.md) retains both segment
+sizes, 9,300 complete-output-checked invocations per host, RSS, binary identity and all slow controls.
+Large Linux listings generally gain about 0.5-2.5%; macOS stays mostly neutral. Reject 256-entry
+segments because long heap-backed names repeatedly cost Linux about 2.5-3%. Larger segments remove
+that regression, while small-tree costs around 1-2% and a macOS long-name 0.44% cost remain explicit.
+Full release suites, relevant sanitizers and a committed 5,003-entry listing regression qualify
+the selected representation. Compact hint/full metadata records remain open under O20b.
+
+
 ### Shared benchmark-history task ordering
 
 Per-revision Similarity order can change the apparent surface geometry while the underlying

@@ -48,6 +48,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <span>
 #include <string>
 #include <string_view>
@@ -58,6 +59,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/time/time.h"
+#include "mbo/container/segmented_vector.h"
 #include "xff/vfs/entry.h"
 #include "xff/vfs/filesystem.h"
 
@@ -208,7 +210,7 @@ absl::StatusOr<std::vector<Entry>> LocalFs::ReadDirectory(std::string_view dir, 
     return absl::ErrnoToStatus(errno, absl::StrCat("opendir('", dir, "')"));
   }
 
-  std::vector<Entry> entries;
+  mbo::container::SegmentedVector<Entry, {.segment_size = 4'096, .segment_reservation = 0}> entries;
   errno = 0;
   // Thread-safe here: each directory is opened and iterated by exactly one worker, so this DIR* is
   // never shared across threads. readdir is only unsafe for threads sharing a stream (readdir_r, the
@@ -238,7 +240,7 @@ absl::StatusOr<std::vector<Entry>> LocalFs::ReadDirectory(std::string_view dir, 
   if (read_errno != 0) {
     return absl::ErrnoToStatus(read_errno, absl::StrCat("readdir('", dir, "')"));
   }
-  return entries;
+  return std::vector<Entry>(std::from_range, std::views::as_rvalue(entries));
 }
 
 absl::StatusOr<Metadata> LocalFs::Stat(std::string_view path, bool follow_symlinks) const {
