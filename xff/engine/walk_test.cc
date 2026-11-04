@@ -182,7 +182,7 @@ class NameListingFs final : public FakeFs {
     MBO_ASSIGN_OR_RETURN(auto entries, FakeFs::ReadDir(dir));
     // A native listing preserves the traversed spelling through directory symlinks.
     for (auto& entry : entries) {
-      entry.path = absl::StrCat(dir, "/", entry.name);
+      entry.path = absl::StrCat(dir, dir.empty() || dir.back() == '/' ? "" : "/", entry.name);
     }
     return entries;
   }
@@ -288,6 +288,115 @@ TEST_F(NameListingTest, RootOnlyArchiveCallbackDoesNotDisableChildNames) {
           [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }, mount),
       IsOk());
   EXPECT_THAT(filesystem.NameReadCount(), Gt(0));
+}
+
+TEST_F(NameListingTest, EmptyAndTrailingSlashRootsPreserveResolvedChildPaths) {
+  static constexpr auto kRoots = std::to_array<std::string_view>({"", "root/", "root//"});
+  for (const auto root : kRoots) {
+    SCOPED_TRACE(root);
+    NameListingFs filesystem(true);
+    const std::string prefix(root);
+    const std::string directory = prefix + "sub";
+    filesystem.AddDir(
+        prefix, 1,
+        {
+            FileEntry(prefix + "known", "known"),
+            {.path = prefix + "unknown", .name = "unknown"},
+            DirEntry(directory, "sub"),
+        });
+    filesystem.AddFile(prefix + "known", 1);
+    filesystem.AddFile(prefix + "unknown", 1);
+    filesystem.AddDir(directory, 1, {FileEntry(directory + "/nested", "nested")});
+    filesystem.AddFile(directory + "/nested", 1);
+    const auto roots = std::to_array<std::string>({prefix});
+    std::vector<std::string> visited;
+    EXPECT_THAT(
+        Walk(
+            filesystem, roots, {.sort = SortOrder::kDir, .metadata = MetadataDemand::kOnDemand},
+            [&](const Visit& visit) {
+              EXPECT_THAT(visit.EnsureMetadata(), IsOk());
+              visited.emplace_back(visit.path);
+              return WalkAction::kContinue;
+            },
+            [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }),
+        IsOk());
+    EXPECT_THAT(visited, ElementsAre(prefix, prefix + "known", directory, prefix + "unknown", directory + "/nested"));
+  }
+}
+
+TEST_F(NameListingTest, RecursiveArchivePolicyWithoutAMounterStillUsesNames) {
+  const NameListingFs filesystem(true);
+  const auto roots = std::to_array<std::string>({"/a_directory_prefix_longer_than_small_string_storage"});
+  EXPECT_THAT(
+      Walk(
+          filesystem, roots, {.metadata = MetadataDemand::kNever, .archive = ArchiveDive::kAll},
+          [](const Visit&) { return WalkAction::kContinue; },
+          [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }),
+      IsOk());
+  EXPECT_THAT(filesystem.NameReadCount(), Gt(0));
+}
+
+TEST_F(NameListingTest, RootMountedNativeComponentsUseNameOrdering) {
+  FakeFs host;
+  const std::string container = "/a_directory_prefix_longer_than_small_string_storage";
+  host.AddFile(container, 1);
+  const auto roots = std::to_array<std::string>({container});
+  std::vector<std::string> members;
+  const auto mount = [&](std::string_view path, const vfs::FileSystem&,
+                         int) -> absl::StatusOr<std::unique_ptr<const vfs::FileSystem>> {
+    EXPECT_THAT(path, EqualsText(container));
+    return std::make_unique<NameListingFs>(true);
+  };
+  EXPECT_THAT(
+      Walk(
+          host, roots, {.sort = SortOrder::kDir, .metadata = MetadataDemand::kNever, .archive = ArchiveDive::kRoots},
+          [&](const Visit& visit) {
+            if (visit.fs_owner) {
+              EXPECT_THAT(visit.EnsureMetadata(), IsOk());
+              members.emplace_back(visit.path);
+            }
+            return WalkAction::kContinue;
+          },
+          [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }, mount),
+      IsOk());
+  EXPECT_THAT(
+      members, ElementsAre(
+                   container + "/a-first.txt", container + "/link", container + "/sub", container + "/unknown.txt",
+                   container + "/z-last.txt", container + "/sub/child.txt"));
+}
+
+TEST_F(NameListingTest, MountedNativeComponentsRetainOrderAndFilesystemOwnership) {
+  FakeFs host;
+  const std::string container = "/a_directory_prefix_longer_than_small_string_storage";
+  host.AddDir("/host", 1, {FileEntry(container, "container")});
+  host.AddFile(container, 1);
+  const auto roots = std::to_array<std::string>({"/host"});
+  std::vector<std::string> members;
+  const auto mount = [&](std::string_view path, const vfs::FileSystem&,
+                         int) -> absl::StatusOr<std::unique_ptr<const vfs::FileSystem>> {
+    EXPECT_THAT(path, EqualsText(container));
+    return std::make_unique<NameListingFs>(true);
+  };
+  EXPECT_THAT(
+      Walk(
+          host, roots,
+          {.sort = SortOrder::kSubtree,
+           .metadata = MetadataDemand::kNever,
+           .archive = ArchiveDive::kAll,
+           .mount_before_visit = true},
+          [&](const Visit& visit) {
+            if (visit.fs_owner) {
+              EXPECT_THAT(visit.EnsureMetadata(), IsOk());
+              members.emplace_back(visit.path);
+            }
+            return WalkAction::kContinue;
+          },
+          [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }, mount),
+      IsOk());
+  EXPECT_THAT(
+      members, ElementsAre(
+                   container + "/a-first.txt", container + "/link", container + "/unknown.txt",
+                   container + "/z-last.txt", container + "/sub", container + "/sub/child.txt"));
 }
 
 TEST_F(NameListingTest, MissingEntriesKeepResolvedPathsAndCachedLazyErrors) {
