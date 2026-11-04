@@ -244,6 +244,31 @@ TEST_F(LocalFsTest, ReadDirOnRegularFileFails) {
   EXPECT_THAT(local_fs_.ReadDir(Path("file.txt")), Not(IsOk()));
 }
 
+TEST_F(LocalFsTest, StatAcceptsNonTerminatedPathViewsAcrossScratchBoundaries) {
+  constexpr auto kLengths = std::to_array<std::size_t>({255, 256, 257, 511, 512, 513, 767});
+  constexpr auto kFields = std::to_array({MetadataFields::kBasic, MetadataFields::kBirthTime});
+  const std::string file = Path("file.txt");
+  for (const auto length : kLengths) {
+    SCOPED_TRACE(length);
+    ASSERT_THAT(file.size(), Gt(0));
+    ASSERT_THAT(length, Gt(file.size()));
+    const std::string spelling = std::string(length - file.size(), '/') + file;
+    const std::vector<char> exact(spelling.begin(), spelling.end());
+    const std::string suffixed = spelling + "/not-part-of-the-view";
+    for (const auto fields : kFields) {
+      MBO_ASSERT_OK_AND_ASSIGN(const auto exact_metadata, local_fs_.StatFields(std::string_view(exact), false, fields));
+      EXPECT_THAT(exact_metadata.type, FileType::kRegular);
+      EXPECT_THAT(exact_metadata.size, Eq(5));
+      EXPECT_THAT(
+          local_fs_.StatFields(std::string_view(suffixed).substr(0, spelling.size()), false, fields),
+          IsOkAndHolds(Field(&Metadata::size, Eq(5))));
+    }
+  }
+  EXPECT_THAT(local_fs_.StatFields({}, false, MetadataFields::kBasic), StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(
+      local_fs_.StatFields(Path("missing"), false, MetadataFields::kBirthTime), StatusIs(absl::StatusCode::kNotFound));
+}
+
 TEST_F(LocalFsTest, StatRegularFile) {
   MBO_ASSERT_OK_AND_ASSIGN(const auto md, local_fs_.Stat(Path("file.txt"), /*follow_symlinks=*/false));
   EXPECT_THAT(md.type, FileType::kRegular);
