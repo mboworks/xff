@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Keep sortable traversal entries compact and store complete metadata with each listing, reducing memory and wide metadata-free traversal costs while preserving lazy errors and observations.
+
 - Accumulate native directory entries in stable segments before moving them into the public listing, reducing repeated relocation in wide directories.
 
 - Avoid unnecessary per-file metadata reads for native-case name matching when a backend guarantees one case policy; preserve volume-specific behavior and required metadata errors.

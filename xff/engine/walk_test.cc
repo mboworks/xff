@@ -431,6 +431,80 @@ TEST_F(NameListingTest, MissingEntriesKeepResolvedPathsAndCachedLazyErrors) {
   EXPECT_THAT(errors, ElementsAre(EqualsText(root + "/unknown")));
 }
 
+TEST_F(NameListingTest, LazyTypeChangesSurviveWideCacheGrowthAndLaterDirectoryTraversal) {
+  struct CountingFs final : FakeFs {
+    absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool follow) const override {
+      ++calls[std::string(path)];
+      return FakeFs::Stat(path, follow);
+    }
+
+    mutable std::map<std::string, std::size_t> calls;
+  };
+
+  CountingFs filesystem;
+  std::vector<vfs::Entry> children;
+  children.reserve(131);
+  // The listing's regular-file hint becomes a directory after the lazy metadata read.
+  children.push_back(FileEntry("/root/changed", "changed"));
+  filesystem.AddDir("/root/changed", 1, {FileEntry("/root/changed/nested", "nested")});
+  filesystem.AddFile("/root/changed/nested", 1);
+  for (std::size_t index = 0; index < 130; ++index) {
+    const std::string name = absl::StrCat("item-", index);
+    const std::string path = absl::StrCat("/root/", name);
+    children.push_back(FileEntry(path, name));
+    filesystem.AddFile(path, 1);
+  }
+  filesystem.AddDir("/root", 1, std::move(children));
+  const auto roots = std::to_array<std::string>({"/root"});
+  std::vector<std::string> changed;
+  std::size_t visited = 0;
+  EXPECT_THAT(
+      Walk(
+          filesystem, roots, {.sort = SortOrder::kDir, .metadata = MetadataDemand::kOnDemand},
+          [&](const Visit& visit) {
+            ++visited;
+            if (visit.path == "/root/changed") {
+              EXPECT_THAT(visit.metadata.type, vfs::FileType::kRegular);
+            }
+            EXPECT_THAT(visit.EnsureMetadata(), IsOk());
+            EXPECT_THAT(visit.EnsureMetadata(), IsOk());
+            if (visit.path == "/root/changed") {
+              EXPECT_THAT(visit.metadata.type, vfs::FileType::kDirectory);
+            }
+            if (visit.path.starts_with("/root/changed")) {
+              changed.emplace_back(visit.path);
+            }
+            return WalkAction::kContinue;
+          },
+          [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }),
+      IsOk());
+  EXPECT_THAT(visited, 133);
+  EXPECT_THAT(changed, ElementsAre(EqualsText("/root/changed"), EqualsText("/root/changed/nested")));
+  for (const auto& [path, calls] : filesystem.calls) {
+    EXPECT_THAT(calls, 1) << path;
+  }
+}
+
+TEST_F(NameListingTest, EagerEntriesKeepTheBasenameFallbackForEmptyListingNames) {
+  FakeFs filesystem;
+  filesystem.AddDir("/root", 1, {FileEntry("/root/file", ""), DirEntry("/root/sub", ""), {.path = "/root/unknown"}});
+  filesystem.AddFile("/root/file", 1);
+  filesystem.AddFile("/root/unknown", 1);
+  filesystem.AddDir("/root/sub", 1, {});
+  const auto roots = std::to_array<std::string>({"/root"});
+  std::vector<std::string> names;
+  EXPECT_THAT(
+      Walk(
+          filesystem, roots, {.sort = SortOrder::kDir, .metadata = MetadataDemand::kAlways},
+          [&](const Visit& visit) {
+            names.emplace_back(visit.name);
+            return WalkAction::kContinue;
+          },
+          [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }),
+      IsOk());
+  EXPECT_THAT(names, ElementsAre(EqualsText("root"), EqualsText("file"), EqualsText("sub"), EqualsText("unknown")));
+}
+
 TEST_F(NameListingTest, UnsupportedBackendKeepsCompletePaths) {
   const FakeFs filesystem;
   EXPECT_THAT(filesystem.SupportsNameOnlyListings(), Not(IsTrue()));

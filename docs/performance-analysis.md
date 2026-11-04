@@ -4087,3 +4087,20 @@ segments because long heap-backed names repeatedly cost Linux about 2.5-3%. Larg
 that regression, while small-tree costs around 1-2% and a macOS long-name 0.44% cost remain explicit.
 Full release suites, relevant sanitizers and a committed 5,003-entry listing regression qualify
 the selected representation. Compact hint/full metadata records remain open under O20b.
+
+### O20b: compact traversal metadata storage
+
+Sortable children retain owned strings, type/source hints, eager-success state and an OptionalRef
+to complete metadata. Exact-reserved eager vectors and transferred chunk owners keep observations
+stable; a listing-owned segmented pool caches lazy success, errors and type changes without
+per-file heap owners, shared ownership or locks. Batches are explicitly move-only. Root observations
+remain stack-owned. Eager callbacks avoid an unused hint; empty eager listing names keep the prior
+basename fallback. Worker admission, stat scheduling, fields, callbacks and safety remain unchanged.
+
+The [two-host qualification](benchmarks/compact-traversal-metadata-20261104.md) retains 8,100 native
+invocations and 6,480 in-memory repetitions per host, every policy/control and strict final binary
+proofs. Large broad metadata-free native cases improve about 5-6% macOS and 8-9% Linux; a macOS
+100k case drops from 35.9 to 24.4 MiB peak RSS. Linux eager CSV repeatedly costs about 3.4%, and
+some nested kernels are neutral/slower. Keep those tradeoffs explicit. Default-native macOS stays
+mostly neutral because its eager policy still retains full paths. Evaluate eager names-only path
+reuse separately, preserving parallel stat chunks rather than silently serializing eager reads.
