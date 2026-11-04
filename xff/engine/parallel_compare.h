@@ -6,6 +6,7 @@
 
 #include <atomic>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -21,9 +22,20 @@
 
 namespace xff::engine {
 
+// Only fields consumed by comparison and patch generation; matching and summaries
+// consume the full metadata during traversal, before comparison entries are retained.
+struct ComparisonMetadata {
+  vfs::FileType type = vfs::FileType::kUnknown;
+  vfs::Source source = vfs::Source::kLocalFs;
+  std::uint64_t size = 0;
+  std::uint32_t mode = 0;
+};
+
+// Text and filesystem observers must outlive this record and comparison results.
+// ComparisonEntries owns retained path bytes for the two-tree coordinator.
 struct TreeCompareEntry {
-  std::string path;
-  vfs::Metadata metadata;
+  std::string_view path;
+  ComparisonMetadata metadata;
   mbo::types::OptionalRef<const vfs::FileSystem> fs;
   std::shared_ptr<const vfs::FileSystem> fs_owner;
 };

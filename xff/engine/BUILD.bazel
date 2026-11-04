@@ -411,6 +411,7 @@ cc_library(
     ],
     visibility = ["//xff:__subpackages__"],
     deps = [
+        ":comparison_entries_cc",
         ":evaluate_cc",
         ":expression_execution_cc",
         ":extract_cc",
@@ -1087,5 +1088,33 @@ cc_test(
         "@mboworks_mbo//mbo/status:status_macros_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
         "@nlohmann_json//:json",
+    ],
+)
+
+cc_library(
+    name = "comparison_entries_cc",
+    srcs = ["comparison_entries.cc"],
+    hdrs = ["comparison_entries.h"],
+    deps = [
+        ":parallel_compare_cc",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@mboworks_mbo//mbo/container:segmented_vector_cc",
+        "@mboworks_mbo//mbo/memory:arena_cc",
+    ],
+)
+
+cc_test(
+    name = "comparison_entries_test",
+    size = "small",
+    srcs = ["comparison_entries_test.cc"],
+    deps = [
+        ":comparison_entries_cc",
+        ":parallel_compare_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )

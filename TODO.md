@@ -432,7 +432,14 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O16a: Qualify direct aggregation of ordinary comparison side totals against native/in-memory
       output, memory and unchanged category/action controls on Linux and macOS.
       Keep [the narrower retention change](docs/benchmarks/aggregate-comparison-totals-20261102.md)
-      separate from actual completed-frontier streaming; both full tree maps remain.
+      separate from actual completed-frontier streaming; both complete trees remain retained.
+- [x] O16a2: Qualify compact complete-tree comparison entries, arena-owned paths and stable sorted
+      key/index records on both hosts. Preserve first-wins duplicates, backend ownership, ordering,
+      errors and full metadata during matching; retain small-case costs and the metadata-only control
+      in [the qualification report](docs/benchmarks/compact-comparison-entries-20261104.md).
+- [ ] O16a3: Qualify append-only borrowed comparison categories. Pairs are already unique and sorted,
+      and the category map's only consumer iterates; preserve exact summary accumulation order.
+      Separately evaluate moving archive-owner records and comparison arena initial-block policies.
 - [ ] O16b: Add and qualify completed-directory/frontier traversal before enabling bounded paired
       comparison. Preserve empty/ignored completion, ordering, ignore inheritance, errors, effects,
       archives and deferred selections; retain explicit fallbacks and avoid repeated shallow scans.

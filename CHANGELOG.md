@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Retain compact comparison paths and metadata, reducing allocation and memory while preserving status, patch and summary behavior.
+
 - Encode CSV/TSV summary cells directly, reducing intermediate allocations while preserving exact output and borrowed-value lifetimes.
 
 - Use fixed-size summary metric storage and move formatted numbers while preserving exact output and missing-cell behavior.

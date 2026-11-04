@@ -209,7 +209,7 @@ int main(int argc, char** argv) {
     benchmark::RegisterBenchmark(
         "totals/" + std::string(scenario.summary) + "/" + std::string(scenario.scopes), CompareTotals, scenario.summary,
         scenario.scopes)
-        ->ArgsProduct({{10, 100, 1'000, 10'000}, {1, 3}})
+        ->ArgsProduct({{10, 100, 1'000, 10'000, 100'000}, {1, 3}})
         ->UseRealTime()
         ->Unit(benchmark::kMicrosecond);
   }
