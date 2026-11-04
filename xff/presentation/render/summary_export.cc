@@ -5,7 +5,6 @@
 
 #include <array>
 #include <cstdint>
-#include <iterator>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -53,29 +52,36 @@ std::string SummaryExport::Header(Format format) const {
 }
 
 std::string SummaryExport::Row(const SummaryExportRecord& record, Format format, unsigned precision) const {
-  std::vector<std::string> cells{
+  const std::string request = absl::StrCat(record.request);
+  const auto identity = std::to_array<std::string_view>({
       "summary",
-      absl::StrCat(record.request),
-      std::string(record.summary),
-      std::string(record.key_template),
-      std::string(record.scope),
-      std::string(record.root),
-      std::string(record.left_root),
-      std::string(record.right_root),
-      std::string(record.type),
-      std::string(record.group),
+      request,
+      record.summary,
+      record.key_template,
+      record.scope,
+      record.root,
+      record.left_root,
+      record.right_root,
+      record.type,
+      record.group,
       record.is_total ? "true" : "false",
+  });
+  DelimitedRow encoded(format);
+  for (const std::string_view cell : identity) {
+    encoded.Append(cell);
+  }
+  const auto append_metrics = [&](const std::array<std::string, 4>& cells) {
+    for (const std::string& cell : cells) {
+      encoded.Append(cell);
+    }
   };
-  cells.reserve(cells.size() + (kMetrics.size() * (1 + scopes_.size())));
-  auto metrics = record.metrics.has_value() ? MetricCells(*record.metrics, precision) : std::array<std::string, 4>{};
-  cells.insert(cells.end(), std::make_move_iterator(metrics.begin()), std::make_move_iterator(metrics.end()));
+  append_metrics(record.metrics.has_value() ? MetricCells(*record.metrics, precision) : std::array<std::string, 4>{});
   for (const std::string& scope : scopes_) {
     const auto found = record.scoped_metrics.find(scope);
-    metrics =
-        found == record.scoped_metrics.end() ? std::array<std::string, 4>{} : MetricCells(found->second, precision);
-    cells.insert(cells.end(), std::make_move_iterator(metrics.begin()), std::make_move_iterator(metrics.end()));
+    append_metrics(
+        found == record.scoped_metrics.end() ? std::array<std::string, 4>{} : MetricCells(found->second, precision));
   }
-  return EncodeTabularRow(format, cells);
+  return std::move(encoded).Finish();
 }
 
 }  // namespace xff::render

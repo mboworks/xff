@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "gmock/gmock.h"
@@ -47,17 +48,7 @@ struct RenderTest : ::testing::Test {};
 
 struct EncodedRecordBufferTest : ::testing::Test {};
 
-TEST_F(EncodedRecordBufferTest, ReusedRecordsPreserveEveryFormatAcrossPathsColorsAndStorageBoundaries) {
-  static constexpr auto kFormats = std::to_array<Format>({
-      Format::kPlain,
-      Format::kNul,
-      Format::kJsonl,
-      Format::kCsv,
-      Format::kTsv,
-      Format::kAligned,
-      Format::kMarkdown,
-      Format::kTree,
-  });
+void ExpectRecordVariants(Format format, PathEncoding encoding) {
   static constexpr auto kPaths = std::to_array<std::string_view>({
       "",
       "a",
@@ -69,25 +60,38 @@ TEST_F(EncodedRecordBufferTest, ReusedRecordsPreserveEveryFormatAcrossPathsColor
       "del\x7f",
   });
   static constexpr auto kLengths = std::to_array<std::size_t>({0, 1, 15, 22, 23, 63, 160, 4'096, 7, 0});
+  EncodedRecordBuffer buffer(format, encoding);
+  const Renderer reference(format, encoding);
+  for (const auto color : {std::string_view(), std::string_view("1;34")}) {
+    for (const auto path : kPaths) {
+      buffer.EmitRecord(
+          path, [&](std::string_view value) { EXPECT_THAT(value, EqualsText(reference.Record(path, color))); }, color);
+    }
+    for (const auto length : kLengths) {
+      SCOPED_TRACE(length);
+      const std::string path = std::string(length, 'x') + ",\"\n\\\t";
+      buffer.EmitRecord(
+          path, [&](std::string_view value) { EXPECT_THAT(value, EqualsText(reference.Record(path, color))); }, color);
+    }
+  }
+}
+
+TEST_F(EncodedRecordBufferTest, ReusedRecordsPreserveEveryFormatAcrossPathsColorsAndStorageBoundaries) {
+  static constexpr auto kFormats = std::to_array<Format>({
+      Format::kPlain,
+      Format::kNul,
+      Format::kJsonl,
+      Format::kCsv,
+      Format::kTsv,
+      Format::kAligned,
+      Format::kMarkdown,
+      Format::kTree,
+  });
+  static constexpr auto kEncodings = std::to_array<PathEncoding>({PathEncoding::kRaw, PathEncoding::kEscape});
   for (const auto format : kFormats) {
     SCOPED_TRACE(static_cast<int>(format));
-    for (const auto encoding : {PathEncoding::kRaw, PathEncoding::kEscape}) {
-      EncodedRecordBuffer buffer(format, encoding);
-      const Renderer reference(format, encoding);
-      for (const auto color : {std::string_view(), std::string_view("1;34")}) {
-        for (const auto path : kPaths) {
-          buffer.EmitRecord(
-              path, [&](std::string_view value) { EXPECT_THAT(value, EqualsText(reference.Record(path, color))); },
-              color);
-        }
-        for (const auto length : kLengths) {
-          SCOPED_TRACE(length);
-          const std::string path = std::string(length, 'x') + ",\"\n\\\t";
-          buffer.EmitRecord(
-              path, [&](std::string_view value) { EXPECT_THAT(value, EqualsText(reference.Record(path, color))); },
-              color);
-        }
-      }
+    for (const auto encoding : kEncodings) {
+      ExpectRecordVariants(format, encoding);
     }
   }
 }
@@ -165,6 +169,23 @@ TEST_F(EncodedRecordBufferTest, QueuedOutputOwnsIndependentRecordsAndBuffersKeep
       ElementsAre(EqualsText("first\n"), EqualsText("{\"path\":\"second\"}\n"), EqualsText("\"last,value\"\n")));
 }
 
+void ExpectRetainedRecordCapacity(Format format) {
+  EncodedRecordBuffer buffer(format, PathEncoding::kEscape);
+  const auto discard = [](std::string_view) {};
+  buffer.EmitRecord(std::string(4'096, 'x'), discard);
+  const auto grown = buffer.RetainedCapacity();
+  EXPECT_THAT(grown, Ge(4'096));
+  buffer.EmitRecord("small", discard);
+  EXPECT_THAT(buffer.RetainedCapacity(), Ge(grown));
+  const std::string oversized(EncodedRecordBuffer::kMaxRetainedBytes + 1, '\n');
+  const auto expected = Renderer(format, PathEncoding::kEscape).Record(oversized);
+  buffer.EmitRecord(oversized, [&](std::string_view value) { EXPECT_THAT(value, EqualsText(expected)); });
+  EXPECT_THAT(buffer.RetainedCapacity(), Le(EncodedRecordBuffer::kMaxRetainedBytes));
+  buffer.EmitRecord("tail", [&](std::string_view value) {
+    EXPECT_THAT(value, EqualsText(Renderer(format, PathEncoding::kEscape).Record("tail")));
+  });
+}
+
 TEST_F(EncodedRecordBufferTest, UsefulCapacityPersistsButOversizedEncodedRecordsAreReleasedAfterConsumption) {
   static constexpr auto kFormats = std::to_array<Format>({
       Format::kPlain,
@@ -174,20 +195,7 @@ TEST_F(EncodedRecordBufferTest, UsefulCapacityPersistsButOversizedEncodedRecords
   });
   for (const auto format : kFormats) {
     SCOPED_TRACE(static_cast<int>(format));
-    EncodedRecordBuffer buffer(format, PathEncoding::kEscape);
-    const auto discard = [](std::string_view) {};
-    buffer.EmitRecord(std::string(4'096, 'x'), discard);
-    const auto grown = buffer.RetainedCapacity();
-    EXPECT_THAT(grown, Ge(4'096));
-    buffer.EmitRecord("small", discard);
-    EXPECT_THAT(buffer.RetainedCapacity(), Ge(grown));
-    const std::string oversized(EncodedRecordBuffer::kMaxRetainedBytes + 1, '\n');
-    const auto expected = Renderer(format, PathEncoding::kEscape).Record(oversized);
-    buffer.EmitRecord(oversized, [&](std::string_view value) { EXPECT_THAT(value, EqualsText(expected)); });
-    EXPECT_THAT(buffer.RetainedCapacity(), Le(EncodedRecordBuffer::kMaxRetainedBytes));
-    buffer.EmitRecord("tail", [&](std::string_view value) {
-      EXPECT_THAT(value, EqualsText(Renderer(format, PathEncoding::kEscape).Record("tail")));
-    });
+    ExpectRetainedRecordCapacity(format);
   }
 }
 
@@ -378,6 +386,53 @@ TEST_F(RenderTest, EncodeTabularRowJoinsAndEncodesCells) {
   // Non-tabular formats are not rows.
   EXPECT_THAT(EncodeTabularRow(Format::kPlain, cells), "");
   EXPECT_THAT(EncodeTabularRow(Format::kJsonl, cells), "");
+}
+
+TEST_F(RenderTest, BorrowedRowCellsRespectSliceBoundsAndReturnOwnedBytes) {
+  std::string first = "prefix-a,b-suffix";
+  std::string second = "prefix-c\td-suffix";
+  const auto cells = std::to_array<std::string_view>({
+      std::string_view(first).substr(7, 3),
+      std::string_view(second).substr(7, 3),
+      "",
+  });
+  DelimitedRow csv_row(Format::kCsv);
+  DelimitedRow tsv_row(Format::kTsv);
+  for (const std::string_view cell : cells) {
+    csv_row.Append(cell);
+    tsv_row.Append(cell);
+  }
+  const std::string csv = std::move(csv_row).Finish();
+  const std::string tsv = std::move(tsv_row).Finish();
+  first.assign(256, 'x');
+  second.clear();
+  EXPECT_THAT(csv, EqualsText("\"a,b\",c\td,\n"));
+  EXPECT_THAT(tsv, EqualsText("a,b\tc\\td\t\n"));
+}
+
+TEST_F(RenderTest, BorrowedRowCellsKeepEmptyAndUnsupportedFormatBehavior) {
+  static constexpr auto kFormats = std::to_array<Format>({
+      Format::kPlain,
+      Format::kNul,
+      Format::kJsonl,
+      Format::kCsv,
+      Format::kTsv,
+      Format::kAligned,
+      Format::kMarkdown,
+      Format::kTree,
+  });
+  const auto cells = std::to_array<std::string_view>({"plain", "comma,quote\"", "tab\tline\nslash\\"});
+  const std::vector<std::string> owned(cells.begin(), cells.end());
+  for (const Format format : kFormats) {
+    SCOPED_TRACE(static_cast<int>(format));
+    DelimitedRow encoded(format);
+    for (const std::string_view cell : cells) {
+      encoded.Append(cell);
+    }
+    EXPECT_THAT(std::move(encoded).Finish(), EqualsText(EncodeTabularRow(format, owned)));
+    EXPECT_THAT(
+        DelimitedRow(format).Finish(), EqualsText(format == Format::kCsv || format == Format::kTsv ? "\n" : ""));
+  }
 }
 
 // The buffered tabular formats (kAligned / kMarkdown) render the whole table at once via

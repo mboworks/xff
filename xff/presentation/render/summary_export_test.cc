@@ -3,6 +3,9 @@
 
 #include "xff/presentation/render/summary_export.h"
 
+#include <string>
+#include <string_view>
+
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
@@ -80,6 +83,35 @@ TEST_F(SummaryExportTest, EscapesUsingTheSameCsvAndTsvContractAsListings) {
   const SummaryExportRecord row{.summary = "ext", .scope = "all", .group = "a,\"b\t\\c\nd"};
   EXPECT_THAT(renderer.Row(row, Format::kCsv, 2), HasSubstr("\"a,\"\"b\t\\c\nd\""));
   EXPECT_THAT(renderer.Row(row, Format::kTsv, 2), HasSubstr("a,\"b\\t\\\\c\\nd\tfalse"));
+}
+
+TEST_F(SummaryExportTest, LongIdentitySlicesAndNumericTextStayValidThroughEncoding) {
+  const SummaryExport renderer;
+  const std::string backing = "prefix-" + std::string(80, 'x') + "-suffix";
+  const std::string_view identity = std::string_view(backing).substr(7, 80);
+  const SummaryExportRecord row{
+      .request = 17,
+      .summary = identity,
+      .key_template = identity,
+      .scope = "all",
+      .root = identity,
+      .left_root = identity,
+      .right_root = identity,
+      .type = "file",
+      .group = identity,
+      .is_total = true,
+      .metrics =
+          SummaryExportMetrics{
+              .count = 1,
+              .total_count = 2,
+              .bytes = SummaryExportBytes{.value = 1, .total = 4},
+          },
+  };
+  const std::string field(identity);
+  EXPECT_THAT(
+      renderer.Row(row, Format::kCsv, 2), EqualsText(
+                                              "summary,17," + field + "," + field + ",all," + field + "," + field + ","
+                                              + field + ",file," + field + ",true,1,50.00,1,25.00\n"));
 }
 
 }  // namespace

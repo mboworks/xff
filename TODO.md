@@ -529,9 +529,13 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       [the paired numeric report](docs/benchmarks/fixed-summary-metrics-20261104.md).
 - [ ] O22c2d: Independently qualify borrowed structured field values; audit fallback snapshot and
       temporary-transform lifetimes before returning any views.
-- [ ] O22c2f: Independently qualify percentage conversion using `std::to_chars`, including exact
-      precision/rounding behavior, public export fallbacks, binary growth and both-host native
-      controls. Keep it separate from fixed-size storage and other floating-point consumers.
+- [x] O22c2f: Evaluate percentage conversion and cached parsed formats independently. Retain exact
+      rounding, deployment, binary-size and native controls; neither trial warrants production
+      adoption. See [the retained alternatives](docs/benchmarks/direct-summary-cells-20261104.md).
+- [x] O22c2g: Qualify direct CSV/TSV summary-cell encoding without intermediate cell vectors;
+      preserve bounded view lifetimes, sparse/zero metrics, full outputs and unchanged-codec
+      controls on both hosts. Retain slower cases and confirmation in
+      [the direct-cell report](docs/benchmarks/direct-summary-cells-20261104.md).
 - [ ] O22c2: Qualify remaining reusable structured cell/row storage and streaming machine formats.
       Preserve synchronous view lifetimes, reentrant callbacks, coordinator ownership and ordered
       publication. Do not add a buffer/destructor to every existing stateless renderer by default.

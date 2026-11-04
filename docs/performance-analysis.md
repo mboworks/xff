@@ -3941,3 +3941,24 @@ controls nor baseline-copy movement establishes a metric-allocation mechanism. N
 speedup or change to percentages, sparse cells, ordering, ownership, workers or VFS is claimed.
 Full release/sanitizer and actual changed-TU checks pass on both hosts. Borrowed structured
 cells, percentage conversion, encoded summary buffers and streaming/backpressure remain separate.
+
+### O22c2f/O22c2g: percentage trials and direct summary cells
+
+The [two-host direct-cell report](benchmarks/direct-summary-cells-20261104.md) retains three
+rejected representations alongside the selected implementation. Floating `to_chars` preserves
+values but adds 117,480 Linux CLI bytes and slower listing controls; macOS 11 cannot use its
+strictly unavailable floating overload. Cached Abseil formats improve isolated conversions
+without a material native benefit. The borrowed-vector policy still allocates two containers.
+
+Direct synchronous CSV/TSV cell encoding removes those containers and identity copies while
+keeping one owning output row. It improves the targeted native cohorts, clearest on macOS;
+ordinary Linux TSV is near baseline. The full slower cells are retained, including a Linux
+11% Markdown kernel that did not repeat and a smaller aligned-command cost that did repeat.
+The report separates the full matrices from additional confirmation and shows baseline-copy
+controls without normalizing them away. There is no universal speedup claim.
+
+Both 314-target release suites, ten applicable sanitizer targets per mode and four scoped
+translation units pass. Exact output, sparse cells, borrowed lifetimes, numeric precision,
+worker behavior, safety and VFS routing stay unchanged. CLI size changes by -32 bytes macOS
+and -7,000 bytes Linux. Further structured borrowing, command-owned summary buffers, paired
+completed frontiers, shared-stage budgets, bulk metadata and backpressure remain open.
