@@ -5,6 +5,7 @@
 //
 //   bazel run -c opt //xff/matching/similarity:similarity_benchmark
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -119,6 +120,127 @@ void RegisterAll() {
   }
 }
 
+enum class ThresholdShape {
+  kFull,
+  kNear,
+  kHalf,
+  kDisjoint,
+  kLeftSmall,
+  kRightSmall,
+};
+
+std::string ThresholdDocument(std::size_t common, std::size_t unique, std::string_view prefix, char separator) {
+  std::string text;
+  for (std::size_t i = 0; i < common; ++i) {
+    absl::StrAppend(&text, "shared", i);
+    text.push_back(separator);
+  }
+  for (std::size_t i = 0; i < unique; ++i) {
+    absl::StrAppend(&text, prefix, i);
+    text.push_back(separator);
+  }
+  return text;
+}
+
+bool MeetsThreshold(std::string_view left, std::string_view right, std::size_t width, int threshold) {
+  return WordShingleAtLeast(left, right, width, threshold);
+}
+
+bool MeetsReferenceThreshold(const ByteWordShingleReference& reference, std::string_view candidate, int threshold) {
+  return reference.AtLeast(candidate, threshold);
+}
+
+void ThresholdVerification(benchmark::State& state, ThresholdShape shape) {
+  const auto count = static_cast<std::size_t>(state.range(0));
+  const auto width = static_cast<std::size_t>(state.range(1));
+  const int threshold = static_cast<int>(state.range(2));
+  const bool cached = state.range(3) != 0;
+  std::size_t left_count = count;
+  std::size_t right_count = count;
+  std::size_t common = 0;
+  switch (shape) {
+    case ThresholdShape::kFull: common = count; break;
+    case ThresholdShape::kNear: common = count - 1; break;
+    case ThresholdShape::kHalf: common = count / 2; break;
+    case ThresholdShape::kDisjoint: break;
+    case ThresholdShape::kLeftSmall:
+      left_count = std::max(1UZ, count / 32);
+      common = left_count;
+      break;
+    case ThresholdShape::kRightSmall:
+      right_count = std::max(1UZ, count / 32);
+      common = right_count;
+      break;
+  }
+  const auto left = ThresholdDocument(common, left_count - common, "left", ' ');
+  const auto right = ThresholdDocument(common, right_count - common, "right", ',');
+  const ByteWordShingleReference reference(right, width);
+  const bool expected = WordShinglePercent(left, right, width) >= threshold;
+  if (MeetsThreshold(left, right, width, threshold) != expected
+      || MeetsReferenceThreshold(reference, left, threshold) != expected) {
+    state.SkipWithError("boolean threshold differs from exact rounded percentage");
+    return;
+  }
+  if (cached) {
+    for (auto iteration : state) {
+      benchmark::DoNotOptimize(iteration);
+      auto matched = MeetsReferenceThreshold(reference, left, threshold);
+      benchmark::DoNotOptimize(matched);
+    }
+  } else {
+    for (auto iteration : state) {
+      benchmark::DoNotOptimize(iteration);
+      auto matched = MeetsThreshold(left, right, width, threshold);
+      benchmark::DoNotOptimize(matched);
+    }
+  }
+}
+
+void RegisterThresholds() {
+  struct Shape {
+    std::string_view name;
+    ThresholdShape shape;
+  };
+
+  static constexpr auto kShapes = std::to_array<Shape>({
+      {
+          .name = "full",
+          .shape = ThresholdShape::kFull,
+      },
+      {
+          .name = "near",
+          .shape = ThresholdShape::kNear,
+      },
+      {
+          .name = "half",
+          .shape = ThresholdShape::kHalf,
+      },
+      {
+          .name = "disjoint",
+          .shape = ThresholdShape::kDisjoint,
+      },
+      {
+          .name = "left-small",
+          .shape = ThresholdShape::kLeftSmall,
+      },
+      {
+          .name = "right-small",
+          .shape = ThresholdShape::kRightSmall,
+      },
+  });
+  for (const auto& shape : kShapes) {
+    benchmark::RegisterBenchmark(
+        absl::StrCat("threshold/", shape.name),
+        [shape = shape.shape](benchmark::State& state) { ThresholdVerification(state, shape); })
+        ->ArgsProduct({{32, 1'000}, {1, 3}, {50, 100}, {0, 1}})
+        ->UseRealTime()
+        ->Unit(benchmark::kMicrosecond)
+        ->Repetitions(9)
+        ->MinTime(0.02)
+        ->MinWarmUpTime(0.01);
+  }
+}
+
 // NOLINTEND(*-magic-numbers)
 
 }  // namespace
@@ -126,6 +248,7 @@ void RegisterAll() {
 
 int main(int argc, char** argv) {
   xff::similarity::RegisterAll();
+  xff::similarity::RegisterThresholds();
   benchmark::Initialize(&argc, argv);
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();

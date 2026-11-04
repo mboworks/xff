@@ -18,6 +18,9 @@ namespace xff::similarity {
 // Width zero is invalid and returns 0.
 [[nodiscard]] int WordShinglePercent(std::string_view lhs, std::string_view rhs, std::size_t width);
 
+// Boolean form with exactly WordShinglePercent rounding and width semantics.
+[[nodiscard]] bool WordShingleAtLeast(std::string_view lhs, std::string_view rhs, std::size_t width, int threshold);
+
 // A stable immutable byte-word representation. Moving the owner preserves its backing storage;
 // copying is deliberately unavailable. This is not a filesystem cache or Unicode decoding.
 class ByteWordShingleReference final {
@@ -32,6 +35,7 @@ class ByteWordShingleReference final {
 
   [[nodiscard]] bool Matches(std::string_view bytes, std::size_t width) const;
   [[nodiscard]] int Percent(std::string_view candidate) const;
+  [[nodiscard]] bool AtLeast(std::string_view candidate, int threshold) const;
   // Tracked capacity only: excludes allocator metadata and hash-table control bytes, not RSS.
   [[nodiscard]] std::size_t StorageBytes() const;
 

@@ -120,6 +120,44 @@ int ShinglePercent(const ShingleSet& left, const ShingleSet& right) {
   return static_cast<int>(((100 * intersection) + (union_size / 2)) / union_size);
 }
 
+template<typename ShingleSet>
+bool ShingleAtLeast(const ShingleSet& left, const ShingleSet& right, int threshold) {
+  // Both public callers handle thresholds outside [1, 100] before constructing shingles.
+  if (left.empty() && right.empty()) {
+    return true;
+  }
+  // Equivalent to the existing rounded percentage comparison, without multiplying a large cardinality.
+  const auto requested = static_cast<std::size_t>(threshold);
+  const std::size_t numerator = (2 * requested) - 1;
+  const std::size_t denominator = 199 + (2 * requested);
+  const std::size_t total = left.size() + right.size();
+  const std::size_t required =
+      ((total / denominator) * numerator) + ((((total % denominator) * numerator) + denominator - 1) / denominator);
+  if (std::min(left.size(), right.size()) < required) {
+    return false;
+  }
+  const auto meets = [required](const ShingleSet& probe, const ShingleSet& stored) {
+    std::size_t shared = 0;
+    std::size_t remaining = probe.size();
+    std::size_t until_check = 32;
+    for (const auto& shingle : probe) {
+      shared += stored.contains(shingle) ? 1 : 0;
+      --remaining;
+      if (--until_check == 0) {
+        if (shared >= required) {
+          return true;
+        }
+        if (remaining < required - shared) {
+          return false;
+        }
+        until_check = 32;
+      }
+    }
+    return shared >= required;
+  };
+  return left.size() <= right.size() ? meets(left, right) : meets(right, left);
+}
+
 }  // namespace
 
 int WordShinglePercent(std::string_view lhs, std::string_view rhs, std::size_t width) {
@@ -135,6 +173,27 @@ int WordShinglePercent(std::string_view lhs, std::string_view rhs, std::size_t w
   const auto left_words = NormalizeByteWords(lhs);
   const auto right_words = NormalizeByteWords(rhs);
   return ShinglePercent(ByteWordShingles(left_words, width), ByteWordShingles(right_words, width));
+}
+
+bool WordShingleAtLeast(std::string_view lhs, std::string_view rhs, std::size_t width, int threshold) {
+  if (width == 0) {
+    return 0 >= threshold;
+  }
+  if (threshold <= 0) {
+    return true;
+  }
+  if (threshold > 100) {
+    return false;
+  }
+  if (lhs == rhs) {
+    return true;
+  }
+  if (width == 1) {
+    return ShingleAtLeast(OwnedSingleByteShingles(lhs), OwnedSingleByteShingles(rhs), threshold);
+  }
+  const auto left_words = NormalizeByteWords(lhs);
+  const auto right_words = NormalizeByteWords(rhs);
+  return ShingleAtLeast(ByteWordShingles(left_words, width), ByteWordShingles(right_words, width), threshold);
 }
 
 struct ByteWordShingleReference::Data {
@@ -191,6 +250,26 @@ int ByteWordShingleReference::Percent(std::string_view candidate) const {
   }
   const auto words = NormalizeByteWords(candidate);
   return ShinglePercent(ByteWordShingles(words, data_->width), data_->windows);
+}
+
+bool ByteWordShingleReference::AtLeast(std::string_view candidate, int threshold) const {
+  if (!data_ || data_->width == 0) {
+    return 0 >= threshold;
+  }
+  if (threshold <= 0) {
+    return true;
+  }
+  if (threshold > 100) {
+    return false;
+  }
+  if (candidate == data_->source) {
+    return true;
+  }
+  if (data_->width == 1) {
+    return ShingleAtLeast(OwnedSingleByteShingles(candidate), data_->single, threshold);
+  }
+  const auto words = NormalizeByteWords(candidate);
+  return ShingleAtLeast(ByteWordShingles(words, data_->width), data_->windows, threshold);
 }
 
 std::size_t ByteWordShingleReference::StorageBytes() const {

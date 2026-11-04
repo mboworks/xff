@@ -490,9 +490,13 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O21b3: Qualify probing the smaller shingle set in both asymmetric directions, preserving the
       representation and exact scores. Retain dynamic targets, tiny/balanced controls, slower cells
       and rejected loop forms in `docs/benchmarks/smaller-shingle-probes-20261103.md`.
-- [ ] Investigate threshold-aware boolean similarity verification, including cardinality bounds
-      and bounded intersection checks. Preserve the exact-score API, integer rounding, conditional
-      I/O and near/full-match controls; qualify separately from key ownership and probe direction.
+- [x] O21b4: Qualify exact threshold-aware boolean similarity with cardinality rejection and
+      batched intersection bounds on both hosts. Preserve the exact-score API, fresh I/O, reference
+      admission and integer rounding; retain rejected strategies and slower full-match controls in
+      `docs/benchmarks/threshold-aware-similarity-20261103.md`.
+- [ ] O21b5: Independently qualify direct width-one word insertion without the temporary word
+      vector. Preserve byte tokenization, duplicate ownership, moved strings and reference reuse;
+      compare tiny/long and duplicate/unique words before changing the qualified staged policy.
 - [ ] O21b: Reuse immutable-source/reference representations and exact candidate indexes only after
       resolving dynamic target/invalidation and retained-byte contracts; keep run-wide grouping semantics explicit.
 - [x] O22a: Qualify snapshot-owned digest observers against owning consumption, preserving cache

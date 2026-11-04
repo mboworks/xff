@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Stop similarity verification once exact rounded threshold bounds decide the match, preserving fresh reads and exact percentage APIs.
+
 - Reuse bounded coordinator-owned storage for escaped, colored, CSV, TSV and JSON-lines path records while preserving exact bytes and queued ownership.
 
 - Probe the smaller similarity shingle set while preserving exact scores, fresh-reference checks and dynamic targets.

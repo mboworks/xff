@@ -1329,21 +1329,21 @@ struct SimilarityReferenceCache {
   std::size_t pending_width = 0;
   similarity::ByteWordShingleReference prepared;
 
-  int Percent(std::string_view candidate, std::string fresh, std::size_t width) {
+  bool AtLeast(std::string_view candidate, std::string fresh, std::size_t width, int threshold) {
     if (prepared.Matches(fresh, width)) {
-      return prepared.Percent(candidate);
+      return prepared.AtLeast(candidate, threshold);
     }
     // A changed observation invalidates the old representation before any rebuild.
     prepared = similarity::ByteWordShingleReference{};
     if (pending_width == width && pending == fresh) {
       prepared = similarity::ByteWordShingleReference(std::move(pending), width);
       pending_width = 0;
-      return prepared.Percent(candidate);
+      return prepared.AtLeast(candidate, threshold);
     }
-    const int percent = similarity::WordShinglePercent(candidate, fresh, width);
+    const bool matched = similarity::WordShingleAtLeast(candidate, fresh, width, threshold);
     pending = std::move(fresh);
     pending_width = width;
-    return percent;
+    return matched;
   }
 
   std::size_t StorageBytes() const { return sizeof(*this) + pending.capacity() + 1 + prepared.StorageBytes(); }
@@ -1368,7 +1368,7 @@ bool EvalSimilarWithReference(
   constexpr std::size_t kMaxReferenceBytes = 1UZ << 20U;
   constexpr std::size_t kMaxTrackedStorageBytes = 8UZ << 20U;
   if (expr.similarity_width == 0) {
-    return similarity::WordShinglePercent(*lhs, *rhs, expr.similarity_width) >= expr.similarity_threshold;
+    return similarity::WordShingleAtLeast(*lhs, *rhs, expr.similarity_width, expr.similarity_threshold);
   }
   if (*lhs == *rhs) {
     return 100 >= expr.similarity_threshold;
@@ -1376,16 +1376,16 @@ bool EvalSimilarWithReference(
   auto& owner = reference;
   if (rhs->size() > kMaxReferenceBytes) {
     owner.reset();
-    return similarity::WordShinglePercent(*lhs, *rhs, expr.similarity_width) >= expr.similarity_threshold;
+    return similarity::WordShingleAtLeast(*lhs, *rhs, expr.similarity_width, expr.similarity_threshold);
   }
   if (!owner) {
     owner = std::make_unique<SimilarityReferenceCache>();
   }
-  const int percent = owner->Percent(*lhs, std::move(*rhs), expr.similarity_width);
+  const bool matched = owner->AtLeast(*lhs, std::move(*rhs), expr.similarity_width, expr.similarity_threshold);
   if (owner->StorageBytes() > kMaxTrackedStorageBytes) {
     owner.reset();
   }
-  return percent >= expr.similarity_threshold;
+  return matched;
 }
 
 bool EvalSimilarWithTemplate(
@@ -1401,7 +1401,7 @@ bool EvalSimilarWithTemplate(
   if (!rhs.ok() || absl::StrContains(std::string_view(*rhs).substr(0, content::kBinaryNulSniffBytes), '\0')) {
     return false;
   }
-  return similarity::WordShinglePercent(*lhs, *rhs, expr.similarity_width) >= expr.similarity_threshold;
+  return similarity::WordShingleAtLeast(*lhs, *rhs, expr.similarity_width, expr.similarity_threshold);
 }
 
 bool EvalSimilar(const parser::Expr& expr, EvalContext& ctx) {

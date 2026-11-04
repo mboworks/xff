@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <limits>
 #include <span>
 #include <string>
 #include <string_view>
@@ -38,6 +39,16 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
   const xff::similarity::ByteWordShingleReference reference(std::string(rhs), width);
   if (forward < 0 || forward > 100 || forward != reverse || reference.Percent(lhs) != forward
       || !reference.Matches(rhs, width)) {
+    std::abort();
+  }
+  const int threshold = (control % 103) - 1;
+  const bool expected = forward >= threshold;
+  if (xff::similarity::WordShingleAtLeast(lhs, rhs, width, threshold) != expected
+      || reference.AtLeast(lhs, threshold) != expected
+      || !xff::similarity::WordShingleAtLeast(lhs, rhs, width, std::numeric_limits<int>::min())
+      || xff::similarity::WordShingleAtLeast(lhs, rhs, width, std::numeric_limits<int>::max())
+      || !reference.AtLeast(lhs, std::numeric_limits<int>::min())
+      || reference.AtLeast(lhs, std::numeric_limits<int>::max())) {
     std::abort();
   }
   if (width == 0) {
