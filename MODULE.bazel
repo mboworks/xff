@@ -77,7 +77,7 @@ bazel_dep(name = "mboworks_mbo", version = "0.15.0")
 # Stable append storage and byte arenas; pin the MBO implementation.
 git_override(
     module_name = "mboworks_mbo",
-    commit = "c854476fb9bf22b6dc372a756d80831f7655d60e",
+    commit = "8dc6ff8290e6b12559a79f69cdd41a529e51ba83",
     remote = "https://github.com/mboworks/mbo.git",
 )
 bazel_dep(name = "nlohmann_json", version = "3.12.0.bcr.2")

@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse supplied field contexts and transfer already-owned scalar output while preserving exact bytes and fallback snapshot lifetimes.
+
 - Reduce long-word similarity construction churn while preserving fast short-word batches, exact scores and owned reference lifetimes.
 
 - Reuse coordinator-owned column cells and bounded CSV/TSV row storage while preserving exact output and buffered ownership.

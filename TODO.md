@@ -518,6 +518,9 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O22c2c: Qualify coordinator-owned cell-vector and bounded CSV/TSV row-buffer reuse,
       separating both mechanisms and preserving short/empty, buffered and queued ownership controls.
       See [the paired row report](docs/benchmarks/column-row-reuse-20261104.md).
+- [x] O22c2d1: Qualify supplied field-context reuse and owned scalar-result transfer on both hosts;
+      retain owning results, local snapshot lifetimes, transformed-field behavior and slower fallback
+      kernels in [the paired field report](docs/benchmarks/field-context-owned-results-20261104.md).
 - [ ] O22c2d: Independently qualify borrowed structured field values and reusable numeric summary
       cells; audit fallback snapshot and temporary-transform lifetimes before returning any views.
 - [ ] O22c2: Qualify remaining reusable structured cell/row storage and streaming machine formats.
