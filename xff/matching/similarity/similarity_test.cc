@@ -79,6 +79,53 @@ int ReferenceBytePercent(std::string_view left, std::string_view right, std::siz
 
 struct SimilarityTest : ::testing::Test {};
 
+TEST_F(SimilarityTest, SingleWordInsertionPreservesLongUniqueAndDuplicateOwnedKeys) {
+  const auto make_text = [](std::size_t count, std::size_t unique, std::size_t padding) {
+    std::string out;
+    for (std::size_t index = 0; index < count; ++index) {
+      out.append(" Word").append(std::to_string(index % unique)).append(padding, 'x');
+      out.append(index % 2 == 0 ? ", " : "!\n");
+    }
+    return out;
+  };
+  static constexpr auto kUniqueCounts = std::to_array<std::size_t>({1, 7, 257});
+  static constexpr auto kPaddings = std::to_array<std::size_t>({0, 32, 256});
+  static constexpr auto kThresholds = std::to_array<int>({0, 1, 50, 99, 100, 101});
+  for (const auto unique : kUniqueCounts) {
+    for (const auto padding : kPaddings) {
+      SCOPED_TRACE(unique);
+      SCOPED_TRACE(padding);
+      std::string original = make_text(1'024, unique, padding);
+      const std::string candidate = make_text(1'025, unique + 1, padding);
+      const int expected = ReferenceBytePercent(candidate, original, 1);
+      ByteWordShingleReference source(original, 1);
+      const ByteWordShingleReference reference(std::move(source));
+      original.assign("caller storage changed");
+      EXPECT_THAT(reference.Percent(candidate), Eq(expected));
+      EXPECT_THAT(WordShinglePercent(candidate, make_text(1'024, unique, padding), 1), Eq(expected));
+      for (const int threshold : kThresholds) {
+        EXPECT_THAT(reference.AtLeast(candidate, threshold), Eq(expected >= threshold));
+        EXPECT_THAT(
+            WordShingleAtLeast(candidate, make_text(1'024, unique, padding), 1, threshold), Eq(expected >= threshold));
+      }
+    }
+  }
+}
+
+TEST_F(SimilarityTest, SingleWordInsertionPreservesMixedInlineAndAllocatedKeys) {
+  const std::string left = "short " + std::string(256, 'A') + " short " + std::string(128, 'B') + " tail";
+  const std::string right = "tail " + std::string(128, 'b') + " short " + std::string(256, 'a') + " extra";
+  const int expected = ReferenceBytePercent(left, right, 1);
+  const ByteWordShingleReference reference(right, 1);
+  EXPECT_THAT(WordShinglePercent(left, right, 1), Eq(expected));
+  EXPECT_THAT(reference.Percent(left), Eq(expected));
+  static constexpr auto kThresholds = std::to_array<int>({0, 1, 50, 80, 81, 100, 101});
+  for (const int threshold : kThresholds) {
+    EXPECT_THAT(WordShingleAtLeast(left, right, 1, threshold), Eq(expected >= threshold));
+    EXPECT_THAT(reference.AtLeast(left, threshold), Eq(expected >= threshold));
+  }
+}
+
 TEST_F(SimilarityTest, BooleanThresholdMatchesExactRoundedScoresForSmallSetShapes) {
   const auto words = [](std::size_t common, std::size_t unique, std::string_view prefix) {
     std::string text;

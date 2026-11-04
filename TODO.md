@@ -494,9 +494,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       batched intersection bounds on both hosts. Preserve the exact-score API, fresh I/O, reference
       admission and integer rounding; retain rejected strategies and slower full-match controls in
       `docs/benchmarks/threshold-aware-similarity-20261103.md`.
-- [ ] O21b5: Independently qualify direct width-one word insertion without the temporary word
-      vector. Preserve byte tokenization, duplicate ownership, moved strings and reference reuse;
-      compare tiny/long and duplicate/unique words before changing the qualified staged policy.
+- [x] O21b5: Qualify width-one word construction across short/long and duplicate/unique inputs.
+      Retain short-word batches and reuse scratch for long-key insertion; reject unconditional
+      direct policies with short-word regressions. Preserve exact byte scores and ownership in
+      [the paired word-set report](docs/benchmarks/word-set-insertion-20261104.md).
 - [ ] O21b: Reuse immutable-source/reference representations and exact candidate indexes only after
       resolving dynamic target/invalidation and retained-byte contracts; keep run-wide grouping semantics explicit.
 - [x] O22a: Qualify snapshot-owned digest observers against owning consumption, preserving cache
