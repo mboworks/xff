@@ -227,3 +227,11 @@ server conditions. The observer can wrap another VFS in a benchmark, but this ex
 instrument dynamically constructed archive/member backends.
 
 Continuous paired measurements are described in [Benchmark history](benchmark-history.md).
+
+### Native-case metadata admission
+
+A filesystem may advertise one guaranteed `IsCaseSensitive` answer for its entire backend
+instance. Native-case name matching can then avoid metadata reads whose only purpose was a device
+lookup. This is an explicit capability, never a sampled inference. Other metadata consumers keep
+their existing demand; required reads and errors are unchanged. Unknown backends and macOS volume
+probing retain their current behavior. See the [qualification and tradeoffs](benchmarks/uniform-native-case-20261104.md).

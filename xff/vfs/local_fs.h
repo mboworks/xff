@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -61,6 +62,7 @@ class LocalFs final : public FileSystem {
   absl::StatusOr<std::string> ReadLink(std::string_view path) const override;
   absl::StatusOr<std::string> FsType(std::string_view path) const override;
   absl::StatusOr<bool> IsCaseSensitive(std::string_view path) const override;
+  std::optional<bool> UniformCaseSensitivity() const override;
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override;
 
   absl::StatusOr<SharedReadSource> ContentSource(std::string_view path) const override {

@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -136,6 +137,11 @@ class FileSystem {
   // volume cannot be probed; the caller falls back to the conservative
   // case-sensitive (byte-exact) behaviour, which is always find-faithful.
   virtual absl::StatusOr<bool> IsCaseSensitive(std::string_view path) const = 0;
+
+  // A present value guarantees IsCaseSensitive's answer for every path of this
+  // backend instance. Unknown backends keep per-path queries. Never infer this
+  // guarantee by sampling one root, device or underlying volume.
+  virtual std::optional<bool> UniformCaseSensitivity() const { return std::nullopt; }
 
   // Reads the entire byte content of the regular file at `path` (xff's content
   // predicates -content / -icontent / -rxc / -irxc). Returns an error when the

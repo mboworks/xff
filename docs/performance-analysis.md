@@ -4050,3 +4050,24 @@ translation units pass. Exact output, sparse cells, borrowed lifetimes, numeric 
 worker behavior, safety and VFS routing stay unchanged. CLI size changes by -32 bytes macOS
 and -7,000 bytes Linux. Further structured borrowing, command-owned summary buffers, paired
 completed frontiers, shared-stage budgets, bulk metadata and backpressure remain open.
+
+### O20c: uniform native-case capability
+
+A backend-provided optional case policy removes the need to stat every leaf only to discover a
+device identifier for native-case matching. The default stays unknown; LocalFs advertises its
+existing constant fallback only where volume probing is unavailable. Never infer this guarantee
+from one root or device. Forward it through the safety wrapper and handle rg stdin's separate
+sensitive rule explicitly. Unknown and macOS backends keep their current queries and error fallback.
+
+The [two-host report](benchmarks/uniform-native-case-20261104.md) retains all 92-case matrices,
+pilots, confirmation and controls. Linux broad 100k selective-name commands improve about 66%
+with one worker and 49% with three; macOS stays effectively unchanged. Eager and exact-case controls
+retain small costs rather than being normalized away. Required metadata, deferred output, worker
+admission, encoding and safety remain unchanged. Compact hint/full records, bulk stat and
+first-device cache allocation remain independent investigations.
+
+A separate follow-up remains: matcher-worker admission still requires `!fs_native_case`, even when
+this capability makes the fold decision immutable. Audit passing that decision into every worker
+EvalContext before admitting known-policy name filters. Preserve serialization for unknown
+backends and existing safety, metadata, collection and deferred gates; test both sensitive and
+insensitive guarantees. This PR does not enable those workers or claim their prospective gain.

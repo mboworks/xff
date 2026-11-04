@@ -59,6 +59,9 @@ using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::Not;
+#if !defined(_PC_CASE_SENSITIVE)
+using ::testing::Optional;
+#endif
 using ::testing::UnorderedElementsAre;
 
 // Builds a small tree under a per-test temp directory:
@@ -396,6 +399,14 @@ TEST_F(LocalFsTest, FsTypeUsesHexForAnUnmappedKernelMagic) {
 
 TEST_F(LocalFsTest, ReadContentRejectsADirectory) {
   EXPECT_THAT(local_fs_.ReadContent(Path("sub")), Not(IsOk()));
+}
+
+TEST_F(LocalFsTest, UniformCaseCapabilityPreservesTheExistingPlatformPolicy) {
+#if defined(_PC_CASE_SENSITIVE)
+  EXPECT_THAT(local_fs_.UniformCaseSensitivity(), Eq(std::nullopt));
+#else
+  EXPECT_THAT(local_fs_.UniformCaseSensitivity(), Optional(IsTrue()));
+#endif
 }
 
 TEST_F(LocalFsTest, IsCaseSensitiveProbesTheVolume) {

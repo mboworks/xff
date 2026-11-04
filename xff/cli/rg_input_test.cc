@@ -31,9 +31,11 @@ using ::testing::Field;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
+using ::testing::Optional;
 using ::testing::Return;
 
 struct HostFs final : vfs::FileSystem {
+  MOCK_METHOD(std::optional<bool>, UniformCaseSensitivity, (), (const, override));
   MOCK_METHOD(bool, SupportsNameOnlyListings, (), (const, override));
   MOCK_METHOD(absl::StatusOr<std::vector<vfs::Entry>>, ReadDirNames, (std::string_view path), (const, override));
   MOCK_METHOD(
@@ -97,6 +99,29 @@ TEST_F(RgInputTest, NameOnlyListsUseHostCapabilityWithoutTreatingStdinAsADirecto
   EXPECT_CALL(host, ReadDirNames("other")).WillOnce(Return(std::vector<vfs::Entry>{}));
   EXPECT_THAT(fs.ReadDirNames("other"), IsOkAndHolds(IsEmpty()));
   EXPECT_THAT(fs.ReadDirNames("-"), StatusIs(absl::StatusCode::kFailedPrecondition, _));
+}
+
+TEST_F(RgInputTest, UniformCaseCapabilityForwardsKnownAndUnknownHostPolicies) {
+  const RgInputFs fs(host, std::nullopt);
+  EXPECT_CALL(host, UniformCaseSensitivity())
+      .WillOnce(Return(std::optional<bool>(false)))
+      .WillOnce(Return(std::optional<bool>(true)))
+      .WillOnce(Return(std::nullopt));
+  EXPECT_THAT(fs.UniformCaseSensitivity(), Optional(IsFalse()));
+  EXPECT_THAT(fs.UniformCaseSensitivity(), Optional(IsTrue()));
+  EXPECT_THAT(fs.UniformCaseSensitivity(), Eq(std::nullopt));
+}
+
+TEST_F(RgInputTest, StdinAndAnInsensitiveHostKeepPerPathCaseRules) {
+  const RgInputFs fs(host, "input");
+  EXPECT_CALL(host, UniformCaseSensitivity())
+      .WillOnce(Return(std::optional<bool>(false)))
+      .WillOnce(Return(std::optional<bool>(true)))
+      .WillOnce(Return(std::nullopt));
+  EXPECT_THAT(fs.UniformCaseSensitivity(), Eq(std::nullopt));
+  EXPECT_THAT(fs.UniformCaseSensitivity(), Optional(IsTrue()));
+  EXPECT_THAT(fs.UniformCaseSensitivity(), Eq(std::nullopt));
+  EXPECT_THAT(fs.IsCaseSensitive("-"), IsOkAndHolds(true));
 }
 
 TEST_F(RgInputTest, HostReadsAreForwardedButMutationsRemainDisconnected) {

@@ -490,10 +490,13 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       `docs/benchmarks/native-name-paths-20261104.md`.
 - [ ] O20b: Separately evaluate compact hint/full traversal records; O20a still retains full Metadata
       per child. Avoid per-file heap/shared ownership and preserve stable lazy metadata observations.
-- [ ] O20c: Evaluate an explicit fixed native-case capability before forcing eager metadata.
-      Linux LocalFs currently always reports case-sensitive; expose that guarantee through the VFS
-      rather than infer it from one path or skip checks on arbitrary backends. Preserve custom and
-      macOS volume behavior; separately review parent-directory versus target-volume semantics.
+- [x] O20c: Qualify the explicit uniform native-case capability on both hosts, preserving unknown
+      backends, macOS volume behavior, required metadata and stdin mixing. Retain all variants,
+      slower controls and syscall evidence in `docs/benchmarks/uniform-native-case-20261104.md`.
+- [ ] O20d: Separately evaluate native-case matcher workers once a backend guarantees a uniform
+      policy. Admission still rejects every filesystem-native name expression; pass the immutable
+      fold decision into worker evaluation, retain unknown-backend serialization and all existing
+      safety/metadata gates, and measure one/three workers on both hosts before enabling it.
 - [ ] O20: Qualify optional bulk metadata by backend capability with precise fallback, while
       keeping metadata-free traversal free of extra probes and extended-stat work.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte
