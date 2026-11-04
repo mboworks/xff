@@ -4154,3 +4154,25 @@ metadata-free/uniform-case controls are mostly neutral. Select 512, reject a lar
 stack policy and keep long-path fallback costs explicit. This does not replace bulk metadata:
 remaining per-entry syscall cost is the larger separate candidate. No peak-memory reduction or
 in-memory VFS speedup is claimed for this host-only adapter.
+
+### O20d/O20h: retain rejected native-case experiments and their regressions
+
+The [paired experiment report](benchmarks/native-case-experiments-20261104.md) retains two worker
+policies (3,360 native invocations per host) and a first-device case-cache shortcut (2,070 per host).
+Known-policy content-worker admission and a compiled coordinator prefix improve large Linux
+workloads, but selective 1k cases still regress roughly 17%/12%. Unknown native-case backends and
+pure name-only useful-work gates stay unchanged. Neither runtime policy is selected; eligibility
+and startup amortization need a separate design rather than an arbitrary time/count threshold.
+
+The first-device cache adds no convincing practical gain over unchanged-parent controls. The pinned
+Abseil map already has a direct single-slot comparison path; repeated hashing or allocation is not
+a valid default explanation for one device, and a sampling/clock cause is unproven. Retain the
+existing runtime, the private implementation and raw slower cells. Publish only the mixed-device,
+cached-failure, deferred-query and exact/find regression coverage against the existing map.
+
+O02b remains a separate hypothesis: prepared simple globs fall back to libc whenever folding flags
+are present. Investigate compatible ASCII/locale-aware matching or terminated-input reuse without
+changing active locale, NUL truncation, complex patterns or non-ASCII semantics. Bulk metadata is
+still the larger host-syscall candidate. Separately, the rendering-history investigation found
+launcher binary hashes splitting Mac reference windows; require a proved semantic launcher identity
+before relaxing normalization. Presentation grouping alone does not make those windows available.

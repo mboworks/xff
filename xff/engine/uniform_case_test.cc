@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 // SPDX-License-Identifier: Apache-2.0
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -34,7 +36,22 @@ struct CasePolicy {
   std::optional<bool> uniform;
   bool fail_leaf_metadata = false;
   bool fail_case_query = false;
+  bool mixed_devices = false;
 };
+
+struct DeviceEntry {
+  std::string_view name;
+  std::uint64_t device;
+};
+
+constexpr auto kDeviceEntries = std::to_array<DeviceEntry>({
+    {.name = "Foo0.TXT", .device = 1},
+    {.name = "Foo1.TXT", .device = 2},
+    {.name = "Foo2.TXT", .device = 3},
+    {.name = "Foo3.txt", .device = 2},
+    {.name = "Foo4.txt", .device = 3},
+    {.name = "Foo5.TXT", .device = 1},
+});
 
 class CaseFs final : public vfs::FileSystem {
  public:
@@ -44,12 +61,39 @@ class CaseFs final : public vfs::FileSystem {
     if (path != "/fixture") {
       return absl::NotFoundError("unknown fixture directory");
     }
+    if (policy_.mixed_devices) {
+      std::vector<vfs::Entry> entries;
+      entries.reserve(kDeviceEntries.size());
+      for (const auto& entry : kDeviceEntries) {
+        entries.push_back({
+            .path = "/fixture/" + std::string(entry.name),
+            .name = std::string(entry.name),
+            .type = vfs::FileType::kRegular,
+        });
+      }
+      return entries;
+    }
     return std::vector<vfs::Entry>{{.path = "/fixture/f.txt", .name = "f.txt", .type = vfs::FileType::kRegular}};
   }
 
   absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool) const override {
     if (path == "/fixture") {
       return vfs::Metadata{.type = vfs::FileType::kDirectory, .ino = 1, .dev = 1};
+    }
+    if (policy_.mixed_devices) {
+      const auto index = static_cast<std::size_t>(
+          std::ranges::find(kDeviceEntries, path.substr(path.find_last_of('/') + 1), &DeviceEntry::name)
+          - kDeviceEntries.begin());
+      if (index == kDeviceEntries.size()) {
+        return absl::NotFoundError("unknown device fixture entry");
+      }
+      return vfs::Metadata{
+          .type = vfs::FileType::kRegular,
+          .size = 7,
+          .mode = 0644,
+          .ino = index + 2,
+          .dev = kDeviceEntries.at(index).device,
+      };
     }
     if (path != "/fixture/f.txt") {
       return absl::NotFoundError("unknown fixture entry");
@@ -66,8 +110,24 @@ class CaseFs final : public vfs::FileSystem {
     return policy_.uniform;
   }
 
-  absl::StatusOr<bool> IsCaseSensitive(std::string_view) const override {
+  absl::StatusOr<bool> IsCaseSensitive(std::string_view path) const override {
     case_queries_.fetch_add(1, std::memory_order_relaxed);
+    query_paths_.emplace_back(path);
+    if (policy_.mixed_devices) {
+      if (path == "/fixture") {
+        return false;
+      }
+      const auto index = static_cast<std::size_t>(
+          std::ranges::find(kDeviceEntries, path.substr(path.find_last_of('/') + 1), &DeviceEntry::name)
+          - kDeviceEntries.begin());
+      if (index == kDeviceEntries.size()) {
+        return absl::NotFoundError("unknown case fixture entry");
+      }
+      if (kDeviceEntries.at(index).device == 3) {
+        return absl::PermissionDeniedError("device case query denied");
+      }
+      return kDeviceEntries.at(index).device == 2;
+    }
     if (policy_.fail_case_query) {
       return absl::PermissionDeniedError("case query denied");
     }
@@ -90,10 +150,13 @@ class CaseFs final : public vfs::FileSystem {
 
   std::size_t CaseQueries() const { return case_queries_.load(std::memory_order_relaxed); }
 
+  const std::vector<std::string>& QueryPaths() const { return query_paths_; }
+
   std::size_t UniformQueries() const { return uniform_queries_.load(std::memory_order_relaxed); }
 
  private:
   const CasePolicy policy_;
+  mutable std::vector<std::string> query_paths_;
   mutable std::atomic<std::size_t> leaf_stats_{0};
   mutable std::atomic<std::size_t> case_queries_{0};
   mutable std::atomic<std::size_t> uniform_queries_{0};
@@ -106,13 +169,15 @@ struct Observation {
   std::size_t leaf_stats = 0;
   std::size_t case_queries = 0;
   std::size_t uniform_queries = 0;
+  std::vector<std::string> case_paths;
 };
 
 struct UniformCaseTest : ::testing::Test {
   static absl::StatusOr<Observation> Observe(
       CasePolicy policy,
       const std::vector<std::string>& extra = {},
-      std::string_view pattern = "F.TXT") {
+      std::string_view pattern = "F.TXT",
+      registry::Style style = registry::Style::kXff) {
     const CaseFs filesystem(policy);
     std::vector<std::string> arguments{
         "--color=never", "--no-ignore", "--jobs=1", "/fixture", "-type", "f", "-name", std::string(pattern),
@@ -120,19 +185,43 @@ struct UniformCaseTest : ::testing::Test {
     arguments.append_range(extra);
     MBO_ASSIGN_OR_RETURN(auto command, parser::Parse(arguments));
     parser::BindMatchers(
-        command, parser::GrammarFromGlobals(command.globals),
-        parser::ResolveCaseMode(command.globals, registry::Style::kXff));
+        command, parser::GrammarFromGlobals(command.globals), parser::ResolveCaseMode(command.globals, style));
     Observation result;
     result.result = RunFind(
         command, filesystem, [&](std::string_view text) { result.output.append(text); },
-        [&](std::string_view, absl::Status status) { result.diagnostics.push_back(std::move(status)); },
-        registry::Style::kXff);
+        [&](std::string_view, absl::Status status) { result.diagnostics.push_back(std::move(status)); }, style);
     result.leaf_stats = filesystem.LeafStats();
     result.case_queries = filesystem.CaseQueries();
     result.uniform_queries = filesystem.UniformQueries();
+    result.case_paths = filesystem.QueryPaths();
     return result;
   }
 };
+
+TEST_F(UniformCaseTest, MixedDevicesCacheAnswersAndErrorsInOrdinaryAndDeferredPasses) {
+  for (const bool deferred : {false, true}) {
+    std::vector<std::string> extra;
+    if (deferred) {
+      extra = {R"(--shard-pattern=(?P<stem>Foo)(?P<index>\d)\.[Tt][Xx][Tt])", "-shard-status", "incomplete"};
+    }
+    MBO_ASSERT_OK_AND_ASSIGN(const auto result, Observe({.mixed_devices = true}, extra, "*.txt"));
+    EXPECT_THAT(
+        result.output, EqualsText("/fixture/Foo0.TXT\n/fixture/Foo3.txt\n/fixture/Foo4.txt\n/fixture/Foo5.TXT\n"));
+    EXPECT_THAT(result.diagnostics, IsEmpty());
+    EXPECT_THAT(result.result.errors, Eq(0));
+    EXPECT_THAT(result.case_paths, ElementsAre("/fixture", "/fixture/Foo1.TXT", "/fixture/Foo2.TXT"));
+    EXPECT_THAT(result.case_queries, Eq(3));
+  }
+}
+
+TEST_F(UniformCaseTest, MixedDeviceExactAndFindModesDoNotQueryCasePolicy) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto exact, Observe({.mixed_devices = true}, {"--exact"}, "*.txt"));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto find, Observe({.mixed_devices = true}, {}, "*.txt", registry::Style::kFind));
+  EXPECT_THAT(exact.output, EqualsText("/fixture/Foo3.txt\n/fixture/Foo4.txt\n"));
+  EXPECT_THAT(find.output, EqualsText(exact.output));
+  EXPECT_THAT(exact.case_paths, IsEmpty());
+  EXPECT_THAT(find.case_paths, IsEmpty());
+}
 
 TEST_F(UniformCaseTest, KnownSensitiveAndInsensitiveAnswersAvoidLeafMetadata) {
   struct Case {
