@@ -73,6 +73,7 @@ config_setting(
 filegroup(
     name = "python_workflow_test_data",
     srcs = [
+        ".bazelrc",
         ".github/actions/bazel-cache-restore/action.yml",
         ".github/actions/bazel-cache-save/action.yml",
         ".github/actions/benchmark-measure/action.yml",

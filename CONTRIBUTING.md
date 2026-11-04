@@ -82,6 +82,12 @@ which cannot satisfy that dependency. Ordinary LLVM 23 builds and the other sani
 continue on `ubuntu-latest`. Moving MSan to that host requires a compatible compiler/runtime
 distribution; keep its compiler and instrumented libc++ versions matched.
 
+The hosted MSan job overrides full `-g` with `-gline-tables-only`: a cold build can otherwise
+fill the runner disk with executable and disk-cache copies of debug information. Sanitizer
+instrumentation and function/file/line reports remain enabled; inspecting local variables in a
+debugger requires the full debug information retained by the ordinary local `--config=msan`.
+See [Clang debug information](https://clang.llvm.org/docs/UsersManual.html#controlling-debug-information).
+
 Pre-commit and `tools/clang_format.sh` run clang-format from the same selected LLVM 23 distribution.
 The first run fetches that distribution if needed; it does not compile XFF. CI runs clang-tidy
 across the complete indexed source set when the compiler or lint policy changes; ordinary source

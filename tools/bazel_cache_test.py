@@ -122,6 +122,18 @@ class BazelCacheTest(unittest.TestCase):
 
 
 
+    def test_hosted_msan_keeps_line_reports_without_full_debug_payload(self):
+        workflow = repository_file(".github/workflows/main.yml").read_text()
+        section = workflow.split("  msan:\n", 1)[1].split("\n  # Minimal core archive:", 1)[0]
+        command = section.split("          bazel test ", 1)[1].split("\n      - name:", 1)[0]
+        arguments = shlex.split(command.replace("\\\n", " "))
+        self.assertIn("--config=msan", arguments)
+        self.assertIn("--config=xff_fuse_tests_required", arguments)
+        self.assertEqual([arg for arg in arguments if arg.startswith("--copt=-g")],
+                         ["--copt=-gline-tables-only"])
+        # The hosted storage choice must not remove full debugging from developer configs.
+        self.assertIn("common:msan --copt=-g\n", repository_file(".bazelrc").read_text())
+
     def test_workflows_refresh_only_main_and_release_only_restores(self):
         root = repository_file("")
         workflow = (root / ".github/workflows/main.yml").read_text()
