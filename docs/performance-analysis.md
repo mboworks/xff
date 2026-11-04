@@ -4088,7 +4088,6 @@ that regression, while small-tree costs around 1-2% and a macOS long-name 0.44% 
 Full release suites, relevant sanitizers and a committed 5,003-entry listing regression qualify
 the selected representation. Compact hint/full metadata records remain open under O20b.
 
-
 ### Shared benchmark-history task ordering
 
 Per-revision Similarity order can change the apparent surface geometry while the underlying
