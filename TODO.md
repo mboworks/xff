@@ -514,6 +514,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O22c2b: Qualify bounded coordinator-owned encoded-record reuse for escaped/colored plain,
       CSV, TSV and JSON-lines listings; retain raw/NUL/stateless and queued-ownership controls in
       [the encoded-record report](docs/benchmarks/encoded-record-reuse-20261103.md).
+- [x] O22c2c: Qualify coordinator-owned cell-vector and bounded CSV/TSV row-buffer reuse,
+      separating both mechanisms and preserving short/empty, buffered and queued ownership controls.
+      See [the paired row report](docs/benchmarks/column-row-reuse-20261104.md).
+- [ ] O22c2d: Independently qualify borrowed structured field values and reusable numeric summary
+      cells; audit fallback snapshot and temporary-transform lifetimes before returning any views.
 - [ ] O22c2: Qualify remaining reusable structured cell/row storage and streaming machine formats.
       Preserve synchronous view lifetimes, reentrant callbacks, coordinator ownership and ordered
       publication. Do not add a buffer/destructor to every existing stateless renderer by default.

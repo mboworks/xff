@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse coordinator-owned column cells and bounded CSV/TSV row storage while preserving exact output and buffered ownership.
+
 - Stop similarity verification once exact rounded threshold bounds decide the match, preserving fresh reads and exact percentage APIs.
 
 - Reuse bounded coordinator-owned storage for escaped, colored, CSV, TSV and JSON-lines path records while preserving exact bytes and queued ownership.

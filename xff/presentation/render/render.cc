@@ -256,6 +256,26 @@ void EncodedRecordBuffer::Encode(std::string_view path, std::string_view color) 
   bytes_.append(path).push_back('\n');
 }
 
+void EncodedRecordBuffer::EncodeRow(const std::vector<std::string>& cells) {
+  bytes_.clear();
+  if (format_ != Format::kCsv && format_ != Format::kTsv) {
+    return;
+  }
+  bool first = true;
+  for (const std::string& cell : cells) {
+    if (!first) {
+      bytes_.push_back(format_ == Format::kTsv ? '\t' : ',');
+    }
+    first = false;
+    if (format_ == Format::kTsv) {
+      AppendTsvField(cell, bytes_);
+    } else {
+      AppendCsvField(cell, bytes_);
+    }
+  }
+  bytes_.push_back('\n');
+}
+
 std::string EncodeTabularRow(Format format, const std::vector<std::string>& cells) {
   switch (format) {
     case Format::kCsv:

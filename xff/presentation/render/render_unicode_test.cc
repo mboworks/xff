@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -19,6 +20,15 @@ using ::testing::Eq;
 
 // Unicode-specific rendering tests. Ordinary rendering fixtures remain ASCII.
 struct UnicodeRenderTest : ::testing::Test {};
+
+TEST_F(UnicodeRenderTest, ReusableRowsPreserveUtf8AndOpaqueCellBytes) {
+  // Visible UTF-8 and an invalid byte are separate cells; CSV/TSV retain both losslessly.
+  const std::vector<std::string> cells{"café", std::string("x\xff", 2)};
+  EncodedRecordBuffer csv(Format::kCsv, PathEncoding::kRaw);
+  csv.EmitRow(cells, [&](std::string_view bytes) { EXPECT_THAT(bytes, EqualsText("café,x\xff\n")); });
+  EncodedRecordBuffer tsv(Format::kTsv, PathEncoding::kRaw);
+  tsv.EmitRow(cells, [&](std::string_view bytes) { EXPECT_THAT(bytes, EqualsText("café\tx\xff\n")); });
+}
 
 TEST_F(UnicodeRenderTest, EncodedRecordReusePreservesUtf8AndTheLosslessFallbackAcrossCalls) {
   EncodedRecordBuffer buffer(Format::kJsonl, PathEncoding::kRaw);

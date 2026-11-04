@@ -3860,3 +3860,19 @@ Deterministic tests cover success/failure checkpoints for both representations, 
 shapes and thresholds, invalid widths, absent/moved owners and fresh-reference failure/recovery.
 Opaque-byte differential fuzzing also compares both boolean APIs against unchanged exact scores.
 Reference indexing/grouping and independent direct word insertion remain open under O21b.
+
+### O22c2c: reusable structured column rows
+
+Retain the coordinator's cell-vector capacity, fill it per entry, emit or copy its row, then clear
+cells immediately. Reuse the existing bounded encoded-record owner for CSV/TSV rows; keep stateless
+encoding, queued copies, buffered table ownership and the raw/NUL fast path intact. The
+[paired report](benchmarks/column-row-reuse-20261104.md) compares baseline, vector-only, row-only
+and combined builds on both hosts with independent complete-output oracles.
+
+Across 48 larger native column cases, the combined implementation improves median time by about
+2.3% on macOS and 1.8% on Linux; the best case medians improve around 6%. In-memory 10,000-entry
+production cases have median session ratios about 0.939/0.968 respectively. These are separate
+mechanism/native cohorts, not interchangeable claims. Preserve the roughly 1.9x Linux zero-cell
+encoder cost (5.0 ns versus 2.6 ns), short/control variation and all raw measurements in the evidence.
+No new worker, lock, I/O path, flag or default output byte is introduced. Borrowed field-value
+lifetimes, reusable numeric summary cells and streaming/backpressure remain open under O22c2.

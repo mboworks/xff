@@ -99,10 +99,22 @@ class EncodedRecordBuffer final {
     }
   }
 
+  // Encode streaming CSV/TSV cells; unsupported formats consume an empty record, like EncodeTabularRow.
+  // The same synchronous, non-reentrant consumer and retained-capacity rules apply.
+  template<std::invocable<std::string_view> Consumer>
+  void EmitRow(const std::vector<std::string>& cells, Consumer&& consume) {
+    EncodeRow(cells);
+    std::invoke(std::forward<Consumer>(consume), std::string_view(bytes_));
+    if (bytes_.capacity() > kMaxRetainedBytes) {
+      std::string{}.swap(bytes_);
+    }
+  }
+
   std::size_t RetainedCapacity() const { return bytes_.capacity(); }
 
  private:
   void Encode(std::string_view path, std::string_view color);
+  void EncodeRow(const std::vector<std::string>& cells);
 
   Format format_;
   PathEncoding encoding_;

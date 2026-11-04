@@ -191,6 +191,66 @@ TEST_F(EncodedRecordBufferTest, UsefulCapacityPersistsButOversizedEncodedRecords
   }
 }
 
+TEST_F(RenderTest, ReusableRowsMatchStatelessBytesAcrossFormatsAndEncodingSelectors) {
+  static constexpr auto kFormats = std::to_array<Format>({
+      Format::kPlain,
+      Format::kNul,
+      Format::kCsv,
+      Format::kTsv,
+      Format::kJsonl,
+      Format::kAligned,
+      Format::kMarkdown,
+      Format::kTree,
+  });
+  static constexpr auto kEncodings = std::to_array<PathEncoding>({PathEncoding::kRaw, PathEncoding::kEscape});
+  const auto rows = std::to_array<std::vector<std::string>>({
+      {},
+      {""},
+      {"path", "42"},
+      {"a,b", "quote\"value", "line\nend"},
+      {"tab\tvalue", "cr\rvalue", "back\\slash"},
+      {std::string(160, 'x'), "tail"},
+  });
+  for (const auto format : kFormats) {
+    for (const auto encoding : kEncodings) {
+      EncodedRecordBuffer buffer(format, encoding);
+      buffer.EmitRecord("stale", [](std::string_view) {});
+      for (const auto& cells : rows) {
+        const auto expected = EncodeTabularRow(format, cells);
+        std::size_t calls = 0;
+        buffer.EmitRow(cells, [&](std::string_view bytes) {
+          ++calls;
+          EXPECT_THAT(bytes, EqualsText(expected));
+        });
+        EXPECT_THAT(calls, Eq(1));
+      }
+    }
+  }
+}
+
+TEST_F(RenderTest, ReusableRowsHaveIndependentLiteralQuotingAndKeepQueuedCopies) {
+  EncodedRecordBuffer csv(Format::kCsv, PathEncoding::kRaw);
+  EncodedRecordBuffer tsv(Format::kTsv, PathEncoding::kRaw);
+  const std::vector<std::string> cells{"a,b", "a\"b", "a\nb", "a\tb", "a\\b"};
+  std::vector<std::string> queued;
+  csv.EmitRow(cells, [&](std::string_view bytes) { queued.emplace_back(bytes); });
+  tsv.EmitRow(
+      cells, [&](std::string_view bytes) { EXPECT_THAT(bytes, EqualsText("a,b\ta\"b\ta\\nb\ta\\tb\ta\\\\b\n")); });
+  csv.EmitRow({"next", "row"}, [&](std::string_view bytes) { queued.emplace_back(bytes); });
+  EXPECT_THAT(queued, ElementsAre(EqualsText("\"a,b\",\"a\"\"b\",\"a\nb\",a\tb,a\\b\n"), EqualsText("next,row\n")));
+}
+
+TEST_F(RenderTest, ReusableRowsReleaseOversizedEncodedCapacityBeforeTheNextRow) {
+  EncodedRecordBuffer buffer(Format::kCsv, PathEncoding::kRaw);
+  const std::vector<std::string> large{std::string(EncodedRecordBuffer::kMaxRetainedBytes + 100, 'x')};
+  buffer.EmitRow(large, [&](std::string_view bytes) { EXPECT_THAT(bytes.size(), Eq(large.at(0).size() + 1)); });
+  EXPECT_THAT(buffer.RetainedCapacity(), Le(EncodedRecordBuffer::kMaxRetainedBytes));
+  buffer.EmitRow({"small"}, [&](std::string_view bytes) { EXPECT_THAT(bytes, EqualsText("small\n")); });
+  const auto retained = buffer.RetainedCapacity();
+  buffer.EmitRow({"short"}, [&](std::string_view bytes) { EXPECT_THAT(bytes, EqualsText("short\n")); });
+  EXPECT_THAT(buffer.RetainedCapacity(), Eq(retained));
+}
+
 TEST_F(RenderTest, RawAndPreparedDisplayCellsHaveEquivalentVisibleEscapes) {
   for (const Format output : std::to_array<Format>({Format::kAligned, Format::kMarkdown})) {
     for (const std::size_t window : kTableBufferWindows) {
