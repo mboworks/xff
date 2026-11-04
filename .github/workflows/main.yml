@@ -533,12 +533,14 @@ jobs:
       - name: Enable FUSE integration coverage
         run: |
           sudo apt-get install -y fuse3
+      # Keep source-line sanitizer reports without duplicating full type/variable DWARF in
+      # every executable and disk-cache blob. A cold full-debug build exhausted 34 GiB.
       - name: bazel test
         run: |
           # shellcheck disable=SC2046  # deliberate word splitting: the tool prints bazel target patterns
           bazel test //... $(tools/extras.py --wildcards) --config=xff_docs \
             --disk_cache=$HOME/.cache/bazel-disk --config=clang --config=msan \
-            --config=xff_fuse_tests_required
+            --config=xff_fuse_tests_required --copt=-gline-tables-only
       - name: Save refreshed Bazel compiled outputs
         if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.bazel-cache.outcome == 'success' }}
         uses: ./.github/actions/bazel-cache-save
