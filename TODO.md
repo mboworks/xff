@@ -521,6 +521,9 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O22c2d1: Qualify supplied field-context reuse and owned scalar-result transfer on both hosts;
       retain owning results, local snapshot lifetimes, transformed-field behavior and slower fallback
       kernels in [the paired field report](docs/benchmarks/field-context-owned-results-20261104.md).
+- [x] O22c2d2: Construct only the selected comparison-summary representation; preserve sparse/zero
+      metrics, owning rows, all output formats and top/request identities. Retain both hosts'
+      [full matrix, ordinary-width supplement and controls](docs/benchmarks/selected-summary-output-20261104.md).
 - [ ] O22c2d: Independently qualify borrowed structured field values and reusable numeric summary
       cells; audit fallback snapshot and temporary-transform lifetimes before returning any views.
 - [ ] O22c2: Qualify remaining reusable structured cell/row storage and streaming machine formats.

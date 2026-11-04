@@ -27,6 +27,7 @@
 #include <functional>
 #include <future>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <map>
 #include <mutex>
@@ -3659,6 +3660,34 @@ void EmitComparisonScopeHeading(const parser::Command& command, std::string_view
           "Right: ", command.roots.at(1), "\n"));
 }
 
+enum class SummaryRowOutput { kCells, kDisplay, kJson, kExport };
+
+constexpr SummaryRowOutput SummaryOutputForFormat(render::Format format) {
+  switch (format) {
+    case render::Format::kPlain:
+    case render::Format::kAligned: return SummaryRowOutput::kDisplay;
+    case render::Format::kJsonl: return SummaryRowOutput::kJson;
+    case render::Format::kCsv:
+    case render::Format::kTsv: return SummaryRowOutput::kExport;
+    default: return SummaryRowOutput::kCells;
+  }
+}
+
+std::string ComparisonSummaryJsonPrefix(
+    bool enabled,
+    const SummarySpec& summary,
+    std::string_view scope,
+    const parser::Command& command,
+    std::string_view key) {
+  if (!enabled) {
+    return {};
+  }
+  return absl::StrCat(
+      "{", SummaryIdentityJson(summary), ",\"scope\":", render::JsonValue(scope),
+      ",\"left_root\":", render::JsonValue(command.roots.at(0)),
+      ",\"right_root\":", render::JsonValue(command.roots.at(1)), ",\"group\":", render::JsonValue(key));
+}
+
 struct ScopeRowContext {
   const std::vector<SummaryScopeColumn>& columns;
   const std::vector<SummaryRow>& totals;
@@ -3666,6 +3695,7 @@ struct ScopeRowContext {
   std::optional<format::SizeUnits> human;
   unsigned precision;
   bool has_size;
+  SummaryRowOutput output;
   std::string population;
 };
 
@@ -3681,33 +3711,52 @@ ComparisonSummaryRow MakeComparisonSummaryRow(
     std::string json,
     const ScopeRowContext& context) {
   const std::string key(record.group);
-  const std::string label = SummaryDisplayKey(key, record.is_total);
-  const bool quote_label = SummaryKeyNeedsQuotes(key, record.is_total);
   ComparisonSummaryRow result{
-      .cells = {label},
       .json = std::move(json),
       .exported = std::move(record),
-      .display = {.label = key, .quote_label = quote_label},
   };
+  if (context.output == SummaryRowOutput::kCells) {
+    result.cells.reserve(1 + (4 * context.columns.size()));
+    result.cells.push_back(SummaryDisplayKey(key, result.exported.is_total));
+  } else if (context.output == SummaryRowOutput::kDisplay) {
+    result.display.label = key;
+    result.display.quote_label = SummaryKeyNeedsQuotes(key, result.exported.is_total);
+    result.display.metrics.reserve(context.columns.size());
+  }
   for (std::size_t column_index = 0; column_index < context.columns.size(); ++column_index) {
     const auto& column = context.columns.at(column_index);
     const auto& source = column.tables.at(context.sink);
     const auto& denominator = context.totals.at(column_index);
     const auto row = result.exported.is_total ? denominator : SummaryCell(source, key);
     const bool present = row.count != 0;
-    if (present) {
+    if (context.output == SummaryRowOutput::kExport && present) {
       result.exported.scoped_metrics.emplace(column.scope, ExportMetrics(row, denominator, context.has_size));
     }
-    const auto values = present ? SummaryColumns(row, denominator, context.human, context.precision, context.has_size)
-                                : std::vector<std::string>{"-", "-", "-", "-"};
-    result.cells.insert(result.cells.end(), values.begin(), values.end());
-    result.display.metrics.push_back({values.at(0), values.at(1), values.at(2), values.at(3)});
-    absl::StrAppend(&result.json, ",", render::JsonValue(column.scope), ":");
-    absl::StrAppend(
-        &result.json,
-        present ? absl::StrCat("{", SummaryJson(row, denominator, context.precision, context.has_size), "}") : "null");
+    if (context.output == SummaryRowOutput::kCells || context.output == SummaryRowOutput::kDisplay) {
+      auto values = present ? SummaryColumns(row, denominator, context.human, context.precision, context.has_size)
+                            : std::vector<std::string>{"-", "-", "-", "-"};
+      if (context.output == SummaryRowOutput::kCells) {
+        result.cells.insert(
+            result.cells.end(), std::make_move_iterator(values.begin()), std::make_move_iterator(values.end()));
+      } else {
+        result.display.metrics.push_back({
+            std::move(values.at(0)),
+            std::move(values.at(1)),
+            std::move(values.at(2)),
+            std::move(values.at(3)),
+        });
+      }
+    } else if (context.output == SummaryRowOutput::kJson) {
+      absl::StrAppend(&result.json, ",", render::JsonValue(column.scope), ":");
+      absl::StrAppend(
+          &result.json, present
+                            ? absl::StrCat("{", SummaryJson(row, denominator, context.precision, context.has_size), "}")
+                            : "null");
+    }
   }
-  absl::StrAppend(&result.json, context.population, SummaryTotalJson(result.exported.is_total), "}\n");
+  if (context.output == SummaryRowOutput::kJson) {
+    absl::StrAppend(&result.json, context.population, SummaryTotalJson(result.exported.is_total), "}\n");
+  }
   return result;
 }
 
@@ -3725,6 +3774,7 @@ void EmitComparisonScopeSummary(
   const bool json = output_format == render::Format::kJsonl;
   const bool compact = output_format == render::Format::kPlain || output_format == render::Format::kAligned;
   const bool delimited = IsDelimitedSummary(output_format);
+  const auto row_output = SummaryOutputForFormat(output_format);
   std::vector<std::string> export_scopes;
   export_scopes.reserve(columns.size());
   for (const auto& column : columns) {
@@ -3751,6 +3801,7 @@ void EmitComparisonScopeSummary(
   for (std::size_t sink = 0; sink < summaries.size(); ++sink) {
     const auto rows = SummaryRows(summaries.at(sink).mode, combined.at(sink), ResolveTop(command.globals));
     const auto population = SummaryGroups(summaries.at(sink).mode, combined.at(sink), rows.size());
+    const std::string population_json = json ? population.Json() : std::string{};
     const bool has_size = SummaryHasSize(summaries.at(sink));
     std::vector<SummaryRow> totals;
     totals.reserve(columns.size());
@@ -3772,12 +3823,8 @@ void EmitComparisonScopeSummary(
           .group = key,
           .is_total = total_row,
       };
-      std::string object = absl::StrCat(
-          "{", SummaryIdentityJson(summaries.at(sink)), ",\"scope\":", render::JsonValue(scope),
-          ",\"left_root\":", render::JsonValue(command.roots.at(0)),
-          ",\"right_root\":", render::JsonValue(command.roots.at(1)), ",\"group\":", render::JsonValue(key));
       auto rendered = MakeComparisonSummaryRow(
-          std::move(exported), std::move(object),
+          std::move(exported), ComparisonSummaryJsonPrefix(json, summaries.at(sink), scope, command, key),
           {
               .columns = columns,
               .totals = totals,
@@ -3785,7 +3832,8 @@ void EmitComparisonScopeSummary(
               .human = human,
               .precision = precision,
               .has_size = has_size,
-              .population = population.Json(),
+              .output = row_output,
+              .population = population_json,
           });
       if (delimited) {
         emit(exporter.Row(rendered.exported, output_format, precision));
