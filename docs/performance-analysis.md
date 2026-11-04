@@ -3908,3 +3908,19 @@ library callers need the fallback. Full release suites, affected sanitizers, act
 and bounded isolated fuzzing pass on both hosts where supported. No new thread, lock, host-I/O
 path, flag or output byte is introduced. Borrowed structured cell lifetimes, numeric summary
 storage and streaming/backpressure remain open under O22c2.
+
+### O22c2d2: construct only the selected comparison-summary representation
+
+The old row builder populated ordinary cells, compact display rows, JSON and delimited export
+metrics for every row. Resolve the output kind from the existing format enum once, construct
+its required representation, reserve known cell/metric arity and move strings into their final
+owner. The [paired report](benchmarks/selected-summary-output-20261104.md) separates full in-memory
+production runs, native wide/narrow output, independent machine-format oracles and controls.
+
+Larger native per-name cohorts improve about 5-16% macOS and 7-25% Linux; the ordinary 110-column
+console supplement improves about 15% and 20% respectively. Retain slower small/aggregate controls
+and all raw observations rather than claiming every command improves. Both full release suites,
+affected sanitizers and actual scoped lint pass. Counts, sizes, denominators, ordering, ambiguous
+labels, sparse/zero cells and schemas remain unchanged. No new thread, lock, file-I/O path, flag
+or ownership wrapper is introduced. Fixed-arity numeric storage, borrowed structured cells and
+streaming/backpressure remain separate candidates.

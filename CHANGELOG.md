@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Construct comparison-summary rows only for the selected format, preserving sparse metrics and exact output while reducing formatting and copying.
+
 - Reuse supplied field contexts and transfer already-owned scalar output while preserving exact bytes and fallback snapshot lifetimes.
 
 - Reduce long-word similarity construction churn while preserving fast short-word batches, exact scores and owned reference lifetimes.

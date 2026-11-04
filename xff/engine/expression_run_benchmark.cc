@@ -55,12 +55,19 @@ class RunFs final : public xff::vfs::FileSystem {
     if (path == "root") {
       return entries_;
     }
+    if (path == "peer") {
+      auto entries = entries_;
+      for (auto& entry : entries) {
+        entry.path = "peer/" + entry.name;
+      }
+      return entries;
+    }
     return absl::NotFoundError("unknown benchmark directory");
   }
 
   absl::StatusOr<xff::vfs::Metadata> Stat(std::string_view path, bool) const override {
     return xff::vfs::Metadata{
-        .type = path == "root" ? xff::vfs::FileType::kDirectory : xff::vfs::FileType::kRegular,
+        .type = path == "root" || path == "peer" ? xff::vfs::FileType::kDirectory : xff::vfs::FileType::kRegular,
         .size = content_.empty() ? 7 : content_.size(),
         .mode = 0644,
     };
@@ -295,6 +302,62 @@ void RegisterColumnRows() {
         ->Repetitions(9)
         ->MinTime(0.02)
         ->MinWarmUpTime(0.01);
+  }
+}
+
+void RegisterComparisonSummaries() {
+  static constexpr auto kFormats =
+      std::to_array<std::string_view>({"plain", "aligned", "markdown", "csv", "tsv", "jsonl"});
+
+  struct SummaryProfile {
+    std::string_view name;
+    std::string_view grouping;
+    std::string_view scopes;
+  };
+
+  static constexpr auto kProfiles = std::to_array<SummaryProfile>({
+      {
+          .name = "two-columns-names",
+          .grouping = "{name}",
+          .scopes = "compare",
+      },
+      {
+          .name = "six-columns-names",
+          .grouping = "{name}",
+          .scopes = "left-total,right-total,left-only,right-only,different,identical",
+      },
+      {
+          .name = "two-columns-ext-control",
+          .grouping = "ext",
+          .scopes = "compare",
+      },
+  });
+  for (const auto& profile : kProfiles) {
+    for (const auto format : kFormats) {
+      const Scenario scenario{
+          .name = profile.name,
+          .arguments =
+              {
+                  "peer",
+                  "--compare=summary",
+                  "--summary=" + std::string(profile.grouping),
+                  "--summary-scope=" + std::string(profile.scopes),
+                  "--format=" + std::string(format),
+                  "--width=1000",
+                  "-type",
+                  "f",
+              },
+      };
+      benchmark::RegisterBenchmark(
+          "engine/comparison-summary/" + std::string(profile.name) + "/" + std::string(format),
+          [scenario](benchmark::State& state) { Measure(state, scenario, ExpressionExecutor::kProduction); })
+          ->ArgsProduct({{0, 10, 1'000, 10'000}, {1, 3}})
+          ->UseRealTime()
+          ->Unit(benchmark::kMicrosecond)
+          ->Repetitions(9)
+          ->MinTime(0.02)
+          ->MinWarmUpTime(0.01);
+    }
   }
 }
 
@@ -549,6 +612,7 @@ int main(int argc, char** argv) {
   }
   RegisterEncodedOutput();
   RegisterColumnRows();
+  RegisterComparisonSummaries();
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();
 }
