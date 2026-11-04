@@ -20,8 +20,9 @@ cc_library(
 cc_test(
     name = "similarity_test",
     size = "small",
-    # The allocating byte-reference matrix exceeds the small timeout under MSan origin tracking.
-    timeout = "moderate",
+    # Exhaustive threshold and opaque-byte oracle matrices exceed 300s under hosted MSan
+    # origin tracking; retain the complete matrix and allow the long (900s) timeout.
+    timeout = "long",
     srcs = ["similarity_test.cc"],
     deps = [
         ":similarity_cc",
