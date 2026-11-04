@@ -75,6 +75,14 @@ class FileSystem {
   // it in the exit code (design.md "Exit-code model"), rather than aborting.
   virtual absl::StatusOr<std::vector<Entry>> ReadDir(std::string_view dir) const = 0;
 
+  // Optional names-only directory listing. Supporting backends return the same children,
+  // order, type/source hints and errors as ReadDir, but leave every Entry.path empty.
+  // Names are direct native path components; callers join them to the unchanged directory
+  // spelling. Other backends keep ReadDir's complete paths, including archive separators.
+  virtual bool SupportsNameOnlyListings() const { return false; }
+
+  virtual absl::StatusOr<std::vector<Entry>> ReadDirNames(std::string_view dir) const;
+
   // Returns metadata for `path`. When `path` is a symlink, `follow_symlinks`
   // selects `stat` (follow the link, like `-L`) vs `lstat` (the link itself,
   // like the default `-P`).

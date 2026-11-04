@@ -338,6 +338,9 @@ class Walker {
         on_error_(on_error),
         mount_container_(mount_container),
         follow_children_(options.symlinks == SymlinkMode::kAll),
+        name_only_listings_(
+            options.metadata != MetadataDemand::kAlways && (options.archive != ArchiveDive::kAll || !mount_container)
+            && fs.SupportsNameOnlyListings()),
         pool_(*this, options.workers > 1 ? options.workers : std::size_t{0}) {}
 
   // Whether `stated` is a FILE this walk should try to open as a container. `kRoots` offers only the
@@ -428,9 +431,11 @@ class Walker {
       return;
     }
     if (options_.sort != SortOrder::kNone && options_.sort != SortOrder::kRoots) {
-      absl::c_sort(*listing, [](const Stated& lhs, const Stated& rhs) { return lhs.path < rhs.path; });
+      absl::c_sort(*listing, [this](const Stated& lhs, const Stated& rhs) {
+        return name_only_listings_ ? lhs.name < rhs.name : lhs.path < rhs.path;
+      });
     }
-    HandleChildren(*listing, depth + 1);
+    HandleChildren(*listing, depth + 1, container);
   }
 
   void WalkRoots(absl::Span<const std::string> roots) {
@@ -473,7 +478,7 @@ class Walker {
   }
 
   // Resolve exactly the eager metadata required for this owned listing slice. Safe on a worker.
-  std::vector<Stated> StatEntries(absl::Span<vfs::Entry> entries) const {
+  std::vector<Stated> StatEntries(absl::Span<vfs::Entry> entries, std::string_view directory = {}) const {
     std::vector<Stated> children;
     children.reserve(entries.size());
     for (vfs::Entry& entry : entries) {
@@ -487,6 +492,13 @@ class Walker {
             .metadata_loaded = false,
         });
       } else {
+        if (name_only_listings_) {
+          entry.path = directory;
+          if (!entry.path.empty() && entry.path.back() != '/') {
+            entry.path.push_back('/');
+          }
+          entry.path.append(entry.name);
+        }
         children.push_back(StatNode(std::move(entry.path), follow_children_, std::move(entry.name)));
       }
     }
@@ -494,13 +506,16 @@ class Walker {
   }
 
   Listing ReadDir(const std::string& dir) const {
-    MBO_ASSIGN_OR_RETURN(auto entries, fs_.ReadDir(dir));
-    return StatEntries(absl::MakeSpan(entries));
+    MBO_ASSIGN_OR_RETURN(auto entries, name_only_listings_ ? fs_.ReadDirNames(dir) : fs_.ReadDir(dir));
+    return StatEntries(absl::MakeSpan(entries), dir);
   }
 
   // Only the coordinator dispatches and joins stat chunks. Directory read-ahead jobs
   // stay leaves: no worker ever waits for jobs submitted to its own pool.
   Listing ReadNow(const std::string& dir) {
+    if (name_only_listings_) {
+      return ReadDir(dir);
+    }
     MBO_ASSIGN_OR_RETURN(auto entries, fs_.ReadDir(dir));
     constexpr std::size_t kChunk = 128;
     if (options_.workers <= 1 || options_.metadata != MetadataDemand::kAlways || entries.size() < 4 * kChunk
@@ -625,9 +640,9 @@ class Walker {
 
   // Only the coordinator accesses this record after its listing request completes. Exclusive
   // ownership makes the lazy cache lock-free; it is never shared with matcher workers.
-  absl::Status LoadMetadata(const Stated& stated) const {
+  absl::Status LoadMetadata(const Stated& stated, std::string_view path) const {
     if (!stated.metadata_loaded) {
-      auto metadata = fs_.StatFields(stated.path, follow_children_, options_.metadata_fields);
+      auto metadata = fs_.StatFields(path, follow_children_, options_.metadata_fields);
       stated.metadata_loaded = true;
       stated.status = metadata.status();
       if (metadata.ok()) {
@@ -640,21 +655,24 @@ class Walker {
   // Reports `stated` to the visitor (pre/post order handled by the caller).
   // Returns the visitor's action, or kContinue when the entry is below
   // `min_depth` (traversed but not visited) or failed to stat.
-  WalkAction VisitOne(const Stated& stated, int depth, bool dived = false) {
+  WalkAction VisitOne(const Stated& stated, int depth, bool dived = false, std::string_view path = {}) {
+    if (path.empty()) {
+      path = stated.path;
+    }
     if (!stated.ok) {
       // -ignore_readdir_race: an entry that vanished after readdir (ENOENT) is a
       // race, not an error worth reporting; other stat failures still surface.
       if (!(options_.ignore_readdir_race && absl::IsNotFound(stated.status))) {
-        on_error_(stated.path, stated.status);
+        on_error_(path, stated.status);
       }
       return WalkAction::kContinue;
     }
     if (depth < options_.min_depth) {
       return WalkAction::kContinue;
     }
-    const auto load_metadata = [&] { return LoadMetadata(stated); };
+    const auto load_metadata = [&] { return LoadMetadata(stated, path); };
     const Visit visit{
-        .path = stated.path,
+        .path = path,
         .name = stated.name,
         .root = current_root_,
         .depth = depth,
@@ -736,9 +754,11 @@ class Walker {
       return;
     }
     if (options_.sort != SortOrder::kNone && options_.sort != SortOrder::kRoots) {
-      absl::c_sort(*listing, [](const Stated& lhs, const Stated& rhs) { return lhs.path < rhs.path; });
+      absl::c_sort(*listing, [this](const Stated& lhs, const Stated& rhs) {
+        return name_only_listings_ ? lhs.name < rhs.name : lhs.path < rhs.path;
+      });
     }
-    HandleChildren(*listing, depth + 1);
+    HandleChildren(*listing, depth + 1, dir.path);
     ancestors_.erase(id);
   }
 
@@ -746,7 +766,21 @@ class Walker {
   // in how a subdirectory's entry is grouped relative to its subtree. A bounded
   // window overlaps sibling reads while the coordinator visits in order.
   // NOLINTNEXTLINE(readability-function-cognitive-complexity): dispatching the ordering modes is cohesive.
-  void HandleChildren(const std::vector<Stated>& children, int depth) {
+  void HandleChildren(const std::vector<Stated>& children, int depth, std::string_view directory) {
+    // This buffer is local to a listing. Nested directory visits cannot invalidate it;
+    // queued consumers already snapshot Visit's callback-bounded path observation.
+    std::string path_scratch;
+    const auto visit_child = [&](const Stated& child, bool dived = false) {
+      if (!child.path.empty()) {
+        return VisitOne(child, depth, dived);
+      }
+      path_scratch.assign(directory);
+      if (!path_scratch.empty() && path_scratch.back() != '/') {
+        path_scratch.push_back('/');
+      }
+      path_scratch.append(child.name);
+      return VisitOne(child, depth, false, path_scratch);
+    };
     // Inline DFS at each entry's position. kTree emits a subtree in its sorted
     // place; post-order (`-depth`) always uses this shape (descend then visit).
     if (options_.sort == SortOrder::kTree || options_.sort == SortOrder::kGlobal || options_.post_order) {
@@ -754,6 +788,10 @@ class Walker {
       for (std::size_t i = 0; i < children.size(); ++i) {
         if (stopped_) {
           return;
+        }
+        if (children.at(i).path.empty()) {
+          visit_child(children.at(i));
+          continue;
         }
         auto read = reads.Take(i);
         VisitSubtree(
@@ -771,7 +809,7 @@ class Walker {
         }
         if (!IsDir(children[i])) {
           dived[i] = WillDive(children[i], depth);
-          VisitOne(children[i], depth, options_.mount_before_visit && dived[i]);
+          visit_child(children[i], options_.mount_before_visit && dived[i]);
         }
       }
       ReadFrontier reads(*this, children, depth);
@@ -801,7 +839,7 @@ class Walker {
         return;
       }
       dived[i] = WillDive(children[i], depth);
-      pruned[i] = VisitOne(children[i], depth, options_.mount_before_visit && dived[i]) == WalkAction::kPrune;
+      pruned[i] = visit_child(children[i], options_.mount_before_visit && dived[i]) == WalkAction::kPrune;
     }
     ReadFrontier reads(*this, children, depth, pruned);
     for (std::size_t i = 0; i < children.size(); ++i) {
@@ -833,6 +871,7 @@ class Walker {
   // --archive-depth's business, not something to fall into by recursion.
   mbo::types::OptionalRef<const ContainerMounter> mount_container_;
   const bool follow_children_;
+  const bool name_only_listings_;
   bool stopped_ = false;
   std::uint64_t root_dev_ = 0;
   // How many containers this walker is already inside; 0 for the walk over the real filesystem.

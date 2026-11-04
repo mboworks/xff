@@ -39,6 +39,10 @@ namespace xff::vfs {
 class LocalFs final : public FileSystem {
  public:
   absl::StatusOr<std::vector<Entry>> ReadDir(std::string_view dir) const override;
+
+  bool SupportsNameOnlyListings() const override { return true; }
+
+  absl::StatusOr<std::vector<Entry>> ReadDirNames(std::string_view dir) const override;
   absl::StatusOr<Metadata> Stat(std::string_view path, bool follow_symlinks) const override;
   absl::StatusOr<Metadata> StatFields(std::string_view path, bool follow_symlinks, MetadataFields fields)
       const override;
@@ -65,6 +69,10 @@ class LocalFs final : public FileSystem {
 
   absl::StatusOr<std::string> ReadContentRange(std::string_view path, std::uint64_t offset, std::size_t length)
       const override;
+
+ private:
+  // XFF_HOST_IO: shared native directory iterator; only reads entry names and type hints.
+  static absl::StatusOr<std::vector<Entry>> ReadDirectory(std::string_view dir, bool include_paths);
 };
 
 }  // namespace xff::vfs

@@ -3505,25 +3505,39 @@ before selecting that contract. Existing intra-batch parallel reads do not prove
 backend equivalence. Pure simple integer summaries are the first eligible subset; effects, custom
 per-entry reductions, content-match publication and archives need explicit fallbacks.
 
-#### Native name/file listing allocation remains a separate hypothesis
+#### O20a: native name/file listing path storage
 
-LocalFs::ReadDir currently joins and owns every full child path. Walker::StatEntries moves those
-strings into Stated, which also retains full metadata even for known regular-file type hints under
-Never/OnDemand demand. Avoiding stat does not remove path allocations or wide traversal records.
+The names-only native listing implementation removes one independently owned full path per known
+leaf under Never/OnDemand metadata demand. LocalFs keeps ReadDir's complete-path contract and
+provides an optional names/type-hints capability; unsupported backends retain the existing path.
+The safety wrapper and rg stdin adapter forward that read capability. Root operands, directories,
+unknown types and followed links still resolve owned paths. Root-only archive handling permits the
+optimization for directory children; recursive archive diving retains complete paths.
 
-Measure an optional native name-listing capability with owned names/type hints and a directory
-prefix, preserving controlled VFS delegation and the existing backend fallback. A coordinator-owned
-reusable full-path scratch can satisfy the existing callback-bounded Visit contract; directories,
-unknown types, queued snapshots and read-ahead still need appropriate ownership. Merely moving
-JoinPath into another full-path vector does not remove allocation. Preserve exact root/slash spelling,
-ignore/prune/depth/symlink semantics and all queued/lazy metadata lifetimes.
+A path scratch buffer belongs to each active listing and is reused only between synchronous leaf
+visits. Nested recursion cannot invalidate a parent's buffer. Lazy metadata loads use that resolved
+path and update the same stable metadata record; queued and deferred consumers retain their existing
+owned snapshots. Names are sorted only where the backend guarantees one native parent prefix,
+preserving complete-path order and exact root/slash spelling.
 
-Separately evaluate compact hint/full listing representations rather than optional<Metadata> or
-per-file shared allocations. Full eager-stat paths keep their established complete storage and
-parallel admission. No locks are needed for one file owned by one accessor. Preserve stable metadata
-references through lazy load. Test capability-enabled in-memory and native broad/deep trees,
-10/100/1k/10k/100k files, 1/3 workers, errors and fallbacks; count allocations/stat calls and measure
-native time/RSS before adoption. No implementation or gain is claimed here.
+The [two-host report](benchmarks/native-name-paths-20261104.md) records native and capability-enabled
+in-memory broad/deep trees, 10/100/1k/10k/100k files, 1/3 workers, full-output equality, baseline-copy
+controls, peak RSS and final qualification. Initial disabled-admission controls and small slower
+cells remain retained. Native broad 100k-file cases improve about 9-15%; in-memory results establish
+that filesystem speed alone does not explain the improvement. This is not a bulk-stat or completed-
+frontier implementation and does not remove all per-entry allocation.
+
+The native diagnostic explicitly sets `--exact`. Default filesystem-native name matching still
+forces eager metadata to obtain device identity; it is outside the names-only admission path.
+Linux LocalFs's current IsCaseSensitive contract always returns true. A separately measured fixed-
+case VFS capability could avoid that tax without inferring all backends' behavior from one root.
+macOS/custom backends must keep their volume-sensitive behavior until independently qualified.
+Parent-directory naming versus a mounted target's volume also needs an explicit semantic review.
+
+A compact hint/full listing representation remains a separate hypothesis. Stated still retains its
+full metadata for each child. Avoid optional<Metadata> or shared allocations per file; preserve stable
+lazy metadata references and the eager path's parallel stat admission. Bulk metadata remains O20,
+with exact attribute and backend fallback requirements unchanged.
 
 SummaryAccumulator::For also repeats outer/inner lookups for a single whole-run aggregate. A direct
 table is another measured policy only after all combined/per-root/histogram/export consumers share

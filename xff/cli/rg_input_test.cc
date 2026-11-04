@@ -34,6 +34,8 @@ using ::testing::IsTrue;
 using ::testing::Return;
 
 struct HostFs final : vfs::FileSystem {
+  MOCK_METHOD(bool, SupportsNameOnlyListings, (), (const, override));
+  MOCK_METHOD(absl::StatusOr<std::vector<vfs::Entry>>, ReadDirNames, (std::string_view path), (const, override));
   MOCK_METHOD(
       absl::StatusOr<vfs::Metadata>,
       StatFields,
@@ -85,6 +87,16 @@ TEST_F(RgInputTest, StdinIsAnImmutableRegularFile) {
   EXPECT_THAT(fs.Access("-", vfs::AccessMode::kWrite), IsFalse());
   EXPECT_THAT(fs.Remove("-"), StatusIs(absl::StatusCode::kPermissionDenied, _));
   EXPECT_THAT(fs.ContentSource("-"), IsOkAndHolds(_));
+}
+
+TEST_F(RgInputTest, NameOnlyListsUseHostCapabilityWithoutTreatingStdinAsADirectory) {
+  const RgInputFs fs(host, "input");
+  EXPECT_CALL(host, SupportsNameOnlyListings()).WillOnce(Return(true)).WillOnce(Return(false));
+  EXPECT_THAT(fs.SupportsNameOnlyListings(), IsTrue());
+  EXPECT_THAT(fs.SupportsNameOnlyListings(), IsFalse());
+  EXPECT_CALL(host, ReadDirNames("other")).WillOnce(Return(std::vector<vfs::Entry>{}));
+  EXPECT_THAT(fs.ReadDirNames("other"), IsOkAndHolds(IsEmpty()));
+  EXPECT_THAT(fs.ReadDirNames("-"), StatusIs(absl::StatusCode::kFailedPrecondition, _));
 }
 
 TEST_F(RgInputTest, HostReadsAreForwardedButMutationsRemainDisconnected) {

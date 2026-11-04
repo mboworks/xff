@@ -19,6 +19,13 @@ The table describes ordinary execution, not every backend's implementation. Arch
 add decompression and retained container state. Configuration discovery, ignore handling, and
 archive probing can also read data even when the expression only tests names.
 
+Native name/type-only listings can retain names and type hints rather than a separate full path
+for every known leaf. The coordinator reuses a path buffer during each synchronous visit; queued
+consumers keep owned snapshots. This reduces allocation, not the number of entries retained in a
+listing. Directories, unknown types, followed links and eager metadata keep owned paths. Recursive
+archive diving and backends without the optional capability retain complete listings. Root-only
+archive handling still permits the native directory optimization.
+
 In comparison mode the two walks run concurrently. Their inventories are merged after both walks
 finish; this is not a directory-at-a-time comparison. Actions inside the expression can run during
 the walks, so their output can precede comparison records and interleave between sides. A small

@@ -1005,6 +1005,27 @@ cc_binary(
     ],
 )
 
+# In-memory control for native names-only versus independently owned full child paths.
+cc_binary(
+    name = "name_listing_benchmark",
+    testonly = True,
+    srcs = ["name_listing_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        ":run_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@com_github_google_benchmark//:benchmark",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+    ],
+)
+
 # Allocator hooks are installed only in this diagnostic test, never in timing/shipping binaries.
 # Normal configurations compile the same fixture but skip the ASan-specific measurements.
 cc_test(

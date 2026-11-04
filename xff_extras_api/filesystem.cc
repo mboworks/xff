@@ -15,6 +15,10 @@
 
 namespace xff::vfs {
 
+absl::StatusOr<std::vector<Entry>> FileSystem::ReadDirNames(std::string_view dir) const {
+  return ReadDir(dir);
+}
+
 absl::StatusOr<Metadata> FileSystem::StatFields(std::string_view path, bool follow_symlinks, MetadataFields /*fields*/)
     const {
   return Stat(path, follow_symlinks);

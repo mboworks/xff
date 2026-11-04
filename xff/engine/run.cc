@@ -1093,6 +1093,12 @@ class ControlledFileSystem : public vfs::FileSystem {
 
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view dir) const override { return fs_.ReadDir(dir); }
 
+  bool SupportsNameOnlyListings() const override { return fs_.SupportsNameOnlyListings(); }
+
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDirNames(std::string_view dir) const override {
+    return fs_.ReadDirNames(dir);
+  }
+
   absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool follow) const override {
     return fs_.Stat(path, follow);
   }
