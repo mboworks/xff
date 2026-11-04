@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse directory-local path storage for native name/type listings, reducing allocation and peak memory while preserving lazy metadata, archive fallbacks and queued ownership.
+
 - Retain comparison-summary categories as ordered borrowed records and avoid temporary contribution lookup keys, preserving exact summaries while reducing allocation.
 
 - Retain compact comparison paths and metadata, reducing allocation and memory while preserving status, patch and summary behavior.

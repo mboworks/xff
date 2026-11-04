@@ -3902,6 +3902,39 @@ class NoBtimeFs : public vfs::FileSystem {
   std::string root_;
 };
 
+class NameOnlyRunFs final : public NoBtimeFs {
+ public:
+  NameOnlyRunFs() : NoBtimeFs("/fake") {}
+
+  bool SupportsNameOnlyListings() const override { return true; }
+
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDirNames(std::string_view dir) const override {
+    MBO_ASSIGN_OR_RETURN(auto entries, ReadDir(dir));
+    read_names_ = true;
+    for (auto& entry : entries) {
+      entry.path.clear();
+    }
+    return entries;
+  }
+
+  bool ReadNames() const { return read_names_; }
+
+ private:
+  mutable bool read_names_ = false;
+};
+
+TEST_F(RunTest, NameOnlyListingSurvivesSafetyWrapperAndXffArchiveDefaults) {
+  const NameOnlyRunFs filesystem;
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--exact", "--color=never", "/fake", "-type", "f"}));
+  std::string output;
+  const auto result = RunFind(
+      command, filesystem, [&](std::string_view record) { output.append(record); },
+      [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }, registry::Style::kXff);
+  EXPECT_THAT(result.errors, Eq(0));
+  EXPECT_THAT(filesystem.ReadNames(), IsTrue());
+  EXPECT_THAT(output, EqualsText("/fake/f.txt\n"));
+}
+
 TEST_F(RunTest, DirectoryPolicyCannotRedirectAnInMemoryFilesystemToTheHost) {
   const NoBtimeFs fs("/fake");
   MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"/fake", "--output-root=/does-not-exist", "-delete"}));

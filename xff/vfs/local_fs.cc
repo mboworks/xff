@@ -189,6 +189,14 @@ constexpr auto kFsMagics = std::to_array<FsMagic>({
 }  // namespace
 
 absl::StatusOr<std::vector<Entry>> LocalFs::ReadDir(std::string_view dir) const {
+  return ReadDirectory(dir, true);
+}
+
+absl::StatusOr<std::vector<Entry>> LocalFs::ReadDirNames(std::string_view dir) const {
+  return ReadDirectory(dir, false);
+}
+
+absl::StatusOr<std::vector<Entry>> LocalFs::ReadDirectory(std::string_view dir, bool include_paths) {
   const std::string dir_str(dir);
   DIR* dirp = ::opendir(dir_str.c_str());
   if (dirp == nullptr) {
@@ -210,7 +218,9 @@ absl::StatusOr<std::vector<Entry>> LocalFs::ReadDir(std::string_view dir) const 
       continue;
     }
     Entry entry;
-    entry.path = JoinPath(dir, name);
+    if (include_paths) {
+      entry.path = JoinPath(dir, name);
+    }
     entry.name = std::string(name);
     entry.type = TypeFromDirent(de->d_type);
     entry.source = Source::kLocalFs;

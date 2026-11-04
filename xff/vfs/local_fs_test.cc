@@ -100,6 +100,23 @@ TEST_F(LocalFsTest, ReadDirListsChildren) {
           Field(&Entry::name, Eq("file.txt")), Field(&Entry::name, Eq("sub")), Field(&Entry::name, Eq("link"))));
 }
 
+TEST_F(LocalFsTest, NameOnlyListingPreservesNamesTypesAndErrorsWithoutPaths) {
+  EXPECT_THAT(local_fs_.SupportsNameOnlyListings(), IsTrue());
+  MBO_ASSERT_OK_AND_ASSIGN(const auto entries, local_fs_.ReadDirNames(root_.string() + "/"));
+  EXPECT_THAT(
+      entries, UnorderedElementsAre(
+                   AllOf(Field(&Entry::name, Eq("file.txt")), Field(&Entry::type, FileType::kRegular)),
+                   AllOf(Field(&Entry::name, Eq("sub")), Field(&Entry::type, FileType::kDirectory)),
+                   AllOf(Field(&Entry::name, Eq("link")), Field(&Entry::type, FileType::kSymlink))));
+  for (const auto& entry : entries) {
+    EXPECT_THAT(entry.path, IsEmpty());
+    EXPECT_THAT(entry.source, Source::kLocalFs);
+    EXPECT_THAT(entry.read_only, IsFalse());
+  }
+  EXPECT_THAT(local_fs_.ReadDirNames(Path("missing")), StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(local_fs_.ReadDirNames(Path("file.txt")), Not(IsOk()));
+}
+
 TEST_F(LocalFsTest, WriteContentReplacesFile) {
   EXPECT_THAT(local_fs_.WriteContent(Path("file.txt"), "updated"), IsOk());
   EXPECT_THAT(local_fs_.ReadContent(Path("file.txt")), IsOkAndHolds("updated"));

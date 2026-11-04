@@ -108,6 +108,14 @@ TEST_F(VfsSeamTest, AnExtraCanImplementTheInterfaceUsingOnlyThisModule) {
   EXPECT_THAT(seam.IsCaseSensitive("/box"), IsOkAndHolds(true));
 }
 
+TEST_F(VfsSeamTest, DefaultNameListingPreservesCompletePathsAndErrors) {
+  const ReadOnlyFakeFs filesystem;
+  const FileSystem& seam = filesystem;
+  EXPECT_THAT(seam.SupportsNameOnlyListings(), IsFalse());
+  EXPECT_THAT(seam.ReadDirNames("/box"), IsOkAndHolds(ElementsAre(Field(&Entry::path, Eq("/box/member.txt")))));
+  EXPECT_THAT(seam.ReadDirNames("/missing"), StatusIs(absl::StatusCode::kNotFound));
+}
+
 TEST_F(VfsSeamTest, ReadOnlyBackendNeverFallsBackToHostOutput) {
   const ReadOnlyFakeFs fs;
   EXPECT_THAT(fs.OpenOutput("/box/member.txt", false), StatusIs(absl::StatusCode::kUnimplemented));

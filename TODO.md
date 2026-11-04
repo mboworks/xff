@@ -484,6 +484,16 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       exact overflow/limit probes, EOF, changing capabilities and owned fallback. Keep range memory
       reservations and replay accounting; do not silently treat a zero-length read as proof of EOF.
       Keep [qualification, rejected fallback and slower controls](docs/benchmarks/direct-source-materialization-20261103.md).
+- [x] O20a: Qualify native names-only directory listings and callback-scoped reusable leaf paths on
+      both hosts, including controlled/rg VFS delegation, lazy metadata and exact owned fallbacks.
+      Retain native and in-memory broad/deep 10-100k-file, 1/3-worker evidence in
+      `docs/benchmarks/native-name-paths-20261104.md`.
+- [ ] O20b: Separately evaluate compact hint/full traversal records; O20a still retains full Metadata
+      per child. Avoid per-file heap/shared ownership and preserve stable lazy metadata observations.
+- [ ] O20c: Evaluate an explicit fixed native-case capability before forcing eager metadata.
+      Linux LocalFs currently always reports case-sensitive; expose that guarantee through the VFS
+      rather than infer it from one path or skip checks on arbitrary backends. Preserve custom and
+      macOS volume behavior; separately review parent-directory versus target-volume semantics.
 - [ ] O20: Qualify optional bulk metadata by backend capability with precise fallback, while
       keeping metadata-free traversal free of extra probes and extended-stat work.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte

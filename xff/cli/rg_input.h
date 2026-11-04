@@ -38,6 +38,10 @@ class RgInputFs final : public vfs::FileSystem {
       : host_(host), input_(input.value_or(std::string())), has_input_(input.has_value()) {}
 
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override;
+
+  bool SupportsNameOnlyListings() const override { return host_.SupportsNameOnlyListings(); }
+
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDirNames(std::string_view path) const override;
   absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool follow) const override;
   absl::StatusOr<vfs::Metadata> StatFields(std::string_view path, bool follow, vfs::MetadataFields fields)
       const override;

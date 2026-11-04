@@ -54,9 +54,11 @@ namespace {
 namespace fs = ::std::filesystem;
 using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
+using ::mbo::testing::StatusIs;
 using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::Ge;
+using ::testing::Gt;
 using ::testing::IsEmpty;
 using ::testing::IsTrue;
 using ::testing::Le;
@@ -151,6 +153,295 @@ vfs::Entry FileEntry(const std::string& path, const std::string& name) {
 
 vfs::Entry SymlinkEntry(const std::string& path, const std::string& name) {
   return vfs::Entry{.path = path, .name = name, .type = vfs::FileType::kSymlink};
+}
+
+// Exercises the optional listing capability through the same VFS seam as LocalFs.
+// The fallback retains complete paths; the candidate deliberately cannot supply them.
+class NameListingFs final : public FakeFs {
+ public:
+  explicit NameListingFs(bool enabled) : enabled_(enabled) {
+    const std::string base = "/a_directory_prefix_longer_than_small_string_storage";
+    AddDir(
+        base, 1,
+        {
+            FileEntry(base + "/z-last.txt", "z-last.txt"),
+            DirEntry(base + "/sub", "sub"),
+            SymlinkEntry(base + "/link", "link"),
+            {.path = base + "/unknown.txt", .name = "unknown.txt"},
+            FileEntry(base + "/a-first.txt", "a-first.txt"),
+        });
+    AddDir(base + "/sub", 1, {FileEntry(base + "/sub/child.txt", "child.txt")});
+    AddFile(base + "/sub/child.txt", 1);
+    AddFile(base + "/z-last.txt", 1);
+    AddFile(base + "/a-first.txt", 1);
+    AddFile(base + "/unknown.txt", 1);
+    AddSymlink(base + "/link", 1, base + "/sub");
+  }
+
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view dir) const override {
+    MBO_ASSIGN_OR_RETURN(auto entries, FakeFs::ReadDir(dir));
+    // A native listing preserves the traversed spelling through directory symlinks.
+    for (auto& entry : entries) {
+      entry.path = absl::StrCat(dir, dir.empty() || dir.back() == '/' ? "" : "/", entry.name);
+    }
+    return entries;
+  }
+
+  absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool follow_symlinks) const override {
+    constexpr std::string_view kAlias = "/a_directory_prefix_longer_than_small_string_storage/link/";
+    if (path.starts_with(kAlias)) {
+      return FakeFs::Stat(
+          absl::StrCat("/a_directory_prefix_longer_than_small_string_storage/sub/", path.substr(kAlias.size())),
+          follow_symlinks);
+    }
+    return FakeFs::Stat(path, follow_symlinks);
+  }
+
+  bool SupportsNameOnlyListings() const override { return enabled_; }
+
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDirNames(std::string_view dir) const override {
+    name_reads_.fetch_add(1, std::memory_order_relaxed);
+    MBO_ASSIGN_OR_RETURN(auto entries, ReadDir(dir));
+    for (auto& entry : entries) {
+      entry.path.clear();
+    }
+    return entries;
+  }
+
+  std::size_t NameReadCount() const { return name_reads_.load(std::memory_order_relaxed); }
+
+ private:
+  const bool enabled_;
+  mutable std::atomic<std::size_t> name_reads_{0};
+};
+
+struct NameListingTest : ::testing::Test {
+  static std::vector<std::string> Observations(bool enabled, const WalkOptions& options, bool prune = false) {
+    const NameListingFs filesystem(enabled);
+    const auto roots = std::to_array<std::string>({"/a_directory_prefix_longer_than_small_string_storage"});
+    std::vector<std::string> observations;
+    EXPECT_THAT(
+        Walk(
+            filesystem, roots, options,
+            [&](const Visit& visit) {
+              // Both success and its cache remain bound to the current scratch path.
+              EXPECT_THAT(visit.EnsureMetadata(), IsOk());
+              EXPECT_THAT(visit.EnsureMetadata(), IsOk());
+              observations.push_back(
+                  absl::StrCat(
+                      visit.path, "|", visit.name, "|", visit.depth, "|", visit.metadata.ino, "|",
+                      static_cast<int>(visit.metadata.type)));
+              return prune && visit.name == "sub" ? WalkAction::kPrune : WalkAction::kContinue;
+            },
+            [&](std::string_view path, absl::Status status) {
+              observations.push_back(absl::StrCat("error|", path, "|", status.ToString()));
+            }),
+        IsOk());
+    return observations;
+  }
+};
+
+TEST_F(NameListingTest, MatchesCompletePathsAcrossOrderingDepthLinksAndWorkers) {
+  static constexpr auto kOrders = std::to_array({
+      SortOrder::kNone,
+      SortOrder::kDir,
+      SortOrder::kSubtree,
+      SortOrder::kTree,
+      SortOrder::kRoots,
+      SortOrder::kGlobal,
+  });
+  static constexpr auto kLinks = std::to_array({SymlinkMode::kNever, SymlinkMode::kRoots, SymlinkMode::kAll});
+  static constexpr auto kDemands =
+      std::to_array({MetadataDemand::kNever, MetadataDemand::kOnDemand, MetadataDemand::kAlways});
+  for (const auto order : kOrders) {
+    for (const auto links : kLinks) {
+      for (const auto demand : kDemands) {
+        for (const auto workers : {1UZ, 3UZ}) {
+          for (const bool post_order : {false, true}) {
+            const WalkOptions options{
+                .post_order = post_order,
+                .symlinks = links,
+                .sort = order,
+                .workers = workers,
+                .metadata = demand,
+            };
+            EXPECT_THAT(Observations(true, options), Observations(false, options));
+          }
+        }
+      }
+    }
+  }
+}
+
+TEST_F(NameListingTest, RootOnlyArchiveCallbackDoesNotDisableChildNames) {
+  const NameListingFs filesystem(true);
+  const auto roots = std::to_array<std::string>({"/a_directory_prefix_longer_than_small_string_storage"});
+  const auto mount = [](std::string_view, const vfs::FileSystem&,
+                        int) -> absl::StatusOr<std::unique_ptr<const vfs::FileSystem>> {
+    ADD_FAILURE() << "Archive callback must stay disconnected when diving is off";
+    return absl::UnimplementedError("not an archive");
+  };
+  EXPECT_THAT(
+      Walk(
+          filesystem, roots, {.metadata = MetadataDemand::kNever, .archive = ArchiveDive::kRoots},
+          [](const Visit&) { return WalkAction::kContinue; },
+          [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }, mount),
+      IsOk());
+  EXPECT_THAT(filesystem.NameReadCount(), Gt(0));
+}
+
+TEST_F(NameListingTest, EmptyAndTrailingSlashRootsPreserveResolvedChildPaths) {
+  static constexpr auto kRoots = std::to_array<std::string_view>({"", "root/", "root//"});
+  for (const auto root : kRoots) {
+    SCOPED_TRACE(root);
+    NameListingFs filesystem(true);
+    const std::string prefix(root);
+    const std::string directory = prefix + "sub";
+    filesystem.AddDir(
+        prefix, 1,
+        {
+            FileEntry(prefix + "known", "known"),
+            {.path = prefix + "unknown", .name = "unknown"},
+            DirEntry(directory, "sub"),
+        });
+    filesystem.AddFile(prefix + "known", 1);
+    filesystem.AddFile(prefix + "unknown", 1);
+    filesystem.AddDir(directory, 1, {FileEntry(directory + "/nested", "nested")});
+    filesystem.AddFile(directory + "/nested", 1);
+    const auto roots = std::to_array<std::string>({prefix});
+    std::vector<std::string> visited;
+    EXPECT_THAT(
+        Walk(
+            filesystem, roots, {.sort = SortOrder::kDir, .metadata = MetadataDemand::kOnDemand},
+            [&](const Visit& visit) {
+              EXPECT_THAT(visit.EnsureMetadata(), IsOk());
+              visited.emplace_back(visit.path);
+              return WalkAction::kContinue;
+            },
+            [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }),
+        IsOk());
+    EXPECT_THAT(visited, ElementsAre(prefix, prefix + "known", directory, prefix + "unknown", directory + "/nested"));
+  }
+}
+
+TEST_F(NameListingTest, RecursiveArchivePolicyWithoutAMounterStillUsesNames) {
+  const NameListingFs filesystem(true);
+  const auto roots = std::to_array<std::string>({"/a_directory_prefix_longer_than_small_string_storage"});
+  EXPECT_THAT(
+      Walk(
+          filesystem, roots, {.metadata = MetadataDemand::kNever, .archive = ArchiveDive::kAll},
+          [](const Visit&) { return WalkAction::kContinue; },
+          [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }),
+      IsOk());
+  EXPECT_THAT(filesystem.NameReadCount(), Gt(0));
+}
+
+TEST_F(NameListingTest, RootMountedNativeComponentsUseNameOrdering) {
+  FakeFs host;
+  const std::string container = "/a_directory_prefix_longer_than_small_string_storage";
+  host.AddFile(container, 1);
+  const auto roots = std::to_array<std::string>({container});
+  std::vector<std::string> members;
+  const auto mount = [&](std::string_view path, const vfs::FileSystem&,
+                         int) -> absl::StatusOr<std::unique_ptr<const vfs::FileSystem>> {
+    EXPECT_THAT(path, EqualsText(container));
+    return std::make_unique<NameListingFs>(true);
+  };
+  EXPECT_THAT(
+      Walk(
+          host, roots, {.sort = SortOrder::kDir, .metadata = MetadataDemand::kNever, .archive = ArchiveDive::kRoots},
+          [&](const Visit& visit) {
+            if (visit.fs_owner) {
+              EXPECT_THAT(visit.EnsureMetadata(), IsOk());
+              members.emplace_back(visit.path);
+            }
+            return WalkAction::kContinue;
+          },
+          [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }, mount),
+      IsOk());
+  EXPECT_THAT(
+      members, ElementsAre(
+                   container + "/a-first.txt", container + "/link", container + "/sub", container + "/unknown.txt",
+                   container + "/z-last.txt", container + "/sub/child.txt"));
+}
+
+TEST_F(NameListingTest, MountedNativeComponentsRetainOrderAndFilesystemOwnership) {
+  FakeFs host;
+  const std::string container = "/a_directory_prefix_longer_than_small_string_storage";
+  host.AddDir("/host", 1, {FileEntry(container, "container")});
+  host.AddFile(container, 1);
+  const auto roots = std::to_array<std::string>({"/host"});
+  std::vector<std::string> members;
+  const auto mount = [&](std::string_view path, const vfs::FileSystem&,
+                         int) -> absl::StatusOr<std::unique_ptr<const vfs::FileSystem>> {
+    EXPECT_THAT(path, EqualsText(container));
+    return std::make_unique<NameListingFs>(true);
+  };
+  EXPECT_THAT(
+      Walk(
+          host, roots,
+          {.sort = SortOrder::kSubtree,
+           .metadata = MetadataDemand::kNever,
+           .archive = ArchiveDive::kAll,
+           .mount_before_visit = true},
+          [&](const Visit& visit) {
+            if (visit.fs_owner) {
+              EXPECT_THAT(visit.EnsureMetadata(), IsOk());
+              members.emplace_back(visit.path);
+            }
+            return WalkAction::kContinue;
+          },
+          [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }, mount),
+      IsOk());
+  EXPECT_THAT(
+      members, ElementsAre(
+                   container + "/a-first.txt", container + "/link", container + "/unknown.txt",
+                   container + "/z-last.txt", container + "/sub", container + "/sub/child.txt"));
+}
+
+TEST_F(NameListingTest, MissingEntriesKeepResolvedPathsAndCachedLazyErrors) {
+  NameListingFs filesystem(true);
+  const std::string root = "/a_directory_prefix_longer_than_small_string_storage";
+  filesystem.AddDir(
+      root, 1,
+      {
+          FileEntry(root + "/gone", "gone"),
+          {.path = root + "/unknown", .name = "unknown"},
+      });
+  const auto roots = std::to_array<std::string>({root});
+  std::vector<std::string> errors;
+  std::vector<std::string> visited;
+  EXPECT_THAT(
+      Walk(
+          filesystem, roots, {.sort = SortOrder::kDir, .metadata = MetadataDemand::kOnDemand},
+          [&](const Visit& visit) {
+            if (visit.depth == 1) {
+              visited.emplace_back(visit.path);
+              EXPECT_THAT(visit.EnsureMetadata(), StatusIs(absl::StatusCode::kNotFound));
+              EXPECT_THAT(visit.EnsureMetadata(), StatusIs(absl::StatusCode::kNotFound));
+            }
+            return WalkAction::kContinue;
+          },
+          [&](std::string_view path, absl::Status status) {
+            errors.emplace_back(path);
+            EXPECT_THAT(status, StatusIs(absl::StatusCode::kNotFound));
+          }),
+      IsOk());
+  EXPECT_THAT(visited, ElementsAre(EqualsText(root + "/gone")));
+  EXPECT_THAT(errors, ElementsAre(EqualsText(root + "/unknown")));
+}
+
+TEST_F(NameListingTest, UnsupportedBackendKeepsCompletePaths) {
+  const FakeFs filesystem;
+  EXPECT_THAT(filesystem.SupportsNameOnlyListings(), Not(IsTrue()));
+  EXPECT_THAT(filesystem.ReadDirNames("missing"), Not(IsOk()));
+}
+
+TEST_F(NameListingTest, PruningAndDepthLimitsKeepTheSameEntries) {
+  const WalkOptions options{.max_depth = 1, .sort = SortOrder::kDir, .workers = 3, .metadata = MetadataDemand::kNever};
+  EXPECT_THAT(Observations(true, options, true), Observations(false, options, true));
+  const WalkOptions prune{.sort = SortOrder::kDir, .workers = 3, .metadata = MetadataDemand::kOnDemand};
+  EXPECT_THAT(Observations(true, prune, true), Observations(false, prune, true));
 }
 
 // Fixture tree:
