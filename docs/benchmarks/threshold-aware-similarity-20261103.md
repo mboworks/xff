@@ -140,6 +140,14 @@ is identical to synchronized #1079 head `0ccc68077e0e27125b33dfc0549c10338349190
 synchronized before timing; actual compiler/source/executable/link identities are retained.
 Checkpoint and fuzz test additions do not change the measured runtime sources.
 
+The coverage follow-up removes private threshold guards that neither public caller can reach:
+both callers already handle thresholds outside `[1, 100]` before constructing sets. It also
+extends fresh-read/failure/recovery checks to manually constructed width-zero expressions.
+The frozen timing artifact predates that redundant-branch removal; its exact sources remain
+archived rather than being relabeled as measurements of a later Git revision. The follow-up
+passes all five affected release and ASan suites on both hosts, the same five MSan/TSan suites
+on Linux, and actual changed-file source/header checks on both hosts.
+
 Run the retained manual cases with:
 
 ```sh

@@ -122,12 +122,7 @@ int ShinglePercent(const ShingleSet& left, const ShingleSet& right) {
 
 template<typename ShingleSet>
 bool ShingleAtLeast(const ShingleSet& left, const ShingleSet& right, int threshold) {
-  if (threshold <= 0) {
-    return true;
-  }
-  if (threshold > 100) {
-    return false;
-  }
+  // Both public callers handle thresholds outside [1, 100] before constructing shingles.
   if (left.empty() && right.empty()) {
     return true;
   }
