@@ -21,6 +21,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -31,6 +32,8 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <utility>
+#include <vector>
 
 #include "absl/status/status.h"
 #include "absl/time/time.h"
@@ -51,6 +54,7 @@ using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
 using ::testing::AllOf;
 using ::testing::Contains;
+using ::testing::ElementsAreArray;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::Gt;
@@ -59,6 +63,7 @@ using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::Not;
+using ::testing::SizeIs;
 #if !defined(_PC_CASE_SENSITIVE)
 using ::testing::Optional;
 #endif
@@ -118,6 +123,44 @@ TEST_F(LocalFsTest, NameOnlyListingPreservesNamesTypesAndErrorsWithoutPaths) {
   }
   EXPECT_THAT(local_fs_.ReadDirNames(Path("missing")), StatusIs(absl::StatusCode::kNotFound));
   EXPECT_THAT(local_fs_.ReadDirNames(Path("file.txt")), Not(IsOk()));
+}
+
+TEST_F(LocalFsTest, WideListingsRetainShortAndHeapBackedNamesAndEntryAttributes) {
+  std::vector<std::string> expected_names = {"file.txt", "link", "sub"};
+  expected_names.reserve(5'003);
+  for (std::size_t index = 0; index < 5'000; ++index) {
+    std::string name = index % 2 == 0 ? "short-" : std::string(180, 'a') + "-";
+    name += std::to_string(index);
+    ASSERT_THAT(local_fs_.WriteContent(Path(name), ""), IsOk());
+    expected_names.push_back(std::move(name));
+  }
+  std::ranges::sort(expected_names);
+  MBO_ASSERT_OK_AND_ASSIGN(auto entries, local_fs_.ReadDir(root_.string()));
+  MBO_ASSERT_OK_AND_ASSIGN(auto names_only, local_fs_.ReadDirNames(root_.string()));
+  std::ranges::sort(entries, {}, &Entry::name);
+  std::ranges::sort(names_only, {}, &Entry::name);
+  ASSERT_THAT(entries, SizeIs(expected_names.size()));
+  ASSERT_THAT(names_only, SizeIs(expected_names.size()));
+  std::vector<std::string> actual_names;
+  actual_names.reserve(entries.size());
+  for (std::size_t index = 0; index < entries.size(); ++index) {
+    const Entry& entry = entries.at(index);
+    const Entry& name_only = names_only.at(index);
+    actual_names.push_back(entry.name);
+    EXPECT_THAT(entry.path, EqualsText(Path(entry.name)));
+    EXPECT_THAT(entry.source, Source::kLocalFs);
+    EXPECT_THAT(entry.read_only, IsFalse());
+    EXPECT_THAT(name_only.name, EqualsText(entry.name));
+    EXPECT_THAT(name_only.path, IsEmpty());
+    EXPECT_THAT(name_only.type, entry.type);
+    EXPECT_THAT(name_only.source, entry.source);
+    EXPECT_THAT(name_only.read_only, IsFalse());
+    const FileType expected_type = entry.name == "sub"    ? FileType::kDirectory
+                                   : entry.name == "link" ? FileType::kSymlink
+                                                          : FileType::kRegular;
+    EXPECT_THAT(entry.type, expected_type);
+  }
+  EXPECT_THAT(actual_names, ElementsAreArray(expected_names));
 }
 
 TEST_F(LocalFsTest, WriteContentReplacesFile) {

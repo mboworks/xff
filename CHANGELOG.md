@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Accumulate native directory entries in stable segments before moving them into the public listing, reducing repeated relocation in wide directories.
+
 - Avoid unnecessary per-file metadata reads for native-case name matching when a backend guarantees one case policy; preserve volume-specific behavior and required metadata errors.
 
 - Reuse directory-local path storage for native name/type listings, reducing allocation and peak memory while preserving lazy metadata, archive fallbacks and queued ownership.
