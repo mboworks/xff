@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Use fixed-size summary metric storage and move formatted numbers while preserving exact output and missing-cell behavior.
+
 - Construct comparison-summary rows only for the selected format, preserving sparse metrics and exact output while reducing formatting and copying.
 
 - Reuse supplied field contexts and transfer already-owned scalar output while preserving exact bytes and fallback snapshot lifetimes.

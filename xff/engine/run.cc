@@ -3361,7 +3361,7 @@ std::string SummarySize(std::uint64_t size, std::optional<format::SizeUnits> hum
   return absl::StrCat(parts.number, " ", format::PadLeft(parts.suffix, *human == format::SizeUnits::kSi ? 2 : 3));
 }
 
-std::vector<std::string> SummaryColumns(
+std::array<std::string, 4> SummaryColumns(
     const SummaryRow& row,
     const SummaryRow& total,
     std::optional<format::SizeUnits> human,
@@ -3556,8 +3556,11 @@ void EmitSummaryRows(
       {"Group", "Count", "% count", "Size", "% size"}, output_format, with_header);
   for (std::size_t index = 0; index < rows.size(); ++index) {
     const auto& row = rows.at(index);
-    auto cells = SummaryColumns(row, total, human, precision, has_size);
-    cells.insert(cells.begin(), SummaryDisplayKey(row.key, index + 1 == rows.size()));
+    auto values = SummaryColumns(row, total, human, precision, has_size);
+    std::vector<std::string> cells;
+    cells.reserve(1 + values.size());
+    cells.push_back(SummaryDisplayKey(row.key, index + 1 == rows.size()));
+    cells.insert(cells.end(), std::make_move_iterator(values.begin()), std::make_move_iterator(values.end()));
     table.AddRow(std::move(cells));
   }
   emit(table.Render());
@@ -3734,17 +3737,12 @@ ComparisonSummaryRow MakeComparisonSummaryRow(
     }
     if (context.output == SummaryRowOutput::kCells || context.output == SummaryRowOutput::kDisplay) {
       auto values = present ? SummaryColumns(row, denominator, context.human, context.precision, context.has_size)
-                            : std::vector<std::string>{"-", "-", "-", "-"};
+                            : std::array<std::string, 4>{"-", "-", "-", "-"};
       if (context.output == SummaryRowOutput::kCells) {
         result.cells.insert(
             result.cells.end(), std::make_move_iterator(values.begin()), std::make_move_iterator(values.end()));
       } else {
-        result.display.metrics.push_back({
-            std::move(values.at(0)),
-            std::move(values.at(1)),
-            std::move(values.at(2)),
-            std::move(values.at(3)),
-        });
+        result.display.metrics.push_back(std::move(values));
       }
     } else if (context.output == SummaryRowOutput::kJson) {
       absl::StrAppend(&result.json, ",", render::JsonValue(column.scope), ":");
@@ -4513,9 +4511,12 @@ void EmitTreeCompareSummary(
                 ",\"type\":", render::JsonValue(type), ",\"group\":", render::JsonValue(row.key), ",",
                 SummaryJson(row, counts.total, precision), SummaryTotalJson(is_total), "}\n"));
       } else {
-        auto cells = SummaryColumns(row, counts.total, human, precision);
-        cells.insert(cells.begin(), row.key);
-        cells.insert(cells.begin(), std::string(type));
+        auto values = SummaryColumns(row, counts.total, human, precision);
+        std::vector<std::string> cells;
+        cells.reserve(2 + values.size());
+        cells.emplace_back(type);
+        cells.push_back(row.key);
+        cells.insert(cells.end(), std::make_move_iterator(values.begin()), std::make_move_iterator(values.end()));
         table.AddRow(std::move(cells));
       }
     };

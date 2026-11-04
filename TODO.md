@@ -524,8 +524,14 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O22c2d2: Construct only the selected comparison-summary representation; preserve sparse/zero
       metrics, owning rows, all output formats and top/request identities. Retain both hosts'
       [full matrix, ordinary-width supplement and controls](docs/benchmarks/selected-summary-output-20261104.md).
-- [ ] O22c2d: Independently qualify borrowed structured field values and reusable numeric summary
-      cells; audit fallback snapshot and temporary-transform lifetimes before returning any views.
+- [x] O22c2e: Qualify fixed-size display/export metric arrays and moved row assembly on both hosts;
+      retain the partial policy, baseline-copy controls and small Linux startup costs in
+      [the paired numeric report](docs/benchmarks/fixed-summary-metrics-20261104.md).
+- [ ] O22c2d: Independently qualify borrowed structured field values; audit fallback snapshot and
+      temporary-transform lifetimes before returning any views.
+- [ ] O22c2f: Independently qualify percentage conversion using `std::to_chars`, including exact
+      precision/rounding behavior, public export fallbacks, binary growth and both-host native
+      controls. Keep it separate from fixed-size storage and other floating-point consumers.
 - [ ] O22c2: Qualify remaining reusable structured cell/row storage and streaming machine formats.
       Preserve synchronous view lifetimes, reentrant callbacks, coordinator ownership and ordered
       publication. Do not add a buffer/destructor to every existing stateless renderer by default.

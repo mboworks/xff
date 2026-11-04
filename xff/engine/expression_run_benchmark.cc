@@ -361,6 +361,44 @@ void RegisterComparisonSummaries() {
   }
 }
 
+void RegisterNumericSummaries() {
+  struct Profile {
+    std::string_view name;
+    std::string_view grouping;
+  };
+
+  static constexpr auto kProfiles = std::to_array<Profile>({
+      {.name = "names", .grouping = "{name}"},
+      {.name = "ext-control", .grouping = "ext"},
+  });
+  static constexpr auto kFormats =
+      std::to_array<std::string_view>({"plain", "aligned", "markdown", "csv", "tsv", "jsonl"});
+  for (const auto& profile : kProfiles) {
+    for (const auto format : kFormats) {
+      const Scenario scenario{
+          .name = profile.name,
+          .arguments =
+              {
+                  "--summary=" + std::string(profile.grouping),
+                  "--format=" + std::string(format),
+                  "--width=110",
+                  "-type",
+                  "f",
+              },
+      };
+      benchmark::RegisterBenchmark(
+          "engine/metric-summary/" + std::string(profile.name) + "/" + std::string(format),
+          [scenario](benchmark::State& state) { Measure(state, scenario, ExpressionExecutor::kProduction); })
+          ->ArgsProduct({{0, 10, 1'000, 10'000}, {1, 3}})
+          ->UseRealTime()
+          ->Unit(benchmark::kMicrosecond)
+          ->Repetitions(9)
+          ->MinTime(0.02)
+          ->MinWarmUpTime(0.01);
+    }
+  }
+}
+
 }  // namespace
 
 // XFF_ABI_POINTER: Google Benchmark's process argument interface.
@@ -613,6 +651,7 @@ int main(int argc, char** argv) {
   RegisterEncodedOutput();
   RegisterColumnRows();
   RegisterComparisonSummaries();
+  RegisterNumericSummaries();
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();
 }

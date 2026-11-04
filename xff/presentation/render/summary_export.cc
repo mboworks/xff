@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cstdint>
+#include <iterator>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -24,7 +25,7 @@ std::string Percent(std::uint64_t value, std::uint64_t total, unsigned precision
   return absl::StrFormat("%.*f", precision, percent);
 }
 
-std::vector<std::string> MetricCells(const SummaryExportMetrics& metrics, unsigned precision) {
+std::array<std::string, 4> MetricCells(const SummaryExportMetrics& metrics, unsigned precision) {
   return {
       absl::StrCat(metrics.count),
       Percent(metrics.count, metrics.total_count, precision),
@@ -66,13 +67,13 @@ std::string SummaryExport::Row(const SummaryExportRecord& record, Format format,
       record.is_total ? "true" : "false",
   };
   cells.reserve(cells.size() + (kMetrics.size() * (1 + scopes_.size())));
-  auto metrics = record.metrics.has_value() ? MetricCells(*record.metrics, precision) : std::vector<std::string>(4);
-  cells.insert(cells.end(), metrics.begin(), metrics.end());
+  auto metrics = record.metrics.has_value() ? MetricCells(*record.metrics, precision) : std::array<std::string, 4>{};
+  cells.insert(cells.end(), std::make_move_iterator(metrics.begin()), std::make_move_iterator(metrics.end()));
   for (const std::string& scope : scopes_) {
     const auto found = record.scoped_metrics.find(scope);
     metrics =
-        found == record.scoped_metrics.end() ? std::vector<std::string>(4) : MetricCells(found->second, precision);
-    cells.insert(cells.end(), metrics.begin(), metrics.end());
+        found == record.scoped_metrics.end() ? std::array<std::string, 4>{} : MetricCells(found->second, precision);
+    cells.insert(cells.end(), std::make_move_iterator(metrics.begin()), std::make_move_iterator(metrics.end()));
   }
   return EncodeTabularRow(format, cells);
 }
