@@ -21,7 +21,9 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/time/time.h"
 #include "benchmark/benchmark.h"
+#include "xff/content/snapshot.h"
 #include "xff/presentation/fields/fields.h"
 #include "xff/vfs/entry.h"
 
@@ -32,7 +34,7 @@ struct Scenario final {
   std::string_view format;
 };
 
-void RenderFields(benchmark::State& state, Scenario scenario) {
+void RenderFields(benchmark::State& state, Scenario scenario, bool supplied) {
   const auto count = static_cast<std::size_t>(state.range(0));
   const auto length = static_cast<std::size_t>(state.range(1));
   std::vector<std::string> paths;
@@ -43,9 +45,18 @@ void RenderFields(benchmark::State& state, Scenario scenario) {
   }
   const xff::fields::Template compiled = xff::fields::Template::Compile(scenario.format);
   const xff::vfs::Metadata metadata;
+  const xff::content::Snapshot snapshot;
+  xff::fields::RenderContext context{
+      .metadata = metadata,
+      .tz = absl::UTCTimeZone(),
+  };
+  if (supplied) {
+    context.content.set_ref(snapshot);
+  }
   for ([[maybe_unused]] const auto unused : state) {
     for (const std::string& path : paths) {
-      std::string value = compiled.Render({.path = path, .metadata = metadata});
+      context.path = path;
+      std::string value = compiled.Render(context);
       benchmark::DoNotOptimize(value);
     }
   }
@@ -71,20 +82,33 @@ int main(int argc, char** argv) {
     return 1;
   }
   static constexpr auto kScenarios = std::to_array<Scenario>({
+      {.name = "path", .format = "{path}"},
       {.name = "name", .format = "{name}"},
       {.name = "components", .format = "{name}|{stem}|{ext}|{suffix}|{suffixes}|{core}"},
       {.name = "qualified", .format = "{path:name}|{path:stem}|{path:ext}|{path:suffix}|{path:suffixes}|{path:core}"},
       {.name = "dir-control", .format = "{dir}"},
+      {.name = "dir-component", .format = "{path:dir}"},
+      {.name = "size-control", .format = "{size}"},
+      {.name = "rewrite-name", .format = "{name:s/tar/pack/g}"},
+      {.name = "rewrite-path", .format = "{path:s#/#_#g}"},
+      {.name = "extract-name", .format = "{name:m/(.*)/\\1/;join(,)}"},
+      {.name = "literal-control", .format = "literal output"},
+      {.name = "composite-dir", .format = "prefix:{dir}:{name}"},
   });
+  static constexpr auto kSupplied = std::to_array<bool>({false, true});
   for (const Scenario& scenario : kScenarios) {
-    benchmark::RegisterBenchmark("fields/" + std::string(scenario.name), RenderFields, scenario)
-        ->ArgsProduct({{10, 1'000, 100'000}, {8, 160}})
-        ->UseRealTime()
-        ->Unit(benchmark::kMicrosecond)
-        ->Repetitions(9)
-        ->MinTime(0.01)
-        ->MinWarmUpTime(0.01)
-        ->ComputeStatistics("fastest7of9", FastestSeven);
+    for (const bool supplied : kSupplied) {
+      benchmark::RegisterBenchmark(
+          "fields-context/" + std::string(supplied ? "supplied/" : "fallback/") + std::string(scenario.name),
+          RenderFields, scenario, supplied)
+          ->ArgsProduct({{10, 1'000, 100'000}, {8, 160}})
+          ->UseRealTime()
+          ->Unit(benchmark::kMicrosecond)
+          ->Repetitions(9)
+          ->MinTime(0.01)
+          ->MinWarmUpTime(0.01)
+          ->ComputeStatistics("fastest7of9", FastestSeven);
+    }
   }
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();

@@ -59,6 +59,18 @@ using ::testing::SizeIs;
 using ::testing::UnorderedElementsAreArray;
 
 struct FieldsTest : ::testing::Test {
+  static void ExpectStableStorage(const Template& empty, std::string_view program, const RenderContext& context) {
+    auto compiled = Template::Compile(program);
+    ASSERT_THAT(compiled.Validate(), IsOk());
+    const auto bytes = compiled.StorageBytes();
+    EXPECT_THAT(bytes, Gt(empty.StorageBytes()));
+    const auto copy = compiled;
+    const auto moved = std::move(compiled);
+    EXPECT_THAT(copy.Render(context), EqualsText(moved.Render(context)));
+    EXPECT_THAT(copy.StorageBytes(), Eq(bytes));
+    EXPECT_THAT(moved.StorageBytes(), Eq(bytes));
+  }
+
   static vfs::Metadata Meta(vfs::FileType type, std::uint64_t size) {
     vfs::Metadata md;
     md.type = type;
@@ -149,15 +161,7 @@ TEST_F(FieldsTest, StorageBudgetIncludesProgramsAndRemainsStableDuringRendering)
   const RenderContext context{.path = "a", .metadata = metadata, .defines = defines};
   for (const auto program : kPrograms) {
     SCOPED_TRACE(program);
-    auto compiled = Template::Compile(program);
-    ASSERT_THAT(compiled.Validate(), IsOk());
-    const auto bytes = compiled.StorageBytes();
-    EXPECT_THAT(bytes, Gt(empty.StorageBytes()));
-    const auto copy = compiled;
-    const auto moved = std::move(compiled);
-    EXPECT_THAT(copy.Render(context), EqualsText(moved.Render(context)));
-    EXPECT_THAT(copy.StorageBytes(), Eq(bytes));
-    EXPECT_THAT(moved.StorageBytes(), Eq(bytes));
+    ExpectStableStorage(empty, program, context);
   }
 }
 
@@ -766,6 +770,40 @@ TEST_F(FieldsTest, FuzzyFieldRendersTheScoreOfTheLastFuzzyTest) {
   // it no-ops in a template, like {shard} outside shard mode.
   EXPECT_THAT(Template::Compile("{fuzzy}").Render(RenderContext{.path = "p", .metadata = md, .fuzzy_score = 65}), "65");
   EXPECT_THAT(Template::Compile("[{fuzzy}]").Render(RenderContext{.path = "p", .metadata = md}), "[]");
+}
+
+TEST_F(FieldsTest, SingleFieldResultsOwnBytesAfterCallerBackingIsReplaced) {
+  const vfs::Metadata metadata = Meta(vfs::FileType::kRegular, 123);
+  const std::string long_name(256, 'x');
+  std::string path = "root/" + long_name + ".txt";
+  std::map<std::string, std::string> defines = {{"value", long_name}};
+  const RenderContext context{.path = path, .metadata = metadata, .defines = defines};
+  const std::string name = Template::Compile("{name}").Render(context);
+  const std::string definition = Template::Compile("{def.value}").Render(context);
+  const std::string directory = Template::Compile("{dir}").Render(context);
+  path.assign("changed");
+  defines.clear();
+  EXPECT_THAT(name, EqualsText(long_name + ".txt"));
+  EXPECT_THAT(definition, EqualsText(long_name));
+  EXPECT_THAT(directory, EqualsText("root"));
+}
+
+TEST_F(FieldsTest, SingleFieldTransformResultsRetainTheirOwnedText) {
+  const vfs::Metadata metadata = Meta(vfs::FileType::kRegular, 123);
+  const std::string long_name(256, 'x');
+  const std::string path = "root/" + long_name + ".txt";
+  static constexpr auto kFormats = std::to_array<std::string_view>({
+      "{path:name}",
+      "{path:dir}",
+      "{name:s/txt/md/}",
+      "{name:m/(.*)/\\1/;join(,)}",
+  });
+  const auto expected = std::to_array<std::string>({long_name + ".txt", "root", long_name + ".md", long_name + ".txt"});
+  for (std::size_t i = 0; i < kFormats.size(); ++i) {
+    const auto compiled = Template::Compile(kFormats.at(i));
+    ASSERT_THAT(compiled.Validate(), IsOk());
+    EXPECT_THAT(compiled.Render({.path = path, .metadata = metadata}), EqualsText(expected.at(i)));
+  }
 }
 
 TEST_F(FieldsTest, DefNamespaceReadsDefines) {

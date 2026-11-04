@@ -93,7 +93,8 @@
     "docs/benchmarks/encoded-record-reuse-20261103.md": "docs/benchmarks/encoded-record-reuse-20261103.html",
     "docs/benchmarks/threshold-aware-similarity-20261103.md": "docs/benchmarks/threshold-aware-similarity-20261103.html",
     "docs/benchmarks/column-row-reuse-20261104.md": "docs/benchmarks/column-row-reuse-20261104.html",
-    "docs/benchmarks/word-set-insertion-20261104.md": "docs/benchmarks/word-set-insertion-20261104.html"
+    "docs/benchmarks/word-set-insertion-20261104.md": "docs/benchmarks/word-set-insertion-20261104.html",
+    "docs/benchmarks/field-context-owned-results-20261104.md": "docs/benchmarks/field-context-owned-results-20261104.html"
   },
   "generated_html": {
     "XFF.md": {

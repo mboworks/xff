@@ -78,6 +78,28 @@ struct HashSnapshotTest : ::testing::Test {
     }
     return result;
   }
+
+  void ExpectHashDefaults(
+      const Template& compiled,
+      const Template& copy,
+      const Template& moved,
+      std::string_view algorithm,
+      std::string_view encoding) const {
+    auto context = Context(true);
+    context.hash_algorithm = algorithm;
+    context.hash_encoding = encoding;
+    const auto selected_algorithm = algorithm.empty() ? std::string_view("sha256") : algorithm;
+    const auto selected_encoding = encoding == "base64" ? hash::Encoding::kBase64 : hash::Encoding::kHex;
+    const auto digest = [&](std::string_view name, hash::Encoding output) {
+      return hash::HashData(name, fs.bytes, output).value_or("unsupported");
+    };
+    const std::string expected = digest(selected_algorithm, selected_encoding) + "|" + digest("md5", selected_encoding)
+                                 + "|" + digest(selected_algorithm, hash::Encoding::kBase64) + "|"
+                                 + digest("sha256", hash::Encoding::kHex);
+    EXPECT_THAT(compiled.Render(context), EqualsText(expected));
+    EXPECT_THAT(copy.Render(context), EqualsText(expected));
+    EXPECT_THAT(moved.Render(context), EqualsText(expected));
+  }
 };
 
 TEST_F(HashSnapshotTest, RepeatedHashFieldsUseOneReadWithBothLocalAndSuppliedSnapshots) {
@@ -113,6 +135,19 @@ TEST_F(HashSnapshotTest, ExtractionWithoutASuppliedSnapshotRetainsTheLocalDigest
     EXPECT_THAT(compiled.AsExtraction(Context(supplied)), Optional(ElementsAre(EqualsText(expected))));
   }
   EXPECT_THAT(fs.reads, Eq(2));
+}
+
+TEST_F(HashSnapshotTest, SingleHashResultOwnsTextBeyondItsSnapshotLifetime) {
+  const std::string original = hash::HashData("sha256", fs.bytes).value_or("unsupported");
+  const std::string local = Template::Compile("{hash}").Render(Context(false));
+  const std::string cached = Template::Compile("{hash}").Render(Context(true));
+  snapshot.Invalidate();
+  fs.bytes = "replacement";
+  EXPECT_THAT(local, EqualsText(original));
+  EXPECT_THAT(cached, EqualsText(original));
+  EXPECT_THAT(
+      Template::Compile("{hash}").Render(Context(false)),
+      EqualsText(hash::HashData("sha256", fs.bytes).value_or("unsupported")));
 }
 
 TEST_F(HashSnapshotTest, BoundHashTagsRemainDistinctFromLiteralAndUnknownSegments) {
@@ -158,20 +193,7 @@ TEST_F(HashSnapshotTest, BoundHashFieldsKeepContextDefaultsDynamicAcrossCopiesAn
     for (const std::string_view encoding : {"hex", "base64", "invalid", ""}) {
       SCOPED_TRACE(algorithm);
       SCOPED_TRACE(encoding);
-      auto context = Context(true);
-      context.hash_algorithm = algorithm;
-      context.hash_encoding = encoding;
-      const auto selected_algorithm = algorithm.empty() ? std::string_view("sha256") : algorithm;
-      const auto selected_encoding = encoding == "base64" ? hash::Encoding::kBase64 : hash::Encoding::kHex;
-      const auto digest = [&](std::string_view name, hash::Encoding output) {
-        return hash::HashData(name, fs.bytes, output).value_or("unsupported");
-      };
-      const std::string expected =
-          digest(selected_algorithm, selected_encoding) + "|" + digest("md5", selected_encoding) + "|"
-          + digest(selected_algorithm, hash::Encoding::kBase64) + "|" + digest("sha256", hash::Encoding::kHex);
-      EXPECT_THAT(compiled.Render(context), EqualsText(expected));
-      EXPECT_THAT(copy.Render(context), EqualsText(expected));
-      EXPECT_THAT(moved.Render(context), EqualsText(expected));
+      ExpectHashDefaults(compiled, copy, moved, algorithm, encoding);
     }
   }
   EXPECT_THAT(fs.reads, Eq(1));

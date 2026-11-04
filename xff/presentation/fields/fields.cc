@@ -1361,34 +1361,44 @@ std::size_t Template::ContentFieldCount() const {
 }
 
 std::string Template::Render(const RenderContext& context) const {
+  const auto render = [this](const RenderContext& entry) {
+    if (segments_.size() == 1) {
+      const Segment& segment = segments_.front();
+      if (segment.IsField() && segment.post == Segment::PostProcess::kNone) {
+        return segment.Value(entry).str();
+      }
+    }
+    std::string out;
+    for (const Segment& segment : segments_) {
+      if (segment.IsField()) {
+        // A post-render transform (s/// rewrite or path-component) renders the field
+        // with no qualifier, then transforms the value; otherwise the qualifier is the
+        // field's own format argument.
+        const StringOrView field_value = segment.Value(entry);
+        const std::string_view value = field_value.view();
+        switch (segment.post) {
+          case Segment::PostProcess::kComponent: out.append(PathComponent(value, segment.qualifier).view()); break;
+          case Segment::PostProcess::kNone: out.append(value); break;
+          case Segment::PostProcess::kRewrite: out.append(segment.transform->Rewrite(value)); break;
+          // A per-line extraction is a value stream. A terminal reducer (`;join(...)`) collapses it to
+          // a scalar (then a post-reducer s/// chain rewrites that scalar); without one it has no single
+          // scalar value, so its scalar projection is the matches newline-joined -- but the scalar-
+          // context guard (#136) rejects an unreduced extraction up front, so that branch is a fallback.
+          case Segment::PostProcess::kExtract: out.append(segment.transform->ExtractScalar(value)); break;
+        }
+      } else {
+        out.append(segment.literal);
+      }
+    }
+    return out;
+  };
+  if (context.content) {
+    return render(context);
+  }
   const content::Snapshot content;
   RenderContext entry = context;
-  if (!entry.content) {
-    entry.content.set_ref(content);
-  }
-  std::string out;
-  for (const Segment& segment : segments_) {
-    if (segment.IsField()) {
-      // A post-render transform (s/// rewrite or path-component) renders the field
-      // with no qualifier, then transforms the value; otherwise the qualifier is the
-      // field's own format argument.
-      const StringOrView field_value = segment.Value(entry);
-      const std::string_view value = field_value.view();
-      switch (segment.post) {
-        case Segment::PostProcess::kComponent: out.append(PathComponent(value, segment.qualifier).view()); break;
-        case Segment::PostProcess::kNone: out.append(value); break;
-        case Segment::PostProcess::kRewrite: out.append(segment.transform->Rewrite(value)); break;
-        // A per-line extraction is a value stream. A terminal reducer (`;join(...)`) collapses it to
-        // a scalar (then a post-reducer s/// chain rewrites that scalar); without one it has no single
-        // scalar value, so its scalar projection is the matches newline-joined -- but the scalar-
-        // context guard (#136) rejects an unreduced extraction up front, so that branch is a fallback.
-        case Segment::PostProcess::kExtract: out.append(segment.transform->ExtractScalar(value)); break;
-      }
-    } else {
-      out.append(segment.literal);
-    }
-  }
-  return out;
+  entry.content.set_ref(content);
+  return render(entry);
 }
 
 std::optional<std::vector<std::string>> Template::AsExtraction(const RenderContext& context) const {

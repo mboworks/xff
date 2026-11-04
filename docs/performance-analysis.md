@@ -3892,3 +3892,19 @@ all separate measurement cohorts and tracked-capacity diagnostics in the evidenc
 source passes both full release suites, relevant sanitizers and bounded opaque-byte fuzzing.
 There is no new worker, lock, filesystem path, dependency or score semantic. Reference grouping
 and candidate indexing remain open under O21b; this does not complete those larger algorithms.
+
+### O22c2d1: supplied contexts and owning scalar transfer
+
+Render directly against an already supplied snapshot context, and transfer a single untransformed
+field's owning string into the returned output. Borrowed values still copy into an owning result
+before any local snapshot can expire. Composite templates and post-processing retain their paths.
+The [paired field report](benchmarks/field-context-owned-results-20261104.md) isolates dependency,
+context and ownership policies, with identical-executable controls and all rejected strategies.
+
+The selected larger-column native median improves about 1.2% macOS and 1.4% Linux; 10,000-file,
+16-column cases improve about 5.3% and 3.9%. Direct local-snapshot fallback kernels cost about
+2.7% more on Linux. Preserve that cost: normal CLI rendering supplies its snapshot, but direct
+library callers need the fallback. Full release suites, affected sanitizers, actual scoped lint
+and bounded isolated fuzzing pass on both hosts where supported. No new thread, lock, host-I/O
+path, flag or output byte is introduced. Borrowed structured cell lifetimes, numeric summary
+storage and streaming/backpressure remain open under O22c2.
