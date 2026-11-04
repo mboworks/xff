@@ -64,6 +64,11 @@
 namespace xff::vfs {
 namespace {
 
+#if !defined(_PC_CASE_SENSITIVE)
+// The same conservative constant already backs LocalFs::IsCaseSensitive.
+constexpr bool kUniformCaseSensitive = true;
+#endif
+
 FileType TypeFromMode(mode_t mode) {
   if (S_ISREG(mode)) {
     return FileType::kRegular;
@@ -343,6 +348,14 @@ absl::StatusOr<std::string> LocalFs::FsType(std::string_view path) const {
 #endif
 }
 
+std::optional<bool> LocalFs::UniformCaseSensitivity() const {
+#if defined(_PC_CASE_SENSITIVE)
+  return std::nullopt;
+#else
+  return kUniformCaseSensitive;
+#endif
+}
+
 absl::StatusOr<bool> LocalFs::IsCaseSensitive(std::string_view path) const {
 #if defined(_PC_CASE_SENSITIVE)
   // macOS / BSD expose the volume's case rule directly: pathconf returns 1 for a
@@ -366,7 +379,7 @@ absl::StatusOr<bool> LocalFs::IsCaseSensitive(std::string_view path) const {
   // a future refinement. Report case-sensitive, which is also the safe default and
   // matches find's byte-exact matching.
   (void)path;
-  return true;
+  return kUniformCaseSensitive;
 #endif
 }
 

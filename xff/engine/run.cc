@@ -1116,6 +1116,8 @@ class ControlledFileSystem : public vfs::FileSystem {
 
   absl::StatusOr<bool> IsCaseSensitive(std::string_view path) const override { return fs_.IsCaseSensitive(path); }
 
+  std::optional<bool> UniformCaseSensitivity() const override { return fs_.UniformCaseSensitivity(); }
+
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override { return fs_.ReadContent(path); }
 
   absl::StatusOr<std::string> ReadContentRange(std::string_view path, std::uint64_t offset, std::size_t length)
@@ -5795,6 +5797,8 @@ RunResult RunFindCore(
   // cache needs no synchronisation), and a case-folding volume sets fold_name_case.
   const bool fs_native_case = style == registry::Style::kXff && !HasGlobal(command.globals, "--exact")
                               && expression.has_value() && NeedsNativeCase(*expression);
+  const auto uniform_native_case = fs_native_case ? walk_fs.UniformCaseSensitivity() : std::nullopt;
+  const bool uniform_fold_name_case = uniform_native_case && !*uniform_native_case;
   absl::flat_hash_map<std::uint64_t, bool> case_sensitive_by_dev;
   // --hidden / --no-hidden (style-scoped default): whether to drop hidden dotfiles.
   const bool skip_hidden = ResolveSkipHidden(command.globals, style);
@@ -6122,9 +6126,9 @@ RunResult RunFindCore(
   for (std::size_t index = 0; index < deferred_nodes.size(); ++index) {
     deferred_node_order.emplace(deferred_nodes[index], index);
   }
-  const bool full_metadata = fs_native_case || colorize || any_reduction || matched_entry.has_value()
-                             || !column_templates.empty() || compiled_tmpl.has_value() || collections.Active()
-                             || !deferred_nodes.empty();
+  const bool full_metadata = (fs_native_case && !uniform_native_case) || colorize || any_reduction
+                             || matched_entry.has_value() || !column_templates.empty() || compiled_tmpl.has_value()
+                             || collections.Active() || !deferred_nodes.empty();
   options.metadata = full_metadata            ? MetadataDemand::kAlways
                      : expression.has_value() ? ExpressionMetadata(*expression)
                                               : MetadataDemand::kNever;
@@ -6355,8 +6359,8 @@ RunResult RunFindCore(
         // FS-native name matching: fold -name/-path case on a case-folding volume
         // (xff style, no --exact). Probe each device once, defaulting to
         // case-sensitive (byte-exact) on the miss and on any probe error.
-        bool fold_name_case = false;
-        if (fs_native_case) {
+        bool fold_name_case = uniform_fold_name_case;
+        if (fs_native_case && !uniform_native_case) {
           auto [it, inserted] = case_sensitive_by_dev.try_emplace(visit.metadata.dev, true);
           if (inserted) {
             it->second = walk_fs.IsCaseSensitive(visit.path).value_or(true);
@@ -6525,8 +6529,8 @@ RunResult RunFindCore(
     for (DeferredCandidate& candidate : deferred_candidates) {
       const Visit visit = candidate.entry.AsVisit();
       Control control;
-      bool fold_name_case = false;
-      if (fs_native_case) {
+      bool fold_name_case = uniform_fold_name_case;
+      if (fs_native_case && !uniform_native_case) {
         auto [it, inserted] = case_sensitive_by_dev.try_emplace(visit.metadata.dev, true);
         if (inserted) {
           it->second = walk_fs.IsCaseSensitive(visit.path).value_or(true);

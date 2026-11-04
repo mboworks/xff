@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -106,6 +107,7 @@ TEST_F(VfsSeamTest, AnExtraCanImplementTheInterfaceUsingOnlyThisModule) {
   EXPECT_THAT(seam.ReadContentRange("/missing", 0, 1), StatusIs(absl::StatusCode::kNotFound));
   EXPECT_THAT(seam.FsType("/box"), IsOkAndHolds("fake"));
   EXPECT_THAT(seam.IsCaseSensitive("/box"), IsOkAndHolds(true));
+  EXPECT_THAT(seam.UniformCaseSensitivity(), Eq(std::nullopt));
 }
 
 TEST_F(VfsSeamTest, DefaultNameListingPreservesCompletePathsAndErrors) {
