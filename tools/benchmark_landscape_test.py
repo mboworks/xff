@@ -280,6 +280,101 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                 for name, count, ratio in [('a', 10, 2), ('b', 100, 0.5)]]
         self.assertEqual(landscape.ordered_pairs(rows, 'similarity'), [('b', 'rg'), ('a', 'rg')])
 
+    def test_common_similarity_uses_majority_revisions_and_symmetric_log_ratios(self):
+        def rows(profiles):
+            return [dict(task=name, reference='rg', dataset='broad', cpus=cpu, files=count,
+                         xff_over_reference=10 ** -value)
+                    for name, values in profiles.items() for cpu in (1, 3)
+                    for count, value in zip((10, 100), values)]
+        ordinary = rows({'a': (1, 0.9), 'b': (0.8, 0.7), 'c': (-0.5, -0.6), 'd': (-0.7, -0.8)})
+        outlier = rows({'a': (-100, -100), 'b': (100, 100), 'c': (0, 0), 'd': (1, 1)})
+        model = landscape.common_task_order([ordinary, ordinary, outlier])
+        pairs = [tuple(pair) for pair in model['pairs']]
+        self.assertEqual(pairs, [('a', 'rg'), ('b', 'rg'), ('c', 'rg'), ('d', 'rg')])
+        self.assertEqual(model['revisions'], 3)
+        self.assertEqual(model, landscape.common_task_order([list(reversed(outlier)), ordinary, ordinary]))
+        self.assertEqual(landscape.common_task_order([])['pairs'], [])
+        with self.assertRaisesRegex(ValueError, 'duplicate comparison cell'):
+            landscape.common_task_order([[ordinary[0], ordinary[0]]])
+
+    def test_shared_task_positions_survive_revision_cpu_scale_and_missing_tasks(self):
+        data = report(cpus=(1, 3, 10))
+        rows = landscape.matrix.relative_results(data)
+        model = landscape.common_task_order([rows])
+        # Include one absent historical task to prove slots remain gaps.
+        model['pairs'].insert(1, ('missing', 'rg'))
+        changed = json.loads(json.dumps(data))
+        for task in changed['tasks']:
+            task['participants']['xff']['samples'][0]['elapsed_seconds'] *= (4 if task['name'] == 'fast' else 0.1)
+        plots = [landscape.figures(value, task_order=model) for value in (data, changed)]
+        ticks = plots[0]['similarity']['percent']['layout']['scene']['zaxis']['ticktext']
+        for value in plots:
+            self.assertEqual(value['task_order'], model)
+            for allocation in [value, *(pair['figures'] for pair in value['allocation_pairs'])]:
+                for metric in ('percent', 'factor'):
+                    figure = allocation['similarity'][metric]
+                    self.assertEqual(figure['layout']['scene']['zaxis']['ticktext'], ticks)
+                    self.assertEqual(figure['data'][0]['y'][1], [None, None, None])
+                    labels = [label.strip() for label in ticks]
+                    for surface in figure['data']:
+                        for coordinates, hover in zip(surface['z'], surface['text']):
+                            label = labels[figure['layout']['scene']['zaxis']['tickvals'].index(coordinates[0])]
+                            for text in hover:
+                                if text != 'Missing measurement':
+                                    values = hover_values(text)
+                                    self.assertEqual(label, values['Task'] + ' / ' + values['Reference tool'])
+
+    def test_history_order_excludes_previews_and_duplicates_and_separates_series(self):
+        def record(sha, platform='linux', attempt=1, preview=False):
+            return dict(head=sha * 40, platform=platform, tool_comparisons=report(),
+                        source=dict(id=1, run_attempt=attempt, created_at='2026-09-01T00:00:00Z',
+                                    head_branch='main', event='pull_request' if preview else 'push'))
+        initial = record('a')
+        next_run = record('b')
+        preview = record('c', preview=True)
+        for task in preview['tool_comparisons']['tasks']:
+            task['name'] = 'new-task' if task['name'] == 'fast' else task['name']
+        incompatible = record('d')
+        incompatible['tool_comparisons']['contract']['fixture_version'] = 9
+        other_platform = record('e', platform='macos')
+        records = [('initial', initial), ('rerun', record('a', attempt=2)), ('next', next_run),
+                   ('preview', preview), ('incompatible', incompatible), ('mac', other_platform)]
+        models = landscape.history_task_orders(records)
+        self.assertEqual(models['initial'], models['next'])
+        self.assertEqual(models['initial']['revisions'], 2)
+        self.assertEqual(models['preview']['pairs'][:-1], models['initial']['pairs'])
+        self.assertEqual(models['preview']['pairs'][-1], ('new-task', 'rg'))
+        self.assertNotEqual(models['initial']['series'], models['incompatible']['series'])
+        self.assertNotEqual(models['initial']['series'], models['mac']['series'])
+        self.assertEqual(models, landscape.history_task_orders(list(reversed(records))))
+        self.assertEqual(landscape.history_task_orders([('preview', preview)]), {})
+
+    def test_common_order_handles_disjoint_single_and_large_task_sets(self):
+        rows = [dict(task=f'task-{index:02}', reference='rg', dataset='broad', cpus=1, files=10,
+                     xff_over_reference=10 ** (index / 10)) for index in range(17)]
+        order = landscape.common_task_order([rows])['pairs']
+        self.assertEqual(len(order), 17)
+        self.assertEqual(set(order), {(row['task'], 'rg') for row in rows})
+        self.assertEqual(order, landscape.common_task_order([list(reversed(rows))])['pairs'])
+        disjoint = [dict(rows[0], files=10), dict(rows[1], files=100)]
+        self.assertEqual(landscape.common_task_order([disjoint])['pairs'], [('task-00', 'rg'), ('task-01', 'rg')])
+        self.assertEqual(landscape.common_task_order([[rows[0]]])['pairs'], [('task-00', 'rg')])
+
+    def test_ordering_ignores_launcher_fingerprint_but_preserves_method_and_baseline_contracts(self):
+        def record(sha, method='native pipeline v1'):
+            data = report()
+            data['contract']['resource_accounting'] = dict(sha256=sha, memory_method=method, wall_method='monotonic')
+            return dict(platform='macos', tool_comparisons=data)
+        a, b = record('a' * 64), record('b' * 64)
+        self.assertEqual(landscape.series_order_key(a), landscape.series_order_key(b))
+        self.assertNotEqual(landscape.series_order_key(a), landscape.series_order_key(record('a' * 64, 'different')))
+        # Only the ordering key is relaxed; raw data and reference-window qualification stay strict.
+        self.assertNotEqual(a['tool_comparisons']['contract'], b['tool_comparisons']['contract'])
+        for value in (a, b):
+            value['tool_comparisons']['contract'].update(storage={}, affinity_by_cpu_count={})
+        self.assertNotEqual(landscape.benchmark_normalization.compatibility(a),
+                            landscape.benchmark_normalization.compatibility(b))
+
     def test_colors_keep_blue_band_at_ten_percentage_points(self):
         extent, stops = landscape.comparison_colorscale(100)
         self.assertEqual(extent, 100)
@@ -349,6 +444,37 @@ class BenchmarkLandscapeTest(unittest.TestCase):
             self.assertEqual((legacy / 'index.html').read_text(), 'Legacy untouched')
             self.assertEqual((root / 'assets/three-landscape.js').read_text(), '/* plotting asset */')
 
+    def test_publication_shares_history_coordinates_with_embedded_and_preview_charts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'index.html').write_text('<h1>History</h1>')
+            paths = []
+            for run in (1, 2, 3):
+                folder = root / 'runs' / str(run) / '1/linux'
+                folder.mkdir(parents=True)
+                data = report(cpus=(1, 3, 10))
+                if run == 3:
+                    for task in data['tasks']:
+                        task['participants']['xff']['samples'][0]['elapsed_seconds'] *= (
+                            4 if task['name'] == 'fast' else 0.1)
+                source = dict(id=run, run_attempt=1, head_sha=str(run) * 40,
+                              head_branch='main', event='push', created_at=f'2026-09-0{run}T00:00:00Z')
+                path = folder / 'report.json'
+                path.write_text(json.dumps(dict(tool_comparisons=data, platform='linux', source=source)))
+                (folder / 'index.html').write_text('<h1>Report</h1>')
+                paths.append(path)
+            originals = [path.read_bytes() for path in paths]
+            landscape.publish(root, '/* renderer */')
+            payloads = [json.loads(path.with_name('landscape.json').read_text()) for path in paths]
+            self.assertEqual(payloads[0]['task_order'], payloads[-1]['task_order'])
+            self.assertEqual(payloads[0]['task_order']['revisions'], 3)
+            for path, payload in zip(paths, payloads):
+                embedded = path.with_name('index.html').read_text()
+                self.assertIn('"task_order": ' + json.dumps(payload['task_order']), embedded)
+                first = payloads[0]['similarity']['percent']['layout']['scene']['zaxis']['ticktext']
+                self.assertEqual(payload['similarity']['percent']['layout']['scene']['zaxis']['ticktext'], first)
+            self.assertEqual([path.read_bytes() for path in paths], originals)
+
     def test_history_selects_latest_attempt_per_commit_and_platform(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -377,7 +503,7 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                 self.assertEqual(row['measurement_date'], '2026-10-02T12:00:00Z'
                                  if row['platform'] == 'macos' else None)
                 payload = json.loads((root / row['figures']).read_text())
-                self.assertEqual(set(payload), set(landscape.ORDER_LABELS) | {'overview'})
+                self.assertEqual(set(payload), set(landscape.ORDER_LABELS) | {'overview', 'task_order'})
                 expected = '3 workers' if row['platform'] == 'macos' else '4 workers'
                 self.assertIn(expected, payload['similarity']['percent']['layout']['scene']['xaxis']['title']['text'])
                 self.assertTrue((root / row['report'] / 'index.html').is_file())

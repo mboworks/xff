@@ -643,15 +643,33 @@ Browser tests run in the normal release-site CI job, using Chromium. Run them lo
 Python interpreter. Tests cover offline loading, hover identity for all orders and scales, axis
 highlights, variable color-stop counts, full rotation, resizing and hide/show behavior.
 
-The task-order selector defaults to **Similarity, better toward center**. Each task/reference
-pair has a profile of percentage values across matching file counts, CPU groups and tree shapes.
-Distance is the mean absolute percentage-point difference over shared observations. The renderer
-finds the minimum-total-distance neighbor chain exactly for up to 16 pairs, with deterministic
-ties, and reverses it when necessary so the better endpoint faces the center. Broad and Deep use
-the same mirrored order. This reduces surface jumps without claiming monotonic improvement.
-For larger reports, a bounded multistart nearest-neighbor heuristic replaces the exact search.
-If no complete chain with shared observations exists, the renderer falls back to average order.
-Missing observations are never replaced with zero.
+The task-order selector defaults to **Similarity, better toward center**. Published history computes
+one shared order from compatible merged revisions for each platform/machine series and workload
+contract. It reuses that order across revisions, worker pairs and scales. Within each revision,
+profiles use symmetric `log10(reference / xff)` values over shared file-count/CPU/tree cells.
+Pair distance is the mean absolute profile difference in that revision; its median across revisions
+is the shared distance. Thus each revision receives one vote and a single extreme revision cannot
+outweigh the majority. The minimum-total-distance neighbor chain is exact for up to 16 pairs,
+with deterministic ties; larger sets use bounded multistart nearest-neighbor search. Its orientation
+uses each endpoint's median revision performance, so the better endpoint faces the center once for
+the series. Broad and Deep mirror the same ranks. No complete overlapping chain means fallback to
+series-median performance order. A globally shared arrangement cannot minimize every individual
+revision's jumps, and surface shape is not evidence of a speed change.
+
+New merged data recomputes the order at publication, so a later publication may update it; moving
+the slider within that publication never does. A preview uses the merged order and appends new
+preview-only tasks alphabetically. Missing historical tasks retain empty slots, and missing cells
+remain gaps. Standalone unpublished reports keep their local percentage-profile order. **Average**
+remains descriptive of the selected report; use Similarity or Alphabetical for fixed positions.
+The published `landscape.json` records the recipe, compatible revision count, series identity and
+ordered task/reference pairs in `task_order`. Embedded report charts use the identical mapping.
+
+Ordering is presentation only. It ignores an accounting launcher's executable fingerprint while
+retaining its accounting method: Mach-O fingerprints can change with build/debug paths even when
+that method is unchanged. Reference-window normalization and timing-baseline qualification remain
+strict and raw measurements are never rewritten. Different workloads, platforms and local series
+remain separate. The [40-report validation](benchmarks/shared-benchmark-order-20261104.md) retains
+source identities, input profiles and actual neighbor-distance tradeoffs.
 
 **Average performance, best at center** sorts descending by equally weighted mean time saved;
 **Alphabetical** restores the task/reference name order. Changing order preserves the camera

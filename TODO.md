@@ -447,12 +447,13 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [ ] O16b: Add and qualify completed-directory/frontier traversal before enabling bounded paired
       comparison. Preserve empty/ignored completion, ordering, ignore inheritance, errors, effects,
       archives and deferred selections; retain explicit fallbacks and avoid repeated shallow scans.
-- [ ] Benchmark history: precompute a shared task order from compatible merged revisions for the
+- [x] Benchmark history: precompute a shared task order from compatible merged revisions for the
       whole series. Current per-revision/per-CPU similarity ordering can visually exaggerate or
       hide changes. Compare robust median adjacency distances across revisions, orient once from
       series-wide performance, retain missing-task gaps, and reuse positions across the version,
       CPU-pair and scale selectors. Recompute on publication; keep Alphabetical available and
       verify hover/tick mapping. Judge performance from matched cells, not surface geometry.
+      [40-report validation and recipe](docs/benchmarks/shared-benchmark-order-20261104.md).
 - [ ] O17: Qualify coordinated persistent stage workers against existing pools and prior rejected
       caller-inclusive/admission policies. Preserve leaf jobs, explicit CPU/role accounting and JC gates.
 - [ ] O18: Qualify byte-bounded overlap with backpressure, ordered publication and cancellation;
