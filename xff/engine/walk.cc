@@ -285,8 +285,8 @@ class Walker {
       return Request<Kind::kDirectory>(Submit(Kind::kDirectory, directory, {}));
     }
 
-    Request<Kind::kStat> SubmitStats(absl::Span<vfs::Entry> entries) {
-      return Request<Kind::kStat>(Submit(Kind::kStat, {}, entries));
+    Request<Kind::kStat> SubmitStats(absl::Span<vfs::Entry> entries, std::string_view directory) {
+      return Request<Kind::kStat>(Submit(Kind::kStat, directory, entries));
     }
 
    private:
@@ -393,7 +393,7 @@ class Walker {
       if (task.kind == Kind::kDirectory) {
         Complete(task, walker_.ReadDir(task.directory));
       } else {
-        Complete(task, walker_.StatEntries(task.entries));
+        Complete(task, walker_.StatEntries(task.entries, task.directory));
       }
     }
 
@@ -442,8 +442,7 @@ class Walker {
         mount_container_(mount_container),
         follow_children_(options.symlinks == SymlinkMode::kAll),
         name_only_listings_(
-            options.metadata != MetadataDemand::kAlways && (options.archive != ArchiveDive::kAll || !mount_container)
-            && fs.SupportsNameOnlyListings()),
+            (options.archive != ArchiveDive::kAll || !mount_container) && fs.SupportsNameOnlyListings()),
         pool_(*this, options.workers > 1 ? options.workers : std::size_t{0}) {}
 
   // Whether `stated` is a FILE this walk should try to open as a container. `kRoots` offers only the
@@ -592,21 +591,34 @@ class Walker {
             : static_cast<std::size_t>(std::ranges::count_if(
                   entries, [this](const vfs::Entry& entry) { return NeedsEagerMetadata(entry); }));
     children.eager.reserve(eager_count);
+    std::string stat_path;
+    std::size_t prefix_size = std::string::npos;
     for (vfs::Entry& entry : entries) {
       if (!NeedsEagerMetadata(entry)) {
         children.entries.emplace_back(std::move(entry.path), std::move(entry.name), entry.type, entry.source);
       } else {
-        if (name_only_listings_) {
-          entry.path = directory;
-          if (!entry.path.empty() && entry.path.back() != '/') {
-            entry.path.push_back('/');
+        const std::string_view path = [&] {
+          if (!name_only_listings_) {
+            return std::string_view(entry.path);
           }
-          entry.path.append(entry.name);
-        }
+          if (prefix_size == std::string::npos) {
+            stat_path.assign(directory);
+            if (!stat_path.empty() && stat_path.back() != '/') {
+              stat_path.push_back('/');
+            }
+            prefix_size = stat_path.size();
+          }
+          stat_path.resize(prefix_size);
+          stat_path.append(entry.name);
+          return std::string_view(stat_path);
+        }();
         if (entry.name.empty()) {
-          entry.name = Basename(entry.path);
+          entry.name = Basename(path);
         }
-        auto& metadata = children.eager.emplace_back(StatNode(entry.path, follow_children_));
+        auto& metadata = children.eager.emplace_back(StatNode(path, follow_children_));
+        if (name_only_listings_ && metadata.status.ok() && metadata.value.type == vfs::FileType::kDirectory) {
+          entry.path = path;
+        }
         children.entries.emplace_back(std::move(entry.path), std::move(entry.name), metadata);
       }
     }
@@ -621,16 +633,13 @@ class Walker {
   // Only the coordinator dispatches and joins stat chunks. Directory read-ahead jobs
   // stay leaves: no worker ever waits for jobs submitted to its own pool.
   Listing ReadNow(const std::string& dir) {
-    if (name_only_listings_) {
-      return ReadDir(dir);
-    }
-    MBO_ASSIGN_OR_RETURN(auto entries, fs_.ReadDir(dir));
+    MBO_ASSIGN_OR_RETURN(auto entries, name_only_listings_ ? fs_.ReadDirNames(dir) : fs_.ReadDir(dir));
     constexpr std::size_t kChunk = 128;
     if (options_.workers <= 1 || options_.metadata != MetadataDemand::kAlways || entries.size() < 4 * kChunk
         || fs_owner_ || absl::c_any_of(entries, [](const vfs::Entry& entry) {
              return entry.source == vfs::Source::kArchiveMember;
            })) {
-      return StatEntries(absl::MakeSpan(entries));
+      return StatEntries(absl::MakeSpan(entries), dir);
     }
     const auto chunks = (entries.size() + kChunk - 1) / kChunk;
     const auto pending = std::min(chunks, options_.workers);
@@ -639,7 +648,7 @@ class Walker {
     const auto submit = [&](std::size_t index) {
       const auto offset = index * kChunk;
       const auto chunk = all_entries.subspan(offset, std::min(kChunk, entries.size() - offset));
-      return pool_.SubmitStats(chunk);
+      return pool_.SubmitStats(chunk, name_only_listings_ ? std::string_view(dir) : std::string_view{});
     };
     std::vector<StatRequest> reads;
     reads.reserve(pending);

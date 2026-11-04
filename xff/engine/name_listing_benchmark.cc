@@ -96,7 +96,7 @@ class ListingFs final : public xff::vfs::FileSystem {
   std::map<std::string, std::vector<xff::vfs::Entry>, std::less<>> directories_;
 };
 
-void Measure(benchmark::State& state, bool deep, bool selected, bool names) {
+void Measure(benchmark::State& state, bool deep, bool selected, bool names, bool eager) {
   const auto count = static_cast<std::size_t>(state.range(0));
   const ListingFs baseline(count, deep, false);
   const ListingFs candidate(count, deep, names);
@@ -106,6 +106,9 @@ void Measure(benchmark::State& state, bool deep, bool selected, bool names) {
   };
   if (selected) {
     arguments.append_range(std::to_array<std::string>({"-name", "*.txt"}));
+  }
+  if (eager) {
+    arguments.push_back("--summary=ext");
   }
   auto command = xff::parser::Parse(arguments);
   if (!command.ok()) {
@@ -144,18 +147,25 @@ void Measure(benchmark::State& state, bool deep, bool selected, bool names) {
   benchmark::DoNotOptimize(bytes);
 }
 
+void RegisterCase(bool deep, bool selected, bool names, bool eager) {
+  const std::string name = absl::StrCat(
+      deep ? "deep/" : "broad/", eager ? "eager/" : "", selected ? "name-txt/" : "files/",
+      names ? "names" : "complete");
+  auto& registration = *benchmark::RegisterBenchmark(name, Measure, deep, selected, names, eager);
+  registration.UseRealTime();
+  for (const auto count : {10, 100, 1'000, 10'000, 100'000}) {
+    for (const auto workers : {1, 3}) {
+      registration.Args({count, workers});
+    }
+  }
+}
+
 void Register() {
   for (const bool deep : {false, true}) {
     for (const bool selected : {false, true}) {
-      for (const bool names : {false, true}) {
-        const std::string name =
-            absl::StrCat(deep ? "deep/" : "broad/", selected ? "name-txt/" : "files/", names ? "names" : "complete");
-        auto& registration = *benchmark::RegisterBenchmark(name, Measure, deep, selected, names);
-        registration.UseRealTime();
-        for (const auto count : {10, 100, 1'000, 10'000, 100'000}) {
-          for (const auto workers : {1, 3}) {
-            registration.Args({count, workers});
-          }
+      for (const bool eager : {false, true}) {
+        for (const bool names : {false, true}) {
+          RegisterCase(deep, selected, names, eager);
         }
       }
     }

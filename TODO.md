@@ -502,10 +502,13 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O20e: Qualify segmented native directory accumulation on both hosts, including wide short/long
       names, exact output, memory and slower small-tree controls. Reject the 256-entry long-name
       regression; retain [selected 4,096-entry policy and all evidence](docs/benchmarks/segmented-native-listings-20261104.md).
-- [ ] O20f: Separately evaluate names-only leaf paths under eager metadata, especially macOS native
-      case. Retain complete observations and reconstruct callback paths; keep actual directory paths,
-      error spellings and eager empty-name fallback. Pass parent directories through existing stat
-      chunks so enabling names-only does not silently disable eager metadata parallelism.
+- [x] O20f: Qualify eager names-only leaf paths with complete observations, directory ownership,
+      unchanged stat parallelism and callback/error spelling. Retain [both-host gains, costs and
+      identity proofs](docs/benchmarks/eager-native-paths-20261104.md).
+- [ ] O20g: Evaluate the remaining native stat-path copy using a scoped terminated-path value:
+      uninitialized short buffer, exact bytes plus terminator and long-path fallback. Compare
+      256/512/1,024-byte policies on both hosts; preserve non-terminated views, empty/error paths,
+      link behavior and basic/birth fields. Never probe beyond the input view for a terminator.
 - [ ] O20: Qualify optional bulk metadata by backend capability with precise fallback, while
       keeping metadata-free traversal free of extra probes and extended-stat work.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte

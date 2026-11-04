@@ -19,6 +19,7 @@
 #include "absl/status/status.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/status/status_macros.h"
 #include "mbo/testing/status.h"
 #include "xff/engine/walk.h"
 #include "xff/vfs/filesystem.h"
@@ -178,6 +179,61 @@ TEST_F(WalkParallelTest, EagerStatsOverlapAndKeepCoordinatorVisitOrderAndFields)
   }
 }
 
+TEST_F(WalkParallelTest, EagerNameOnlyStatsRetainParallelismFieldsPathsAndErrors) {
+  struct NamedWideFs final : WideFs {
+    bool SupportsNameOnlyListings() const override { return true; }
+
+    absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override {
+      {
+        const std::scoped_lock lock(trace->mutex);
+        ++complete_reads;
+      }
+      return WideFs::ReadDir(path);
+    }
+
+    absl::StatusOr<std::vector<vfs::Entry>> ReadDirNames(std::string_view path) const override {
+      {
+        const std::scoped_lock lock(trace->mutex);
+        ++name_reads;
+      }
+      MBO_ASSIGN_OR_RETURN(auto entries, WideFs::ReadDir(path));
+      for (auto& entry : entries) {
+        entry.path.clear();
+      }
+      return entries;
+    }
+
+    mutable std::size_t name_reads = 0;
+    mutable std::size_t complete_reads = 0;
+  };
+
+  constexpr auto kFields = std::to_array({vfs::MetadataFields::kBasic, vfs::MetadataFields::kBirthTime});
+  for (const auto fields : kFields) {
+    for (const bool failures : {false, true}) {
+      WideFs serial;
+      NamedWideFs parallel;
+      if (failures) {
+        serial.failures = {
+            {"root/100", absl::StatusCode::kNotFound},
+            {"root/800", absl::StatusCode::kPermissionDenied},
+        };
+        parallel.failures = serial.failures;
+      }
+      parallel.trace->await_peer = true;
+      const auto expected = Record(serial, {.workers = 1, .metadata_fields = fields});
+      const auto actual = Record(parallel, {.workers = 3, .metadata_fields = fields});
+      EXPECT_THAT(actual.visits, Eq(expected.visits));
+      EXPECT_THAT(actual.errors, Eq(expected.errors));
+      EXPECT_THAT(actual.visitors, ElementsAre(std::this_thread::get_id()));
+      EXPECT_THAT(parallel.trace->children, Eq(1'024));
+      EXPECT_THAT(parallel.trace->threads.size(), Gt(1));
+      EXPECT_THAT(parallel.trace->fields, ElementsAre(fields));
+      EXPECT_THAT(parallel.name_reads, Eq(1));
+      EXPECT_THAT(parallel.complete_reads, Eq(0));
+    }
+  }
+}
+
 TEST_F(WalkParallelTest, LazyAndMetadataFreeListingsDoNotStartStatWorkers) {
   constexpr auto kDemands = std::to_array({MetadataDemand::kNever, MetadataDemand::kOnDemand});
   for (const auto demand : kDemands) {
@@ -203,7 +259,10 @@ TEST_F(WalkParallelTest, SmallAndArchiveSourceListingsRemainSerial) {
 
 TEST_F(WalkParallelTest, StatFailuresAndRaceSuppressionKeepSerialOrder) {
   WideFs fs;
-  fs.failures = {{"root/100", absl::StatusCode::kNotFound}, {"root/800", absl::StatusCode::kPermissionDenied}};
+  fs.failures = {
+      {"root/100", absl::StatusCode::kNotFound},
+      {"root/800", absl::StatusCode::kPermissionDenied},
+  };
   const auto expected = Record(fs, {.workers = 1});
   const auto actual = Record(fs, {.workers = 4});
   EXPECT_THAT(actual.visits, Eq(expected.visits));

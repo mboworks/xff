@@ -840,6 +840,7 @@ cc_test(
         "//xff/vfs:vfs_cc",
         "@abseil-cpp//absl/status",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )
