@@ -437,9 +437,13 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       key/index records on both hosts. Preserve first-wins duplicates, backend ownership, ordering,
       errors and full metadata during matching; retain small-case costs and the metadata-only control
       in [the qualification report](docs/benchmarks/compact-comparison-entries-20261104.md).
-- [ ] O16a3: Qualify append-only borrowed comparison categories. Pairs are already unique and sorted,
-      and the category map's only consumer iterates; preserve exact summary accumulation order.
-      Separately evaluate moving archive-owner records and comparison arena initial-block policies.
+- [x] O16a3: Qualify appended borrowed comparison categories and transparent contribution lookup
+      on both hosts, preserving exact accumulation order and ownership. Retain slower controls and
+      memory/footprint in [the qualification report](docs/benchmarks/comparison-category-sequence-20261104.md).
+- [ ] O16a4: Separately evaluate moving archive-owner records and comparison arena initial-block
+      policies; keep complete-tree and completed-frontier lifetime contracts distinct.
+- [ ] O16a5: Avoid constructing ordinary scope columns after comparison-summary emission when no
+      ordinary summaries remain. Preserve headers, status/patch/counts-only output and ordinary controls.
 - [ ] O16b: Add and qualify completed-directory/frontier traversal before enabling bounded paired
       comparison. Preserve empty/ignored completion, ordering, ignore inheritance, errors, effects,
       archives and deferred selections; retain explicit fallbacks and avoid repeated shallow scans.

@@ -3452,6 +3452,20 @@ and the only category-map consumer iterates. Preserve exact merge/accumulation o
 replacing it with hash iteration. Moving temporary archive-owner records and smaller initial arena
 blocks remain separate measured policies, not assumed wins. O16b/O17/O18 remain open.
 
+### O16a3: appended borrowed category records
+
+Comparison pairs are unique and already globally sorted; the category map's sole consumer iterates.
+Retain a sequence of path/static-label views, with conditional lower-bound capacity reservation,
+and use transparent contribution lookups instead of materializing temporary keys. Tree owners stay
+alive through final consumption; this borrowing contract does not permit early frontier release.
+[The complete qualification](benchmarks/comparison-category-sequence-20261104.md) retains all
+native/kernel cases, copies, memory, footprint and repeatable small Linux patch/extension costs.
+Named native summaries gain modestly on both hosts. No universal gain or completed streaming claim.
+
+A separate output candidate can return after comparison-count emission when the ordinary summary
+vector is empty: current code still constructs scope columns, labels and joins even then. Preserve
+header/count emission first and qualify status/patch/counts-only plus ordinary-summary controls.
+
 ### O16b/O17/O18: completed-frontier integration remains open
 
 The current walker exposes visits, not completed-directory events or a resumable cursor. Absence
@@ -3474,6 +3488,46 @@ byte-bounded queues. Directory jobs must remain leaf work and never wait for nes
 own saturated pool. O08 task storage and O11 warm participation do not establish that a shared
 executor is faster. Global sorting/effects/deferred/archive cases need explicit fallback contracts
 until independently qualified.
+
+#### Frontier ownership and errors still need an explicit contract
+
+Visit metadata/path lifetimes are callback-bounded; a completed-directory event alone does not
+lease them. Start with owned bounded batches. Empty/unmatched/ignored directories need positive
+progress tokens; EOF and early preparation/Walk returns must settle negotiation and wake blocked
+publishers before joining. Reuse the existing left auxiliary invocation and caller-side right walk,
+with leaf workers, byte/token bounds and at most one explicitly oversized wide listing.
+
+Component-ordered frontiers differ from global bytewise path order. Preserve traversal-error
+precedence and suppress summaries/comparison diagnostics until both walks succeed. Keeping the
+smallest comparison error key can preserve deterministic final diagnostics but may perform reads
+the old fail-fast batches never reached; qualify actual read/error traces and resource bounds
+before selecting that contract. Existing intra-batch parallel reads do not prove arbitrary stateful
+backend equivalence. Pure simple integer summaries are the first eligible subset; effects, custom
+per-entry reductions, content-match publication and archives need explicit fallbacks.
+
+#### Native name/file listing allocation remains a separate hypothesis
+
+LocalFs::ReadDir currently joins and owns every full child path. Walker::StatEntries moves those
+strings into Stated, which also retains full metadata even for known regular-file type hints under
+Never/OnDemand demand. Avoiding stat does not remove path allocations or wide traversal records.
+
+Measure an optional native name-listing capability with owned names/type hints and a directory
+prefix, preserving controlled VFS delegation and the existing backend fallback. A coordinator-owned
+reusable full-path scratch can satisfy the existing callback-bounded Visit contract; directories,
+unknown types, queued snapshots and read-ahead still need appropriate ownership. Merely moving
+JoinPath into another full-path vector does not remove allocation. Preserve exact root/slash spelling,
+ignore/prune/depth/symlink semantics and all queued/lazy metadata lifetimes.
+
+Separately evaluate compact hint/full listing representations rather than optional<Metadata> or
+per-file shared allocations. Full eager-stat paths keep their established complete storage and
+parallel admission. No locks are needed for one file owned by one accessor. Preserve stable metadata
+references through lazy load. Test capability-enabled in-memory and native broad/deep trees,
+10/100/1k/10k/100k files, 1/3 workers, errors and fallbacks; count allocations/stat calls and measure
+native time/RSS before adoption. No implementation or gain is claimed here.
+
+SummaryAccumulator::For also repeats outer/inner lookups for a single whole-run aggregate. A direct
+table is another measured policy only after all combined/per-root/histogram/export consumers share
+an explicit contract. Neither this nor listing/metadata work is part of O16a3.
 
 ### O19a: reuse archive input storage
 

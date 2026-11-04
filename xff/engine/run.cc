@@ -3279,7 +3279,7 @@ struct SummaryAccumulator {
   std::size_t sinks = 0;
   bool per_root = false;
   bool per_entry = false;
-  std::map<std::string, std::map<std::string, SummaryTables>> partitions;
+  std::map<std::string, std::map<std::string, SummaryTables, std::less<>>> partitions;
 
   SummaryTables& For(const Visit& visit) {
     auto& tables = partitions[per_root ? std::string(visit.root) : ""]
@@ -4356,7 +4356,7 @@ struct TreeCompareCounts {
   }
 };
 
-SummaryTables ComparisonContribution(const SummaryAccumulator& source, const std::string& path) {
+SummaryTables ComparisonContribution(const SummaryAccumulator& source, std::string_view path) {
   SummaryTables result(source.sinks);
   for (const auto& [root, entries] : source.partitions) {
     const auto found = entries.find(path == "." ? "" : path);
@@ -4427,10 +4427,17 @@ SummaryTables AggregatedComparisonColumn(
   return SummaryTables(sinks);
 }
 
+// Comparison pairs already arrive once in global path order. Both trees own these
+// path bytes until after summary consumption; category labels have static storage.
+struct ComparisonCategoryRecord {
+  std::string_view path;
+  std::string_view category;
+};
+
 std::vector<SummaryScopeColumn> ComparisonScopeColumns(
     const std::vector<std::string>& scopes,
     const std::array<SummaryAccumulator, 2>& sides,
-    const std::map<std::string, std::string>& categories,
+    absl::Span<const ComparisonCategoryRecord> categories,
     std::size_t sinks) {
   const bool aggregated = !sides.at(0).per_entry && !sides.at(1).per_entry;
   std::vector<SummaryScopeColumn> columns;
@@ -4611,7 +4618,7 @@ RunResult RunTreeCompare(
     return RunResult{.errors = 2};
   }
   std::array<SummaryAccumulator, 2> side_summaries;
-  std::map<std::string, std::string> categories;
+  std::vector<ComparisonCategoryRecord> categories;
   std::array<ComparisonEntries, 2> entries;
   std::mutex callback_mutex;
   std::set<std::string> reported_errors;
@@ -4657,9 +4664,10 @@ RunResult RunTreeCompare(
     return RunResult{.errors = std::max(left_run_result.errors, right_result.errors)};
   }
 
+  const bool retain_categories = side_summaries.at(0).per_entry || side_summaries.at(1).per_entry;
   const auto record_category = [&](std::string_view path, std::string_view category) {
-    if (side_summaries.at(0).per_entry || side_summaries.at(1).per_entry) {
-      categories.emplace(path, category);
+    if (retain_categories) {
+      categories.push_back({.path = path, .category = category});
     }
   };
   bool different = false;
@@ -4680,6 +4688,9 @@ RunResult RunTreeCompare(
   const auto selected = std::array{selection.left_only, selection.right_only, selection.different, selection.identical};
   const auto& left_entries = entries[0].Ordered();
   const auto& right_entries = entries[1].Ordered();
+  if (retain_categories) {
+    categories.reserve(std::max(left_entries.size(), right_entries.size()));
+  }
   auto left = left_entries.begin();
   auto right = right_entries.begin();
   while (left != left_entries.end() || right != right_entries.end()) {
