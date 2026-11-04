@@ -276,6 +276,28 @@ void EncodedRecordBuffer::EncodeRow(const std::vector<std::string>& cells) {
   bytes_.push_back('\n');
 }
 
+void DelimitedRow::Append(std::string_view cell) {
+  if (format_ != Format::kCsv && format_ != Format::kTsv) {
+    return;
+  }
+  if (!first_) {
+    bytes_.push_back(format_ == Format::kTsv ? '\t' : ',');
+  }
+  first_ = false;
+  if (format_ == Format::kTsv) {
+    AppendTsvField(cell, bytes_);
+  } else {
+    AppendCsvField(cell, bytes_);
+  }
+}
+
+std::string DelimitedRow::Finish() && {
+  if (format_ == Format::kCsv || format_ == Format::kTsv) {
+    bytes_.push_back('\n');
+  }
+  return std::move(bytes_);
+}
+
 std::string EncodeTabularRow(Format format, const std::vector<std::string>& cells) {
   switch (format) {
     case Format::kCsv:

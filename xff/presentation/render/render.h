@@ -203,6 +203,21 @@ std::string RenderTable(
 // kNul / kJsonl are not rows -- all of those yield an empty string.
 std::string EncodeTabularRow(Format format, const std::vector<std::string>& cells);
 
+// Builds one owned CSV/TSV row without owning intermediate cells. Append consumes each
+// borrowed value synchronously; Finish includes the newline. Other formats yield no bytes.
+class DelimitedRow final {
+ public:
+  explicit DelimitedRow(Format format) : format_(format) {}
+
+  void Append(std::string_view cell);
+  std::string Finish() &&;
+
+ private:
+  Format format_;
+  bool first_ = true;
+  std::string bytes_;
+};
+
 // Builds a directory tree from the matched paths and renders it (--format=tree). Each Add()
 // splices a path into a shared-prefix child map, so a match implies its ancestor directories as
 // branch nodes and memory is O(distinct path components), not O(rendered bytes). Render() draws

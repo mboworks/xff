@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Encode CSV/TSV summary cells directly, reducing intermediate allocations while preserving exact output and borrowed-value lifetimes.
+
 - Use fixed-size summary metric storage and move formatted numbers while preserving exact output and missing-cell behavior.
 
 - Construct comparison-summary rows only for the selected format, preserving sparse metrics and exact output while reducing formatting and copying.
