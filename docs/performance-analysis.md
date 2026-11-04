@@ -3876,3 +3876,19 @@ mechanism/native cohorts, not interchangeable claims. Preserve the roughly 1.9x 
 encoder cost (5.0 ns versus 2.6 ns), short/control variation and all raw measurements in the evidence.
 No new worker, lock, I/O path, flag or default output byte is introduced. Borrowed field-value
 lifetimes, reusable numeric summary cells and streaming/backpressure remain open under O22c2.
+
+### O21b5: preserve short-word batches and reuse long-word scratch
+
+The [paired word-construction report](benchmarks/word-set-insertion-20261104.md) retains baseline,
+unconditional direct-move/direct-copy experiments and a separately measured final policy. Both
+direct policies regress large short-word inputs by roughly 5-7% on macOS/Linux. Preserve the
+inline-length word batch, insert longer keys directly from reusable scratch, then move the short
+batch into the set. Keys remain owned; scratch can coexist temporarily with a copied long key.
+The string library's empty capacity supplies the cutoff rather than a new tuning constant/flag.
+
+Final native long-word medians improve about 4.3% macOS and 8.0% Linux, with short-word confirmation
+cohorts matching or improving their identical-binary controls. Keep primitive costs, slower cells,
+all separate measurement cohorts and tracked-capacity diagnostics in the evidence. The selected
+source passes both full release suites, relevant sanitizers and bounded opaque-byte fuzzing.
+There is no new worker, lock, filesystem path, dependency or score semantic. Reference grouping
+and candidate indexing remain open under O21b; this does not complete those larger algorithms.

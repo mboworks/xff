@@ -21,28 +21,32 @@ bool IsByteWordChar(char value) {
   return static_cast<unsigned char>(value) >= 0x80 || absl::ascii_isalnum(value);
 }
 
-std::vector<std::string> OwnedByteWords(std::string_view text) {
-  std::vector<std::string> words;
+absl::flat_hash_set<std::string> OwnedSingleByteShingles(std::string_view text) {
+  // Batch inline strings as before; avoid a vector of separately allocated long words.
+  static constexpr std::size_t kInlineWordBytes = std::string{}.capacity();
+  std::vector<std::string> short_words;
+  absl::flat_hash_set<std::string> result;
   std::string word;
+  const auto collect_word = [&] {
+    if (word.size() <= kInlineWordBytes) {
+      short_words.push_back(word);
+    } else {
+      result.insert(word);
+    }
+    word.clear();
+  };
   for (const char value : text) {
     if (IsByteWordChar(value)) {
       word.push_back(absl::ascii_tolower(value));
     } else if (!word.empty()) {
-      words.push_back(std::move(word));
-      word.clear();
+      collect_word();
     }
   }
   if (!word.empty()) {
-    words.push_back(std::move(word));
+    collect_word();
   }
-  return words;
-}
-
-absl::flat_hash_set<std::string> OwnedSingleByteShingles(std::string_view text) {
-  auto words = OwnedByteWords(text);
-  absl::flat_hash_set<std::string> result;
-  for (auto& word : words) {
-    result.insert(std::move(word));
+  for (auto& short_word : short_words) {
+    result.insert(std::move(short_word));
   }
   return result;
 }

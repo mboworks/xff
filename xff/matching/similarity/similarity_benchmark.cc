@@ -83,6 +83,74 @@ void Args(benchmark::Benchmark* benchmark) {
   }
 }
 
+enum class WordSetMode { kFreshPercent, kFreshThreshold, kReferencePercent, kReferenceThreshold };
+
+void MeasureWordInsertion(benchmark::State& state, WordSetMode mode) {
+  const auto count = static_cast<std::size_t>(state.range(0));
+  const auto unique = static_cast<std::size_t>(state.range(1));
+  const auto padding = static_cast<std::size_t>(state.range(2));
+  std::string source;
+  std::string candidate;
+  for (std::size_t index = 0; index < count; ++index) {
+    const auto number = std::to_string(index % unique);
+    source.append(" word").append(number).append(padding, 'x');
+    candidate.append(",WORD").append(number).append(padding, 'X');
+  }
+  const ByteWordShingleReference reference(source, 1);
+  if (WordShinglePercent(candidate, source, 1) != 100 || reference.Percent(candidate) != 100
+      || !WordShingleAtLeast(candidate, source, 1, 100) || !reference.AtLeast(candidate, 100)) {
+    state.SkipWithError("single-word normalization differs for equivalent word sets");
+    return;
+  }
+  for (auto iteration : state) {
+    benchmark::DoNotOptimize(iteration);
+    switch (mode) {
+      case WordSetMode::kFreshPercent: benchmark::DoNotOptimize(WordShinglePercent(candidate, source, 1)); break;
+      case WordSetMode::kFreshThreshold: benchmark::DoNotOptimize(WordShingleAtLeast(candidate, source, 1, 100)); break;
+      case WordSetMode::kReferencePercent: benchmark::DoNotOptimize(reference.Percent(candidate)); break;
+      case WordSetMode::kReferenceThreshold: benchmark::DoNotOptimize(reference.AtLeast(candidate, 100)); break;
+    }
+  }
+  state.SetItemsProcessed(state.iterations() * static_cast<std::int64_t>(count));
+}
+
+void RegisterWordInsertion() {
+  struct Mode {
+    std::string_view name;
+    WordSetMode mode;
+  };
+
+  static constexpr auto kModes = std::to_array<Mode>({
+      {
+          .name = "fresh-percent",
+          .mode = WordSetMode::kFreshPercent,
+      },
+      {
+          .name = "fresh-threshold",
+          .mode = WordSetMode::kFreshThreshold,
+      },
+      {
+          .name = "reference-percent",
+          .mode = WordSetMode::kReferencePercent,
+      },
+      {
+          .name = "reference-threshold",
+          .mode = WordSetMode::kReferenceThreshold,
+      },
+  });
+  for (const auto& entry : kModes) {
+    const std::string name = "similarity/word-insertion/" + std::string(entry.name);
+    benchmark::RegisterBenchmark(
+        name, [mode = entry.mode](benchmark::State& state) { MeasureWordInsertion(state, mode); })
+        ->ArgsProduct({{1, 32, 2'048}, {1, 32, 2'048}, {0, 32, 256}})
+        ->UseRealTime()
+        ->Unit(benchmark::kMicrosecond)
+        ->Repetitions(9)
+        ->MinTime(0.02)
+        ->MinWarmUpTime(0.01);
+  }
+}
+
 void RegisterAll() {
   struct Shape {
     std::string_view name;
@@ -248,6 +316,7 @@ void RegisterThresholds() {
 
 int main(int argc, char** argv) {
   xff::similarity::RegisterAll();
+  xff::similarity::RegisterWordInsertion();
   xff::similarity::RegisterThresholds();
   benchmark::Initialize(&argc, argv);
   benchmark::RunSpecifiedBenchmarks();

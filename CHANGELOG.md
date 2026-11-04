@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reduce long-word similarity construction churn while preserving fast short-word batches, exact scores and owned reference lifetimes.
+
 - Reuse coordinator-owned column cells and bounded CSV/TSV row storage while preserving exact output and buffered ownership.
 
 - Stop similarity verification once exact rounded threshold bounds decide the match, preserving fresh reads and exact percentage APIs.
