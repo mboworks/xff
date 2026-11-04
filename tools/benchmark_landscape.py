@@ -6,6 +6,7 @@ Supply the built Three.js renderer with --renderer-js; no network is used by the
 """
 
 import argparse
+import hashlib
 import html
 import itertools
 import json
@@ -13,6 +14,7 @@ import math
 import os
 from pathlib import Path
 import re
+import statistics
 
 import benchmark_datasets
 import benchmark_matrix as matrix
@@ -83,6 +85,11 @@ def ordered_pairs(rows, mode):
             common = profiles[left].keys() & profiles[right].keys()
             distances[i, j] = (sum(abs(profiles[left][k] - profiles[right][k]) for k in sorted(common))
                                / len(common) if common else math.inf)
+    return neighbor_chain(pairs, distances, means)
+
+
+def neighbor_chain(pairs, distances, means):
+    """Select a deterministic shortest path, with the better endpoint inward."""
     n = len(pairs)
     if n <= 16:
         # Exact shortest Hamiltonian path; each state holds cost and deterministic tie-break path.
@@ -121,6 +128,95 @@ def ordered_pairs(rows, mode):
     result = [pairs[i] for i in min(candidates)[1]]
     if means[result[0]] < means[result[-1]]:
         result.reverse()
+    return result
+
+
+def series_order_key(record):
+    """Keep measurement series and workload contracts separate, allowing grid growth."""
+    report = record['tool_comparisons']
+    # Legacy reports omit these fields; unknown stays distinct from known contracts.
+    contract = dict(report['contract'])
+    contract.setdefault('storage', {})
+    contract.setdefault('affinity_by_cpu_count', {})
+    known = dict(record, tool_comparisons=dict(report, contract=contract))
+    policy = benchmark_normalization.compatibility(known)
+    # Ordering compares dimensionless within-run ratios, not elapsed-time baselines.
+    # Mach-O launcher build IDs vary with sandbox/debug paths. Preserve the accounting
+    # method but do not split this presentation-only order by executable fingerprint.
+    if 'resource_accounting' in policy:
+        policy['resource_accounting'] = {key: value for key, value in policy['resource_accounting'].items()
+                                         if key != 'sha256'}
+    series = record['series'] if benchmark_records.is_local(record) else 'CI'
+    return json.dumps([benchmark_records.platform_key(record), series, policy], sort_keys=True)
+
+
+def common_task_order(revisions):
+    """Minimize median neighbor distances across revisions, not just one surface."""
+    profiles = []
+    performances = {}
+    for rows in revisions:
+        profile = {}
+        for row in rows:
+            pair = (row['task'], row['reference'])
+            cell = (row['dataset'], row['cpus'], row['files'])
+            cells = profile.setdefault(pair, {})
+            if cell in cells:
+                raise ValueError('duplicate comparison cell')
+            # Symmetric logarithmic ratios keep one extreme slowdown from dominating.
+            cells[cell] = -math.log10(row['xff_over_reference'])
+        for pair, cells in profile.items():
+            performances.setdefault(pair, []).append(statistics.fmean(cells.values()))
+        profiles.append(profile)
+    pairs = sorted(performances)
+    means = {pair: statistics.median(values) for pair, values in performances.items()}
+    distances = {}
+    for i, left in enumerate(pairs):
+        for j, right in enumerate(pairs):
+            values = []
+            for profile in profiles:
+                a, b = profile.get(left, {}), profile.get(right, {})
+                common = a.keys() & b.keys()
+                if common:
+                    values.append(statistics.fmean(abs(a[cell] - b[cell]) for cell in sorted(common)))
+            distances[i, j] = statistics.median(values) if values else math.inf
+    order = neighbor_chain(pairs, distances, means) if pairs else []
+    return dict(recipe='median-shared-log-ratio-distance-v1', revisions=len(profiles), pairs=order)
+
+
+def history_task_orders(records):
+    """Select one report per merged revision and share its order with previews."""
+    groups = {}
+    for identity, record in records:
+        if not record.get('tool_comparisons') or benchmark_records.is_preview(record):
+            continue
+        commit = record.get('head') or record.get('source', {}).get('head_sha')
+        if not commit:
+            continue
+        key = series_order_key(record)
+        rank = ((record['completed_at'], identity) if benchmark_records.is_local(record)
+                else benchmark_records.preference(record))
+        selected = groups.setdefault(key, {})
+        if commit not in selected or rank > selected[commit][0]:
+            selected[commit] = (rank, identity, record)
+    models = {}
+    for key, selected in groups.items():
+        ordered = sorted(selected.values(), key=lambda value: (
+            benchmark_records.reference_time(value[2]), value[1]))
+        model = common_task_order([matrix.relative_results(record['tool_comparisons'])
+                                   for _, _, record in ordered])
+        model['series'] = hashlib.sha256(key.encode()).hexdigest()
+        models[key] = model
+    result = {}
+    for identity, record in records:
+        if not record.get('tool_comparisons'):
+            continue
+        model = models.get(series_order_key(record))
+        if model is not None:
+            # A new preview-only task appends; it never rearranges merged history.
+            pairs = [tuple(pair) for pair in model['pairs']]
+            extras = sorted({(row['task'], row['reference'])
+                             for row in matrix.relative_results(record['tool_comparisons'])} - set(pairs))
+            result[identity] = dict(model, pairs=[*pairs, *extras])
     return result
 
 
@@ -173,7 +269,7 @@ def normalized_hover(text, value):
     return text.removesuffix('</tbody></table>') + hover_rows(rows) + '</tbody></table>'
 
 
-def figure(report, order='similarity', metric='percent', groups=None, normalization=None):
+def figure(report, order='similarity', metric='percent', groups=None, normalization=None, task_order=None):
     """Keep CPU/tree quadrants disconnected; never fill missing observations."""
     if metric not in ('percent', 'factor'):
         raise ValueError('unknown comparison metric')
@@ -186,7 +282,8 @@ def figure(report, order='similarity', metric='percent', groups=None, normalizat
             cpu not in report['contract']['cpu_counts'] for cpu in groups):
         raise ValueError('landscape requires two distinct positive allocation groups')
     rows = [row for row in rows if row['cpus'] in groups]
-    pairs = ordered_pairs(rows, order)
+    pairs = ([tuple(pair) for pair in task_order['pairs']]
+             if task_order is not None and order == 'similarity' else ordered_pairs(rows, order))
     if not pairs:
         raise ValueError('no comparable measurements')
     lookup = {}
@@ -279,15 +376,17 @@ def figure(report, order='similarity', metric='percent', groups=None, normalizat
     return result
 
 
-def figures(report, normalization=None):
-    result = {mode: {metric: figure(report, mode, metric, normalization=normalization) for metric in ('percent', 'factor')}
+def figures(report, normalization=None, task_order=None):
+    result = {mode: {metric: figure(report, mode, metric, normalization=normalization, task_order=task_order) for metric in ('percent', 'factor')}
               for mode in ORDER_LABELS}
     result['overview'] = benchmark_overview.summarize(report)
+    if task_order is not None:
+        result['task_order'] = task_order
     if len(report['contract']['cpu_counts']) > 2:
         result['allocation_pairs'] = [
             dict(value=f'{left}/{right}',
                  label=f'{matrix.allocation_label(report, left)} / {matrix.allocation_label(report, right)}',
-                 figures={mode: {metric: figure(report, mode, metric, (left, right), normalization)
+                 figures={mode: {metric: figure(report, mode, metric, (left, right), normalization, task_order)
                                  for metric in ('percent', 'factor')} for mode in ORDER_LABELS})
             for left, right in itertools.combinations(sorted(report['contract']['cpu_counts']), 2)]
     return result
@@ -324,6 +423,9 @@ def history_panel(catalog):
             '+/- zoom and Home reset. Percentage = 100 &times; (1 - xff/reference time); '
             'logarithmic = log10(reference/xff time). Green is faster, red slower. '
             'Surfaces connect measured neighbors; they are not predictions.</p>'
+            '<p>Similarity uses one shared order from compatible merged history, fixed across versions, '
+            'worker pairs and scales. Missing tasks keep empty slots. New preview-only tasks append. '
+            'Average order describes the selected report; Alphabetical always follows names.</p>'
             '</div></details>'
             '<details data-view-panel class="landscape-card" open>'
             '<summary><strong>View</strong><span data-view-platform>No measured datasets</span></summary>'
@@ -426,8 +528,8 @@ def binary_evidence(path, record):
     return benchmark_provenance.describe(record)
 
 
-def render(report, javascript, normalization=None):
-    plots = figures(report, normalization)
+def render(report, javascript, normalization=None, task_order=None):
+    plots = figures(report, normalization, task_order)
     groups = allocation_groups(report)
     plot = json.dumps(plots, allow_nan=False, ensure_ascii=False).replace('<', '\\u003c')
     return ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
@@ -450,8 +552,10 @@ def render(report, javascript, normalization=None):
             'Blue spans +/-10 percentage points; dark red/green at -/+20 points brightens toward the extremes. Hover for timings and ratios. '
             'Surfaces interpolate neighboring measured points, including between categorical tasks; '
             'they are visual guides, not predictions. Gaps between CPU/tree groups are intentional.</p>'
-            '<p>Better profiles face the center on both tree halves. Similarity order minimizes '
-            'neighbor differences; it is not necessarily monotonic. Average order descends by mean '
+            '<p>Better profiles face the center on both tree halves. Published Similarity order uses '
+            'median neighbor differences across compatible merged history, fixed across versions, worker '
+            'pairs and scales. Standalone reports use their own profiles. Missing historical tasks keep '
+            'empty slots; order is not necessarily monotonic. Average order descends by mean '
             'relative performance. All file counts, CPU groups and tree shapes receive equal weight.</p>'
             '<p>Performance factor = reference time / xff time: 2x is twice as fast; 0.5x is half as fast. '
             'Factor heights and tick labels use log10: 0 is parity, +1 means 10x, -1 means 0.1x. Colors and task order keep the same meaning in both views.</p>'
@@ -502,6 +606,8 @@ def publish(root, javascript, previews=(), incremental=False, repository='mbowor
     preview_records = [(path, json.loads(path.read_text())) for path in previews]
     windows = benchmark_normalization.reference_windows([(path.relative_to(root).as_posix(), record)
                                                         for path, record in [*records, *preview_records]])
+    task_orders = history_task_orders([(path.relative_to(root).as_posix(), record)
+                                      for path, record in [*records, *preview_records]])
     for path, record in preview_records:
         relative = '../' * len(path.parent.relative_to(root).parts)
         path.with_name('index.html').write_text(benchmark_preview.render_report(record, repository, relative))
@@ -515,10 +621,11 @@ def publish(root, javascript, previews=(), incremental=False, repository='mbowor
         local = benchmark_records.is_local(record)
         preview = benchmark_records.is_preview(record)
         normalization = windows.get(path.relative_to(root).as_posix(), {})
+        task_order = task_orders.get(path.relative_to(root).as_posix())
         path.with_name('normalization.json').write_text(json.dumps(normalization, allow_nan=False), encoding='utf-8')
         if (source or local) and (not preview or path in previews):
             payload = path.with_name('landscape.json')
-            payload.write_text(json.dumps(figures(report, normalization), allow_nan=False), encoding='utf-8')
+            payload.write_text(json.dumps(figures(report, normalization, task_order), allow_nan=False), encoding='utf-8')
             contract = report.get('contract', {})
             platform = benchmark_records.platform_key(record) or contract.get('platform', 'Unknown platform')
             machine = contract.get('machine', record.get('contract', {}).get('machine', ''))
@@ -559,7 +666,7 @@ def publish(root, javascript, previews=(), incremental=False, repository='mbowor
                 raise ValueError('incomplete landscape section')
             text = before + after
         # Keep existing provenance, baseline tables and all detailed metrics intact.
-        document = render(report, '', normalization)
+        document = render(report, '', normalization, task_order)
         fragment = document.split('<h1>Benchmark comparison landscape</h1>', 1)[1].split('<h2>Measurements</h2>', 1)[0]
         script = html.escape(Path(os.path.relpath(asset, page.parent)).as_posix(), quote=True)
         fragment = fragment.replace('<script></script>', f'<script src="{script}"></script>')

@@ -4088,6 +4088,24 @@ that regression, while small-tree costs around 1-2% and a macOS long-name 0.44% 
 Full release suites, relevant sanitizers and a committed 5,003-entry listing regression qualify
 the selected representation. Compact hint/full metadata records remain open under O20b.
 
+
+### Shared benchmark-history task ordering
+
+Per-revision Similarity order can change the apparent surface geometry while the underlying
+matched performance values do not change. Publication now derives one deterministic neighbor
+chain from median per-revision distances between symmetric log-ratio profiles. Orient it once
+from series-wide endpoint performance and reuse it across versions, worker pairs and scales.
+Missing tasks keep their positions; preview-only tasks append without moving merged history.
+Raw measurements, reference windows and regression thresholds stay unchanged.
+
+The [40-report validation](benchmarks/shared-benchmark-order-20261104.md) found 19 order transitions
+across the latest 20 macOS reports, reduced to zero within the publication. Linux already kept one
+order in that sample. The shared arrangement can cost a little per-revision smoothness; retain
+actual distance distributions and never infer a speedup from surface shape. The launcher binary
+fingerprint is excluded only from this presentation key, with its method retained; strict timing
+and reference-window identities are unchanged.
+
+
 ### O20b: compact traversal metadata storage
 
 Sortable children retain owned strings, type/source hints, eager-success state and an OptionalRef
