@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "total_bytes": 616408884,
+  "total_bytes": 617573100,
   "sections": {
     "root": {
       "files": 34,
       "bytes": 543465
     },
-    "coverage": {
-      "files": 9075,
-      "bytes": 126525761
+    ".trunk": {
+      "files": 4,
+      "bytes": 3761
     },
     "benchmarks": {
       "files": 4319,
@@ -18,17 +18,17 @@
       "files": 21,
       "bytes": 126921
     },
-    "bazelmod": {
-      "files": 4,
-      "bytes": 9173
-    },
-    ".trunk": {
-      "files": 4,
-      "bytes": 3761
+    "coverage": {
+      "files": 9089,
+      "bytes": 127689977
     },
     "xff": {
       "files": 248,
       "bytes": 2147842
+    },
+    "bazelmod": {
+      "files": 4,
+      "bytes": 9173
     },
     "docs": {
       "files": 7,
@@ -46,13 +46,13 @@
       "files": 84,
       "bytes": 519549
     },
-    "releases": {
-      "files": 29,
-      "bytes": 6916561
-    },
     "site": {
       "files": 442,
       "bytes": 16899029
+    },
+    "releases": {
+      "files": 29,
+      "bytes": 6916561
     }
   },
   "coverage_detail_days": 7,
