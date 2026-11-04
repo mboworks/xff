@@ -3924,3 +3924,20 @@ affected sanitizers and actual scoped lint pass. Counts, sizes, denominators, or
 labels, sparse/zero cells and schemas remain unchanged. No new thread, lock, file-I/O path, flag
 or ownership wrapper is introduced. Fixed-arity numeric storage, borrowed structured cells and
 streaming/backpressure remain separate candidates.
+
+### O22c2e: fixed-size numeric summary storage
+
+The four metric strings now use owning `std::array` storage rather than a temporary vector.
+Final labeled rows reserve once and receive moved strings; CSV/TSV metric insertion also moves.
+The [two-platform numeric report](benchmarks/fixed-summary-metrics-20261104.md) compares the
+complete and display-only policies with an identical-binary control, 240 whole-engine cases
+and 164 exact-output native cases per host. Four balanced sessions retain fastest seven of nine.
+
+This is a modest allocation reduction: larger native cohorts generally improve around one percent
+on macOS and up to two percent for ordinary Linux tables, while comparison cohorts often stay
+near baseline. Retain slower cells: the largest Linux native ratio increase is 3.12%, about
+26 microseconds in a ten-file TSV command; the largest macOS increase is 0.86%. Neither JSON
+controls nor baseline-copy movement establishes a metric-allocation mechanism. No universal
+speedup or change to percentages, sparse cells, ordering, ownership, workers or VFS is claimed.
+Full release/sanitizer and actual changed-TU checks pass on both hosts. Borrowed structured
+cells, percentage conversion, encoded summary buffers and streaming/backpressure remain separate.
