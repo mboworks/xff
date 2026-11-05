@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reduce small archive-directory result reallocations with bounded initial storage while preserving empty listings and exact results.
+
 - Select local clang-tidy consumers of changed headers exposed through Bazel include-prefix aliases.
 
 - Bound nonroot archive directory listing to its ordered subtree, reducing large archive traversal work while preserving direct children, ordering, metadata and errors.

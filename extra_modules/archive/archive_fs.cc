@@ -15,6 +15,8 @@
 
 #include "xff/archive/archive_fs.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <limits>
 #include <optional>
 #include <ranges>
@@ -359,6 +361,11 @@ absl::StatusOr<std::vector<vfs::Entry>> ArchiveFileSystem::ReadDir(std::string_v
     last = nodes_.lower_bound(boundary);
   }
   std::vector<vfs::Entry> entries;
+  if (first != last) {
+    // Bound initial storage independently of the number of descendants in this subtree.
+    constexpr std::size_t kInitialEntryCapacity = 16;
+    entries.reserve(std::min(nodes_.size(), kInitialEntryCapacity));
+  }
   for (const auto& [member_key, node] : std::ranges::subrange(first, last)) {
     if (ParentOf(member_key) != *key) {
       continue;  // only direct children; the walk recurses for the rest
