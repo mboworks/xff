@@ -250,10 +250,7 @@ regresses 3-11% across the two sessions. Keep this tradeoff visible when compari
       including physical/generated extension aliases. Reclassify only owned Bazel system includes
       in the temporary lint database; preserve foreign macro suppression and production commands.
       Verify relative/absolute ordinary/system paths and foreign negative controls with a real
-      clang-tidy preflight and regression tests, including nested third-party repositories with
-      an XFF module prefix. Repair newly exposed owned-header findings while preserving narrow
-      C ABI names and proven executor synchronization invariants. Ordinary affected-source scope
-      remains unchanged; lint-policy changes request a complete indexed CI pass.
+      clang-tidy preflight and regression tests. Translation-unit scope remains unchanged.
 - [ ] Profile the static-analyzer cost of `xff/engine/run_test.cc` and evaluate splitting
       it into focused test targets. LLVM 23 spent 1,626 seconds on this translation unit in
       CI run 36786917255; a local run took 712 seconds, and process sampling found the
@@ -506,6 +503,16 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       exact overflow/limit probes, EOF, changing capabilities and owned fallback. Keep range memory
       reservations and replay accounting; do not silently treat a zero-length read as proof of EOF.
       Keep [qualification, rejected fallback and slower controls](docs/benchmarks/direct-source-materialization-20261103.md).
+- [x] O19e: Reuse the archive session cursor for format detection, retaining full first-block replay,
+      complete short-read fallback, owned/caller-owned bounds and shared reservations. Preserve
+      separate prototype matrices, costs, errors and both-host qualification in
+      [the prefix reuse report](docs/benchmarks/archive-prefix-reuse-20261105.md).
+- [ ] O19f: Independently qualify ordered subtree bounds for archive directory listing; avoid scanning
+      unrelated nodes for every subdirectory. Preserve root/direct-child ordering, synthesized and
+      absolute members, metadata/errors and small/chain-shaped controls before claiming a win.
+- [ ] O19g: Independently qualify borrowed normalized archive lookup keys with transparent map/cache
+      lookup. Copy only at retained member-source ownership boundaries; test temporary caller paths,
+      long non-SSO keys, custom separators, absolute/nested paths and all existing normalization.
 - [x] O20a: Qualify native names-only directory listings and callback-scoped reusable leaf paths on
       both hosts, including controlled/rg VFS delegation, lazy metadata and exact owned fallbacks.
       Retain native and in-memory broad/deep 10-100k-file, 1/3-worker evidence in

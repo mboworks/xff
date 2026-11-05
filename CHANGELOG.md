@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse the archive session's first input block for format detection, reducing redundant cursor opens and nested replay while preserving short reads, errors and shared budgets.
+
 - Skip unused ordinary summary setup after comparison-only output while preserving headers and exact results.
 
 - Check XFF-owned headers in clang-tidy, repair newly exposed declarations, and distinguish direct Bazel extension aliases from nested third-party repositories while retaining system-macro isolation.

@@ -207,6 +207,7 @@ struct SourceSession {
   std::unique_ptr<vfs::ReadStream> stream;
   std::string buffer;
   std::unique_ptr<std::array<char, kBlockSize>> read_buffer;
+  std::optional<std::string_view> prefetched;
   std::string prefix;
   absl::Status error;
   std::optional<std::uint64_t> size;
@@ -221,6 +222,7 @@ struct SourceSession {
       return 0;
     }
     auto& self = *static_cast<SourceSession*>(data);
+    // Input/filter bidding has already consumed the prefetched block before a data skip.
     const auto skipped = self.stream->Skip(limit);
     if (!skipped.ok()) {
       self.error = skipped.status();
@@ -237,9 +239,17 @@ struct SourceSession {
 
   // Views remain valid until the next refill or session destruction.
   absl::StatusOr<std::string_view> Refill() {
+    if (prefetched) {
+      const std::string_view result = *prefetched;
+      prefetched.reset();
+      return result;
+    }
     if (!stream->SupportsReadInto()) {
       read_buffer.reset();
       MBO_ASSIGN_OR_RETURN(buffer, stream->Read(kBlockSize));
+      if (buffer.size() > kBlockSize) {
+        return absl::DataLossError("archive source returned more bytes than requested");
+      }
       return std::string_view(buffer);
     }
     if (!read_buffer) {
@@ -281,6 +291,7 @@ struct SourceSession {
       return ARCHIVE_FATAL;
     }
     self.stream = std::move(*stream);
+    self.prefetched.reset();
     return offset;
   }
 
@@ -312,9 +323,18 @@ absl::StatusOr<std::unique_ptr<SourceSession>> OpenSourceSession(const vfs::Shar
   if (!session->handle) {
     return absl::UnavailableError("cannot enable archive readers");
   }
-  MBO_ASSIGN_OR_RETURN(const auto prefix, vfs::ReadSourceRange(*source, 0, 4));
-  session->prefix = prefix.bytes;
-  if (prefix.bytes == "xar!") {
+  MBO_ASSIGN_OR_RETURN(const auto first, session->Refill());
+  if (first.size() >= 4) {
+    session->prefix = first.substr(0, 4);
+  } else {
+    // A short first read need not mean EOF; preserve the existing complete format probe.
+    MBO_ASSIGN_OR_RETURN(const auto prefix, vfs::ReadSourceRange(*source, 0, 4));
+    session->prefix = prefix.bytes;
+  }
+  // Retain the full normal block, avoiding a separate cursor without a four-byte first callback.
+  // Its view borrows the session-owned storage until Read delivers it or Seek invalidates it.
+  session->prefetched = first;
+  if (session->prefix == "xar!") {
     ::archive_read_set_seek_callback(session->handle.get(), &SourceSession::Seek);
   }
   if (::archive_read_open2(
