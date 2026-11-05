@@ -2,16 +2,16 @@
   "schema": 1,
   "target": "pr/1098",
   "source": {
-    "created_at": "2026-11-05T00:42:30Z",
-    "started_at": "2026-11-05T00:42:30Z",
-    "completed_at": "2026-11-05T02:16:35Z",
-    "run_id": 41943323241,
+    "created_at": "2026-11-05T06:00:48Z",
+    "started_at": "2026-11-05T06:00:48Z",
+    "completed_at": "2026-11-05T07:21:33Z",
+    "run_id": 41977589356,
     "run_attempt": 1,
-    "head_sha": "fc31e2d4e43e572154aa4aa83617ae2a7b25869d"
+    "head_sha": "877c54b31bed8f07bc78908453bb925217f20dad"
   },
   "coverage": {
     "lines": {
-      "covered": 30872,
+      "covered": 30873,
       "total": 31751,
       "percent": 97.23
     },
@@ -21,9 +21,9 @@
       "percent": 98.18
     },
     "branches": {
-      "covered": 16087,
+      "covered": 16085,
       "total": 17392,
-      "percent": 92.5
+      "percent": 92.49
     }
   },
   "pull_state": "open",
