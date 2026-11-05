@@ -4286,3 +4286,32 @@ implementation under multiple workers is a possible experiment, not a selected p
 always-bulk variants regressed wide parallel metadata roughly 6.6-7.7%. Keep broad/deep, small
 listings, symlink/directory fallbacks and metadata-demand controls; do not add speculative timers
 or duplicate count thresholds.
+
+### O19e: reuse the archive session format probe
+
+The existing source session reserves its normal 64 KiB input block and opens a read cursor, but
+then opens another cursor through `ReadSourceRange` solely to identify the four-byte XAR prefix.
+For nested sources that repeats parent-member decoding/replay. Prefill the normal session block,
+borrow its prefix for detection and replay that exact view to libarchive's first callback. Keep
+owned and caller-owned bounds checks, the complete independent fallback for initial reads shorter
+than four bytes, successful-seek invalidation and existing error/budget lifetimes. Automatic
+filter/format bidding consumes the pending block before member-data skips, so an initially added
+speculative skip guard is unnecessary; retain its coverage observation and distinct measured form.
+
+The [cross-platform qualification report](benchmarks/archive-prefix-reuse-20261105.md) retains
+separate initial and final identities, all 64 in-memory and 48 native cases per host, copied-parent
+controls, warmup/output checks, slower cells, RSS, binary footprint and source/check logs. Native
+nested cases improve substantially on both hosts; isolated tiny memory tests and flat ZIP controls
+include costs. This is a targeted replay reduction rather than a universal archive speedup or the
+unfinished immutable ZIP index/cache. Exact final numerical tables and qualification are in the
+linked report; no sanitizer elapsed time is used as performance evidence.
+
+Two further independent archive candidates remain open: O19f bounds `ReadDir` to the existing
+ordered subtree instead of scanning unrelated nodes for every directory; O19g borrows normalized
+member lookup keys while explicitly copying at retained cursor ownership boundaries. The former
+still scans grandchildren and does not solve the chain-shaped worst case. The latter needs real
+non-SSO keys on both platforms and temporary caller-path lifetime tests. Neither justifies adding
+locks, a second child index, per-file shared owners or an unbudgeted central-directory cache.
+Retained plan notes also identify map insertion/default-node construction as a separate hypothesis,
+with existing stored-member replacement and inode ordering preserved. No gain is claimed until
+these candidates are independently measured and qualified.

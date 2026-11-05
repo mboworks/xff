@@ -56,9 +56,11 @@ struct ReadOptions {
   bool direct_skip = false;
   bool fail_skip = false;
   bool oversized_skip = false;
+  bool fail_reopen = false;
 };
 
 struct ReadCounts {
+  std::size_t opens = 0;
   std::size_t owned = 0;
   std::size_t caller_owned = 0;
   std::size_t eof = 0;
@@ -84,6 +86,9 @@ class CountingStream final : public vfs::ReadStream {
     if (max_bytes > 4 && offset_ >= options_.fail_at) {
       return absl::DataLossError("injected archive source failure");
     }
+    if (options_.oversized_count) {
+      return std::string(max_bytes + 1, 'x');
+    }
     const auto count = std::min({max_bytes, options_.chunk, bytes_->size() - offset_});
     auto result = bytes_->substr(offset_, count);
     offset_ += count;
@@ -98,8 +103,9 @@ class CountingStream final : public vfs::ReadStream {
   absl::StatusOr<std::size_t> ReadInto(std::span<char> buffer) override {
     ++counts_->caller_owned;
     ++callbacks_;
-    // Alternating paths intentionally release the inactive buffer; addresses may change.
-    if (!options_.alternate_capability) {
+    // Alternating paths release inactive storage. Independent four-byte range probes advance
+    // through subspans; only the session's complete callback block has one stable base address.
+    if (!options_.alternate_capability && buffer.size() == kReadBlock) {
       if (first_buffer_.empty()) {
         first_buffer_ = buffer;
       } else {
@@ -161,6 +167,10 @@ class CountingSource final : public vfs::ReadSource {
         counts_(std::move(counts)) {}
 
   absl::StatusOr<std::unique_ptr<vfs::ReadStream>> Open() const override {
+    ++counts_->opens;
+    if (options_.fail_reopen && counts_->opens > 1) {
+      return absl::DataLossError("injected redundant reopen failure");
+    }
     return std::make_unique<CountingStream>(bytes_, options_, counts_);
   }
 
@@ -201,6 +211,46 @@ struct ArchiveSourceBufferTest : ::testing::Test {
     return bytes;
   }
 };
+
+TEST_F(ArchiveSourceBufferTest, NormalFormatProbeReusesOneCursorAndItsCompleteFirstBlock) {
+  for (const bool caller_owned : {false, true}) {
+    const auto counts = std::make_shared<ReadCounts>();
+    const auto budget = std::make_shared<vfs::ReadBudget>(kReadBlock);
+    const std::string content(3 * kReadBlock, 'x');
+    const auto source = std::make_shared<CountingSource>(
+        MakeTar(content), ReadOptions{.caller_owned = caller_owned, .fail_reopen = true}, counts, budget);
+    EXPECT_THAT(
+        vfs::ReadSourceBytes(*MemberReadSource(source, "data.txt"), content.size()), IsOkAndHolds(EqualsText(content)));
+    EXPECT_THAT(counts->opens, Eq(1));
+    EXPECT_THAT(counts->stable_storage, IsTrue());
+    EXPECT_THAT(budget->MemoryUsed(), Eq(0));
+  }
+}
+
+TEST_F(ArchiveSourceBufferTest, ShortFormatProbeKeepsCompleteDetectionAndReplaysOriginalBytes) {
+  for (const std::size_t chunk : {1UZ, 2UZ, 3UZ}) {
+    for (const bool caller_owned : {false, true}) {
+      const auto counts = std::make_shared<ReadCounts>();
+      const auto source = std::make_shared<CountingSource>(
+          MakeTar("short chunks"), ReadOptions{.caller_owned = caller_owned, .chunk = chunk}, counts);
+      EXPECT_THAT(
+          vfs::ReadSourceBytes(*MemberReadSource(source, "data.txt"), 20), IsOkAndHolds(EqualsText("short chunks")));
+      EXPECT_THAT(counts->opens, Eq(2));
+      EXPECT_THAT(counts->stable_storage, IsTrue());
+      EXPECT_THAT(source->Budget()->MemoryUsed(), Eq(0));
+    }
+  }
+}
+
+TEST_F(ArchiveSourceBufferTest, NormalListingNeedsNoSeparateFourByteProbeReservation) {
+  const auto counts = std::make_shared<ReadCounts>();
+  const auto budget = std::make_shared<vfs::ReadBudget>(kReadBlock);
+  const auto source = std::make_shared<CountingSource>(MakeTar("content"), ReadOptions{}, counts, budget);
+  EXPECT_THAT(
+      ListMembersOfSource(source), IsOkAndHolds(ElementsAre(Field("path", &Member::path, EqualsText("data.txt")))));
+  EXPECT_THAT(counts->opens, Eq(1));
+  EXPECT_THAT(budget->MemoryUsed(), Eq(0));
+}
 
 TEST_F(ArchiveSourceBufferTest, ListingSkipsLargeDirectPayloadAndReleasesTheSessionReservation) {
   const auto counts = std::make_shared<ReadCounts>();
@@ -295,7 +345,7 @@ TEST_F(ArchiveSourceBufferTest, ReusesTheCallerOwnedBufferForFullAndShortBlocks)
   const auto source =
       std::make_shared<CountingSource>(MakeTar(std::string(3 * kReadBlock, 'x')), ReadOptions{}, counts);
   EXPECT_THAT(ListMembersOfSource(source), IsOkAndHolds(ElementsAre(Field(&Member::path, EqualsText("data.txt")))));
-  EXPECT_THAT(counts->owned, Eq(0));  // The independent format probe also fills its reserved storage directly.
+  EXPECT_THAT(counts->owned, Eq(0));  // Format detection reuses this cursor and its reserved storage.
   EXPECT_THAT(counts->caller_owned, Gt(3));
   EXPECT_THAT(counts->stable_storage, IsTrue());
 }
@@ -345,6 +395,14 @@ TEST_F(ArchiveSourceBufferTest, CallerOwnedFailureAfterOpenIsNotReportedAsEndOfF
       MakeTar(std::string(3 * kReadBlock, 'x')), ReadOptions{.fail_at = kReadBlock}, std::make_shared<ReadCounts>());
   MBO_ASSERT_OK_AND_ASSIGN(auto stream, MemberReadSource(source, "data.txt")->Open());
   EXPECT_THAT(stream->Read(kReadBlock), StatusIs(absl::StatusCode::kDataLoss, HasSubstr("injected")));
+}
+
+TEST_F(ArchiveSourceBufferTest, RejectsOversizedOwnedReadBeforeFormatDetection) {
+  const auto counts = std::make_shared<ReadCounts>();
+  const auto source = std::make_shared<CountingSource>(
+      MakeTar("content"), ReadOptions{.caller_owned = false, .oversized_count = true}, counts);
+  EXPECT_THAT(ListMembersOfSource(source), StatusIs(absl::StatusCode::kDataLoss, HasSubstr("more bytes")));
+  EXPECT_THAT(source->Budget()->MemoryUsed(), Eq(0));
 }
 
 TEST_F(ArchiveSourceBufferTest, RejectsAnImpossibleReadCountBeforeCommittingTheStringSize) {
