@@ -17,6 +17,11 @@ load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 
 package(default_visibility = ["//visibility:private"])
 
+config_setting(
+    name = "linux",
+    constraint_values = ["@platforms//os:linux"],
+)
+
 # The runtime FUSE loader (epic #183, slice 1): dlopen the platform's fuse3 library and resolve the
 # mount server's symbol set, or report why the machine cannot mount. No build-time libfuse anywhere -
 # see MODULE.bazel for why that is the design, not an omission.
@@ -61,6 +66,28 @@ cc_test(
         ":fuse_loader_cc",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_test(
+    name = "fuse_api_unavailable_test",
+    size = "small",
+    srcs = ["fuse_api_unavailable_test.cc"],
+    # GNU ld wrapping applies only to this test executable, leaving installed FUSE and production
+    # loading untouched. It deterministically exercises degradation even on FUSE-enabled CI hosts.
+    linkopts = select({
+        ":linux": ["-Wl,--wrap=dlopen"],
+        "//conditions:default": [],
+    }),
+    linkstatic = True,
+    deps = [
+        ":fuse_api_cc",
+        ":fuse_loader_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )
