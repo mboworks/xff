@@ -121,7 +121,8 @@ Bazel alias paths so a checkout named `xff` does not accidentally include unrela
 headers. Before an enforcing run, a tiny real clang-tidy probe checks relative/absolute include
 paths and normal/system-header handling; suppressed owned findings or reported dependency findings
 fail before the expensive translation-unit pass. This diagnostic filter does not broaden the
-selected translation units.
+selected translation units. Changes to these lint-policy scripts request the full indexed
+translation-unit scope in CI, as toolchain and `.clang-tidy` changes already do.
 
 When Trunk manages Git hooks, its commit and push actions invoke the entire configured pre-commit
 suite, including formatting, repository policy and clang-tidy. Invoking only the clang-tidy hook
