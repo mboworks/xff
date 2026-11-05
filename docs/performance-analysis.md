@@ -4415,8 +4415,50 @@ runtime bytes and UUID are identical and both signatures verify. The original co
 qualification remains separate. The lossless content-addressed archive preserves every original
 text record and verified reconstruction, without duplicating large repeated captures.
 
-O20k is also still a plan: the Darwin decoder presently admits complete regular-file observations
-only. Any extension to non-followed symlinks must first prove the native returned attributes and
-every Metadata field against ordinary stat; missing file-specific attributes and followed targets
-retain existing fallback. Existing authorized VFS adapters suffice for reads, so this is no reason
-to introduce another host-mutation path or a new user-visible safety option.
+### O20k: complete native non-followed symlink observations, qualified
+
+[The complete report](benchmarks/native-symlink-observations-20261105.md) qualifies VLNK only under
+all existing complete returned-attribute, status, range and timestamp gates. Native type/mode bits
+are checked against the SDK; unsupported/missing attributes and other special types still request
+ordinary stat. The walker still re-stats followed symlinks, preserving dangling-target fallback,
+mount owners, errors/order and unchanged native backend stat-worker preference. No flag, worker,
+lock, dependency, new production syscall or mutation path is introduced.
+
+Native basic/birth requests match all 14 ordinary stat fields for short, long, absolute, dangling,
+directory-target, self-loop and hardlinked symlink objects. The initial std::filesystem hardlink
+fixture followed its source on Mac; its failure is retained, and the corrected test-only no-follow
+linkat fixture verifies the actual link inode before comparison. Pure bounded decoder tests cover
+complete link values, missing/invalid masks and every truncation alongside regular/special controls.
+
+Two hundred independent-output native cases on each host cover regular, symlink-only and mixed
+broad/deep 10-100k trees with one/three workers. Three balanced 9/7 sessions and copied-parent controls
+retain every slower cell. An additional sixteen independently checked -L cases use the same frozen
+images after qualification. Mac 100k-link summaries improve 55.26% broad serial, 33.83% deep serial
+and 26.13% deep three-worker; mixed serial summaries improve 20-27%. The largest new default-mode
+cost is mixed deep 100k three-worker CSV +1.98%; follow-mode controls range -0.83% to +1.70%.
+These small costs and RSS remain explicit. Linux parent/candidate/rebuilt whole executables are
+byte-identical, so Linux elapsed differences are unchanged-code noise controls rather than gains.
+
+All 331 release targets pass on both hosts with every extra and real required Linux FUSE. Five
+focused ASan suites pass on both, MSan/TSan on Linux; canonical changed coverage reaches 3/3 lines
+and 10/10 branches. All four actual affected translation units pass local canonical lint on both.
+Post-qualification rebuilt binaries exactly equal the frozen measured images; both executable sizes
+are unchanged. These private results do not replace normal signed hooks and new-PR own-head CI.
+The original O20i measurements remain their original regular-only-admission population; they must
+not be relabeled as O20k results. Native metadata field completeness, not an expression heuristic,
+removes repeated symlink stat work.
+
+O20j storage remains open: bulk public vector materialization can raise RSS. Pinned MBO segmented
+slots have empty inactive-union constructors and construct T only on append, so unused-element
+zeroing is not an established cost. FinishEntries already moves its observation owner; do not repeat
+obsolete claims of an extra engine copy. Any public representation change must preserve contiguous
+stat slices, wrapper delegation, metadata ownership, fallback, ordering and small/metadata-free
+controls. Expression-proved admission would now need to account for eligible regular files and
+non-followed symlinks, as well as directory/link/mount traversal semantics.
+
+Two narrower inspection-only follow-ups are tracked, not implemented: O20l places existing cheap
+observed-listing serial/small/mounted exits before an otherwise unnecessary missing-count scan.
+O08b moves the normally consumed task directory's cleanup outside the queue mutex, matching the
+already-correct abandoned-payload pattern. It need not retain path capacity, borrow caller storage
+or add another wrapper. Each needs independent both-host measurements and ownership/error/stop
+qualification; no speedup is inferred from removing an operation.
