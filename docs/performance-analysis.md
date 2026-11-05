@@ -4485,3 +4485,26 @@ agent sandbox. Keep all first-touch costs and the initial sandbox preflight. Exi
 storage reuse includes custom CSV rows; it is not multiple-row coalescing. No output API or buffering
 change follows from that diagnostic. Broader observation ownership/admission and bounded streaming
 remain independent unqualified work.
+
+### O20n: compile symlink target demand once
+
+[Both-host qualification](benchmarks/symlink-target-demand-20261105.md) adopts a small implicit-
+listing change. Compiled field-function bindings tell the command once whether templates or columns
+need a symlink target. Target-free fields skip ReadLink; required, qualified, transformed and
+repeated target fields retain exactly one read, and comparison equality remains independent.
+No per-entry name scan, metadata read, lock, new allocation owner or worker policy is introduced.
+
+All 228 immutable native cases pass three balanced nine-repeat sessions retaining the fastest
+seven on each host, with copied-parent controls and complete output oracles. Symlink metadata
+medians improve 20.71% on Linux and 18.45% on macOS; mixed metadata improves 12.01% and 9.05%.
+Other output families remain broadly flat. The report preserves slower cells, absolute differences
+and a separate unchanged-image Linux repeat instead of replacing the original data.
+
+All 331 release targets pass on both hosts; five affected ASan suites pass on each and the same
+MSan/TSan suites pass on Linux. Actual affected-header clang-tidy covers 47 translation units on
+each host. Canonical changed coverage is seven of seven lines and ten of ten branches, with no
+policy exception; final ordinary rebuilds exactly match the measured private images.
+
+The compact evidence archive preserves both full populations, original failures and counterexample
+records losslessly. Native input-path storage, owned-target transfer, short-target buffers and PGO
+are independent policies; their results must not be added to this change's measured percentages.

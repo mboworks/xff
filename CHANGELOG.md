@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Avoid reading symlink targets for target-free listing templates and table columns while preserving target output and comparisons.
+
 - Defer coverage report ingestion when its source workflow has already started a retry, preserving retained reports and metadata refresh until the new attempt completes.
 
 - Publish PR benchmark previews from the combined Linux/macOS comparison job while preserving exact artifact provenance and bounded retries of temporary GitHub read failures.

@@ -589,6 +589,20 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       [Two independent both-host native/archive trials](docs/benchmarks/native-metadata-followups-20261105.md)
       reject duplicated finalization and the compact single-condition form. Full correctness and
       improved generated code do not establish sufficient practical gain; preserve every counterexample.
+- [ ] O20m: Publish the retained short-target-buffer trial independently; no general cross-platform
+      benefit is established and no runtime change is selected from that trial.
+- [x] O20n: Compile symlink target demand from field bindings once before traversal, avoiding
+      unnecessary target reads in implicit listings. [Both-host qualification](docs/benchmarks/symlink-target-demand-20261105.md)
+      retains all outputs and slower controls; full native metadata medians improve on both hosts.
+      Target fields, transforms, repeated references, errors and comparison equality remain covered.
+- [ ] O20o: Evaluate reusing terminated native input-path storage for required ReadLink calls.
+      Preserve exact views, short/long fallback boundaries and ordinary stat/listing controls;
+      qualify independently of O20n, the short-target-buffer trial and PGO.
+- [ ] O20p: Measure transferring already-owned listing link targets rather than copying them.
+      Retain exact fields, buffered/queued output lifetimes and short/long target controls.
+- [ ] O23: Publish the completed native PGO evaluation and reproducible evidence before deciding
+      on a portable profile producer or release default; retain source/compiler/architecture
+      binding, original failed configurations and untrained held-out cases.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte
       equality shortcut on Linux/macOS. Preserve [rejected width-one paths and all controls](docs/benchmarks/byte-shingle-representations-20261102.md).
 - [x] O21b0: Remove the owning similarity binary-sniff prefix while preserving the exact window,

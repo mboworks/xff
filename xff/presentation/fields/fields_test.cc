@@ -180,6 +180,37 @@ TEST_F(FieldsTest, TimeZoneDemandIncludesTransformedTimeFields) {
   EXPECT_THAT(Template::Compile("{{mtime}} {name} {size} {text}").NeedsTimeZone(), IsFalse());
 }
 
+TEST_F(FieldsTest, LinkTargetDemandUsesCompiledBindingsIncludingTransforms) {
+  static constexpr auto kTargetFields = std::to_array<std::string_view>({
+      "{target}",
+      "prefix/{target}/suffix",
+      "{target:name}",
+      "{target:s/file/entry/}",
+      "{target:m/./x/;join(,)}",
+      "{{target}} {target}",
+  });
+  static constexpr auto kUnrelatedFields = std::to_array<std::string_view>({
+      "",
+      "target",
+      "{{target}}",
+      "{name} {path} {size} {type} {mtime}",
+      "{hash:s/target/other/}",
+      "{def.target}",
+  });
+  for (const std::string_view text : kTargetFields) {
+    SCOPED_TRACE(text);
+    const auto field = Template::Compile(text);
+    ASSERT_THAT(field.Validate(), IsOk());
+    EXPECT_THAT(field.NeedsLinkTarget(), IsTrue());
+  }
+  for (const std::string_view text : kUnrelatedFields) {
+    SCOPED_TRACE(text);
+    const auto field = Template::Compile(text);
+    ASSERT_THAT(field.Validate(), IsOk());
+    EXPECT_THAT(field.NeedsLinkTarget(), IsFalse());
+  }
+}
+
 TEST_F(FieldsTest, ContentDerivationUsesCompiledFieldsDefaultsAndTransforms) {
   const auto request =
       Template::Compile("{{hash}} {name} {hash} {hash:sha256} {hash:md5/base64} {lines:s/2/two/} {hash:s/a/b/}")

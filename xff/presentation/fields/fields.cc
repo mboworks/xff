@@ -1324,6 +1324,10 @@ bool Template::NeedsTimeZone() const {
   });
 }
 
+bool Template::NeedsLinkTarget() const {
+  return std::ranges::any_of(segments_, [](const Segment& segment) { return segment.fn == &TargetField; });
+}
+
 hash::DefaultUsage Template::HashDefaultsUsed() const {
   hash::DefaultUsage usage;
   for (const Segment& segment : segments_) {
