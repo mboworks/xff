@@ -25,14 +25,38 @@ class CacheSizeTest(unittest.TestCase):
     )
 
   def test_instrumented_compressed_allowance_is_scoped_and_inclusive(self):
-    for namespace in ("asan", "tsan", "msan", "coverage", "default", "clang-tidy"):
+    for namespace in ("asan", "tsan", "msan", "msan-ubuntu24", "coverage", "default", "clang-tidy"):
       with self.subTest(namespace=namespace):
         key = f"bazel-actions-v2-Linux-X64-{namespace}-{'a' * 64}-123-1"
-        limit = 1_200_000_000 if namespace == "msan" else 1_000_000_000
+        limit = 1_200_000_000 if namespace in ("msan", "msan-ubuntu24") else 1_000_000_000
         caches = [{"id": 1, "key": key, "sizeInBytes": limit},
                   {"id": 2, "key": key, "sizeInBytes": limit + 1}]
-        expected = [2] if namespace in ("asan", "tsan", "msan", "coverage") else [1, 2]
+        expected = [2] if namespace in ("asan", "tsan", "msan", "msan-ubuntu24", "coverage") else [1, 2]
         self.assertEqual(cache_size.oversized_cache_ids(caches), expected)
+
+  def test_host_specific_msan_preserves_cache_between_ordinary_and_msan_limits(self):
+    sizes = (699_999_999, 700_000_000, 800_000_000, 1_200_000_000, 1_200_000_001)
+    caches = [{"id": number, "sizeInBytes": size,
+               "key": f"bazel-actions-v2-Linux-X64-msan-ubuntu24-{'a' * 64}-{number}-1"}
+              for number, size in enumerate(sizes, start=1)]
+    self.assertEqual(cache_size.oversized_cache_ids(caches), [5])
+
+  def test_unregistered_host_suffixes_keep_the_ordinary_ceiling(self):
+    for namespace in ("msan-ubuntu240", "msan-ubuntu24-other", "msan-custom", "coverage-ubuntu24"):
+      with self.subTest(namespace=namespace):
+        caches = [{"id": 1, "sizeInBytes": 800_000_000,
+                   "key": f"bazel-actions-v2-Linux-X64-{namespace}-{'a' * 64}-123-1"}]
+        self.assertEqual(cache_size.oversized_cache_ids(caches), [1])
+
+  def test_cleanup_retains_newest_usable_host_specific_msan_cache(self):
+    def entry(number, size):
+      return {"id": number, "ref": "refs/heads/main", "sizeInBytes": size,
+              "createdAt": f"2026-09-{number:02d}T00:00:00Z",
+              "key": f"bazel-actions-v2-Linux-X64-msan-ubuntu24-{'a' * 64}-{number}-1"}
+    caches = [entry(1, 800_000_000), entry(2, 1_200_000_000), entry(3, 1_200_000_001)]
+    self.assertEqual(cache_size.obsolete_cache_ids(caches, set()), [1, 3])
+    self.assertEqual(cache_size.replaced_cache_ids(caches[:2], caches[1]["key"]), [1])
+    self.assertEqual(cache_size.replaced_cache_ids(caches, caches[2]["key"]), [])
 
   def test_empty_inventory_needs_no_cleanup(self):
     self.assertEqual(cache_size.oversized_cache_ids([]), [])

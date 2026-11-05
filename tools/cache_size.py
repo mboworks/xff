@@ -24,9 +24,10 @@ def oversized_cache_ids(caches: Iterable[dict[str, Any]]) -> list[int]:
   result = []
   for cache in caches:
     instrumented = re.fullmatch(
-        r"bazel-actions-v2-[^-]+-[^-]+-(asan|tsan|msan|coverage)-[0-9a-f]{64}-\d+-\d+",
+        r"bazel-actions-v2-[^-]+-[^-]+-(asan|tsan|msan(?:-ubuntu24)?|coverage)-[0-9a-f]{64}-\d+-\d+",
         cache.get("key", ""))
-    limit = MSAN_MAX_CACHE_BYTES if instrumented and instrumented[1] == "msan" else INSTRUMENTED_MAX_CACHE_BYTES
+    limit = (MSAN_MAX_CACHE_BYTES if instrumented and instrumented[1] in ("msan", "msan-ubuntu24")
+             else INSTRUMENTED_MAX_CACHE_BYTES)
     oversized = (cache["sizeInBytes"] > limit if instrumented
                  else cache["sizeInBytes"] >= MAX_CACHE_BYTES)
     if oversized:
