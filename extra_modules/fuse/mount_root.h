@@ -64,7 +64,7 @@ class MountRoot {
   ~MountRoot();
 
   // This run's root directory.
-  [[nodiscard]] std::string_view path() const { return path_; }
+  [[nodiscard]] std::string_view Path() const { return path_; }
 
   // A fresh mount-point directory for `container` under the root. The name is the container's
   // basename plus a counter when two containers share one basename - readable in `mount` output and

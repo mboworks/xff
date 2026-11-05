@@ -43,8 +43,8 @@ absl::Status Assign(const FuseLoader& loader, std::string_view name, Fn& target)
 
 absl::StatusOr<FuseApi> FuseApi::Resolve() {
   const FuseLoader& loader = FuseLoader::Instance();
-  if (!loader.available()) {
-    return absl::UnavailableError(loader.error());
+  if (!loader.Available()) {
+    return absl::UnavailableError(loader.Error());
   }
   // Mutated through the reference parameter of Assign below, which misc-const-correctness cannot
   // see through the template - the NOLINT documents the false positive rather than restructuring

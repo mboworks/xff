@@ -38,15 +38,15 @@ TEST_F(RunExecutorTest, RunsInlineUntilStartedAndRetainsWorkers) {
   EXPECT_THAT(executor.Submit([] { return std::this_thread::get_id(); }).Get(), Eq(coordinator));
 
   executor.Start(2);
-  EXPECT_THAT(executor.worker_count(), Eq(2));
+  EXPECT_THAT(executor.WorkerCount(), Eq(2));
   EXPECT_THAT(executor.Submit([] { return std::this_thread::get_id(); }).Get(), Ne(coordinator));
 
   executor.Start(3);
-  EXPECT_THAT(executor.worker_count(), Eq(3));
+  EXPECT_THAT(executor.WorkerCount(), Eq(3));
   executor.Start(1);
-  EXPECT_THAT(executor.worker_count(), Eq(3));
+  EXPECT_THAT(executor.WorkerCount(), Eq(3));
   executor.Start(100);
-  EXPECT_THAT(executor.worker_count(), Eq(3));
+  EXPECT_THAT(executor.WorkerCount(), Eq(3));
 }
 
 TEST_F(RunExecutorTest, ReusesTheSameBoundedThreadsAcrossPhases) {

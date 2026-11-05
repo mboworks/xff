@@ -68,7 +68,7 @@ TEST_F(MountRootTest, CreateMakesThePerRunTreeAndTheDestructorRemovesIt) {
   std::string path;
   {
     MBO_ASSERT_OK_AND_ASSIGN(const MountRoot root, MountRoot::Create(options_));
-    path = std::string(root.path());
+    path = std::string(root.Path());
     EXPECT_THAT(path, AllOf(HasSubstr(absl::StrCat(base_, "/xff/")), HasSubstr(absl::StrCat("/", ::getpid(), "-"))));
     EXPECT_THAT(stdfs::is_directory(path), IsTrue());
   }
@@ -98,7 +98,7 @@ TEST_F(MountRootTest, CreateUsesTheXdgRuntimeDirectoryByDefault) {
   ASSERT_THAT(restore_result, 0);
 
   MBO_ASSERT_OK_AND_ASSIGN(const MountRoot root, std::move(created));
-  EXPECT_THAT(root.path(), HasSubstr(absl::StrCat(base_, "/xff/")));
+  EXPECT_THAT(root.Path(), HasSubstr(absl::StrCat(base_, "/xff/")));
 }
 
 TEST_F(MountRootTest, EmptyXdgRuntimeDirectoryFallsBackToTheSystemTemporaryDirectory) {
@@ -117,7 +117,7 @@ TEST_F(MountRootTest, EmptyXdgRuntimeDirectoryFallsBackToTheSystemTemporaryDirec
   ASSERT_THAT(restore_result, 0);
 
   MBO_ASSERT_OK_AND_ASSIGN(const MountRoot root, std::move(created));
-  EXPECT_THAT(root.path(), Not(HasSubstr(base_)));
+  EXPECT_THAT(root.Path(), Not(HasSubstr(base_)));
 }
 
 TEST_F(MountRootTest, CreateReportsWhenTheSharedBaseCannotBeCreated) {
@@ -147,7 +147,7 @@ TEST_F(MountRootTest, MountPointAcceptsAContainerWithoutAParentPath) {
 
 TEST_F(MountRootTest, MountPointReportsANameCollision) {
   MBO_ASSERT_OK_AND_ASSIGN(MountRoot root, MountRoot::Create(options_));
-  const std::string collision = absl::StrCat(root.path(), "/box.tgz");
+  const std::string collision = absl::StrCat(root.Path(), "/box.tgz");
   std::ofstream blocker(collision);
   blocker << "not a directory";
   blocker.close();
@@ -158,10 +158,10 @@ TEST_F(MountRootTest, MountPointReportsANameCollision) {
 
 TEST_F(MountRootTest, AMovedFromRootOwnsNothing) {
   MBO_ASSERT_OK_AND_ASSIGN(MountRoot root, MountRoot::Create(options_));
-  const std::string path(root.path());
+  const std::string path(root.Path());
   {
     const MountRoot taken = std::move(root);
-    EXPECT_THAT(taken.path(), path);
+    EXPECT_THAT(taken.Path(), path);
   }
   // `taken` removed the tree; the moved-from `root` destructing later must not touch anything.
   EXPECT_THAT(stdfs::exists(path), IsFalse());
@@ -169,30 +169,30 @@ TEST_F(MountRootTest, AMovedFromRootOwnsNothing) {
 
 TEST_F(MountRootTest, MoveAssignmentTransfersOwnership) {
   MBO_ASSERT_OK_AND_ASSIGN(MountRoot source, MountRoot::Create(options_));
-  const std::string source_path(source.path());
+  const std::string source_path(source.Path());
   MountRoot destination = std::move(source);
   const MountRootOptions other_options{.base_override = absl::StrCat(base_, "/other")};
   MBO_ASSERT_OK_AND_ASSIGN(MountRoot replacement, MountRoot::Create(other_options));
-  const std::string replaced_path(replacement.path());
+  const std::string replaced_path(replacement.Path());
   replacement = std::move(destination);
-  EXPECT_THAT(replacement.path(), source_path);
+  EXPECT_THAT(replacement.Path(), source_path);
   EXPECT_THAT(stdfs::exists(replaced_path), IsFalse());
 }
 
 TEST_F(MountRootTest, MoveAssignmentIntoAMovedFromRootTransfersOwnership) {
   MBO_ASSERT_OK_AND_ASSIGN(MountRoot source, MountRoot::Create(options_));
   MountRoot destination = std::move(source);
-  const std::string path(destination.path());
+  const std::string path(destination.Path());
   source = std::move(destination);
-  EXPECT_THAT(source.path(), path);
+  EXPECT_THAT(source.Path(), path);
 }
 
 TEST_F(MountRootTest, SelfMoveAssignmentPreservesOwnership) {
   MBO_ASSERT_OK_AND_ASSIGN(MountRoot root, MountRoot::Create(options_));
-  const std::string path(root.path());
+  const std::string path(root.Path());
   MountRoot* const same = &root;
   root = std::move(*same);
-  EXPECT_THAT(root.path(), path);
+  EXPECT_THAT(root.Path(), path);
   EXPECT_THAT(stdfs::is_directory(path), IsTrue());
 }
 
@@ -235,7 +235,7 @@ TEST_F(MountRootTest, InvalidBasenamesNeverCreateMountPoints) {
   for (const std::string_view path : paths) {
     EXPECT_THAT(root.MountPointFor(path), StatusIs(absl::StatusCode::kInvalidArgument));
   }
-  EXPECT_THAT(stdfs::is_empty(root.path()), IsTrue());
+  EXPECT_THAT(stdfs::is_empty(root.Path()), IsTrue());
 }
 
 TEST_F(MountRootTest, DeletionPolicyPreventsStaleRootUnmountAndCleanup) {

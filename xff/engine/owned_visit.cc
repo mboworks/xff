@@ -8,11 +8,11 @@
 namespace xff::engine {
 
 OwnedVisit::OwnedVisit(const Visit& visit)
-    : depth(visit.depth),
-      metadata(visit.metadata),
-      fs(visit.fs),
-      fs_owner(visit.fs_owner),
-      root_index(visit.root_index),
+    : depth_(visit.depth),
+      metadata_(visit.metadata),
+      fs_(visit.fs),
+      fs_owner_(visit.fs_owner),
+      root_index_(visit.root_index),
       path_size_(visit.path.size()) {
   const bool shared_name = visit.path.ends_with(visit.name);
   const bool shared_root = visit.path.starts_with(visit.root);
@@ -29,16 +29,16 @@ OwnedVisit::OwnedVisit(const Visit& visit)
 }
 
 OwnedVisit::OwnedVisit(OwnedVisit&& other) noexcept
-    : depth(other.depth),
-      metadata(other.metadata),
-      fs(other.fs),
-      fs_owner(std::move(other.fs_owner)),
-      root_index(other.root_index),
+    : depth_(other.depth_),
+      metadata_(other.metadata_),
+      fs_(other.fs_),
+      fs_owner_(std::move(other.fs_owner_)),
+      root_index_(other.root_index_),
       bytes_(std::move(other.bytes_)),
       path_size_(std::exchange(other.path_size_, 0)),
       name_(std::exchange(other.name_, {})),
       root_(std::exchange(other.root_, {})) {
-  other.fs.reset();
+  other.fs_.reset();
 }
 
 std::string_view OwnedVisit::Path() const {
@@ -62,11 +62,11 @@ Visit OwnedVisit::AsVisit() const {
       .path = Path(),
       .name = Name(),
       .root = Root(),
-      .depth = depth,
-      .metadata = metadata,
-      .fs = fs,
-      .fs_owner = fs_owner,
-      .root_index = root_index,
+      .depth = depth_,
+      .metadata = metadata_,
+      .fs = fs_,
+      .fs_owner = fs_owner_,
+      .root_index = root_index_,
   };
 }
 

@@ -42,7 +42,7 @@ struct ModeSpellings {
   }
 
   consteval bool Sort() {
-    auto active = std::span(entries).first(size);
+    const auto active = std::span(entries).first(size);
     std::ranges::sort(active, {}, &IndexedSpelling::name);
     for (std::size_t i = 1; i < size; ++i) {
       if (entries.at(i - 1).name == entries.at(i).name && entries.at(i - 1).entry != entries.at(i).entry) {

@@ -24,6 +24,7 @@ class ComparisonEntries final {
   using OrderedEntry = std::pair<std::string_view, std::size_t>;
 
   ComparisonEntries() = default;
+  ~ComparisonEntries() = default;
   ComparisonEntries(const ComparisonEntries&) = delete;
   ComparisonEntries& operator=(const ComparisonEntries&) = delete;
   ComparisonEntries(ComparisonEntries&&) = delete;

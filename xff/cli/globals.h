@@ -128,7 +128,7 @@ struct GlobalFlag {
     kTristate,
     kBuffer,
     kWidth,
-    kPositiveInteger
+    kPositiveInteger,
   };
   ValueCheck value_check = ValueCheck::kNone;
   bool cli_only = false;     // Requires command-line/bootstrap processing; rejected in config files.

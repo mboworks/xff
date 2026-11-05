@@ -250,7 +250,10 @@ regresses 3-11% across the two sessions. Keep this tradeoff visible when compari
       including physical/generated extension aliases. Reclassify only owned Bazel system includes
       in the temporary lint database; preserve foreign macro suppression and production commands.
       Verify relative/absolute ordinary/system paths and foreign negative controls with a real
-      clang-tidy preflight and regression tests. Translation-unit scope remains unchanged.
+      clang-tidy preflight and regression tests, including nested third-party repositories with
+      an XFF module prefix. Repair newly exposed owned-header findings while preserving narrow
+      C ABI names and proven executor synchronization invariants. Ordinary affected-source scope
+      remains unchanged; lint-policy changes request a complete indexed CI pass.
 - [ ] Profile the static-analyzer cost of `xff/engine/run_test.cc` and evaluate splitting
       it into focused test targets. LLVM 23 spent 1,626 seconds on this translation unit in
       CI run 36786917255; a local run took 712 seconds, and process sampling found the
