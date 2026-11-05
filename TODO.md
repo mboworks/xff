@@ -448,10 +448,15 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O16a3: Qualify appended borrowed comparison categories and transparent contribution lookup
       on both hosts, preserving exact accumulation order and ownership. Retain slower controls and
       memory/footprint in [the qualification report](docs/benchmarks/comparison-category-sequence-20261104.md).
-- [ ] O16a4: Separately evaluate moving archive-owner records and comparison arena initial-block
-      policies; keep complete-tree and completed-frontier lifetime contracts distinct.
-- [ ] O16a5: Avoid constructing ordinary scope columns after comparison-summary emission when no
-      ordinary summaries remain. Preserve headers, status/patch/counts-only output and ordinary controls.
+- [x] O16a4a: Evaluate retained comparison-owner transfer by value and reference overloads on both
+      hosts. Reject both mixed-result implementations; retain source, tests, raw results and controls
+      in [the decision report](docs/benchmarks/comparison-retention-followups-20261105.md).
+- [ ] O16a4b: Separately evaluate comparison arena initial-block policy; keep complete-tree and
+      completed-frontier lifetime contracts distinct from the rejected owner-transfer implementations.
+- [x] O16a5: Avoid constructing ordinary scope columns after comparison-summary emission when no
+      ordinary summaries remain. Preserve headers, status/patch/counts-only output and ordinary controls;
+      retain modest gains, slower cells and both-host qualification in
+      [the decision report](docs/benchmarks/comparison-retention-followups-20261105.md).
 - [ ] O16b: Add and qualify completed-directory/frontier traversal before enabling bounded paired
       comparison. Preserve empty/ignored completion, ordering, ignore inheritance, errors, effects,
       archives and deferred selections; retain explicit fallbacks and avoid repeated shallow scans.

@@ -3462,9 +3462,9 @@ alive through final consumption; this borrowing contract does not permit early f
 native/kernel cases, copies, memory, footprint and repeatable small Linux patch/extension costs.
 Named native summaries gain modestly on both hosts. No universal gain or completed streaming claim.
 
-A separate output candidate can return after comparison-count emission when the ordinary summary
-vector is empty: current code still constructs scope columns, labels and joins even then. Preserve
-header/count emission first and qualify status/patch/counts-only plus ordinary-summary controls.
+The separate O16a5 output cleanup is now qualified below: return after comparison-count/header
+emission when no ordinary summaries remain. Preserve the status/patch/counts-only and ordinary
+controls; this does not implement streaming or change the owner-retention contract.
 
 ### O16b/O17/O18: completed-frontier integration remains open
 
@@ -4228,3 +4228,27 @@ ownership and expression-proved ineligible-type admission as separate possible f
 Final raw focused added-code coverage is 230/232 lines (99.14%) and 137/156 branches
 (87.82%). Preserve the rejected ELF identity assumption and the fresh exact-binary
 confirmation rather than weakening runtime comparisons.
+
+### O16a4a/O16a5: reject owner transfer; skip unused comparison scopes
+
+The [two-host decision report](benchmarks/comparison-retention-followups-20261105.md) retains two
+complete owner-transfer matrices and native archive controls. By-value and paired-reference forms
+improve Linux owned temporaries but worsen borrowed/duplicate paths and Mac owned temporaries.
+Linux wrappers are inlined; wrapper-call overhead is not an established explanation. Native 1k ZIP
+controls show no attributable transfer gain after checking identical-parent drift. Reject both
+runtime implementations and retain the existing ownership contract. Arena initial-block policy,
+completed-frontier ownership and archive-reader reuse remain separate open work.
+
+A narrower selected change returns after comparison counts/headers when no ordinary summaries
+remain. It skips unused column/table/label construction without changing collection, callbacks,
+output bytes, read/error precedence or backend lifetime. The 48-case memory matrix shows about 3%
+small serial counts-only improvement on both hosts, but larger/ordinary cells include drift and
+costs. Forty native cases per host are mostly neutral: counts-console cohort medians are +0.27%
+Mac and -0.30% Linux. Do not describe it as a universal CLI speedup. The Linux executable shrinks
+1,392 bytes; Mac size is unchanged.
+
+All 329 release targets pass on both hosts; focused ASan passes on both and MSan/TSan on Linux.
+Raw focused patch coverage is 3/3 lines and 2/2 branches. Final qualified binaries exactly match
+the measured candidates. Keep failed harness/identity attempts explicit and ineligible, including
+the invalid explicit-scope counts-only diagnostic. A narrowly verified Mac N_SO/signature difference
+admits only its exact frozen parent pair; it is not permission to normalize arbitrary binaries.
