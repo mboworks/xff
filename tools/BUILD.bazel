@@ -328,7 +328,10 @@ py_library(
         ".",
         "..",
     ],
-    deps = [":package_init"],
+    deps = [
+        ":clang_tidy_compdb_lib",
+        ":package_init",
+    ],
 )
 
 py_library(

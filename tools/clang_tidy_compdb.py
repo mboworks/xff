@@ -7,6 +7,8 @@
 
 import argparse
 import json
+import pathlib
+import re
 import shlex
 import sys
 from collections import defaultdict
@@ -24,6 +26,53 @@ def arguments(entry: dict[str, object]) -> list[str]:
     if isinstance(command, str):
         return shlex.split(command)
     raise ValueError(f"compile command has neither arguments nor command: {entry!r}")
+
+
+def owned_header_filter(repository: pathlib.Path) -> str:
+    """Match XFF source/generated headers through relative and Bazel alias paths."""
+    source = r"(xff/|xff_extras_api/|extra_modules/|external/xff_[^/]+/)"
+    generated = r"[^/]+/bin/(xff/|xff_extras_api/|external/xff_[^/]+/)"
+    owned = rf"({source}|bazel-out/{generated})"
+    root = repository.absolute()
+    patterns = [rf"(\./)?{owned}"]
+    for spelling in sorted({root, root.resolve()}):
+        patterns.append(re.escape(str(spelling)) + "/" + owned)
+    for alias, suffix in ((root / "external", r"xff_[^/]+/"),
+                          (root / "bazel-out", generated)):
+        spellings = {alias.absolute(), alias.resolve()}
+        if alias.is_symlink():
+            target = alias.readlink()
+            spellings.add(target.absolute() if target.is_absolute()
+                          else (alias.parent / target).absolute())
+        patterns.extend(re.escape(str(spelling)) + "/" + suffix for spelling in sorted(spellings))
+    return "^(" + "|".join(patterns) + ")"
+
+
+def normalize_owned_includes(
+    command: Sequence[str], repository: pathlib.Path, directory: pathlib.Path
+) -> list[str]:
+    """Make first-party Bazel system includes visible only for this lint invocation."""
+    pattern = re.compile(owned_header_filter(repository))
+    result = []
+    index = 0
+    while index < len(command):
+        argument = command[index]
+        if argument == "-isystem" and index + 1 < len(command):
+            include = command[index + 1]
+            path = pathlib.Path(include)
+            absolute = path if path.is_absolute() else directory / path
+            result.extend(("-I" if pattern.match(str(absolute) + "/") else argument, include))
+            index += 2
+        elif argument.startswith("-isystem") and len(argument) > len("-isystem"):
+            include = argument[len("-isystem"):]
+            path = pathlib.Path(include)
+            absolute = path if path.is_absolute() else directory / path
+            result.append(("-I" if pattern.match(str(absolute) + "/") else "-isystem") + include)
+            index += 1
+        else:
+            result.append(argument)
+            index += 1
+    return result
 
 
 def is_fuzz_entry(entry: dict[str, object]) -> bool:
@@ -63,6 +112,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     with open(args.input, encoding="utf-8") as stream:
         database = json.load(stream)
     filtered, removed = deduplicate(database)
+    repository = pathlib.Path.cwd()
+    for record in filtered:
+        record["arguments"] = normalize_owned_includes(
+            arguments(record), repository, pathlib.Path(str(record.get("directory", repository)))
+        )
+        record.pop("command", None)
     with open(args.output, "w", encoding="utf-8") as stream:
         json.dump(filtered, stream)
     print(

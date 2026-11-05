@@ -3,6 +3,8 @@
 # SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 # SPDX-License-Identifier: Apache-2.0
 
+import pathlib
+import tempfile
 import unittest
 
 from tools import clang_tidy_compdb
@@ -30,6 +32,58 @@ def entry(path: str, configuration: str, *extra: str) -> dict[str, object]:
 
 
 class ClangTidyCompdbTest(unittest.TestCase):
+    def test_only_owned_system_includes_are_reclassified(self):
+        root = pathlib.Path("/workspace parent/xff")
+        owned = (
+            "xff",
+            "xff_extras_api",
+            "extra_modules/archive",
+            "external/xff_extras_api+",
+            "bazel-out/platform/bin/external/xff_archive+/_virtual_includes/api",
+        )
+        foreign = (
+            "external/mboworks_mbo+",
+            "external/abseil-cpp+",
+            "xff_near_miss",
+            "xff_extras_api_near_miss",
+            "/Library/Developer/SDK/usr/include",
+        )
+        for absolute in (False, True):
+            for joined in (False, True):
+                command = ["clang++", "-std=c++23", "-iquote", "."]
+                expected = list(command)
+                for name in (*owned, *foreign):
+                    path = str(root / name) if absolute else name
+                    option = "-I" if name in owned else "-isystem"
+                    command.extend(["-isystem" + path] if joined else ["-isystem", path])
+                    expected.extend([option + path] if joined else [option, path])
+                with self.subTest(absolute=absolute, joined=joined):
+                    self.assertEqual(clang_tidy_compdb.normalize_owned_includes(command, root, root),
+                                     expected)
+
+    def test_physical_bazel_alias_paths_match_without_matching_foreign_dependencies(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary) / "xff"
+            root.mkdir()
+            external = pathlib.Path(temporary) / "bazel-external"
+            external.mkdir()
+            generated = pathlib.Path(temporary) / "bazel-generated"
+            generated.mkdir()
+            (root / "external").symlink_to(external, target_is_directory=True)
+            (root / "bazel-out").symlink_to(generated, target_is_directory=True)
+            paths = [external / "xff_archive+", external / "mboworks_mbo+",
+                     generated / "platform/bin/external/xff_extras_api+/_virtual_includes/api",
+                     generated / "platform/bin/external/abseil-cpp+"]
+            command = [argument for path in paths for argument in ("-isystem", str(path))]
+            expected = [argument for index, path in enumerate(paths)
+                        for argument in ("-I" if index in (0, 2) else "-isystem", str(path))]
+            self.assertEqual(clang_tidy_compdb.normalize_owned_includes(command, root, root), expected)
+
+    def test_incomplete_system_include_option_is_preserved(self):
+        root = pathlib.Path("/checkout")
+        self.assertEqual(clang_tidy_compdb.normalize_owned_includes(["-isystem"], root, root),
+                         ["-isystem"])
+
     def test_prefers_ordinary_entry_over_equivalent_fuzz_transition(self):
         ordinary = entry("mbo/file/glob.cc", "k8-fastbuild")
         fuzz = entry(

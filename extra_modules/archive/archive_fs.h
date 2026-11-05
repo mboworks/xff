@@ -88,7 +88,7 @@ class ArchiveFileSystem : public vfs::FileSystem {
   [[nodiscard]] absl::StatusOr<std::string> ReadContent(std::string_view path) const override;
 
   // The container this filesystem was opened on, as given.
-  [[nodiscard]] std::string_view container() const { return container_; }
+  [[nodiscard]] std::string_view Container() const { return container_; }
 
  private:
   // One indexed node: a member as stored, or a directory synthesized from a member's parents.

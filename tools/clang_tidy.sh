@@ -149,9 +149,10 @@ while IFS= read -r FILE; do
   esac
 done <<<"${SCOPE}"
 
-# Report only: --header-filter restricts diagnostics to this repo's own headers
-# (not the toolchain's force-included / system headers), -p points at the compile
-# DB. WarningsAsErrors in .clang-tidy makes any finding a non-zero exit. The Python
+# Report only: the runner derives owned-header paths including Bazel aliases and
+# verifies real diagnostic visibility before processing TUs. The temporary compile
+# DB makes only owned -isystem directories normal includes, preserving unrelated
+# system-header/macro suppression. WarningsAsErrors makes findings a non-zero exit.
 # coordinator owns output serialization, progress reporting, and interruption cleanup.
 OUTPUT="$(mktemp "${TMPDIR:-/tmp}/clang_tidy_out.XXXXXX")"
 CDB_DIR="$(mktemp -d "${TMPDIR:-/tmp}/clang_tidy_cdb.XXXXXX")"

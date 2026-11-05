@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Check XFF-owned headers in clang-tidy, including Bazel extension aliases, while retaining dependency and system-macro isolation.
+
 - Reuse optional bulk directory metadata for eligible Mac regular files while preserving ordinary fallback and parallel stats; reduce unused observation storage for nonregular directories.
 
 - Reuse prepared ASCII glob shapes for folded name/path matching while preserving active-locale semantics and measured native fallbacks.
