@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Select local clang-tidy consumers of changed headers exposed through Bazel include-prefix aliases.
+
 - Bound nonroot archive directory listing to its ordered subtree, reducing large archive traversal work while preserving direct children, ordering, metadata and errors.
 
 - Reuse the archive session's first input block for format detection, reducing redundant cursor opens and nested replay while preserving short reads, errors and shared budgets.

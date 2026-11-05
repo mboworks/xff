@@ -113,6 +113,11 @@ select the affected translation units. A single coordinator defaults to the dete
 that count, or leave it unset (`auto`) to use CPU detection. GitHub CI explicitly supplies its
 runner CPU count; there is no fixed two-worker local limit.
 
+Header selection resolves Bazel `include_prefix` spellings through the generated
+`_virtual_includes` directories in the compile database. It follows those aliases back to owned
+source headers before computing transitive consumers; third-party targets remain excluded.
+Refresh the database after changing include mappings so local selection uses the current build.
+
 Diagnostics include XFF core, extras API, extension-module and generated owned headers, including
 first-party headers Bazel exposes through `-isystem`: the temporary lint compile database treats
 only owned include directories as normal includes, leaving production commands and foreign

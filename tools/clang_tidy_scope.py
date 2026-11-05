@@ -5,9 +5,12 @@
 
 """Select translation units affected by files passed to clang-tidy."""
 
+from __future__ import annotations
+
 import json
 import pathlib
 import re
+import shlex
 import sys
 
 SOURCE_SUFFIXES = (".cc", ".cpp", ".cxx")
@@ -36,7 +39,50 @@ def database_sources(database: list[dict[str, object]]) -> set[str]:
     return sources
 
 
-def quoted_includes(path: pathlib.Path, root: pathlib.Path) -> set[str]:
+def virtual_include_aliases(
+    database: list[dict[str, object]], root: pathlib.Path
+) -> dict[str, set[str]]:
+    """Resolve Bazel's actual include-prefix headers, without a second alias catalog."""
+    directories: set[pathlib.Path] = set()
+    for entry in database:
+        arguments = entry.get("arguments")
+        if not isinstance(arguments, list):
+            arguments = shlex.split(str(entry.get("command", "")))
+        directory = pathlib.Path(str(entry.get("directory", root)))
+        if not directory.is_absolute():
+            directory = root / directory
+        for index, argument in enumerate(arguments):
+            spelling = ""
+            for option in ("-isystem", "-iquote", "-I"):
+                if argument == option and index + 1 < len(arguments):
+                    spelling = str(arguments[index + 1])
+                    break
+                if argument.startswith(option) and len(argument) > len(option):
+                    spelling = argument[len(option):]
+                    break
+            path = pathlib.Path(spelling)
+            if "_virtual_includes" in path.parts:
+                directories.add(path if path.is_absolute() else directory / path)
+    aliases: dict[str, set[str]] = {}
+    workspace = root.resolve()
+    for directory in sorted(directories):
+        for path in directory.rglob("*"):
+            if not path.is_file() or not is_header(path.name):
+                continue
+            physical = path.resolve()
+            if not physical.is_relative_to(workspace):
+                continue
+            relative = physical.relative_to(workspace)
+            if relative.parts[0] in {"bazel-out", "external"}:
+                continue
+            spelling = path.relative_to(directory).as_posix()
+            aliases.setdefault(spelling, set()).add(relative.as_posix())
+    return aliases
+
+
+def quoted_includes(
+    path: pathlib.Path, root: pathlib.Path, aliases: dict[str, set[str]]
+) -> set[str]:
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeError):
@@ -49,15 +95,19 @@ def quoted_includes(path: pathlib.Path, root: pathlib.Path) -> set[str]:
             includes.add(workspace_path.relative_to(root).as_posix())
         elif relative_path.is_file():
             includes.add(relative_path.relative_to(root).as_posix())
+        else:
+            includes.update(aliases.get(spelling, set()))
     return includes
 
 
-def include_graph(root: pathlib.Path) -> dict[str, set[str]]:
+def include_graph(
+    root: pathlib.Path, aliases: dict[str, set[str]] | None = None
+) -> dict[str, set[str]]:
     graph: dict[str, set[str]] = {}
     for path in root.rglob("*"):
         relative = path.relative_to(root).as_posix()
         if path.is_file() and (is_source(relative) or is_header(relative)):
-            graph[relative] = quoted_includes(path, root)
+            graph[relative] = quoted_includes(path, root, aliases or {})
     return graph
 
 
@@ -98,7 +148,8 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
-    graph = {} if changed == ["--all"] else include_graph(pathlib.Path.cwd())
+    root = pathlib.Path.cwd()
+    graph = {} if changed == ["--all"] else include_graph(root, virtual_include_aliases(database, root))
     for source in select_sources(database, changed, graph):
         print(source)
     return 0
