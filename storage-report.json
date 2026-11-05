@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "total_bytes": 644908802,
+  "total_bytes": 645661621,
   "sections": {
     "root": {
       "files": 34,
       "bytes": 543465
     },
     "coverage": {
-      "files": 9370,
-      "bytes": 143643589
+      "files": 9383,
+      "bytes": 144396408
     },
     "benchmarks": {
       "files": 4415,
