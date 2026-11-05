@@ -4252,3 +4252,37 @@ Raw focused patch coverage is 3/3 lines and 2/2 branches. Final qualified binari
 the measured candidates. Keep failed harness/identity attempts explicit and ineligible, including
 the invalid explicit-scope counts-only diagnostic. A narrowly verified Mac N_SO/signature difference
 admits only its exact frozen parent pair; it is not permission to normalize arbitrary binaries.
+
+### O16a4b/O16a6: retain current comparison arena and duplicate index
+
+The [storage decision report](benchmarks/comparison-storage-followups-20261105.md) retains three
+private candidates and both-host evidence. A 64 KiB initial arena growing to 1 MiB costs roughly
+8-11% in stable long-path Mac 10k cases; keep fixed 1 MiB blocks. Experimental one-probe Abseil
+map insertion improves long-key mechanisms but costs small Linux cells. Neither variant has a
+full native/sanitizer acceptance claim.
+
+The stable key-only set removes unused mapped indices, saves roughly 2 MiB in Linux 100k native
+comparisons and shrinks release binaries 448 bytes on Mac and 12,904 bytes on Linux. Native elapsed
+is mostly neutral. Preserve initial and separate confirmation engine results: Linux serial 10k
+ordinary/category summaries cost about 8% in confirmation, while the initial medians were near
+neutral. Mac broad serial status RSS increases 1.61 MiB; some other Mac reductions track the
+unchanged parent copy. These are not universal speed/memory improvements, so the implementation
+stays private. All 329 release targets pass on both hosts; focused ASan passes both, MSan/TSan
+and coverage pass Linux. Exact source identity is retained. Linux rebuilt runtime is whole-file
+identical; Mac has only two independently proven N_SO sandbox-string differences and their valid
+dependent signing hash. Preserve that failed whole-file check and narrow proof.
+
+Further isolated hypotheses remain open. OpenSourceSession opens a cursor, then uses a second
+short cursor to read the XAR prefix. Reusing/prefetching from the first cursor may remove an open
+and a tiny reservation, but must preserve short reads, callback-buffer stability, budgets, error
+precedence, logical skipping, seek invalidation and header replay. This is separate from immutable
+ZIP member-index reuse and must not hide intentional failure-contract changes.
+
+ParallelCompare already retains reusable workers; tiny fixture files do not reach its parallel
+byte threshold. Some small listings/single-child chains can decline Mac bulk metadata merely
+because multiple stat workers are allowed, while never actually dispatching parallel stats.
+Prove the exercised paths before assigning causality. Re-evaluating the final aligned bulk
+implementation under multiple workers is a possible experiment, not a selected policy: earlier
+always-bulk variants regressed wide parallel metadata roughly 6.6-7.7%. Keep broad/deep, small
+listings, symlink/directory fallbacks and metadata-demand controls; do not add speculative timers
+or duplicate count thresholds.
