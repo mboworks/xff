@@ -4776,6 +4776,9 @@ RunResult RunTreeCompare(
     emit(render::SummaryExport(export_scopes).Header(ResolveFormat(command.globals)));
   }
   EmitTreeCompareSummary(command, counts, style, emit, export_scopes);
+  if (summaries.empty()) {
+    return RunResult{.errors = 0, .any_match = different};
+  }
   const auto format = ResolveFormat(command.globals);
   const auto human = ResolveHuman(command.globals, style);
   const auto columns = ComparisonScopeColumns(*scopes_result, side_summaries, categories, summaries.size());

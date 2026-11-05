@@ -129,10 +129,8 @@ void Compare(benchmark::State& state, std::size_t bytes, bool different, bool pa
 
 void CompareTotals(benchmark::State& state, std::string_view summary, std::string_view scopes) {
   const CompareTree tree(static_cast<std::size_t>(state.range(0)), 8, true);
-  const std::vector<std::string> arguments{
+  std::vector<std::string> arguments{
       "--compare=summary",
-      "--summary=" + std::string(summary),
-      "--summary-scope=" + std::string(scopes),
       "--jobs=" + std::to_string(state.range(1)),
       "--archive=none",
       "--sort=none",
@@ -141,6 +139,10 @@ void CompareTotals(benchmark::State& state, std::string_view summary, std::strin
       "-type",
       "f",
   };
+  if (summary != "compare") {
+    arguments.push_back("--summary=" + std::string(summary));
+    arguments.push_back("--summary-scope=" + std::string(scopes));
+  }
   auto command = xff::parser::Parse(arguments);
   if (!command.ok()) {
     state.SkipWithError(command.status().ToString());
@@ -199,6 +201,10 @@ int main(int argc, char** argv) {
   };
 
   constexpr auto kTotals = std::to_array<TotalsScenario>({
+      {
+          .summary = "compare",
+          .scopes = "default",
+      },
       {.summary = "overall", .scopes = "compare"},
       {.summary = "type", .scopes = "compare"},
       {.summary = "ext", .scopes = "compare"},

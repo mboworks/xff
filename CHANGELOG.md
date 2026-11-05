@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Skip unused ordinary summary setup after comparison-only output while preserving headers and exact results.
+
 - Check XFF-owned headers in clang-tidy, repair newly exposed declarations, and distinguish direct Bazel extension aliases from nested third-party repositories while retaining system-macro isolation.
 
 - Reuse optional bulk directory metadata for eligible Mac regular files while preserving ordinary fallback and parallel stats; reduce unused observation storage for nonregular directories.
