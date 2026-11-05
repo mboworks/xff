@@ -17,6 +17,7 @@
 
 #include <limits>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -341,6 +342,8 @@ absl::StatusOr<std::vector<vfs::Entry>> ArchiveFileSystem::ReadDir(std::string_v
   if (!key.has_value()) {
     return absl::InvalidArgumentError(absl::StrCat("not a path in ", container_, ": ", dir));
   }
+  auto first = nodes_.begin();
+  auto last = nodes_.end();
   if (!key->empty()) {
     const auto found = nodes_.find(*key);
     if (found == nodes_.end()) {
@@ -349,9 +352,14 @@ absl::StatusOr<std::vector<vfs::Entry>> ArchiveFileSystem::ReadDir(std::string_v
     if (found->second.metadata.type != vfs::FileType::kDirectory) {
       return absl::InvalidArgumentError(absl::StrCat("not a directory: ", *key));
     }
+    std::string boundary = absl::StrCat(*key, "/");
+    first = nodes_.lower_bound(boundary);
+    // The next ASCII byte after the appended slash bounds exactly this subtree's prefix.
+    boundary.back() = '0';
+    last = nodes_.lower_bound(boundary);
   }
   std::vector<vfs::Entry> entries;
-  for (const auto& [member_key, node] : nodes_) {
+  for (const auto& [member_key, node] : std::ranges::subrange(first, last)) {
     if (ParentOf(member_key) != *key) {
       continue;  // only direct children; the walk recurses for the rest
     }

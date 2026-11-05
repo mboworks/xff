@@ -4306,7 +4306,8 @@ include costs. This is a targeted replay reduction rather than a universal archi
 unfinished immutable ZIP index/cache. Exact final numerical tables and qualification are in the
 linked report; no sanitizer elapsed time is used as performance evidence.
 
-Two further independent archive candidates remain open: O19f bounds `ReadDir` to the existing
+Independent archive follow-ups address subtree bounds (O19f, qualified below) and borrowed keys
+(O19g, still open). O19f bounds `ReadDir` to the existing
 ordered subtree instead of scanning unrelated nodes for every directory; O19g borrows normalized
 member lookup keys while explicitly copying at retained cursor ownership boundaries. The former
 still scans grandchildren and does not solve the chain-shaped worst case. The latter needs real
@@ -4314,4 +4315,33 @@ non-SSO keys on both platforms and temporary caller-path lifetime tests. Neither
 locks, a second child index, per-file shared owners or an unbudgeted central-directory cache.
 Retained plan notes also identify map insertion/default-node construction as a separate hypothesis,
 with existing stored-member replacement and inode ordering preserved. No gain is claimed until
-these candidates are independently measured and qualified.
+the remaining candidates are independently measured and qualified.
+
+### O19f: ordered archive directory ranges
+
+Use two lower bounds on the existing ordered node map before filtering a nonroot directory's direct
+children. Root listing keeps the complete range; exact output order, metadata, normalization,
+absolute/nested paths and errors are unchanged. This is O(log N + subtree size), so it does not
+claim a direct-child index or fix the single-chain worst case. One temporary boundary string is
+reused; no retained child index or per-entry owner is added.
+
+[The full report](benchmarks/archive-directory-range-20261105.md) retains 44 isolated lookup cases
+and 66 full-command cases per host, complete-output oracles, nine repetitions retaining seven in
+three balanced sessions, copied-parent controls and all raw results. Complete 100k-member wide/deep
+TAR traversals improve from 10.82/12.71 seconds to 123/187 milliseconds on Mac, and 9.26/14.08
+seconds to 94/171 milliseconds on Linux. Ordinary native and flat archive controls stay close to
+unchanged. Isolated tiny root/chain costs remain explicit rather than motivating an ad hoc gate.
+
+Four 1k-member/three-worker Linux metadata cases become 7-13% slower (about 0.26-0.35 ms); an
+independent confirmation retains roughly 6-14% costs while serial/10k controls improve. This is a
+large-archive optimization, not a universal speedup. O19h tracks the remaining pipeline cost without
+asserting an unmeasured cause or adding a timer/count threshold. O19g separately measures borrowed
+member keys and keeps explicit string ownership at retained source boundaries.
+
+All 330 release tests pass on both hosts, with required real Linux FUSE; seven focused ASan suites
+pass on both hosts and MSan/TSan on Linux. Canonical changed source coverage is 7/7 lines and 2/2
+branches. Actual affected-TU lint passes without suppressions after refactoring only the manual
+fixture setup. The final manual binary has new complete memory matrices and correctness-only ASan
+preflights. Initial lint failures, parent-header restoration error, exact binary records and
+independent Mac debug-symbol/signature proofs remain in the lossless evidence archive. Public
+current-head readiness still requires the new PR's normal hooks and own CI.

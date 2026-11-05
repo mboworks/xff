@@ -34,9 +34,8 @@
 //    path itself (as a directory, so a walk can enter it) and for member paths under it. The real
 //    file stays a real file to the rest of xff, which is what "dual identity" means.
 //
-// `ReadContent` is deliberately unimplemented in this slice: the reader lists members but does not
-// extract data yet, so content predicates (`-grep`, `-content`, `{hash}`) get a clear Unimplemented
-// rather than silence or an empty string. The next slice adds member extraction.
+// Member content is read through retained sources and independent cursors. Legacy decoded/phar
+// paths keep their existing materialization/cache behavior and shared read-budget controls.
 
 #include <cstdint>
 #include <map>

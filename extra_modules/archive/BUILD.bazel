@@ -616,3 +616,36 @@ cc_test(
         "@xff_extras_api//:archive_backend_cc",
     ],
 )
+
+# Shared fixture-only in-memory writer for archive behavior tests and manual benchmarks.
+cc_library(
+    name = "memory_archive_test_cc",
+    testonly = True,
+    hdrs = ["memory_archive_test.h"],
+    include_prefix = "xff/archive",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@libarchive//libarchive",
+    ],
+)
+
+cc_test(
+    name = "archive_directory_range_test",
+    srcs = ["archive_directory_range_test.cc"],
+    deps = [
+        ":archive_fs_cc",
+        ":memory_archive_test_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+        "@xff_extras_api//:member_path_cc",
+        "@xff_extras_api//:vfs_cc",
+    ],
+)
