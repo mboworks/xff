@@ -213,6 +213,9 @@ scope or declaring new flags implemented. See
       machine series with selectable landscape allocation pairs and preserved raw observations.
 - [ ] Run and publish the separate local Zen 5 1/3/10 series with physical-core affinity. Keep
       M5 Pro, M2 Ultra and Zen 5 distinct; macOS requests workers without claiming CPU affinity.
+- [ ] Establish a stable semantic native-launcher identity for reference windows while retaining
+      exact binary fingerprints as provenance. Prove equivalence before combining differing
+      identities; the history-order presentation key does not relax timing compatibility.
 - [x] Implement presentation-only reference normalization using exactly five compatible reference times:
       the initial measurements share the first five; from measurement five use current plus four prior.
       Scale each individual XFF result by the reference mean divided by its own reference time.
@@ -369,6 +372,9 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       budgets and ownership/growth/move coverage. Retain small regressions and Linux/macOS evidence
       in [the collection-sharing report](docs/benchmarks/collection-text-sharing-20261101.md).
 - [x] O02: Qualify owned-pattern references and prepared simple ASCII glob operands (#1042).
+- [ ] O02b: Evaluate folded simple-glob and terminated-input costs on both hosts. Preserve the active
+      locale, embedded NULs, non-ASCII/complex fallback and legacy/prepared evaluator equivalence;
+      do not assume ASCII folding in arbitrary locales or infer gains from source inspection.
       [Cross-platform measurements](docs/benchmarks/native-glob-preparation-20261101.md) preserve
       case-folded/complex fallbacks, native controls and preparation costs.
 - [x] O03: Qualify cached fuzzy self-score ceilings and bounded per-worker score rows on macOS
@@ -499,6 +505,9 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       policy. Admission still rejects every filesystem-native name expression; pass the immutable
       fold decision into worker evaluation, retain unknown-backend serialization and all existing
       safety/metadata gates, and measure one/three workers on both hosts before enabling it.
+      Direct and coordinator-prefix trials are unselected: selective 1k cases cost roughly 17%/12%.
+      Retain [both-host evidence](docs/benchmarks/native-case-experiments-20261104.md) and redesign
+      useful-work/snapshot-only eligibility before retrying; do not add arbitrary count/time gates.
 - [x] O20e: Qualify segmented native directory accumulation on both hosts, including wide short/long
       names, exact output, memory and slower small-tree controls. Reject the 256-entry long-name
       regression; retain [selected 4,096-entry policy and all evidence](docs/benchmarks/segmented-native-listings-20261104.md).
@@ -508,10 +517,9 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O20g: Qualify scoped terminated native stat paths with uninitialized short storage, exact-view
       boundaries and a long fallback. Retain [all three policies, two-host gains/costs and binary
       proofs](docs/benchmarks/scoped-native-stat-paths-20261104.md); select 512 bytes without a new flag.
-- [ ] O20h: Separately qualify a first-device case record with hashed overflow for other devices.
-      Preserve ordinary/deferred query order and cached error defaults; test mixed devices and
-      native/exact/uniform paths. Measure startup and many-file controls before attributing an
-      Abseil allocation/clock cost or enabling the shortcut.
+- [x] O20h: Evaluate a first-device case record with hashed overflow on both hosts; retain the
+      existing runtime after inconclusive practical gains. Publish [raw controls, rejected policies
+      and mixed-device/deferred regression coverage](docs/benchmarks/native-case-experiments-20261104.md).
 - [ ] O20: Qualify optional bulk metadata by backend capability with precise fallback, while
       keeping metadata-free traversal free of extra probes and extended-stat work.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte
