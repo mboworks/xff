@@ -4380,22 +4380,40 @@ CI remain separate requirements. The lossless evidence uses content-addressed te
 preserving every repeated record and verifying exact reconstruction instead of enlarging site data
 with identical complete-output captures.
 
-### O19j: indexed directory observations, not yet implemented
+### O19j: indexed archive observations, qualified
 
-Archive nodes already hold complete metadata equivalent to Stat. The existing directory-observation
-API could transfer those values with the owned listing, avoiding per-entry split, normalization and
-map lookup when eager metadata is required. This is an independent candidate; no performance gain
-or implementation is claimed yet. It needs complete-field/order/error and retained-lifetime tests,
-both-host names/full-metadata/worker controls and complete qualification.
+[The complete report](benchmarks/archive-directory-observations-20261105.md) retains 88 memory
+cases and 82 full commands per host, independent complete-output oracles, every copied-parent
+control and the rejected compile-time specialization. The archive listing's existing immutable
+metadata supplies owned complete observations only for eager demand, avoiding per-entry Stat path
+work. Ordinary names, owned-key normalization, ordering, errors and bounded storage remain intact.
 
-Walker currently gates observations on name-only listings and excludes mounted owners. A candidate
-must distinguish a full-path backend from native name-only listings deliberately disabled under
-archive-all mounting. Blindly removing that gate could hand empty native paths to the walker.
-Allowing already-complete mounted observations must not remove ReadObservedNow's existing
-leaf-worker prohibition on nested stat submission. Transfer the observation owner before borrowing
-records, preserve followed-link ordinary fallback and container-root host identity, and never request
-eager observations for on-demand or metadata-free traversal. Keep O19h's small parallel metadata costs
-as explicit controls rather than introducing a speculative threshold.
+The walker admits full-path archive observations independently of native name-only capability;
+native archive-all deliberately disabled name-only paths keep their old convention. Owner transfer
+precedes borrowing, followed links use ordinary fallback, lazy/on-demand traversal stays lazy and
+mounted leaf workers still cannot submit nested stat work. No lock, worker, flag or timing/count
+threshold is introduced.
+
+Complete 100k-member summaries improve roughly 1-11% on Mac and 4-9% on Linux. Serial 100k metadata
+CSV improves roughly 4-5%; some parallel CSV cells cost up to about 3% Mac and 5% Linux. All slower
+cells, copy drift, ordinary controls, full-path/field equivalence and RSS remain visible. O19h stays
+open: this is a useful eager-path gain, not a uniform traversal win.
+
+All 331 release tests pass on each host with every extension and real Linux FUSE. Nine focused
+ASan suites pass on both, MSan/TSan on Linux; canonical changed coverage is 24/24 lines and 18/18
+branches. All 12 actual affected local lint translation units pass on both, with the corrected
+benchmark relinted separately. Unstripped executable growth is 816 Mac bytes and 3,544 Linux bytes.
+Private qualification does not replace the new PR's normal hooks and own current-head CI.
+
+The separate compile-time boolean helper specialization is rejected after bounded both-host
+measurements. Its parent is the selected runtime-mode candidate; its 16-case results are not
+combined with #1107-parent measurements. It has a repeat Mac flat-10k metadata cost and adds 12,616
+Linux bytes without a general benefit. No full qualification is claimed for that variant. Selected
+sources restore exactly; Linux rebuilt bytes match exactly. Mac's later strict whole-hash failure
+is retained alongside a separate precise proof of only 40 changed debug/signature bytes; all other
+runtime bytes and UUID are identical and both signatures verify. The original complete exact-image
+qualification remains separate. The lossless content-addressed archive preserves every original
+text record and verified reconstruction, without duplicating large repeated captures.
 
 O20k is also still a plan: the Darwin decoder presently admits complete regular-file observations
 only. Any extension to non-followed symlinks must first prove the native returned attributes and
