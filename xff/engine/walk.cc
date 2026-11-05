@@ -40,6 +40,7 @@
 #include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "mbo/container/segmented_vector.h"
 #include "mbo/status/status_macros.h"
 #include "mbo/types/optional_ref.h"
 #include "xff/vfs/entry.h"
@@ -57,21 +58,123 @@ std::string_view Basename(std::string_view path) {
   return slash == std::string_view::npos ? path : path.substr(slash + 1);
 }
 
-// One directory child, with either complete or lazily loaded metadata.
-struct Stated {
-  std::string path;
-  // The entry's own final component, as the LISTING reported it. Not derivable from `path` in
-  // general: an archive member's path is `a.tar!one.txt`, whose name is `one.txt`, not the whole
-  // string a slash-based basename would yield. Empty only for a root operand, which has no listing.
-  std::string name;
-  mutable vfs::Metadata metadata;
-  bool ok = false;
-  mutable absl::Status status;
-  mutable bool metadata_loaded = true;
+// Complete observations live beside a listing instead of inside every sortable child.
+struct CompleteMetadata {
+  vfs::Metadata value;
+  absl::Status status;
 };
 
-// The result of reading one directory: its children, or a ReadDir error.
-using Listing = absl::StatusOr<std::vector<Stated>>;
+using LazyMetadataPool =
+    mbo::container::SegmentedVector<CompleteMetadata, {.segment_size = 64, .segment_reservation = 0}>;
+
+struct Stated {
+  ~Stated() = default;
+
+  Stated(std::string path, std::string name, vfs::FileType type, vfs::Source source)
+      : path(std::move(path)), name(std::move(name)), type(type), source(source), ok(true) {}
+
+  Stated(std::string path, std::string name, CompleteMetadata& metadata)
+      : path(std::move(path)), name(std::move(name)), ok(metadata.status.ok()), complete(metadata) {}
+
+  Stated(const Stated&) = default;
+  Stated(Stated&&) noexcept = default;
+  Stated& operator=(const Stated&) = delete;
+
+  Stated& operator=(Stated&& other) noexcept {
+    if (this != &other) {
+      path = std::move(other.path);
+      name = std::move(other.name);
+      type = other.type;
+      source = other.source;
+      ok = other.ok;
+      complete.reset();
+      if (other.complete) {
+        complete.set_ref(*other.complete);
+      }
+    }
+    return *this;
+  }
+
+  std::string path;
+  // Preserve the listing's own component, including archive separator semantics.
+  std::string name;
+  vfs::FileType type = vfs::FileType::kUnknown;
+  vfs::Source source = vfs::Source::kLocalFs;
+  bool ok = false;
+  mutable mbo::types::OptionalRef<CompleteMetadata> complete;
+
+  vfs::FileType Type() const { return complete ? complete->value.type : type; }
+
+  vfs::Source Origin() const { return complete ? complete->value.source : source; }
+
+  std::uint64_t Device() const { return complete ? complete->value.dev : 0; }
+
+  std::uint64_t Inode() const { return complete ? complete->value.ino : 0; }
+};
+
+struct ChildBatch {
+  ChildBatch() = default;
+  ~ChildBatch() = default;
+  ChildBatch(const ChildBatch&) = delete;
+  ChildBatch& operator=(const ChildBatch&) = delete;
+  ChildBatch(ChildBatch&&) noexcept = default;
+  ChildBatch& operator=(ChildBatch&&) noexcept = default;
+
+  std::vector<Stated> entries;
+  std::vector<CompleteMetadata> eager;
+  std::vector<std::vector<CompleteMetadata>> chunks;
+  mutable LazyMetadataPool lazy;
+
+  // Moving vector owners preserves the complete-record addresses stored by children.
+  void Append(ChildBatch other) {
+    entries.append_range(other.entries | std::views::as_rvalue);
+    if (eager.empty()) {
+      eager = std::move(other.eager);
+    } else if (!other.eager.empty()) {
+      chunks.push_back(std::move(other.eager));
+    }
+    chunks.append_range(other.chunks | std::views::as_rvalue);
+  }
+};
+
+using Listing = absl::StatusOr<ChildBatch>;
+
+// One coordinator owns each completed listing. Its callback observation stays stable
+// when a lazy read fills the listing-owned cache, including cached errors and type changes.
+struct VisitMetadata {
+  const Stated& stated;
+  LazyMetadataPool& pool;
+  const vfs::FileSystem& fs;
+  std::string_view path;
+  bool follow;
+  vfs::MetadataFields fields;
+  std::optional<vfs::Metadata> hint;
+
+  static std::optional<vfs::Metadata> InitialHint(const Stated& stated) {
+    if (stated.complete) {
+      return std::nullopt;
+    }
+    return vfs::Metadata{.type = stated.Type(), .source = stated.Origin()};
+  }
+
+  const vfs::Metadata& Value() const { return hint ? *hint : stated.complete->value; }
+
+  absl::Status Load() {
+    if (!stated.complete && hint) {
+      auto metadata = fs.StatFields(path, follow, fields);
+      auto& cached = pool.emplace_back(
+          CompleteMetadata{
+              .value = metadata.ok() ? *metadata : *hint,
+              .status = metadata.status(),
+          });
+      stated.complete.set_ref(cached);
+      if (metadata.ok()) {
+        *hint = *metadata;
+      }
+    }
+    return stated.complete->status;
+  }
+};
 
 class Walker {
   // Typed leaf jobs share the existing persistent workers. A request owns a slot until its
@@ -94,7 +197,7 @@ class Walker {
       std::string directory;
       absl::Span<vfs::Entry> entries;
       Listing listing;
-      std::vector<Stated> stated;
+      ChildBatch stated;
       std::atomic<TaskState> state{TaskState::kPending};
     };
 
@@ -111,7 +214,7 @@ class Walker {
     template<Kind kKind>
     class Request {
      public:
-      using Result = std::conditional_t<kKind == Kind::kDirectory, Listing, std::vector<Stated>>;
+      using Result = std::conditional_t<kKind == Kind::kDirectory, Listing, ChildBatch>;
       Request() = default;
 
       explicit Request(Task& task) : task_(task) {}
@@ -222,7 +325,7 @@ class Walker {
       std::string{}.swap(task.directory);
       task.entries = {};
       task.listing = absl::UnknownError("");
-      std::vector<Stated>{}.swap(task.stated);
+      task.stated = ChildBatch{};
       task.storage.free.push_back(task.index);
     }
 
@@ -249,7 +352,7 @@ class Walker {
       struct Payload {
         std::string directory;
         Listing listing;
-        std::vector<Stated> stated;
+        ChildBatch stated;
       };
 
       // Declare the moved payload before the lock so its allocations die after unlocking.
@@ -352,7 +455,7 @@ class Walker {
     if (container_depth_ >= options_.archive_depth) {
       return false;  // --archive-depth: this walk is already as many containers deep as allowed
     }
-    if (!stated.ok || stated.metadata.type != vfs::FileType::kRegular) {
+    if (!stated.ok || stated.Type() != vfs::FileType::kRegular) {
       return false;
     }
     return options_.archive == ArchiveDive::kAll || depth == 0;
@@ -403,7 +506,7 @@ class Walker {
     inner.container_depth_ = container_depth_ + 1;
     inner.current_root_ = current_root_;
     inner.current_root_index_ = current_root_index_;
-    inner.root_dev_ = container.metadata.dev;
+    inner.root_dev_ = container.Device();
     inner.DescendMembers(container.path, depth);
     if (inner.stopped_) {
       stopped_ = true;  // a -quit inside the archive stops the whole walk, as it would in a directory
@@ -431,7 +534,7 @@ class Walker {
       return;
     }
     if (options_.sort != SortOrder::kNone && options_.sort != SortOrder::kRoots) {
-      absl::c_sort(*listing, [this](const Stated& lhs, const Stated& rhs) {
+      absl::c_sort(listing->entries, [this](const Stated& lhs, const Stated& rhs) {
         return name_only_listings_ ? lhs.name < rhs.name : lhs.path < rhs.path;
       });
     }
@@ -452,45 +555,46 @@ class Walker {
       }
       // -P never follows, -H follows command-line operands (depth 0), -L all.
       const bool follow = options_.symlinks != SymlinkMode::kNever;
-      const Stated stated = StatNode(root, follow);
-      root_dev_ = stated.ok ? stated.metadata.dev : 0;
+      CompleteMetadata metadata = StatNode(root, follow);
+      const Stated stated{root, std::string(Basename(root)), metadata};
+      LazyMetadataPool root_metadata;
+      root_dev_ = stated.ok ? stated.Device() : 0;
       current_root_ = root;
       current_root_index_ = root_index;
-      VisitSubtree(stated, /*depth=*/0, /*prefetched=*/{});
+      VisitSubtree(stated, root_metadata, /*depth=*/0, /*prefetched=*/{});
     }
   }
 
  private:
-  // lstat (or stat, when following) a single path into a Stated, with the
-  // dangling-symlink fallback to the link itself.
-  Stated StatNode(std::string path, bool follow, std::string name = {}) const {
-    // A path with no listing behind it (a root operand) falls back to the slash-based basename,
-    // which is right for every real filesystem path.
-    std::string entry_name = name.empty() ? std::string(Basename(path)) : std::move(name);
-    absl::StatusOr<vfs::Metadata> metadata = fs_.StatFields(path, follow, options_.metadata_fields);
+  // Preserve eager lstat/stat order and the dangling-link fallback.
+  CompleteMetadata StatNode(std::string_view path, bool follow) const {
+    auto metadata = fs_.StatFields(path, follow, options_.metadata_fields);
     if (!metadata.ok() && follow) {
-      metadata = fs_.StatFields(path, /*follow_symlinks=*/false, options_.metadata_fields);
+      metadata = fs_.StatFields(path, false, options_.metadata_fields);
     }
     if (!metadata.ok()) {
-      return Stated{.path = std::move(path), .name = std::move(entry_name), .ok = false, .status = metadata.status()};
+      return {.status = metadata.status()};
     }
-    return Stated{.path = std::move(path), .name = std::move(entry_name), .metadata = *metadata, .ok = true};
+    return {.value = *metadata};
   }
 
-  // Resolve exactly the eager metadata required for this owned listing slice. Safe on a worker.
-  std::vector<Stated> StatEntries(absl::Span<vfs::Entry> entries, std::string_view directory = {}) const {
-    std::vector<Stated> children;
-    children.reserve(entries.size());
+  bool NeedsEagerMetadata(const vfs::Entry& entry) const {
+    return options_.metadata == MetadataDemand::kAlways || entry.type == vfs::FileType::kUnknown
+           || entry.type == vfs::FileType::kDirectory || (follow_children_ && entry.type == vfs::FileType::kSymlink);
+  }
+
+  ChildBatch StatEntries(absl::Span<vfs::Entry> entries, std::string_view directory = {}) const {
+    ChildBatch children;
+    children.entries.reserve(entries.size());
+    const std::size_t eager_count =
+        options_.metadata == MetadataDemand::kAlways
+            ? entries.size()
+            : static_cast<std::size_t>(std::ranges::count_if(
+                  entries, [this](const vfs::Entry& entry) { return NeedsEagerMetadata(entry); }));
+    children.eager.reserve(eager_count);
     for (vfs::Entry& entry : entries) {
-      if (options_.metadata != MetadataDemand::kAlways && entry.type != vfs::FileType::kUnknown
-          && entry.type != vfs::FileType::kDirectory && (!follow_children_ || entry.type != vfs::FileType::kSymlink)) {
-        children.push_back({
-            .path = std::move(entry.path),
-            .name = std::move(entry.name),
-            .metadata = {.type = entry.type, .source = entry.source},
-            .ok = true,
-            .metadata_loaded = false,
-        });
+      if (!NeedsEagerMetadata(entry)) {
+        children.entries.emplace_back(std::move(entry.path), std::move(entry.name), entry.type, entry.source);
       } else {
         if (name_only_listings_) {
           entry.path = directory;
@@ -499,7 +603,11 @@ class Walker {
           }
           entry.path.append(entry.name);
         }
-        children.push_back(StatNode(std::move(entry.path), follow_children_, std::move(entry.name)));
+        if (entry.name.empty()) {
+          entry.name = Basename(entry.path);
+        }
+        auto& metadata = children.eager.emplace_back(StatNode(entry.path, follow_children_));
+        children.entries.emplace_back(std::move(entry.path), std::move(entry.name), metadata);
       }
     }
     return children;
@@ -538,11 +646,12 @@ class Walker {
     for (std::size_t index = 0; index < pending; ++index) {
       reads.push_back(submit(index));
     }
-    std::vector<Stated> children;
-    children.reserve(entries.size());
+    ChildBatch children;
+    children.entries.reserve(entries.size());
+    children.chunks.reserve(chunks - 1);
     for (std::size_t index = 0; index < chunks; ++index) {
       auto& read = reads.at(index % pending);
-      children.append_range(read.Take() | std::views::as_rvalue);
+      children.Append(read.Take());
       if (index + pending < chunks) {
         read = submit(index + pending);
       }
@@ -632,51 +741,51 @@ class Walker {
   };
 
   bool Descendable(const Stated& stated, int depth) const {
-    const bool is_dir = stated.ok && stated.metadata.type == vfs::FileType::kDirectory;
+    const bool is_dir = stated.ok && stated.Type() == vfs::FileType::kDirectory;
     const bool within_depth = options_.max_depth < 0 || depth < options_.max_depth;
-    const bool on_root_fs = !options_.single_filesystem || stated.metadata.dev == root_dev_;
+    const bool on_root_fs = !options_.single_filesystem || stated.Device() == root_dev_;
     return is_dir && within_depth && on_root_fs;
-  }
-
-  // Only the coordinator accesses this record after its listing request completes. Exclusive
-  // ownership makes the lazy cache lock-free; it is never shared with matcher workers.
-  absl::Status LoadMetadata(const Stated& stated, std::string_view path) const {
-    if (!stated.metadata_loaded) {
-      auto metadata = fs_.StatFields(path, follow_children_, options_.metadata_fields);
-      stated.metadata_loaded = true;
-      stated.status = metadata.status();
-      if (metadata.ok()) {
-        stated.metadata = *metadata;
-      }
-    }
-    return stated.status;
   }
 
   // Reports `stated` to the visitor (pre/post order handled by the caller).
   // Returns the visitor's action, or kContinue when the entry is below
   // `min_depth` (traversed but not visited) or failed to stat.
-  WalkAction VisitOne(const Stated& stated, int depth, bool dived = false, std::string_view path = {}) {
+  WalkAction VisitOne(
+      const Stated& stated,
+      LazyMetadataPool& metadata_pool,
+      int depth,
+      bool dived = false,
+      std::string_view path = {}) {
     if (path.empty()) {
       path = stated.path;
     }
     if (!stated.ok) {
       // -ignore_readdir_race: an entry that vanished after readdir (ENOENT) is a
       // race, not an error worth reporting; other stat failures still surface.
-      if (!(options_.ignore_readdir_race && absl::IsNotFound(stated.status))) {
-        on_error_(path, stated.status);
+      if (!(options_.ignore_readdir_race && absl::IsNotFound(stated.complete->status))) {
+        on_error_(path, stated.complete->status);
       }
       return WalkAction::kContinue;
     }
     if (depth < options_.min_depth) {
       return WalkAction::kContinue;
     }
-    const auto load_metadata = [&] { return LoadMetadata(stated, path); };
+    VisitMetadata metadata{
+        .stated = stated,
+        .pool = metadata_pool,
+        .fs = fs_,
+        .path = path,
+        .follow = follow_children_,
+        .fields = options_.metadata_fields,
+        .hint = VisitMetadata::InitialHint(stated),
+    };
+    const auto load_metadata = [&] { return metadata.Load(); };
     const Visit visit{
         .path = path,
         .name = stated.name,
         .root = current_root_,
         .depth = depth,
-        .metadata = stated.metadata,
+        .metadata = metadata.Value(),
         .dived = dived,
         .fs = fs_,
         .fs_owner = fs_owner_,
@@ -690,13 +799,17 @@ class Walker {
     return action;
   }
 
-  static bool IsDir(const Stated& stated) { return stated.ok && stated.metadata.type == vfs::FileType::kDirectory; }
+  static bool IsDir(const Stated& stated) { return stated.ok && stated.Type() == vfs::FileType::kDirectory; }
 
   // Visits `stated` and, if it is a descendable directory, descends into it.
   // Pre-order by default; post-order (`-depth`) descends first, then visits, and
   // `-prune` has no effect (matching find). `prefetched` is the directory's
   // already-submitted listing read (from the parent's batch), or empty to read now.
-  void VisitSubtree(const Stated& stated, int depth, mbo::types::OptionalRef<ReadRequest> prefetched) {
+  void VisitSubtree(
+      const Stated& stated,
+      LazyMetadataPool& metadata_pool,
+      int depth,
+      mbo::types::OptionalRef<ReadRequest> prefetched) {
     if (stopped_) {
       return;
     }
@@ -717,11 +830,11 @@ class Walker {
         DescendContainer(stated, depth);
       }
       if (!stopped_) {
-        VisitOne(stated, depth, options_.mount_before_visit && dived);
+        VisitOne(stated, metadata_pool, depth, options_.mount_before_visit && dived);
       }
       return;
     }
-    const WalkAction action = VisitOne(stated, depth, options_.mount_before_visit && dived);
+    const WalkAction action = VisitOne(stated, metadata_pool, depth, options_.mount_before_visit && dived);
     if (stopped_ || action == WalkAction::kPrune) {
       return;
     }
@@ -739,7 +852,7 @@ class Walker {
   // Reads `dir` (from its prefetched request, or now) and recurses its children,
   // guarding against filesystem loops (only possible when following symlinks).
   void Descend(const Stated& dir, int depth, mbo::types::OptionalRef<ReadRequest> prefetched) {
-    const std::pair<std::uint64_t, std::uint64_t> id{dir.metadata.dev, dir.metadata.ino};
+    const std::pair<std::uint64_t, std::uint64_t> id{dir.Device(), dir.Inode()};
     if (!ancestors_.insert(id).second) {
       on_error_(dir.path, absl::FailedPreconditionError("filesystem loop detected"));
       return;
@@ -754,7 +867,7 @@ class Walker {
       return;
     }
     if (options_.sort != SortOrder::kNone && options_.sort != SortOrder::kRoots) {
-      absl::c_sort(*listing, [this](const Stated& lhs, const Stated& rhs) {
+      absl::c_sort(listing->entries, [this](const Stated& lhs, const Stated& rhs) {
         return name_only_listings_ ? lhs.name < rhs.name : lhs.path < rhs.path;
       });
     }
@@ -766,20 +879,21 @@ class Walker {
   // in how a subdirectory's entry is grouped relative to its subtree. A bounded
   // window overlaps sibling reads while the coordinator visits in order.
   // NOLINTNEXTLINE(readability-function-cognitive-complexity): dispatching the ordering modes is cohesive.
-  void HandleChildren(const std::vector<Stated>& children, int depth, std::string_view directory) {
+  void HandleChildren(const ChildBatch& batch, int depth, std::string_view directory) {
+    const auto& children = batch.entries;
     // This buffer is local to a listing. Nested directory visits cannot invalidate it;
     // queued consumers already snapshot Visit's callback-bounded path observation.
     std::string path_scratch;
     const auto visit_child = [&](const Stated& child, bool dived = false) {
       if (!child.path.empty()) {
-        return VisitOne(child, depth, dived);
+        return VisitOne(child, batch.lazy, depth, dived);
       }
       path_scratch.assign(directory);
       if (!path_scratch.empty() && path_scratch.back() != '/') {
         path_scratch.push_back('/');
       }
       path_scratch.append(child.name);
-      return VisitOne(child, depth, false, path_scratch);
+      return VisitOne(child, batch.lazy, depth, false, path_scratch);
     };
     // Inline DFS at each entry's position. kTree emits a subtree in its sorted
     // place; post-order (`-depth`) always uses this shape (descend then visit).
@@ -795,7 +909,7 @@ class Walker {
         }
         auto read = reads.Take(i);
         VisitSubtree(
-            children.at(i), depth,
+            children.at(i), batch.lazy, depth,
             read.Valid() ? mbo::types::OptionalRef{read} : mbo::types::OptionalRef<ReadRequest>{});
       }
       return;
@@ -820,7 +934,7 @@ class Walker {
         if (IsDir(children[i])) {
           auto read = reads.Take(i);
           VisitSubtree(
-              children.at(i), depth,
+              children.at(i), batch.lazy, depth,
               read.Valid() ? mbo::types::OptionalRef{read} : mbo::types::OptionalRef<ReadRequest>{});
         } else if (dived[i]) {
           // A container groups its members like a directory, so under kSubtree it belongs in the

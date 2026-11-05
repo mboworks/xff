@@ -489,8 +489,9 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       both hosts, including controlled/rg VFS delegation, lazy metadata and exact owned fallbacks.
       Retain native and in-memory broad/deep 10-100k-file, 1/3-worker evidence in
       `docs/benchmarks/native-name-paths-20261104.md`.
-- [ ] O20b: Separately evaluate compact hint/full traversal records; O20a still retains full Metadata
-      per child. Avoid per-file heap/shared ownership and preserve stable lazy metadata observations.
+- [x] O20b: Qualify compact hint/full traversal records without per-file heap/shared owners, preserving
+      stable eager/lazy observations, cached failures, type changes and stat-chunk ownership. Retain
+      [both-host evidence, binary proofs and eager-path costs](docs/benchmarks/compact-traversal-metadata-20261104.md).
 - [x] O20c: Qualify the explicit uniform native-case capability on both hosts, preserving unknown
       backends, macOS volume behavior, required metadata and stdin mixing. Retain all variants,
       slower controls and syscall evidence in `docs/benchmarks/uniform-native-case-20261104.md`.
@@ -501,6 +502,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O20e: Qualify segmented native directory accumulation on both hosts, including wide short/long
       names, exact output, memory and slower small-tree controls. Reject the 256-entry long-name
       regression; retain [selected 4,096-entry policy and all evidence](docs/benchmarks/segmented-native-listings-20261104.md).
+- [ ] O20f: Separately evaluate names-only leaf paths under eager metadata, especially macOS native
+      case. Retain complete observations and reconstruct callback paths; keep actual directory paths,
+      error spellings and eager empty-name fallback. Pass parent directories through existing stat
+      chunks so enabling names-only does not silently disable eager metadata parallelism.
 - [ ] O20: Qualify optional bulk metadata by backend capability with precise fallback, while
       keeping metadata-free traversal free of extra probes and extended-stat work.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte

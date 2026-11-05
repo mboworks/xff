@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Keep sortable traversal entries compact and store complete metadata with each listing, reducing memory and wide metadata-free traversal costs while preserving lazy errors and observations.
+
 - Keep benchmark Similarity task positions fixed across a compatible merged history, worker pairs and scales, preserving gaps for missing tasks.
 
 - Accumulate native directory entries in stable segments before moving them into the public listing, reducing repeated relocation in wide directories.
