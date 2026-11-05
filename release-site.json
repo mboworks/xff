@@ -118,7 +118,9 @@
     "docs/benchmarks/archive-directory-observations-20261105.md": "docs/benchmarks/archive-directory-observations-20261105.html",
     "docs/benchmarks/native-symlink-observations-20261105.md": "docs/benchmarks/native-symlink-observations-20261105.html",
     "docs/benchmarks/native-metadata-followups-20261105.md": "docs/benchmarks/native-metadata-followups-20261105.html",
-    "docs/benchmarks/symlink-target-demand-20261105.md": "docs/benchmarks/symlink-target-demand-20261105.html"
+    "docs/benchmarks/symlink-target-demand-20261105.md": "docs/benchmarks/symlink-target-demand-20261105.html",
+    "docs/benchmarks/native-pgo-20261105.md": "docs/benchmarks/native-pgo-20261105.html",
+    "docs/benchmarks/readlink-short-target-20261105.md": "docs/benchmarks/readlink-short-target-20261105.html"
   },
   "generated_html": {
     "XFF.md": {

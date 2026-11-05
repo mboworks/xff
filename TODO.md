@@ -589,8 +589,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       [Two independent both-host native/archive trials](docs/benchmarks/native-metadata-followups-20261105.md)
       reject duplicated finalization and the compact single-condition form. Full correctness and
       improved generated code do not establish sufficient practical gain; preserve every counterexample.
-- [ ] O20m: Publish the retained short-target-buffer trial independently; no general cross-platform
-      benefit is established and no runtime change is selected from that trial.
+- [x] O20m: [Publish the retained short-target-buffer trial](docs/benchmarks/readlink-short-target-20261105.md).
+      Linux required-target gains are small; the Mac screen does not establish a gain beyond
+      the copied-parent control. No runtime change is selected; both screens and Linux full
+      results, slower controls, exact source and focused gates remain available losslessly.
 - [x] O20n: Compile symlink target demand from field bindings once before traversal, avoiding
       unnecessary target reads in implicit listings. [Both-host qualification](docs/benchmarks/symlink-target-demand-20261105.md)
       retains all outputs and slower controls; full native metadata medians improve on both hosts.
@@ -600,9 +602,15 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       qualify independently of O20n, the short-target-buffer trial and PGO.
 - [ ] O20p: Measure transferring already-owned listing link targets rather than copying them.
       Retain exact fields, buffered/queued output lifetimes and short/long target controls.
-- [ ] O23: Publish the completed native PGO evaluation and reproducible evidence before deciding
-      on a portable profile producer or release default; retain source/compiler/architecture
-      binding, original failed configurations and untrained held-out cases.
+- [x] O23: [Publish the completed native PGO evaluation and evidence](docs/benchmarks/native-pgo-20261105.md).
+      Both 179-case held-out populations pass three nine-repeat sessions retaining seven;
+      both complete 331-target release runs pass in the explicit supported experiment scope.
+      Linux gains remain an opportunity; small generic Mac gains and a 14.33% larger Mac
+      image do not justify a portable default. No build flags or runtime policy change.
+- [ ] O23a: Before adopting PGO, design a portable training producer, exact source/compiler/
+      architecture provenance, artifact trust/retention, regeneration and source-only fallback.
+      Resolve the documented static/test-only profile scope and remeasure integration with
+      subsequent runtime changes. Do not reuse retained diagnostic profiles as release inputs.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte
       equality shortcut on Linux/macOS. Preserve [rejected width-one paths and all controls](docs/benchmarks/byte-shingle-representations-20261102.md).
 - [x] O21b0: Remove the owning similarity binary-sniff prefix while preserving the exact window,

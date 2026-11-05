@@ -4508,3 +4508,29 @@ policy exception; final ordinary rebuilds exactly match the measured private ima
 The compact evidence archive preserves both full populations, original failures and counterexample
 records losslessly. Native input-path storage, owned-target transfer, short-target buffers and PGO
 are independent policies; their results must not be added to this change's measured percentages.
+
+### O20m and O23: completed independent decision reports
+
+The [short symlink-target storage trial](benchmarks/readlink-short-target-20261105.md)
+retains its implemented source, focused release/sanitizer/lint qualification, both 228-case
+screens and complete Linux three-session measurements. Required-target Linux medians improve
+modestly, but the Mac screen's apparent target-output gain is comparable to its copied-parent
+control. No runtime change is selected and no full Mac or 331-target qualification is claimed.
+
+The [native PGO evaluation](benchmarks/native-pgo-20261105.md) completes independent training
+and held-out workloads with exact Clang 23.1.4, source, profile and binary provenance. Both hosts'
+179 held-out cases pass three balanced nine-repeat sessions retaining seven; all 331 release
+targets pass in the explicitly documented static-production/test-only profile scope. Original
+failed configurations and the identity-only query recovery remain retained.
+
+Linux group medians improve approximately 3-10%, while generic Mac groups are mostly small or
+flat and its executable grows 14.33%. Keep the portable build default unchanged. A supported
+profile producer requires deliberate provenance, trust, retention, regeneration, cache and fallback
+policy, plus resolution of the experiment's qualification scope. Neither report enables new build
+flags or installs a training profile. Lossless compressed evidence preserves all named records;
+binary/raw-profile inventories identify separately retained originals rather than publishing
+hundreds of megabytes of executable or training output.
+
+These trials use the ordinary #1110 parent and are independent of compiled target demand,
+native input-path storage and owned-target transfer. Do not add their measured percentages to
+later improvements or compare different private candidate parents as though they were identical.
