@@ -20,6 +20,9 @@
 #include <sys/stat.h>
 #include <sys/un.h>
 #include <unistd.h>
+#if defined(__APPLE__)
+# include <sys/xattr.h>
+#endif
 
 #include <algorithm>
 #include <array>
@@ -63,10 +66,10 @@ using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::Not;
-using ::testing::SizeIs;
-#if !defined(_PC_CASE_SENSITIVE)
+#if defined(__linux__)
 using ::testing::Optional;
 #endif
+using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
 // Builds a small tree under a per-test temp directory:
@@ -107,6 +110,99 @@ TEST_F(LocalFsTest, ReadDirListsChildren) {
       UnorderedElementsAre(
           Field(&Entry::name, Eq("file.txt")), Field(&Entry::name, Eq("sub")), Field(&Entry::name, Eq("link"))));
 }
+
+TEST_F(LocalFsTest, DirectoryObservationsRetainNamesAndCompleteNativeMetadata) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto listing, local_fs_.ReadDirMetadata(root_.string(), MetadataFields::kBasic));
+  EXPECT_THAT(listing.entries, SizeIs(3));
+  EXPECT_THAT(local_fs_.SupportsDirectoryMetadata(3), IsFalse());
+#if defined(__APPLE__)
+  EXPECT_THAT(local_fs_.SupportsDirectoryMetadata(1), IsTrue());
+  ASSERT_THAT(listing.observations, SizeIs(listing.entries.size()));
+  std::size_t observed = 0;
+  for (std::size_t index = 0; index < listing.entries.size(); ++index) {
+    EXPECT_THAT(listing.entries.at(index).path, IsEmpty());
+    const auto& observation = listing.observations.at(index);
+    if (!observation.status.ok()) {
+      EXPECT_THAT(listing.entries.at(index).type, Not(Eq(FileType::kRegular)));
+      continue;
+    }
+    ++observed;
+    MBO_ASSERT_OK_AND_ASSIGN(const auto expected, local_fs_.Stat(Path(listing.entries.at(index).name), false));
+    EXPECT_THAT(observation.value.type, Eq(expected.type));
+    EXPECT_THAT(observation.value.source, Eq(expected.source));
+    EXPECT_THAT(observation.value.size, Eq(expected.size));
+    EXPECT_THAT(observation.value.blocks, Eq(expected.blocks));
+    EXPECT_THAT(observation.value.mode, Eq(expected.mode));
+    EXPECT_THAT(observation.value.nlink, Eq(expected.nlink));
+    EXPECT_THAT(observation.value.uid, Eq(expected.uid));
+    EXPECT_THAT(observation.value.gid, Eq(expected.gid));
+    EXPECT_THAT(observation.value.ino, Eq(expected.ino));
+    EXPECT_THAT(observation.value.dev, Eq(expected.dev));
+    EXPECT_THAT(observation.value.atime, Eq(expected.atime));
+    EXPECT_THAT(observation.value.mtime, Eq(expected.mtime));
+    EXPECT_THAT(observation.value.ctime, Eq(expected.ctime));
+    EXPECT_THAT(observation.value.btime, Eq(expected.btime));
+  }
+  EXPECT_THAT(observed, Eq(1));
+#else
+  EXPECT_THAT(local_fs_.SupportsDirectoryMetadata(1), IsFalse());
+  EXPECT_THAT(listing.observations, IsEmpty());
+#endif
+  EXPECT_THAT(
+      local_fs_.ReadDirMetadata(Path("missing"), MetadataFields::kBirthTime), StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(local_fs_.ReadDirMetadata(Path("file.txt"), MetadataFields::kBasic), Not(IsOk()));
+}
+
+TEST_F(LocalFsTest, DirectoryWithoutCompleteObservationsKeepsOnlyNames) {
+  ASSERT_THAT(fs::remove(root_ / "file.txt"), IsTrue());
+  MBO_ASSERT_OK_AND_ASSIGN(const auto listing, local_fs_.ReadDirMetadata(root_.string(), MetadataFields::kBasic));
+  EXPECT_THAT(listing.entries, UnorderedElementsAre(Field(&Entry::name, Eq("sub")), Field(&Entry::name, Eq("link"))));
+  EXPECT_THAT(listing.observations, IsEmpty());
+}
+
+TEST_F(LocalFsTest, EmbeddedNulDirectorySpellingsRetainTheOrdinaryStatPath) {
+  const std::string directory = root_.string() + std::string("\0ignored", 8);
+  MBO_ASSERT_OK_AND_ASSIGN(const auto listing, local_fs_.ReadDirMetadata(directory, MetadataFields::kBasic));
+  EXPECT_THAT(listing.entries, SizeIs(3));
+  EXPECT_THAT(listing.observations, IsEmpty());
+  EXPECT_THAT(
+      local_fs_.Stat(directory + "/file.txt", false), IsOkAndHolds(Field(&Metadata::type, Eq(FileType::kDirectory))));
+}
+
+#if defined(__APPLE__)
+TEST_F(LocalFsTest, DirectoryObservationsCountResourceForkBlocksAndPreserveSparseAndHardlinkedFiles) {
+  const std::string resource = Path("resource");
+  { std::ofstream(resource) << "data"; }
+  const std::string fork(8'192, 'r');
+  ASSERT_THAT(::setxattr(resource.c_str(), "com.apple.ResourceFork", fork.data(), fork.size(), 0, 0), Eq(0));
+  const std::string sparse = Path("sparse");
+  { const std::ofstream stream(sparse); }
+  fs::resize_file(sparse, 1'048'576);
+  fs::create_hard_link(resource, Path("hardlink"));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto listing, local_fs_.ReadDirMetadata(root_.string(), MetadataFields::kBirthTime));
+  ASSERT_THAT(listing.observations, SizeIs(listing.entries.size()));
+  std::size_t checked = 0;
+  for (std::size_t index = 0; index < listing.entries.size(); ++index) {
+    if (listing.entries.at(index).type != FileType::kRegular) {
+      EXPECT_THAT(listing.observations.at(index).status, Not(IsOk()));
+      continue;
+    }
+    MBO_ASSERT_OK_AND_ASSIGN(const auto expected, local_fs_.Stat(Path(listing.entries.at(index).name), false));
+    EXPECT_THAT(
+        listing.observations.at(index),
+        AllOf(
+            Field(&MetadataObservation::status, IsOk()),
+            Field(
+                &MetadataObservation::value,
+                AllOf(
+                    Field(&Metadata::type, Eq(FileType::kRegular)), Field(&Metadata::size, Eq(expected.size)),
+                    Field(&Metadata::blocks, Eq(expected.blocks)), Field(&Metadata::nlink, Eq(expected.nlink)),
+                    Field(&Metadata::ino, Eq(expected.ino)), Field(&Metadata::btime, Eq(expected.btime))))));
+    ++checked;
+  }
+  EXPECT_THAT(checked, Eq(4));
+}
+#endif
 
 TEST_F(LocalFsTest, NameOnlyListingPreservesNamesTypesAndErrorsWithoutPaths) {
   EXPECT_THAT(local_fs_.SupportsNameOnlyListings(), IsTrue());

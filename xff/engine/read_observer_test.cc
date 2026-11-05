@@ -4,6 +4,7 @@
 #include "xff/engine/read_observer.h"
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -24,13 +25,47 @@ namespace {
 using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
+using ::testing::ElementsAre;
 using ::testing::Eq;
+using ::testing::Field;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
+using ::testing::Optional;
 
 class MemorySource final : public vfs::FileSystem {
  public:
+  mutable std::optional<vfs::MetadataFields> observed_fields;
+
+  bool SupportsNameOnlyListings() const override { return true; }
+
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDirNames(std::string_view path) const override {
+    if (path == "names") {
+      return std::vector<vfs::Entry>{
+          {
+              .name = "leaf",
+          },
+      };
+    }
+    return std::vector<vfs::Entry>{};
+  }
+
+  bool SupportsDirectoryMetadata(std::size_t stat_workers) const override {
+    observed_stat_workers = stat_workers;
+    return true;
+  }
+
+  mutable std::size_t observed_stat_workers = 0;
+
+  absl::StatusOr<vfs::DirectoryMetadata> ReadDirMetadata(std::string_view path, vfs::MetadataFields fields)
+      const override {
+    observed_fields = fields;
+    if (path == "missing") {
+      return absl::NotFoundError("missing");
+    }
+    return vfs::DirectoryMetadata{};
+  }
+
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view) const override { return std::vector<vfs::Entry>{}; }
 
   absl::StatusOr<vfs::Metadata> Stat(std::string_view, bool) const override { return vfs::Metadata{}; }
@@ -111,6 +146,20 @@ TEST_F(ReadObserverTest, ReadOnlyMetadataQueriesKeepBackendResults) {
   EXPECT_THAT(observer_.IsCaseSensitive("file"), IsOkAndHolds(IsTrue()));
   EXPECT_THAT(observer_.Access("file", vfs::AccessMode::kRead), IsTrue());
   EXPECT_THAT(observer_.SupportsDirectoryPolicies(), IsFalse());
+  EXPECT_THAT(observer_.Snapshot().whole.attempts, Eq(0));
+  EXPECT_THAT(observer_.Snapshot().range.attempts, Eq(0));
+}
+
+TEST_F(ReadObserverTest, DirectoryObservationCapabilitiesAndFieldRequestsAreTransparent) {
+  EXPECT_THAT(observer_.SupportsNameOnlyListings(), IsTrue());
+  EXPECT_THAT(observer_.SupportsDirectoryMetadata(3), IsTrue());
+  EXPECT_THAT(source_.observed_stat_workers, Eq(3));
+  EXPECT_THAT(observer_.ReadDirNames("names"), IsOkAndHolds(ElementsAre(Field(&vfs::Entry::name, Eq("leaf")))));
+  EXPECT_THAT(observer_.ReadDirMetadata("root", vfs::MetadataFields::kBasic), IsOk());
+  EXPECT_THAT(source_.observed_fields, Optional(vfs::MetadataFields::kBasic));
+  EXPECT_THAT(
+      observer_.ReadDirMetadata("missing", vfs::MetadataFields::kBirthTime), StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(source_.observed_fields, Optional(vfs::MetadataFields::kBirthTime));
   EXPECT_THAT(observer_.Snapshot().whole.attempts, Eq(0));
   EXPECT_THAT(observer_.Snapshot().range.attempts, Eq(0));
 }

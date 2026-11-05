@@ -43,6 +43,17 @@ class ReadObserver final : public vfs::FileSystem {
       const override;
 
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override;
+
+  bool SupportsNameOnlyListings() const override { return backend_.SupportsNameOnlyListings(); }
+
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDirNames(std::string_view path) const override;
+
+  bool SupportsDirectoryMetadata(std::size_t stat_workers) const override {
+    return backend_.SupportsDirectoryMetadata(stat_workers);
+  }
+
+  absl::StatusOr<vfs::DirectoryMetadata> ReadDirMetadata(std::string_view path, vfs::MetadataFields fields)
+      const override;
   absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool follow) const override;
   bool Access(std::string_view path, vfs::AccessMode mode) const override;
   absl::StatusOr<std::string> ReadLink(std::string_view path) const override;

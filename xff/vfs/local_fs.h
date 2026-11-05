@@ -44,6 +44,9 @@ class LocalFs final : public FileSystem {
   bool SupportsNameOnlyListings() const override { return true; }
 
   absl::StatusOr<std::vector<Entry>> ReadDirNames(std::string_view dir) const override;
+
+  bool SupportsDirectoryMetadata(std::size_t stat_workers) const override;
+  absl::StatusOr<DirectoryMetadata> ReadDirMetadata(std::string_view dir, MetadataFields fields) const override;
   absl::StatusOr<Metadata> Stat(std::string_view path, bool follow_symlinks) const override;
   absl::StatusOr<Metadata> StatFields(std::string_view path, bool follow_symlinks, MetadataFields fields)
       const override;

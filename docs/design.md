@@ -82,6 +82,16 @@ Consumers use capability-oriented `vfs::FileSystem` operations with value-return
 Unsupported operations fail explicitly. POSIX handles and required raw pointers stay inside narrow,
 annotated adapters. All file mutation routes through the common mutation surface.
 
+Optional directory metadata is an owning, aligned read observation, not mutation authorization.
+Backends advertise whether it is preferable to the stat concurrency already available. Complete
+observations can move into sorted batches; missing/error observations retain ordinary stats.
+Metadata-free traversal does not request the capability. Mac uses bulk metadata for eligible regular
+files while keeping directory/link/mount-sensitive stats, parallel coordinator reads and full
+unsupported/malformed-read fallback. Linux retains ordinary enumeration/stat. The
+[measured policy and explicit workload costs](benchmarks/bulk-directory-metadata-20261105.md)
+include serial symlink overhead and wide serial memory growth. These reads remain best-effort
+observations, not an atomic tree snapshot.
+
 Checks precede creation, truncation, publication, deletion, and directory changes. Exclusive creation
 protects existing entries when overwrite is blocked. Directory policies pin roots, prevent traversal
 through untrusted links, intersect overlapping restrictions, protect roots themselves, and preserve

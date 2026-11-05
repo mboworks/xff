@@ -37,6 +37,23 @@ struct MutationPolicy;
 // Backends may supply additional fields when they are available at no extra cost.
 enum class MetadataFields { kBasic, kBirthTime };
 
+// An owned metadata observation. In a directory listing, a non-OK status requests ordinary stat;
+// that lookup, rather than the observation status, determines the visible per-entry error.
+// The engine may transfer the complete record owner without copying every metadata value.
+struct MetadataObservation {
+  Metadata value;
+  absl::Status status;
+};
+
+// One directory listing with optional complete observations in matching entry order. An empty
+// observations vector means ordinary per-entry stat; otherwise it has entries.size() elements.
+// A non-OK observation requests ordinary stat for that entry. Observations describe the entry itself,
+// never a followed symlink target. The listing owns all strings and observations.
+struct DirectoryMetadata {
+  std::vector<Entry> entries;
+  std::vector<MetadataObservation> observations;
+};
+
 // Permission to probe with `FileSystem::Access` (find's -readable/-writable/
 // -executable). Platform-neutral; LocalFs maps these to R_OK/W_OK/X_OK.
 enum class AccessMode { kRead, kWrite, kExecute };
@@ -83,6 +100,15 @@ class FileSystem {
   virtual bool SupportsNameOnlyListings() const { return false; }
 
   virtual absl::StatusOr<std::vector<Entry>> ReadDirNames(std::string_view dir) const;
+
+  // Explicit optional capability for eager metadata. Consumers must not request it for lazy or
+  // metadata-free traversal. Implementations preserve ReadDir/ReadDirNames path conventions and
+  // return only complete, semantically equivalent observations for the requested fields.
+  // A backend may decline this optimization when the coordinator can use multiple stat workers.
+  // Directory-read leaf jobs pass one: they must not dispatch or wait for nested pool work.
+  virtual bool SupportsDirectoryMetadata(std::size_t /*stat_workers*/) const { return false; }
+
+  virtual absl::StatusOr<DirectoryMetadata> ReadDirMetadata(std::string_view dir, MetadataFields fields) const;
 
   // Returns metadata for `path`. When `path` is a symlink, `follow_symlinks`
   // selects `stat` (follow the link, like `-L`) vs `lstat` (the link itself,
