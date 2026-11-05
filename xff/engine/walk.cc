@@ -59,10 +59,7 @@ std::string_view Basename(std::string_view path) {
 }
 
 // Complete observations live beside a listing instead of inside every sortable child.
-struct CompleteMetadata {
-  vfs::Metadata value;
-  absl::Status status;
-};
+using CompleteMetadata = vfs::MetadataObservation;
 
 using LazyMetadataPool =
     mbo::container::SegmentedVector<CompleteMetadata, {.segment_size = 64, .segment_reservation = 0}>;
@@ -176,6 +173,34 @@ struct VisitMetadata {
   }
 };
 
+// Reuses only directory-local scratch. The caller's directory and entry survive each lookup.
+class StatPath final {
+ public:
+  StatPath(std::string_view directory, bool names_only) : directory_(directory), names_only_(names_only) {}
+
+  std::string_view For(const vfs::Entry& entry) {
+    if (!names_only_) {
+      return entry.path;
+    }
+    if (prefix_size_ == std::string::npos) {
+      scratch_.assign(directory_);
+      if (!scratch_.empty() && scratch_.back() != '/') {
+        scratch_.push_back('/');
+      }
+      prefix_size_ = scratch_.size();
+    }
+    scratch_.resize(prefix_size_);
+    scratch_.append(entry.name);
+    return scratch_;
+  }
+
+ private:
+  const std::string_view directory_;
+  const bool names_only_;
+  std::string scratch_;
+  std::size_t prefix_size_ = std::string::npos;
+};
+
 class Walker {
   // Typed leaf jobs share the existing persistent workers. A request owns a slot until its
   // result is consumed, or marks it abandoned so the worker can release it after completion.
@@ -196,6 +221,7 @@ class Walker {
       Kind kind = Kind::kDirectory;
       std::string directory;
       absl::Span<vfs::Entry> entries;
+      absl::Span<const CompleteMetadata> observations;
       Listing listing;
       ChildBatch stated;
       std::atomic<TaskState> state{TaskState::kPending};
@@ -285,12 +311,19 @@ class Walker {
       return Request<Kind::kDirectory>(Submit(Kind::kDirectory, directory, {}));
     }
 
-    Request<Kind::kStat> SubmitStats(absl::Span<vfs::Entry> entries, std::string_view directory) {
-      return Request<Kind::kStat>(Submit(Kind::kStat, directory, entries));
+    Request<Kind::kStat> SubmitStats(
+        absl::Span<vfs::Entry> entries,
+        std::string_view directory,
+        absl::Span<const CompleteMetadata> observations = {}) {
+      return Request<Kind::kStat>(Submit(Kind::kStat, directory, entries, observations));
     }
 
    private:
-    Task& Submit(Kind kind, std::string_view directory, absl::Span<vfs::Entry> entries) {
+    Task& Submit(
+        Kind kind,
+        std::string_view directory,
+        absl::Span<vfs::Entry> entries,
+        absl::Span<const CompleteMetadata> observations = {}) {
       Task& task = [&] -> Task& {
         const absl::MutexLock lock(mutex_);
         if (!storage_) {
@@ -308,6 +341,7 @@ class Walker {
         selected.kind = kind;
         selected.directory = directory;
         selected.entries = entries;
+        selected.observations = observations;
         selected.state.store(TaskState::kPending, std::memory_order_relaxed);
         if (!threads_.empty()) {
           storage_->pending.push(index);
@@ -324,6 +358,7 @@ class Walker {
     void Recycle(Task& task) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
       std::string{}.swap(task.directory);
       task.entries = {};
+      task.observations = {};
       task.listing = absl::UnknownError("");
       task.stated = ChildBatch{};
       task.storage.free.push_back(task.index);
@@ -393,7 +428,7 @@ class Walker {
       if (task.kind == Kind::kDirectory) {
         Complete(task, walker_.ReadDir(task.directory));
       } else {
-        Complete(task, walker_.StatEntries(task.entries, task.directory));
+        Complete(task, walker_.StatEntries(task.entries, task.directory, task.observations));
       }
     }
 
@@ -443,6 +478,10 @@ class Walker {
         follow_children_(options.symlinks == SymlinkMode::kAll),
         name_only_listings_(
             (options.archive != ArchiveDive::kAll || !mount_container) && fs.SupportsNameOnlyListings()),
+        bulk_metadata_listings_(
+            options.metadata == MetadataDemand::kAlways && name_only_listings_ && fs.SupportsDirectoryMetadata(1)),
+        coordinator_bulk_metadata_listings_(
+            bulk_metadata_listings_ && (options.workers <= 1 || fs.SupportsDirectoryMetadata(options.workers))),
         pool_(*this, options.workers > 1 ? options.workers : std::size_t{0}) {}
 
   // Whether `stated` is a FILE this walk should try to open as a container. `kRoots` offers only the
@@ -582,7 +621,7 @@ class Walker {
            || entry.type == vfs::FileType::kDirectory || (follow_children_ && entry.type == vfs::FileType::kSymlink);
   }
 
-  ChildBatch StatEntries(absl::Span<vfs::Entry> entries, std::string_view directory = {}) const {
+  ChildBatch StatOrdinaryEntries(absl::Span<vfs::Entry> entries, std::string_view directory = {}) const {
     ChildBatch children;
     children.entries.reserve(entries.size());
     const std::size_t eager_count =
@@ -625,30 +664,119 @@ class Walker {
     return children;
   }
 
+  // Transfer the observation owner before constructing references into it. It never grows while
+  // children borrow records, and vector moves preserve those addresses through sorting/frontiers.
+  ChildBatch StatObservedEntries(
+      absl::Span<vfs::Entry> entries,
+      std::string_view directory,
+      std::vector<CompleteMetadata> observations) const {
+    ChildBatch children;
+    children.entries.reserve(entries.size());
+    children.eager = std::move(observations);
+    StatPath stat_path(directory, name_only_listings_);
+    for (std::size_t index = 0; index < entries.size(); ++index) {
+      auto& entry = entries.at(index);
+      auto& metadata = children.eager.at(index);
+      if (!metadata.status.ok() || (follow_children_ && metadata.value.type == vfs::FileType::kSymlink)) {
+        metadata = StatNode(stat_path.For(entry), follow_children_);
+      }
+      if (metadata.status.ok() && metadata.value.type == vfs::FileType::kDirectory) {
+        entry.path = stat_path.For(entry);
+      }
+      children.entries.emplace_back(std::move(entry.path), std::move(entry.name), metadata);
+    }
+    return children;
+  }
+
+  ChildBatch StatEntries(
+      absl::Span<vfs::Entry> entries,
+      std::string_view directory,
+      absl::Span<const CompleteMetadata> observations) const {
+    if (observations.empty()) {
+      return StatOrdinaryEntries(entries, directory);
+    }
+    return StatObservedEntries(entries, directory, std::vector<CompleteMetadata>(std::from_range, observations));
+  }
+
+  ChildBatch FinishEntries(vfs::DirectoryMetadata listing, std::string_view directory) const {
+    if (listing.observations.empty()) {
+      return StatOrdinaryEntries(absl::MakeSpan(listing.entries), directory);
+    }
+    return StatObservedEntries(absl::MakeSpan(listing.entries), directory, std::move(listing.observations));
+  }
+
+  absl::StatusOr<vfs::DirectoryMetadata> ReadObservedEntries(const std::string& dir) const {
+    MBO_ASSIGN_OR_RETURN(auto result, fs_.ReadDirMetadata(dir, options_.metadata_fields));
+    if (!result.observations.empty() && result.observations.size() != result.entries.size()) {
+      return absl::InternalError("directory metadata observations do not match entries");
+    }
+    return result;
+  }
+
   Listing ReadDir(const std::string& dir) const {
+    if (bulk_metadata_listings_ && !fs_owner_) {
+      MBO_ASSIGN_OR_RETURN(auto listing, ReadObservedEntries(dir));
+      return FinishEntries(std::move(listing), dir);
+    }
     MBO_ASSIGN_OR_RETURN(auto entries, name_only_listings_ ? fs_.ReadDirNames(dir) : fs_.ReadDir(dir));
-    return StatEntries(absl::MakeSpan(entries), dir);
+    return StatOrdinaryEntries(absl::MakeSpan(entries), dir);
   }
 
   // Only the coordinator dispatches and joins stat chunks. Directory read-ahead jobs
   // stay leaves: no worker ever waits for jobs submitted to its own pool.
   Listing ReadNow(const std::string& dir) {
+    return coordinator_bulk_metadata_listings_ && !fs_owner_ ? ReadObservedNow(dir) : ReadOrdinaryNow(dir);
+  }
+
+  Listing ReadOrdinaryNow(const std::string& dir) {
     MBO_ASSIGN_OR_RETURN(auto entries, name_only_listings_ ? fs_.ReadDirNames(dir) : fs_.ReadDir(dir));
     constexpr std::size_t kChunk = 128;
     if (options_.workers <= 1 || options_.metadata != MetadataDemand::kAlways || entries.size() < 4 * kChunk
         || fs_owner_ || absl::c_any_of(entries, [](const vfs::Entry& entry) {
              return entry.source == vfs::Source::kArchiveMember;
            })) {
-      return StatEntries(absl::MakeSpan(entries), dir);
+      return StatOrdinaryEntries(absl::MakeSpan(entries), dir);
     }
     const auto chunks = (entries.size() + kChunk - 1) / kChunk;
     const auto pending = std::min(chunks, options_.workers);
+    return StatChunks(entries, dir, {}, chunks, pending);
+  }
+
+  Listing ReadObservedNow(const std::string& dir) {
+    MBO_ASSIGN_OR_RETURN(auto listing, ReadObservedEntries(dir));
+    auto& entries = listing.entries;
+    const auto observations = absl::MakeConstSpan(listing.observations);
+    constexpr std::size_t kChunk = 128;
+    const auto chunks = (entries.size() / kChunk) + static_cast<std::size_t>(entries.size() % kChunk != 0);
+    const auto pending = std::min(chunks, options_.workers);
+    const auto missing = observations.empty()
+                             ? entries.size()
+                             : static_cast<std::size_t>(std::ranges::count_if(
+                                   observations, [](const auto& value) { return !value.status.ok(); }));
+    if (pending <= 1 || options_.metadata != MetadataDemand::kAlways || entries.size() < 4 * kChunk
+        || missing < 4 * kChunk || fs_owner_
+        || absl::c_any_of(
+            entries, [](const vfs::Entry& entry) { return entry.source == vfs::Source::kArchiveMember; })) {
+      return FinishEntries(std::move(listing), dir);
+    }
+    return StatChunks(entries, dir, observations, chunks, pending);
+  }
+
+  ChildBatch StatChunks(
+      std::vector<vfs::Entry>& entries,
+      std::string_view dir,
+      absl::Span<const CompleteMetadata> observations,
+      std::size_t chunks,
+      std::size_t pending) {
+    constexpr std::size_t kChunk = 128;
     pool_.Start(pending);
     const auto all_entries = absl::MakeSpan(entries);
     const auto submit = [&](std::size_t index) {
       const auto offset = index * kChunk;
       const auto chunk = all_entries.subspan(offset, std::min(kChunk, entries.size() - offset));
-      return pool_.SubmitStats(chunk, name_only_listings_ ? std::string_view(dir) : std::string_view{});
+      return pool_.SubmitStats(
+          chunk, name_only_listings_ ? std::string_view(dir) : std::string_view{},
+          observations.empty() ? observations : observations.subspan(offset, chunk.size()));
     };
     std::vector<StatRequest> reads;
     reads.reserve(pending);
@@ -995,6 +1123,8 @@ class Walker {
   mbo::types::OptionalRef<const ContainerMounter> mount_container_;
   const bool follow_children_;
   const bool name_only_listings_;
+  const bool bulk_metadata_listings_;
+  const bool coordinator_bulk_metadata_listings_;
   bool stopped_ = false;
   std::uint64_t root_dev_ = 0;
   // How many containers this walker is already inside; 0 for the walk over the real filesystem.

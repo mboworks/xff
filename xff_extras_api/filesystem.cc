@@ -19,6 +19,10 @@ absl::StatusOr<std::vector<Entry>> FileSystem::ReadDirNames(std::string_view dir
   return ReadDir(dir);
 }
 
+absl::StatusOr<DirectoryMetadata> FileSystem::ReadDirMetadata(std::string_view, MetadataFields) const {
+  return absl::UnimplementedError("filesystem does not support directory metadata observations");
+}
+
 absl::StatusOr<Metadata> FileSystem::StatFields(std::string_view path, bool follow_symlinks, MetadataFields /*fields*/)
     const {
   return Stat(path, follow_symlinks);

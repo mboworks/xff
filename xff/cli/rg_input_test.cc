@@ -37,6 +37,12 @@ using ::testing::Return;
 struct HostFs final : vfs::FileSystem {
   MOCK_METHOD(std::optional<bool>, UniformCaseSensitivity, (), (const, override));
   MOCK_METHOD(bool, SupportsNameOnlyListings, (), (const, override));
+  MOCK_METHOD(bool, SupportsDirectoryMetadata, (std::size_t), (const, override));
+  MOCK_METHOD(
+      absl::StatusOr<vfs::DirectoryMetadata>,
+      ReadDirMetadata,
+      (std::string_view path, vfs::MetadataFields fields),
+      (const, override));
   MOCK_METHOD(absl::StatusOr<std::vector<vfs::Entry>>, ReadDirNames, (std::string_view path), (const, override));
   MOCK_METHOD(
       absl::StatusOr<vfs::Metadata>,
@@ -99,6 +105,23 @@ TEST_F(RgInputTest, NameOnlyListsUseHostCapabilityWithoutTreatingStdinAsADirecto
   EXPECT_CALL(host, ReadDirNames("other")).WillOnce(Return(std::vector<vfs::Entry>{}));
   EXPECT_THAT(fs.ReadDirNames("other"), IsOkAndHolds(IsEmpty()));
   EXPECT_THAT(fs.ReadDirNames("-"), StatusIs(absl::StatusCode::kFailedPrecondition, _));
+}
+
+TEST_F(RgInputTest, DirectoryMetadataForwardsHostCapabilityFieldsAndErrorsButRejectsStdin) {
+  const RgInputFs fs(host, "input");
+  EXPECT_CALL(host, SupportsDirectoryMetadata(1)).WillOnce(Return(true)).WillOnce(Return(false));
+  EXPECT_THAT(fs.SupportsDirectoryMetadata(1), IsTrue());
+  EXPECT_THAT(fs.SupportsDirectoryMetadata(1), IsFalse());
+  EXPECT_CALL(host, SupportsDirectoryMetadata(3)).WillOnce(Return(true));
+  EXPECT_THAT(fs.SupportsDirectoryMetadata(3), IsTrue());
+  EXPECT_CALL(host, ReadDirMetadata("other", vfs::MetadataFields::kBasic)).WillOnce(Return(vfs::DirectoryMetadata{}));
+  EXPECT_THAT(
+      fs.ReadDirMetadata("other", vfs::MetadataFields::kBasic),
+      IsOkAndHolds(Field(&vfs::DirectoryMetadata::entries, IsEmpty())));
+  EXPECT_CALL(host, ReadDirMetadata("missing", vfs::MetadataFields::kBirthTime))
+      .WillOnce(Return(absl::NotFoundError("missing")));
+  EXPECT_THAT(fs.ReadDirMetadata("missing", vfs::MetadataFields::kBirthTime), StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(fs.ReadDirMetadata("-", vfs::MetadataFields::kBasic), StatusIs(absl::StatusCode::kFailedPrecondition));
 }
 
 TEST_F(RgInputTest, UniformCaseCapabilityForwardsKnownAndUnknownHostPolicies) {

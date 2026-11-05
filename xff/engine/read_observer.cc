@@ -49,6 +49,15 @@ absl::StatusOr<std::vector<vfs::Entry>> ReadObserver::ReadDir(std::string_view p
   return backend_.ReadDir(path);
 }
 
+absl::StatusOr<std::vector<vfs::Entry>> ReadObserver::ReadDirNames(std::string_view path) const {
+  return backend_.ReadDirNames(path);
+}
+
+absl::StatusOr<vfs::DirectoryMetadata> ReadObserver::ReadDirMetadata(std::string_view path, vfs::MetadataFields fields)
+    const {
+  return backend_.ReadDirMetadata(path, fields);
+}
+
 absl::StatusOr<vfs::Metadata> ReadObserver::Stat(std::string_view path, bool follow) const {
   return backend_.Stat(path, follow);
 }

@@ -31,6 +31,7 @@
 #include "mbo/status/status_macros.h"
 #include "xff/vfs/mutations.h"
 #if defined(__APPLE__)
+# include <sys/attr.h>
 # include <sys/mount.h>  // statfs + f_fstypename (BSD/macOS report the name directly)
 # include <sys/param.h>
 #else
@@ -41,6 +42,7 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <ctime>
@@ -55,11 +57,14 @@
 #include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/time/time.h"
 #include "mbo/container/segmented_vector.h"
+#include "xff/vfs/darwin_bulk.h"
 #include "xff/vfs/entry.h"
 #include "xff/vfs/filesystem.h"
 
@@ -148,6 +153,62 @@ std::string JoinPath(std::string_view dir, std::string_view name) {
   return absl::StrCat(dir, "/", name);
 }
 
+#if defined(__APPLE__)
+// XFF_HOST_IO: optional read-only native directory/attribute adapter; failures reopen normal enumeration.
+absl::StatusOr<DirectoryMetadata> ReadDarwinDirectory(std::string_view dir) {
+  const std::string directory(dir);
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg): POSIX open is the required read-only ABI.
+  const int descriptor = ::open(directory.c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+  if (descriptor < 0) {
+    return absl::ErrnoToStatus(errno, "open directory for bulk metadata");
+  }
+  const absl::Cleanup close = [&] { ::close(descriptor); };
+  struct attrlist attributes{
+      .bitmapcount = ATTR_BIT_MAP_COUNT,
+      .reserved = 0,
+      .commonattr = internal::kBulkCommonAttributes,
+      .volattr = 0,
+      .dirattr = 0,
+      .fileattr = internal::kBulkFileAttributes,
+      .forkattr = 0,
+  };
+  alignas(8) std::array<std::byte, 65'536> buffer;
+  mbo::container::SegmentedVector<Entry, {.segment_size = 4'096, .segment_reservation = 0}> entries;
+  mbo::container::SegmentedVector<MetadataObservation, {.segment_size = 512, .segment_reservation = 0}> observations;
+  while (true) {
+    const int count = ::getattrlistbulk(descriptor, &attributes, buffer.data(), buffer.size(), FSOPT_PACK_INVAL_ATTRS);
+    if (count < 0) {
+      return absl::ErrnoToStatus(errno, "read bulk directory metadata");
+    }
+    if (count == 0) {
+      return DirectoryMetadata{
+          .entries = std::vector<Entry>(std::from_range, std::views::as_rvalue(entries)),
+          .observations = std::vector<MetadataObservation>(std::from_range, std::views::as_rvalue(observations)),
+      };
+    }
+    std::size_t offset = 0;
+    for (int index = 0; index < count; ++index) {
+      MBO_ASSIGN_OR_RETURN(auto record, internal::DecodeDarwinBulkRecord(std::span(buffer).subspan(offset)));
+      offset += record.bytes;
+      if (record.name == "." || record.name == "..") {
+        continue;
+      }
+      if (record.metadata) {
+        // A sidecar is useful only after the first complete observation. Preserve preceding
+        // positions when that happens; directories with none keep the ordinary stat path.
+        while (observations.size() < entries.size()) {
+          observations.push_back(MetadataObservation{.status = absl::UnavailableError("")});
+        }
+        observations.push_back(MetadataObservation{.value = *record.metadata});
+      } else if (!observations.empty()) {
+        observations.push_back(MetadataObservation{.status = absl::UnavailableError("")});
+      }
+      entries.push_back(Entry{.name = std::move(record.name), .type = record.type});
+    }
+  }
+}
+#endif
+
 #if defined(__linux__) && defined(STATX_BTIME)
 absl::Time StatxTime(const struct statx_timestamp& value) {
   return absl::FromUnixSeconds(value.tv_sec) + absl::Nanoseconds(value.tv_nsec);
@@ -230,6 +291,32 @@ absl::StatusOr<std::vector<Entry>> LocalFs::ReadDir(std::string_view dir) const 
 
 absl::StatusOr<std::vector<Entry>> LocalFs::ReadDirNames(std::string_view dir) const {
   return ReadDirectory(dir, false);
+}
+
+bool LocalFs::SupportsDirectoryMetadata(std::size_t stat_workers) const {
+#if defined(__APPLE__)
+  return stat_workers <= 1;
+#else
+  static_cast<void>(stat_workers);
+  return false;
+#endif
+}
+
+absl::StatusOr<DirectoryMetadata> LocalFs::ReadDirMetadata(std::string_view dir, MetadataFields /*fields*/) const {
+#if defined(__APPLE__)
+  // Any unavailable/malformed/failed bulk result is discarded in full. Reopen from the start;
+  // mixing readdir with an already-consumed bulk directory handle is undefined.
+  // Embedded NULs change the subsequent joined stat path's native meaning. Keep ordinary
+  // enumeration/stat for those spellings instead of attaching observations for another path.
+  if (!absl::StrContains(dir, '\0')) {
+    auto observed = ReadDarwinDirectory(dir);
+    if (observed.ok()) {
+      return observed;
+    }
+  }
+#endif
+  MBO_ASSIGN_OR_RETURN(auto entries, ReadDirNames(dir));
+  return DirectoryMetadata{.entries = std::move(entries)};
 }
 
 absl::StatusOr<std::vector<Entry>> LocalFs::ReadDirectory(std::string_view dir, bool include_paths) {

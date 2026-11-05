@@ -29,12 +29,42 @@ alias(
 
 # Local filesystem backend (POSIX opendir/readdir + lstat/stat).
 cc_library(
+    name = "darwin_bulk_cc",
+    srcs = ["darwin_bulk.cc"],
+    hdrs = ["darwin_bulk.h"],
+    deps = [
+        ":vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_test(
+    name = "darwin_bulk_test",
+    size = "small",
+    srcs = ["darwin_bulk_test.cc"],
+    deps = [
+        ":darwin_bulk_cc",
+        ":vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_library(
     name = "local_fs_cc",
     srcs = ["local_fs.cc"],
     hdrs = ["local_fs.h"],
     visibility = ["//xff:__subpackages__"],
     deps = [
+        ":darwin_bulk_cc",
         ":vfs_cc",
+        "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",

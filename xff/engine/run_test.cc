@@ -3904,7 +3904,7 @@ class NoBtimeFs : public vfs::FileSystem {
 
 class NameOnlyRunFs final : public NoBtimeFs {
  public:
-  NameOnlyRunFs() : NoBtimeFs("/fake") {}
+  explicit NameOnlyRunFs(bool observations = false) : NoBtimeFs("/fake"), observations_(observations) {}
 
   bool SupportsNameOnlyListings() const override { return true; }
 
@@ -3919,8 +3919,24 @@ class NameOnlyRunFs final : public NoBtimeFs {
 
   bool ReadNames() const { return read_names_; }
 
+  bool SupportsDirectoryMetadata(std::size_t stat_workers) const override { return observations_ && stat_workers <= 1; }
+
+  absl::StatusOr<vfs::DirectoryMetadata> ReadDirMetadata(std::string_view dir, vfs::MetadataFields) const override {
+    MBO_ASSIGN_OR_RETURN(auto entries, ReadDirNames(dir));
+    MBO_ASSIGN_OR_RETURN(const auto metadata, NoBtimeFs::Stat("/fake/f.txt", false));
+    read_observations_ = true;
+    return vfs::DirectoryMetadata{
+        .entries = std::move(entries),
+        .observations = {vfs::MetadataObservation{.value = metadata}},
+    };
+  }
+
+  bool ReadObservations() const { return read_observations_; }
+
  private:
+  const bool observations_;
   mutable bool read_names_ = false;
+  mutable bool read_observations_ = false;
 };
 
 TEST_F(RunTest, NameOnlyListingSurvivesSafetyWrapperAndXffArchiveDefaults) {
@@ -3932,6 +3948,34 @@ TEST_F(RunTest, NameOnlyListingSurvivesSafetyWrapperAndXffArchiveDefaults) {
       [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }, registry::Style::kXff);
   EXPECT_THAT(result.errors, Eq(0));
   EXPECT_THAT(filesystem.ReadNames(), IsTrue());
+  EXPECT_THAT(output, EqualsText("/fake/f.txt\n"));
+}
+
+TEST_F(RunTest, CompleteDirectoryObservationsSurviveSafetyWrapperAndEagerMatchers) {
+  const NameOnlyRunFs filesystem(true);
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto command,
+      parser::Parse({"--exact", "--color=never", "--safe", "--jobs=1", "/fake", "-size", "0", "-type", "f"}));
+  std::string output;
+  const auto result = RunFind(
+      command, filesystem, [&](std::string_view record) { output.append(record); },
+      [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }, registry::Style::kXff);
+  EXPECT_THAT(result.errors, Eq(0));
+  EXPECT_THAT(filesystem.ReadObservations(), IsTrue());
+  EXPECT_THAT(output, EqualsText("/fake/f.txt\n"));
+}
+
+TEST_F(RunTest, SafetyWrapperPreservesDirectoryObservationWorkerPreference) {
+  const NameOnlyRunFs filesystem(true);
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto command,
+      parser::Parse({"--exact", "--color=never", "--safe", "--jobs=3", "/fake", "-size", "0", "-type", "f"}));
+  std::string output;
+  const auto result = RunFind(
+      command, filesystem, [&](std::string_view record) { output.append(record); },
+      [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }, registry::Style::kXff);
+  EXPECT_THAT(result.errors, Eq(0));
+  EXPECT_THAT(filesystem.ReadObservations(), IsFalse());
   EXPECT_THAT(output, EqualsText("/fake/f.txt\n"));
 }
 

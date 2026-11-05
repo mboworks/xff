@@ -4195,3 +4195,36 @@ on Linux. Focused raw added-line coverage is 96.23% and branch coverage 92.00%; 
 binaries exactly match the frozen selected measurements. Footprint grows 112 bytes on Mac and
 3,912 bytes on Linux. This completes the measured prepared-glob part of O02b, not a general
 terminated-input API, bulk metadata implementation or new worker admission policy.
+
+### O20i: bulk metadata with explicit backend stat-worker preference
+
+The [four-policy report](benchmarks/bulk-directory-metadata-20261105.md) retains both-host native
+and virtual controls, rejected scheduling/ownership policies and all slower cells. The final
+Mac confirmation improves 100k regular-file serial CSV about 34% and deep three-worker CSV
+about 43%. Linux declines bulk metadata and keeps ordinary listing/stat. Complete aligned read
+observations move into sorted ownership; missing, failed, followed-link and directory/mount-sensitive
+metadata retains ordinary stats. Unsupported or malformed bulk reads reopen ordinary listing.
+Embedded-NUL spelling also retains ordinary path semantics. No new lock, timer, thread or dependency.
+
+Do not serialize a coordinator's already-parallel stat work: the first copy/transfer policies cost
+about 6.6-7.7% in broad 10k three-worker cases. Explicit backend preference preserves parallel stats
+while directory-read leaf workers still use bulk metadata. Delayed observation allocation saves
+about 1 MiB for 10k symlinks; it does not remove their serial bulk-read overhead (about 11-18%).
+Wide serial 100k regular-file peak RSS remains about 9.5 MiB higher; retain that footprint tradeoff.
+A generic Mac 1k eager/name-only cell costs 9.39% (roughly 0.268 to 0.289 ms); some wide metadata-free
+virtual controls cost 2.6-2.8%. Linux's clean memory matrix has a +4.15% small eager cell with a
++2.10% identical-copy control. Native ordinary and virtual controls are distinct evidence.
+
+The 329-target release suites, focused sanitizers and actual modified-file lint qualify the
+scheduling policy on both hosts. The final allocation refinement passes the same release/sanitizer suites; its exact binaries
+complete fresh 88-native/160-virtual matrices on both hosts. A final empty-sidecar regression also
+passes scoped sanitizers and actual lint; measured production sources remain unchanged.
+Do not infer Apple-adapter coverage from Linux instrumentation. Linux's first memory matrix overlapped
+fixture generation and is retained but excluded; a clean replacement and separate missing eight
+nonregular native controls complete the protocol without repeating valid regular cases. Actual
+cardinality and driver/source/binary hashes guard those distinctions. O20j retains segmented public
+ownership and expression-proved ineligible-type admission as separate possible follow-ups.
+
+Final raw focused added-code coverage is 230/232 lines (99.14%) and 137/156 branches
+(87.82%). Preserve the rejected ELF identity assumption and the fresh exact-binary
+confirmation rather than weakening runtime comparisons.

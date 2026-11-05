@@ -520,8 +520,17 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O20h: Evaluate a first-device case record with hashed overflow on both hosts; retain the
       existing runtime after inconclusive practical gains. Publish [raw controls, rejected policies
       and mixed-device/deferred regression coverage](docs/benchmarks/native-case-experiments-20261104.md).
-- [ ] O20: Qualify optional bulk metadata by backend capability with precise fallback, while
-      keeping metadata-free traversal free of extra probes and extended-stat work.
+- [x] O20i: Qualify optional bulk metadata by backend stat-worker preference and
+      owning observations. Retain [all four policies, both-host matrices and explicit costs](docs/benchmarks/bulk-directory-metadata-20261105.md),
+      including symlink-only overhead, virtual controls, serial RSS and the clean Linux protocol repeat.
+- [ ] O20j: Evaluate bulk observation storage that avoids public vector materialization and its wide
+      serial RSS cost. Separately assess skipping bulk reads when prepared expression metadata proves
+      no eligible regular files can contribute; preserve directory/link/mount stat semantics and
+      avoid ad hoc flag-name, count or timer gates. Publish only measured improvements.
+- [ ] O20k: Probe complete native bulk observations for non-followed symlinks against every ordinary
+      stat field, including dangling/hardlinked links. Preserve followed-link and mount semantics;
+      select only after native equivalence, malformed-input coverage and both-host measurements.
+      This may remove the retained serial all-symlink bulk-read cost without expression heuristics.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte
       equality shortcut on Linux/macOS. Preserve [rejected width-one paths and all controls](docs/benchmarks/byte-shingle-representations-20261102.md).
 - [x] O21b0: Remove the owning similarity binary-sniff prefix while preserving the exact window,

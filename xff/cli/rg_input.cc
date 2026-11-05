@@ -44,6 +44,14 @@ absl::StatusOr<std::vector<vfs::Entry>> RgInputFs::ReadDirNames(std::string_view
   return host_.ReadDirNames(path);
 }
 
+absl::StatusOr<vfs::DirectoryMetadata> RgInputFs::ReadDirMetadata(std::string_view path, vfs::MetadataFields fields)
+    const {
+  if (IsInput(path)) {
+    return absl::FailedPreconditionError("standard input is not a directory");
+  }
+  return host_.ReadDirMetadata(path, fields);
+}
+
 absl::StatusOr<vfs::Metadata> RgInputFs::Stat(std::string_view path, bool follow) const {
   if (IsInput(path)) {
     return vfs::Metadata{.type = vfs::FileType::kRegular, .size = input_.size()};

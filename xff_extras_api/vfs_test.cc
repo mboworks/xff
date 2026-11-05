@@ -116,6 +116,8 @@ TEST_F(VfsSeamTest, DefaultNameListingPreservesCompletePathsAndErrors) {
   EXPECT_THAT(seam.SupportsNameOnlyListings(), IsFalse());
   EXPECT_THAT(seam.ReadDirNames("/box"), IsOkAndHolds(ElementsAre(Field(&Entry::path, Eq("/box/member.txt")))));
   EXPECT_THAT(seam.ReadDirNames("/missing"), StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(seam.SupportsDirectoryMetadata(1), IsFalse());
+  EXPECT_THAT(seam.ReadDirMetadata("/box", MetadataFields::kBasic), StatusIs(absl::StatusCode::kUnimplemented));
 }
 
 TEST_F(VfsSeamTest, ReadOnlyBackendNeverFallsBackToHostOutput) {

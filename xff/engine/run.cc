@@ -1095,6 +1095,15 @@ class ControlledFileSystem : public vfs::FileSystem {
 
   bool SupportsNameOnlyListings() const override { return fs_.SupportsNameOnlyListings(); }
 
+  bool SupportsDirectoryMetadata(std::size_t stat_workers) const override {
+    return fs_.SupportsDirectoryMetadata(stat_workers);
+  }
+
+  absl::StatusOr<vfs::DirectoryMetadata> ReadDirMetadata(std::string_view dir, vfs::MetadataFields fields)
+      const override {
+    return fs_.ReadDirMetadata(dir, fields);
+  }
+
   absl::StatusOr<std::vector<vfs::Entry>> ReadDirNames(std::string_view dir) const override {
     return fs_.ReadDirNames(dir);
   }
