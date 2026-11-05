@@ -372,11 +372,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       budgets and ownership/growth/move coverage. Retain small regressions and Linux/macOS evidence
       in [the collection-sharing report](docs/benchmarks/collection-text-sharing-20261101.md).
 - [x] O02: Qualify owned-pattern references and prepared simple ASCII glob operands (#1042).
-- [ ] O02b: Evaluate folded simple-glob and terminated-input costs on both hosts. Preserve the active
-      locale, embedded NULs, non-ASCII/complex fallback and legacy/prepared evaluator equivalence;
-      do not assume ASCII folding in arbitrary locales or infer gains from source inspection.
-      [Cross-platform measurements](docs/benchmarks/native-glob-preparation-20261101.md) preserve
-      case-folded/complex fallbacks, native controls and preparation costs.
+- [x] O02b: Qualify prepared folded ASCII globs on both hosts, preserving active thread locale,
+      embedded NULs, non-ASCII/complex fallback and legacy/prepared equivalence. Retain native
+      Linux folded contains after measured regressions. [Selected policies, full observations and
+      qualification](docs/benchmarks/folded-ascii-globs-20261105.md); general terminated-input
+      reuse remains separate work.
 - [x] O03: Qualify cached fuzzy self-score ceilings and bounded per-worker score rows on macOS
       and Linux. Preserve ranking/negation/case semantics and measure allocation counts separately.
       [Selected policy and full evidence](docs/benchmarks/fuzzy-score-workspace-20261102.md): exact

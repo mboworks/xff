@@ -149,6 +149,16 @@ TEST_F(GlobEvaluateTest, SimpleAndComplexPatternsAgreeWithNativeFnmatch) {
   Check(patterns, texts);
 }
 
+TEST_F(GlobEvaluateTest, FoldedLiteralShapesAndAsciiBytesAgreeWithNativeFnmatch) {
+  const std::vector<std::string> patterns{
+      "I", "i", "K", "s", "A*", "*Z", "*Bc*", "AB*YZ", "AB*BC", "**", "*", "*.TXT",
+  };
+  const std::vector<std::string> texts{
+      "", "I", "i", "k", "K", "S", "s", "a", "AbBc", "abc", "abcyz", "ABBC", "file.txt", "FILE.TXT",
+  };
+  Check(patterns, texts);
+}
+
 TEST_F(GlobEvaluateTest, MissingPatternRemainsANonMatchInAnInProcessExpression) {
   const vfs::Metadata metadata{.type = vfs::FileType::kRegular};
   const Visit visit{.path = "file.txt", .name = "file.txt", .metadata = metadata};

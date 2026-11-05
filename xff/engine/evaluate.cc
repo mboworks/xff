@@ -27,8 +27,11 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
+#include <cwctype>
 #include <functional>
 #include <iostream>
 #include <limits>
@@ -3183,6 +3186,75 @@ PreparedOperand PrepareGlobOperand(std::string_view argument) {
   return result;
 }
 
+#if defined(__APPLE__)
+constexpr bool kUseFoldedContains = true;
+#else
+constexpr bool kUseFoldedContains = false;
+#endif
+
+// Both operands passed ASCII validation. Match libc's byte/wide folding choice
+// in the active thread locale; never cache a process-global locale assumption.
+bool EqualAsciiInActiveLocale(char left, char right) {
+  if (left == right) {
+    return true;
+  }
+  const auto first = static_cast<unsigned char>(left);
+  const auto second = static_cast<unsigned char>(right);
+  if (MB_CUR_MAX == 1) {
+    return std::tolower(first) == std::tolower(second);
+  }
+  return std::towlower(first) == std::towlower(second);
+}
+
+template<bool Fold>
+bool EqualGlobLiteral(std::string_view text, std::string_view literal) {
+  if constexpr (Fold) {
+    return std::ranges::equal(text, literal, EqualAsciiInActiveLocale);
+  } else {
+    return text == literal;
+  }
+}
+
+template<bool Fold>
+bool StartsWithGlobLiteral(std::string_view text, std::string_view literal) {
+  return text.size() >= literal.size() && EqualGlobLiteral<Fold>(text.substr(0, literal.size()), literal);
+}
+
+template<bool Fold>
+bool EndsWithGlobLiteral(std::string_view text, std::string_view literal) {
+  return text.size() >= literal.size() && EqualGlobLiteral<Fold>(text.substr(text.size() - literal.size()), literal);
+}
+
+template<bool Fold>
+bool ContainsGlobLiteral(std::string_view text, std::string_view literal) {
+  if constexpr (Fold) {
+    return literal.empty() || !std::ranges::search(text, literal, EqualAsciiInActiveLocale).empty();
+  } else {
+    return text.contains(literal);
+  }
+}
+
+template<bool Fold>
+bool MatchesSimpleGlob(const GlobPattern& pattern, const std::string& argument, std::string_view text) {
+  const std::string_view literal(argument.data(), pattern.length);
+  switch (pattern.kind) {
+    case GlobKind::kLiteral: return EqualGlobLiteral<Fold>(text, literal);
+    case GlobKind::kPrefix: return StartsWithGlobLiteral<Fold>(text, literal.substr(0, pattern.star));
+    case GlobKind::kSuffix: return EndsWithGlobLiteral<Fold>(text, literal.substr(1));
+    case GlobKind::kContains:
+      if constexpr (Fold && !kUseFoldedContains) {
+        return Fnmatch(argument, text, FNM_CASEFOLD);
+      } else {
+        return ContainsGlobLiteral<Fold>(text, literal.substr(1, literal.size() - 2));
+      }
+    case GlobKind::kPrefixSuffix:
+      return text.size() >= literal.size() - 1 && StartsWithGlobLiteral<Fold>(text, literal.substr(0, pattern.star))
+             && EndsWithGlobLiteral<Fold>(text, literal.substr(pattern.star + 1));
+    case GlobKind::kFallback: return Fnmatch(argument, text, Fold ? FNM_CASEFOLD : 0);
+  }
+  std::unreachable();  // LCOV_EXCL_LINE: every prepared glob kind is handled above.
+}
+
 bool MatchesPreparedGlob(
     const parser::Expr& expression,
     const PreparedOperand& operand,
@@ -3191,12 +3263,12 @@ bool MatchesPreparedGlob(
   if (expression.args.empty()) {
     return false;
   }
-  if (flags != 0 || !std::holds_alternative<GlobPattern>(operand)) {
+  if ((flags != 0 && flags != FNM_CASEFOLD) || !std::holds_alternative<GlobPattern>(operand)) {
     return Fnmatch(expression.args.front(), text, flags);
   }
   const auto& pattern = std::get<GlobPattern>(operand);
-  if (pattern.kind != GlobKind::kFallback) {
-    // Locale-sensitive/multibyte behavior remains with libc. ASCII and zero flags use byte slices.
+  if (pattern.kind != GlobKind::kFallback
+      && (flags == 0 || pattern.kind != GlobKind::kContains || kUseFoldedContains)) {
     for (std::size_t index = 0; index < text.size(); ++index) {
       const auto byte = static_cast<unsigned char>(text[index]);
       if (byte == 0) {
@@ -3208,18 +3280,8 @@ bool MatchesPreparedGlob(
       }
     }
   }
-  const std::string_view literal(expression.args.front().data(), pattern.length);
-  switch (pattern.kind) {
-    case GlobKind::kLiteral: return text == literal;
-    case GlobKind::kPrefix: return text.starts_with(literal.substr(0, pattern.star));
-    case GlobKind::kSuffix: return text.ends_with(literal.substr(1));
-    case GlobKind::kContains: return text.contains(literal.substr(1, literal.size() - 2));
-    case GlobKind::kPrefixSuffix:
-      return text.size() >= literal.size() - 1 && text.starts_with(literal.substr(0, pattern.star))
-             && text.ends_with(literal.substr(pattern.star + 1));
-    case GlobKind::kFallback: return Fnmatch(expression.args.front(), text, flags);
-  }
-  std::unreachable();  // LCOV_EXCL_LINE: every internally prepared glob kind is handled above.
+  return flags == 0 ? MatchesSimpleGlob<false>(pattern, expression.args.front(), text)
+                    : MatchesSimpleGlob<true>(pattern, expression.args.front(), text);
 }
 
 bool EvalPreparedName(

@@ -557,6 +557,12 @@ hot-loop/storage overhead. Moving cost into the first match is not by itself a s
 reached predicate. The original tree remains the qualification baseline; the coordinator strategy
 selected after these measurements is described in the production section below.
 
+Prepared name/path globs reuse simple ASCII shapes for exact and folded matching. Folded
+comparisons honor the active thread locale; non-ASCII text/patterns, complex syntax and unsupported
+flags retain native `fnmatch`. Folded contains remains native on Linux after measured search costs,
+while macOS uses the prepared search. Scalar reference and regex-fnmatch backends stay native.
+See the [policy and qualification report](benchmarks/folded-ascii-globs-20261105.md).
+
 ### Evaluator operand/effect inventory
 
 The registry remains authoritative for spelling, aliases, traversal, metadata, safety and worker
