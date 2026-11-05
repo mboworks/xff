@@ -118,7 +118,8 @@ first-party headers Bazel exposes through `-isystem`: the temporary lint compile
 only owned include directories as normal includes, leaving production commands and foreign
 system-header/macro suppression unchanged. The runner derives anchored repository and
 Bazel alias paths so a checkout named `xff` does not accidentally include unrelated dependency
-headers. Before an enforcing run, a tiny real clang-tidy probe checks relative/absolute include
+headers. An external module alias must end at its direct canonical root (`xff_NAME+/`);
+nested dependency repositories such as `xff_squashfs++http_archive+libsqsh` remain foreign. Before an enforcing run, a tiny real clang-tidy probe checks relative/absolute include
 paths and normal/system-header handling; suppressed owned findings or reported dependency findings
 fail before the expensive translation-unit pass. This diagnostic filter does not broaden the
 selected translation units. Changes to these lint-policy scripts request the full indexed

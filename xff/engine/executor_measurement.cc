@@ -219,7 +219,7 @@ absl::StatusOr<ExecutorProbeMeasurement> MeasureExecutor(const ExecutorProbeConf
   auto start = Clock::now();
   executor->Start(config.participants - 1);
   result.start_seconds = Elapsed(start);
-  result.background_workers = executor->worker_count();
+  result.background_workers = executor->WorkerCount();
   result.first_dispatch = FirstDispatch(*executor, config.participants);
   result.warmed =
       config.dispatch == ExecutorProbeDispatch::kDrain ? DrainSweeps(*executor, config) : LeafSweeps(*executor, config);

@@ -41,7 +41,7 @@ TEST_F(FuseApiTest, ResolveMatchesTheLoadersVerdict) {
 TEST_F(FuseApiTest, AvailableMeansEveryPointerIsTypedAndNonNull) {
   if (!FuseAvailable()) {
     // NOLINTNEXTLINE(readability-implicit-bool-conversion): fires inside GTEST_SKIP's expansion.
-    GTEST_SKIP() << "no FUSE3 on this machine: " << FuseLoader::Instance().error();
+    GTEST_SKIP() << "no FUSE3 on this machine: " << FuseLoader::Instance().Error();
   }
   MBO_ASSERT_OK_AND_ASSIGN(const FuseApi api, FuseApi::Resolve());
   EXPECT_THAT(api.session_new, NotNull());
@@ -61,7 +61,7 @@ TEST_F(FuseApiTest, AvailableMeansEveryPointerIsTypedAndNonNull) {
 TEST_F(FuseApiTest, UnavailableCarriesTheLoadersReason) {
   if (FuseAvailable()) {
     // NOLINTNEXTLINE(readability-implicit-bool-conversion): fires inside GTEST_SKIP's expansion.
-    GTEST_SKIP() << "FUSE3 present (" << FuseLoader::Instance().library() << ")";
+    GTEST_SKIP() << "FUSE3 present (" << FuseLoader::Instance().Library() << ")";
   }
   EXPECT_THAT(FuseApi::Resolve(), StatusIs(absl::StatusCode::kUnavailable));
 }

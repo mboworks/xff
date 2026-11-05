@@ -47,7 +47,7 @@ struct CompatibilityOption {
     kNoColumn,
     kPretty,
     kUnicode,
-    kNoUnicode
+    kNoUnicode,
   };
   std::string_view name;
   std::string_view alias;

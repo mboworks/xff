@@ -30,14 +30,14 @@ def arguments(entry: dict[str, object]) -> list[str]:
 
 def owned_header_filter(repository: pathlib.Path) -> str:
     """Match XFF source/generated headers through relative and Bazel alias paths."""
-    source = r"(xff/|xff_extras_api/|extra_modules/|external/xff_[^/]+/)"
-    generated = r"[^/]+/bin/(xff/|xff_extras_api/|external/xff_[^/]+/)"
+    source = r"(xff/|xff_extras_api/|extra_modules/|external/xff_[a-z0-9_]+\+/)"
+    generated = r"[^/]+/bin/(xff/|xff_extras_api/|external/xff_[a-z0-9_]+\+/)"
     owned = rf"({source}|bazel-out/{generated})"
     root = repository.absolute()
     patterns = [rf"(\./)?{owned}"]
     for spelling in sorted({root, root.resolve()}):
         patterns.append(re.escape(str(spelling)) + "/" + owned)
-    for alias, suffix in ((root / "external", r"xff_[^/]+/"),
+    for alias, suffix in ((root / "external", r"xff_[a-z0-9_]+\+/"),
                           (root / "bazel-out", generated)):
         spellings = {alias.absolute(), alias.resolve()}
         if alias.is_symlink():

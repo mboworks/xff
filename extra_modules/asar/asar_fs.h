@@ -34,6 +34,9 @@ class AsarFileSystem : public vfs::FileSystem {
       std::string bytes,
       archive::MemberPathOptions options = {});
 
+  ~AsarFileSystem() override = default;
+  AsarFileSystem(const AsarFileSystem&) = delete;
+  AsarFileSystem& operator=(const AsarFileSystem&) = delete;
   AsarFileSystem(AsarFileSystem&& other) noexcept;
   AsarFileSystem& operator=(AsarFileSystem&& other) noexcept = delete;
 

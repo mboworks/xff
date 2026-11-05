@@ -55,6 +55,8 @@
 #include <cstddef>
 #include <cstdint>
 
+// Preserve the transcribed libfuse C ABI names and its root-inode enum.
+// NOLINTBEGIN(readability-identifier-naming,cppcoreguidelines-use-enum-class)
 extern "C" {
 
 // Passed through only, so deliberately incomplete: no layout to get wrong.
@@ -144,5 +146,6 @@ struct fuse_lowlevel_ops {
 };
 
 }  // extern "C"
+// NOLINTEND(readability-identifier-naming,cppcoreguidelines-use-enum-class)
 
 #endif  // XFF_FUSE_FUSE_ABI_H_

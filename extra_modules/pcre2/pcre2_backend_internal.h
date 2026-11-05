@@ -14,6 +14,8 @@
 // limitations under the License.
 
 #ifndef XFF_PCRE2_BACKEND_INTERNAL_H_
+// The include guard retains the canonical PCRE2 module spelling.
+// NOLINTNEXTLINE(readability-identifier-naming)
 #define XFF_PCRE2_BACKEND_INTERNAL_H_
 
 #include <functional>

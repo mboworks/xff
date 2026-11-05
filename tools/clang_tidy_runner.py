@@ -96,6 +96,8 @@ def verify_header_visibility(clang_tidy: str) -> None:
         "external/mboworks_mbo+/probe6.h",
         "external/abseil-cpp+/probe7.h",
         "xff_near_miss/probe8.h",
+        "external/xff_squashfs++http_archive+libsqsh/probe9.h",
+        "bazel-out/platform/bin/external/xff_squashfs++http_archive+libsqsh/probe10.h",
     )
     with tempfile.TemporaryDirectory(prefix="xff-clang-tidy-headers-") as temporary:
         root = pathlib.Path(temporary) / "xff"

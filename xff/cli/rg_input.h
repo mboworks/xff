@@ -35,7 +35,7 @@ absl::StatusOr<std::string> ReadRgStdin();
 class RgInputFs final : public vfs::FileSystem {
  public:
   RgInputFs(const vfs::FileSystem& host, std::optional<std::string> input)
-      : host_(host), input_(input.value_or(std::string())), has_input_(input.has_value()) {}
+      : host_(host), has_input_(input.has_value()), input_(std::move(input).value_or(std::string())) {}
 
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override;
 
@@ -76,8 +76,8 @@ class RgInputFs final : public vfs::FileSystem {
   bool IsInput(std::string_view path) const { return has_input_ && path == "-"; }
 
   const vfs::FileSystem& host_;
-  std::string input_;
   bool has_input_;
+  std::string input_;
 };
 }  // namespace xff::cli
 #endif  // XFF_CLI_RG_INPUT_H_

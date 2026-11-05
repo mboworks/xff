@@ -44,6 +44,9 @@ class ClangTidyCompdbTest(unittest.TestCase):
         foreign = (
             "external/mboworks_mbo+",
             "external/abseil-cpp+",
+            "external/xff_squashfs++http_archive+libsqsh/include",
+            "external/xff_archive+near_miss",
+            "bazel-out/platform/bin/external/xff_squashfs++http_archive+libsqsh/include",
             "xff_near_miss",
             "xff_extras_api_near_miss",
             "/Library/Developer/SDK/usr/include",
@@ -74,6 +77,8 @@ class ClangTidyCompdbTest(unittest.TestCase):
             paths = [external / "xff_archive+", external / "mboworks_mbo+",
                      generated / "platform/bin/external/xff_extras_api+/_virtual_includes/api",
                      generated / "platform/bin/external/abseil-cpp+"]
+            paths.extend((external / "xff_squashfs++http_archive+libsqsh/include",
+                          generated / "platform/bin/external/xff_squashfs++http_archive+libsqsh/include"))
             command = [argument for path in paths for argument in ("-isystem", str(path))]
             expected = [argument for index, path in enumerate(paths)
                         for argument in ("-I" if index in (0, 2) else "-isystem", str(path))]

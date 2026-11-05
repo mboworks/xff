@@ -36,7 +36,7 @@ enum class Capability {
   kOutputFileDeletion,
   kOutputDirectoryCreation,
   kOutputDirectoryDeletion,
-  kCount
+  kCount,
 };
 
 struct DetailedPolicy {
