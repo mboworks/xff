@@ -26,7 +26,7 @@
 //
 // Scope: the FUSE3 API, including Linux SONAMEs 3 and 4. The ABI subset in fuse_abi.h
 // works with both; SONAME 4 is still the FUSE3 API. macFUSE installations that ship only the legacy fuse2 library
-// report unavailable (with the library name in `error()`); supporting the fuse2 lowlevel API is a separate decision to
+// report unavailable (with the library name in `Error()`); supporting the fuse2 lowlevel API is a separate decision to
 // take when a real macFUSE user appears, not a default.
 
 #include <string>
@@ -62,13 +62,13 @@ class FuseLoader {
   static const FuseLoader& Instance();
 
   // Whether the platform FUSE library was found with every required symbol.
-  [[nodiscard]] bool available() const { return handle_ != nullptr; }
+  [[nodiscard]] bool Available() const { return handle_ != nullptr; }
 
   // The library name that was loaded, or empty when unavailable.
-  [[nodiscard]] std::string_view library() const { return library_; }
+  [[nodiscard]] std::string_view Library() const { return library_; }
 
   // Why the loader is unavailable, or empty when it is available.
-  [[nodiscard]] std::string_view error() const { return error_; }
+  [[nodiscard]] std::string_view Error() const { return error_; }
 
   // The resolved address of a required symbol, or nullptr (always nullptr when unavailable). The
   // mount server casts these to the fuse3 function types at its call sites.
@@ -90,7 +90,7 @@ class FuseLoader {
   std::string error_;
 };
 
-// Convenience for the common question; same probe as Instance().available().
+// Convenience for the common question; same probe as Instance().Available().
 [[nodiscard]] bool FuseAvailable();
 
 }  // namespace xff::fuse

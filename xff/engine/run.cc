@@ -1712,7 +1712,7 @@ ShardStatusCohort MakeShardStatusCohort(
   ShardStatusCohort cohort;
   for (const std::size_t index : indexes) {
     const DeferredCandidate& candidate = entries[index];
-    if (candidate.entry.metadata.type != vfs::FileType::kRegular) {
+    if (candidate.entry.Metadata().type != vfs::FileType::kRegular) {
       continue;
     }
     const std::optional<shard::Match> decoded = shard_matcher.Decode(candidate.entry.Name());
@@ -1724,9 +1724,9 @@ ShardStatusCohort MakeShardStatusCohort(
     if (visits.empty()) {
       cohort.files.push_back({
           .name = name,
-          .size = candidate.entry.metadata.size,
-          .mode = candidate.entry.metadata.mode,
-          .mtime = absl::ToUnixNanos(candidate.entry.metadata.mtime),
+          .size = candidate.entry.Metadata().size,
+          .mode = candidate.entry.Metadata().mode,
+          .mtime = absl::ToUnixNanos(candidate.entry.Metadata().mtime),
       });
     }
     visits.push_back(index);

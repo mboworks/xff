@@ -188,9 +188,9 @@ struct FuseServerTest : ::testing::Test {
 #else
     if (!FuseAvailable()) {
 # if defined(XFF_FUSE_TESTS_REQUIRED)
-      FAIL() << "fuse3 must be loadable here: " << FuseLoader::Instance().error();
+      FAIL() << "fuse3 must be loadable here: " << FuseLoader::Instance().Error();
 # else
-      GTEST_SKIP() << "no fuse3 on this machine: " << FuseLoader::Instance().error();
+      GTEST_SKIP() << "no fuse3 on this machine: " << FuseLoader::Instance().Error();
 # endif
     }
     // A plain directory is all a mount point is; MountRoot (which normally provides it) has its
@@ -239,7 +239,7 @@ TEST_F(FuseServerTest, AnInvalidMountPointReportsTheMountFailure) {
   GTEST_SKIP() << "MSan cannot model the uninstrumented system libfuse3";
 #else
   if (!FuseAvailable()) {
-    GTEST_SKIP() << "no fuse3 on this machine: " << FuseLoader::Instance().error();
+    GTEST_SKIP() << "no fuse3 on this machine: " << FuseLoader::Instance().Error();
   }
   const std::string absent =
       (std::filesystem::path(::testing::TempDir()) / "xff-fuse-absent-mount-point" / "child").string();

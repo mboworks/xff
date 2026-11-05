@@ -113,6 +113,18 @@ select the affected translation units. A single coordinator defaults to the dete
 that count, or leave it unset (`auto`) to use CPU detection. GitHub CI explicitly supplies its
 runner CPU count; there is no fixed two-worker local limit.
 
+Diagnostics include XFF core, extras API, extension-module and generated owned headers, including
+first-party headers Bazel exposes through `-isystem`: the temporary lint compile database treats
+only owned include directories as normal includes, leaving production commands and foreign
+system-header/macro suppression unchanged. The runner derives anchored repository and
+Bazel alias paths so a checkout named `xff` does not accidentally include unrelated dependency
+headers. An external module alias must end at its direct canonical root (`xff_NAME+/`);
+nested dependency repositories such as `xff_squashfs++http_archive+libsqsh` remain foreign. Before an enforcing run, a tiny real clang-tidy probe checks relative/absolute include
+paths and normal/system-header handling; suppressed owned findings or reported dependency findings
+fail before the expensive translation-unit pass. This diagnostic filter does not broaden the
+selected translation units. Changes to these lint-policy scripts request the full indexed
+translation-unit scope in CI, as toolchain and `.clang-tidy` changes already do.
+
 When Trunk manages Git hooks, its commit and push actions invoke the entire configured pre-commit
 suite, including formatting, repository policy and clang-tidy. Invoking only the clang-tidy hook
 would omit clang-format and the policy checks because Trunk does not own those checks.

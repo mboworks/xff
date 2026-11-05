@@ -85,16 +85,16 @@ TEST_F(FuseLoaderTest, TheProbeIsStableAcrossCalls) {
   const FuseLoader& first = FuseLoader::Instance();
   const FuseLoader& second = FuseLoader::Instance();
   EXPECT_THAT(&second, Eq(&first));
-  EXPECT_THAT(FuseAvailable(), Eq(first.available()));
+  EXPECT_THAT(FuseAvailable(), Eq(first.Available()));
 }
 
 TEST_F(FuseLoaderTest, AvailableMeansEveryRequiredSymbolResolves) {
   const FuseLoader& loader = FuseLoader::Instance();
-  if (!loader.available()) {
-    GTEST_SKIP() << "no FUSE3 on this machine: " << loader.error();
+  if (!loader.Available()) {
+    GTEST_SKIP() << "no FUSE3 on this machine: " << loader.Error();
   }
-  EXPECT_THAT(loader.library(), Not(IsEmpty()));
-  EXPECT_THAT(loader.error(), IsEmpty());
+  EXPECT_THAT(loader.Library(), Not(IsEmpty()));
+  EXPECT_THAT(loader.Error(), IsEmpty());
   for (const std::string_view symbol : RequiredSymbols()) {
     EXPECT_THAT(loader.Symbol(symbol), NotNull()) << symbol;
   }
@@ -102,11 +102,11 @@ TEST_F(FuseLoaderTest, AvailableMeansEveryRequiredSymbolResolves) {
 
 TEST_F(FuseLoaderTest, UnavailableCarriesTheReasonAndResolvesNothing) {
   const FuseLoader& loader = FuseLoader::Instance();
-  if (loader.available()) {
-    GTEST_SKIP() << "FUSE3 present (" << loader.library() << "); the unavailable path is not reachable here";
+  if (loader.Available()) {
+    GTEST_SKIP() << "FUSE3 present (" << loader.Library() << "); the unavailable path is not reachable here";
   }
-  EXPECT_THAT(loader.library(), IsEmpty());
-  EXPECT_THAT(loader.error(), Not(IsEmpty()));
+  EXPECT_THAT(loader.Library(), IsEmpty());
+  EXPECT_THAT(loader.Error(), Not(IsEmpty()));
   EXPECT_THAT(loader.Symbol("fuse_session_new"), IsNull());
 }
 

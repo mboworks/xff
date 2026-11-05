@@ -9,12 +9,19 @@ import argparse
 import concurrent.futures
 import dataclasses
 import os
+import pathlib
 import signal
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from typing import IO, Optional, Sequence
+
+if __package__:
+    from .clang_tidy_compdb import normalize_owned_includes, owned_header_filter
+else:
+    from clang_tidy_compdb import normalize_owned_includes, owned_header_filter
 
 
 @dataclasses.dataclass(frozen=True)
@@ -71,14 +78,71 @@ class ProcessRegistry:
                 process.kill()
 
 
+def header_filter_arguments(repository: pathlib.Path) -> tuple[str]:
+    return (f"--header-filter={owned_header_filter(repository)}",)
+
+
+def verify_header_visibility(clang_tidy: str) -> None:
+    """Exercise real diagnostic visibility without enabling unrelated system macros."""
+    owned = (
+        "xff/probe0.h",
+        "xff_extras_api/probe1.h",
+        "extra_modules/archive/probe2.h",
+        "external/xff_archive+/probe3.h",
+        "bazel-out/platform/bin/external/xff_extras_api+/_virtual_includes/probe/probe4.h",
+    )
+    foreign = (
+        "mbo/probe5.h",
+        "external/mboworks_mbo+/probe6.h",
+        "external/abseil-cpp+/probe7.h",
+        "xff_near_miss/probe8.h",
+        "external/xff_squashfs++http_archive+libsqsh/probe9.h",
+        "bazel-out/platform/bin/external/xff_squashfs++http_archive+libsqsh/probe10.h",
+    )
+    with tempfile.TemporaryDirectory(prefix="xff-clang-tidy-headers-") as temporary:
+        root = pathlib.Path(temporary) / "xff"
+        for index, name in enumerate((*owned, *foreign)):
+            header = root / name
+            header.parent.mkdir(parents=True, exist_ok=True)
+            content = f"inline int* probe_{index} = 0;\n"
+            if index == 6:
+                content += "#define FOREIGN_BITS(value) ((value) & 1)\n"
+            header.write_text(content, encoding="utf-8")
+        source = root / "probe.cc"
+        for include_kind in ("-I", "-isystem"):
+            for absolute in (False, True):
+                include_arguments = []
+                for name in (*owned, *foreign):
+                    parent = (root / name).parent if absolute else pathlib.Path(name).parent
+                    include_arguments.extend((include_kind, str(parent)))
+                source_text = "".join(f"#include <{pathlib.Path(name).name}>\n"
+                                      for name in (*owned, *foreign))
+                if include_kind == "-isystem":
+                    source_text += "unsigned foreign_bits(unsigned value) { return FOREIGN_BITS(value); }\n"
+                source.write_text(source_text, encoding="utf-8")
+                command = [clang_tidy, "--quiet", *header_filter_arguments(root),
+                           "--checks=-*,modernize-use-nullptr,bugprone-signed-bitwise",
+                           "--warnings-as-errors=*", str(source), "--", "-std=c++23",
+                           *normalize_owned_includes(include_arguments, root, root)]
+                result = subprocess.run(command, cwd=root, text=True, stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT, check=False, timeout=30)
+                seen = {name for name in (*owned, *foreign) if f"{name}:1:" in result.stdout}
+                if (result.returncode != 1 or seen != set(owned)
+                        or "bugprone-signed-bitwise" in result.stdout):
+                    raise RuntimeError("clang-tidy owned-header visibility probe failed: "
+                                       f"{include_kind} absolute={absolute}; diagnosed {sorted(seen)}\n"
+                                       + result.stdout)
+
+
 def run_task(
     task: Task,
     clang_tidy: str,
     compile_database: str,
     registry: ProcessRegistry,
     extra_args: Sequence[str],
+    header_arguments: Sequence[str],
 ) -> Result:
-    command = [clang_tidy, "--quiet", "--header-filter=(^|/)mbo/"]
+    command = [clang_tidy, "--quiet", *header_arguments]
     if task.checks:
         command.append(f"--checks={task.checks}")
     command.extend(extra_args)
@@ -130,6 +194,7 @@ def run_all(
         flush=True,
     )
     registry = ProcessRegistry()
+    header_arguments = header_filter_arguments(pathlib.Path.cwd())
     failed = 0
     started = time.monotonic()
 
@@ -142,7 +207,8 @@ def run_all(
             with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
                 futures = {
                     executor.submit(
-                        run_task, task, clang_tidy, compile_database, registry, extra_args
+                        run_task, task, clang_tidy, compile_database, registry, extra_args,
+                        header_arguments
                     ): task
                     for task in tasks
                 }
@@ -198,6 +264,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     tasks = [Task(path) for path in args.source]
     tasks.extend(Task(path, args.test_disabled_checks) for path in args.test)
     extra_args = [f"--extra-arg-before={argument}" for argument in args.extra_arg_before]
+    if tasks:
+        verify_header_visibility(args.clang_tidy)
     return run_all(
         tasks,
         args.clang_tidy,

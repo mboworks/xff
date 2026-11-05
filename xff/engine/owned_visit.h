@@ -18,19 +18,17 @@ namespace xff::engine {
 // An independent snapshot of opaque path/name/root bytes and entry observations. Text shares
 // one owned allocation where the original values overlap, without encoding/path normalization.
 // Offsets, rather than stored views, survive short-string moves and vector relocation.
-struct OwnedVisit {
+class OwnedVisit final {
+ public:
   OwnedVisit() = default;
+  ~OwnedVisit() = default;
   explicit OwnedVisit(const Visit& visit);
   OwnedVisit(const OwnedVisit&) = default;
   OwnedVisit(OwnedVisit&& other) noexcept;
   OwnedVisit& operator=(const OwnedVisit&) = delete;
   OwnedVisit& operator=(OwnedVisit&&) = delete;
 
-  int depth = 0;
-  vfs::Metadata metadata;
-  mbo::types::OptionalRef<const vfs::FileSystem> fs;
-  std::shared_ptr<const vfs::FileSystem> fs_owner;
-  std::size_t root_index = 0;
+  const vfs::Metadata& Metadata() const { return metadata_; }
 
   std::string_view Path() const;
   std::string_view Name() const;
@@ -40,6 +38,12 @@ struct OwnedVisit {
   Visit AsVisit() const;
 
  private:
+  int depth_ = 0;
+  vfs::Metadata metadata_;
+  mbo::types::OptionalRef<const vfs::FileSystem> fs_;
+  std::shared_ptr<const vfs::FileSystem> fs_owner_;
+  std::size_t root_index_ = 0;
+
   struct Slice {
     std::size_t offset = 0;
     std::size_t size = 0;

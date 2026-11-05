@@ -130,8 +130,8 @@ TEST_F(OwnedVisitTest, SnapshotOwnsMetadataAndRetainsFilesystemLifetime) {
   EXPECT_THAT(view.metadata.type, Eq(vfs::FileType::kRegular));
   EXPECT_THAT(view.metadata.size, Eq(42));
   ASSERT_THAT(static_cast<bool>(view.fs), IsTrue());
-  EXPECT_THAT(*view.fs, Ref(*owned.fs));
-  EXPECT_THAT(view.fs_owner, Eq(owned.fs_owner));
+  EXPECT_THAT(*view.fs, Ref(*owned.AsVisit().fs));
+  EXPECT_THAT(view.fs_owner, Eq(owned.AsVisit().fs_owner));
 }
 
 TEST_F(OwnedVisitTest, DefaultSnapshotAndMovedFromObserverAreEmpty) {
@@ -139,14 +139,16 @@ TEST_F(OwnedVisitTest, DefaultSnapshotAndMovedFromObserverAreEmpty) {
   EXPECT_THAT(empty.Path(), IsEmpty());
   EXPECT_THAT(empty.Name(), IsEmpty());
   EXPECT_THAT(empty.Root(), IsEmpty());
-  EXPECT_THAT(static_cast<bool>(empty.fs), IsFalse());
+  EXPECT_THAT(static_cast<bool>(empty.AsVisit().fs), IsFalse());
   const vfs::LocalFs fs;
   OwnedVisit observed(Visit{.path = "x", .metadata = metadata, .fs = fs});
   const OwnedVisit moved(std::move(observed));
   EXPECT_THAT(moved.Path(), EqualsText("x"));
   // The move contract explicitly disengages the old observer.
-  // NOLINTNEXTLINE(bugprone-use-after-move)
-  EXPECT_THAT(static_cast<bool>(observed.fs), IsFalse());
+  // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
+  EXPECT_THAT(static_cast<bool>(observed.AsVisit().fs), IsFalse());
+  // Path is also explicitly empty after the move.
+  // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
   EXPECT_THAT(observed.Path(), IsEmpty());
 }
 

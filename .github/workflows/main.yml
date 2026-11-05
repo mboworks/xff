@@ -651,7 +651,9 @@ jobs:
             BASE_REF="origin/main"
           fi
           if ! git diff --quiet "${BASE_REF}"...HEAD -- \
-            bazelmod/llvm.MODULE.bazel .clang-tidy; then
+            bazelmod/llvm.MODULE.bazel .clang-tidy \
+            tools/clang_tidy.sh tools/clang_tidy_compdb.py \
+            tools/clang_tidy_runner.py tools/clang_tidy_scope.py; then
             echo '--all' >.clang-tidy-inputs
             SCOPE="all translation units (toolchain or lint policy changed)"
           else

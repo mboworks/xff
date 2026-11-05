@@ -41,6 +41,7 @@ enum class RunTaskClass { kForeground, kReadAhead };
 class RunWork final {
  public:
   explicit RunWork(absl::AnyInvocable<void()> work);
+  ~RunWork() = default;
 
   RunWork(const RunWork&) = delete;
   RunWork& operator=(const RunWork&) = delete;
@@ -101,6 +102,7 @@ template<typename Result>
 class RunTask final {
  public:
   RunTask() = default;
+  ~RunTask() = default;
   RunTask(RunTask&&) = default;
   RunTask& operator=(RunTask&&) = default;
   RunTask(const RunTask&) = delete;
@@ -115,6 +117,8 @@ class RunTask final {
   Result Get() {
     Wait();
     if constexpr (!std::is_void_v<Result>) {
+      // Wait synchronizes with SetValue, which publishes this value before notification.
+      // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
       return std::move(*state_->result);
     }
   }
@@ -132,7 +136,7 @@ class RunTask final {
 template<typename Result>
 class RunPromise final {
  public:
-  using Stored = typename executor_detail::TaskState<Result>::Stored;
+  using Stored = executor_detail::TaskState<Result>::Stored;
 
   RunTask<Result> Task() const { return RunTask<Result>(state_); }
 
@@ -157,11 +161,11 @@ class RunPromise final {
 // max_workers counts background threads; command owners reserve one participant
 // for the calling coordinator and therefore pass N-1 for a --jobs=N allowance.
 // Start grows the pool but never shrinks it; destruction joins the workers once.
-// Start, Submit and worker_count are called only by the coordinator. Jobs stay
+// Start, Submit and WorkerCount are called only by the coordinator. Jobs stay
 // leaves and must not submit or wait on work in this executor.
 class RunExecutor final {
  public:
-  static constexpr std::size_t kReadAheadBytes = 8 * 1'024 * 1'024;
+  static constexpr std::size_t kReadAheadBytes = std::size_t{8} * 1'024 * 1'024;
 
   explicit RunExecutor(std::size_t max_workers, std::size_t read_ahead_bytes = kReadAheadBytes);
 
@@ -188,7 +192,7 @@ class RunExecutor final {
     using Result = std::invoke_result_t<Job>;
     RunPromise<Result> promise;
     auto result = promise.Task();
-    absl::AnyInvocable<void()> task = [promise = std::move(promise), job = std::move(job)]() mutable {
+    absl::AnyInvocable<void()> task = [promise = std::move(promise), job = std::move(job)] mutable {
       if constexpr (std::is_void_v<Result>) {
         job();
         promise.SetValue();
@@ -201,6 +205,8 @@ class RunExecutor final {
       return result;
     }
     const absl::MutexLock lock(mutex_);
+    // Start initializes queues_ before publishing any background thread.
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     auto& queues = queues_.value();
     if (task_class == RunTaskClass::kReadAhead) {
       queues.read_ahead.emplace(std::move(task));
@@ -210,7 +216,7 @@ class RunExecutor final {
     return result;
   }
 
-  std::size_t worker_count() const { return threads_.size(); }
+  std::size_t WorkerCount() const { return threads_.size(); }
 
  private:
   bool Pending() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);

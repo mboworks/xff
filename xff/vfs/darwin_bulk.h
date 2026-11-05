@@ -16,10 +16,10 @@
 namespace xff::vfs::internal {
 
 // Darwin's packed native-endian wire format. Constants are checked against the SDK on Darwin.
-inline constexpr std::uint32_t kBulkCommonAttributes = 0x00000001 | 0x00000002 | 0x00000008 | 0x00000200 | 0x00000400
-                                                       | 0x00000800 | 0x00001000 | 0x00008000 | 0x00010000 | 0x00020000
-                                                       | 0x02000000 | 0x20000000 | 0x80000000;
-inline constexpr std::uint32_t kBulkFileAttributes = 0x00000001 | 0x00000004 | 0x00000200;
+inline constexpr std::uint32_t kBulkCommonAttributes =
+    0x00000001U | 0x00000002U | 0x00000008U | 0x00000200U | 0x00000400U | 0x00000800U | 0x00001000U | 0x00008000U
+    | 0x00010000U | 0x00020000U | 0x02000000U | 0x20000000U | 0x80000000U;
+inline constexpr std::uint32_t kBulkFileAttributes = 0x00000001U | 0x00000004U | 0x00000200U;
 
 struct DarwinBulkRecord {
   std::string name;

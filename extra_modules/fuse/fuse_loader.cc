@@ -130,7 +130,7 @@ void* FuseLoader::Symbol(std::string_view name) const {
 }
 
 bool FuseAvailable() {
-  return FuseLoader::Instance().available();
+  return FuseLoader::Instance().Available();
 }
 
 }  // namespace xff::fuse
