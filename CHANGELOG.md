@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse prepared ASCII glob shapes for folded name/path matching while preserving active-locale semantics and measured native fallbacks.
+
 - Terminate short native stat paths in scoped scratch storage while retaining long-path ownership and exact string-view boundaries.
 
 - Reuse native stat-path storage for eager listings while preserving parallel metadata reads and complete callback paths.

@@ -4170,9 +4170,28 @@ a valid default explanation for one device, and a sampling/clock cause is unprov
 existing runtime, the private implementation and raw slower cells. Publish only the mixed-device,
 cached-failure, deferred-query and exact/find regression coverage against the existing map.
 
-O02b remains a separate hypothesis: prepared simple globs fall back to libc whenever folding flags
-are present. Investigate compatible ASCII/locale-aware matching or terminated-input reuse without
-changing active locale, NUL truncation, complex patterns or non-ASCII semantics. Bulk metadata is
+O02b is qualified separately below: prepared folded ASCII matching now preserves the active
+thread locale and keeps Linux folded contains in libc after measuring its cost. Bulk metadata is
 still the larger host-syscall candidate. Separately, the rendering-history investigation found
 launcher binary hashes splitting Mac reference windows; require a proved semantic launcher identity
 before relaxing normalization. Presentation grouping alone does not make those windows available.
+
+### O02b: select prepared folded ASCII globs with native fallbacks
+
+The [both-host report](benchmarks/folded-ascii-globs-20261105.md) retains 7,140 native invocations
+per host across an initial screen, glob-shape screen and selected-policy confirmation. Broad Mac
+100k native-name cases improve about 5-8%; explicit `-iname` about 17-18%, and long-name cases
+about 28-51%. Linux folded simple shapes improve modestly, commonly 1-3%; native-case controls
+remain mostly unchanged. Keep the small slower controls and identical-parent drift visible.
+
+The initial generic folded contains search costs about 4-6% for two Linux workloads. Keep those
+patterns in native libc on Linux without an extra ASCII scan; select the faster prepared search on
+Mac. Preserve first-NUL behavior, complex/non-ASCII fallback and active thread locales, including
+plans prepared before `uselocale` changes. The implementation adds no owner, allocation, timer,
+lock, public flag or larger prepared operand. Scalar and regex-fnmatch backends remain native.
+
+All 316 release targets pass on both hosts; eight focused ASan targets pass on both, with MSan/TSan
+on Linux. Focused raw added-line coverage is 96.23% and branch coverage 92.00%; final release
+binaries exactly match the frozen selected measurements. Footprint grows 112 bytes on Mac and
+3,912 bytes on Linux. This completes the measured prepared-glob part of O02b, not a general
+terminated-input API, bulk metadata implementation or new worker admission policy.

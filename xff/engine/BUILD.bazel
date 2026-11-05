@@ -340,6 +340,7 @@ cc_test(
         ":walk_cc",
         "//xff/parser:parser_cc",
         "//xff/vfs:local_fs_cc",
+        "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/time",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:status_cc",
