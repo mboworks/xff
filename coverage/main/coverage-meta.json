@@ -3,10 +3,10 @@
   "target": "main",
   "source": {
     "created_at": "2026-11-05T09:06:36Z",
-    "started_at": "2026-11-05T09:06:36Z",
-    "completed_at": "2026-11-05T10:06:23Z",
+    "started_at": "2026-11-05T10:09:12Z",
+    "completed_at": "2026-11-05T10:45:31Z",
     "run_id": 41999670255,
-    "run_attempt": 1,
+    "run_attempt": 2,
     "head_sha": "76185cb37fa2d4f6cb36876efde58b0ede0e753a"
   },
   "coverage": {
