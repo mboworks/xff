@@ -507,12 +507,17 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       complete short-read fallback, owned/caller-owned bounds and shared reservations. Preserve
       separate prototype matrices, costs, errors and both-host qualification in
       [the prefix reuse report](docs/benchmarks/archive-prefix-reuse-20261105.md).
-- [ ] O19f: Independently qualify ordered subtree bounds for archive directory listing; avoid scanning
-      unrelated nodes for every subdirectory. Preserve root/direct-child ordering, synthesized and
-      absolute members, metadata/errors and small/chain-shaped controls before claiming a win.
+- [x] O19f: Bound archive directory listing to its existing ordered subtree, retaining direct-child
+      order, metadata/errors, absolute/synthesized entries and root/chain controls. Preserve both-host
+      complete 100k-member traversals, small-case costs and full qualification in
+      [the directory range report](docs/benchmarks/archive-directory-range-20261105.md).
 - [ ] O19g: Independently qualify borrowed normalized archive lookup keys with transparent map/cache
       lookup. Copy only at retained member-source ownership boundaries; test temporary caller paths,
       long non-SSO keys, custom separators, absolute/nested paths and all existing normalization.
+- [ ] O19h: Investigate the repeatable 1k-member/three-worker Linux metadata-output cost exposed by
+      faster archive directory admission. Preserve the original and independent confirmation
+      (roughly 6-14%, 0.24-0.35 ms), serial and 10k controls. Identify stage/scheduling/allocation
+      causes before introducing any worker threshold; do not hide the cost in cohort medians.
 - [x] O20a: Qualify native names-only directory listings and callback-scoped reusable leaf paths on
       both hosts, including controlled/rg VFS delegation, lazy metadata and exact owned fallbacks.
       Retain native and in-memory broad/deep 10-100k-file, 1/3-worker evidence in

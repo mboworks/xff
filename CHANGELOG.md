@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Bound nonroot archive directory listing to its ordered subtree, reducing large archive traversal work while preserving direct children, ordering, metadata and errors.
+
 - Reuse the archive session's first input block for format detection, reducing redundant cursor opens and nested replay while preserving short reads, errors and shared budgets.
 
 - Skip unused ordinary summary setup after comparison-only output while preserving headers and exact results.
