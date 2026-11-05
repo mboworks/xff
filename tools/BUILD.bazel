@@ -1469,3 +1469,19 @@ py_test(
     srcs = ["site_storage_test.py"],
     deps = [":site_storage_lib"],
 )
+
+# Fixed-time formatting only: every case checks complete output before measurement.
+cc_binary(
+    name = "time_format_benchmark",
+    testonly = True,
+    srcs = ["time_format_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@com_github_google_benchmark//:benchmark",
+    ],
+)

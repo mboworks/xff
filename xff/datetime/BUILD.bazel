@@ -42,3 +42,16 @@ cc_test(
         "@googletest//:gtest_main",
     ],
 )
+
+# Exercise the retained CCTZ formatter contract for the local empty-fragment patch.
+cc_test(
+    name = "cctz_format_test",
+    size = "small",
+    srcs = ["cctz_format_test.cc"],
+    deps = [
+        "@abseil-cpp//absl/time",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+    ],
+)
