@@ -122,6 +122,23 @@ class BenchmarkPreviewTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'ambiguous'):
             preview.completed_comparisons(jobs + jobs)
 
+    def test_combined_aggregate_releases_both_platforms_before_other_tests_finish(self):
+        aggregate = {'name': 'Benchmark comparison (Linux and macOS, best 7 of 9)',
+                     'status': 'completed', 'conclusion': 'success',
+                     'completed_at': '2026-10-03T10:04:00Z'}
+        pending = {'name': 'clang-tidy', 'status': 'in_progress', 'conclusion': None}
+        self.assertEqual(preview.completed_comparisons([aggregate, pending]),
+                         {'linux': aggregate, 'macos': aggregate})
+        for status, conclusion in (('in_progress', None), ('completed', 'failure'),
+                                   ('completed', 'cancelled'), ('completed', 'skipped')):
+            with self.subTest(status=status, conclusion=conclusion):
+                self.assertIsNone(preview.completed_comparisons([
+                    dict(aggregate, status=status, conclusion=conclusion)]))
+        platform_job = dict(aggregate, name='Benchmark comparison (linux, best 7 of 9)')
+        for ambiguous in ([aggregate, aggregate], [aggregate, platform_job]):
+            with self.subTest(jobs=ambiguous), self.assertRaisesRegex(ValueError, 'ambiguous'):
+                preview.completed_comparisons(ambiguous)
+
     def test_artifact_names_and_output_identifiers_are_constrained(self):
         for name, expected in (('benchmark-pr-linux-x86_64', 'linux'), ('benchmark-pr-macos-arm64', 'macos')):
             self.assertEqual(preview.artifact_platform(name), expected)

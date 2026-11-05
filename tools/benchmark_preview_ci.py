@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 import time
 import zipfile
 
@@ -26,8 +27,21 @@ class GitHub:
         command = ['gh', 'api', f'repos/{self.repository}/{path}']
         if body is not None:
             command += ['--method', method or 'POST', '--input', '-']
-        result = subprocess.run(command, input=json.dumps(body).encode() if body is not None else None,
-                                stdout=subprocess.PIPE, check=True, timeout=120)
+        read_only = body is None and method in (None, 'GET')
+        for attempt in range(4):
+            try:
+                result = subprocess.run(command, input=json.dumps(body).encode() if body is not None else None,
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, timeout=120)
+                break
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+                message = error.stderr or b''
+                if message:
+                    print(message.decode(errors='replace'), file=sys.stderr, end='')
+                transient = (isinstance(error, subprocess.TimeoutExpired)
+                             or re.search(rb'HTTP (?:500|502|503|504)', message))
+                if not read_only or not transient or attempt == 3:
+                    raise
+                time.sleep(2 ** attempt)
         return result.stdout if raw else json.loads(result.stdout)
 
     def pages(self, path, key=None):
@@ -97,16 +111,18 @@ def artifact_json(raw, name):
 
 
 def matching_artifacts(artifacts, jobs):
+    comparisons = benchmark_preview.completed_comparisons(jobs)
+    if comparisons is None:
+        raise ValueError('both current-attempt platform artifacts are required')
     selected = {}
     for artifact in artifacts:
         name = artifact['name']
         if not name.startswith('benchmark-pr-') or artifact.get('expired'):
             continue
         platform = benchmark_preview.artifact_platform(name)
-        job = next((job for job in jobs if job['name'].startswith(f'Benchmark comparison ({platform},')
-                    and job['status'] == 'completed' and job['conclusion'] == 'success'), None)
+        job = comparisons[platform]
         created = datetime.fromisoformat(artifact['created_at'])
-        if not job or not datetime.fromisoformat(job['started_at']) <= created <= datetime.fromisoformat(job['completed_at']):
+        if not datetime.fromisoformat(job['started_at']) <= created <= datetime.fromisoformat(job['completed_at']):
             continue
         if platform in selected:
             raise ValueError('multiple artifacts for a platform in this attempt')

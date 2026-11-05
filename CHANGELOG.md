@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Publish PR benchmark previews from the combined Linux/macOS comparison job while preserving exact artifact provenance and bounded retries of temporary GitHub read failures.
+
 - Reuse complete macOS bulk metadata for non-followed symlinks while preserving target lookup and ordinary fallback.
 
 - Reuse complete indexed archive metadata in eager walks, avoiding repeated per-entry lookup while preserving lazy and followed-link behavior.
