@@ -4120,3 +4120,19 @@ proofs. Large broad metadata-free native cases improve about 5-6% macOS and 8-9%
 some nested kernels are neutral/slower. Keep those tradeoffs explicit. Default-native macOS stays
 mostly neutral because its eager policy still retains full paths. Evaluate eager names-only path
 reuse separately, preserving parallel stat chunks rather than silently serializing eager reads.
+
+### O20f: reuse eager native stat paths
+
+Admit existing names-only backend capabilities for eager metadata and pass parent prefixes through
+unchanged stat-chunk scheduling. Reuse one scratch path per call/chunk, retaining paths for actual
+directories and cached complete observations for leaves/errors. Keep archive-all/mounter exclusions,
+required fields, eager empty-name fallback and callback spelling. No locks, thread thresholds,
+shared owners or public flags are added.
+
+The [two-host report](benchmarks/eager-native-paths-20261104.md) retains 6,120 native invocations and
+12,960 in-memory repetitions per host. macOS default-native 100k listings repeat roughly 4-6%
+gains; Linux long-name eager summaries improve roughly 9-15%. Large eager names-only in-memory
+cases independently improve on both hosts. Native small controls include about 2% costs; one Linux
+complete-path in-memory control costs 4.87%, while another unexpectedly improves 10.93% despite
+no intended allocation change there. Preserve controls, raw observations and final identity proofs;
+do not turn these cases into a universal speedup claim.
