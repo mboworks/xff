@@ -4456,9 +4456,32 @@ stat slices, wrapper delegation, metadata ownership, fallback, ordering and smal
 controls. Expression-proved admission would now need to account for eligible regular files and
 non-followed symlinks, as well as directory/link/mount traversal semantics.
 
-Two narrower inspection-only follow-ups are tracked, not implemented: O20l places existing cheap
-observed-listing serial/small/mounted exits before an otherwise unnecessary missing-count scan.
-O08b moves the normally consumed task directory's cleanup outside the queue mutex, matching the
-already-correct abandoned-payload pattern. It need not retain path capacity, borrow caller storage
-or add another wrapper. Each needs independent both-host measurements and ownership/error/stop
-qualification; no speedup is inferred from removing an operation.
+### O20j/O20l/O08b: retain the current runtime after follow-up trials
+
+[The complete follow-up report](benchmarks/native-metadata-followups-20261105.md) preserves four
+independently implemented and measured rejected prototypes, their sources and all slower controls.
+The first observed-listing early return grows the actual Linux ReadNow function by 409 bytes without
+convincing complete-command gain. A second single-condition form proves the cheap checks precede
+the count and grows that function only five bytes, but its practical signal remains small/mixed.
+Do not infer elapsed gains merely because generated code performs less work.
+
+The compact form completes all 331 release targets on both hosts, five focused ASan suites on both,
+and the same MSan/TSan suites on Linux. Initial actual changed coverage fails at 10/12 branches;
+a meaningful 129/511/512-entry fallback boundary test raises it to 11/12, with all five lines covered.
+Both rebuilt images exactly equal their measured candidates. These tests and implementations remain
+reconstructible in the evidence rather than being added to production without a performance case.
+The original Linux large-directory counterexample and its separate unchanged-image repeat both
+survive; neither is replaced by a favorable average or dismissed without evidence.
+
+Direct native observation-vector accumulation is also rejected: Mac elapsed changes remain mixed
+and reported serial RSS changes are about one MiB or less. Linux instructions are identical, while
+its whole-image hash differs only through verified diagnostic line words, build ID and debug data.
+The narrow task-path cleanup trial likewise has no clear in-memory gain and retains a Mac regression.
+It does not justify borrowing caller paths, retaining capacity or changing worker admission.
+
+The large CSV transport observation is not a demonstrated product bug: unchanged frozen binaries
+and copied controls produce the exact 100k-member output quickly to both file and pipe outside the
+agent sandbox. Keep all first-touch costs and the initial sandbox preflight. Existing per-record
+storage reuse includes custom CSV rows; it is not multiple-row coalescing. No output API or buffering
+change follows from that diagnostic. Broader observation ownership/admission and bounded streaming
+remain independent unqualified work.
