@@ -4136,3 +4136,21 @@ cases independently improve on both hosts. Native small controls include about 2
 complete-path in-memory control costs 4.87%, while another unexpectedly improves 10.93% despite
 no intended allocation change there. Preserve controls, raw observations and final identity proofs;
 do not turn these cases into a universal speedup claim.
+
+### O20g: scoped terminated native stat paths
+
+LocalFs::StatFields now terminates input in a private 512-byte uninitialized short buffer, with
+an owning long fallback. Copy only the input bytes plus terminator; never inspect beyond an
+arbitrary string_view. Keep the value immovable/noncopyable and its view valid through the POSIX
+calls. Narrow lint annotations record the proven termination guarantee, without a raw observer API
+or a new host-I/O/mutation route. Basic/birth, symlinks, empty/error paths and fallback stat semantics
+remain unchanged.
+
+The [two-host policy report](benchmarks/scoped-native-stat-paths-20261104.md) retains 256/512/1,024-byte
+policies, 3,840 complete-output-checked native invocations per host, full release/sanitizer coverage
+and exact final runtime proofs. Gains are modest: selected eager cases commonly improve about
+0.5-1.6%, with macOS long eager cases about 0.8-1.8%. Retain initial slower cells and copy drift;
+metadata-free/uniform-case controls are mostly neutral. Select 512, reject a larger unsupported
+stack policy and keep long-path fallback costs explicit. This does not replace bulk metadata:
+remaining per-entry syscall cost is the larger separate candidate. No peak-memory reduction or
+in-memory VFS speedup is claimed for this host-only adapter.

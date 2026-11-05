@@ -105,7 +105,8 @@
     "docs/benchmarks/segmented-native-listings-20261104.md": "docs/benchmarks/segmented-native-listings-20261104.html",
     "docs/benchmarks/shared-benchmark-order-20261104.md": "docs/benchmarks/shared-benchmark-order-20261104.html",
     "docs/benchmarks/compact-traversal-metadata-20261104.md": "docs/benchmarks/compact-traversal-metadata-20261104.html",
-    "docs/benchmarks/eager-native-paths-20261104.md": "docs/benchmarks/eager-native-paths-20261104.html"
+    "docs/benchmarks/eager-native-paths-20261104.md": "docs/benchmarks/eager-native-paths-20261104.html",
+    "docs/benchmarks/scoped-native-stat-paths-20261104.md": "docs/benchmarks/scoped-native-stat-paths-20261104.html"
   },
   "generated_html": {
     "XFF.md": {

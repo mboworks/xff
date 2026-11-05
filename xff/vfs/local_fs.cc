@@ -71,6 +71,35 @@ namespace {
 constexpr bool kUniformCaseSensitive = true;
 #endif
 
+// A short buffer or owning long fallback gives syscalls a terminated copy of arbitrary views.
+// The unused short-buffer tail stays uninitialized. View() ends immediately before the terminator.
+class TerminatedStatPath final {
+ public:
+  explicit TerminatedStatPath(std::string_view path) : size_(path.size()) {
+    if (size_ < short_.size()) {
+      std::ranges::copy(path, short_.begin());
+      short_.at(size_) = '\0';
+    } else {
+      long_.assign(path);
+    }
+  }
+
+  ~TerminatedStatPath() = default;
+  TerminatedStatPath(const TerminatedStatPath&) = delete;
+  TerminatedStatPath& operator=(const TerminatedStatPath&) = delete;
+  TerminatedStatPath(TerminatedStatPath&&) = delete;
+  TerminatedStatPath& operator=(TerminatedStatPath&&) = delete;
+
+  std::string_view View() const {
+    return size_ < short_.size() ? std::string_view(short_.data(), size_) : std::string_view(long_);
+  }
+
+ private:
+  std::array<char, 512> short_;
+  std::string long_;
+  const std::size_t size_;
+};
+
 FileType TypeFromMode(mode_t mode) {
   if (S_ISREG(mode)) {
     return FileType::kRegular;
@@ -248,7 +277,8 @@ absl::StatusOr<Metadata> LocalFs::Stat(std::string_view path, bool follow_symlin
 }
 
 absl::StatusOr<Metadata> LocalFs::StatFields(std::string_view path, bool follow_symlinks, MetadataFields fields) const {
-  const std::string path_str(path);
+  const TerminatedStatPath terminated(path);
+  const std::string_view path_str = terminated.View();
   std::optional<absl::Time> btime;
 #if defined(__linux__) && defined(STATX_BTIME)
   if (fields == MetadataFields::kBirthTime) {
@@ -256,8 +286,8 @@ absl::StatusOr<Metadata> LocalFs::StatFields(std::string_view path, bool follow_
     // whose interceptors do not yet mark the kernel-written statx fields initialized.
     struct statx extended{};
     const int flags = follow_symlinks ? 0 : AT_SYMLINK_NOFOLLOW;
-    // XFF_HOST_IO: LocalFs retrieves metadata at the Linux syscall boundary.
-    if (::statx(AT_FDCWD, path_str.c_str(), flags, STATX_BASIC_STATS | STATX_BTIME, &extended) == 0) {
+    // XFF_HOST_IO: owned NUL-terminated stat path. NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
+    if (::statx(AT_FDCWD, path_str.data(), flags, STATX_BASIC_STATS | STATX_BTIME, &extended) == 0) {
       if ((extended.stx_mask & STATX_BTIME) != 0U) {
         btime = StatxTime(extended.stx_btime);
       }
@@ -272,8 +302,8 @@ absl::StatusOr<Metadata> LocalFs::StatFields(std::string_view path, bool follow_
   static_cast<void>(fields);
 #endif
   struct stat st{};
-  // XFF_HOST_IO: LocalFs implements the VFS metadata operation at the POSIX boundary.
-  const int rc = follow_symlinks ? ::stat(path_str.c_str(), &st) : ::lstat(path_str.c_str(), &st);
+  // XFF_HOST_IO: owned NUL-terminated stat path. NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
+  const int rc = follow_symlinks ? ::stat(path_str.data(), &st) : ::lstat(path_str.data(), &st);
   if (rc != 0) {
     return absl::ErrnoToStatus(errno, absl::StrCat(follow_symlinks ? "stat('" : "lstat('", path, "')"));
   }

@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Terminate short native stat paths in scoped scratch storage while retaining long-path ownership and exact string-view boundaries.
+
 - Reuse native stat-path storage for eager listings while preserving parallel metadata reads and complete callback paths.
 
 - Keep sortable traversal entries compact and store complete metadata with each listing, reducing memory and wide metadata-free traversal costs while preserving lazy errors and observations.

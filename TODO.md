@@ -505,10 +505,13 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O20f: Qualify eager names-only leaf paths with complete observations, directory ownership,
       unchanged stat parallelism and callback/error spelling. Retain [both-host gains, costs and
       identity proofs](docs/benchmarks/eager-native-paths-20261104.md).
-- [ ] O20g: Evaluate the remaining native stat-path copy using a scoped terminated-path value:
-      uninitialized short buffer, exact bytes plus terminator and long-path fallback. Compare
-      256/512/1,024-byte policies on both hosts; preserve non-terminated views, empty/error paths,
-      link behavior and basic/birth fields. Never probe beyond the input view for a terminator.
+- [x] O20g: Qualify scoped terminated native stat paths with uninitialized short storage, exact-view
+      boundaries and a long fallback. Retain [all three policies, two-host gains/costs and binary
+      proofs](docs/benchmarks/scoped-native-stat-paths-20261104.md); select 512 bytes without a new flag.
+- [ ] O20h: Separately qualify a first-device case record with hashed overflow for other devices.
+      Preserve ordinary/deferred query order and cached error defaults; test mixed devices and
+      native/exact/uniform paths. Measure startup and many-file controls before attributing an
+      Abseil allocation/clock cost or enabling the shortcut.
 - [ ] O20: Qualify optional bulk metadata by backend capability with precise fallback, while
       keeping metadata-free traversal free of extra probes and extended-stat work.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte
