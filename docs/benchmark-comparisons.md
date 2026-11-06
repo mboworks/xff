@@ -406,10 +406,20 @@ The workflow counts agreement only among candidates with the same non-CPU benchm
 the same host CPU count. If three initial candidates do not form a quorum, it schedules a fourth
 candidate for that platform; if four still do not contain three matching candidates, it schedules a
 fifth. This also handles runner image drift, such as Homebrew updating `fzf` while macOS shards are
-starting: candidates using different tool versions form separate groups and are never pooled. Linux
+starting: candidates using different independently installed tool versions form separate groups. Linux
 and macOS vote independently, since their runner contracts are not comparable. The final aggregator
 runs once and selects exactly three reports from a matching group for each platform. If five
-candidates cannot produce that quorum, aggregation fails rather than mixing unlike measurements. A
+candidates cannot produce an exact quorum, aggregation attempts an OS-version fallback. This keeps
+the OS family, architecture, CPU count, XFF binary, independently installed reference tools, and
+remaining measurement contract equal while permitting OS release differences. macOS's bundled
+`/usr/bin/find` may also differ between OS releases; different identities within the same release
+remain incompatible. The fallback chooses as many hosts on the same release as possible, records
+every selected host's original OS and tool identities, and labels the merged report as mixed OS
+releases. It does not assign one host's bundled-tool hash to all samples. Exact quorums always win,
+and the fourth and fifth candidates are requested to seek one before relaxing OS compatibility.
+Mixed-release contracts retain the release set in baseline compatibility, so an ordinary single-OS
+report is not silently used as their historical baseline. If no fallback quorum exists, aggregation
+still fails. A
 missing report can use the next candidate slot, but a runner cancellation can still make the workflow
 fail and require a CI retry.
 
@@ -429,7 +439,7 @@ limit the end-to-end gain.
 Aggregation requires the complete planned matrix on each selected sample shard, exactly three raw
 rounds per selected shard, matching source, binary, reference tools, fixture contents, expected
 outputs and commands, compatible CPU affinity, equal host CPU counts and identical sampling
-contracts within the selected group. Each merged report retains the selected candidates' original
+contracts within the selected group, subject only to the explicit OS-version fallback above. Each merged report retains the selected candidates' original
 shard indexes and host provenance. Contract differences split candidates into separate groups; an
 invalid candidate or a failure to obtain a three-candidate group remains an error. The adaptive jobs
 run inside the same workflow attempt, so a provider-canceled candidate does not require a workflow
