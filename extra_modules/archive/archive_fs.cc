@@ -223,11 +223,13 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenDecodedExtension(
   }
   auto fs = Index(
       std::string(container), nullptr,
-      {Member{
-          .path = stem.value_or(std::string(name)),
-          .size = static_cast<std::int64_t>(content.size()),
-          .mode = 0444,
-      }},
+      {
+          Member{
+              .path = stem.value_or(std::string(name)),
+              .size = static_cast<std::int64_t>(content.size()),
+              .mode = 0444,
+          },
+      },
       options);
   fs.single_file_content_ = std::move(content);
   fs.single_ = true;
