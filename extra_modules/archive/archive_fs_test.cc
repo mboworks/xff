@@ -107,7 +107,7 @@ absl::StatusOr<std::string> ChildCountTar() {
   constexpr int kRootFileCount = 21;
   constexpr int kWideFileCount = 40;
   std::vector<std::string> paths;
-  paths.reserve(static_cast<std::size_t>(kRootFileCount + kWideFileCount + 3));
+  paths.reserve(static_cast<std::size_t>(kRootFileCount) + kWideFileCount + 3);
   for (int index = 0; index < kRootFileCount; ++index) {
     paths.push_back(absl::StrFormat("root-%02d.txt", index));
   }
