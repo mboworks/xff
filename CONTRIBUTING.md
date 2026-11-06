@@ -62,6 +62,8 @@ in the live checkout. Main and release CI run it explicitly. It is a `py_binary`
 hermetic interpreter, not a sandboxed or cached `py_test`; its assertions execute on every run.
 No list of exported BUILD files or source snapshots needs maintenance. For direct script execution,
 supply `--workspace=PATH` explicitly. Fixture-based unit suites remain under `bazel test`.
+The coverage-index suite also executes the trusted eligibility shell with local API fixtures and
+requires host jq.
 The coverage-index and release-site suites require host Git; release-note tests require Bash and sed.
 Their Bazel targets carry `requires-host-tools`, and the supported Linux/macOS CI images provide them.
 No tests contact GitHub or recursively invoke Bazel; the separate site integration step does use GitHub.

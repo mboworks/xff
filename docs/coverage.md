@@ -110,7 +110,11 @@ post-merge result belongs to the aggregation PR alone.
 Coverage publication requires the source workflow's `coverage` job to succeed, not every job
 in that workflow. An unrelated sanitizer or lint failure does not suppress a valid coverage
 report. A failed, cancelled, or skipped coverage job leaves the previous report intact while
-PR metadata still refreshes. In the two-phase view, post-merge precedes pre-merge within each PR;
+PR metadata still refreshes. If a source workflow is retried while its earlier completion event waits
+in the publication queue, that event skips report ingestion successfully when the source is no longer
+completed. Retained reports and metadata refresh are preserved; the retry's completion triggers a new
+publication. Manual recovery also defers an in-progress source instead of treating it as a completed
+report. In the two-phase view, post-merge precedes pre-merge within each PR;
 PR groups retain their merge-time ordering even when a pre-merge retry finishes later.
 
 To recover an unpublished report without rerunning tests, dispatch `Publish coverage` with
