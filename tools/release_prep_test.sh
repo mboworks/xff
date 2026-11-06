@@ -246,18 +246,18 @@ test_release_binaries_use_shared_configuration_and_staging() {
   if [ "$(count_lines_with '          subject-path: dist/*' "${release_workflow}")" -ne 1 ]; then
     fail "release workflow: provenance must attest every asset, including SHA256SUMS"
   fi
-  if [ "$(count_lines_with 'flags: "--config=clang_release"' "${main_workflow}")" -ne 1 ]; then
-    fail "main workflow: default tests must use the production Clang release configuration"
+  if [ "$(count_lines_with 'flags: "--config=clang_opt"' "${main_workflow}")" -ne 1 ]; then
+    fail "main workflow: default tests must use optimized native links"
   fi
   if [ "$(count_lines_with 'bazel test //xff/cli:all --config=xff_docs' "${main_workflow}")" -ne 0 ]; then
     fail "main workflow: release validation must not add a second bazel test invocation"
   fi
-  if [ "$(count_lines_with 'bazel build --config=clang_release' "${main_workflow}")" -ne 0 ]; then
-    fail "main workflow: release validation must not add a bazel build invocation"
+  if [ "$(count_lines_with 'bazel build --config=clang_release --config=xff_docs //xff/cli:xff //xff/cli:xff_full' "${main_workflow}")" -ne 1 ]; then
+    fail "main workflow: release validation must rebuild only the two shipping binaries with LTO"
   fi
   if [ "$(count_lines_with 'lean="bazel-bin/xff/cli/xff"' "${main_workflow}")" -ne 1 ] \
     || [ "$(count_lines_with 'full="bazel-bin/xff/cli/xff_full"' "${main_workflow}")" -ne 1 ]; then
-    fail "main workflow: staging must consume both binaries built by the complete test invocation"
+    fail "main workflow: staging must consume both production CLI binaries"
   fi
   if [ "$(count_lines_with 'tools/stage_release_artifacts.sh' "${main_workflow}")" -ne 1 ]; then
     fail "main workflow: release cells must exercise the shared staging script"

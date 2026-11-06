@@ -248,7 +248,7 @@ class BenchmarkHistoryTest(unittest.TestCase):
                 source = repository_file(workflow).read_text().split('\n  ' + job + ':', 1)[1]
                 source = re.split(r'\n  [a-z][a-z-]*:', source, maxsplit=1)[0]
                 self.assertIn("bazel cquery 'config(//tools:process_resources_native, target)' "
-                              "--config=clang_release", source)
+                              "--config=clang_opt", source)
                 self.assertIn('cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"', source)
                 self.assertIn('tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" '
                               'benchmark-head benchmark-resource-launcher', source)
@@ -256,7 +256,8 @@ class BenchmarkHistoryTest(unittest.TestCase):
                 # Build the exact target configuration queried and copied below.
                 head_build = source.split('bazel build ', 1)[1].split('\n', 1)[0].split()
                 self.assertIn('//tools:process_resources_native', head_build)
-                self.assertIn('--config=clang_release', head_build)
+                self.assertIn('--config=clang_opt', head_build)
+                self.assertIn('bazel build //xff/cli:xff --config=clang_release', source)
                 self.assertLess(source.index('bazel build '),
                                 source.index('bazel cquery '))
         action = repository_file('.github/actions/benchmark-measure/action.yml').read_text()
@@ -265,18 +266,36 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertNotIn('bazel build', action)
         self.assertNotIn('bazel run', action)
 
+    def test_workflow_lto_builds_select_only_shipping_cli_targets(self):
+        import shlex
+        shipping = {'//xff/cli:xff', '//xff/cli:xff_full'}
+        for workflow in ('main.yml', 'benchmarks.yml', 'benchmark_backfill.yml', 'release.yml'):
+            source = repository_file('.github/workflows/' + workflow).read_text().replace('\\\n', ' ')
+            for line in source.splitlines():
+                command = line.strip()
+                if not command.startswith('bazel ') or '--config=clang_release' not in command:
+                    continue
+                args = shlex.split(command)
+                if args[1] == 'cquery':
+                    continue
+                with self.subTest(workflow=workflow, command=command):
+                    self.assertEqual(args[1], 'build')
+                    targets = {arg for arg in args if arg.startswith(('//', '@'))}
+                    self.assertTrue(targets)
+                    self.assertLessEqual(targets, shipping)
+
     def test_native_launcher_queries_select_only_the_built_target_configuration(self):
         for workflow in ('.github/workflows/main.yml', '.github/workflows/benchmarks.yml',
                          '.github/workflows/benchmark_backfill.yml'):
             with self.subTest(workflow=workflow):
                 source = repository_file(workflow).read_text()
                 query = source.split('launcher="$(bazel cquery ', 1)[1].split('cp "${launcher}"', 1)[0]
-                self.assertIn("'config(//tools:process_resources_native, target)' --config=clang_release", query)
+                self.assertIn("'config(//tools:process_resources_native, target)' --config=clang_opt", query)
 
     def test_ci_backfill_builds_native_launcher_before_freezing_and_measuring(self):
         source = repository_file('.github/workflows/benchmark_backfill.yml').read_text()
-        build = source.index('bazel build //tools:process_resources_native --config=clang_release')
-        query = source.index("bazel cquery 'config(//tools:process_resources_native, target)' --config=clang_release")
+        build = source.index('bazel build //tools:process_resources_native --config=clang_opt')
+        query = source.index("bazel cquery 'config(//tools:process_resources_native, target)' --config=clang_opt")
         copy = source.index('cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"')
         run = source.index('python3 tools/benchmark_campaign.py run')
         self.assertLess(build, query)

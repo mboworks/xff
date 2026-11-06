@@ -47,14 +47,20 @@ git_override(
 # Keep the MSan compiler and instrumented standard library on the same release.
 # The ordinary compiler can advance independently through the feature override below.
 MSAN_LIBCXX_URL = "https://github.com/RealtimeRoboticsGroup/toolchains/releases/download/{v}/libcxx-msan-{v}-x86_64-linux-gnu-ubuntu-22.04.tar.zst"
+
 # Follow stable LLVM 23 releases from the pinned toolchains_llvm catalogue.
 # Major compiler and clang-tidy upgrades require an explicit policy change.
 LLVM_VERSION = "latest:major==23"
+
 LLVM_VERSION_MSAN = "22.1.8"
 
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
 llvm.toolchain(
     name = "llvm_toolchain_llvm",
+    extra_known_features = [
+        "//bazelmod:release_objects",
+        "//bazelmod:production_lto",
+    ],
     linker = {
         "darwin-aarch64": "auto",
         "darwin-x86_64": "auto",
@@ -67,27 +73,55 @@ llvm.toolchain(
     },
     llvm_version = LLVM_VERSION,
 )
+
 # Mold's archive has no matching LLVMgold plugin. Bundled LLD implements Bazel's
 # separate indexing/backend protocol without an external plugin. Other builds keep mold.
 llvm.feature_override(
     name = "llvm_toolchain_llvm",
-    features = ["thin_lto", "-msan"],
-    targets = ["linux-aarch64", "linux-x86_64"],
+    features = [
+        "thin_lto",
+        "-msan",
+    ],
     linker = {
         "linux-aarch64": "",
         "linux-x86_64": "",
     },
+    targets = [
+        "linux-aarch64",
+        "linux-x86_64",
+    ],
 )
+
+# Both optimized configurations use the same Linux toolchain and fat-object flags.
+# Only xff_production_lto adds IR-consuming link flags. Do not enable Bazel's
+# thin_lto feature here: its split backend protocol would discard native-object sharing.
+llvm.feature_override(
+    name = "llvm_toolchain_llvm",
+    features = [
+        "xff_release_objects",
+        "-thin_lto",
+        "-msan",
+    ],
+    linker = {
+        "linux-aarch64": "",
+        "linux-x86_64": "",
+    },
+    targets = [
+        "linux-aarch64",
+        "linux-x86_64",
+    ],
+)
+
 # MSan selects a complete compiler/runtime pair independently of flag order. Keep this
 # condition disjoint from the LLVM 23 LTO override; LLD also supports MSan plus ThinLTO.
 llvm.feature_override(
     name = "llvm_toolchain_llvm",
     features = ["msan"],
-    targets = ["linux-x86_64"],
     libcxx_sha256 = "fd1ac49eeda4edc6deeda2037998e558718a63a5054fff4fdace7751b270217a",
     libcxx_url = MSAN_LIBCXX_URL.format(v = LLVM_VERSION_MSAN),
     linker = {"linux-x86_64": ""},
     llvm_version = LLVM_VERSION_MSAN,
+    targets = ["linux-x86_64"],
 )
 use_repo(llvm, "llvm_toolchain_llvm")
 
