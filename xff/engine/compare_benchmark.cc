@@ -178,12 +178,17 @@ class NestedCompareTree final : public xff::vfs::FileSystem {
       const std::size_t separator = relative.find('/', offset);
       if (separator == std::string_view::npos) {
         const std::string name(relative.substr(offset));
+        std::string path(directory);
+        path.push_back('/');
+        path.append(name);
         directories_.at(directory).push_back(
-            {.path = directory + "/" + name, .name = name, .type = xff::vfs::FileType::kRegular});
+            {.path = std::move(path), .name = name, .type = xff::vfs::FileType::kRegular});
         return;
       }
       const std::string name(relative.substr(offset, separator - offset));
-      const std::string child = directory + "/" + name;
+      std::string child(directory);
+      child.push_back('/');
+      child.append(name);
       const bool inserted = directories_.try_emplace(child).second;
       if (inserted) {
         directories_.at(directory).push_back({.path = child, .name = name, .type = xff::vfs::FileType::kDirectory});
@@ -314,7 +319,7 @@ void CompareNestedTrees(benchmark::State& state, bool deep) {
   if (initial.errors != 0 || output_bytes == 0) {
     const std::string message = "nested comparison errors=" + std::to_string(initial.errors)
                                 + " output_bytes=" + std::to_string(output_bytes) + " first=" + first_error;
-    state.SkipWithError(message.c_str());
+    state.SkipWithError(message);
     return;
   }
   for (auto iteration : state) {
@@ -327,7 +332,7 @@ void CompareNestedTrees(benchmark::State& state, bool deep) {
     }
     benchmark::DoNotOptimize(output_bytes);
   }
-  state.SetItemsProcessed(state.iterations() * count);
+  state.SetItemsProcessed(state.iterations() * static_cast<std::int64_t>(count));
 }
 }  // namespace
 
@@ -385,7 +390,7 @@ int main(int argc, char** argv) {
       {"comparison/deep", true},
   });
   for (const auto& [name, deep] : kFrontierScenarios) {
-    benchmark::RegisterBenchmark(name.data(), CompareNestedTrees, deep)
+    benchmark::RegisterBenchmark(std::string(name), CompareNestedTrees, deep)
         ->ArgsProduct({{10, 100, 1'000, 10'000}, {1, 3}})
         ->UseRealTime()
         ->Unit(benchmark::kMicrosecond);
