@@ -159,6 +159,9 @@ class Template {
   // Whether a compiled field renders civil time, including transformed time fields.
   bool NeedsTimeZone() const;
 
+  // Whether a compiled field consumes a symlink target, including transformed fields.
+  bool NeedsLinkTarget() const;
+
   // Number of compiled hash/line-count fields that can read content when rendered.
   // This describes template structure, not observed reads or bytes.
   std::size_t ContentFieldCount() const;
