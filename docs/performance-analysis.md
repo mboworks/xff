@@ -4576,9 +4576,10 @@ The following remain independent experiments, not promised speedups:
   Verify that audit and insertion/large-Node relocation costs on both systems. The pinned default
   string comparator enables transparent three-way lookup; explicitly passing `less<>` would skip
   that specialization. Keep this independent of descendant skipping before testing integration.
-- O19i2: bounded direct-child capacity hints could reduce repeated Entry/observation growth.
-  Establish actual Node padding and insertion bookkeeping cost before adding persistent storage;
-  a new full-width counter per node is not free. Prefer simpler subtree skipping first.
+- O19i2: [qualified bounded direct-child capacity hint](benchmarks/archive-directory-child-capacity-20261106.md).
+  The count fits existing `Node` padding, while the root count adds 8 bytes per archive FS.
+  Mac and Linux measurements show large flat/wide-root listing gains, neutral construction, and
+  near-neutral whole-matrix medians. Deep/chain controls and all raw measurements remain retained.
 - O24: [actual-library audit completed](benchmarks/cli-stream-sync-audit-20261105.md).
   Both current hermetic libc++ functions only read/write their previous-state byte. Add no
   runtime call and claim no buffering speedup. This says nothing about GNU libstdc++ or a future

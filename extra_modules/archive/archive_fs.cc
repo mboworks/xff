@@ -74,6 +74,12 @@ vfs::Metadata DirectoryMetadata() {
   };
 }
 
+void IncrementChildCount(std::uint32_t& count) {
+  if (count < std::numeric_limits<std::uint32_t>::max()) {
+    ++count;
+  }
+}
+
 // A synthetic device id for one container, so that every member of it shares a device and members of
 // two containers do not. Derived from the container path rather than counted, so the value is stable
 // across runs (a walk that prints it, or compares it between invocations, sees no churn).
@@ -304,20 +310,35 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::Index(
     // the evaluator can see it.
     node.metadata.source = vfs::Source::kArchiveMember;
     node.link_target = member.link_target;
-    fs.nodes_[key] = std::move(node);
+    const auto [entry_it, inserted] = fs.nodes_.try_emplace(key);
+    const std::uint32_t direct_children = entry_it->second.direct_child_count;
+    entry_it->second = std::move(node);
+    entry_it->second.direct_child_count = direct_children;
 
     // Synthesize every missing ancestor: tar streams routinely omit directory entries, and a walk
     // that trusted the stored list would never descend into them.
-    for (std::string_view parent = ParentOf(key); !parent.empty(); parent = ParentOf(parent)) {
+    bool has_new_child = inserted;
+    std::string_view parent = ParentOf(key);
+    while (!parent.empty()) {
       const std::string parent_key(parent);
-      if (fs.nodes_.contains(parent_key)) {
+      const auto existing = fs.nodes_.find(parent_key);
+      if (existing != fs.nodes_.end()) {
+        if (has_new_child) {
+          IncrementChildCount(existing->second.direct_child_count);
+        }
         break;  // this ancestor exists, so all further ancestors do too
       }
       Node parent_node{.metadata = DirectoryMetadata(), .synthesized = true};
       parent_node.metadata.dev = device;
       parent_node.metadata.ino = next_ino++;
       parent_node.metadata.nlink = 1;
+      parent_node.direct_child_count = 1;
       fs.nodes_[parent_key] = std::move(parent_node);
+      has_new_child = true;
+      parent = ParentOf(parent);
+    }
+    if (has_new_child && parent.empty()) {
+      IncrementChildCount(fs.root_direct_child_count_);
     }
   }
   return fs;
@@ -356,6 +377,7 @@ absl::StatusOr<vfs::DirectoryMetadata> ArchiveFileSystem::ReadDirectory(std::str
   }
   auto first = nodes_.begin();
   auto last = nodes_.end();
+  std::size_t direct_child_count = root_direct_child_count_;
   if (!key->empty()) {
     const auto found = nodes_.find(*key);
     if (found == nodes_.end()) {
@@ -364,6 +386,7 @@ absl::StatusOr<vfs::DirectoryMetadata> ArchiveFileSystem::ReadDirectory(std::str
     if (found->second.metadata.type != vfs::FileType::kDirectory) {
       return absl::InvalidArgumentError(absl::StrCat("not a directory: ", *key));
     }
+    direct_child_count = found->second.direct_child_count;
     std::string boundary = absl::StrCat(*key, "/");
     first = nodes_.lower_bound(boundary);
     // The next ASCII byte after the appended slash bounds exactly this subtree's prefix.
@@ -373,9 +396,11 @@ absl::StatusOr<vfs::DirectoryMetadata> ArchiveFileSystem::ReadDirectory(std::str
   vfs::DirectoryMetadata listing;
   auto& entries = listing.entries;
   if (first != last) {
-    // Bound initial storage independently of the number of descendants in this subtree.
+    // Keep the small-listing allocation floor, while using the index's direct-child count for wide
+    // directories so their results avoid repeated growth.
     constexpr std::size_t kInitialEntryCapacity = 16;
-    entries.reserve(std::min(nodes_.size(), kInitialEntryCapacity));
+    entries.reserve(
+        std::max(std::min(nodes_.size(), kInitialEntryCapacity), std::min(direct_child_count, nodes_.size())));
     if (observe) {
       listing.observations.reserve(entries.capacity());
     }

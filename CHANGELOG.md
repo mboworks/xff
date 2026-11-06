@@ -3,6 +3,9 @@
 
 # 0.11.0
 
+- Reserve archive directory listing storage from indexed direct-child counts, reducing reallocations
+  in wide directories while preserving synthesized-parent and duplicate-member behavior.
+
 - Reuse normalized archive member-key views for immediate lookups while keeping deferred read sources owned and preserving archive paths, errors, and read-only behavior.
 
 - Avoid empty libc timestamp-formatting calls, substantially reducing metadata-output cost on macOS while preserving exact output and timezone behavior.

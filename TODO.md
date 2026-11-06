@@ -1405,9 +1405,13 @@ this as intentional accounting.
       Audit mutation-only indexing, owned returned sources/metadata and nonescaping iterators.
       Keep the pinned default transparent three-way string comparator; include large Node
       insertion/relocation, root/flat/chain and RSS costs before testing integration.
-- [ ] O19i2: Establish actual archive Node padding before considering a bounded direct-child
-      capacity hint. Measure insertion bookkeeping and root/chain controls; a persistent
-      full-width count per node is not free. Compare simpler key/insertion changes first.
+- [x] O19i2: [Qualify a bounded archive direct-child capacity hint](docs/benchmarks/archive-directory-child-capacity-20261106.md).
+      The count fits existing `Node` padding; the one root count adds 8 bytes per archive FS.
+      Three balanced sessions on Mac and Linux show large flat/wide-root listing wins, neutral
+      construction, and near-neutral overall listing medians. Preserve the slower deep/chain cases
+      and all raw measurements. Regression coverage pins exact root/nested reservations across
+      synthesized-parent replacement, first-wins duplicates, and metadata observations. The change
+      is ready for a focused PR after the current PR stack stabilizes.
 - [ ] O19f3: Independently compare forward direct-child separator detection with reverse parent
       scanning inside the existing bounded archive range. Preserve a leading absolute slash
       at the archive root. The ordered-index model passes; runtime code and measurements are
