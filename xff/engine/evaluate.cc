@@ -370,7 +370,7 @@ std::string FormatPrintf(std::string_view format, const EvalContext& ctx) {
         if (!length.has_value()) {
           out.append("%{");
         } else {
-          absl::StrAppend(&out, fields::Render(format.substr(i, *length), field_ctx));
+          fields::Template::Compile(format.substr(i, *length)).AppendTo(out, field_ctx);
           i += *length - 1;
         }
       } else if (directive == 'a' || directive == 'c' || directive == 't') {

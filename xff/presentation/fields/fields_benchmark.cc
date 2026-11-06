@@ -63,6 +63,40 @@ void RenderFields(benchmark::State& state, Scenario scenario, bool supplied) {
   state.SetItemsProcessed(state.iterations() * static_cast<std::int64_t>(count));
 }
 
+void AppendField(benchmark::State& state, Scenario scenario, bool direct, bool supplied) {
+  const auto count = static_cast<std::size_t>(state.range(0));
+  const auto length = static_cast<std::size_t>(state.range(1));
+  std::vector<std::string> paths;
+  paths.reserve(count);
+  for (std::size_t at = 0; at < count; ++at) {
+    paths.push_back(
+        "root/" + std::string(length, 'd') + "/" + std::string(length, 'f') + std::to_string(at) + ".tar.gz");
+  }
+  const xff::fields::Template compiled = xff::fields::Template::Compile(scenario.format);
+  const xff::vfs::Metadata metadata;
+  const xff::content::Snapshot snapshot;
+  xff::fields::RenderContext context{
+      .metadata = metadata,
+      .tz = absl::UTCTimeZone(),
+  };
+  if (supplied) {
+    context.content.set_ref(snapshot);
+  }
+  for ([[maybe_unused]] const auto unused : state) {
+    for (const std::string& path : paths) {
+      context.path = path;
+      std::string output;
+      if (direct) {
+        compiled.AppendTo(output, context);
+      } else {
+        output.append(compiled.Render(context));
+      }
+      benchmark::DoNotOptimize(output);
+    }
+  }
+  state.SetItemsProcessed(state.iterations() * static_cast<std::int64_t>(count));
+}
+
 // Repetitions retain the same fastest-seven protocol used by other expression benchmarks.
 double FastestSeven(const std::vector<double>& values) {
   std::vector<double> sorted(values);
@@ -108,6 +142,32 @@ int main(int argc, char** argv) {
           ->MinTime(0.01)
           ->MinWarmUpTime(0.01)
           ->ComputeStatistics("fastest7of9", FastestSeven);
+    }
+  }
+  static constexpr auto kAppendScenarios = std::to_array<Scenario>({
+      {.name = "path", .format = "{path}"},
+      {.name = "dir", .format = "{dir}"},
+      {.name = "name", .format = "{name}"},
+      {.name = "transformed", .format = "{path:stem}"},
+      {.name = "composite", .format = "{dir}/{name}"},
+  });
+  static constexpr auto kDirect = std::to_array<bool>({false, true});
+  static constexpr auto kAppendContext = std::to_array<bool>({false, true});
+  for (const Scenario& scenario : kAppendScenarios) {
+    for (const bool direct : kDirect) {
+      for (const bool supplied : kAppendContext) {
+        benchmark::RegisterBenchmark(
+            "fields-append/" + std::string(direct ? "direct/" : "render-copy/")
+                + std::string(supplied ? "supplied/" : "fallback/") + std::string(scenario.name),
+            AppendField, scenario, direct, supplied)
+            ->ArgsProduct({{10, 1'000, 100'000}, {8, 160}})
+            ->UseRealTime()
+            ->Unit(benchmark::kMicrosecond)
+            ->Repetitions(9)
+            ->MinTime(0.01)
+            ->MinWarmUpTime(0.01)
+            ->ComputeStatistics("fastest7of9", FastestSeven);
+      }
     }
   }
   benchmark::RunSpecifiedBenchmarks();

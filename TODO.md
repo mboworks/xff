@@ -664,8 +664,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O22c2e: Qualify fixed-size display/export metric arrays and moved row assembly on both hosts;
       retain the partial policy, baseline-copy controls and small Linux startup costs in
       [the paired numeric report](docs/benchmarks/fixed-summary-metrics-20261104.md).
-- [ ] O22c2d: Independently qualify borrowed structured field values; audit fallback snapshot and
-      temporary-transform lifetimes before returning any views.
+- [x] O22c2d: Independently qualify borrowed structured field values; append them synchronously
+      while snapshot and transform owners remain alive. The 20-case long-path subset improves in
+      19 cases per host; full 60-case populations improve in 53 macOS and 54 Linux cases. Retain all
+      slower controls in
+      [the paired append report](docs/benchmarks/borrowed-field-appends-20261106.md).
 - [x] O22c2f: Evaluate percentage conversion and cached parsed formats independently. Retain exact
       rounding, deployment, binary-size and native controls; neither trial warrants production
       adoption. See [the retained alternatives](docs/benchmarks/direct-summary-cells-20261104.md).

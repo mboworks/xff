@@ -124,6 +124,10 @@ class Template {
 
   std::string Render(const RenderContext& context) const;
 
+  // Append the rendered value directly to an existing owner. Borrowed field values are consumed
+  // before their RenderContext or any fallback content snapshot can expire.
+  void AppendTo(std::string& output, const RenderContext& context) const;
+
   // The value stream when this template is a single `{field:m<delim>PAT<delim>REPL<delim>flags}`
   // extraction with NO terminal reducer: the field's multi-line value split into lines, each matching
   // line rewritten by REPL, non-matching lines dropped. nullopt when the template is not exactly one

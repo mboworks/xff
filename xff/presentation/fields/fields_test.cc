@@ -99,6 +99,52 @@ TEST_F(FieldsTest, LiteralClassificationUsesCompiledSegmentsIncludingHashBinding
   }
 }
 
+TEST_F(FieldsTest, AppendToPreservesTextForEmptyPrefilledAndReusableDestinations) {
+  struct Case {
+    std::string_view source;
+    std::string_view expected;
+  };
+
+  static constexpr auto kCases = std::to_array<Case>({
+      {"", ""},
+      {"literal", "literal"},
+      {"{path}", "root/long-directory-component/sub-directory/file.txt"},
+      {"{dir}", "root/long-directory-component/sub-directory"},
+      {"{name:stem}", "file"},
+      {"prefix:{dir}/{name}", "prefix:root/long-directory-component/sub-directory/file.txt"},
+      {"{path:s/file/item/}", "root/long-directory-component/sub-directory/item.txt"},
+  });
+  const vfs::Metadata metadata = Meta(vfs::FileType::kRegular, 17);
+  const content::Snapshot snapshot;
+  for (const bool supplied : {false, true}) {
+    SCOPED_TRACE(supplied);
+    RenderContext context{
+        .path = "root/long-directory-component/sub-directory/file.txt",
+        .metadata = metadata,
+        .tz = absl::UTCTimeZone(),
+    };
+    if (supplied) {
+      context.content.set_ref(snapshot);
+    }
+    for (const Case& test : kCases) {
+      SCOPED_TRACE(test.source);
+      const Template compiled = Template::Compile(test.source);
+      for (const std::string_view prefix : {std::string_view{}, std::string_view{"existing:"}}) {
+        SCOPED_TRACE(prefix);
+        for (const bool reusable : {false, true}) {
+          SCOPED_TRACE(reusable);
+          std::string actual(prefix);
+          if (reusable) {
+            actual.reserve(512);
+          }
+          compiled.AppendTo(actual, context);
+          EXPECT_THAT(actual, EqualsText(std::string(prefix) + std::string(test.expected)));
+        }
+      }
+    }
+  }
+}
+
 TEST_F(FieldsTest, StandaloneRewriteOwnsProgramsAndUsesFieldSubstitutionSemantics) {
   std::string spec = R"(s|([a-z]+)-([0-9]+)|\2_\1|gi;s|^|prefix/|)";
   ASSERT_OK_AND_ASSIGN(auto original, RewriteProgram::Compile(spec));
