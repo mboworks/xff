@@ -216,6 +216,22 @@ TEST_F(ArchiveFsTest, TheContainerItselfReadsAsTheArchiveRoot) {
                    Field("name", &vfs::Entry::name, "top.txt")));
 }
 
+TEST_F(ArchiveFsTest, FlatArchiveRootListsAllMembers) {
+  constexpr std::array kMembers{
+      MemoryArchiveMember{.path = "first.txt"},
+      MemoryArchiveMember{.path = "second.txt"},
+  };
+  MBO_ASSERT_OK_AND_ASSIGN(const std::string bytes, MakeMemoryTar(kMembers));
+  constexpr std::string_view kContainer = "flat-root.tar";
+  MBO_ASSERT_OK_AND_ASSIGN(const ArchiveFileSystem fs, ArchiveFileSystem::OpenBytes(kContainer, bytes));
+
+  MBO_ASSERT_OK_AND_ASSIGN(const std::vector<vfs::Entry> entries, fs.ReadDir(kContainer));
+  EXPECT_THAT(
+      entries, ElementsAre(
+                   Field("name", &vfs::Entry::name, EqualsText("first.txt")),
+                   Field("name", &vfs::Entry::name, EqualsText("second.txt"))));
+}
+
 TEST_F(ArchiveFsTest, DirectChildCountsSurviveSynthesizedParentReplacementAndDuplicates) {
   constexpr std::string_view kContainer = "child-counts.tar";
   MBO_ASSERT_OK_AND_ASSIGN(const std::string bytes, ChildCountTar());

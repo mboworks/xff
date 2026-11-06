@@ -1411,11 +1411,13 @@ this as intentional accounting.
       construction, and near-neutral overall listing medians. Preserve the slower deep/chain cases
       and all raw measurements. Regression coverage pins exact root/nested reservations across
       synthesized-parent replacement, first-wins duplicates, and metadata observations. The change
-      is ready for a focused PR after the current PR stack stabilizes.
-- [ ] O19f3: Independently compare forward direct-child separator detection with reverse parent
-      scanning inside the existing bounded archive range. Preserve a leading absolute slash
-      at the archive root. The ordered-index model passes; runtime code and measurements are
-      pending. Keep long initial components and large deep-root regressions as controls.
+      is implemented in #1120; retain its separate current-head CI and main-health qualification.
+- [x] O19f3: [Measure forward archive child-separator detection](docs/benchmarks/archive-directory-child-separator-20261106.md).
+      The selected forward scan plus flat-root count shortcut improves the median of 24 cases by
+      1.80% on Mac and 3.36% on Linux. It retains explicit Mac deep-root slow cases; the
+      forward-only and hybrid variants are archived but rejected. Existing absolute-member tests
+      and a new flat-root test cover the root separator paths. The locally verified candidate is
+      ready to enter the PR sequence after its O19i2 base is stable.
 - [x] O24: [Audit the actual CLI stream synchronization implementation](docs/benchmarks/cli-stream-sync-audit-20261105.md).
       Both hermetic Clang 23.1.4 libc++ implementations only read/write the prior-state byte.
       Keep the current runtime; no buffering change or measured gain follows from adding the

@@ -4680,12 +4680,14 @@ ordinary and fallback lifecycles, including the fresh input required by each inv
 record RSS. Host-backed `Open` and `OpenSource` do not have this input-copy cost. The prototype
 is outside the worktree, uncompiled and unmeasured; no new public VFS API is proposed.
 
-O19f3 is a smaller alternative to the rejected descendant-jump loop. Within the already bounded
-subtree, classify a direct child by looking for the next slash after the known directory prefix
-instead of reverse-scanning the whole key for its last slash. At the archive root, searching
-from byte one preserves a possible leading absolute slash. The same 160-set ordered-index
-model checks 25,054 directory keys and 59,256 bounded members without a semantic difference.
-This remains a model, not a runtime improvement. Inspect actual generated code before assuming
-the forward search uses a faster primitive; long initial path components can make it worse
-than a reverse scan. Keep it independent of map successor searches, layout, insertion and worker
-changes, and do not delay publishing the current borrowed-key decision to add another variant.
+O19f3 applies the bounded forward separator test in `ArchiveFileSystem::ReadDirectory`, with a
+flat-root fast path when the direct-child count equals the indexed-node count. Searching after the
+known directory prefix avoids reverse-scanning the full key; starting at byte one for root members
+preserves a leading absolute slash. The final variant has a 24-case median improvement of 1.80%
+on the local Mac and 3.36% on drogon Linux, with 21/24 and 22/24 cases faster respectively. It
+retains the Mac deep-root 100k median cost and small Linux costs in two cases. The
+forward-only version regressed Linux flat-root metadata 100k by 15.20%; the hybrid root scan was
+neutral overall on Linux. Both rejected variants and all raw samples are retained in
+[`the O19f3 qualification`](benchmarks/archive-directory-child-separator-20261106.md). This is a
+targeted archive listing improvement, not a demonstrated full-command speedup. The implementation
+keeps map layout, insertion, successor searches and workers unchanged.
