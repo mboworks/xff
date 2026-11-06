@@ -478,8 +478,11 @@ class Walker {
         follow_children_(options.symlinks == SymlinkMode::kAll),
         name_only_listings_(
             (options.archive != ArchiveDive::kAll || !mount_container) && fs.SupportsNameOnlyListings()),
+        // Full-path backends can expose observations too. Keep native name-only observations
+        // disabled when mounting requires their ordinary complete-path listing instead.
         bulk_metadata_listings_(
-            options.metadata == MetadataDemand::kAlways && name_only_listings_ && fs.SupportsDirectoryMetadata(1)),
+            options.metadata == MetadataDemand::kAlways && (name_only_listings_ || !fs.SupportsNameOnlyListings())
+            && fs.SupportsDirectoryMetadata(1)),
         coordinator_bulk_metadata_listings_(
             bulk_metadata_listings_ && (options.workers <= 1 || fs.SupportsDirectoryMetadata(options.workers))),
         pool_(*this, options.workers > 1 ? options.workers : std::size_t{0}) {}
@@ -714,7 +717,7 @@ class Walker {
   }
 
   Listing ReadDir(const std::string& dir) const {
-    if (bulk_metadata_listings_ && !fs_owner_) {
+    if (bulk_metadata_listings_) {
       MBO_ASSIGN_OR_RETURN(auto listing, ReadObservedEntries(dir));
       return FinishEntries(std::move(listing), dir);
     }
@@ -725,7 +728,7 @@ class Walker {
   // Only the coordinator dispatches and joins stat chunks. Directory read-ahead jobs
   // stay leaves: no worker ever waits for jobs submitted to its own pool.
   Listing ReadNow(const std::string& dir) {
-    return coordinator_bulk_metadata_listings_ && !fs_owner_ ? ReadObservedNow(dir) : ReadOrdinaryNow(dir);
+    return coordinator_bulk_metadata_listings_ ? ReadObservedNow(dir) : ReadOrdinaryNow(dir);
   }
 
   Listing ReadOrdinaryNow(const std::string& dir) {

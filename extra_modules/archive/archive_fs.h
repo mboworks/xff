@@ -37,6 +37,7 @@
 // Member content is read through retained sources and independent cursors. Legacy decoded/phar
 // paths keep their existing materialization/cache behavior and shared read-budget controls.
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -78,6 +79,12 @@ class ArchiveFileSystem : public vfs::FileSystem {
   bool ContainerCandidate(std::string_view path) const override;
 
   [[nodiscard]] absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view dir) const override;
+
+  // Indexed values are complete; observing them never starts nested metadata work.
+  bool SupportsDirectoryMetadata(std::size_t /*stat_workers*/) const override { return true; }
+
+  [[nodiscard]] absl::StatusOr<vfs::DirectoryMetadata> ReadDirMetadata(std::string_view dir, vfs::MetadataFields fields)
+      const override;
   [[nodiscard]] absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool follow_symlinks) const override;
   [[nodiscard]] absl::Status Remove(std::string_view path) const override;
   [[nodiscard]] bool Access(std::string_view path, vfs::AccessMode mode) const override;
@@ -126,6 +133,9 @@ class ArchiveFileSystem : public vfs::FileSystem {
   // Resolves an incoming path to a member key: empty means the container itself (the archive's
   // root), nullopt means the path does not belong to this filesystem at all.
   [[nodiscard]] std::optional<std::string> MemberKeyOf(std::string_view path) const;
+
+  // Listing paths and observations are owned values from the same immutable node range.
+  [[nodiscard]] absl::StatusOr<vfs::DirectoryMetadata> ReadDirectory(std::string_view dir, bool observe) const;
 
   vfs::SharedReadSource source_;
   bool package_ = false;

@@ -340,6 +340,17 @@ std::optional<std::string> ArchiveFileSystem::MemberKeyOf(std::string_view path)
 }
 
 absl::StatusOr<std::vector<vfs::Entry>> ArchiveFileSystem::ReadDir(std::string_view dir) const {
+  MBO_ASSIGN_OR_RETURN(auto listing, ReadDirectory(dir, false));
+  return std::move(listing.entries);
+}
+
+absl::StatusOr<vfs::DirectoryMetadata> ArchiveFileSystem::ReadDirMetadata(
+    std::string_view dir,
+    vfs::MetadataFields /*fields*/) const {
+  return ReadDirectory(dir, true);
+}
+
+absl::StatusOr<vfs::DirectoryMetadata> ArchiveFileSystem::ReadDirectory(std::string_view dir, bool observe) const {
   const std::optional<std::string> key = MemberKeyOf(dir);
   if (!key.has_value()) {
     return absl::InvalidArgumentError(absl::StrCat("not a path in ", container_, ": ", dir));
@@ -360,11 +371,15 @@ absl::StatusOr<std::vector<vfs::Entry>> ArchiveFileSystem::ReadDir(std::string_v
     boundary.back() = '0';
     last = nodes_.lower_bound(boundary);
   }
-  std::vector<vfs::Entry> entries;
+  vfs::DirectoryMetadata listing;
+  auto& entries = listing.entries;
   if (first != last) {
     // Bound initial storage independently of the number of descendants in this subtree.
     constexpr std::size_t kInitialEntryCapacity = 16;
     entries.reserve(std::min(nodes_.size(), kInitialEntryCapacity));
+    if (observe) {
+      listing.observations.reserve(entries.capacity());
+    }
   }
   for (const auto& [member_key, node] : std::ranges::subrange(first, last)) {
     if (ParentOf(member_key) != *key) {
@@ -380,8 +395,15 @@ absl::StatusOr<std::vector<vfs::Entry>> ArchiveFileSystem::ReadDir(std::string_v
             .source = vfs::Source::kArchiveMember,
             .read_only = true,
         });
+    if (observe) {
+      listing.observations.push_back(
+          vfs::MetadataObservation{
+              .value = node.metadata,
+              .status = absl::OkStatus(),
+          });
+    }
   }
-  return entries;
+  return listing;
 }
 
 absl::StatusOr<vfs::Metadata> ArchiveFileSystem::Stat(std::string_view path, bool /*follow_symlinks*/) const {

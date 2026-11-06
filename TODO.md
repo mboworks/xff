@@ -523,17 +523,20 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       reallocations, retaining tiny/root/chain costs and complete native controls. Full both-host
       qualification and the held O19g variants are in
       [the allocation decisions](docs/benchmarks/archive-directory-allocation-20261105.md).
-- [ ] O19j: Qualify complete archive directory observations from existing immutable node metadata.
-      Preserve full virtual paths, native archive-all listing conventions, eager-only demand,
-      followed-link fallback, mounted lifetimes and leaf-worker isolation before bypassing repeated
-      per-entry Stat. Measure names and full metadata controls on both hosts; do not infer a gain.
+- [x] O19j: Qualify complete archive directory observations from immutable indexed metadata.
+      Preserve full paths, native archive-all conventions, eager-only demand, followed-link fallback,
+      mounted lifetimes and leaf-worker isolation. Both-host full qualification and measured summary
+      gains/parallel CSV costs: [indexed observations](docs/benchmarks/archive-directory-observations-20261105.md).
+- [x] O19j2: Reject the compile-time observation-mode specialization after bounded both-host
+      measurements: no general gain, repeat Mac flat-10k metadata cost and larger Linux code.
+      Preserve every diagnostic session, copy control, source and exact restoration proof in
+      [the same report](docs/benchmarks/archive-directory-observations-20261105.md).
 - [ ] O19h: Investigate the repeatable 1k-member/three-worker Linux metadata-output cost exposed by
       faster archive directory admission. Preserve the original and independent confirmation
       (roughly 6-14%, 0.24-0.35 ms), serial and 10k controls. Identify stage/scheduling/allocation
       causes before introducing any worker threshold; do not hide the cost in cohort medians.
-- [ ] O20k: Investigate complete non-followed Darwin symlink observations. Admit them only after
-      proving every requested attribute and Metadata field equals ordinary lstat semantics; retain
-      conservative fallback for missing fields, special types and followed-target lookups.
+      Retain O19j's additional three-worker CSV costs (up to about 3% Mac and 5% Linux), including
+      100k-member controls; summary gains do not erase those cells.
 - [x] O20a: Qualify native names-only directory listings and callback-scoped reusable leaf paths on
       both hosts, including controlled/rg VFS delegation, lazy metadata and exact owned fallbacks.
       Retain native and in-memory broad/deep 10-100k-file, 1/3-worker evidence in
@@ -573,7 +576,9 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [ ] O20k: Probe complete native bulk observations for non-followed symlinks against every ordinary
       stat field, including dangling/hardlinked links. Preserve followed-link and mount semantics;
       select only after native equivalence, malformed-input coverage and both-host measurements.
-      This may remove the retained serial all-symlink bulk-read cost without expression heuristics.
+      Require every requested native attribute; missing fields, special types and followed-target
+      lookups retain ordinary fallback. This may remove the retained serial all-symlink bulk-read
+      cost without expression heuristics.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte
       equality shortcut on Linux/macOS. Preserve [rejected width-one paths and all controls](docs/benchmarks/byte-shingle-representations-20261102.md).
 - [x] O21b0: Remove the owning similarity binary-sniff prefix while preserving the exact window,
