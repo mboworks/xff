@@ -101,6 +101,7 @@ class ArchiveFileSystem : public vfs::FileSystem {
   struct Node {
     vfs::Metadata metadata;
     std::string link_target;
+    std::uint32_t direct_child_count = 0;
     bool synthesized = false;  // no stored entry of its own; inferred from a child's path
   };
 
@@ -160,6 +161,7 @@ class ArchiveFileSystem : public vfs::FileSystem {
   // Keyed by member path as stored, without a trailing slash. Ordered so ReadDir output is stable
   // without a sort, which keeps a walk's ordering reproducible.
   std::map<std::string, Node, std::less<>> nodes_;
+  std::uint32_t root_direct_child_count_ = 0;
 };
 
 }  // namespace xff::archive
