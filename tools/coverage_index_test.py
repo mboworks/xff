@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -36,7 +37,7 @@ class CoverageIndexTest(unittest.TestCase):
         self.assertIn("  workflow_dispatch:", workflow)
         self.assertIn("      source_run_id:", workflow)
         self.assertIn("github.event.workflow_run.id || inputs.source_run_id", workflow)
-        self.assertIn('[[ "${SOURCE_RUN_ID}" =~ ^[1-9][0-9]*$ ]]', workflow)
+        self.assertIn('[[ ! "${SOURCE_RUN_ID}" =~ ^[1-9][0-9]*$ ]]', workflow)
         self.assertIn('.status == "completed"', workflow)
         self.assertIn('.path == ".github/workflows/main.yml"', workflow)
         self.assertIn('.path == ".github/workflows/release.yml"', workflow)
@@ -55,6 +56,78 @@ class CoverageIndexTest(unittest.TestCase):
         self.assertIn("pulls?state=all&per_page=100", refresh)
         self.assertLess(refresh.index("coverage_index.py history"), refresh.index("coverage_index.py site"))
         self.assertLess(refresh.index("coverage_index.py site"), refresh.index("git -C site push"))
+
+    def coverage_eligibility(self, metadata, jobs, run_id="123"):
+        """Run the actual trusted workflow step with local GitHub API fixtures."""
+        workflow = repository_file(".github/workflows/coverage_pages.yml").read_text()
+        step = workflow.split("      - name: Check coverage job result\n", 1)[1]
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1].split("      - uses:", 1)[0])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "run.json").write_text(json.dumps(metadata))
+            (root / "jobs.json").write_text(json.dumps(jobs))
+            output = root / "output"
+            output.touch()
+            requests = root / "requests"
+            stub = """gh() {
+  printf '%s\\n' "$*" >> "$REQUEST_LOG"
+  case "$*" in
+    *'/jobs?'*) cat "$JOBS_FIXTURE" ;;
+    *) cat "$RUN_FIXTURE" ;;
+  esac
+}
+"""
+            result = subprocess.run(
+                ["bash", "-c", stub + script], cwd=root, capture_output=True, text=True,
+                env={**os.environ, "SOURCE_RUN_ID": run_id, "GITHUB_REPOSITORY": "owner/repository",
+                     "GITHUB_OUTPUT": str(output), "REQUEST_LOG": str(requests),
+                     "JOBS_FIXTURE": str(root / "jobs.json"), "RUN_FIXTURE": str(root / "run.json")})
+            calls = requests.read_text().splitlines() if requests.exists() else []
+            return result, dict(line.split("=", 1) for line in output.read_text().splitlines()), calls
+
+    def test_coverage_publication_defers_source_rerun_without_failing(self):
+        # A completed webhook can wait in the publication queue while its source is retried.
+        for status in ("queued", "in_progress", "waiting", "pending", "requested"):
+            with self.subTest(status=status):
+                result, output, calls = self.coverage_eligibility(
+                    {"path": ".github/workflows/main.yml", "status": status, "run_attempt": 2},
+                    [{"jobs": [{"name": "coverage", "conclusion": "success"}]}])
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(output, {"eligible": "false"})
+                self.assertIn("deferring coverage report", result.stdout)
+                self.assertEqual(len(calls), 1)  # Do not query/download a live attempt's artifacts.
+
+    def test_completed_coverage_source_preserves_identity_and_job_eligibility(self):
+        metadata = {"status": "completed", "id": 123, "head_sha": "a" * 40, "run_attempt": 2,
+                    "created_at": "2026-11-05T10:00:00Z", "updated_at": "2026-11-05T11:00:00Z",
+                    "run_started_at": "2026-11-05T10:30:00Z", "conclusion": "failure"}
+        for path in (".github/workflows/main.yml", ".github/workflows/release.yml"):
+            for conclusion in ("success", "failure", "cancelled", "skipped"):
+                with self.subTest(path=path, conclusion=conclusion):
+                    result, output, calls = self.coverage_eligibility(
+                        {**metadata, "path": path},
+                        [{"jobs": [{"name": "coverage", "conclusion": conclusion}]}])
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(output["eligible"], str(conclusion == "success").lower())
+                    self.assertEqual(output["id"], "123")
+                    self.assertEqual(output["head_sha"], metadata["head_sha"])
+                    self.assertEqual(output["run_attempt"], "2")
+                    for field in ("created_at", "updated_at", "run_started_at"):
+                        self.assertEqual(output[field], metadata[field])
+                    self.assertEqual(len(calls), 2)
+
+    def test_coverage_eligibility_still_rejects_untrusted_workflow_or_invalid_run(self):
+        for status in ("in_progress", "completed"):
+            result, output, calls = self.coverage_eligibility(
+                {"path": ".github/workflows/untrusted.yml", "status": status}, [])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(output, {})
+            self.assertEqual(len(calls), 1)
+        for run_id in ("", "0", "-1", "1; exit 0", "owner/run"):
+            result, output, calls = self.coverage_eligibility({}, [], run_id)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(output, {})
+            self.assertEqual(calls, [])
 
     def test_merge_refresh_reorders_existing_report_without_replacing_measurements(self):
         with tempfile.TemporaryDirectory() as directory:

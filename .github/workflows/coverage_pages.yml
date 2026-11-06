@@ -54,10 +54,20 @@ jobs:
           SOURCE_RUN_ID: ${{ github.event.workflow_run.id || inputs.source_run_id }}
         run: |
           set -euo pipefail
-          [[ "${SOURCE_RUN_ID}" =~ ^[1-9][0-9]*$ ]]
+          if [[ ! "${SOURCE_RUN_ID}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Invalid source workflow run ID: ${SOURCE_RUN_ID}" >&2
+            exit 1
+          fi
           gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}" > coverage-run.json
-          jq -e '.status == "completed" and (.path == ".github/workflows/main.yml" or .path == ".github/workflows/release.yml")' \
+          jq -e '(.path == ".github/workflows/main.yml" or .path == ".github/workflows/release.yml")' \
             coverage-run.json >/dev/null
+          # A completed event can wait behind another publication while the source is retried.
+          # Keep the retained report and refresh metadata; the retry's completion will publish it.
+          if ! jq -e '.status == "completed"' coverage-run.json >/dev/null; then
+            echo "Source run ${SOURCE_RUN_ID} is not completed; deferring coverage report"
+            echo "eligible=false" >>"${GITHUB_OUTPUT}"
+            exit 0
+          fi
           gh api --paginate --slurp \
             "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}/jobs?filter=latest&per_page=100" > coverage-jobs.json
           eligible="$(jq 'any(.[].jobs[]; .name == "coverage" and .conclusion == "success")' coverage-jobs.json)"

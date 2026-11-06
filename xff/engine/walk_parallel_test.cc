@@ -33,6 +33,7 @@ using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Gt;
 using ::testing::IsEmpty;
+using ::testing::NotNull;
 using ::testing::SizeIs;
 
 struct StatTrace {
@@ -249,6 +250,7 @@ TEST_F(WalkParallelTest, LazyAndMetadataFreeListingsDoNotStartStatWorkers) {
 }
 
 struct ObservedWideFs final : WideFs {
+  bool name_only = true;
   bool serial_only = false;
   mutable std::vector<std::size_t> requested_stat_workers;
   bool partial = false;
@@ -256,7 +258,7 @@ struct ObservedWideFs final : WideFs {
   bool malformed = false;
   mutable std::atomic<std::size_t> observation_reads = 0;
 
-  bool SupportsNameOnlyListings() const override { return true; }
+  bool SupportsNameOnlyListings() const override { return name_only; }
 
   bool SupportsDirectoryMetadata(std::size_t stat_workers) const override {
     requested_stat_workers.push_back(stat_workers);
@@ -273,7 +275,7 @@ struct ObservedWideFs final : WideFs {
 
   absl::StatusOr<vfs::DirectoryMetadata> ReadDirMetadata(std::string_view path, vfs::MetadataFields) const override {
     ++observation_reads;
-    MBO_ASSIGN_OR_RETURN(auto entries, ReadDirNames(path));
+    MBO_ASSIGN_OR_RETURN(auto entries, name_only ? ReadDirNames(path) : WideFs::ReadDir(path));
     if (unavailable) {
       return vfs::DirectoryMetadata{.entries = std::move(entries)};
     }
@@ -304,11 +306,12 @@ struct ObservedWideFs final : WideFs {
 };
 
 struct ObservedDirectoryFs final : DirectoryFs {
+  bool name_only = true;
   bool serial_only = false;
   mutable std::vector<std::size_t> requested_stat_workers;
   mutable std::atomic<std::size_t> observation_reads = 0;
 
-  bool SupportsNameOnlyListings() const override { return true; }
+  bool SupportsNameOnlyListings() const override { return name_only; }
 
   bool SupportsDirectoryMetadata(std::size_t stat_workers) const override {
     requested_stat_workers.push_back(stat_workers);
@@ -328,7 +331,9 @@ struct ObservedDirectoryFs final : DirectoryFs {
         MBO_ASSIGN_OR_RETURN(const auto metadata, DirectoryFs::StatFields(entry.path, false, fields));
         observations.push_back(vfs::MetadataObservation{.value = metadata});
       }
-      entry.path.clear();
+      if (name_only) {
+        entry.path.clear();
+      }
     }
     return vfs::DirectoryMetadata{.entries = std::move(entries), .observations = std::move(observations)};
   }
@@ -356,6 +361,28 @@ TEST_F(WalkParallelTest, OwnedDirectoryObservationsSurviveSortingPrefetchAndRead
       EXPECT_THAT(actual.errors, Eq(expected.errors));
       EXPECT_THAT(actual.visitors, ElementsAre(std::this_thread::get_id()));
     }
+  }
+}
+
+TEST_F(WalkParallelTest, OwnedFullPathObservationsSurviveSortedPrefetchAndDirectoryErrors) {
+  constexpr auto kOrders = std::to_array({
+      SortOrder::kNone,
+      SortOrder::kDir,
+      SortOrder::kTree,
+      SortOrder::kGlobal,
+      SortOrder::kSubtree,
+  });
+  for (const auto order : kOrders) {
+    DirectoryFs reference;
+    ObservedDirectoryFs observed;
+    observed.name_only = false;
+    reference.unreadable = observed.unreadable = {"root/d100"};
+    const auto expected = Record(reference, {.sort = order, .workers = 1});
+    const auto actual = Record(observed, {.sort = order, .workers = 3});
+    EXPECT_THAT(actual.visits, Eq(expected.visits));
+    EXPECT_THAT(actual.errors, Eq(expected.errors));
+    EXPECT_THAT(actual.visitors, ElementsAre(std::this_thread::get_id()));
+    EXPECT_THAT(observed.observation_reads.load(), Gt(0));
   }
 }
 
@@ -408,6 +435,131 @@ TEST_F(WalkParallelTest, CompleteDirectoryObservationsAvoidPerChildStatAndKeepSe
   EXPECT_THAT(observed.observation_reads.load(), Eq(1));
   EXPECT_THAT(observed.trace->children, Eq(0));
   EXPECT_THAT(observed.trace->threads, IsEmpty());
+}
+
+TEST_F(WalkParallelTest, CompleteFullPathObservationsRetainFieldsAndCoordinatorVisits) {
+  constexpr auto kWorkers = std::to_array<std::size_t>({1, 3});
+  constexpr auto kFields = std::to_array({vfs::MetadataFields::kBasic, vfs::MetadataFields::kBirthTime});
+  for (const auto workers : kWorkers) {
+    for (const auto fields : kFields) {
+      const WideFs reference;
+      ObservedWideFs observed;
+      observed.name_only = false;
+      const auto expected = Record(reference, {.workers = 1, .metadata_fields = fields});
+      const auto actual = Record(observed, {.workers = workers, .metadata_fields = fields});
+      EXPECT_THAT(actual.visits, Eq(expected.visits));
+      EXPECT_THAT(actual.errors, IsEmpty());
+      EXPECT_THAT(actual.visitors, ElementsAre(std::this_thread::get_id()));
+      EXPECT_THAT(observed.observation_reads.load(), Eq(1));
+      EXPECT_THAT(observed.trace->children, Eq(0));
+      EXPECT_THAT(observed.trace->threads, IsEmpty());
+    }
+  }
+}
+
+TEST_F(WalkParallelTest, IncompleteFullPathObservationsKeepFallbackErrorsAndFields) {
+  constexpr auto kWorkers = std::to_array<std::size_t>({1, 3});
+  for (const auto workers : kWorkers) {
+    WideFs reference;
+    ObservedWideFs observed;
+    observed.name_only = false;
+    observed.partial = true;
+    observed.trace->await_peer = workers > 1;
+    reference.failures = {{"root/100", absl::StatusCode::kNotFound}, {"root/801", absl::StatusCode::kPermissionDenied}};
+    observed.failures = reference.failures;
+    const auto expected = Record(reference, {.workers = 1, .metadata_fields = vfs::MetadataFields::kBirthTime});
+    const auto actual = Record(observed, {.workers = workers, .metadata_fields = vfs::MetadataFields::kBirthTime});
+    EXPECT_THAT(actual.visits, Eq(expected.visits));
+    EXPECT_THAT(actual.errors, Eq(expected.errors));
+    EXPECT_THAT(actual.visitors, ElementsAre(std::this_thread::get_id()));
+    EXPECT_THAT(observed.observation_reads.load(), Eq(1));
+    EXPECT_THAT(observed.trace->children, Eq(513));
+    EXPECT_THAT(observed.trace->fields, ElementsAre(vfs::MetadataFields::kBirthTime));
+  }
+}
+
+TEST_F(WalkParallelTest, FullPathObservationsRespectLazyDemandAndRejectMalformedBatches) {
+  constexpr auto kDemands = std::to_array({MetadataDemand::kNever, MetadataDemand::kOnDemand});
+  for (const auto demand : kDemands) {
+    ObservedWideFs observed;
+    observed.name_only = false;
+    const auto actual = Record(observed, {.workers = 3, .metadata = demand});
+    EXPECT_THAT(actual.visits, SizeIs(1'025));
+    EXPECT_THAT(actual.errors, IsEmpty());
+    EXPECT_THAT(observed.observation_reads.load(), Eq(0));
+    EXPECT_THAT(observed.trace->children, Eq(0));
+  }
+  ObservedWideFs malformed;
+  malformed.name_only = false;
+  malformed.malformed = true;
+  const auto actual = Record(malformed, {.workers = 3});
+  EXPECT_THAT(actual.visits, SizeIs(1));
+  EXPECT_THAT(actual.errors, SizeIs(1));
+  EXPECT_THAT(malformed.trace->children, Eq(0));
+}
+
+TEST_F(WalkParallelTest, MountedFullPathObservationsAvoidNestedStatWorkersAndRetainOwnership) {
+  for (const bool partial : {false, true}) {
+    WideFs host;
+    host.root_type = vfs::FileType::kRegular;
+    const auto trace = std::make_shared<StatTrace>();
+    std::shared_ptr<const vfs::FileSystem> retained;
+    std::size_t visited = 0;
+    const auto roots = std::to_array<std::string>({"root"});
+    EXPECT_THAT(
+        Walk(
+            host, roots, {.workers = 3, .archive = ArchiveDive::kRoots},
+            [&](const Visit& visit) {
+              ++visited;
+              if (visit.fs_owner) {
+                retained = visit.fs_owner;
+              }
+              return WalkAction::kContinue;
+            },
+            [](std::string_view, const absl::Status& status) { EXPECT_THAT(status, IsOk()); },
+            [&](std::string_view, const vfs::FileSystem&,
+                int) -> absl::StatusOr<std::unique_ptr<const vfs::FileSystem>> {
+              auto mounted = std::make_unique<ObservedWideFs>();
+              mounted->name_only = false;
+              mounted->partial = partial;
+              mounted->trace = trace;
+              return mounted;
+            }),
+        IsOk());
+    EXPECT_THAT(visited, Eq(1'025));
+    ASSERT_THAT(retained, NotNull());
+    MBO_ASSERT_OK_AND_ASSIGN(const auto listing, retained->ReadDirMetadata("root", vfs::MetadataFields::kBasic));
+    EXPECT_THAT(listing.entries, SizeIs(1'024));
+    EXPECT_THAT(trace->children, Eq(partial ? 512 : 0));
+    if (partial) {
+      EXPECT_THAT(trace->threads, ElementsAre(std::this_thread::get_id()));
+    } else {
+      EXPECT_THAT(trace->threads, IsEmpty());
+    }
+  }
+}
+
+TEST_F(WalkParallelTest, NativeArchiveAllKeepsCompletePathsInsteadOfNameOnlyObservations) {
+  ObservedWideFs fs;
+  fs.count = 8;
+  const auto roots = std::to_array<std::string>({"root"});
+  std::vector<std::string> paths;
+  EXPECT_THAT(
+      Walk(
+          fs, roots, {.workers = 3, .archive = ArchiveDive::kAll},
+          [&](const Visit& visit) {
+            paths.emplace_back(visit.path);
+            return WalkAction::kContinue;
+          },
+          [](std::string_view, const absl::Status& status) { EXPECT_THAT(status, IsOk()); },
+          [](std::string_view, const vfs::FileSystem&, int) -> absl::StatusOr<std::unique_ptr<const vfs::FileSystem>> {
+            return absl::InvalidArgumentError("not a container");
+          }),
+      IsOk());
+  EXPECT_THAT(
+      paths, ElementsAre("root", "root/0", "root/1", "root/2", "root/3", "root/4", "root/5", "root/6", "root/7"));
+  EXPECT_THAT(fs.observation_reads.load(), Eq(0));
+  EXPECT_THAT(fs.trace->children, Eq(8));
 }
 
 TEST_F(WalkParallelTest, MissingDirectoryObservationsRetainParallelStatsFieldsAndErrors) {

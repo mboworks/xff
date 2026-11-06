@@ -24,6 +24,7 @@ struct MemoryArchiveMember {
   std::string_view path;
   std::string_view content = "x";
   bool directory = false;
+  std::string_view symlink_target;
 };
 
 // A narrow in-memory libarchive adapter; no host paths/handles are opened or mutated.
@@ -40,7 +41,7 @@ inline absl::StatusOr<std::string> MakeMemoryTar(std::span<const MemoryArchiveMe
   std::size_t capacity = 16'384;
   for (const auto& member : members) {
     // Allow an entry header, padded data, and a possible extended pathname record.
-    capacity += (4 * kTarBlock) + member.content.size() + member.path.size();
+    capacity += (4 * kTarBlock) + member.content.size() + member.path.size() + member.symlink_target.size();
   }
   std::string bytes(capacity, '\0');
   std::size_t used = 0;
@@ -55,10 +56,15 @@ inline absl::StatusOr<std::string> MakeMemoryTar(std::span<const MemoryArchiveMe
     }
     const std::string path(member.path);
     ::archive_entry_set_pathname(entry.get(), path.c_str());
-    ::archive_entry_set_filetype(entry.get(), member.directory ? AE_IFDIR : AE_IFREG);
+    const bool symlink = !member.symlink_target.empty();
+    ::archive_entry_set_filetype(entry.get(), member.directory ? AE_IFDIR : symlink ? AE_IFLNK : AE_IFREG);
+    if (symlink) {
+      const std::string target(member.symlink_target);
+      ::archive_entry_set_symlink(entry.get(), target.c_str());
+    }
     ::archive_entry_set_perm(entry.get(), member.directory ? 0755 : 0640);
     ::archive_entry_set_mtime(entry.get(), 1'700'000'000, 0);
-    const std::string_view content = member.directory ? std::string_view{} : member.content;
+    const std::string_view content = (member.directory || symlink) ? std::string_view{} : member.content;
     ::archive_entry_set_size(entry.get(), static_cast<la_int64_t>(content.size()));
     if (::archive_write_header(writer.get(), entry.get()) != ARCHIVE_OK
         || ::archive_write_data(writer.get(), content.data(), content.size())

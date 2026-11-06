@@ -62,6 +62,8 @@ in the live checkout. Main and release CI run it explicitly. It is a `py_binary`
 hermetic interpreter, not a sandboxed or cached `py_test`; its assertions execute on every run.
 No list of exported BUILD files or source snapshots needs maintenance. For direct script execution,
 supply `--workspace=PATH` explicitly. Fixture-based unit suites remain under `bazel test`.
+The coverage-index suite also executes the trusted eligibility shell with local API fixtures and
+requires host jq.
 The coverage-index and release-site suites require host Git; release-note tests require Bash and sed.
 Their Bazel targets carry `requires-host-tools`, and the supported Linux/macOS CI images provide them.
 No tests contact GitHub or recursively invoke Bazel; the separate site integration step does use GitHub.
@@ -112,6 +114,11 @@ select the affected translation units. A single coordinator defaults to the dete
 (minimum one), capped by the number of selected files. This leaves one CPU available for other work. Set `CLANG_TIDY_JOBS` to a positive integer to override
 that count, or leave it unset (`auto`) to use CPU detection. GitHub CI explicitly supplies its
 runner CPU count; there is no fixed two-worker local limit.
+
+Header selection resolves Bazel `include_prefix` spellings through the generated
+`_virtual_includes` directories in the compile database. It follows those aliases back to owned
+source headers before computing transitive consumers; third-party targets remain excluded.
+Refresh the database after changing include mappings so local selection uses the current build.
 
 Diagnostics include XFF core, extras API, extension-module and generated owned headers, including
 first-party headers Bazel exposes through `-isystem`: the temporary lint compile database treats

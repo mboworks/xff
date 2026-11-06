@@ -9,9 +9,13 @@ keeps the two sets identical.
 """
 
 CLANG_TIDY_MANUAL_TARGETS = [
+    "@xff_archive//:archive_openbytes_benchmark",
     "//tools:archive_directory_benchmark",
+    "//tools:archive_index_benchmark",
+    "//tools:archive_member_key_benchmark",
     "//tools:archive_source_benchmark",
     "//tools:read_source_benchmark",
+    "//tools:time_format_benchmark",
     "//xff/cli:globals_benchmark",
     "//xff/engine:read_accounting_test",
     "//xff/engine:compare_benchmark",

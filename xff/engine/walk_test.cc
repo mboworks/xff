@@ -36,6 +36,7 @@
 #include "absl/strings/str_cat.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/status/status_macros.h"
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/vfs/entry.h"
@@ -57,6 +58,7 @@ using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
 using ::testing::AllOf;
 using ::testing::ElementsAre;
+using ::testing::Eq;
 using ::testing::Ge;
 using ::testing::Gt;
 using ::testing::IsEmpty;
@@ -159,7 +161,7 @@ vfs::Entry SymlinkEntry(const std::string& path, const std::string& name) {
 // The fallback retains complete paths; the candidate deliberately cannot supply them.
 class NameListingFs final : public FakeFs {
  public:
-  explicit NameListingFs(bool enabled) : enabled_(enabled) {
+  explicit NameListingFs(bool enabled, bool observed = false) : enabled_(enabled), observed_(observed) {
     const std::string base = "/a_directory_prefix_longer_than_small_string_storage";
     AddDir(
         base, 1,
@@ -208,16 +210,39 @@ class NameListingFs final : public FakeFs {
     return entries;
   }
 
+  bool SupportsDirectoryMetadata(std::size_t) const override { return observed_; }
+
+  absl::StatusOr<vfs::DirectoryMetadata> ReadDirMetadata(std::string_view dir, vfs::MetadataFields fields)
+      const override {
+    observation_reads_.fetch_add(1, std::memory_order_relaxed);
+    MBO_ASSIGN_OR_RETURN(auto entries, ReadDir(dir));
+    std::vector<vfs::MetadataObservation> observations;
+    observations.reserve(entries.size());
+    for (const auto& entry : entries) {
+      MBO_ASSIGN_OR_RETURN(const auto metadata, StatFields(entry.path, false, fields));
+      observations.push_back(vfs::MetadataObservation{.value = metadata});
+    }
+    return vfs::DirectoryMetadata{.entries = std::move(entries), .observations = std::move(observations)};
+  }
+
+  std::size_t ObservationReadCount() const { return observation_reads_.load(std::memory_order_relaxed); }
+
   std::size_t NameReadCount() const { return name_reads_.load(std::memory_order_relaxed); }
 
  private:
   const bool enabled_;
+  const bool observed_;
   mutable std::atomic<std::size_t> name_reads_{0};
+  mutable std::atomic<std::size_t> observation_reads_{0};
 };
 
 struct NameListingTest : ::testing::Test {
-  static std::vector<std::string> Observations(bool enabled, const WalkOptions& options, bool prune = false) {
-    const NameListingFs filesystem(enabled);
+  static std::vector<std::string> Observations(
+      bool enabled,
+      const WalkOptions& options,
+      bool prune = false,
+      bool observed = false) {
+    const NameListingFs filesystem(enabled, observed);
     const auto roots = std::to_array<std::string>({"/a_directory_prefix_longer_than_small_string_storage"});
     std::vector<std::string> observations;
     EXPECT_THAT(
@@ -237,9 +262,43 @@ struct NameListingTest : ::testing::Test {
               observations.push_back(absl::StrCat("error|", path, "|", status.ToString()));
             }),
         IsOk());
+    if (observed && options.metadata == MetadataDemand::kAlways) {
+      EXPECT_THAT(filesystem.ObservationReadCount(), Gt(0));
+    } else {
+      EXPECT_THAT(filesystem.ObservationReadCount(), Eq(0));
+    }
     return observations;
   }
 };
+
+TEST_F(NameListingTest, FullPathObservationsKeepSymlinkFollowingOrderingAndLazyMetadata) {
+  static constexpr auto kOrders = std::to_array({
+      SortOrder::kNone,
+      SortOrder::kDir,
+      SortOrder::kSubtree,
+      SortOrder::kTree,
+      SortOrder::kRoots,
+      SortOrder::kGlobal,
+  });
+  static constexpr auto kLinks = std::to_array({SymlinkMode::kNever, SymlinkMode::kRoots, SymlinkMode::kAll});
+  static constexpr auto kDemands =
+      std::to_array({MetadataDemand::kNever, MetadataDemand::kOnDemand, MetadataDemand::kAlways});
+  for (const auto order : kOrders) {
+    for (const auto links : kLinks) {
+      for (const auto demand : kDemands) {
+        for (const auto workers : {1UZ, 3UZ}) {
+          const WalkOptions options{
+              .symlinks = links,
+              .sort = order,
+              .workers = workers,
+              .metadata = demand,
+          };
+          EXPECT_THAT(Observations(false, options, false, true), Eq(Observations(false, options)));
+        }
+      }
+    }
+  }
+}
 
 TEST_F(NameListingTest, MatchesCompletePathsAcrossOrderingDepthLinksAndWorkers) {
   static constexpr auto kOrders = std::to_array({

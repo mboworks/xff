@@ -3,6 +3,36 @@
 
 # 0.11.0
 
+- Append structured `-printf` field values directly to the output buffer while preserving owning
+  renders and content-snapshot lifetimes.
+
+- Reuse owned in-memory archive bytes across streaming detection and legacy fallback, avoiding a
+  complete input copy and reducing large OpenBytes lifecycle time and peak memory.
+
+- Reduce archive directory name scans and skip them when all indexed members are direct children
+  of the root.
+
+- Reserve archive directory listing storage from indexed direct-child counts, reducing reallocations
+  in wide directories while preserving synthesized-parent and duplicate-member behavior.
+
+- Reuse normalized archive member-key views for immediate lookups while keeping deferred read sources owned and preserving archive paths, errors, and read-only behavior.
+
+- Avoid empty libc timestamp-formatting calls, substantially reducing metadata-output cost on macOS while preserving exact output and timezone behavior.
+
+- Avoid reading symlink targets for target-free listing templates and table columns while preserving target output and comparisons.
+
+- Defer coverage report ingestion when its source workflow has already started a retry, preserving retained reports and metadata refresh until the new attempt completes.
+
+- Publish PR benchmark previews from the combined Linux/macOS comparison job while preserving exact artifact provenance and bounded retries of temporary GitHub read failures.
+
+- Reuse complete macOS bulk metadata for non-followed symlinks while preserving target lookup and ordinary fallback.
+
+- Reuse complete indexed archive metadata in eager walks, avoiding repeated per-entry lookup while preserving lazy and followed-link behavior.
+
+- Reduce small archive-directory result reallocations with bounded initial storage while preserving empty listings and exact results.
+
+- Select local clang-tidy consumers of changed headers exposed through Bazel include-prefix aliases.
+
 - Bound nonroot archive directory listing to its ordered subtree, reducing large archive traversal work while preserving direct children, ordering, metadata and errors.
 
 - Reuse the archive session's first input block for format detection, reducing redundant cursor opens and nested replay while preserving short reads, errors and shared budgets.

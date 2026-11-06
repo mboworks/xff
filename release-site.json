@@ -98,6 +98,7 @@
     "docs/benchmarks/selected-summary-output-20261104.md": "docs/benchmarks/selected-summary-output-20261104.html",
     "docs/benchmarks/fixed-summary-metrics-20261104.md": "docs/benchmarks/fixed-summary-metrics-20261104.html",
     "docs/benchmarks/direct-summary-cells-20261104.md": "docs/benchmarks/direct-summary-cells-20261104.html",
+    "docs/benchmarks/borrowed-field-appends-20261106.md": "docs/benchmarks/borrowed-field-appends-20261106.html",
     "docs/benchmarks/compact-comparison-entries-20261104.md": "docs/benchmarks/compact-comparison-entries-20261104.html",
     "docs/benchmarks/comparison-category-sequence-20261104.md": "docs/benchmarks/comparison-category-sequence-20261104.html",
     "docs/benchmarks/native-name-paths-20261104.md": "docs/benchmarks/native-name-paths-20261104.html",
@@ -113,7 +114,24 @@
     "docs/benchmarks/comparison-retention-followups-20261105.md": "docs/benchmarks/comparison-retention-followups-20261105.html",
     "docs/benchmarks/comparison-storage-followups-20261105.md": "docs/benchmarks/comparison-storage-followups-20261105.html",
     "docs/benchmarks/archive-prefix-reuse-20261105.md": "docs/benchmarks/archive-prefix-reuse-20261105.html",
-    "docs/benchmarks/archive-directory-range-20261105.md": "docs/benchmarks/archive-directory-range-20261105.html"
+    "docs/benchmarks/archive-directory-range-20261105.md": "docs/benchmarks/archive-directory-range-20261105.html",
+    "docs/benchmarks/archive-directory-allocation-20261105.md": "docs/benchmarks/archive-directory-allocation-20261105.html",
+    "docs/benchmarks/archive-directory-child-capacity-20261106.md": "docs/benchmarks/archive-directory-child-capacity-20261106.html",
+    "docs/benchmarks/openbytes-owned-input-20261106.md": "docs/benchmarks/openbytes-owned-input-20261106.html",
+    "docs/benchmarks/archive-directory-child-separator-20261106.md": "docs/benchmarks/archive-directory-child-separator-20261106.html",
+    "docs/benchmarks/archive-directory-observations-20261105.md": "docs/benchmarks/archive-directory-observations-20261105.html",
+    "docs/benchmarks/native-symlink-observations-20261105.md": "docs/benchmarks/native-symlink-observations-20261105.html",
+    "docs/benchmarks/native-metadata-followups-20261105.md": "docs/benchmarks/native-metadata-followups-20261105.html",
+    "docs/benchmarks/symlink-target-demand-20261105.md": "docs/benchmarks/symlink-target-demand-20261105.html",
+    "docs/benchmarks/native-pgo-20261105.md": "docs/benchmarks/native-pgo-20261105.html",
+    "docs/benchmarks/readlink-short-target-20261105.md": "docs/benchmarks/readlink-short-target-20261105.html",
+    "docs/benchmarks/cctz-empty-format-20261105.md": "docs/benchmarks/cctz-empty-format-20261105.html",
+    "docs/benchmarks/readlink-input-path-20261105.md": "docs/benchmarks/readlink-input-path-20261105.html",
+    "docs/benchmarks/readlink-owned-transfer-20261105.md": "docs/benchmarks/readlink-owned-transfer-20261105.html",
+    "docs/benchmarks/archive-descendant-skipping-20261105.md": "docs/benchmarks/archive-descendant-skipping-20261105.html",
+    "docs/benchmarks/archive-observation-mode-20261105.md": "docs/benchmarks/archive-observation-mode-20261105.html",
+    "docs/benchmarks/cli-stream-sync-audit-20261105.md": "docs/benchmarks/cli-stream-sync-audit-20261105.html",
+    "docs/benchmarks/archive-member-keys-20261105.md": "docs/benchmarks/archive-member-keys-20261105.html"
   },
   "generated_html": {
     "XFF.md": {

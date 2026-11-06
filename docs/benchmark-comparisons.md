@@ -71,18 +71,20 @@ are labeled explicitly and do not become merged measurements. A new push removes
 from selection on the next publication. Closing or merging a PR also removes its preview from
 selection on that refresh; the original observations remain archived at their immutable URL.
 
-The trusted publisher starts watching when PR CI starts. Once both benchmark comparison jobs pass,
-it publishes their existing JSON results without waiting for unrelated tests. It does not collect
-another set of measurements. Publication still waits for any active Pages deployment. The browser
+The trusted publisher starts watching when PR CI starts. Once the combined Linux/macOS comparison
+job passes, it publishes both existing JSON results without waiting for unrelated tests. It does not
+collect another set of measurements. Publication still waits for any active Pages deployment. The browser
 loads public data from the site and needs no GitHub credentials. Preview publication does not mean
 the rest of CI passed.
 
-The publisher checks the current PR head, repository, run attempt, successful comparison jobs,
+The publisher checks the current PR head, repository, run attempt, successful comparison job,
 artifact creation times, and the tested merge commit's parents. Reports preserve both the PR
 branch head and tested merge commit, the base parent, and artifact identity. Only code checked out
 from `main` executes with publication permissions. Uploaded HTML is ignored; bounded JSON is
 validated and rendered again. Waiting happens outside the shared deployment lock. Preview updates
 reuse merged pages and their catalog instead of rebuilding every historical chart.
+Temporary GitHub read failures retry with bounded backoff; comment creation and updates are never
+blindly retried.
 
 The compact **Performance overview** appears before the detailed tables, in the selected chart
 view, and in one bot comment updated on the PR after successful publication. It gives:

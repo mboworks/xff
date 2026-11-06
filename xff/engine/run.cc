@@ -5356,6 +5356,10 @@ RunResult RunFindCore(
     }
     summary_templates[i] = std::move(tmpl);
   }
+  // Resolve target demand once from compiled fields, never by scanning templates per entry.
+  const bool listing_needs_link_target =
+      (compiled_tmpl.has_value() && compiled_tmpl->NeedsLinkTarget())
+      || std::ranges::any_of(column_templates, [](const fields::Template& field) { return field.NeedsLinkTarget(); });
   // --timezone=ZONE overrides the local zone for interpreting time-string args
   // (-newerXt), -daystart's midnight and civil-time output. An unknown explicit
   // zone is a usage error, refused before traversal even without a consumer.
@@ -6081,7 +6085,7 @@ RunResult RunFindCore(
         emit(table_stream->Add({std::string(visit.path)}));
       } else if (!column_templates.empty() || compiled_tmpl.has_value()) {
         std::string link;
-        if (visit.metadata.type == vfs::FileType::kSymlink) {
+        if (listing_needs_link_target && visit.metadata.type == vfs::FileType::kSymlink) {
           if (const absl::StatusOr<std::string> target = walk_fs.ReadLink(visit.path); target.ok()) {
             link = *target;
           }

@@ -114,6 +114,24 @@ TEST_F(HashSnapshotTest, RepeatedHashFieldsUseOneReadWithBothLocalAndSuppliedSna
   EXPECT_THAT(fs.reads, Eq(2));
 }
 
+TEST_F(HashSnapshotTest, AppendedDigestOwnsTextAfterLocalAndSuppliedSnapshotsExpire) {
+  const auto compiled = Template::Compile("{hash}|{hash}");
+  for (const bool supplied : {false, true}) {
+    SCOPED_TRACE(supplied);
+    const std::string digest = hash::HashData("sha256", fs.bytes).value_or("unsupported");
+    std::string output = "existing:";
+    compiled.AppendTo(output, Context(supplied));
+    fs.bytes = "replacement";
+    snapshot.Invalidate();
+    std::string expected = "existing:";
+    expected += digest;
+    expected += '|';
+    expected += digest;
+    EXPECT_THAT(output, EqualsText(expected));
+  }
+  EXPECT_THAT(fs.reads, Eq(2));
+}
+
 TEST_F(HashSnapshotTest, RenderedOutputOwnsItsDigestAfterTheEntrySnapshotIsInvalidated) {
   const auto compiled = Template::Compile("{hash}|{hash}");
   const std::string original = hash::HashData("sha256", fs.bytes).value_or("unsupported");

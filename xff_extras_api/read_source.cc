@@ -85,8 +85,8 @@ class MemoryStream final : public ReadStream {
 
 class MemorySource final : public ReadSource {
  public:
-  MemorySource(std::string bytes, std::shared_ptr<ReadBudget> budget)
-      : ReadSource(std::move(budget)), bytes_(std::make_shared<const std::string>(std::move(bytes))) {}
+  MemorySource(std::shared_ptr<const std::string> bytes, std::shared_ptr<ReadBudget> budget)
+      : ReadSource(std::move(budget)), bytes_(std::move(bytes)) {}
 
   absl::StatusOr<std::uint64_t> Size() const override { return bytes_->size(); }
 
@@ -218,8 +218,16 @@ class HostSource final : public ReadSource {
 };
 }  // namespace
 
+MemoryReadSourceData MakeMemoryReadSource(std::string bytes, std::shared_ptr<ReadBudget> budget) {
+  auto owned_bytes = std::make_shared<const std::string>(std::move(bytes));
+  return {
+      .source = std::make_shared<MemorySource>(owned_bytes, std::move(budget)),
+      .bytes = std::move(owned_bytes),
+  };
+}
+
 SharedReadSource MemoryReadSource(std::string bytes, std::shared_ptr<ReadBudget> budget) {
-  return std::make_shared<MemorySource>(std::move(bytes), std::move(budget));
+  return std::make_shared<MemorySource>(std::make_shared<const std::string>(std::move(bytes)), std::move(budget));
 }
 
 SharedReadSource HostReadSource(std::string path, std::shared_ptr<ReadBudget> budget) {

@@ -9,6 +9,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -20,6 +21,7 @@
 #include "xff/archive/archive_fs.h"
 #include "xff/archive/memory_archive_test.h"
 #include "xff/vfs/entry.h"
+#include "xff/vfs/filesystem.h"
 
 namespace xff::archive {
 namespace {
@@ -196,6 +198,88 @@ void ReadDirectories(benchmark::State& state, TreeShape shape, QuerySet queries,
   state.counters["returned_entries"] = static_cast<double>(fixture->returned);
 }
 
+auto MetadataValues(const vfs::Metadata& metadata) {
+  return std::tie(
+      metadata.type, metadata.source, metadata.size, metadata.blocks, metadata.mode, metadata.nlink, metadata.uid,
+      metadata.gid, metadata.ino, metadata.dev, metadata.atime, metadata.mtime, metadata.ctime, metadata.btime);
+}
+
+absl::StatusOr<vfs::DirectoryMetadata> ReadDirectoryValues(
+    const ArchiveFileSystem& filesystem,
+    std::string_view query) {
+  if (filesystem.SupportsDirectoryMetadata(1)) {
+    return filesystem.ReadDirMetadata(query, vfs::MetadataFields::kBasic);
+  }
+  MBO_ASSIGN_OR_RETURN(auto entries, filesystem.ReadDir(query));
+  return vfs::DirectoryMetadata{.entries = std::move(entries)};
+}
+
+absl::Status CheckDirectoryMetadata(const DirectoryFixture& fixture) {
+  for (const auto& query : fixture.queries) {
+    MBO_ASSIGN_OR_RETURN(const auto listing, ReadDirectoryValues(fixture.filesystem, query));
+    if (!listing.observations.empty() && listing.observations.size() != listing.entries.size()) {
+      return absl::DataLossError("archive metadata preflight observation count mismatch");
+    }
+    for (std::size_t index = 0; index < listing.entries.size(); ++index) {
+      MBO_ASSIGN_OR_RETURN(
+          const auto expected,
+          fixture.filesystem.StatFields(listing.entries.at(index).path, false, vfs::MetadataFields::kBasic));
+      if (!listing.observations.empty()) {
+        const auto& observation = listing.observations.at(index);
+        MBO_RETURN_IF_ERROR(observation.status);
+        if (MetadataValues(observation.value) != MetadataValues(expected)) {
+          return absl::DataLossError("archive metadata preflight field mismatch");
+        }
+      }
+    }
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ConsumeDirectoryMetadata(const ArchiveFileSystem& filesystem, std::string_view query) {
+  MBO_ASSIGN_OR_RETURN(auto listing, ReadDirectoryValues(filesystem, query));
+  if (listing.observations.empty()) {
+    for (const auto& entry : listing.entries) {
+      MBO_ASSIGN_OR_RETURN(auto metadata, filesystem.StatFields(entry.path, false, vfs::MetadataFields::kBasic));
+      benchmark::DoNotOptimize(metadata);
+    }
+  } else {
+    for (auto& observation : listing.observations) {
+      MBO_RETURN_IF_ERROR(observation.status);
+      benchmark::DoNotOptimize(observation.value);
+    }
+  }
+  benchmark::ClobberMemory();
+  return absl::OkStatus();
+}
+
+void ReadDirectoryMetadata(benchmark::State& state, TreeShape shape, QuerySet queries, std::size_t members) {
+  auto fixture = MakeFixture(shape, queries, members);
+  if (!fixture.ok()) {
+    state.SkipWithError(fixture.status().ToString());
+    return;
+  }
+  const auto checked = CheckDirectoryMetadata(*fixture);
+  if (!checked.ok()) {
+    state.SkipWithError(checked.ToString());
+    return;
+  }
+  for (const auto unused : state) {
+    static_cast<void>(unused);
+    for (const auto& query : fixture->queries) {
+      const auto status = ConsumeDirectoryMetadata(fixture->filesystem, query);
+      if (!status.ok()) {
+        state.SkipWithError(status.ToString());
+        return;
+      }
+    }
+  }
+  state.counters["stored_members"] = static_cast<double>(members);
+  state.counters["indexed_nodes"] = static_cast<double>(fixture->nodes);
+  state.counters["directory_queries"] = static_cast<double>(fixture->queries.size());
+  state.counters["returned_entries"] = static_cast<double>(fixture->returned);
+}
+
 bool RegisterBenchmarks() {
   struct ShapeSpec {
     TreeShape shape;
@@ -254,6 +338,13 @@ bool RegisterBenchmarks() {
         }
         const auto name = absl::StrCat("archive-directory/", shape.name, "/", query.name, "/", members);
         benchmark::RegisterBenchmark(name, ReadDirectories, shape.shape, query.queries, members)
+            ->UseRealTime()
+            ->Unit(benchmark::kMicrosecond)
+            ->MinWarmUpTime(0.01)
+            ->MinTime(0.02);
+        const auto metadata_name =
+            absl::StrCat("archive-directory-metadata/", shape.name, "/", query.name, "/", members);
+        benchmark::RegisterBenchmark(metadata_name, ReadDirectoryMetadata, shape.shape, query.queries, members)
             ->UseRealTime()
             ->Unit(benchmark::kMicrosecond)
             ->MinWarmUpTime(0.01)

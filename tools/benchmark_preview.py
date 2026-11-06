@@ -39,15 +39,17 @@ def current_pull(source, pull):
 
 
 def completed_comparisons(jobs):
-    """Release previews after both platform comparison jobs succeed."""
+    """Return each platform's successful comparison job, rejecting ambiguous provenance."""
     completed = {}
     for job in jobs:
-        match = re.fullmatch(r'Benchmark comparison \((linux|macos), best \d+ of \d+\)', job['name'])
+        match = re.fullmatch(r'Benchmark comparison \((linux|macos|Linux and macOS), best \d+ of \d+\)',
+                             job['name'])
         if match and job['status'] == 'completed' and job['conclusion'] == 'success':
-            platform = match[1]
-            if platform in completed:
-                raise ValueError('ambiguous platform comparison jobs')
-            completed[platform] = job['completed_at']
+            platforms = ('linux', 'macos') if match[1] == 'Linux and macOS' else (match[1],)
+            for platform in platforms:
+                if platform in completed:
+                    raise ValueError('ambiguous platform comparison jobs')
+                completed[platform] = job
     return completed if set(completed) == {'linux', 'macos'} else None
 
 

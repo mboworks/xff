@@ -99,6 +99,52 @@ TEST_F(FieldsTest, LiteralClassificationUsesCompiledSegmentsIncludingHashBinding
   }
 }
 
+TEST_F(FieldsTest, AppendToPreservesTextForEmptyPrefilledAndReusableDestinations) {
+  struct Case {
+    std::string_view source;
+    std::string_view expected;
+  };
+
+  static constexpr auto kCases = std::to_array<Case>({
+      {.source = "", .expected = ""},
+      {.source = "literal", .expected = "literal"},
+      {.source = "{path}", .expected = "root/long-directory-component/sub-directory/file.txt"},
+      {.source = "{dir}", .expected = "root/long-directory-component/sub-directory"},
+      {.source = "{name:stem}", .expected = "file"},
+      {.source = "prefix:{dir}/{name}", .expected = "prefix:root/long-directory-component/sub-directory/file.txt"},
+      {.source = "{path:s/file/item/}", .expected = "root/long-directory-component/sub-directory/item.txt"},
+  });
+  const vfs::Metadata metadata = Meta(vfs::FileType::kRegular, 17);
+  const content::Snapshot snapshot;
+  for (const bool supplied : {false, true}) {
+    SCOPED_TRACE(supplied);
+    RenderContext context{
+        .path = "root/long-directory-component/sub-directory/file.txt",
+        .metadata = metadata,
+        .tz = absl::UTCTimeZone(),
+    };
+    if (supplied) {
+      context.content.set_ref(snapshot);
+    }
+    for (const Case& test : kCases) {
+      SCOPED_TRACE(test.source);
+      const Template compiled = Template::Compile(test.source);
+      for (const std::string_view prefix : {std::string_view{}, std::string_view{"existing:"}}) {
+        SCOPED_TRACE(prefix);
+        for (const bool reusable : {false, true}) {
+          SCOPED_TRACE(reusable);
+          std::string actual(prefix);
+          if (reusable) {
+            actual.reserve(512);
+          }
+          compiled.AppendTo(actual, context);
+          EXPECT_THAT(actual, EqualsText(std::string(prefix) + std::string(test.expected)));
+        }
+      }
+    }
+  }
+}
+
 TEST_F(FieldsTest, StandaloneRewriteOwnsProgramsAndUsesFieldSubstitutionSemantics) {
   std::string spec = R"(s|([a-z]+)-([0-9]+)|\2_\1|gi;s|^|prefix/|)";
   ASSERT_OK_AND_ASSIGN(auto original, RewriteProgram::Compile(spec));
@@ -178,6 +224,37 @@ TEST_F(FieldsTest, TimeZoneDemandIncludesTransformedTimeFields) {
     EXPECT_THAT(Template::Compile(text).NeedsTimeZone(), IsTrue()) << text;
   }
   EXPECT_THAT(Template::Compile("{{mtime}} {name} {size} {text}").NeedsTimeZone(), IsFalse());
+}
+
+TEST_F(FieldsTest, LinkTargetDemandUsesCompiledBindingsIncludingTransforms) {
+  static constexpr auto kTargetFields = std::to_array<std::string_view>({
+      "{target}",
+      "prefix/{target}/suffix",
+      "{target:name}",
+      "{target:s/file/entry/}",
+      "{target:m/./x/;join(,)}",
+      "{{target}} {target}",
+  });
+  static constexpr auto kUnrelatedFields = std::to_array<std::string_view>({
+      "",
+      "target",
+      "{{target}}",
+      "{name} {path} {size} {type} {mtime}",
+      "{hash:s/target/other/}",
+      "{def.target}",
+  });
+  for (const std::string_view text : kTargetFields) {
+    SCOPED_TRACE(text);
+    const auto field = Template::Compile(text);
+    ASSERT_THAT(field.Validate(), IsOk());
+    EXPECT_THAT(field.NeedsLinkTarget(), IsTrue());
+  }
+  for (const std::string_view text : kUnrelatedFields) {
+    SCOPED_TRACE(text);
+    const auto field = Template::Compile(text);
+    ASSERT_THAT(field.Validate(), IsOk());
+    EXPECT_THAT(field.NeedsLinkTarget(), IsFalse());
+  }
 }
 
 TEST_F(FieldsTest, ContentDerivationUsesCompiledFieldsDefaultsAndTransforms) {

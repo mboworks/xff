@@ -403,6 +403,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O08: Qualify typed reusable directory-task slots without changing worker/admission policy.
       [Initial and refined evidence](docs/benchmarks/directory-task-slots-20261102.md) selects
       atomic ownership handoff, rejecting global completion locking and retaining small regressions.
+- [x] O08b: Measure consumed task-path cleanup outside the queue mutex. Retain the current runtime:
+      [both-host in-memory trials](docs/benchmarks/native-metadata-followups-20261105.md) establish
+      no convincing gain and preserve the Mac counterexample. Keep prompt ownership release; no
+      capacity-retention, borrowing, wrapper or worker-policy change is adopted.
 - [x] O09: Qualify packed independent matcher/deferred snapshots, including short-string moves,
       vector relocation, opaque bytes, and archive ownership. Preserve allocation counts, modest
       gains and slower controls in [the two-host report](docs/benchmarks/packed-visit-snapshots-20261102.md).
@@ -514,10 +518,29 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [ ] O19g: Independently qualify borrowed normalized archive lookup keys with transparent map/cache
       lookup. Copy only at retained member-source ownership boundaries; test temporary caller paths,
       long non-SSO keys, custom separators, absolute/nested paths and all existing normalization.
+- [ ] O19g2: Revisit the held borrowed-key implementations only after identifying the repeatable
+      Linux flat-TAR-10k cost. Both 28-case memory and 66-case native matrices, lifetime tests and
+      separate hardware diagnostics are retained in
+      [the allocation decisions](docs/benchmarks/archive-directory-allocation-20261105.md);
+      microbenchmark gains alone do not qualify either runtime implementation.
+- [x] O19i: Bound initial archive-directory result storage to reduce small-listing vector
+      reallocations, retaining tiny/root/chain costs and complete native controls. Full both-host
+      qualification and the held O19g variants are in
+      [the allocation decisions](docs/benchmarks/archive-directory-allocation-20261105.md).
+- [x] O19j: Qualify complete archive directory observations from immutable indexed metadata.
+      Preserve full paths, native archive-all conventions, eager-only demand, followed-link fallback,
+      mounted lifetimes and leaf-worker isolation. Both-host full qualification and measured summary
+      gains/parallel CSV costs: [indexed observations](docs/benchmarks/archive-directory-observations-20261105.md).
+- [x] O19j2: Reject the compile-time observation-mode specialization after bounded both-host
+      measurements: no general gain, repeat Mac flat-10k metadata cost and larger Linux code.
+      Preserve every diagnostic session, copy control, source and exact restoration proof in
+      [the same report](docs/benchmarks/archive-directory-observations-20261105.md).
 - [ ] O19h: Investigate the repeatable 1k-member/three-worker Linux metadata-output cost exposed by
       faster archive directory admission. Preserve the original and independent confirmation
       (roughly 6-14%, 0.24-0.35 ms), serial and 10k controls. Identify stage/scheduling/allocation
       causes before introducing any worker threshold; do not hide the cost in cohort medians.
+      Retain O19j's additional three-worker CSV costs (up to about 3% Mac and 5% Linux), including
+      100k-member controls; summary gains do not erase those cells.
 - [x] O20a: Qualify native names-only directory listings and callback-scoped reusable leaf paths on
       both hosts, including controlled/rg VFS delegation, lazy metadata and exact owned fallbacks.
       Retain native and in-memory broad/deep 10-100k-file, 1/3-worker evidence in
@@ -550,14 +573,45 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O20i: Qualify optional bulk metadata by backend stat-worker preference and
       owning observations. Retain [all four policies, both-host matrices and explicit costs](docs/benchmarks/bulk-directory-metadata-20261105.md),
       including symlink-only overhead, virtual controls, serial RSS and the clean Linux protocol repeat.
-- [ ] O20j: Evaluate bulk observation storage that avoids public vector materialization and its wide
-      serial RSS cost. Separately assess skipping bulk reads when prepared expression metadata proves
-      no eligible regular files can contribute; preserve directory/link/mount stat semantics and
-      avoid ad hoc flag-name, count or timer gates. Publish only measured improvements.
-- [ ] O20k: Probe complete native bulk observations for non-followed symlinks against every ordinary
-      stat field, including dangling/hardlinked links. Preserve followed-link and mount semantics;
-      select only after native equivalence, malformed-input coverage and both-host measurements.
-      This may remove the retained serial all-symlink bulk-read cost without expression heuristics.
+- [ ] O20j: Further public observation-storage changes remain unqualified. The first direct-vector
+      implementation is [measured and rejected](docs/benchmarks/native-metadata-followups-20261105.md):
+      its small RSS changes and mixed elapsed results do not justify adoption. Revisit larger owner/
+      representation changes only with measured pressure and exact contiguous-slice/lifetime contracts.
+      Separately assess skipping bulk reads when prepared expression metadata proves no eligible
+      regular files or non-followed symlinks can contribute; preserve directory/link/mount stat
+      semantics and avoid ad hoc flag-name, count or timer gates. Publish only measured improvements.
+- [x] O20k: Qualify complete native non-followed symlink observations against every ordinary stat
+      field, including dangling, long and hardlinked links. Preserve returned-attribute requirements,
+      other special-type fallback, followed-target behavior and unchanged backend worker preference.
+      [Both-host qualification, default/follow controls, RSS and all costs](docs/benchmarks/native-symlink-observations-20261105.md)
+      retain the Mac gains and byte-identical Linux runtime.
+- [x] O20l: Measure observed-listing early exits before the full missing-observation count.
+      [Two independent both-host native/archive trials](docs/benchmarks/native-metadata-followups-20261105.md)
+      reject duplicated finalization and the compact single-condition form. Full correctness and
+      improved generated code do not establish sufficient practical gain; preserve every counterexample.
+- [x] O20m: [Publish the retained short-target-buffer trial](docs/benchmarks/readlink-short-target-20261105.md).
+      Linux required-target gains are small; the Mac screen does not establish a gain beyond
+      the copied-parent control. No runtime change is selected; both screens and Linux full
+      results, slower controls, exact source and focused gates remain available losslessly.
+- [x] O20n: Compile symlink target demand from field bindings once before traversal, avoiding
+      unnecessary target reads in implicit listings. [Both-host qualification](docs/benchmarks/symlink-target-demand-20261105.md)
+      retains all outputs and slower controls; full native metadata medians improve on both hosts.
+      Target fields, transforms, repeated references, errors and comparison equality remain covered.
+- [x] O20o: [Retain the terminated input-path trial](docs/benchmarks/readlink-input-path-20261105.md).
+      Both 244-case screens and focused qualification pass, but Linux's small gains and
+      flat/slower Mac targets do not justify a runtime change. Preserve original failures.
+- [x] O20p: [Retain the owned-target transfer decision](docs/benchmarks/readlink-owned-transfer-20261105.md).
+      Both full 264-case populations, independent eight-case confirmations and complete
+      331-target qualification pass; weak/mixed Mac gains do not justify adoption.
+- [x] O23: [Publish the completed native PGO evaluation and evidence](docs/benchmarks/native-pgo-20261105.md).
+      Both 179-case held-out populations pass three nine-repeat sessions retaining seven;
+      both complete 331-target release runs pass in the explicit supported experiment scope.
+      Linux gains remain an opportunity; small generic Mac gains and a 14.33% larger Mac
+      image do not justify a portable default. No build flags or runtime policy change.
+- [ ] O23a: Before adopting PGO, design a portable training producer, exact source/compiler/
+      architecture provenance, artifact trust/retention, regeneration and source-only fallback.
+      Resolve the documented static/test-only profile scope and remeasure integration with
+      subsequent runtime changes. Do not reuse retained diagnostic profiles as release inputs.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte
       equality shortcut on Linux/macOS. Preserve [rejected width-one paths and all controls](docs/benchmarks/byte-shingle-representations-20261102.md).
 - [x] O21b0: Remove the owning similarity binary-sniff prefix while preserving the exact window,
@@ -610,8 +664,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O22c2e: Qualify fixed-size display/export metric arrays and moved row assembly on both hosts;
       retain the partial policy, baseline-copy controls and small Linux startup costs in
       [the paired numeric report](docs/benchmarks/fixed-summary-metrics-20261104.md).
-- [ ] O22c2d: Independently qualify borrowed structured field values; audit fallback snapshot and
-      temporary-transform lifetimes before returning any views.
+- [x] O22c2d: Independently qualify borrowed structured field values; append them synchronously
+      while snapshot and transform owners remain alive. The 20-case long-path subset improves in
+      19 cases per host; full 60-case populations improve in 53 macOS and 54 Linux cases. Retain all
+      slower controls in
+      [the paired append report](docs/benchmarks/borrowed-field-appends-20261106.md).
 - [x] O22c2f: Evaluate percentage conversion and cached parsed formats independently. Retain exact
       rounding, deployment, binary-size and native controls; neither trial warrants production
       adoption. See [the retained alternatives](docs/benchmarks/direct-summary-cells-20261104.md).
@@ -1267,10 +1324,17 @@ this as intentional accounting.
 
 ## Published site storage review
 
-- [ ] Revisit total Pages size when `storage-report.json` reaches 200 MB. Follow the options in
-      [docs/site-storage.md](docs/site-storage.md): data-driven shared table rendering, numeric chart
-      matrices, column-oriented benchmark observations, and additional coverage/source deduplication.
-      Preserve coverage aggregate history and all release/merged-PR performance measurements.
+- [x] Review total Pages size at the 200 MB warning: the 2026-11-05 publication reports 669,113,099
+      bytes. [The immutable snapshot and breakdown](docs/site-storage.md#2026-11-05-review) show
+      479 MB of benchmarks and 162 MB of coverage; exact benchmark duplicates save only 2.25 MB.
+      No historical observations or coverage aggregates were deleted.
+- [ ] Prototype a shared generated-table renderer against the 94.61 MB packed benchmark HTML;
+      preserve historical navigation, exact table values, relative assets and downloadable reports.
+- [ ] Measure lossless column-oriented benchmark observations/shared invocation dictionaries against
+      the 288.38 MB raw reports. Preserve every sample, original provenance, local/backfill contracts
+      and exact recoverability; do not round data or evict release/merged-PR observations.
+- [ ] Recheck coverage representation savings separately from benchmark storage. Keep aggregate
+      history and the original seven-day detail clock; do not use the review point as a new expiry.
 
 ## Benchmark baseline and progress repairs
 
@@ -1327,3 +1391,61 @@ this as intentional accounting.
 - [ ] Qualify the retained window on physical slow/network storage and heterogeneous directory
       sizes. A per-level request limit does not establish a command-wide byte budget or optimal
       I/O concurrency. Keep JC05/JC06/JC07 open and evaluate cancellation separately.
+
+### Further bounded performance candidates
+
+- [x] O26: [Avoid empty libc time-format flushes](docs/benchmarks/cctz-empty-format-20261105.md).
+      Pinned CCTZ returns before calling strftime for an empty deferred fragment. Both hosts'
+      51-case native and eight-format three-session trials retain all complete output checks,
+      slower controls, actual release flags, 332 release targets, affected sanitizers and lint.
+      Preserve nonempty locale fallback and timezone behavior without environment mutation.
+- [x] O19f2: [Evaluate indexed archive descendant skipping](docs/benchmarks/archive-descendant-skipping-20261105.md).
+      Retain the old Linux full trial and deliberately partial Mac screen separately from both
+      new formatter-parent screens. Do not adopt the current loop: isolated wide/root listings
+      repeatedly regress around 30-44%, despite major deep-root gains. Any future combined
+      layout/loop revision needs a new hypothesis and independent qualification.
+- [ ] O19k: Independently measure an Abseil B-tree for the private immutable archive node map.
+      Audit mutation-only indexing, owned returned sources/metadata and nonescaping iterators.
+      Keep the pinned default transparent three-way string comparator; include large Node
+      insertion/relocation, root/flat/chain and RSS costs before testing integration.
+- [x] O19i2: [Qualify a bounded archive direct-child capacity hint](docs/benchmarks/archive-directory-child-capacity-20261106.md).
+      The count fits existing `Node` padding; the one root count adds 8 bytes per archive FS.
+      Three balanced sessions on Mac and Linux show large flat/wide-root listing wins, neutral
+      construction, and near-neutral overall listing medians. Preserve the slower deep/chain cases
+      and all raw measurements. Regression coverage pins exact root/nested reservations across
+      synthesized-parent replacement, first-wins duplicates, and metadata observations. The change
+      is implemented in #1120; retain its separate current-head CI and main-health qualification.
+- [x] O19f3: [Measure forward archive child-separator detection](docs/benchmarks/archive-directory-child-separator-20261106.md).
+      The selected forward scan plus flat-root count shortcut improves the median of 24 cases by
+      1.80% on Mac and 3.36% on Linux. It retains explicit Mac deep-root slow cases; the
+      forward-only and hybrid variants are archived but rejected. Existing absolute-member tests
+      and a new flat-root test cover the root separator paths. The locally verified candidate is
+      ready to enter the PR sequence after its O19i2 base is stable.
+- [x] O24: [Audit the actual CLI stream synchronization implementation](docs/benchmarks/cli-stream-sync-audit-20261105.md).
+      Both hermetic Clang 23.1.4 libc++ implementations only read/write the prior-state byte.
+      Keep the current runtime; no buffering change or measured gain follows from adding the
+      call. Revisit for a different standard-library implementation or output architecture.
+- [ ] O25: Independently measure direct final-string decoding and owned-result transfer for
+      the lazy embedded language JSON. The current payload is 109,261 bytes, not an ordinary
+      startup megabyte cost. Preserve corruption/length errors and narrow ABI adapters.
+- [x] O28: [Evaluate compile-time archive observation mode](docs/benchmarks/archive-observation-mode-20261105.md).
+      Actual release assembly retains the dynamic mode branch, but its removal fails to
+      establish a consistent cross-platform standalone benefit. Preserve both complete screens,
+      copied-parent drift and exact source/image identities; do not adopt the private template.
+- [ ] O27: Independently measure archive-index insertion changes: defer an owned ancestor key
+      until transparent lookup proves absence; compare lower_bound plus emplace_hint to the
+      repeated search, and compare direct mapped-value construction separately. Preserve
+      duplicate overwrite, synthesis flags and inode order. Construction/destruction benchmarks
+      must include and name actual public archive parsing/source costs, not hot-listing setup.
+- [x] O29: [Qualify borrowed archive member keys and bounded parent-length checks](docs/benchmarks/archive-member-keys-20261105.md).
+      Both full 333-target release suites, relevant sanitizers, actual changed-TU lint, exact
+      ordinary release images and 15/15 lines plus 2/2 branches pass. All 14 targeted operations
+      improve in each of three sessions on both hosts; whole commands remain mostly modest.
+      Retain the Linux large-deep-root listing cost around 5%, the conflicting Mac full/subset
+      populations, and every earlier rejected variant. PR/current-base CI remains separate.
+- [ ] O30: Move the owned OpenBytes input into its memory source instead of copying the complete
+      buffer before streaming. TAR/PHAR correctness and full focused suites pass on macOS/Linux;
+      six complete macOS pairs and three Linux pairs show large-input wins, with about 64 MiB lower
+      peak RSS at 64 MiB member payload. Full protocol and raw evidence: [O30 report](docs/benchmarks/openbytes-owned-input-20261106.md).
+      Sync to current main, create the PR, and complete changed-file lint plus all required CI before
+      marking this merged candidate complete. The initial noisy macOS screen remains in the artifact.

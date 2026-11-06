@@ -44,6 +44,48 @@ cc_binary(
 )
 
 cc_binary(
+    name = "archive_index_benchmark",
+    testonly = True,
+    srcs = ["archive_index_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@com_github_google_benchmark//:benchmark",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@xff_archive//:archive_fs_cc",
+        "@xff_archive//:memory_archive_test_cc",
+        "@xff_extras_api//:read_source_cc",
+        "@xff_extras_api//:vfs_cc",
+    ],
+)
+
+cc_binary(
+    name = "archive_member_key_benchmark",
+    testonly = True,
+    srcs = ["archive_member_key_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@com_github_google_benchmark//:benchmark",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@xff_archive//:archive_fs_cc",
+        "@xff_archive//:memory_archive_test_cc",
+        "@xff_extras_api//:read_source_cc",
+        "@xff_extras_api//:vfs_cc",
+    ],
+)
+
+cc_binary(
     name = "archive_source_benchmark",
     srcs = ["archive_source_benchmark.cc"],
     tags = [
@@ -1468,4 +1510,20 @@ py_test(
     size = "small",
     srcs = ["site_storage_test.py"],
     deps = [":site_storage_lib"],
+)
+
+# Fixed-time formatting only: every case checks complete output before measurement.
+cc_binary(
+    name = "time_format_benchmark",
+    testonly = True,
+    srcs = ["time_format_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@com_github_google_benchmark//:benchmark",
+    ],
 )

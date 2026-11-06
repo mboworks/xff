@@ -3902,6 +3902,125 @@ class NoBtimeFs : public vfs::FileSystem {
   std::string root_;
 };
 
+// Read-only synthetic entries isolate whether presentation requests a link target.
+struct LinkTargetRunFs final : NoBtimeFs {
+  LinkTargetRunFs() : NoBtimeFs("/fake") {}
+
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view directory) const override {
+    if (directory != "/fake") {
+      return absl::NotFoundError("unknown virtual directory");
+    }
+    return std::vector<vfs::Entry>{
+        {.path = "/fake/file", .name = "file", .type = vfs::FileType::kRegular},
+        {.path = "/fake/link", .name = "link", .type = vfs::FileType::kSymlink},
+    };
+  }
+
+  absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool follow_symlinks) const override {
+    if (path == "/fake") {
+      return vfs::Metadata{.type = vfs::FileType::kDirectory};
+    }
+    if (path == "/fake/file" || (path == "/fake/link" && follow_symlinks)) {
+      return vfs::Metadata{.type = vfs::FileType::kRegular, .size = 3};
+    }
+    if (path == "/fake/link") {
+      return vfs::Metadata{.type = vfs::FileType::kSymlink, .size = 15};
+    }
+    return absl::NotFoundError("unknown virtual entry");
+  }
+
+  absl::StatusOr<std::string> ReadLink(std::string_view path) const override {
+    ++link_reads;
+    if (path != "/fake/link") {
+      return absl::NotFoundError("not a virtual symlink");
+    }
+    return unreadable_link ? absl::StatusOr<std::string>(absl::PermissionDeniedError("unreadable virtual target"))
+                           : absl::StatusOr<std::string>("nested/file.txt");
+  }
+
+  absl::Status Remove(std::string_view) const override {
+    ADD_FAILURE() << "Link demand tests must not mutate their input";
+    return absl::PermissionDeniedError("read-only fixture");
+  }
+
+  mutable std::size_t link_reads = 0;
+  bool unreadable_link = false;
+};
+
+TEST_F(RunTest, TemplateWithoutTargetDoesNotReadSymlink) {
+  const LinkTargetRunFs filesystem;
+  EXPECT_THAT(
+      RunArgvRecords({"--sort=dir", "--template={name}", "/fake", "-type", "l"}, filesystem),
+      ElementsAre(EqualsText("link")));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(filesystem.link_reads, Eq(0));
+}
+
+TEST_F(RunTest, TargetFreeColumnsDoNotReadSymlinksWithOneOrThreeWorkers) {
+  static constexpr auto kJobs = std::to_array<std::string_view>({"--jobs=1", "--jobs=3"});
+  for (const auto jobs : kJobs) {
+    SCOPED_TRACE(jobs);
+    const LinkTargetRunFs filesystem;
+    EXPECT_THAT(
+        RunArgvRecords(
+            {std::string(jobs), "--sort=dir", "--format=csv", "--columns=path", "/fake", "-type", "l"}, filesystem),
+        ElementsAre(EqualsText("path"), EqualsText("/fake/link")));
+    EXPECT_THAT(last_errors_, Eq(0));
+    EXPECT_THAT(filesystem.link_reads, Eq(0));
+  }
+}
+
+TEST_F(RunTest, TargetFieldsReadExactlyOncePerSymlinkIncludingTransforms) {
+  struct Case {
+    std::string_view argument;
+    std::string_view expected;
+  };
+
+  static constexpr auto kCases = std::to_array<Case>({
+      {.argument = "--template={target}", .expected = "nested/file.txt"},
+      {.argument = "--template={target:name}", .expected = "file.txt"},
+      {.argument = "--template={target:s/file/entry/}", .expected = "nested/entry.txt"},
+      {.argument = "--template={target}|{target:name}", .expected = "nested/file.txt|file.txt"},
+  });
+  for (const auto& test : kCases) {
+    SCOPED_TRACE(test.argument);
+    const LinkTargetRunFs filesystem;
+    EXPECT_THAT(
+        RunArgvRecords({"--sort=dir", std::string(test.argument), "/fake", "-type", "l"}, filesystem),
+        ElementsAre(EqualsText(test.expected)));
+    EXPECT_THAT(last_errors_, Eq(0));
+    EXPECT_THAT(filesystem.link_reads, Eq(1));
+  }
+}
+
+TEST_F(RunTest, TargetColumnsReadSymlinksButNeverRegularFiles) {
+  const LinkTargetRunFs filesystem;
+  EXPECT_THAT(
+      RunArgvRecords({"--sort=dir", "--format=csv", "--columns=name,target", "/fake", "-mindepth", "1"}, filesystem),
+      ElementsAre(EqualsText("name,target"), EqualsText("file,"), EqualsText("link,nested/file.txt")));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(filesystem.link_reads, Eq(1));
+}
+
+TEST_F(RunTest, UnreadableTargetKeepsExistingEmptyFieldBehavior) {
+  LinkTargetRunFs filesystem;
+  filesystem.unreadable_link = true;
+  EXPECT_THAT(
+      RunArgvRecords({"--sort=dir", "--template={name}:{target}", "/fake", "-type", "l"}, filesystem),
+      ElementsAre(EqualsText("link:")));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(filesystem.link_reads, Eq(1));
+}
+
+TEST_F(RunTest, EscapedTargetLiteralDoesNotReadSymlinks) {
+  const LinkTargetRunFs filesystem;
+  EXPECT_THAT(
+      RunArgvRecords({"--sort=dir", "--template={{target}}:{name}", "/fake", "-type", "l"}, filesystem),
+      ElementsAre(EqualsText("{target}:link")));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(filesystem.link_reads, Eq(0));
+}
+
 class NameOnlyRunFs final : public NoBtimeFs {
  public:
   explicit NameOnlyRunFs(bool observations = false) : NoBtimeFs("/fake"), observations_(observations) {}

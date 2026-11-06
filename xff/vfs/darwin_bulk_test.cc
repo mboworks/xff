@@ -81,6 +81,22 @@ TEST_F(DarwinBulkTest, CompleteRegularObservationPreservesDataLengthAndAllForkBl
           Field(&Metadata::atime, Eq(absl::FromUnixSeconds(4))))));
 }
 
+TEST_F(DarwinBulkTest, CompleteSymlinkObservationPreservesLinkObjectFields) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto record, DecodeDarwinBulkRecord(Record(5)));
+  EXPECT_THAT(record.name, EqualsText("file"));
+  EXPECT_THAT(record.type, Eq(FileType::kSymlink));
+  EXPECT_THAT(
+      record.metadata,
+      Optional(AllOf(
+          Field(&Metadata::type, Eq(FileType::kSymlink)), Field(&Metadata::source, Eq(Source::kLocalFs)),
+          Field(&Metadata::size, Eq(13)), Field(&Metadata::blocks, Eq(24)), Field(&Metadata::mode, Eq(0120644)),
+          Field(&Metadata::nlink, Eq(2)), Field(&Metadata::dev, Eq(7)), Field(&Metadata::ino, Eq(999)),
+          Field(&Metadata::uid, Eq(501)), Field(&Metadata::gid, Eq(20)),
+          Field(&Metadata::btime, Optional(absl::FromUnixSeconds(1))),
+          Field(&Metadata::mtime, Eq(absl::FromUnixSeconds(2))), Field(&Metadata::ctime, Eq(absl::FromUnixSeconds(3))),
+          Field(&Metadata::atime, Eq(absl::FromUnixSeconds(4))))));
+}
+
 TEST_F(DarwinBulkTest, DirectoryLayoutOmitsFileSlotsAndRequiresOrdinaryStat) {
   MBO_ASSERT_OK_AND_ASSIGN(const auto record, DecodeDarwinBulkRecord(Record(2)));
   EXPECT_THAT(record.name, EqualsText("file"));
@@ -103,7 +119,7 @@ TEST_F(DarwinBulkTest, SignedDeviceAndPermissionBitsMatchNativeStatWidths) {
 }
 
 TEST_F(DarwinBulkTest, SpecialTypesKeepNameAndConservativeMetadataFallback) {
-  constexpr auto kTypes = std::to_array<std::uint32_t>({3, 4, 5, 6, 7, 99});
+  constexpr auto kTypes = std::to_array<std::uint32_t>({3, 4, 6, 7, 99});
   for (const auto type : kTypes) {
     SCOPED_TRACE(type);
     MBO_ASSERT_OK_AND_ASSIGN(const auto record, DecodeDarwinBulkRecord(Record(type)));
@@ -113,30 +129,38 @@ TEST_F(DarwinBulkTest, SpecialTypesKeepNameAndConservativeMetadataFallback) {
 }
 
 TEST_F(DarwinBulkTest, EveryTruncatedRecordIsRejected) {
-  const auto bytes = Record();
-  for (std::size_t size = 0; size < bytes.size(); ++size) {
-    SCOPED_TRACE(size);
-    EXPECT_THAT(DecodeDarwinBulkRecord(std::span(bytes).first(size)), StatusIs(absl::StatusCode::kDataLoss));
+  constexpr auto kTypes = std::to_array<std::uint32_t>({1, 5});
+  for (const auto type : kTypes) {
+    SCOPED_TRACE(type);
+    const auto bytes = Record(type);
+    for (std::size_t size = 0; size < bytes.size(); ++size) {
+      SCOPED_TRACE(size);
+      EXPECT_THAT(DecodeDarwinBulkRecord(std::span(bytes).first(size)), StatusIs(absl::StatusCode::kDataLoss));
+    }
   }
 }
 
 TEST_F(DarwinBulkTest, MissingOrInvalidObservationsFallBackWithoutLosingNames) {
   constexpr auto kFields = std::to_array<std::size_t>({4, 16, 24, 132, 140, 52, 68, 84, 100});
-  for (const auto offset : kFields) {
-    SCOPED_TRACE(offset);
-    auto bytes = Record();
-    if (offset == 4) {
-      Set(bytes, offset, kBulkCommonAttributes & ~0x02000000U);
-    } else if (offset == 16) {
-      Set(bytes, offset, std::uint32_t{0});
-    } else if (offset == 24) {
-      Set(bytes, offset, std::uint32_t{13});
-    } else {
-      Set(bytes, offset, std::int64_t{-1});
+  constexpr auto kTypes = std::to_array<std::uint32_t>({1, 5});
+  for (const auto type : kTypes) {
+    SCOPED_TRACE(type);
+    for (const auto offset : kFields) {
+      SCOPED_TRACE(offset);
+      auto bytes = Record(type);
+      if (offset == 4) {
+        Set(bytes, offset, kBulkCommonAttributes & ~0x02000000U);
+      } else if (offset == 16) {
+        Set(bytes, offset, std::uint32_t{0});
+      } else if (offset == 24) {
+        Set(bytes, offset, std::uint32_t{13});
+      } else {
+        Set(bytes, offset, std::int64_t{-1});
+      }
+      MBO_ASSERT_OK_AND_ASSIGN(const auto record, DecodeDarwinBulkRecord(bytes));
+      EXPECT_THAT(record.name, EqualsText("file"));
+      EXPECT_THAT(record.metadata, Eq(std::nullopt));
     }
-    MBO_ASSERT_OK_AND_ASSIGN(const auto record, DecodeDarwinBulkRecord(bytes));
-    EXPECT_THAT(record.name, EqualsText("file"));
-    EXPECT_THAT(record.metadata, Eq(std::nullopt));
   }
 }
 

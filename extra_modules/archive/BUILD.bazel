@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
 load("@xff_extras_api//:license_body.bzl", "license_body")
 
@@ -445,15 +445,39 @@ cc_test(
     shard_count = 10,
     deps = [
         ":archive_fs_cc",
+        ":memory_archive_test_cc",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
         "@libarchive//libarchive",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
         "@xff_extras_api//:member_path_cc",
         "@xff_extras_api//:vfs_cc",
+    ],
+)
+
+cc_test(
+    name = "archive_openbytes_ownership_test",
+    size = "small",
+    srcs = ["archive_openbytes_ownership_test.cc"],
+    deps = [
+        ":archive_extension_cc",
+        ":archive_fs_cc",
+        ":memory_archive_test_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+        "@xff_extras_api//:read_source_cc",
+        "@zlib",
     ],
 )
 
@@ -621,13 +645,17 @@ cc_test(
 cc_library(
     name = "memory_archive_test_cc",
     testonly = True,
-    hdrs = ["memory_archive_test.h"],
+    hdrs = [
+        "memory_archive_test.h",
+        "memory_phar_test.h",
+    ],
     include_prefix = "xff/archive",
     visibility = ["//visibility:public"],
     deps = [
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@libarchive//libarchive",
+        "@zlib",
     ],
 )
 
@@ -647,5 +675,63 @@ cc_test(
         "@mboworks_mbo//mbo/testing:status_cc",
         "@xff_extras_api//:member_path_cc",
         "@xff_extras_api//:vfs_cc",
+    ],
+)
+
+cc_test(
+    name = "archive_directory_metadata_test",
+    srcs = ["archive_directory_metadata_test.cc"],
+    deps = [
+        ":archive_fs_cc",
+        ":memory_archive_test_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+        "@xff_extras_api//:member_path_cc",
+        "@xff_extras_api//:vfs_cc",
+    ],
+)
+
+cc_test(
+    name = "archive_member_key_test",
+    srcs = ["archive_member_key_test.cc"],
+    deps = [
+        ":archive_fs_cc",
+        ":memory_archive_test_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+        "@xff_extras_api//:member_path_cc",
+        "@xff_extras_api//:read_source_cc",
+        "@xff_extras_api//:vfs_cc",
+    ],
+)
+
+cc_binary(
+    name = "archive_openbytes_benchmark",
+    testonly = True,
+    srcs = ["archive_openbytes_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        ":archive_fs_cc",
+        ":memory_archive_test_cc",
+        "@abseil-cpp//absl/strings",
+        "@com_github_google_benchmark//:benchmark",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@xff_extras_api//:read_source_cc",
+        "@zlib",
     ],
 )

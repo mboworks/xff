@@ -6,6 +6,7 @@
 import subprocess
 import sys
 import unittest
+from unittest import mock
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -105,6 +106,71 @@ class ClangTidyScopeTest(unittest.TestCase):
                     "xff/example/use.cc": {"xff/example/public.h"},
                 },
             )
+
+    def test_bazel_include_prefix_selects_transitive_owned_consumers(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            header = root / "extra_modules/archive/archive_fs.h"
+            header.parent.mkdir(parents=True)
+            header.write_text("", encoding="utf-8")
+            middle = root / "xff/middle.h"
+            middle.parent.mkdir()
+            middle.write_text('#include "xff/archive/archive_fs.h"\n', encoding="utf-8")
+            (root / "xff/use.cc").write_text('#include "xff/middle.h"\n', encoding="utf-8")
+            include = root / "bazel-out/config/bin/external/archive/_virtual_includes/api"
+            virtual = include / "xff/archive/archive_fs.h"
+            virtual.parent.mkdir(parents=True)
+            virtual.write_text("", encoding="utf-8")
+            database = [{"file": "xff/use.cc", "directory": str(root),
+                         "arguments": ["clang", "-isystem", str(include)]}]
+            resolve = Path.resolve
+
+            def resolve_header(path, *args, **kwargs):
+                # Model the compiler-generated mapping without creating repository symlinks.
+                return resolve(header if path == virtual else path, *args, **kwargs)
+
+            with mock.patch.object(Path, "resolve", resolve_header):
+                aliases = clang_tidy_scope.virtual_include_aliases(database, root)
+            self.assertEqual(aliases, {"xff/archive/archive_fs.h": {"extra_modules/archive/archive_fs.h"}})
+            graph = clang_tidy_scope.include_graph(root, aliases)
+            self.assertEqual(
+                clang_tidy_scope.select_sources(database, ["extra_modules/archive/archive_fs.h"], graph),
+                ["xff/use.cc"],
+            )
+            self.assertEqual(clang_tidy_scope.select_sources(database, ["xff/other.h"], graph), [])
+
+    def test_virtual_aliases_accept_command_and_joined_options_and_exclude_dependencies(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "workspace"
+            root.mkdir()
+            own = root / "xff/own.h"
+            own.parent.mkdir()
+            own.write_text("", encoding="utf-8")
+            foreign = Path(directory) / "dependency/other.h"
+            foreign.parent.mkdir()
+            foreign.write_text("", encoding="utf-8")
+            include = root / "bazel-out/_virtual_includes/with space"
+            include.mkdir(parents=True)
+            owned_alias = include / "owned.h"
+            foreign_alias = include / "foreign.h"
+            owned_alias.write_text("", encoding="utf-8")
+            foreign_alias.write_text("", encoding="utf-8")
+            database = [
+                {"command": 'clang -I"bazel-out/_virtual_includes/with space"'},
+                {"arguments": ["clang", "-iquote" + str(include)]},
+                {"arguments": ["clang", "-isystem" + str(include)]},
+            ]
+            resolve = Path.resolve
+
+            def resolve_header(path, *args, **kwargs):
+                target = own if path == owned_alias else foreign if path == foreign_alias else path
+                return resolve(target, *args, **kwargs)
+
+            with mock.patch.object(Path, "resolve", resolve_header):
+                self.assertEqual(
+                    clang_tidy_scope.virtual_include_aliases(database, root),
+                    {"owned.h": {"xff/own.h"}},
+                )
 
 
 if __name__ == "__main__":

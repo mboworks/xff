@@ -37,6 +37,7 @@
 // Member content is read through retained sources and independent cursors. Legacy decoded/phar
 // paths keep their existing materialization/cache behavior and shared read-budget controls.
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -78,6 +79,12 @@ class ArchiveFileSystem : public vfs::FileSystem {
   bool ContainerCandidate(std::string_view path) const override;
 
   [[nodiscard]] absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view dir) const override;
+
+  // Indexed values are complete; observing them never starts nested metadata work.
+  bool SupportsDirectoryMetadata(std::size_t /*stat_workers*/) const override { return true; }
+
+  [[nodiscard]] absl::StatusOr<vfs::DirectoryMetadata> ReadDirMetadata(std::string_view dir, vfs::MetadataFields fields)
+      const override;
   [[nodiscard]] absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool follow_symlinks) const override;
   [[nodiscard]] absl::Status Remove(std::string_view path) const override;
   [[nodiscard]] bool Access(std::string_view path, vfs::AccessMode mode) const override;
@@ -94,6 +101,7 @@ class ArchiveFileSystem : public vfs::FileSystem {
   struct Node {
     vfs::Metadata metadata;
     std::string link_target;
+    std::uint32_t direct_child_count = 0;
     bool synthesized = false;  // no stored entry of its own; inferred from a child's path
   };
 
@@ -107,7 +115,7 @@ class ArchiveFileSystem : public vfs::FileSystem {
 
   static absl::StatusOr<ArchiveFileSystem> OpenBytesImpl(
       std::string_view container,
-      std::string bytes,
+      std::shared_ptr<const std::string> bytes,
       MemberPathOptions options,
       bool allow_extensions);
   static absl::StatusOr<ArchiveFileSystem> OpenDecodedExtension(
@@ -117,22 +125,27 @@ class ArchiveFileSystem : public vfs::FileSystem {
 
   // Builds the node index from a member list, whatever the source. `bytes` is empty for a
   // path-backed container.
-  static absl::StatusOr<ArchiveFileSystem> Index(
+  static ArchiveFileSystem Index(
       std::string container,
-      std::string bytes,
+      std::shared_ptr<const std::string> bytes,
       const std::vector<Member>& members,
       MemberPathOptions options);
 
   // Resolves an incoming path to a member key: empty means the container itself (the archive's
   // root), nullopt means the path does not belong to this filesystem at all.
-  [[nodiscard]] std::optional<std::string> MemberKeyOf(std::string_view path) const;
+  // A returned key borrows path and must be consumed before that input expires.
+  [[nodiscard]] std::optional<std::string_view> MemberKeyOf(std::string_view path) const;
+
+  // Listing paths and observations are owned values from the same immutable node range.
+  [[nodiscard]] absl::StatusOr<vfs::DirectoryMetadata> ReadDirectory(std::string_view dir, bool observe) const;
 
   vfs::SharedReadSource source_;
   bool package_ = false;
   std::string container_;
-  // The container's own bytes, for a nested container; empty when `container_` is a real path and
-  // reads stream from the file instead.
-  std::string bytes_;
+  // The container's own bytes, for an in-memory container; null when `container_` is a real path and
+  // reads stream from the file instead. Shared with the memory source so legacy parsers can inspect
+  // the original input without materializing a second complete copy.
+  std::shared_ptr<const std::string> bytes_;
   // Which reader owns this container: the phar reader when libarchive declined it and the phar parser
   // accepted it. Member reads must go back to the same one, since a phar's data offsets come from its
   // manifest rather than from any format libarchive knows.
@@ -149,6 +162,7 @@ class ArchiveFileSystem : public vfs::FileSystem {
   // Keyed by member path as stored, without a trailing slash. Ordered so ReadDir output is stable
   // without a sort, which keeps a walk's ordering reproducible.
   std::map<std::string, Node, std::less<>> nodes_;
+  std::uint32_t root_direct_child_count_ = 0;
 };
 
 }  // namespace xff::archive

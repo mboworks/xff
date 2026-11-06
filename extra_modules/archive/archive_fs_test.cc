@@ -31,14 +31,18 @@
 #include "archive_entry.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/status/status_macros.h"
+#include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/archive/member_path.h"
+#include "xff/archive/memory_archive_test.h"
 #include "xff/vfs/entry.h"
 #include "xff/vfs/filesystem.h"
 
 namespace xff::archive {
 namespace {
 
+using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
@@ -97,6 +101,40 @@ std::string WriteFixtureTar() {
   archive_write_close(out);
   archive_write_free(out);
   return path;
+}
+
+absl::StatusOr<std::string> ChildCountTar() {
+  constexpr int kRootFileCount = 21;
+  constexpr int kWideFileCount = 40;
+  std::vector<std::string> paths;
+  paths.reserve(static_cast<std::size_t>(kRootFileCount) + kWideFileCount + 3);
+  for (int index = 0; index < kRootFileCount; ++index) {
+    paths.push_back(absl::StrFormat("root-%02d.txt", index));
+  }
+  for (int index = 0; index < kWideFileCount; ++index) {
+    paths.push_back(absl::StrFormat("wide/item-%02d.txt", index));
+  }
+  // Replace the previously synthesized wide directory after it already has children.
+  const std::size_t wide_directory_index = paths.size();
+  paths.emplace_back("wide/");
+  // A duplicate path must not inflate either the root or wide direct-child count.
+  const std::size_t duplicate_file_index = paths.size();
+  paths.emplace_back("wide/item-00.txt");
+  // This adds one direct child to the explicit wide directory through a synthesized parent.
+  paths.emplace_back("wide/nested/deep.txt");
+
+  std::vector<MemoryArchiveMember> members;
+  members.reserve(paths.size());
+  for (std::size_t index = 0; index < paths.size(); ++index) {
+    if (index == wide_directory_index) {
+      members.push_back(MemoryArchiveMember{.path = paths[index], .directory = true});
+    } else if (index == duplicate_file_index) {
+      members.push_back(MemoryArchiveMember{.path = paths[index], .content = "replacement"});
+    } else {
+      members.push_back(MemoryArchiveMember{.path = paths[index]});
+    }
+  }
+  return MakeMemoryTar(members);
 }
 
 std::string TruncatedPhar() {
@@ -176,6 +214,45 @@ TEST_F(ArchiveFsTest, TheContainerItselfReadsAsTheArchiveRoot) {
       entries, UnorderedElementsAre(
                    Field("name", &vfs::Entry::name, "dir"), Field("name", &vfs::Entry::name, "prefixed.txt"),
                    Field("name", &vfs::Entry::name, "top.txt")));
+}
+
+TEST_F(ArchiveFsTest, FlatArchiveRootListsAllMembers) {
+  constexpr std::array kMembers{
+      MemoryArchiveMember{.path = "first.txt"},
+      MemoryArchiveMember{.path = "second.txt"},
+  };
+  MBO_ASSERT_OK_AND_ASSIGN(const std::string bytes, MakeMemoryTar(kMembers));
+  constexpr std::string_view kContainer = "flat-root.tar";
+  MBO_ASSERT_OK_AND_ASSIGN(const ArchiveFileSystem fs, ArchiveFileSystem::OpenBytes(kContainer, bytes));
+
+  MBO_ASSERT_OK_AND_ASSIGN(const std::vector<vfs::Entry> entries, fs.ReadDir(kContainer));
+  EXPECT_THAT(
+      entries, ElementsAre(
+                   Field("name", &vfs::Entry::name, EqualsText("first.txt")),
+                   Field("name", &vfs::Entry::name, EqualsText("second.txt"))));
+}
+
+TEST_F(ArchiveFsTest, DirectChildCountsSurviveSynthesizedParentReplacementAndDuplicates) {
+  constexpr std::string_view kContainer = "child-counts.tar";
+  MBO_ASSERT_OK_AND_ASSIGN(const std::string bytes, ChildCountTar());
+  MBO_ASSERT_OK_AND_ASSIGN(const ArchiveFileSystem fs, ArchiveFileSystem::OpenBytes(kContainer, bytes));
+
+  MBO_ASSERT_OK_AND_ASSIGN(const std::vector<vfs::Entry> root, fs.ReadDir(kContainer));
+  EXPECT_THAT(root, SizeIs(22));  // 21 stored files and the synthesized-then-stored `wide` directory.
+  // The supported libc++ and libstdc++ implementations reserve the requested capacity exactly;
+  // pinning it detects a lost direct-child count that would otherwise be hidden by vector growth.
+  EXPECT_THAT(root.capacity(), Eq(22U));
+
+  MBO_ASSERT_OK_AND_ASSIGN(const std::vector<vfs::Entry> wide, fs.ReadDir(absl::StrCat(kContainer, "!wide")));
+  EXPECT_THAT(wide, SizeIs(41));  // 40 unique files plus `nested`; the duplicate adds no child.
+  EXPECT_THAT(wide.capacity(), Eq(41U));
+  // Duplicate names are first-wins; the later payload must not replace the original member.
+  EXPECT_THAT(fs.ReadContent(absl::StrCat(kContainer, "!wide/item-00.txt")), IsOkAndHolds(EqualsText("x")));
+
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const vfs::DirectoryMetadata observed, fs.ReadDirMetadata(absl::StrCat(kContainer, "!wide"), {}));
+  EXPECT_THAT(observed.entries, SizeIs(41));
+  EXPECT_THAT(observed.observations, SizeIs(41));
 }
 
 TEST_F(ArchiveFsTest, ImplicitParentDirectoriesAreSynthesized) {

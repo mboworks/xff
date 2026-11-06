@@ -4345,3 +4345,369 @@ fixture setup. The final manual binary has new complete memory matrices and corr
 preflights. Initial lint failures, parent-header restoration error, exact binary records and
 independent Mac debug-symbol/signature proofs remain in the lossless evidence archive. Public
 current-head readiness still requires the new PR's normal hooks and own CI.
+
+### O19g and O19i: archive key and allocation decisions
+
+[The complete report](benchmarks/archive-directory-allocation-20261105.md) retains both borrowed-key
+variants and the independently qualified bounded-reserve implementation. Borrowing normalized
+member keys removes transient copies, with explicit string ownership at retained source boundaries;
+all 24 hot lookups improve on both hosts. Both variants nevertheless repeat a roughly 5.6-6.2%
+Linux flat-TAR-10k full-command regression. Keeping the original owned-index normalization body
+restores direct cold-index behavior but does not resolve that cost. Extra access-predicate native
+controls improve only modestly. These runtime variants remain held, with complete sources, lifetime
+tests, all original/confirmation samples and copied-parent controls retained rather than pooled.
+
+Separate hardware diagnostics show nearly unchanged instruction count but higher cycle count for
+that case. They do not establish an allocator, inlining, scheduling, cache or layout cause. No
+sanitizer elapsed result is used as performance evidence, and the held implementations have not
+received full release/sanitizer/coverage qualification.
+
+The adopted O19i allocation change reserves at most 16 initial Entry slots for a nonempty selected
+range, then uses ordinary vector growth. Empty ranges keep zero initial allocation; capacity is
+never reserved for the whole subtree. Existing lookup, filtering, ownership, ordering, metadata,
+read-only flags and errors stay unchanged. Forty-four isolated cases show typical wide/deep
+multi-query improvements of about 11-16% on Linux and 15-22% on Mac. Complete 66-case CLI medians
+are approximately neutral; large Mac TAR names runs improve around 2%. Tiny Mac root cases can
+cost tens of nanoseconds (one 33% relative cost), and all small/chain/ordinary/copy-drift/RSS results
+remain explicit. This is a modest allocation improvement, not a uniform traversal speedup.
+
+All 330 release tests pass on both hosts with all extras and real Linux FUSE; seven focused ASan
+suites pass on both and MSan/TSan on Linux. Canonical changed coverage reaches 4/4 lines and 2/2
+branches. Actual local lint checks the sole modified C++ translation unit on both hosts without new
+suppressions. Post-qualification rebuilt CLI bytes match the measured frozen candidate exactly on
+both hosts; Mac size is unchanged and Linux adds 520 bytes. Normal public hooks and own current-head
+CI remain separate requirements. The lossless evidence uses content-addressed text deduplication,
+preserving every repeated record and verifying exact reconstruction instead of enlarging site data
+with identical complete-output captures.
+
+### O19j: indexed archive observations, qualified
+
+[The complete report](benchmarks/archive-directory-observations-20261105.md) retains 88 memory
+cases and 82 full commands per host, independent complete-output oracles, every copied-parent
+control and the rejected compile-time specialization. The archive listing's existing immutable
+metadata supplies owned complete observations only for eager demand, avoiding per-entry Stat path
+work. Ordinary names, owned-key normalization, ordering, errors and bounded storage remain intact.
+
+The walker admits full-path archive observations independently of native name-only capability;
+native archive-all deliberately disabled name-only paths keep their old convention. Owner transfer
+precedes borrowing, followed links use ordinary fallback, lazy/on-demand traversal stays lazy and
+mounted leaf workers still cannot submit nested stat work. No lock, worker, flag or timing/count
+threshold is introduced.
+
+Complete 100k-member summaries improve roughly 1-11% on Mac and 4-9% on Linux. Serial 100k metadata
+CSV improves roughly 4-5%; some parallel CSV cells cost up to about 3% Mac and 5% Linux. All slower
+cells, copy drift, ordinary controls, full-path/field equivalence and RSS remain visible. O19h stays
+open: this is a useful eager-path gain, not a uniform traversal win.
+
+All 331 release tests pass on each host with every extension and real Linux FUSE. Nine focused
+ASan suites pass on both, MSan/TSan on Linux; canonical changed coverage is 24/24 lines and 18/18
+branches. All 12 actual affected local lint translation units pass on both, with the corrected
+benchmark relinted separately. Unstripped executable growth is 816 Mac bytes and 3,544 Linux bytes.
+Private qualification does not replace the new PR's normal hooks and own current-head CI.
+
+The separate compile-time boolean helper specialization is rejected after bounded both-host
+measurements. Its parent is the selected runtime-mode candidate; its 16-case results are not
+combined with #1107-parent measurements. It has a repeat Mac flat-10k metadata cost and adds 12,616
+Linux bytes without a general benefit. No full qualification is claimed for that variant. Selected
+sources restore exactly; Linux rebuilt bytes match exactly. Mac's later strict whole-hash failure
+is retained alongside a separate precise proof of only 40 changed debug/signature bytes; all other
+runtime bytes and UUID are identical and both signatures verify. The original complete exact-image
+qualification remains separate. The lossless content-addressed archive preserves every original
+text record and verified reconstruction, without duplicating large repeated captures.
+
+### O20k: complete native non-followed symlink observations, qualified
+
+[The complete report](benchmarks/native-symlink-observations-20261105.md) qualifies VLNK only under
+all existing complete returned-attribute, status, range and timestamp gates. Native type/mode bits
+are checked against the SDK; unsupported/missing attributes and other special types still request
+ordinary stat. The walker still re-stats followed symlinks, preserving dangling-target fallback,
+mount owners, errors/order and unchanged native backend stat-worker preference. No flag, worker,
+lock, dependency, new production syscall or mutation path is introduced.
+
+Native basic/birth requests match all 14 ordinary stat fields for short, long, absolute, dangling,
+directory-target, self-loop and hardlinked symlink objects. The initial std::filesystem hardlink
+fixture followed its source on Mac; its failure is retained, and the corrected test-only no-follow
+linkat fixture verifies the actual link inode before comparison. Pure bounded decoder tests cover
+complete link values, missing/invalid masks and every truncation alongside regular/special controls.
+
+Two hundred independent-output native cases on each host cover regular, symlink-only and mixed
+broad/deep 10-100k trees with one/three workers. Three balanced 9/7 sessions and copied-parent controls
+retain every slower cell. An additional sixteen independently checked -L cases use the same frozen
+images after qualification. Mac 100k-link summaries improve 55.26% broad serial, 33.83% deep serial
+and 26.13% deep three-worker; mixed serial summaries improve 20-27%. The largest new default-mode
+cost is mixed deep 100k three-worker CSV +1.98%; follow-mode controls range -0.83% to +1.70%.
+These small costs and RSS remain explicit. Linux parent/candidate/rebuilt whole executables are
+byte-identical, so Linux elapsed differences are unchanged-code noise controls rather than gains.
+
+All 331 release targets pass on both hosts with every extra and real required Linux FUSE. Five
+focused ASan suites pass on both, MSan/TSan on Linux; canonical changed coverage reaches 3/3 lines
+and 10/10 branches. All four actual affected translation units pass local canonical lint on both.
+Post-qualification rebuilt binaries exactly equal the frozen measured images; both executable sizes
+are unchanged. These private results do not replace normal signed hooks and new-PR own-head CI.
+The original O20i measurements remain their original regular-only-admission population; they must
+not be relabeled as O20k results. Native metadata field completeness, not an expression heuristic,
+removes repeated symlink stat work.
+
+O20j storage remains open: bulk public vector materialization can raise RSS. Pinned MBO segmented
+slots have empty inactive-union constructors and construct T only on append, so unused-element
+zeroing is not an established cost. FinishEntries already moves its observation owner; do not repeat
+obsolete claims of an extra engine copy. Any public representation change must preserve contiguous
+stat slices, wrapper delegation, metadata ownership, fallback, ordering and small/metadata-free
+controls. Expression-proved admission would now need to account for eligible regular files and
+non-followed symlinks, as well as directory/link/mount traversal semantics.
+
+### O20j/O20l/O08b: retain the current runtime after follow-up trials
+
+[The complete follow-up report](benchmarks/native-metadata-followups-20261105.md) preserves four
+independently implemented and measured rejected prototypes, their sources and all slower controls.
+The first observed-listing early return grows the actual Linux ReadNow function by 409 bytes without
+convincing complete-command gain. A second single-condition form proves the cheap checks precede
+the count and grows that function only five bytes, but its practical signal remains small/mixed.
+Do not infer elapsed gains merely because generated code performs less work.
+
+The compact form completes all 331 release targets on both hosts, five focused ASan suites on both,
+and the same MSan/TSan suites on Linux. Initial actual changed coverage fails at 10/12 branches;
+a meaningful 129/511/512-entry fallback boundary test raises it to 11/12, with all five lines covered.
+Both rebuilt images exactly equal their measured candidates. These tests and implementations remain
+reconstructible in the evidence rather than being added to production without a performance case.
+The original Linux large-directory counterexample and its separate unchanged-image repeat both
+survive; neither is replaced by a favorable average or dismissed without evidence.
+
+Direct native observation-vector accumulation is also rejected: Mac elapsed changes remain mixed
+and reported serial RSS changes are about one MiB or less. Linux instructions are identical, while
+its whole-image hash differs only through verified diagnostic line words, build ID and debug data.
+The narrow task-path cleanup trial likewise has no clear in-memory gain and retains a Mac regression.
+It does not justify borrowing caller paths, retaining capacity or changing worker admission.
+
+The large CSV transport observation is not a demonstrated product bug: unchanged frozen binaries
+and copied controls produce the exact 100k-member output quickly to both file and pipe outside the
+agent sandbox. Keep all first-touch costs and the initial sandbox preflight. Existing per-record
+storage reuse includes custom CSV rows; it is not multiple-row coalescing. No output API or buffering
+change follows from that diagnostic. Broader observation ownership/admission and bounded streaming
+remain independent unqualified work.
+
+### O20n: compile symlink target demand once
+
+[Both-host qualification](benchmarks/symlink-target-demand-20261105.md) adopts a small implicit-
+listing change. Compiled field-function bindings tell the command once whether templates or columns
+need a symlink target. Target-free fields skip ReadLink; required, qualified, transformed and
+repeated target fields retain exactly one read, and comparison equality remains independent.
+No per-entry name scan, metadata read, lock, new allocation owner or worker policy is introduced.
+
+All 228 immutable native cases pass three balanced nine-repeat sessions retaining the fastest
+seven on each host, with copied-parent controls and complete output oracles. Symlink metadata
+medians improve 20.71% on Linux and 18.45% on macOS; mixed metadata improves 12.01% and 9.05%.
+Other output families remain broadly flat. The report preserves slower cells, absolute differences
+and a separate unchanged-image Linux repeat instead of replacing the original data.
+
+All 331 release targets pass on both hosts; five affected ASan suites pass on each and the same
+MSan/TSan suites pass on Linux. Actual affected-header clang-tidy covers 47 translation units on
+each host. Canonical changed coverage is seven of seven lines and ten of ten branches, with no
+policy exception; final ordinary rebuilds exactly match the measured private images.
+
+The compact evidence archive preserves both full populations, original failures and counterexample
+records losslessly. Native input-path storage, owned-target transfer, short-target buffers and PGO
+are independent policies; their results must not be added to this change's measured percentages.
+
+### O20m and O23: completed independent decision reports
+
+The [short symlink-target storage trial](benchmarks/readlink-short-target-20261105.md)
+retains its implemented source, focused release/sanitizer/lint qualification, both 228-case
+screens and complete Linux three-session measurements. Required-target Linux medians improve
+modestly, but the Mac screen's apparent target-output gain is comparable to its copied-parent
+control. No runtime change is selected and no full Mac or 331-target qualification is claimed.
+
+The [native PGO evaluation](benchmarks/native-pgo-20261105.md) completes independent training
+and held-out workloads with exact Clang 23.1.4, source, profile and binary provenance. Both hosts'
+179 held-out cases pass three balanced nine-repeat sessions retaining seven; all 331 release
+targets pass in the explicitly documented static-production/test-only profile scope. Original
+failed configurations and the identity-only query recovery remain retained.
+
+Linux group medians improve approximately 3-10%, while generic Mac groups are mostly small or
+flat and its executable grows 14.33%. Keep the portable build default unchanged. A supported
+profile producer requires deliberate provenance, trust, retention, regeneration, cache and fallback
+policy, plus resolution of the experiment's qualification scope. Neither report enables new build
+flags or installs a training profile. Lossless compressed evidence preserves all named records;
+binary/raw-profile inventories identify separately retained originals rather than publishing
+hundreds of megabytes of executable or training output.
+
+These trials use the ordinary #1110 parent and are independent of compiled target demand,
+native input-path storage and owned-target transfer. Do not add their measured percentages to
+later improvements or compare different private candidate parents as though they were identical.
+
+### O20o: terminated ReadLink input paths not selected
+
+[The retained input-path report](benchmarks/readlink-input-path-20261105.md) records both complete
+244-case screens, ordinary copied-parent controls, new long-path fallback cases, source/image
+identities, focused release/sanitizer tests and actual two-TU lint. Reusing the native 512-byte
+terminated-path helper removes a transient path string, but does not establish a consistent
+cross-platform win. Target CSV medians improve about 0.7-0.9% on Linux while the corresponding
+Mac groups are flat/slower. Keep the current production path; no full three-session performance
+or all-331 qualification is claimed for this rejected screen. Initial real lint errors, failed
+preflights and the lossless temporary-quota recovery remain in the evidence.
+
+### O20p: owned target transfer not selected
+
+[The full owned-transfer report](benchmarks/readlink-owned-transfer-20261105.md) retains both
+264-case three-session/fastest-seven-of-nine matrices and separate eight-case confirmations.
+Moving the already-owned ReadLink string removes a real copy without a new wrapper, syscall,
+lock, field scan or policy. Correctness passes all 331 release targets on each host, relevant
+sanitizers, both actual changed translation units and canonical 2/2 line plus 2/2 branch coverage;
+final rebuilt images match the measured hashes exactly.
+
+The targeted Mac group medians remain below half a percent and mixed; a retained large ordinary
+summary case slows in every original and repeat session, although its cost shrinks in the repeat.
+Independent copied-parent controls and substantial between-population baseline drift remain
+visible. Keep the existing production implementation rather than treating weak results as a
+verified cross-platform standalone gain. Preserve both full populations, every slower cell,
+source/test prototypes and binaries; do not add the earlier target-demand gain, subtract control
+drift or repeat until a preferred answer appears.
+
+### Next bounded allocation and traversal candidates
+
+The following remain independent experiments, not promised speedups:
+
+- O19f2: [evaluated without adoption](benchmarks/archive-descendant-skipping-20261105.md).
+  Deep-root gains do not erase repeatedly slower wide/root listing controls. Preserve the old
+  Linux full trial and deliberately partial Mac population separately from the new complete
+  formatter-parent screens. A future loop/layout combination needs fresh qualification.
+- O19k: replace only the private immutable archive node map with Abseil's B-tree. Index is the
+  sole mutation phase; later APIs return owned values/sources and do not retain node iterators.
+  Verify that audit and insertion/large-Node relocation costs on both systems. The pinned default
+  string comparator enables transparent three-way lookup; explicitly passing `less<>` would skip
+  that specialization. Keep this independent of descendant skipping before testing integration.
+- O19i2: [qualified bounded direct-child capacity hint](benchmarks/archive-directory-child-capacity-20261106.md).
+  The count fits existing `Node` padding, while the root count adds 8 bytes per archive FS.
+  Mac and Linux measurements show large flat/wide-root listing gains, neutral construction, and
+  near-neutral whole-matrix medians. Deep/chain controls and all raw measurements remain retained.
+- O24: [actual-library audit completed](benchmarks/cli-stream-sync-audit-20261105.md).
+  Both current hermetic libc++ functions only read/write their previous-state byte. Add no
+  runtime call and claim no buffering speedup. This says nothing about GNU libstdc++ or a future
+  implementation; output latency, pager/confirmation ordering and final flush still matter.
+- O25: embedded language JSON decoding currently zero-initializes a byte vector, copies it into
+  a string and then copies the const owned result into a lazy static string. The exact embedded
+  JSON is 109,261 bytes. Independently test owned return transfer and direct final-string decoding,
+  preserving corruption/length errors and narrowly annotated required ABI callbacks. This is
+  first language-database access, not an unconditional ordinary-listing startup cost. Other const
+  StatusOr values used only for reads/views do not warrant mechanical move edits.
+
+### O26: skip empty deferred libc time formats
+
+[The complete formatter report](benchmarks/cctz-empty-format-20261105.md) adopts a two-line
+empty-fragment guard in pinned Abseil CCTZ. Numeric directives were already handled directly,
+but empty deferred flushes still called strftime. An untimed Mac stack sample exposed repeated
+Darwin timezone loading even when Xff requested UTC output. The fix preserves nonempty locale
+fallback, requested timezone, exact literal/NUL bytes and existing lazy CoreFoundation handling.
+It does not change TZ or locale environment, the formatter API, workers, safety or release flags.
+
+Both complete 51-command and eight-format trials pass three balanced nine-repeat sessions
+retaining seven, with independent copied-parent controls and complete output oracles. Mac's
+24 timestamp-bearing metadata cases improve about 92% at the group median; Linux whole-command
+gains are modest, while isolated numeric formatting improves about 27-30%. Ordinary names,
+path/size CSV, startup and comparison controls remain explicit. Large 100k timestamp outputs
+are independently checked for correctness without claiming paired large-parent timing.
+
+Both hosts pass all 332 release targets, relevant ASan and actual new-translation-unit clang-tidy;
+Linux also passes relevant MSan/TSan. Final rebuilt CLI and formatter benchmark exactly match
+measured image hashes. Current actual compiler actions prove ordinary Clang 23.1.4/O2/ThinLTO
+with exceptions disabled and no PGO/sanitizer flags. The external patch is outside owned-source
+changed coverage; no threshold, exemption or invented percentage is added. Failed diagnostic
+setup, real lint findings and scoped temporary-quota recovery remain in lossless evidence.
+
+Previous independent trial baselines did not capture every locale/timezone environment value;
+this diagnosis does not retroactively prove why all historical absolute times changed. Archive
+descendant skipping was subsequently evaluated on this faster common parent; its retained
+wide/root regressions remain a reason not to adopt that loop.
+
+### O28: archive observation-mode specialization not selected
+
+[The independent observation-mode report](benchmarks/archive-observation-mode-20261105.md)
+retains actual parent release disassembly, both complete 82-command and 88-listing screens,
+focused tests, nine affected header consumers and image identities. The runtime branch really
+survives ThinLTO, but its removal does not establish a consistent cross-platform gain. No full
+332-target or full three-session qualification is claimed for this rejected screen. Do not add
+its percentages to another change or treat an eliminated branch as a measured improvement.
+
+### Further independent archive allocation candidates
+
+O27 examines construction work that the existing hot-listing benchmark explicitly excludes.
+The current index constructs an owned long ancestor key before a transparent lookup even when
+that ancestor already exists. First defer that construction until absence is established. A
+separate lower_bound/emplace_hint variant can avoid another ancestor search; separately compare
+member insert_or_assign and known-missing-parent try_emplace to default mapped construction.
+Keep duplicate overwrite, synthesized flags, ancestor break behavior and inode assignment order.
+
+Measure the real public archive construction lifecycle, including destruction, and name any
+parsing/source-copy cost included in that path. Do not introduce a benchmark-only public/friend
+API or pretend an untimed setup benchmark measures indexing. Preserve flat/wide/deep/chain
+construction, complete command/listing controls, tiny cases, allocation/RSS limits and both hosts.
+Do not retain map key views across a future B-tree insertion: relocated small-string keys can
+invalidate them. These insertion prototypes remain uninstalled and unqualified.
+
+O29 examines borrowed normalized member-key views for immediate stat/access/readlink/cache
+lookups. Normalization only selects a contiguous input subview. Stored index keys and both
+delayed MemberReadSource boundaries must still own their text. A deferred-source regression
+must destroy/overwrite the caller path and archive filesystem before opening the retained source.
+The initial broad variant's Linux flat-listing regression remains retained separately; explicitly
+bypassing an empty direct-parent byte comparison is a new candidate to measure, not an excuse
+to relabel or discard the original negative results. That revision's full trials pass their
+oracles and both complete release suites, but canonical changed coverage exposes an unreachable
+final string-inequality outcome. The existing ordered subtree interval already guarantees the
+parent prefix: matching parent length implies matching bytes. A simpler length-only candidate
+has an independent sibling/boundary regression, an exhaustive ordered-index model and 100%
+changed-line/branch coverage. [The complete member-key report](benchmarks/archive-member-keys-20261105.md)
+retains both full 82-command/14-lookup/88-listing trials, 333 release targets on both hosts,
+relevant sanitizers, actual changed-TU lint and exact normal-release image/flag proofs. All
+14 targeted operations improve in every session on both hosts; whole commands remain mostly
+modest. The isolated Mac screen and full large-deep-root slowdowns remain in the evidence.
+
+One predeclared independent 12-case corroboration uses the exact same qualified images and
+includes all flat/wide/deep root 10,000/100,000 ordinary and observed controls. All Mac medians
+improve there; the Linux large-deep-root listing cost remains around 5%. Keep the two populations
+separate, do not assign a cause to the Mac reversal, and do not subtract copied-parent drift to
+manufacture a result. Adopt the simpler immediate-key ownership improvement with that explicit
+tradeoff rather than promise a universal command-level speedup. Required current-base PR CI and
+post-merge checks remain separate from the development qualification. A removed allocation or
+branch is not itself a measured command-level improvement.
+
+O30 moves the owned `OpenBytes` input into a shared immutable memory source rather than copying
+the complete buffer before streaming. If legacy parsing is required, the source is released before
+that fallback reuses the same contiguous bytes, avoiding a second full buffer. The implementation
+preserves empty, corrupt, PHAR, compression and nested-source behavior; host-backed `Open` and
+`OpenSource` do not have this input-copy cost. Focused correctness suites passed on macOS and Linux.
+Three paired Linux sessions and six complete paired macOS sessions show large-input improvements
+for TAR and PHAR, with about 64 MiB lower peak RSS at 64 MiB member payload. The unchanged `OpenSource`
+control was stable. An earlier macOS exploratory screen was noisy and remains disclosed in the
+raw data; the six later complete pairs are the primary macOS evidence. See the [O30 measurement
+report](benchmarks/openbytes-owned-input-20261106.md) for methodology, exact timings, RSS and
+binary hashes. Current-main synchronization, changed-file lint and required PR CI remain pending;
+local development measurements do not replace those gates. The focused implementation adds an
+owned memory-source helper in `xff_extras_api` and does not alter host-backed reads. Public integration adds direct shared-owner/budget and registered compression-fallback boundary tests, makes the already infallible private index helper value-returning, and selects legacy readers by ownership before format. Those integration changes retain separate source identities from the private measurements; current pushed-head CI must qualify them.
+
+O19f3 applies the bounded forward separator test in `ArchiveFileSystem::ReadDirectory`, with a
+flat-root fast path when the direct-child count equals the indexed-node count. Searching after the
+known directory prefix avoids reverse-scanning the full key; starting at byte one for root members
+preserves a leading absolute slash. The final variant has a 24-case median improvement of 1.80%
+on the local Mac and 3.36% on drogon Linux, with 21/24 and 22/24 cases faster respectively. It
+retains the Mac deep-root 100k median cost and small Linux costs in two cases. The
+forward-only version regressed Linux flat-root metadata 100k by 15.20%; the hybrid root scan was
+neutral overall on Linux. Both rejected variants and all raw samples are retained in
+[`the O19f3 qualification`](benchmarks/archive-directory-child-separator-20261106.md). This is a
+targeted archive listing improvement, not a demonstrated full-command speedup. The implementation
+keeps map layout, insertion, successor searches and workers unchanged.
+
+O22c2d independently qualifies direct appending of borrowed structured field values. `-printf`
+consumes each view synchronously while the entry context, fallback snapshot and transformation
+source remain alive, avoiding an intermediate owning string. `Template::Render` retains its direct
+single-field path to move owned scalar values; composite and transformed values use the append
+implementation. The displayed long-path subset improves in 19 of 20 cases on each host. Two
+host-specific cases regress: macOS supplied `{path:stem}` at 100,000 renders (0.9%) and Linux
+fallback `{name}` at 100,000 renders (5.5%). Direct `{path}` improves 46-49% on macOS and 24-26%
+on Linux. These microbenchmarks do not prove an end-to-end command speedup. Keep the full matrix,
+exceptions and provenance in
+[the append report](benchmarks/borrowed-field-appends-20261106.md).
+
+The complete retained O22c2d population contains 60 cases per host: 53 improve on macOS and 54
+on Linux. Short-path controls also retain costs, including macOS fallback directory rendering at
+1,000 entries (+5.4%) and Linux supplied-name rendering at 10 entries (+4.1%). The displayed
+long-path table is a subset, not a claim that only two measured cells are slower.

@@ -15,6 +15,8 @@
 
 #include "xff/archive/archive_fs.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <limits>
 #include <optional>
 #include <ranges>
@@ -43,15 +45,14 @@ namespace {
 // slash is how tar marks a directory, so it is information - the caller records the type before
 // stripping it, and an ABSOLUTE member keeps its leading slash (see member_path.h: hiding it would
 // hide the Zip-Slip red flag).
-std::string IndexKey(std::string_view stored) {
-  std::string_view key = stored;
+std::string_view IndexKeyView(std::string_view key) {
   while (key.starts_with("./")) {
     key.remove_prefix(2);
   }
   while (key.size() > 1 && key.ends_with('/')) {
     key.remove_suffix(1);
   }
-  return std::string(key);
+  return key;
 }
 
 std::string_view ParentOf(std::string_view key) {
@@ -71,6 +72,12 @@ vfs::Metadata DirectoryMetadata() {
       // 0555: readable and traversable, never writable - members cannot be modified.
       .mode = 0555,
   };
+}
+
+void IncrementChildCount(std::uint32_t& count) {
+  if (count < std::numeric_limits<std::uint32_t>::max()) {
+    ++count;
+  }
 }
 
 // A synthetic device id for one container, so that every member of it shares a device and members of
@@ -108,7 +115,7 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenSource(
     return absl::DataLossError("decoded package payload is not a supported archive");
   }
   MBO_RETURN_IF_ERROR(members.status());
-  MBO_ASSIGN_OR_RETURN(auto fs, Index(std::string(container), {}, *members, options));
+  auto fs = Index(std::string(container), nullptr, *members, options);
   source = std::move(decoded);
   fs.source_ = std::move(source);
   fs.package_ = prefix == "xar!"
@@ -129,7 +136,7 @@ absl::StatusOr<vfs::SharedReadSource> ArchiveFileSystem::ContentSource(std::stri
   if (!key) {
     return absl::NotFoundError("not an archive member");
   }
-  return MemberReadSource(source_, *key);
+  return MemberReadSource(source_, std::string(*key));
 }
 
 bool ArchiveFileSystem::ContainerCandidate(std::string_view path) const {
@@ -179,7 +186,7 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::Open(std::string_view conta
     }
   }
   MBO_RETURN_IF_ERROR(members.status());
-  MBO_ASSIGN_OR_RETURN(ArchiveFileSystem fs, Index(std::string(container), std::string(), *members, options));
+  auto fs = Index(std::string(container), nullptr, *members, options);
   fs.phar_ = phar;
   // Not single_: the only path that sets it returns from inside the branch above, so reaching here
   // means this container HAS a member list and the field keeps its false default.
@@ -203,7 +210,8 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenDecodedExtension(
   // and `.tar.gz` is a whole tar, so a container can hide inside the compression: OpenBytes asks
   // libarchive and then the phar reader about the decompressed bytes, and when either claims them
   // the members are the real answer. Only when nothing claims them is this a single compressed FILE.
-  absl::StatusOr<ArchiveFileSystem> inner = OpenBytesImpl(container, content, options, /*allow_extensions=*/false);
+  absl::StatusOr<ArchiveFileSystem> inner =
+      OpenBytesImpl(container, std::make_shared<const std::string>(content), options, /*allow_extensions=*/false);
   if (inner.ok() || !absl::IsInvalidArgument(inner.status())) {
     return inner;
   }
@@ -213,15 +221,16 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenDecodedExtension(
   if (!stem.has_value()) {
     stem = CompressionExtensionStem(name);
   }
-  MBO_ASSIGN_OR_RETURN(
-      ArchiveFileSystem fs, Index(
-                                std::string(container), std::string(),
-                                {Member{
-                                    .path = stem.value_or(std::string(name)),
-                                    .size = static_cast<std::int64_t>(content.size()),
-                                    .mode = 0444,
-                                }},
-                                options));
+  auto fs = Index(
+      std::string(container), nullptr,
+      {
+          Member{
+              .path = stem.value_or(std::string(name)),
+              .size = static_cast<std::int64_t>(content.size()),
+              .mode = 0444,
+          },
+      },
+      options);
   fs.single_file_content_ = std::move(content);
   fs.single_ = true;
   return fs;
@@ -231,24 +240,28 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenBytes(
     std::string_view container,
     std::string bytes,
     MemberPathOptions options) {
-  auto streamed = OpenSource(container, vfs::MemoryReadSource(bytes), options);
+  vfs::MemoryReadSourceData input = vfs::MakeMemoryReadSource(std::move(bytes));
+  auto streamed = OpenSource(container, input.source, options);
   if (streamed.ok() || !absl::IsInvalidArgument(streamed.status())) {
     return streamed;
   }
-  return OpenBytesImpl(container, std::move(bytes), options, /*allow_extensions=*/true);
+  // Legacy parsers need contiguous bytes. Drop the streaming wrapper before fallback parsing; its
+  // immutable allocation remains owned by `input.bytes`, so fallback does not copy the input.
+  input.source.reset();
+  return OpenBytesImpl(container, std::move(input.bytes), options, /*allow_extensions=*/true);
 }
 
 absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenBytesImpl(
     std::string_view container,
-    std::string bytes,
+    std::shared_ptr<const std::string> bytes,
     MemberPathOptions options,
     bool allow_extensions) {
   // A container INSIDE a container: its bytes came out of its parent, so there is no path to open
   // and the filesystem keeps them for as long as it lives (member reads stream from them).
-  absl::StatusOr<std::vector<Member>> members = ListMembers(bytes);
+  absl::StatusOr<std::vector<Member>> members = ListMembers(*bytes);
   bool phar = false;
   if (absl::IsInvalidArgument(members.status())) {
-    absl::StatusOr<std::vector<Member>> phar_members = ListPharMembers(bytes);
+    absl::StatusOr<std::vector<Member>> phar_members = ListPharMembers(*bytes);
     if (phar_members.ok()) {
       members = std::move(phar_members);
       phar = true;
@@ -257,19 +270,19 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenBytesImpl(
     }
   }
   if (allow_extensions && absl::IsInvalidArgument(members.status()) && CompressionExtensionFor(container).has_value()) {
-    MBO_ASSIGN_OR_RETURN(std::string content, DecodeCompressionExtension(container, bytes));
+    MBO_ASSIGN_OR_RETURN(std::string content, DecodeCompressionExtension(container, *bytes));
     return OpenDecodedExtension(container, std::move(content), options);
   }
   MBO_RETURN_IF_ERROR(members.status());
-  MBO_ASSIGN_OR_RETURN(ArchiveFileSystem fs, Index(std::string(container), std::move(bytes), *members, options));
+  auto fs = Index(std::string(container), std::move(bytes), *members, options);
   fs.phar_ = phar;
   return fs;
 }
 
-// The shared indexing pass: whatever the source, a member list becomes nodes the same way.
-absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::Index(
+// The readers validate their input before this infallible pass builds the same nodes for every source.
+ArchiveFileSystem ArchiveFileSystem::Index(
     std::string container,
-    std::string bytes,
+    std::shared_ptr<const std::string> bytes,
     const std::vector<Member>& members,
     MemberPathOptions options) {
   ArchiveFileSystem fs(std::move(container), options);
@@ -283,7 +296,7 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::Index(
   std::uint64_t next_ino = 1;
   for (const Member& member : members) {
     const bool is_dir = member.path.ends_with('/') || member.is_directory;
-    const std::string key = IndexKey(member.path);
+    const std::string key{IndexKeyView(member.path)};
     if (key.empty()) {
       continue;  // the archive's own root, which the container path already names
     }
@@ -303,28 +316,43 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::Index(
     // the evaluator can see it.
     node.metadata.source = vfs::Source::kArchiveMember;
     node.link_target = member.link_target;
-    fs.nodes_[key] = std::move(node);
+    const auto [entry_it, inserted] = fs.nodes_.try_emplace(key);
+    const std::uint32_t direct_children = entry_it->second.direct_child_count;
+    entry_it->second = std::move(node);
+    entry_it->second.direct_child_count = direct_children;
 
     // Synthesize every missing ancestor: tar streams routinely omit directory entries, and a walk
     // that trusted the stored list would never descend into them.
-    for (std::string_view parent = ParentOf(key); !parent.empty(); parent = ParentOf(parent)) {
+    bool has_new_child = inserted;
+    std::string_view parent = ParentOf(key);
+    while (!parent.empty()) {
       const std::string parent_key(parent);
-      if (fs.nodes_.contains(parent_key)) {
+      const auto existing = fs.nodes_.find(parent_key);
+      if (existing != fs.nodes_.end()) {
+        if (has_new_child) {
+          IncrementChildCount(existing->second.direct_child_count);
+        }
         break;  // this ancestor exists, so all further ancestors do too
       }
       Node parent_node{.metadata = DirectoryMetadata(), .synthesized = true};
       parent_node.metadata.dev = device;
       parent_node.metadata.ino = next_ino++;
       parent_node.metadata.nlink = 1;
+      parent_node.direct_child_count = 1;
       fs.nodes_[parent_key] = std::move(parent_node);
+      has_new_child = true;
+      parent = ParentOf(parent);
+    }
+    if (has_new_child && parent.empty()) {
+      IncrementChildCount(fs.root_direct_child_count_);
     }
   }
   return fs;
 }
 
-std::optional<std::string> ArchiveFileSystem::MemberKeyOf(std::string_view path) const {
+std::optional<std::string_view> ArchiveFileSystem::MemberKeyOf(std::string_view path) const {
   if (path == container_) {
-    return std::string{};  // the container itself: the archive's root directory
+    return std::string_view{};  // the container itself: the archive's root directory
   }
   // The probing split, with the answer already known: this filesystem's container is the only one it
   // can be. A plain first-separator split would be wrong for a NESTED container, whose own path
@@ -334,16 +362,28 @@ std::optional<std::string> ArchiveFileSystem::MemberKeyOf(std::string_view path)
   if (!parts.has_value()) {
     return std::nullopt;
   }
-  return IndexKey(parts->member);
+  return IndexKeyView(parts->member);
 }
 
 absl::StatusOr<std::vector<vfs::Entry>> ArchiveFileSystem::ReadDir(std::string_view dir) const {
-  const std::optional<std::string> key = MemberKeyOf(dir);
+  MBO_ASSIGN_OR_RETURN(auto listing, ReadDirectory(dir, false));
+  return std::move(listing.entries);
+}
+
+absl::StatusOr<vfs::DirectoryMetadata> ArchiveFileSystem::ReadDirMetadata(
+    std::string_view dir,
+    vfs::MetadataFields /*fields*/) const {
+  return ReadDirectory(dir, true);
+}
+
+absl::StatusOr<vfs::DirectoryMetadata> ArchiveFileSystem::ReadDirectory(std::string_view dir, bool observe) const {
+  const std::optional<std::string_view> key = MemberKeyOf(dir);
   if (!key.has_value()) {
     return absl::InvalidArgumentError(absl::StrCat("not a path in ", container_, ": ", dir));
   }
   auto first = nodes_.begin();
   auto last = nodes_.end();
+  std::size_t direct_child_count = root_direct_child_count_;
   if (!key->empty()) {
     const auto found = nodes_.find(*key);
     if (found == nodes_.end()) {
@@ -352,15 +392,33 @@ absl::StatusOr<std::vector<vfs::Entry>> ArchiveFileSystem::ReadDir(std::string_v
     if (found->second.metadata.type != vfs::FileType::kDirectory) {
       return absl::InvalidArgumentError(absl::StrCat("not a directory: ", *key));
     }
+    direct_child_count = found->second.direct_child_count;
     std::string boundary = absl::StrCat(*key, "/");
     first = nodes_.lower_bound(boundary);
     // The next ASCII byte after the appended slash bounds exactly this subtree's prefix.
     boundary.back() = '0';
     last = nodes_.lower_bound(boundary);
   }
-  std::vector<vfs::Entry> entries;
+  vfs::DirectoryMetadata listing;
+  auto& entries = listing.entries;
+  if (first != last) {
+    // Keep the small-listing allocation floor, while using the index's direct-child count for wide
+    // directories so their results avoid repeated growth.
+    constexpr std::size_t kInitialEntryCapacity = 16;
+    entries.reserve(
+        std::max(std::min(nodes_.size(), kInitialEntryCapacity), std::min(direct_child_count, nodes_.size())));
+    if (observe) {
+      listing.observations.reserve(entries.capacity());
+    }
+  }
+  // A flat root has one indexed node per direct child; avoid scanning every name for `/` in this
+  // common case. Synthesized ancestors make the counts differ whenever a member is nested.
+  const bool root_contains_only_direct_children = key->empty() && direct_child_count == nodes_.size();
+  const std::string_view::size_type separator_start = key->empty() ? 1 : key->size() + 1;
   for (const auto& [member_key, node] : std::ranges::subrange(first, last)) {
-    if (ParentOf(member_key) != *key) {
+    // The bounded subtree range already guarantees the parent prefix matches. Scan forward from
+    // that boundary for another separator; root members may start with one absolute slash.
+    if (!root_contains_only_direct_children && member_key.find('/', separator_start) != std::string_view::npos) {
       continue;  // only direct children; the walk recurses for the rest
     }
     entries.push_back(
@@ -373,12 +431,19 @@ absl::StatusOr<std::vector<vfs::Entry>> ArchiveFileSystem::ReadDir(std::string_v
             .source = vfs::Source::kArchiveMember,
             .read_only = true,
         });
+    if (observe) {
+      listing.observations.push_back(
+          vfs::MetadataObservation{
+              .value = node.metadata,
+              .status = absl::OkStatus(),
+          });
+    }
   }
-  return entries;
+  return listing;
 }
 
 absl::StatusOr<vfs::Metadata> ArchiveFileSystem::Stat(std::string_view path, bool /*follow_symlinks*/) const {
-  const std::optional<std::string> key = MemberKeyOf(path);
+  const std::optional<std::string_view> key = MemberKeyOf(path);
   if (!key.has_value()) {
     return absl::InvalidArgumentError(absl::StrCat("not a path in ", container_, ": ", path));
   }
@@ -404,7 +469,7 @@ bool ArchiveFileSystem::Access(std::string_view path, vfs::AccessMode mode) cons
   if (mode == vfs::AccessMode::kWrite) {
     return false;  // read-only, unconditionally
   }
-  const std::optional<std::string> key = MemberKeyOf(path);
+  const std::optional<std::string_view> key = MemberKeyOf(path);
   if (!key.has_value()) {
     return false;
   }
@@ -422,7 +487,7 @@ bool ArchiveFileSystem::Access(std::string_view path, vfs::AccessMode mode) cons
 }
 
 absl::StatusOr<std::string> ArchiveFileSystem::ReadLink(std::string_view path) const {
-  const std::optional<std::string> key = MemberKeyOf(path);
+  const std::optional<std::string_view> key = MemberKeyOf(path);
   if (!key.has_value() || key->empty()) {
     return absl::InvalidArgumentError(absl::StrCat("not a member path: ", path));
   }
@@ -450,7 +515,7 @@ absl::StatusOr<std::string> ArchiveFileSystem::ReadContent(std::string_view path
   // streamed pass per read. The index is consulted FIRST so this filesystem's own errors (not mine,
   // no such member, has no content) are answered from what it already knows, and libarchive is only
   // asked to extract something that is really there.
-  const std::optional<std::string> key = MemberKeyOf(path);
+  const std::optional<std::string_view> key = MemberKeyOf(path);
   if (!key.has_value()) {
     return absl::InvalidArgumentError(absl::StrCat("not a path in ", container_, ": ", path));
   }
@@ -476,11 +541,12 @@ absl::StatusOr<std::string> ArchiveFileSystem::ReadContent(std::string_view path
   }
   absl::StatusOr<std::string> content;
   if (source_) {
-    content = vfs::ReadSourceBytes(*MemberReadSource(source_, *key), std::numeric_limits<std::size_t>::max());
-  } else if (phar_) {
-    content = bytes_.empty() ? ReadPharMemberOfFile(container_, *key) : ReadPharMember(bytes_, *key);
+    content =
+        vfs::ReadSourceBytes(*MemberReadSource(source_, std::string(*key)), std::numeric_limits<std::size_t>::max());
+  } else if (bytes_) {
+    content = phar_ ? ReadPharMember(*bytes_, *key) : ReadMember(*bytes_, *key);
   } else {
-    content = bytes_.empty() ? ReadMemberOfFile(container_, *key) : ReadMember(bytes_, *key);
+    content = phar_ ? ReadPharMemberOfFile(container_, *key) : ReadMemberOfFile(container_, *key);
   }
   if (content.ok()) {
     member_cache_->Put(*key, *content);
