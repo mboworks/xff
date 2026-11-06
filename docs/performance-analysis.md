@@ -4345,3 +4345,60 @@ fixture setup. The final manual binary has new complete memory matrices and corr
 preflights. Initial lint failures, parent-header restoration error, exact binary records and
 independent Mac debug-symbol/signature proofs remain in the lossless evidence archive. Public
 current-head readiness still requires the new PR's normal hooks and own CI.
+
+### O19g and O19i: archive key and allocation decisions
+
+[The complete report](benchmarks/archive-directory-allocation-20261105.md) retains both borrowed-key
+variants and the independently qualified bounded-reserve implementation. Borrowing normalized
+member keys removes transient copies, with explicit string ownership at retained source boundaries;
+all 24 hot lookups improve on both hosts. Both variants nevertheless repeat a roughly 5.6-6.2%
+Linux flat-TAR-10k full-command regression. Keeping the original owned-index normalization body
+restores direct cold-index behavior but does not resolve that cost. Extra access-predicate native
+controls improve only modestly. These runtime variants remain held, with complete sources, lifetime
+tests, all original/confirmation samples and copied-parent controls retained rather than pooled.
+
+Separate hardware diagnostics show nearly unchanged instruction count but higher cycle count for
+that case. They do not establish an allocator, inlining, scheduling, cache or layout cause. No
+sanitizer elapsed result is used as performance evidence, and the held implementations have not
+received full release/sanitizer/coverage qualification.
+
+The adopted O19i allocation change reserves at most 16 initial Entry slots for a nonempty selected
+range, then uses ordinary vector growth. Empty ranges keep zero initial allocation; capacity is
+never reserved for the whole subtree. Existing lookup, filtering, ownership, ordering, metadata,
+read-only flags and errors stay unchanged. Forty-four isolated cases show typical wide/deep
+multi-query improvements of about 11-16% on Linux and 15-22% on Mac. Complete 66-case CLI medians
+are approximately neutral; large Mac TAR names runs improve around 2%. Tiny Mac root cases can
+cost tens of nanoseconds (one 33% relative cost), and all small/chain/ordinary/copy-drift/RSS results
+remain explicit. This is a modest allocation improvement, not a uniform traversal speedup.
+
+All 330 release tests pass on both hosts with all extras and real Linux FUSE; seven focused ASan
+suites pass on both and MSan/TSan on Linux. Canonical changed coverage reaches 4/4 lines and 2/2
+branches. Actual local lint checks the sole modified C++ translation unit on both hosts without new
+suppressions. Post-qualification rebuilt CLI bytes match the measured frozen candidate exactly on
+both hosts; Mac size is unchanged and Linux adds 520 bytes. Normal public hooks and own current-head
+CI remain separate requirements. The lossless evidence uses content-addressed text deduplication,
+preserving every repeated record and verifying exact reconstruction instead of enlarging site data
+with identical complete-output captures.
+
+### O19j: indexed directory observations, not yet implemented
+
+Archive nodes already hold complete metadata equivalent to Stat. The existing directory-observation
+API could transfer those values with the owned listing, avoiding per-entry split, normalization and
+map lookup when eager metadata is required. This is an independent candidate; no performance gain
+or implementation is claimed yet. It needs complete-field/order/error and retained-lifetime tests,
+both-host names/full-metadata/worker controls and complete qualification.
+
+Walker currently gates observations on name-only listings and excludes mounted owners. A candidate
+must distinguish a full-path backend from native name-only listings deliberately disabled under
+archive-all mounting. Blindly removing that gate could hand empty native paths to the walker.
+Allowing already-complete mounted observations must not remove ReadObservedNow's existing
+leaf-worker prohibition on nested stat submission. Transfer the observation owner before borrowing
+records, preserve followed-link ordinary fallback and container-root host identity, and never request
+eager observations for on-demand or metadata-free traversal. Keep O19h's small parallel metadata costs
+as explicit controls rather than introducing a speculative threshold.
+
+O20k is also still a plan: the Darwin decoder presently admits complete regular-file observations
+only. Any extension to non-followed symlinks must first prove the native returned attributes and
+every Metadata field against ordinary stat; missing file-specific attributes and followed targets
+retain existing fallback. Existing authorized VFS adapters suffice for reads, so this is no reason
+to introduce another host-mutation path or a new user-visible safety option.

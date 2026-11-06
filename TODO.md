@@ -514,10 +514,26 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [ ] O19g: Independently qualify borrowed normalized archive lookup keys with transparent map/cache
       lookup. Copy only at retained member-source ownership boundaries; test temporary caller paths,
       long non-SSO keys, custom separators, absolute/nested paths and all existing normalization.
+- [ ] O19g2: Revisit the held borrowed-key implementations only after identifying the repeatable
+      Linux flat-TAR-10k cost. Both 28-case memory and 66-case native matrices, lifetime tests and
+      separate hardware diagnostics are retained in
+      [the allocation decisions](docs/benchmarks/archive-directory-allocation-20261105.md);
+      microbenchmark gains alone do not qualify either runtime implementation.
+- [x] O19i: Bound initial archive-directory result storage to reduce small-listing vector
+      reallocations, retaining tiny/root/chain costs and complete native controls. Full both-host
+      qualification and the held O19g variants are in
+      [the allocation decisions](docs/benchmarks/archive-directory-allocation-20261105.md).
+- [ ] O19j: Qualify complete archive directory observations from existing immutable node metadata.
+      Preserve full virtual paths, native archive-all listing conventions, eager-only demand,
+      followed-link fallback, mounted lifetimes and leaf-worker isolation before bypassing repeated
+      per-entry Stat. Measure names and full metadata controls on both hosts; do not infer a gain.
 - [ ] O19h: Investigate the repeatable 1k-member/three-worker Linux metadata-output cost exposed by
       faster archive directory admission. Preserve the original and independent confirmation
       (roughly 6-14%, 0.24-0.35 ms), serial and 10k controls. Identify stage/scheduling/allocation
       causes before introducing any worker threshold; do not hide the cost in cohort medians.
+- [ ] O20k: Investigate complete non-followed Darwin symlink observations. Admit them only after
+      proving every requested attribute and Metadata field equals ordinary lstat semantics; retain
+      conservative fallback for missing fields, special types and followed-target lookups.
 - [x] O20a: Qualify native names-only directory listings and callback-scoped reusable leaf paths on
       both hosts, including controlled/rg VFS delegation, lazy metadata and exact owned fallbacks.
       Retain native and in-memory broad/deep 10-100k-file, 1/3-worker evidence in
