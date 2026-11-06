@@ -61,6 +61,29 @@ TEST_F(ReadSourceTest, UnsupportedSkipNeverConsumesOwnedOnlyStream) {
   EXPECT_THAT(stream.Read(6), IsOkAndHolds(EqualsText("abcdef")));
 }
 
+TEST_F(ReadSourceTest, OwnedMemoryCursorOutlivesBothPublicOwners) {
+  const std::string bytes("a\0b\xff", 4);
+  const auto budget = std::make_shared<ReadBudget>(128, 32);
+  auto input = MakeMemoryReadSource(bytes, budget);
+  EXPECT_THAT(input.source->Budget(), Eq(budget));
+  EXPECT_THAT(input.source->Size(), IsOkAndHolds(Eq(bytes.size())));
+  EXPECT_THAT(*input.bytes, EqualsText(bytes));
+  MBO_ASSERT_OK_AND_ASSIGN(auto cursor, input.source->Open());
+  input.bytes.reset();
+  input.source.reset();
+  EXPECT_THAT(cursor->Read(bytes.size()), IsOkAndHolds(EqualsText(bytes)));
+}
+
+TEST_F(ReadSourceTest, OwnedMemoryBytesOutliveSourceAndCursor) {
+  const std::string bytes("a\0b\xff", 4);
+  auto input = MakeMemoryReadSource(bytes);
+  MBO_ASSERT_OK_AND_ASSIGN(auto cursor, input.source->Open());
+  const auto retained_bytes = std::move(input.bytes);
+  input.source.reset();
+  cursor.reset();
+  EXPECT_THAT(*retained_bytes, EqualsText(bytes));
+}
+
 TEST_F(ReadSourceTest, MemorySkipSharesReadPositionAndBoundsCountsWithoutLosingOwners) {
   auto source = MemoryReadSource("abcdef");
   MBO_ASSERT_OK_AND_ASSIGN(auto cursor, source->Open());

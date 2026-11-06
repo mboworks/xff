@@ -4670,15 +4670,19 @@ tradeoff rather than promise a universal command-level speedup. Required current
 post-merge checks remain separate from the development qualification. A removed allocation or
 branch is not itself a measured command-level improvement.
 
-O30 identifies an actual complete-buffer copy in `ArchiveFileSystem::OpenBytes`: its input is
-already owned by value, but it is passed as an lvalue to `MemoryReadSource`. A narrow prototype
-moves that input into the existing source and materializes contiguous bytes only if the legacy
-parser fallback is needed. The source must then be released before fallback parsing to avoid
-holding two complete buffers longer than necessary. Preserve exact failure classifications,
-empty/corrupt/phar/compression behavior and later content-source ownership. Benchmark both
-ordinary and fallback lifecycles, including the fresh input required by each invocation, and
-record RSS. Host-backed `Open` and `OpenSource` do not have this input-copy cost. The prototype
-is outside the worktree, uncompiled and unmeasured; no new public VFS API is proposed.
+O30 moves the owned `OpenBytes` input into a shared immutable memory source rather than copying
+the complete buffer before streaming. If legacy parsing is required, the source is released before
+that fallback reuses the same contiguous bytes, avoiding a second full buffer. The implementation
+preserves empty, corrupt, PHAR, compression and nested-source behavior; host-backed `Open` and
+`OpenSource` do not have this input-copy cost. Focused correctness suites passed on macOS and Linux.
+Three paired Linux sessions and six complete paired macOS sessions show large-input improvements
+for TAR and PHAR, with about 64 MiB lower peak RSS at 64 MiB member payload. The unchanged `OpenSource`
+control was stable. An earlier macOS exploratory screen was noisy and remains disclosed in the
+raw data; the six later complete pairs are the primary macOS evidence. See the [O30 measurement
+report](benchmarks/openbytes-owned-input-20261106.md) for methodology, exact timings, RSS and
+binary hashes. Current-main synchronization, changed-file lint and required PR CI remain pending;
+local development measurements do not replace those gates. The focused implementation adds an
+owned memory-source helper in `xff_extras_api` and does not alter host-backed reads. Public integration adds direct shared-owner/budget and registered compression-fallback boundary tests, makes the already infallible private index helper value-returning, and selects legacy readers by ownership before format. Those integration changes retain separate source identities from the private measurements; current pushed-head CI must qualify them.
 
 O19f3 applies the bounded forward separator test in `ArchiveFileSystem::ReadDirectory`, with a
 flat-root fast path when the direct-child count equals the indexed-node count. Searching after the

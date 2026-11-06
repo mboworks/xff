@@ -115,7 +115,7 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenSource(
     return absl::DataLossError("decoded package payload is not a supported archive");
   }
   MBO_RETURN_IF_ERROR(members.status());
-  MBO_ASSIGN_OR_RETURN(auto fs, Index(std::string(container), {}, *members, options));
+  auto fs = Index(std::string(container), nullptr, *members, options);
   source = std::move(decoded);
   fs.source_ = std::move(source);
   fs.package_ = prefix == "xar!"
@@ -186,7 +186,7 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::Open(std::string_view conta
     }
   }
   MBO_RETURN_IF_ERROR(members.status());
-  MBO_ASSIGN_OR_RETURN(ArchiveFileSystem fs, Index(std::string(container), std::string(), *members, options));
+  auto fs = Index(std::string(container), nullptr, *members, options);
   fs.phar_ = phar;
   // Not single_: the only path that sets it returns from inside the branch above, so reaching here
   // means this container HAS a member list and the field keeps its false default.
@@ -210,7 +210,8 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenDecodedExtension(
   // and `.tar.gz` is a whole tar, so a container can hide inside the compression: OpenBytes asks
   // libarchive and then the phar reader about the decompressed bytes, and when either claims them
   // the members are the real answer. Only when nothing claims them is this a single compressed FILE.
-  absl::StatusOr<ArchiveFileSystem> inner = OpenBytesImpl(container, content, options, /*allow_extensions=*/false);
+  absl::StatusOr<ArchiveFileSystem> inner =
+      OpenBytesImpl(container, std::make_shared<const std::string>(content), options, /*allow_extensions=*/false);
   if (inner.ok() || !absl::IsInvalidArgument(inner.status())) {
     return inner;
   }
@@ -220,15 +221,16 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenDecodedExtension(
   if (!stem.has_value()) {
     stem = CompressionExtensionStem(name);
   }
-  MBO_ASSIGN_OR_RETURN(
-      ArchiveFileSystem fs, Index(
-                                std::string(container), std::string(),
-                                {Member{
-                                    .path = stem.value_or(std::string(name)),
-                                    .size = static_cast<std::int64_t>(content.size()),
-                                    .mode = 0444,
-                                }},
-                                options));
+  auto fs = Index(
+      std::string(container), nullptr,
+      {
+          Member{
+              .path = stem.value_or(std::string(name)),
+              .size = static_cast<std::int64_t>(content.size()),
+              .mode = 0444,
+          },
+      },
+      options);
   fs.single_file_content_ = std::move(content);
   fs.single_ = true;
   return fs;
@@ -238,24 +240,28 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenBytes(
     std::string_view container,
     std::string bytes,
     MemberPathOptions options) {
-  auto streamed = OpenSource(container, vfs::MemoryReadSource(bytes), options);
+  vfs::MemoryReadSourceData input = vfs::MakeMemoryReadSource(std::move(bytes));
+  auto streamed = OpenSource(container, input.source, options);
   if (streamed.ok() || !absl::IsInvalidArgument(streamed.status())) {
     return streamed;
   }
-  return OpenBytesImpl(container, std::move(bytes), options, /*allow_extensions=*/true);
+  // Legacy parsers need contiguous bytes. Drop the streaming wrapper before fallback parsing; its
+  // immutable allocation remains owned by `input.bytes`, so fallback does not copy the input.
+  input.source.reset();
+  return OpenBytesImpl(container, std::move(input.bytes), options, /*allow_extensions=*/true);
 }
 
 absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenBytesImpl(
     std::string_view container,
-    std::string bytes,
+    std::shared_ptr<const std::string> bytes,
     MemberPathOptions options,
     bool allow_extensions) {
   // A container INSIDE a container: its bytes came out of its parent, so there is no path to open
   // and the filesystem keeps them for as long as it lives (member reads stream from them).
-  absl::StatusOr<std::vector<Member>> members = ListMembers(bytes);
+  absl::StatusOr<std::vector<Member>> members = ListMembers(*bytes);
   bool phar = false;
   if (absl::IsInvalidArgument(members.status())) {
-    absl::StatusOr<std::vector<Member>> phar_members = ListPharMembers(bytes);
+    absl::StatusOr<std::vector<Member>> phar_members = ListPharMembers(*bytes);
     if (phar_members.ok()) {
       members = std::move(phar_members);
       phar = true;
@@ -264,19 +270,19 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenBytesImpl(
     }
   }
   if (allow_extensions && absl::IsInvalidArgument(members.status()) && CompressionExtensionFor(container).has_value()) {
-    MBO_ASSIGN_OR_RETURN(std::string content, DecodeCompressionExtension(container, bytes));
+    MBO_ASSIGN_OR_RETURN(std::string content, DecodeCompressionExtension(container, *bytes));
     return OpenDecodedExtension(container, std::move(content), options);
   }
   MBO_RETURN_IF_ERROR(members.status());
-  MBO_ASSIGN_OR_RETURN(ArchiveFileSystem fs, Index(std::string(container), std::move(bytes), *members, options));
+  auto fs = Index(std::string(container), std::move(bytes), *members, options);
   fs.phar_ = phar;
   return fs;
 }
 
-// The shared indexing pass: whatever the source, a member list becomes nodes the same way.
-absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::Index(
+// The readers validate their input before this infallible pass builds the same nodes for every source.
+ArchiveFileSystem ArchiveFileSystem::Index(
     std::string container,
-    std::string bytes,
+    std::shared_ptr<const std::string> bytes,
     const std::vector<Member>& members,
     MemberPathOptions options) {
   ArchiveFileSystem fs(std::move(container), options);
@@ -537,10 +543,10 @@ absl::StatusOr<std::string> ArchiveFileSystem::ReadContent(std::string_view path
   if (source_) {
     content =
         vfs::ReadSourceBytes(*MemberReadSource(source_, std::string(*key)), std::numeric_limits<std::size_t>::max());
-  } else if (phar_) {
-    content = bytes_.empty() ? ReadPharMemberOfFile(container_, *key) : ReadPharMember(bytes_, *key);
+  } else if (bytes_) {
+    content = phar_ ? ReadPharMember(*bytes_, *key) : ReadMember(*bytes_, *key);
   } else {
-    content = bytes_.empty() ? ReadMemberOfFile(container_, *key) : ReadMember(bytes_, *key);
+    content = phar_ ? ReadPharMemberOfFile(container_, *key) : ReadMemberOfFile(container_, *key);
   }
   if (content.ok()) {
     member_cache_->Put(*key, *content);

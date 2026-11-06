@@ -115,7 +115,7 @@ class ArchiveFileSystem : public vfs::FileSystem {
 
   static absl::StatusOr<ArchiveFileSystem> OpenBytesImpl(
       std::string_view container,
-      std::string bytes,
+      std::shared_ptr<const std::string> bytes,
       MemberPathOptions options,
       bool allow_extensions);
   static absl::StatusOr<ArchiveFileSystem> OpenDecodedExtension(
@@ -125,9 +125,9 @@ class ArchiveFileSystem : public vfs::FileSystem {
 
   // Builds the node index from a member list, whatever the source. `bytes` is empty for a
   // path-backed container.
-  static absl::StatusOr<ArchiveFileSystem> Index(
+  static ArchiveFileSystem Index(
       std::string container,
-      std::string bytes,
+      std::shared_ptr<const std::string> bytes,
       const std::vector<Member>& members,
       MemberPathOptions options);
 
@@ -142,9 +142,10 @@ class ArchiveFileSystem : public vfs::FileSystem {
   vfs::SharedReadSource source_;
   bool package_ = false;
   std::string container_;
-  // The container's own bytes, for a nested container; empty when `container_` is a real path and
-  // reads stream from the file instead.
-  std::string bytes_;
+  // The container's own bytes, for an in-memory container; null when `container_` is a real path and
+  // reads stream from the file instead. Shared with the memory source so legacy parsers can inspect
+  // the original input without materializing a second complete copy.
+  std::shared_ptr<const std::string> bytes_;
   // Which reader owns this container: the phar reader when libarchive declined it and the phar parser
   // accepted it. Member reads must go back to the same one, since a phar's data offsets come from its
   // manifest rather than from any format libarchive knows.
