@@ -2,18 +2,18 @@
   "schema": 1,
   "target": "pr/1112",
   "source": {
-    "created_at": "2026-11-05T17:59:01Z",
-    "started_at": "2026-11-05T17:59:01Z",
-    "completed_at": "2026-11-05T19:49:26Z",
-    "run_id": 42079860366,
+    "created_at": "2026-11-06T07:59:39Z",
+    "started_at": "2026-11-06T07:59:39Z",
+    "completed_at": "2026-11-06T09:03:03Z",
+    "run_id": 42184514985,
     "run_attempt": 1,
-    "head_sha": "b9f4163961d1ba38bb401bf1d1fe0ad42de9e11c"
+    "head_sha": "b602bde49be81f56fb9214f44c31123b90a38528"
   },
   "coverage": {
     "lines": {
-      "covered": 31153,
+      "covered": 31157,
       "total": 32031,
-      "percent": 97.26
+      "percent": 97.27
     },
     "functions": {
       "covered": 2962,
@@ -21,12 +21,15 @@
       "percent": 98.21
     },
     "branches": {
-      "covered": 16242,
+      "covered": 16243,
       "total": 17566,
-      "percent": 92.46
+      "percent": 92.47
     }
   },
-  "pull_state": "open",
-  "reference_time": null,
-  "history": null
+  "pull_state": "merged",
+  "reference_time": "2026-11-06T09:03:23Z",
+  "history": {
+    "commit": "852539d084ca1c4bb1756b0f83eb4b50b2b19b85",
+    "position": 1057
+  }
 }
