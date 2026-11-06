@@ -113,6 +113,7 @@
     "docs/benchmarks/bulk-directory-metadata-20261105.md": "docs/benchmarks/bulk-directory-metadata-20261105.html",
     "docs/benchmarks/comparison-retention-followups-20261105.md": "docs/benchmarks/comparison-retention-followups-20261105.html",
     "docs/benchmarks/comparison-storage-followups-20261105.md": "docs/benchmarks/comparison-storage-followups-20261105.html",
+    "docs/benchmarks/comparison-frontier-rejection-20261106.md": "docs/benchmarks/comparison-frontier-rejection-20261106.html",
     "docs/benchmarks/archive-prefix-reuse-20261105.md": "docs/benchmarks/archive-prefix-reuse-20261105.html",
     "docs/benchmarks/archive-directory-range-20261105.md": "docs/benchmarks/archive-directory-range-20261105.html",
     "docs/benchmarks/archive-directory-allocation-20261105.md": "docs/benchmarks/archive-directory-allocation-20261105.html",
