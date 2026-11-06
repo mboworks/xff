@@ -28,7 +28,7 @@ struct DarwinBulkRecord {
   std::size_t bytes = 0;
 };
 
-// Pure bounded decoder. Only complete regular-file observations replace stat; everything else
+// Pure bounded decoder. Only complete regular-file and symlink observations replace stat; everything else
 // carries its name/type and requests ordinary metadata. A malformed record rejects the batch.
 absl::StatusOr<DarwinBulkRecord> DecodeDarwinBulkRecord(std::span<const std::byte> bytes);
 

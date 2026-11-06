@@ -143,7 +143,7 @@ TEST_F(LocalFsTest, DirectoryObservationsRetainNamesAndCompleteNativeMetadata) {
     EXPECT_THAT(observation.value.ctime, Eq(expected.ctime));
     EXPECT_THAT(observation.value.btime, Eq(expected.btime));
   }
-  EXPECT_THAT(observed, Eq(1));
+  EXPECT_THAT(observed, Eq(2));
 #else
   EXPECT_THAT(local_fs_.SupportsDirectoryMetadata(1), IsFalse());
   EXPECT_THAT(listing.observations, IsEmpty());
@@ -153,10 +153,61 @@ TEST_F(LocalFsTest, DirectoryObservationsRetainNamesAndCompleteNativeMetadata) {
   EXPECT_THAT(local_fs_.ReadDirMetadata(Path("file.txt"), MetadataFields::kBasic), Not(IsOk()));
 }
 
+#if defined(__APPLE__)
+TEST_F(LocalFsTest, NativeSymlinkObservationMatchesEveryOrdinaryStatField) {
+  constexpr auto kLinks = std::to_array<std::pair<std::string_view, std::string_view>>({
+      {"dangling", "missing"},
+      {"directory-link", "sub"},
+      {"loop", "loop"},
+  });
+  for (const auto& [name, target] : kLinks) {
+    fs::create_symlink(target, Path(name));
+  }
+  fs::create_symlink(Path("file.txt"), Path("absolute"));
+  fs::create_symlink(std::string(180, 'x'), Path("long-dangling"));
+  // XFF_HOST_IO: test-owned link fixture; no-follow linkat preserves the symlink inode itself.
+  ASSERT_THAT(::linkat(AT_FDCWD, Path("link").c_str(), AT_FDCWD, Path("hard-link").c_str(), 0), Eq(0));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto original_link, local_fs_.Stat(Path("link"), false));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto hard_link, local_fs_.Stat(Path("hard-link"), false));
+  ASSERT_THAT(original_link.type, Eq(FileType::kSymlink));
+  EXPECT_THAT(hard_link.type, Eq(original_link.type));
+  EXPECT_THAT(hard_link.ino, Eq(original_link.ino));
+  EXPECT_THAT(hard_link.nlink, Eq(2));
+  constexpr auto kFields = std::to_array<MetadataFields>({MetadataFields::kBasic, MetadataFields::kBirthTime});
+  for (const auto fields : kFields) {
+    SCOPED_TRACE(static_cast<int>(fields));
+    MBO_ASSERT_OK_AND_ASSIGN(const auto listing, local_fs_.ReadDirMetadata(root_.string(), fields));
+    ASSERT_THAT(listing.observations, SizeIs(listing.entries.size()));
+    std::size_t checked = 0;
+    for (std::size_t index = 0; index < listing.entries.size(); ++index) {
+      if (listing.entries.at(index).type != FileType::kSymlink) {
+        continue;
+      }
+      ++checked;
+      const auto& observation = listing.observations.at(index);
+      ASSERT_THAT(observation.status, IsOk());
+      MBO_ASSERT_OK_AND_ASSIGN(const auto expected, local_fs_.Stat(Path(listing.entries.at(index).name), false));
+      EXPECT_THAT(
+          observation.value,
+          AllOf(
+              Field(&Metadata::type, Eq(expected.type)), Field(&Metadata::source, Eq(expected.source)),
+              Field(&Metadata::size, Eq(expected.size)), Field(&Metadata::blocks, Eq(expected.blocks)),
+              Field(&Metadata::mode, Eq(expected.mode)), Field(&Metadata::nlink, Eq(expected.nlink)),
+              Field(&Metadata::uid, Eq(expected.uid)), Field(&Metadata::gid, Eq(expected.gid)),
+              Field(&Metadata::ino, Eq(expected.ino)), Field(&Metadata::dev, Eq(expected.dev)),
+              Field(&Metadata::atime, Eq(expected.atime)), Field(&Metadata::mtime, Eq(expected.mtime)),
+              Field(&Metadata::ctime, Eq(expected.ctime)), Field(&Metadata::btime, Eq(expected.btime))));
+    }
+    EXPECT_THAT(checked, Eq(7));
+  }
+}
+#endif
+
 TEST_F(LocalFsTest, DirectoryWithoutCompleteObservationsKeepsOnlyNames) {
-  ASSERT_THAT(fs::remove(root_ / "file.txt"), IsTrue());
+  ASSERT_THAT(local_fs_.Remove(Path("file.txt")), IsOk());
+  ASSERT_THAT(local_fs_.Remove(Path("link")), IsOk());
   MBO_ASSERT_OK_AND_ASSIGN(const auto listing, local_fs_.ReadDirMetadata(root_.string(), MetadataFields::kBasic));
-  EXPECT_THAT(listing.entries, UnorderedElementsAre(Field(&Entry::name, Eq("sub")), Field(&Entry::name, Eq("link"))));
+  EXPECT_THAT(listing.entries, UnorderedElementsAre(Field(&Entry::name, Eq("sub"))));
   EXPECT_THAT(listing.observations, IsEmpty());
 }
 
@@ -184,7 +235,9 @@ TEST_F(LocalFsTest, DirectoryObservationsCountResourceForkBlocksAndPreserveSpars
   std::size_t checked = 0;
   for (std::size_t index = 0; index < listing.entries.size(); ++index) {
     if (listing.entries.at(index).type != FileType::kRegular) {
-      EXPECT_THAT(listing.observations.at(index).status, Not(IsOk()));
+      if (listing.entries.at(index).type != FileType::kSymlink) {
+        EXPECT_THAT(listing.observations.at(index).status, Not(IsOk()));
+      }
       continue;
     }
     MBO_ASSERT_OK_AND_ASSIGN(const auto expected, local_fs_.Stat(Path(listing.entries.at(index).name), false));

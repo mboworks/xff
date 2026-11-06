@@ -403,6 +403,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [x] O08: Qualify typed reusable directory-task slots without changing worker/admission policy.
       [Initial and refined evidence](docs/benchmarks/directory-task-slots-20261102.md) selects
       atomic ownership handoff, rejecting global completion locking and retaining small regressions.
+- [ ] O08b: Measure freeing a consumed directory task's owned path after unlocking the queue mutex,
+      matching abandoned-payload cleanup. Move ownership into a local before recycling; retain prompt
+      release, sole-consumer/generation safety and no new capacity retention, wrapper or worker policy.
+      Keep allocation diagnostics separate from clean both-host timing and qualify only measured wins.
 - [x] O09: Qualify packed independent matcher/deferred snapshots, including short-string moves,
       vector relocation, opaque bytes, and archive ownership. Preserve allocation counts, modest
       gains and slower controls in [the two-host report](docs/benchmarks/packed-visit-snapshots-20261102.md).
@@ -571,14 +575,17 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       including symlink-only overhead, virtual controls, serial RSS and the clean Linux protocol repeat.
 - [ ] O20j: Evaluate bulk observation storage that avoids public vector materialization and its wide
       serial RSS cost. Separately assess skipping bulk reads when prepared expression metadata proves
-      no eligible regular files can contribute; preserve directory/link/mount stat semantics and
+      no eligible regular files or non-followed symlinks can contribute; preserve directory/link/mount
+      stat semantics and
       avoid ad hoc flag-name, count or timer gates. Publish only measured improvements.
-- [ ] O20k: Probe complete native bulk observations for non-followed symlinks against every ordinary
-      stat field, including dangling/hardlinked links. Preserve followed-link and mount semantics;
-      select only after native equivalence, malformed-input coverage and both-host measurements.
-      Require every requested native attribute; missing fields, special types and followed-target
-      lookups retain ordinary fallback. This may remove the retained serial all-symlink bulk-read
-      cost without expression heuristics.
+- [x] O20k: Qualify complete native non-followed symlink observations against every ordinary stat
+      field, including dangling, long and hardlinked links. Preserve returned-attribute requirements,
+      other special-type fallback, followed-target behavior and unchanged backend worker preference.
+      [Both-host qualification, default/follow controls, RSS and all costs](docs/benchmarks/native-symlink-observations-20261105.md)
+      retain the Mac gains and byte-identical Linux runtime.
+- [ ] O20l: Measure moving observed-listing serial/small/mounted early exits before the full missing-
+      observation count. Preserve exact existing chunk thresholds, owners and stat/follow fallbacks;
+      do not claim that removing a scan is an end-to-end gain without both-host measurements.
 - [x] O21a: Qualify staged one-word keys, borrowed normalized shingle windows and an isolated byte
       equality shortcut on Linux/macOS. Preserve [rejected width-one paths and all controls](docs/benchmarks/byte-shingle-representations-20261102.md).
 - [x] O21b0: Remove the owning similarity binary-sniff prefix while preserving the exact window,

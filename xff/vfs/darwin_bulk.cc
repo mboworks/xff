@@ -36,7 +36,7 @@ static_assert(kBulkFileAttributes == (ATTR_FILE_LINKCOUNT | ATTR_FILE_ALLOCSIZE 
 static_assert(sizeof(dev_t) == 4 && sizeof(uid_t) == 4 && sizeof(gid_t) == 4 && sizeof(off_t) == 8);
 static_assert(sizeof(timespec) == 16 && sizeof(attribute_set_t) == 20 && sizeof(attrreference_t) == 8);
 static_assert(sizeof(mode_t) == 2 && sizeof(nlink_t) == 2);
-static_assert(VREG == 1 && VDIR == 2 && VLNK == 5 && S_IFREG == 0100000);
+static_assert(VREG == 1 && VDIR == 2 && VLNK == 5 && S_IFREG == 0100000 && S_IFLNK == 0120000);
 #endif
 
 class Cursor final {
@@ -143,15 +143,15 @@ absl::StatusOr<DarwinBulkRecord> DecodeDarwinBulkRecord(std::span<const std::byt
     return InvalidRecord();
   }
   DarwinBulkRecord record{.name = std::move(name), .type = NativeType(type), .bytes = length};
-  if (error == 0 && type == 1 && (common & kBulkCommonAttributes) == kBulkCommonAttributes
+  if (error == 0 && (type == 1 || type == 5) && (common & kBulkCommonAttributes) == kBulkCommonAttributes
       && (file & kBulkFileAttributes) == kBulkFileAttributes && size >= 0 && allocated >= 0 && allocated % 512 == 0
       && links <= std::numeric_limits<std::uint16_t>::max() && birth.Valid() && modified.Valid() && changed.Valid()
       && accessed.Valid()) {
     record.metadata = Metadata{
-        .type = FileType::kRegular,
+        .type = NativeType(type),
         .size = static_cast<std::uint64_t>(size),
         .blocks = static_cast<std::uint64_t>(allocated / 512),
-        .mode = (permissions & 07777U) | 0100000U,
+        .mode = (permissions & 07777U) | (type == 5 ? 0120000U : 0100000U),
         .nlink = static_cast<std::uint64_t>(links),
         .uid = uid,
         .gid = gid,

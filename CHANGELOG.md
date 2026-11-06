@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse complete macOS bulk metadata for non-followed symlinks while preserving target lookup and ordinary fallback.
+
 - Reuse complete indexed archive metadata in eager walks, avoiding repeated per-entry lookup while preserving lazy and followed-link behavior.
 
 - Reduce small archive-directory result reallocations with bounded initial storage while preserving empty listings and exact results.
