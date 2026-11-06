@@ -3489,13 +3489,23 @@ own saturated pool. O08 task storage and O11 warm participation do not establish
 executor is faster. Global sorting/effects/deferred/archive cases need explicit fallback contracts
 until independently qualified.
 
+The first shared-map implementation was measured on equal in-memory broad and deep trees. It was
+functionally correct on the focused comparison tests on macOS and Linux, but its per-entry path
+ownership, shared map coordination and per-directory completion work caused large time regressions.
+One 10k deep macOS case lowered process peak RSS by 37%, but the corresponding Linux case increased
+RSS by 15%; neither result justifies the slowdown. The detailed 7-round measurements and commands
+are retained in [the rejection report](benchmarks/comparison-frontier-rejection-20261106.md). No
+frontier API or consumer from this prototype is retained. A retry needs a new design that avoids
+shared per-entry coordination and is measured before production integration.
+
 #### Frontier ownership and errors still need an explicit contract
 
 Visit metadata/path lifetimes are callback-bounded; a completed-directory event alone does not
-lease them. Start with owned bounded batches. Empty/unmatched/ignored directories need positive
-progress tokens; EOF and early preparation/Walk returns must settle negotiation and wake blocked
-publishers before joining. Reuse the existing left auxiliary invocation and caller-side right walk,
-with leaf workers, byte/token bounds and at most one explicitly oversized wide listing.
+lease them. Any future approach must choose owned bounded batches or another explicit lifetime
+contract. Empty/unmatched/ignored directories need positive progress tokens; EOF and early
+preparation/Walk returns must settle negotiation and wake blocked publishers before joining. Reuse
+the existing left auxiliary invocation and caller-side right walk, with leaf workers, byte/token
+bounds and at most one explicitly oversized wide listing.
 
 Component-ordered frontiers differ from global bytewise path order. Preserve traversal-error
 precedence and suppress summaries/comparison diagnostics until both walks succeed. Keeping the
