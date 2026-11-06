@@ -58,9 +58,11 @@ def sampling_text(report):
     sampling = report.get('sample_shards')
     if not sampling:
         return ''
+    warning = (' OS-version fallback was used; OS releases and bundled tool identities differ across hosts.'
+               if report.get('contract', {}).get('os_version_fallback') else '')
     return (f"Each of {sampling['count']} shards measures the complete matrix with {sampling['repetitions']} measured "
             'round(s) per case and a discarded warm-up. Raw samples are pooled before fastest-run selection; '
-            'sample shard IDs identify their hosts and invocations. Host variation can still affect the result.')
+            'sample shard IDs identify their hosts and invocations. Host variation can still affect the result.' + warning)
 
 
 def task_key(task):
