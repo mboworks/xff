@@ -3,6 +3,9 @@
 
 # 0.11.0
 
+- Append structured `-printf` field values directly to the output buffer while preserving owning
+  renders and content-snapshot lifetimes.
+
 - Reuse owned in-memory archive bytes across streaming detection and legacy fallback, avoiding a
   complete input copy and reducing large OpenBytes lifecycle time and peak memory.
 

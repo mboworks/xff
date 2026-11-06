@@ -4695,3 +4695,19 @@ neutral overall on Linux. Both rejected variants and all raw samples are retaine
 [`the O19f3 qualification`](benchmarks/archive-directory-child-separator-20261106.md). This is a
 targeted archive listing improvement, not a demonstrated full-command speedup. The implementation
 keeps map layout, insertion, successor searches and workers unchanged.
+
+O22c2d independently qualifies direct appending of borrowed structured field values. `-printf`
+consumes each view synchronously while the entry context, fallback snapshot and transformation
+source remain alive, avoiding an intermediate owning string. `Template::Render` retains its direct
+single-field path to move owned scalar values; composite and transformed values use the append
+implementation. The displayed long-path subset improves in 19 of 20 cases on each host. Two
+host-specific cases regress: macOS supplied `{path:stem}` at 100,000 renders (0.9%) and Linux
+fallback `{name}` at 100,000 renders (5.5%). Direct `{path}` improves 46-49% on macOS and 24-26%
+on Linux. These microbenchmarks do not prove an end-to-end command speedup. Keep the full matrix,
+exceptions and provenance in
+[the append report](benchmarks/borrowed-field-appends-20261106.md).
+
+The complete retained O22c2d population contains 60 cases per host: 53 improve on macOS and 54
+on Linux. Short-path controls also retain costs, including macOS fallback directory rendering at
+1,000 entries (+5.4%) and Linux supplied-name rendering at 10 entries (+4.1%). The displayed
+long-path table is a subset, not a claim that only two measured cells are slower.

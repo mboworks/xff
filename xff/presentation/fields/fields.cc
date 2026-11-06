@@ -1365,44 +1365,69 @@ std::size_t Template::ContentFieldCount() const {
 }
 
 std::string Template::Render(const RenderContext& context) const {
-  const auto render = [this](const RenderContext& entry) {
+  if (segments_.size() == 1) {
+    const Segment& segment = segments_.front();
+    if (segment.IsField() && segment.post == Segment::PostProcess::kNone) {
+      if (context.content) {
+        return segment.Value(context).str();
+      }
+      const content::Snapshot content;
+      RenderContext entry = context;
+      entry.content.set_ref(content);
+      return segment.Value(entry).str();
+    }
+  }
+  std::string out;
+  AppendTo(out, context);
+  return out;
+}
+
+void Template::AppendTo(std::string& output, const RenderContext& context) const {
+  const auto append = [&output](StringOrView value) {
+    if (value.owns_string() && output.empty() && output.capacity() < value.size()) {
+      output = std::move(value).str();
+    } else {
+      output.append(value.view());
+    }
+  };
+  const auto render = [this, &output, &append](const RenderContext& entry) {
     if (segments_.size() == 1) {
       const Segment& segment = segments_.front();
       if (segment.IsField() && segment.post == Segment::PostProcess::kNone) {
-        return segment.Value(entry).str();
+        append(segment.Value(entry));
+        return;
       }
     }
-    std::string out;
     for (const Segment& segment : segments_) {
       if (segment.IsField()) {
         // A post-render transform (s/// rewrite or path-component) renders the field
         // with no qualifier, then transforms the value; otherwise the qualifier is the
         // field's own format argument.
-        const StringOrView field_value = segment.Value(entry);
+        StringOrView field_value = segment.Value(entry);
         const std::string_view value = field_value.view();
         switch (segment.post) {
-          case Segment::PostProcess::kComponent: out.append(PathComponent(value, segment.qualifier).view()); break;
-          case Segment::PostProcess::kNone: out.append(value); break;
-          case Segment::PostProcess::kRewrite: out.append(segment.transform->Rewrite(value)); break;
+          case Segment::PostProcess::kComponent: append(PathComponent(value, segment.qualifier)); break;
+          case Segment::PostProcess::kNone: append(std::move(field_value)); break;
+          case Segment::PostProcess::kRewrite: output.append(segment.transform->Rewrite(value)); break;
           // A per-line extraction is a value stream. A terminal reducer (`;join(...)`) collapses it to
           // a scalar (then a post-reducer s/// chain rewrites that scalar); without one it has no single
           // scalar value, so its scalar projection is the matches newline-joined -- but the scalar-
           // context guard (#136) rejects an unreduced extraction up front, so that branch is a fallback.
-          case Segment::PostProcess::kExtract: out.append(segment.transform->ExtractScalar(value)); break;
+          case Segment::PostProcess::kExtract: output.append(segment.transform->ExtractScalar(value)); break;
         }
       } else {
-        out.append(segment.literal);
+        output.append(segment.literal);
       }
     }
-    return out;
   };
   if (context.content) {
-    return render(context);
+    render(context);
+    return;
   }
   const content::Snapshot content;
   RenderContext entry = context;
   entry.content.set_ref(content);
-  return render(entry);
+  render(entry);
 }
 
 std::optional<std::vector<std::string>> Template::AsExtraction(const RenderContext& context) const {
