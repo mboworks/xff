@@ -106,13 +106,13 @@ TEST_F(FieldsTest, AppendToPreservesTextForEmptyPrefilledAndReusableDestinations
   };
 
   static constexpr auto kCases = std::to_array<Case>({
-      {"", ""},
-      {"literal", "literal"},
-      {"{path}", "root/long-directory-component/sub-directory/file.txt"},
-      {"{dir}", "root/long-directory-component/sub-directory"},
-      {"{name:stem}", "file"},
-      {"prefix:{dir}/{name}", "prefix:root/long-directory-component/sub-directory/file.txt"},
-      {"{path:s/file/item/}", "root/long-directory-component/sub-directory/item.txt"},
+      {.source = "", .expected = ""},
+      {.source = "literal", .expected = "literal"},
+      {.source = "{path}", .expected = "root/long-directory-component/sub-directory/file.txt"},
+      {.source = "{dir}", .expected = "root/long-directory-component/sub-directory"},
+      {.source = "{name:stem}", .expected = "file"},
+      {.source = "prefix:{dir}/{name}", .expected = "prefix:root/long-directory-component/sub-directory/file.txt"},
+      {.source = "{path:s/file/item/}", .expected = "root/long-directory-component/sub-directory/item.txt"},
   });
   const vfs::Metadata metadata = Meta(vfs::FileType::kRegular, 17);
   const content::Snapshot snapshot;

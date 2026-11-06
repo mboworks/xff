@@ -123,7 +123,11 @@ TEST_F(HashSnapshotTest, AppendedDigestOwnsTextAfterLocalAndSuppliedSnapshotsExp
     compiled.AppendTo(output, Context(supplied));
     fs.bytes = "replacement";
     snapshot.Invalidate();
-    EXPECT_THAT(output, EqualsText("existing:" + digest + "|" + digest));
+    std::string expected = "existing:";
+    expected += digest;
+    expected += '|';
+    expected += digest;
+    EXPECT_THAT(output, EqualsText(expected));
   }
   EXPECT_THAT(fs.reads, Eq(2));
 }
