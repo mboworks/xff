@@ -132,7 +132,8 @@ class ArchiveFileSystem : public vfs::FileSystem {
 
   // Resolves an incoming path to a member key: empty means the container itself (the archive's
   // root), nullopt means the path does not belong to this filesystem at all.
-  [[nodiscard]] std::optional<std::string> MemberKeyOf(std::string_view path) const;
+  // A returned key borrows path and must be consumed before that input expires.
+  [[nodiscard]] std::optional<std::string_view> MemberKeyOf(std::string_view path) const;
 
   // Listing paths and observations are owned values from the same immutable node range.
   [[nodiscard]] absl::StatusOr<vfs::DirectoryMetadata> ReadDirectory(std::string_view dir, bool observe) const;

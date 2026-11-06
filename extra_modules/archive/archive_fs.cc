@@ -45,15 +45,14 @@ namespace {
 // slash is how tar marks a directory, so it is information - the caller records the type before
 // stripping it, and an ABSOLUTE member keeps its leading slash (see member_path.h: hiding it would
 // hide the Zip-Slip red flag).
-std::string IndexKey(std::string_view stored) {
-  std::string_view key = stored;
+std::string_view IndexKeyView(std::string_view key) {
   while (key.starts_with("./")) {
     key.remove_prefix(2);
   }
   while (key.size() > 1 && key.ends_with('/')) {
     key.remove_suffix(1);
   }
-  return std::string(key);
+  return key;
 }
 
 std::string_view ParentOf(std::string_view key) {
@@ -131,7 +130,7 @@ absl::StatusOr<vfs::SharedReadSource> ArchiveFileSystem::ContentSource(std::stri
   if (!key) {
     return absl::NotFoundError("not an archive member");
   }
-  return MemberReadSource(source_, *key);
+  return MemberReadSource(source_, std::string(*key));
 }
 
 bool ArchiveFileSystem::ContainerCandidate(std::string_view path) const {
@@ -285,7 +284,7 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::Index(
   std::uint64_t next_ino = 1;
   for (const Member& member : members) {
     const bool is_dir = member.path.ends_with('/') || member.is_directory;
-    const std::string key = IndexKey(member.path);
+    const std::string key{IndexKeyView(member.path)};
     if (key.empty()) {
       continue;  // the archive's own root, which the container path already names
     }
@@ -324,9 +323,9 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::Index(
   return fs;
 }
 
-std::optional<std::string> ArchiveFileSystem::MemberKeyOf(std::string_view path) const {
+std::optional<std::string_view> ArchiveFileSystem::MemberKeyOf(std::string_view path) const {
   if (path == container_) {
-    return std::string{};  // the container itself: the archive's root directory
+    return std::string_view{};  // the container itself: the archive's root directory
   }
   // The probing split, with the answer already known: this filesystem's container is the only one it
   // can be. A plain first-separator split would be wrong for a NESTED container, whose own path
@@ -336,7 +335,7 @@ std::optional<std::string> ArchiveFileSystem::MemberKeyOf(std::string_view path)
   if (!parts.has_value()) {
     return std::nullopt;
   }
-  return IndexKey(parts->member);
+  return IndexKeyView(parts->member);
 }
 
 absl::StatusOr<std::vector<vfs::Entry>> ArchiveFileSystem::ReadDir(std::string_view dir) const {
@@ -351,7 +350,7 @@ absl::StatusOr<vfs::DirectoryMetadata> ArchiveFileSystem::ReadDirMetadata(
 }
 
 absl::StatusOr<vfs::DirectoryMetadata> ArchiveFileSystem::ReadDirectory(std::string_view dir, bool observe) const {
-  const std::optional<std::string> key = MemberKeyOf(dir);
+  const std::optional<std::string_view> key = MemberKeyOf(dir);
   if (!key.has_value()) {
     return absl::InvalidArgumentError(absl::StrCat("not a path in ", container_, ": ", dir));
   }
@@ -382,7 +381,8 @@ absl::StatusOr<vfs::DirectoryMetadata> ArchiveFileSystem::ReadDirectory(std::str
     }
   }
   for (const auto& [member_key, node] : std::ranges::subrange(first, last)) {
-    if (ParentOf(member_key) != *key) {
+    // The bounded subtree range already guarantees the parent prefix matches.
+    if (ParentOf(member_key).size() != key->size()) {
       continue;  // only direct children; the walk recurses for the rest
     }
     entries.push_back(
@@ -407,7 +407,7 @@ absl::StatusOr<vfs::DirectoryMetadata> ArchiveFileSystem::ReadDirectory(std::str
 }
 
 absl::StatusOr<vfs::Metadata> ArchiveFileSystem::Stat(std::string_view path, bool /*follow_symlinks*/) const {
-  const std::optional<std::string> key = MemberKeyOf(path);
+  const std::optional<std::string_view> key = MemberKeyOf(path);
   if (!key.has_value()) {
     return absl::InvalidArgumentError(absl::StrCat("not a path in ", container_, ": ", path));
   }
@@ -433,7 +433,7 @@ bool ArchiveFileSystem::Access(std::string_view path, vfs::AccessMode mode) cons
   if (mode == vfs::AccessMode::kWrite) {
     return false;  // read-only, unconditionally
   }
-  const std::optional<std::string> key = MemberKeyOf(path);
+  const std::optional<std::string_view> key = MemberKeyOf(path);
   if (!key.has_value()) {
     return false;
   }
@@ -451,7 +451,7 @@ bool ArchiveFileSystem::Access(std::string_view path, vfs::AccessMode mode) cons
 }
 
 absl::StatusOr<std::string> ArchiveFileSystem::ReadLink(std::string_view path) const {
-  const std::optional<std::string> key = MemberKeyOf(path);
+  const std::optional<std::string_view> key = MemberKeyOf(path);
   if (!key.has_value() || key->empty()) {
     return absl::InvalidArgumentError(absl::StrCat("not a member path: ", path));
   }
@@ -479,7 +479,7 @@ absl::StatusOr<std::string> ArchiveFileSystem::ReadContent(std::string_view path
   // streamed pass per read. The index is consulted FIRST so this filesystem's own errors (not mine,
   // no such member, has no content) are answered from what it already knows, and libarchive is only
   // asked to extract something that is really there.
-  const std::optional<std::string> key = MemberKeyOf(path);
+  const std::optional<std::string_view> key = MemberKeyOf(path);
   if (!key.has_value()) {
     return absl::InvalidArgumentError(absl::StrCat("not a path in ", container_, ": ", path));
   }
@@ -505,7 +505,8 @@ absl::StatusOr<std::string> ArchiveFileSystem::ReadContent(std::string_view path
   }
   absl::StatusOr<std::string> content;
   if (source_) {
-    content = vfs::ReadSourceBytes(*MemberReadSource(source_, *key), std::numeric_limits<std::size_t>::max());
+    content =
+        vfs::ReadSourceBytes(*MemberReadSource(source_, std::string(*key)), std::numeric_limits<std::size_t>::max());
   } else if (phar_) {
     content = bytes_.empty() ? ReadPharMemberOfFile(container_, *key) : ReadPharMember(bytes_, *key);
   } else {

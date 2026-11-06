@@ -1396,21 +1396,45 @@ this as intentional accounting.
       51-case native and eight-format three-session trials retain all complete output checks,
       slower controls, actual release flags, 332 release targets, affected sanitizers and lint.
       Preserve nonempty locale fallback and timezone behavior without environment mutation.
-- [ ] O19f2: Qualify indexed archive descendant skipping on the O26 formatter parent. The
-      previous Linux full 82-command/88-listing trial is retained; Mac stopped intentionally
-      after 11 of 82 screen cases to resolve the formatter bottleneck. Preserve that partial
-      population separately. Recheck root/flat/chain costs and the slower isolated wide case;
-      no new child index, lock, count, worker policy or metadata fetch is needed.
+- [x] O19f2: [Evaluate indexed archive descendant skipping](docs/benchmarks/archive-descendant-skipping-20261105.md).
+      Retain the old Linux full trial and deliberately partial Mac screen separately from both
+      new formatter-parent screens. Do not adopt the current loop: isolated wide/root listings
+      repeatedly regress around 30-44%, despite major deep-root gains. Any future combined
+      layout/loop revision needs a new hypothesis and independent qualification.
 - [ ] O19k: Independently measure an Abseil B-tree for the private immutable archive node map.
       Audit mutation-only indexing, owned returned sources/metadata and nonescaping iterators.
       Keep the pinned default transparent three-way string comparator; include large Node
       insertion/relocation, root/flat/chain and RSS costs before testing integration.
 - [ ] O19i2: Establish actual archive Node padding before considering a bounded direct-child
       capacity hint. Measure insertion bookkeeping and root/chain controls; a persistent
-      full-width count per node is not free. Prefer simpler descendant skipping first.
-- [ ] O24: Evaluate CLI stream synchronization only at the real process entry, preserving
-      terminal latency, confirmation ties, pager/child order and the final flush. Existing
-      listing already writes complete records; reusable cli::Run is the wrong global boundary.
+      full-width count per node is not free. Compare simpler key/insertion changes first.
+- [ ] O19f3: Independently compare forward direct-child separator detection with reverse parent
+      scanning inside the existing bounded archive range. Preserve a leading absolute slash
+      at the archive root. The ordered-index model passes; runtime code and measurements are
+      pending. Keep long initial components and large deep-root regressions as controls.
+- [x] O24: [Audit the actual CLI stream synchronization implementation](docs/benchmarks/cli-stream-sync-audit-20261105.md).
+      Both hermetic Clang 23.1.4 libc++ implementations only read/write the prior-state byte.
+      Keep the current runtime; no buffering change or measured gain follows from adding the
+      call. Revisit for a different standard-library implementation or output architecture.
 - [ ] O25: Independently measure direct final-string decoding and owned-result transfer for
       the lazy embedded language JSON. The current payload is 109,261 bytes, not an ordinary
       startup megabyte cost. Preserve corruption/length errors and narrow ABI adapters.
+- [x] O28: [Evaluate compile-time archive observation mode](docs/benchmarks/archive-observation-mode-20261105.md).
+      Actual release assembly retains the dynamic mode branch, but its removal fails to
+      establish a consistent cross-platform standalone benefit. Preserve both complete screens,
+      copied-parent drift and exact source/image identities; do not adopt the private template.
+- [ ] O27: Independently measure archive-index insertion changes: defer an owned ancestor key
+      until transparent lookup proves absence; compare lower_bound plus emplace_hint to the
+      repeated search, and compare direct mapped-value construction separately. Preserve
+      duplicate overwrite, synthesis flags and inode order. Construction/destruction benchmarks
+      must include and name actual public archive parsing/source costs, not hot-listing setup.
+- [x] O29: [Qualify borrowed archive member keys and bounded parent-length checks](docs/benchmarks/archive-member-keys-20261105.md).
+      Both full 333-target release suites, relevant sanitizers, actual changed-TU lint, exact
+      ordinary release images and 15/15 lines plus 2/2 branches pass. All 14 targeted operations
+      improve in each of three sessions on both hosts; whole commands remain mostly modest.
+      Retain the Linux large-deep-root listing cost around 5%, the conflicting Mac full/subset
+      populations, and every earlier rejected variant. PR/current-base CI remains separate.
+- [ ] O30: Independently measure moving the owned OpenBytes input into its memory source instead
+      of copying the complete buffer before streaming. Preserve legacy InvalidArgument fallback
+      ownership/statuses, measure ordinary and legacy lifecycle/RSS, and keep host Open/OpenSource
+      controls. A narrow outside-worktree prototype exists; it is not compiled or measured.
