@@ -46,7 +46,56 @@ checkout before regenerating views. CI baseline selection and backfill revision 
 both expanded and compressed observations. This keeps storage changes independent of coverage
 policy and benchmark compatibility decisions.
 
-## Next review at 200 MB
+## 2026-11-05 review
+
+The 200 MB warning fired in the successful publication of PR #1102's exact post-merge coverage.
+The publisher reported **669,113,099 bytes**, about 669 MB. This is a review point, not a failed
+publication or permission to delete retained observations. The 9 GB packaging guard is unchanged.
+
+The retained snapshot is coverage-pages commit
+[`5df110799d3a50df1194e515dece5711eed93d8b`](https://github.com/mboworks/xff/commit/5df110799d3a50df1194e515dece5711eed93d8b),
+with its original [storage report](https://github.com/mboworks/xff/blob/5df110799d3a50df1194e515dece5711eed93d8b/storage-report.json).
+The recursive GitHub tree response was not truncated. Its blob sizes reproduce the reported total
+plus the 978-byte storage report itself; Git history and Actions caches/artifacts are excluded.
+
+| Section                              |  Files |       Bytes |
+| :----------------------------------- | -----: | ----------: |
+| Benchmarks                           |  4,466 | 479,375,677 |
+| Coverage                             |  9,658 | 162,259,518 |
+| Release sites                        |    442 |  16,899,029 |
+| Legacy release reference pages       |     29 |   6,916,561 |
+| Other site files                     |    444 |   3,662,314 |
+| Total before the accounting document | 15,039 | 669,113,099 |
+
+Benchmark storage is primarily distinct compressed report data and generated presentation, rather
+than repeated JavaScript assets:
+
+| Benchmark representation              | Files |       Bytes |
+| :------------------------------------ | ----: | ----------: |
+| Raw `report.json.gz`                  |   633 | 288,380,459 |
+| Packed `page.html.gz`                 |   633 |  94,611,160 |
+| Preview `artifact.json.gz`            |   114 |  39,213,605 |
+| Interned `landscape.json.gz`          |   614 |  34,950,127 |
+| `normalization.json.gz`               |   614 |  12,367,197 |
+| Other metadata, navigation and assets | 1,858 |   9,853,129 |
+| All benchmarks                        | 4,466 | 479,375,677 |
+
+Grouped by provenance, local measurements use 182,764,050 bytes, main/run reports 168,455,434,
+previews 97,005,338 and backfills 21,780,648. These groups overlap the representation table;
+they are a different view of the same files and must not be added to it.
+
+Exact Git blob identity found only **2,250,560 redundant benchmark bytes** across identical files.
+The two shared renderer scripts together use 5,403,829 bytes. Asset deduplication alone therefore
+cannot return this site to 200 MB. Nor does the 97 MB preview total establish that those reports
+can be deleted: the existing retention policy and provenance still apply.
+
+A representative current Linux report is 493,485 compressed bytes and 8,628,704 expanded bytes.
+It retains raw samples, tool comparisons, measurement-shard provenance and derived summaries.
+Dropping that report or rounding its numeric observations would change the historical record.
+The next reduction should target redundant _representation_ while preserving lossless recovery.
+No report, measurement, coverage aggregate or retained source detail was deleted by this review.
+
+## Priorities after the 200 MB review
 
 - Replace packed generated summary/table HTML with one shared renderer driven by compact records.
 - Generate chart order, scale, and CPU-pair views from one numeric matrix in the browser instead

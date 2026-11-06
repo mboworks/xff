@@ -1312,10 +1312,17 @@ this as intentional accounting.
 
 ## Published site storage review
 
-- [ ] Revisit total Pages size when `storage-report.json` reaches 200 MB. Follow the options in
-      [docs/site-storage.md](docs/site-storage.md): data-driven shared table rendering, numeric chart
-      matrices, column-oriented benchmark observations, and additional coverage/source deduplication.
-      Preserve coverage aggregate history and all release/merged-PR performance measurements.
+- [x] Review total Pages size at the 200 MB warning: the 2026-11-05 publication reports 669,113,099
+      bytes. [The immutable snapshot and breakdown](docs/site-storage.md#2026-11-05-review) show
+      479 MB of benchmarks and 162 MB of coverage; exact benchmark duplicates save only 2.25 MB.
+      No historical observations or coverage aggregates were deleted.
+- [ ] Prototype a shared generated-table renderer against the 94.61 MB packed benchmark HTML;
+      preserve historical navigation, exact table values, relative assets and downloadable reports.
+- [ ] Measure lossless column-oriented benchmark observations/shared invocation dictionaries against
+      the 288.38 MB raw reports. Preserve every sample, original provenance, local/backfill contracts
+      and exact recoverability; do not round data or evict release/merged-PR observations.
+- [ ] Recheck coverage representation savings separately from benchmark storage. Keep aggregate
+      history and the original seven-day detail clock; do not use the review point as a new expiry.
 
 ## Benchmark baseline and progress repairs
 
