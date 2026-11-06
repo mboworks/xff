@@ -78,7 +78,7 @@ TEST_F(ReadSourceTest, OwnedMemoryBytesOutliveSourceAndCursor) {
   const std::string bytes("a\0b\xff", 4);
   auto input = MakeMemoryReadSource(bytes);
   MBO_ASSERT_OK_AND_ASSIGN(auto cursor, input.source->Open());
-  auto retained_bytes = std::move(input.bytes);
+  const auto retained_bytes = std::move(input.bytes);
   input.source.reset();
   cursor.reset();
   EXPECT_THAT(*retained_bytes, EqualsText(bytes));
