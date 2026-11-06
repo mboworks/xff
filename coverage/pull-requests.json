@@ -1,9 +1,9 @@
 [
   {
     "number": 1124,
-    "state": "open",
-    "merged_at": null,
-    "merge_commit_sha": "ed31c3199cecba0c0c7c1f9d8199af66b51f56c4"
+    "state": "closed",
+    "merged_at": "2026-11-06T22:11:55Z",
+    "merge_commit_sha": "de2fa3557d69e9c3eb1c52bb2b0300566f960fea"
   },
   {
     "number": 1123,
@@ -33,7 +33,7 @@
     "number": 1119,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": "d2b347b469434349f7b5168bd38499453ed353cc"
+    "merge_commit_sha": "baf15f5296fbe15baa53b6d556fadcbbdeb670e1"
   },
   {
     "number": 1118,
