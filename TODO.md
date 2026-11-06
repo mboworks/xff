@@ -466,9 +466,12 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       private: mixed small-case costs and unresolved summary regressions outweigh mechanism/storage
       gains. Preserve full key-set correctness qualification and all original/confirmation results
       in [the storage decision report](docs/benchmarks/comparison-storage-followups-20261105.md).
-- [ ] O16b: Add and qualify completed-directory/frontier traversal before enabling bounded paired
-      comparison. Preserve empty/ignored completion, ordering, ignore inheritance, errors, effects,
-      archives and deferred selections; retain explicit fallbacks and avoid repeated shallow scans.
+- [x] O16b: Prototype bounded paired comparison using completed-directory frontiers. Reject the
+      per-entry shared directory-map design: it reduced macOS peak RSS on one 10k deep case but was
+      14-200% slower across the 10k cases; Linux was 19-445% slower and used more peak RSS. Keep the
+      generic nested-tree benchmark fixture and [the cross-platform rejection report](docs/benchmarks/comparison-frontier-rejection-20261106.md).
+      Any retry needs a different ownership/coordination design and must preserve ordered output,
+      error/effect semantics, archives and deferred selections.
 - [x] Benchmark history: precompute a shared task order from compatible merged revisions for the
       whole series. Current per-revision/per-CPU similarity ordering can visually exaggerate or
       hide changes. Compare robust median adjacency distances across revisions, orient once from
