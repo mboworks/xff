@@ -53,36 +53,43 @@ jobs:
           namespace: default
       - name: Identify measurement platform
         run: echo "BENCHMARK_PLATFORM=${{ matrix.platform }}-$(uname -m)" >>"${GITHUB_ENV}"
-      - name: Build paired optimized revisions
+      - name: Prepare paired revisions
         run: |
           set -euo pipefail
           head_sha="$(git rev-parse HEAD)"
           base_sha="$(git rev-parse HEAD^1)"
           git worktree add --detach "${RUNNER_TEMP}/benchmark-base" "${base_sha}"
+          {
+            echo "BENCHMARK_HEAD=${head_sha}"
+            echo "BENCHMARK_BASE=${base_sha}"
+          } >>"${GITHUB_ENV}"
+      - name: Build benchmark helpers (optimized, no LTO)
+        run: |
           # Python runfiles may build a transitioned helper, not the target copied below.
           bazel build //xff/engine:read_benchmark //tools:benchmark_resources //tools:process_resources_native //xff/engine:expression_benchmark //xff/engine:expression_run_benchmark --config=clang_opt \
             --disk_cache="${HOME}/.cache/bazel-disk"
-          bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
-          cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-head"
           cp bazel-bin/xff/engine/read_benchmark "${RUNNER_TEMP}/benchmark-head-reads"
           launcher="$(bazel cquery 'config(//tools:process_resources_native, target)' --config=clang_opt \
             --output=starlark --starlark:expr='target.files_to_run.executable.path')"
           cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"
           driver="$(pwd)/$(bazel cquery //tools:benchmark_resources --config=clang_opt \
             --output=starlark --starlark:expr='target.files_to_run.executable.path')"
-          (
-            cd "${RUNNER_TEMP}/benchmark-base"
-            # Parent revisions may predate clang_opt; disable their global ThinLTO feature explicitly.
-            bazel build //xff/engine:read_benchmark --config=clang --config=release --features=-thin_lto --disk_cache="${HOME}/.cache/bazel-disk"
-            bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
-            cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-base-bin"
-            cp bazel-bin/xff/engine/read_benchmark "${RUNNER_TEMP}/benchmark-base-reads"
-          )
-          {
-            echo "BENCHMARK_HEAD=${head_sha}"
-            echo "BENCHMARK_BASE=${base_sha}"
-            echo "BENCHMARK_DRIVER=${driver}"
-          } >>"${GITHUB_ENV}"
+          echo "BENCHMARK_DRIVER=${driver}" >>"${GITHUB_ENV}"
+      - name: Build production benchmark CLI (ThinLTO)
+        run: |
+          bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
+          cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-head"
+      - name: Build baseline read helper (optimized, no LTO)
+        working-directory: ${{ runner.temp }}/benchmark-base
+        run: |
+          # Parent revisions may predate clang_opt; disable their global ThinLTO feature explicitly.
+          bazel build //xff/engine:read_benchmark --config=clang --config=release --features=-thin_lto --disk_cache="${HOME}/.cache/bazel-disk"
+          cp bazel-bin/xff/engine/read_benchmark "${RUNNER_TEMP}/benchmark-base-reads"
+      - name: Build production baseline CLI (ThinLTO)
+        working-directory: ${{ runner.temp }}/benchmark-base
+        run: |
+          bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
+          cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-base-bin"
       - name: Measure expression preparation and execution baseline
         run: |
           bazel run //xff/engine:expression_benchmark --config=clang_opt --disk_cache="${HOME}/.cache/bazel-disk" -- \

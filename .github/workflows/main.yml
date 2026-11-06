@@ -761,15 +761,18 @@ jobs:
       - uses: ./.github/actions/bazel-cache-restore
         with:
           namespace: default
-      - name: Build one optimized binary for all three measurement shards
+      - name: Build benchmark helpers (optimized, no LTO)
         run: |
           bazel build //tools:process_resources_native //xff/engine:expression_benchmark //xff/engine:expression_run_benchmark --config=clang_opt --disk_cache="${HOME}/.cache/bazel-disk"
-          bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
-          cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-head"
           launcher="$(bazel cquery 'config(//tools:process_resources_native, target)' --config=clang_opt \
             --output=starlark --starlark:expr='target.files_to_run.executable.path')"
           cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"
-          tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" benchmark-head benchmark-resource-launcher
+      - name: Build production benchmark CLI (ThinLTO)
+        run: |
+          bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
+          cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-head"
+      - name: Package frozen binaries for all measurement candidates
+        run: tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" benchmark-head benchmark-resource-launcher
       - name: Measure expression preparation and execution baseline
         run: |
           bazel run //xff/engine:expression_benchmark --config=clang_opt --disk_cache="${HOME}/.cache/bazel-disk" -- \
