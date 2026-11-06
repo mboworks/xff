@@ -3,6 +3,9 @@
 
 # 0.11.0
 
+- Reduce archive directory name scans and skip them when all indexed members are direct children
+  of the root.
+
 - Reserve archive directory listing storage from indexed direct-child counts, reducing reallocations
   in wide directories while preserving synthesized-parent and duplicate-member behavior.
 

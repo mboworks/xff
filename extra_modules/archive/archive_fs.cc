@@ -405,9 +405,14 @@ absl::StatusOr<vfs::DirectoryMetadata> ArchiveFileSystem::ReadDirectory(std::str
       listing.observations.reserve(entries.capacity());
     }
   }
+  // A flat root has one indexed node per direct child; avoid scanning every name for `/` in this
+  // common case. Synthesized ancestors make the counts differ whenever a member is nested.
+  const bool root_contains_only_direct_children = key->empty() && direct_child_count == nodes_.size();
+  const std::string_view::size_type separator_start = key->empty() ? 1 : key->size() + 1;
   for (const auto& [member_key, node] : std::ranges::subrange(first, last)) {
-    // The bounded subtree range already guarantees the parent prefix matches.
-    if (ParentOf(member_key).size() != key->size()) {
+    // The bounded subtree range already guarantees the parent prefix matches. Scan forward from
+    // that boundary for another separator; root members may start with one absolute slash.
+    if (!root_contains_only_direct_children && member_key.find('/', separator_start) != std::string_view::npos) {
       continue;  // only direct children; the walk recurses for the rest
     }
     entries.push_back(
