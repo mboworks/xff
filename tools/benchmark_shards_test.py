@@ -74,6 +74,75 @@ class BenchmarkShardsTest(unittest.TestCase):
                 self.assertEqual([r['tool_comparisons']['contract']['shard']['index'] for r in selected],
                                  [0, 2, 4])
 
+    def os_candidates(self):
+        values = records(count=5, partition='samples', repetitions=15, keep=15, adaptive=True)
+        for index, record in enumerate(values):
+            report = record['tool_comparisons']
+            release = 'macOS-26.6.2-arm64-Mach-O' if index in (0, 3) else 'macOS-26.7.2-arm64-Mach-O'
+            report['contract']['platform'] = release
+            report['tools']['find'] = dict(status='available', path='/usr/bin/find',
+                                           version='BSD find; ' + release, sha256=release)
+        values[4]['tool_comparisons']['contract']['cpu_count'] = 5
+        return values
+
+    def test_os_fallback_waits_for_five_and_preserves_provenance(self):
+        values = self.os_candidates()
+        candidates = {'macos': dict(enumerate(values[:4]))}
+        self.assertTrue(shards.adaptive_decisions(candidates, 'fourth')['macos'])
+        with self.assertRaisesRegex(ValueError, 'no three-shard compatible'):
+            shards.select_adaptive_reports(candidates, 'macos')
+        candidates['macos'][4] = values[4]
+        selected = shards.select_adaptive_reports(candidates, 'macos')
+        self.assertEqual(len(selected), 3)
+        original = copy.deepcopy(values)
+        merged = shards.merge_reports(selected, allow_sample_subset=True)
+        report = merged['tool_comparisons']
+        self.assertEqual(len(report['contract']['os_version_fallback']), 2)
+        self.assertEqual(len(report['tools']['find']['variants']), 2)
+        self.assertNotIn('sha256', report['tools']['find'])
+        self.assertEqual(len(merged['measurement_shards']), 3)
+        self.assertEqual(report['contract']['repetitions'], 9)
+        self.assertEqual(values, original)
+        with self.assertRaisesRegex(ValueError, 'missing shard reports'):
+            shards.merge_reports(selected)
+
+    def test_linux_os_fallback_preserves_reference_tool_identity(self):
+        values = self.os_candidates()
+        for index, value in enumerate(values):
+            report = value['tool_comparisons']
+            report['contract']['platform'] = (
+                'Linux-6.11.0-x86_64-with-glibc2.39' if index in (0, 3)
+                else 'Linux-6.14.0-x86_64-with-glibc2.39')
+            report['tools']['find'] = dict(status='available', sha256='same-gnu-find', version='GNU find 4.10')
+        selected = shards.select_adaptive_reports({'linux': dict(enumerate(values))}, 'linux')
+        merged = shards.merge_reports(selected, allow_sample_subset=True)
+        self.assertEqual(merged['tool_comparisons']['tools']['find']['sha256'], 'same-gnu-find')
+        self.assertIn('OS-version fallback', shards.benchmark_matrix.sampling_text(merged['tool_comparisons']))
+
+    def test_exact_os_quorum_wins_over_larger_fallback_group(self):
+        values = self.os_candidates()
+        values[4]['tool_comparisons']['contract']['cpu_count'] = 3
+        selected = shards.select_adaptive_reports({'macos': dict(enumerate(values))}, 'macos')
+        self.assertEqual([value['tool_comparisons']['contract']['shard']['index'] for value in selected],
+                         [1, 2, 4])
+        self.assertNotIn('os_version_fallback', shards.merge_reports(
+            selected, allow_sample_subset=True)['tool_comparisons']['contract'])
+
+    def test_os_fallback_keeps_binary_architecture_and_tool_checks(self):
+        for change in ('xff', 'rg', 'architecture', 'same-os-find'):
+            with self.subTest(change=change):
+                values = self.os_candidates()
+                for index in (1, 2):
+                    report = values[index]['tool_comparisons']
+                    if change in ('xff', 'rg'):
+                        report['tools'][change] = dict(sha256='different')
+                    elif change == 'architecture':
+                        report['contract']['platform'] = report['contract']['platform'].replace('arm64', 'x86_64')
+                    else:
+                        values[0]['tool_comparisons']['tools']['find']['sha256'] = 'unexpected'
+                with self.assertRaisesRegex(ValueError, 'no three-shard compatible'):
+                    shards.select_adaptive_reports({'macos': dict(enumerate(values))}, 'macos')
+
     def native_records(self):
         inputs = records(partition='samples')
         for index, record in enumerate(inputs):

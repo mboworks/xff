@@ -148,6 +148,14 @@ def merge_reports(records, baseline_root=None, baseline_revisions=None, *, allow
     elif len(records) != len(plan['shards']):
         raise ValueError('missing shard reports')
     sampling = sample_policy(plan)
+    mixed_os = len({report['contract'].get('platform') for report in reports}) > 1
+    os_fallback = allow_sample_subset and mixed_os
+    if os_fallback:
+        relaxed = _adaptive_candidate_groups(
+            {report['contract']['shard']['index']: record for record, report in zip(records, reports, strict=True)},
+            'selected', ignore_os_version=True)
+        if not any(len(values) == len(records) for values in relaxed.values()):
+            raise ValueError('incompatible OS-version fallback candidates')
     result = copy.deepcopy(next((record for record in records if 'base' in record), records[0]))
     combined = result['tool_comparisons']
     combined['tasks'] = []
@@ -172,6 +180,16 @@ def merge_reports(records, baseline_root=None, baseline_revisions=None, *, allow
         difference = identity_difference(
             {'head': result['head'], 'contract': contract, 'tools': combined['tools']},
             {'head': record['head'], 'contract': current, 'tools': report['tools']})
+        if difference and os_fallback:
+            expected = _version_independent_identity(result)['tool_comparisons']
+            incoming = _version_independent_identity(record)['tool_comparisons']
+            expected_contract = {key: value for key, value in expected['contract'].items()
+                                 if key not in ('shard', 'affinity_by_cpu_count')}
+            incoming_contract = {key: value for key, value in incoming['contract'].items()
+                                 if key not in ('shard', 'affinity_by_cpu_count')}
+            difference = identity_difference(
+                {'head': result['head'], 'contract': expected_contract, 'tools': expected['tools']},
+                {'head': record['head'], 'contract': incoming_contract, 'tools': incoming['tools']})
         if difference:
             raise ValueError(f'incompatible shard {index}: {difference}')
         if sampling and (current.get('repetitions'), current.get('retained')) != (sampling[0], sampling[0]):
@@ -217,6 +235,17 @@ def merge_reports(records, baseline_root=None, baseline_revisions=None, *, allow
         raise ValueError('missing shard index')
     combined['contract'] = dict(contract, affinity_by_cpu_count=affinity)
     combined.pop('host_id', None)
+    if os_fallback:
+        releases = sorted({report['contract']['platform'] for report in reports})
+        combined['contract']['platform'] = 'Mixed OS releases: ' + ', '.join(releases)
+        combined['contract']['os_version_fallback'] = releases
+        for name in combined['tools']:
+            variants = {json.dumps(report['tools'][name], sort_keys=True) for report in reports}
+            if len(variants) > 1:
+                combined['tools'][name] = {
+                    'status': 'available', 'version': 'Mixed OS-bundled tool identities: ' +
+                    json.dumps([json.loads(value) for value in sorted(variants)], sort_keys=True),
+                    'variants': [json.loads(value) for value in sorted(variants)]}
     if sampling:
         combined['tasks'] = list(pooled.values())
         pooled_rounds = sampling[0] * len(records)
@@ -254,7 +283,26 @@ def adaptive_candidate_records(directory):
     return result
 
 
-def _adaptive_identity(record):
+def _version_independent_identity(record):
+    """Relax only the OS release and OS-bundled BSD find identity."""
+    original = record['tool_comparisons']
+    report = dict(original, contract=copy.deepcopy(original['contract']), tools=copy.deepcopy(original['tools']))
+    contract = report['contract']
+    platform_name = contract.get('platform', '')
+    # Keep the OS family, architecture and remaining platform qualifiers intact.
+    contract['platform'] = re.sub(r'^(macOS|Linux|Windows)-[0-9][^-]*-', r'\1-OSVERSION-', platform_name)
+    find = report['tools'].get('find', {})
+    if (platform_name.startswith('macOS-') and find.get('status') == 'available'
+            and find.get('path') == '/usr/bin/find'
+            and find.get('version') == 'BSD find; ' + platform_name):
+        find['version'] = 'BSD find; ' + contract['platform']
+        find.pop('sha256', None)
+    return dict(record, tool_comparisons=report)
+
+
+def _adaptive_identity(record, *, ignore_os_version=False):
+    if ignore_os_version:
+        record = _version_independent_identity(record)
     report = record['tool_comparisons']
     contract = copy.deepcopy(report['contract'])
     contract.pop('shard', None)
@@ -299,7 +347,7 @@ def validate_adaptive_candidate(record, index):
     return cpu_count
 
 
-def _adaptive_candidate_groups(reports, platform_name):
+def _adaptive_candidate_groups(reports, platform_name, *, ignore_os_version=False):
     """Group validated candidates by their compatible contract and observed CPU count."""
     groups = {}
     plan = None
@@ -309,7 +357,14 @@ def _adaptive_candidate_groups(reports, platform_name):
         if plan is not None and current_plan != plan:
             raise ValueError(f'incompatible adaptive plans for {platform_name}')
         plan = current_plan
-        groups.setdefault((_adaptive_identity(record), cpu_count), []).append((index, record))
+        identity = _adaptive_identity(record, ignore_os_version=ignore_os_version)
+        groups.setdefault((identity, cpu_count), []).append((index, record))
+    if ignore_os_version:
+        groups = {key: values for key, values in groups.items()
+                  if all(len({_adaptive_identity(record) for _, record in values
+                              if record['tool_comparisons']['contract'].get('platform') == release}) == 1
+                         for release in {record['tool_comparisons']['contract'].get('platform')
+                                         for _, record in values})}
     return groups
 
 
@@ -331,13 +386,26 @@ def select_adaptive_reports(candidates, platform_name):
     reports = candidates.get(platform_name, {})
     groups = _adaptive_candidate_groups(reports, platform_name)
     eligible = [values for values in groups.values() if len(values) >= 3]
+    if not eligible and len(reports) == 5:
+        relaxed = _adaptive_candidate_groups(reports, platform_name, ignore_os_version=True)
+        eligible = [values for values in relaxed.values() if len(values) >= 3]
     if not eligible:
         counts = {}
         for (_, cpu_count), values in groups.items():
             counts.setdefault(cpu_count, []).append(len(values))
         counts = {cpu_count: sorted(sizes, reverse=True) for cpu_count, sizes in counts.items()}
-        raise ValueError(f'{platform_name} has no three-shard compatible CPU-count agreement: {counts}')
+        environments = {index: {'cpu_count': record['tool_comparisons']['contract'].get('cpu_count'),
+                                'platform': record['tool_comparisons']['contract'].get('platform')}
+                        for index, record in sorted(reports.items())}
+        raise ValueError(f'{platform_name} has no three-shard compatible CPU-count agreement: {counts}; '
+                         f'candidate environments: {environments}')
     winner = max(eligible, key=lambda values: (len(values), -values[0][0]))
+    release_counts = {}
+    for _, record in winner:
+        release = record['tool_comparisons']['contract'].get('platform', '')
+        release_counts[release] = release_counts.get(release, 0) + 1
+    winner = sorted(winner, key=lambda value: (
+        -release_counts[value[1]['tool_comparisons']['contract'].get('platform', '')], value[0]))
     return [record for _, record in winner[:3]]
 
 
@@ -422,6 +490,10 @@ def main():
         for platform_name in ('linux', 'macos'):
             selected = select_adaptive_reports(candidates, platform_name)
             result = merge_reports(selected, args.baseline_root, revisions, allow_sample_subset=True)
+            releases = result['tool_comparisons']['contract'].get('os_version_fallback')
+            if releases:
+                print(f'{platform_name}: no exact OS quorum after five candidates; '
+                      f'using OS-version fallback across {releases}')
             if args.seed_directory:
                 seeds = sorted(args.seed_directory.rglob(f'benchmark-report-{platform_name}-*.json'))
                 if len(seeds) != 1:
