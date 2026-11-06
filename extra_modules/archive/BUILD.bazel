@@ -466,6 +466,7 @@ cc_test(
     size = "small",
     srcs = ["archive_openbytes_ownership_test.cc"],
     deps = [
+        ":archive_extension_cc",
         ":archive_fs_cc",
         ":memory_archive_test_cc",
         "@abseil-cpp//absl/status",

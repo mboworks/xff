@@ -125,7 +125,7 @@ class ArchiveFileSystem : public vfs::FileSystem {
 
   // Builds the node index from a member list, whatever the source. `bytes` is empty for a
   // path-backed container.
-  static absl::StatusOr<ArchiveFileSystem> Index(
+  static ArchiveFileSystem Index(
       std::string container,
       std::shared_ptr<const std::string> bytes,
       const std::vector<Member>& members,

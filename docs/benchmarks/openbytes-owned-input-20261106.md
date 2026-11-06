@@ -94,3 +94,18 @@ The complete parsed benchmark JSON values and recorded RSS/image metadata are re
 Independent inspection reproduces all 20 displayed timing/percentage rows from the declared
 participant-median estimator and verifies all 32 retained run populations. This archive does not
 claim byte-for-byte preservation of original JSON whitespace or include complete build/test logs.
+
+## Public integration boundary checks
+
+The later public PR adds direct root-module coverage of the shared memory-source factory's budget,
+binary contents and independent byte/cursor lifetimes. Registered compression-extension tests also
+exercise decoded TAR ownership after filesystem destruction and preserve decoder errors. These
+new tests passed against the original public O30 runtime before its routing cleanup.
+
+The private indexing pass has no fallible operations; public integration returns its constructed
+filesystem directly. Legacy content selects its
+existing in-memory or host owner first, then the PHAR or libarchive reader. This preserves behavior
+and uses the same number of decisions while exposing meaningful ownership boundaries to tests.
+These later integration changes are distinct from the private benchmark sources and images above.
+Fresh pushed-head CI, including canonical coverage and affected-header lint, remains authoritative;
+no timing or image-identity claim is extended to the later public integration.

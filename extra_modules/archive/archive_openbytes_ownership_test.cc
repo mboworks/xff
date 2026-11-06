@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <array>
+#include <cstdint>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "absl/status/status.h"
@@ -12,6 +15,7 @@
 #include "mbo/status/status_macros.h"
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
+#include "xff/archive/archive_extension.h"
 #include "xff/archive/archive_fs.h"
 #include "xff/archive/memory_archive_test.h"
 #include "xff/archive/memory_phar_test.h"
@@ -79,6 +83,39 @@ TEST_F(ArchiveOpenBytesOwnershipTest, NestedStreamedArchiveRetainsItsOwnedInput)
     return inner.ContentSource("outer.tar!inner.tar!member.txt");
   }());
   EXPECT_THAT(vfs::ReadSourceBytes(*source, content.size()), IsOkAndHolds(EqualsText(content)));
+}
+
+TEST_F(ArchiveOpenBytesOwnershipTest, CompressionFallbackRetainsItsDecodedTarBytes) {
+  const std::string content(65'537, 'w');
+  const auto members = std::to_array<MemoryArchiveMember>({
+      {.path = "member.txt", .content = content},
+  });
+  MBO_ASSERT_OK_AND_ASSIGN(auto decoded, MakeMemoryTar(members));
+  RegisterCompressionExtension({
+      .name = "owned-bytes-wrapper",
+      .suffixes = {".owned-bytes-wrapper"},
+      .decoder = [bytes = std::move(decoded)](std::string_view, std::optional<std::string_view>, std::uint64_t)
+          -> absl::StatusOr<std::string> { return bytes; },
+  });
+  MBO_ASSERT_OK_AND_ASSIGN(const auto source, [&]() -> absl::StatusOr<vfs::SharedReadSource> {
+    MBO_ASSIGN_OR_RETURN(
+        const auto fs, ArchiveFileSystem::OpenBytes("memory.owned-bytes-wrapper", "unrecognized wrapper"));
+    return fs.ContentSource("memory.owned-bytes-wrapper!member.txt");
+  }());
+  EXPECT_THAT(vfs::ReadSourceBytes(*source, content.size()), IsOkAndHolds(EqualsText(content)));
+}
+
+TEST_F(ArchiveOpenBytesOwnershipTest, CompressionFallbackPreservesDecoderErrors) {
+  RegisterCompressionExtension({
+      .name = "owned-bytes-error",
+      .suffixes = {".owned-bytes-error"},
+      .decoder = [](std::string_view, std::optional<std::string_view>, std::uint64_t) -> absl::StatusOr<std::string> {
+        return absl::DataLossError("invalid wrapped stream");
+      },
+  });
+  EXPECT_THAT(
+      ArchiveFileSystem::OpenBytes("memory.owned-bytes-error", "unrecognized wrapper"),
+      StatusIs(absl::StatusCode::kDataLoss, HasSubstr("invalid wrapped stream")));
 }
 
 TEST_F(ArchiveOpenBytesOwnershipTest, UnknownAndCorruptContentKeepDistinctErrors) {

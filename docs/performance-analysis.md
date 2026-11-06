@@ -4682,7 +4682,7 @@ raw data; the six later complete pairs are the primary macOS evidence. See the [
 report](benchmarks/openbytes-owned-input-20261106.md) for methodology, exact timings, RSS and
 binary hashes. Current-main synchronization, changed-file lint and required PR CI remain pending;
 local development measurements do not replace those gates. The focused implementation adds an
-owned memory-source helper in `xff_extras_api` and does not alter host-backed reads.
+owned memory-source helper in `xff_extras_api` and does not alter host-backed reads. Public integration adds direct shared-owner/budget and registered compression-fallback boundary tests, makes the already infallible private index helper value-returning, and selects legacy readers by ownership before format. Those integration changes retain separate source identities from the private measurements; current pushed-head CI must qualify them.
 
 O19f3 applies the bounded forward separator test in `ArchiveFileSystem::ReadDirectory`, with a
 flat-root fast path when the direct-child count equals the indexed-node count. Searching after the

@@ -115,7 +115,7 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenSource(
     return absl::DataLossError("decoded package payload is not a supported archive");
   }
   MBO_RETURN_IF_ERROR(members.status());
-  MBO_ASSIGN_OR_RETURN(auto fs, Index(std::string(container), nullptr, *members, options));
+  auto fs = Index(std::string(container), nullptr, *members, options);
   source = std::move(decoded);
   fs.source_ = std::move(source);
   fs.package_ = prefix == "xar!"
@@ -186,7 +186,7 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::Open(std::string_view conta
     }
   }
   MBO_RETURN_IF_ERROR(members.status());
-  MBO_ASSIGN_OR_RETURN(ArchiveFileSystem fs, Index(std::string(container), nullptr, *members, options));
+  auto fs = Index(std::string(container), nullptr, *members, options);
   fs.phar_ = phar;
   // Not single_: the only path that sets it returns from inside the branch above, so reaching here
   // means this container HAS a member list and the field keeps its false default.
@@ -221,15 +221,14 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenDecodedExtension(
   if (!stem.has_value()) {
     stem = CompressionExtensionStem(name);
   }
-  MBO_ASSIGN_OR_RETURN(
-      ArchiveFileSystem fs, Index(
-                                std::string(container), nullptr,
-                                {Member{
-                                    .path = stem.value_or(std::string(name)),
-                                    .size = static_cast<std::int64_t>(content.size()),
-                                    .mode = 0444,
-                                }},
-                                options));
+  auto fs = Index(
+      std::string(container), nullptr,
+      {Member{
+          .path = stem.value_or(std::string(name)),
+          .size = static_cast<std::int64_t>(content.size()),
+          .mode = 0444,
+      }},
+      options);
   fs.single_file_content_ = std::move(content);
   fs.single_ = true;
   return fs;
@@ -273,13 +272,13 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenBytesImpl(
     return OpenDecodedExtension(container, std::move(content), options);
   }
   MBO_RETURN_IF_ERROR(members.status());
-  MBO_ASSIGN_OR_RETURN(ArchiveFileSystem fs, Index(std::string(container), std::move(bytes), *members, options));
+  auto fs = Index(std::string(container), std::move(bytes), *members, options);
   fs.phar_ = phar;
   return fs;
 }
 
-// The shared indexing pass: whatever the source, a member list becomes nodes the same way.
-absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::Index(
+// The readers validate their input before this infallible pass builds the same nodes for every source.
+ArchiveFileSystem ArchiveFileSystem::Index(
     std::string container,
     std::shared_ptr<const std::string> bytes,
     const std::vector<Member>& members,
@@ -542,10 +541,10 @@ absl::StatusOr<std::string> ArchiveFileSystem::ReadContent(std::string_view path
   if (source_) {
     content =
         vfs::ReadSourceBytes(*MemberReadSource(source_, std::string(*key)), std::numeric_limits<std::size_t>::max());
-  } else if (phar_) {
-    content = bytes_ == nullptr ? ReadPharMemberOfFile(container_, *key) : ReadPharMember(*bytes_, *key);
+  } else if (bytes_) {
+    content = phar_ ? ReadPharMember(*bytes_, *key) : ReadMember(*bytes_, *key);
   } else {
-    content = bytes_ == nullptr ? ReadMemberOfFile(container_, *key) : ReadMember(*bytes_, *key);
+    content = phar_ ? ReadPharMemberOfFile(container_, *key) : ReadMemberOfFile(container_, *key);
   }
   if (content.ok()) {
     member_cache_->Put(*key, *content);

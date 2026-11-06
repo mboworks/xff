@@ -26,7 +26,7 @@ inline std::string MemoryPharUint32(std::uint32_t value) {
       static_cast<char>((value >> 16U) & 0xFFU),
       static_cast<char>((value >> 24U) & 0xFFU),
   });
-  return std::string(std::from_range, bytes);
+  return {std::from_range, bytes};
 }
 
 // XFF_ABI_POINTER: zlib's CRC32 API observes immutable fixture bytes.
