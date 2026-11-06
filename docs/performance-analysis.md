@@ -4534,3 +4534,86 @@ hundreds of megabytes of executable or training output.
 These trials use the ordinary #1110 parent and are independent of compiled target demand,
 native input-path storage and owned-target transfer. Do not add their measured percentages to
 later improvements or compare different private candidate parents as though they were identical.
+
+### O20o: terminated ReadLink input paths not selected
+
+[The retained input-path report](benchmarks/readlink-input-path-20261105.md) records both complete
+244-case screens, ordinary copied-parent controls, new long-path fallback cases, source/image
+identities, focused release/sanitizer tests and actual two-TU lint. Reusing the native 512-byte
+terminated-path helper removes a transient path string, but does not establish a consistent
+cross-platform win. Target CSV medians improve about 0.7-0.9% on Linux while the corresponding
+Mac groups are flat/slower. Keep the current production path; no full three-session performance
+or all-331 qualification is claimed for this rejected screen. Initial real lint errors, failed
+preflights and the lossless temporary-quota recovery remain in the evidence.
+
+### O20p: owned target transfer not selected
+
+[The full owned-transfer report](benchmarks/readlink-owned-transfer-20261105.md) retains both
+264-case three-session/fastest-seven-of-nine matrices and separate eight-case confirmations.
+Moving the already-owned ReadLink string removes a real copy without a new wrapper, syscall,
+lock, field scan or policy. Correctness passes all 331 release targets on each host, relevant
+sanitizers, both actual changed translation units and canonical 2/2 line plus 2/2 branch coverage;
+final rebuilt images match the measured hashes exactly.
+
+The targeted Mac group medians remain below half a percent and mixed; a retained large ordinary
+summary case slows in every original and repeat session, although its cost shrinks in the repeat.
+Independent copied-parent controls and substantial between-population baseline drift remain
+visible. Keep the existing production implementation rather than treating weak results as a
+verified cross-platform standalone gain. Preserve both full populations, every slower cell,
+source/test prototypes and binaries; do not add the earlier target-demand gain, subtract control
+drift or repeat until a preferred answer appears.
+
+### Next bounded allocation and traversal candidates
+
+The following remain independent experiments, not promised speedups:
+
+- O19f2: skip indexed descendant runs after reaching a nondirect child. Preserve punctuation
+  siblings, absolute and repeated-slash keys, metadata and exact order. Check first-indexed CLI
+  cost and root/chain/flat controls as well as isolated listing speed. The earlier full Linux trial and intentionally partial Mac screen remain retained while O26
+  removes the formatter bottleneck before fresh combined-parent qualification. No additional
+  child index, per-file owner, count, lock or worker threshold is needed by this prototype.
+- O19k: replace only the private immutable archive node map with Abseil's B-tree. Index is the
+  sole mutation phase; later APIs return owned values/sources and do not retain node iterators.
+  Verify that audit and insertion/large-Node relocation costs on both systems. The pinned default
+  string comparator enables transparent three-way lookup; explicitly passing `less<>` would skip
+  that specialization. Keep this independent of descendant skipping before testing integration.
+- O19i2: bounded direct-child capacity hints could reduce repeated Entry/observation growth.
+  Establish actual Node padding and insertion bookkeeping cost before adding persistent storage;
+  a new full-width counter per node is not free. Prefer simpler subtree skipping first.
+- O24: evaluate CLI iostream synchronization only at the real process entry. Existing listing
+  already emits complete records using `cout.write`; this is no proof of another buffering bug.
+  Preserve terminal latency, confirmation stream ties, pager replacement, child output order and
+  the final flush. A process-global change in reusable `cli::Run` would be the wrong boundary.
+- O25: embedded language JSON decoding currently zero-initializes a byte vector, copies it into
+  a string and then copies the const owned result into a lazy static string. The exact embedded
+  JSON is 109,261 bytes. Independently test owned return transfer and direct final-string decoding,
+  preserving corruption/length errors and narrowly annotated required ABI callbacks. This is
+  first language-database access, not an unconditional ordinary-listing startup cost. Other const
+  StatusOr values used only for reads/views do not warrant mechanical move edits.
+
+### O26: skip empty deferred libc time formats
+
+[The complete formatter report](benchmarks/cctz-empty-format-20261105.md) adopts a two-line
+empty-fragment guard in pinned Abseil CCTZ. Numeric directives were already handled directly,
+but empty deferred flushes still called strftime. An untimed Mac stack sample exposed repeated
+Darwin timezone loading even when Xff requested UTC output. The fix preserves nonempty locale
+fallback, requested timezone, exact literal/NUL bytes and existing lazy CoreFoundation handling.
+It does not change TZ or locale environment, the formatter API, workers, safety or release flags.
+
+Both complete 51-command and eight-format trials pass three balanced nine-repeat sessions
+retaining seven, with independent copied-parent controls and complete output oracles. Mac's
+24 timestamp-bearing metadata cases improve about 92% at the group median; Linux whole-command
+gains are modest, while isolated numeric formatting improves about 27-30%. Ordinary names,
+path/size CSV, startup and comparison controls remain explicit. Large 100k timestamp outputs
+are independently checked for correctness without claiming paired large-parent timing.
+
+Both hosts pass all 332 release targets, relevant ASan and actual new-translation-unit clang-tidy;
+Linux also passes relevant MSan/TSan. Final rebuilt CLI and formatter benchmark exactly match
+measured image hashes. Current actual compiler actions prove ordinary Clang 23.1.4/O2/ThinLTO
+with exceptions disabled and no PGO/sanitizer flags. The external patch is outside owned-source
+changed coverage; no threshold, exemption or invented percentage is added. Failed diagnostic
+setup, real lint findings and scoped temporary-quota recovery remain in lossless evidence.
+
+Previous independent trial baselines did not capture every locale/timezone environment value;
+this diagnosis does not retroactively prove why all historical absolute times changed. Archive
+descendant skipping remains an independent candidate to measure on this faster common parent.

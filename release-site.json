@@ -120,7 +120,10 @@
     "docs/benchmarks/native-metadata-followups-20261105.md": "docs/benchmarks/native-metadata-followups-20261105.html",
     "docs/benchmarks/symlink-target-demand-20261105.md": "docs/benchmarks/symlink-target-demand-20261105.html",
     "docs/benchmarks/native-pgo-20261105.md": "docs/benchmarks/native-pgo-20261105.html",
-    "docs/benchmarks/readlink-short-target-20261105.md": "docs/benchmarks/readlink-short-target-20261105.html"
+    "docs/benchmarks/readlink-short-target-20261105.md": "docs/benchmarks/readlink-short-target-20261105.html",
+    "docs/benchmarks/cctz-empty-format-20261105.md": "docs/benchmarks/cctz-empty-format-20261105.html",
+    "docs/benchmarks/readlink-input-path-20261105.md": "docs/benchmarks/readlink-input-path-20261105.html",
+    "docs/benchmarks/readlink-owned-transfer-20261105.md": "docs/benchmarks/readlink-owned-transfer-20261105.html"
   },
   "generated_html": {
     "XFF.md": {

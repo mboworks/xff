@@ -597,11 +597,12 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       unnecessary target reads in implicit listings. [Both-host qualification](docs/benchmarks/symlink-target-demand-20261105.md)
       retains all outputs and slower controls; full native metadata medians improve on both hosts.
       Target fields, transforms, repeated references, errors and comparison equality remain covered.
-- [ ] O20o: Evaluate reusing terminated native input-path storage for required ReadLink calls.
-      Preserve exact views, short/long fallback boundaries and ordinary stat/listing controls;
-      qualify independently of O20n, the short-target-buffer trial and PGO.
-- [ ] O20p: Measure transferring already-owned listing link targets rather than copying them.
-      Retain exact fields, buffered/queued output lifetimes and short/long target controls.
+- [x] O20o: [Retain the terminated input-path trial](docs/benchmarks/readlink-input-path-20261105.md).
+      Both 244-case screens and focused qualification pass, but Linux's small gains and
+      flat/slower Mac targets do not justify a runtime change. Preserve original failures.
+- [x] O20p: [Retain the owned-target transfer decision](docs/benchmarks/readlink-owned-transfer-20261105.md).
+      Both full 264-case populations, independent eight-case confirmations and complete
+      331-target qualification pass; weak/mixed Mac gains do not justify adoption.
 - [x] O23: [Publish the completed native PGO evaluation and evidence](docs/benchmarks/native-pgo-20261105.md).
       Both 179-case held-out populations pass three nine-repeat sessions retaining seven;
       both complete 331-target release runs pass in the explicit supported experiment scope.
@@ -1387,3 +1388,29 @@ this as intentional accounting.
 - [ ] Qualify the retained window on physical slow/network storage and heterogeneous directory
       sizes. A per-level request limit does not establish a command-wide byte budget or optimal
       I/O concurrency. Keep JC05/JC06/JC07 open and evaluate cancellation separately.
+
+### Further bounded performance candidates
+
+- [x] O26: [Avoid empty libc time-format flushes](docs/benchmarks/cctz-empty-format-20261105.md).
+      Pinned CCTZ returns before calling strftime for an empty deferred fragment. Both hosts'
+      51-case native and eight-format three-session trials retain all complete output checks,
+      slower controls, actual release flags, 332 release targets, affected sanitizers and lint.
+      Preserve nonempty locale fallback and timezone behavior without environment mutation.
+- [ ] O19f2: Qualify indexed archive descendant skipping on the O26 formatter parent. The
+      previous Linux full 82-command/88-listing trial is retained; Mac stopped intentionally
+      after 11 of 82 screen cases to resolve the formatter bottleneck. Preserve that partial
+      population separately. Recheck root/flat/chain costs and the slower isolated wide case;
+      no new child index, lock, count, worker policy or metadata fetch is needed.
+- [ ] O19k: Independently measure an Abseil B-tree for the private immutable archive node map.
+      Audit mutation-only indexing, owned returned sources/metadata and nonescaping iterators.
+      Keep the pinned default transparent three-way string comparator; include large Node
+      insertion/relocation, root/flat/chain and RSS costs before testing integration.
+- [ ] O19i2: Establish actual archive Node padding before considering a bounded direct-child
+      capacity hint. Measure insertion bookkeeping and root/chain controls; a persistent
+      full-width count per node is not free. Prefer simpler descendant skipping first.
+- [ ] O24: Evaluate CLI stream synchronization only at the real process entry, preserving
+      terminal latency, confirmation ties, pager/child order and the final flush. Existing
+      listing already writes complete records; reusable cli::Run is the wrong global boundary.
+- [ ] O25: Independently measure direct final-string decoding and owned-result transfer for
+      the lazy embedded language JSON. The current payload is 109,261 bytes, not an ordinary
+      startup megabyte cost. Preserve corruption/length errors and narrow ABI adapters.

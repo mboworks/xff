@@ -1,0 +1,11 @@
+--- a/absl/time/internal/cctz/src/time_zone_format.cc
++++ b/absl/time/internal/cctz/src/time_zone_format.cc
+@@ -225,6 +225,8 @@
+
+ // Formats a std::tm using strftime(3).
+ void FormatTM(std::string* out, const std::string& fmt, const std::tm& tm) {
++  // Empty deferred fragments have no output and need no libc timezone/locale work.
++  if (fmt.empty()) return;
+   // We assume that 16 times the length of the format string will
+   // be sufficient to store the result.  The extreme case appears
+   // to be "%c" (2 chars), which, in the POSIX locale, produces
