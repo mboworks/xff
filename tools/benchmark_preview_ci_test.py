@@ -5,6 +5,7 @@
 import io
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -26,9 +27,9 @@ def pull():
 
 
 def jobs():
-    return [{'name': f'Benchmark comparison ({platform}, best 7 of 9)', 'status': 'completed',
+    return [{'name': 'Benchmark comparison (Linux and macOS, best 7 of 9)', 'status': 'completed',
              'conclusion': 'success', 'started_at': '2026-10-03T10:00:00Z',
-             'completed_at': '2026-10-03T10:02:00Z'} for platform in ('linux', 'macos')]
+             'completed_at': '2026-10-03T10:02:00Z'}]
 
 
 def artifacts():
@@ -115,7 +116,7 @@ class BenchmarkPreviewCiTest(unittest.TestCase):
         self.assertEqual(state, 'ready')
         self.assertEqual(result[1]['number'], 9)
         api.pages.assert_called_once_with('actions/runs/10/attempts/2/jobs', 'jobs')
-        api.pages.return_value = jobs()[:1]
+        api.pages.return_value = [dict(jobs()[0], status='in_progress', conclusion=None)]
         self.assertEqual(ci.ready(api, 10, 2), ('waiting', None))
         api.request.side_effect = lambda path: dict(source(), status='completed') if path.startswith('actions/') else pull()
         self.assertEqual(ci.ready(api, 10, 2), ('finished', None))
@@ -142,6 +143,62 @@ class BenchmarkPreviewCiTest(unittest.TestCase):
                 ci.matching_artifacts(candidates, jobs())
         with self.assertRaisesRegex(ValueError, 'multiple artifacts'):
             ci.matching_artifacts([*artifacts(), artifacts()[0]], jobs())
+
+    def test_artifact_provenance_uses_the_same_unambiguous_comparison_jobs_as_readiness(self):
+        aggregate = jobs()[0]
+        legacy = [dict(aggregate, name=f'Benchmark comparison ({platform}, best 7 of 9)')
+                  for platform in ('linux', 'macos')]
+        self.assertEqual(set(ci.matching_artifacts(artifacts(), legacy)), {'linux', 'macos'})
+        for candidates in ([dict(aggregate, conclusion='failure')],
+                           [dict(aggregate, status='in_progress', conclusion=None)], legacy[:1]):
+            with self.subTest(jobs=candidates), self.assertRaisesRegex(ValueError, 'both current-attempt'):
+                ci.matching_artifacts(artifacts(), candidates)
+        for candidates in ([aggregate, aggregate], [aggregate, legacy[0]]):
+            with self.subTest(jobs=candidates), self.assertRaisesRegex(ValueError, 'ambiguous'):
+                ci.matching_artifacts(artifacts(), candidates)
+        for boundary in ('started_at', 'completed_at'):
+            candidates = artifacts()
+            candidates[0]['created_at'] = aggregate[boundary]
+            with self.subTest(boundary=boundary):
+                self.assertEqual(set(ci.matching_artifacts(candidates, jobs())), {'linux', 'macos'})
+
+    def test_transient_read_errors_retry_with_bounded_backoff(self):
+        response = subprocess.CompletedProcess([], 0, stdout=b'{"available":true}')
+        for failure in (subprocess.CalledProcessError(1, ['gh'], stderr=b'gh: HTTP 500\n'),
+                        subprocess.CalledProcessError(1, ['gh'], stderr=b'gh: HTTP 503\n'),
+                        subprocess.CalledProcessError(1, ['gh'], stderr=b'gh: Server Error (HTTP 502)\n'),
+                        subprocess.TimeoutExpired(['gh'], 120)):
+            with self.subTest(failure=failure), \
+                    mock.patch.object(ci.subprocess, 'run', side_effect=[failure, response]) as run, \
+                    mock.patch.object(ci.time, 'sleep') as sleep:
+                self.assertEqual(ci.GitHub('owner/repo').request('actions/runs/10'), {'available': True})
+                self.assertEqual(run.call_count, 2)
+                sleep.assert_called_once_with(1)
+        failure = subprocess.CalledProcessError(1, ['gh'], stderr=b'gh: HTTP 504\n')
+        with mock.patch.object(ci.subprocess, 'run', side_effect=failure) as run, \
+                mock.patch.object(ci.time, 'sleep') as sleep, self.assertRaises(subprocess.CalledProcessError):
+            ci.GitHub('owner/repo').request('actions/runs/10')
+        self.assertEqual(run.call_count, 4)
+        self.assertEqual(sleep.call_args_list, [mock.call(1), mock.call(2), mock.call(4)])
+
+    def test_permanent_read_errors_and_comment_mutations_are_never_retried(self):
+        for body, method, stderr in ((None, None, b'gh: HTTP 404\n'),
+                                     (None, None, b'gh: HTTP 403\n'),
+                                     ({'body': 'comment'}, None, b'gh: HTTP 503\n'),
+                                     ({'body': 'comment'}, 'PATCH', b'gh: HTTP 502\n')):
+            failure = subprocess.CalledProcessError(1, ['gh'], stderr=stderr)
+            with self.subTest(body=body, method=method), \
+                    mock.patch.object(ci.subprocess, 'run', side_effect=failure) as run, \
+                    mock.patch.object(ci.time, 'sleep') as sleep, \
+                    self.assertRaises(subprocess.CalledProcessError):
+                ci.GitHub('owner/repo').request('issues/9/comments', body, method)
+            run.assert_called_once()
+            sleep.assert_not_called()
+        with mock.patch.object(ci.subprocess, 'run', side_effect=subprocess.TimeoutExpired(['gh'], 120)) as run, \
+                mock.patch.object(ci.time, 'sleep') as sleep, self.assertRaises(subprocess.TimeoutExpired):
+            ci.GitHub('owner/repo').request('issues/9/comments', {'body': 'comment'}, 'PATCH')
+        run.assert_called_once()
+        sleep.assert_not_called()
 
     def test_zip_reads_only_expected_json_without_extracting_uploaded_paths_or_html(self):
         data = io.BytesIO()
