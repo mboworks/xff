@@ -202,8 +202,8 @@ script use requires an explicit prebuilt binary; measurement never triggers a
 build. For example, prepare it before any timing session:
 
 ```sh
-bazel build //tools:process_resources_native --config=clang_release
-launcher=$(bazel cquery //tools:process_resources_native --config=clang_release --output=files)
+bazel build //tools:process_resources_native --config=clang_opt
+launcher=$(bazel cquery //tools:process_resources_native --config=clang_opt --output=files)
 python3.13 tools/benchmark_compare.py --resource-launcher="$PWD/$launcher" \
   --binary=/path/to/optimized/xff --report=/tmp/native-comparison.json --cpus=1
 ```
@@ -296,7 +296,10 @@ process trees are outside this accounting contract.
 
 ## Running and publication
 
-Build with `--config=clang_release`. The driver is also available as `//tools:benchmark_compare`.
+Build the measured production CLI with `--config=clang_release`. Build accounting helpers and
+dedicated C++ microbenchmarks with `--config=clang_opt` so they use optimized native links; their
+results describe those experiments rather than production whole-program optimization. The driver
+is also available as `//tools:benchmark_compare`.
 
 ```sh
 python3 tools/benchmark_compare.py --binary=/path/to/optimized/xff --report=report.json \

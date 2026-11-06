@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
+
 package(default_visibility = ["//visibility:private"])
 
 exports_files([
@@ -26,3 +29,62 @@ exports_files([
     "xz-callback-types.patch",
     "xz-crc64-bounds.patch",
 ])
+
+# Linux fat objects contain native code and ThinLTO IR. Mach-O does not support
+# -ffat-lto-objects, so optimized test compilation there remains native.
+cc_args(
+    name = "release_object_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile",
+        "@rules_cc//cc/toolchains/actions:cpp_compile",
+    ],
+    args = select({
+        "@platforms//os:linux": [
+            "-flto=thin",
+            "-ffat-lto-objects",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+cc_feature(
+    name = "release_objects",
+    args = [":release_object_args"],
+    feature_name = "xff_release_objects",
+    visibility = ["//visibility:public"],  # Consumed by generated LLVM toolchain repositories.
+)
+
+cc_args(
+    name = "production_compile_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile",
+        "@rules_cc//cc/toolchains/actions:cpp_compile",
+    ],
+    args = select({
+        "@platforms//os:macos": ["-flto=thin"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_args(
+    name = "production_link_args",
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = select({
+        "@platforms//os:linux": [
+            "-flto=thin",
+            "-Wl,--fat-lto-objects",
+        ],
+        "@platforms//os:macos": ["-flto=thin"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_feature(
+    name = "production_lto",
+    args = [
+        ":production_compile_args",
+        ":production_link_args",
+    ],
+    feature_name = "xff_production_lto",
+    visibility = ["//visibility:public"],  # Consumed by generated LLVM toolchain repositories.
+)

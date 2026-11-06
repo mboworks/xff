@@ -118,20 +118,19 @@ common:clang --ltobackendopt=-Wno-unused-command-line-argument
 # Linker selection and LTO feature overrides come from the toolchain module.
 common:clang --define is_clang=true
 
-# --config=release supplies the production optimization and link settings without selecting a
-# compiler. --config=clang_release is the exact composed configuration used for tests and published
-# executables. Keep debug information in Bazel's outputs so tools/stage_release_artifacts.sh can
-# split it from the shipped binaries. LTO is independently selectable with --config=lto.
-# The toolchain uses linker-managed ThinLTO on macOS and separate Bazel backends on Linux.
+# Optimized tests and development tools use --config=clang_opt, without LTO links.
+# Published CLI binaries use --config=clang_release. Linux shares fat native/IR objects
+# between these configurations; Mach-O requires a separate ThinLTO compilation.
+# --config=lto remains an explicit opt-in to Bazel's ordinary ThinLTO machinery.
 common:lto --features=thin_lto
 common:release --compilation_mode=opt
 common:release --strip=never
 common:release --copt=-O2
-common:release --config=lto
-# Enable the ELF-only linkopts selected by the two shipped binary targets. Keeping these behind a
-# build setting prevents LLD spellings from reaching macOS or unrelated test/host executables.
+common:release --features=xff_release_objects
+# Only the two CLI targets consume the platform-scoped ELF link optimizations.
 common:release --//xff:xff_release_elf_link_optimizations=True
-common:clang_release --config=clang --config=release
+common:clang_opt --config=clang --config=release
+common:clang_release --config=clang_opt --features=xff_production_lto
 
 # --config=linux_perf : opt-in Google Benchmark hardware counters on native Linux.
 # libpfm is built by Bazel; no system libpfm install or toolchain change is needed.

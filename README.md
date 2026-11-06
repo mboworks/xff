@@ -223,11 +223,15 @@ bazel build --config=xff_full //xff/cli:xff_full
 
 The `//xff` target alias follows your active workspace configuration automatically: it resolves to the lean binary by default, and switches to the full binary under `--config=xff_full`. The underlying targets remain explicit and configuration-stable: `//xff/cli:xff` is always lean, and `//xff/cli:xff_full` is always full.
 
-Published binaries use `--config=clang_release`, which combines the hermetic Clang toolchain with
-`-O2` optimization and `--config=lto`. Select ThinLTO independently with
-`--config=clang --config=lto -c opt`; `--config=lto` enables `--features=thin_lto`.
-macOS uses Apple linker-managed ThinLTO; Linux selects bundled LLD and Bazel's separate LTO
-backend actions. Linux builds without ThinLTO use mold. Releases provide the stripped `xff-PLATFORM-ARCH` and
+Optimized tests and development tools use `--config=clang_opt` (`-O2`, native links).
+Published CLI binaries use `--config=clang_release`, which adds linker-managed ThinLTO.
+Build these in separate invocations so C++ test executables and test helpers avoid LTO links.
+Linux uses bundled LLD and fat objects containing native code plus ThinLTO IR: the two configurations
+share compilation and choose native code or IR at link time. LLVM does not support fat LTO objects
+for Mach-O, so macOS compiles separate native and ThinLTO objects and uses Apple's linker.
+The explicit `--config=clang --config=lto -c opt` configuration still selects ordinary ThinLTO
+(including Bazel's separate Linux backend actions) when deliberately requested. Other Linux builds
+use mold. Releases provide the stripped `xff-PLATFORM-ARCH` and
 `xff_full-PLATFORM-ARCH` executables directly. Each platform also provides separate level-19
 Zstandard-compressed `xff-PLATFORM-ARCH.tar.zst` and `xff_full-PLATFORM-ARCH.tar.zst` archives.
 Each archive contains its own executable and matching symbol file under `debug/`; no `.tar.gz`

@@ -5,9 +5,13 @@
 import argparse
 import gzip
 import json
+import os
 from pathlib import Path
 import re
+import subprocess
+import sys
 import tempfile
+import textwrap
 import unittest
 from unittest import mock
 
@@ -248,7 +252,7 @@ class BenchmarkHistoryTest(unittest.TestCase):
                 source = repository_file(workflow).read_text().split('\n  ' + job + ':', 1)[1]
                 source = re.split(r'\n  [a-z][a-z-]*:', source, maxsplit=1)[0]
                 self.assertIn("bazel cquery 'config(//tools:process_resources_native, target)' "
-                              "--config=clang_release", source)
+                              "--config=clang_opt", source)
                 self.assertIn('cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"', source)
                 self.assertIn('tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" '
                               'benchmark-head benchmark-resource-launcher', source)
@@ -256,7 +260,8 @@ class BenchmarkHistoryTest(unittest.TestCase):
                 # Build the exact target configuration queried and copied below.
                 head_build = source.split('bazel build ', 1)[1].split('\n', 1)[0].split()
                 self.assertIn('//tools:process_resources_native', head_build)
-                self.assertIn('--config=clang_release', head_build)
+                self.assertIn('--config=clang_opt', head_build)
+                self.assertIn('bazel build //xff/cli:xff --config=clang_release', source)
                 self.assertLess(source.index('bazel build '),
                                 source.index('bazel cquery '))
         action = repository_file('.github/actions/benchmark-measure/action.yml').read_text()
@@ -265,18 +270,96 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertNotIn('bazel build', action)
         self.assertNotIn('bazel run', action)
 
+    def test_benchmark_binaries_are_frozen_from_matching_configurations(self):
+        for workflow in ('main.yml', 'benchmarks.yml'):
+            with self.subTest(workflow=workflow), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                tools = root / 'tools'
+                tools.mkdir()
+                bazel = tools / 'bazel'
+                bazel.write_text('#!' + sys.executable + '\n' + textwrap.dedent("""\
+                    import pathlib
+                    import re
+                    import sys
+                    args = sys.argv[1:]
+                    config = 'production' if '--config=clang_release' in args else 'native'
+                    output = pathlib.Path('configured-output') / config
+                    def artifact(label):
+                        return output / label.removeprefix('//').replace(':', '/')
+                    if args[0] == 'build':
+                        for label in args:
+                            if label.startswith('//'):
+                                binary = artifact(label)
+                                binary.parent.mkdir(parents=True, exist_ok=True)
+                                binary.write_text(config + ' ' + label)
+                                binary.chmod(0o755)
+                        link = pathlib.Path('bazel-bin')
+                        link.unlink(missing_ok=True)
+                        link.symlink_to(output)
+                    elif args[0] == 'cquery':
+                        label = re.fullmatch(r'config[(](//[^,]+), target[)]', args[1])
+                        label = label.group(1) if label else args[1]
+                        binary = artifact(label)
+                        assert binary.is_file(), binary
+                        print(binary)
+                    else:
+                        raise AssertionError(args)
+                    """))
+                bazel.chmod(0o755)
+                source = repository_file('.github/workflows/' + workflow).read_text()
+                def step(name):
+                    block = source.split('      - name: ' + name + '\n', 1)[1].split('\n      - ', 1)[0]
+                    return textwrap.dedent(block.split('        run: |\n', 1)[1])
+                helper_name = 'Build benchmark helpers (optimized, no LTO)'
+                production_name = 'Build production benchmark CLI (ThinLTO)'
+                self.assertLess(source.index(helper_name), source.index(production_name))
+                environment = dict(os.environ, PATH=str(tools) + os.pathsep + os.environ['PATH'],
+                                   RUNNER_TEMP=str(root), GITHUB_ENV=str(root / 'github-env'))
+                subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', step(helper_name)], cwd=root,
+                               env=environment, check=True, capture_output=True, text=True)
+                launcher = root / 'benchmark-resource-launcher'
+                self.assertEqual(launcher.read_text(), 'native //tools:process_resources_native')
+                # A later configuration switch can change bazel-bin or overwrite original artifacts.
+                (root / 'configured-output/native/tools/process_resources_native').write_text('overwritten')
+                subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', step(production_name)], cwd=root,
+                               env=environment, check=True, capture_output=True, text=True)
+                frozen = root / 'benchmark-head'
+                self.assertEqual(frozen.read_text(), 'production //xff/cli:xff')
+                subprocess.run([str(bazel), 'build', '//xff/cli:xff', '--config=clang_opt'],
+                               cwd=root, env=environment, check=True, capture_output=True, text=True)
+                self.assertEqual(frozen.read_text(), 'production //xff/cli:xff')
+                self.assertEqual(launcher.read_text(), 'native //tools:process_resources_native')
+
+    def test_workflow_lto_builds_select_only_shipping_cli_targets(self):
+        import shlex
+        shipping = {'//xff/cli:xff', '//xff/cli:xff_full'}
+        for workflow in ('main.yml', 'benchmarks.yml', 'benchmark_backfill.yml', 'release.yml'):
+            source = repository_file('.github/workflows/' + workflow).read_text().replace('\\\n', ' ')
+            for line in source.splitlines():
+                command = line.strip()
+                if not command.startswith('bazel ') or '--config=clang_release' not in command:
+                    continue
+                args = shlex.split(command)
+                if args[1] == 'cquery':
+                    continue
+                with self.subTest(workflow=workflow, command=command):
+                    self.assertEqual(args[1], 'build')
+                    targets = {arg for arg in args if arg.startswith(('//', '@'))}
+                    self.assertTrue(targets)
+                    self.assertLessEqual(targets, shipping)
+
     def test_native_launcher_queries_select_only_the_built_target_configuration(self):
         for workflow in ('.github/workflows/main.yml', '.github/workflows/benchmarks.yml',
                          '.github/workflows/benchmark_backfill.yml'):
             with self.subTest(workflow=workflow):
                 source = repository_file(workflow).read_text()
                 query = source.split('launcher="$(bazel cquery ', 1)[1].split('cp "${launcher}"', 1)[0]
-                self.assertIn("'config(//tools:process_resources_native, target)' --config=clang_release", query)
+                self.assertIn("'config(//tools:process_resources_native, target)' --config=clang_opt", query)
 
     def test_ci_backfill_builds_native_launcher_before_freezing_and_measuring(self):
         source = repository_file('.github/workflows/benchmark_backfill.yml').read_text()
-        build = source.index('bazel build //tools:process_resources_native --config=clang_release')
-        query = source.index("bazel cquery 'config(//tools:process_resources_native, target)' --config=clang_release")
+        build = source.index('bazel build //tools:process_resources_native --config=clang_opt')
+        query = source.index("bazel cquery 'config(//tools:process_resources_native, target)' --config=clang_opt")
         copy = source.index('cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"')
         run = source.index('python3 tools/benchmark_campaign.py run')
         self.assertLess(build, query)

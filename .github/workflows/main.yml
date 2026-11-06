@@ -70,7 +70,7 @@ jobs:
         os: [ubuntu-24.04, ubuntu-latest, macos-latest]
         config:
           - name: default
-            flags: "--config=clang_release"
+            flags: "--config=clang_opt"
           - name: asan
             flags: "--config=clang --config=asan"
         exclude:
@@ -161,22 +161,26 @@ jobs:
             bazel-testlogs/xff/engine/expression_allocations_test/test.log
           retention-days: 7
           if-no-files-found: error
-      # The complete suite above builds both shipped binaries with the production ThinLTO config.
-      # Stage those already-built outputs and execute the stripped copies to cover the final release
-      # transformation without a second Bazel invocation or compilation configuration.
+      # Unit tests and their isolated CLI helpers link natively. Rebuild only the two
+      # shipping entry points with ThinLTO, then smoke-test their staged release copies.
+      # Linux reuses fat-object compilation; Mach-O requires separate IR compilation.
       - name: Stage and smoke-test release artifacts
         if: matrix.config.name == 'default'
         run: |
           set -euo pipefail
           command -v zstd
+          bazel build --config=clang_release --config=xff_docs //xff/cli:xff //xff/cli:xff_full \
+            --disk_cache="${HOME}/.cache/bazel-disk" --repository_cache="${HOME}/.cache/bazel-repo"
           case "${RUNNER_OS}" in
             Linux) platform=linux ;;
             macOS) platform=macos ;;
             *) echo "unsupported runner OS: ${RUNNER_OS}" >&2; exit 2 ;;
           esac
           arch="$(uname -m)"
-          lean="bazel-bin/xff/cli/xff"
-          full="bazel-bin/xff/cli/xff_full"
+          lean="$(bazel cquery 'config(//xff/cli:xff, target)' --config=clang_release --config=xff_docs \
+            --output=starlark --starlark:expr='target.files_to_run.executable.path')"
+          full="$(bazel cquery 'config(//xff/cli:xff_full, target)' --config=clang_release --config=xff_docs \
+            --output=starlark --starlark:expr='target.files_to_run.executable.path')"
           tools/stage_release_artifacts.sh "${platform}" "${arch}" "${lean}" "${full}" dist
           python3 tools/release_smoke.py "dist/xff-${platform}-${arch}" --expected-version="0.0.0"
           python3 tools/release_smoke.py "dist/xff_full-${platform}-${arch}" --expected-version="0.0.0"
@@ -759,21 +763,28 @@ jobs:
       - uses: ./.github/actions/bazel-cache-restore
         with:
           namespace: default
-      - name: Build one optimized binary for all three measurement shards
+      - name: Build benchmark helpers (optimized, no LTO)
         run: |
-          bazel build //xff/cli:xff //tools:process_resources_native //xff/engine:expression_benchmark //xff/engine:expression_run_benchmark --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
-          cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-head"
-          launcher="$(bazel cquery 'config(//tools:process_resources_native, target)' --config=clang_release \
+          bazel build //tools:process_resources_native //xff/engine:expression_benchmark //xff/engine:expression_run_benchmark --config=clang_opt --disk_cache="${HOME}/.cache/bazel-disk"
+          launcher="$(bazel cquery 'config(//tools:process_resources_native, target)' --config=clang_opt \
             --output=starlark --starlark:expr='target.files_to_run.executable.path')"
           cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"
-          tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" benchmark-head benchmark-resource-launcher
+      - name: Build production benchmark CLI (ThinLTO)
+        run: |
+          bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
+          binary="$(bazel cquery 'config(//xff/cli:xff, target)' --config=clang_release \
+            --output=starlark --starlark:expr='target.files_to_run.executable.path')"
+          cp "${binary}" "${RUNNER_TEMP}/benchmark-head"
+          shasum -a 256 "${RUNNER_TEMP}/benchmark-head"
+      - name: Package frozen binaries for all measurement candidates
+        run: tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" benchmark-head benchmark-resource-launcher
       - name: Measure expression preparation and execution baseline
         run: |
-          bazel run //xff/engine:expression_benchmark --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk" -- \
+          bazel run //xff/engine:expression_benchmark --config=clang_opt --disk_cache="${HOME}/.cache/bazel-disk" -- \
             --benchmark_out="${GITHUB_WORKSPACE}/expression-baseline-${{ matrix.platform }}.json" \
             --benchmark_out_format=json --benchmark_display_aggregates_only=true \
             --benchmark_enable_random_interleaving=true \
-            --benchmark_context="revision=$(git rev-parse HEAD),sampling=random-interleaved-9-fastest-7"
+            --benchmark_context="revision=$(git rev-parse HEAD),sampling=random-interleaved-9-fastest-7,build_config=clang_opt,lto=false"
           python3 - <<'PY_CHECK'
           import json
           import os
@@ -785,11 +796,11 @@ jobs:
           PY_CHECK
       - name: Measure whole-engine expression integration
         run: |
-          bazel run //xff/engine:expression_run_benchmark --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk" -- \
+          bazel run //xff/engine:expression_run_benchmark --config=clang_opt --disk_cache="${HOME}/.cache/bazel-disk" -- \
             --benchmark_out="${GITHUB_WORKSPACE}/expression-engine-${{ matrix.platform }}.json" \
             --benchmark_out_format=json --benchmark_display_aggregates_only=true \
             --benchmark_enable_random_interleaving=true \
-            --benchmark_context="revision=$(git rev-parse HEAD),sampling=random-interleaved-9-fastest-7"
+            --benchmark_context="revision=$(git rev-parse HEAD),sampling=random-interleaved-9-fastest-7,build_config=clang_opt,lto=false"
           python3 - <<'PY_CHECK'
           import json
           import os
