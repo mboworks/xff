@@ -1440,7 +1440,9 @@ this as intentional accounting.
       improve in each of three sessions on both hosts; whole commands remain mostly modest.
       Retain the Linux large-deep-root listing cost around 5%, the conflicting Mac full/subset
       populations, and every earlier rejected variant. PR/current-base CI remains separate.
-- [ ] O30: Independently measure moving the owned OpenBytes input into its memory source instead
-      of copying the complete buffer before streaming. Preserve legacy InvalidArgument fallback
-      ownership/statuses, measure ordinary and legacy lifecycle/RSS, and keep host Open/OpenSource
-      controls. A narrow outside-worktree prototype exists; it is not compiled or measured.
+- [ ] O30: Move the owned OpenBytes input into its memory source instead of copying the complete
+      buffer before streaming. TAR/PHAR correctness and full focused suites pass on macOS/Linux;
+      six complete macOS pairs and three Linux pairs show large-input wins, with about 64 MiB lower
+      peak RSS at 64 MiB member payload. Full protocol and raw evidence: [O30 report](docs/benchmarks/openbytes-owned-input-20261106.md).
+      Sync to current main, create the PR, and complete changed-file lint plus all required CI before
+      marking this merged candidate complete. The initial noisy macOS screen remains in the artifact.

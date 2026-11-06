@@ -3,6 +3,9 @@
 
 # 0.11.0
 
+- Reuse owned in-memory archive bytes across streaming detection and legacy fallback, avoiding a
+  complete input copy and reducing large OpenBytes lifecycle time and peak memory.
+
 - Reduce archive directory name scans and skip them when all indexed members are direct children
   of the root.
 

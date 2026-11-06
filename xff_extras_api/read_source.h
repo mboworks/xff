@@ -77,6 +77,16 @@ class ReadSource {
 
 using SharedReadSource = std::shared_ptr<const ReadSource>;
 
+// An immutable memory source plus the exact storage it reads. Callers that need both streaming
+// access and direct parsing can share one owned buffer without copying its contents.
+struct MemoryReadSourceData {
+  SharedReadSource source;
+  std::shared_ptr<const std::string> bytes;
+};
+
+MemoryReadSourceData MakeMemoryReadSource(
+    std::string bytes,
+    std::shared_ptr<ReadBudget> budget = std::make_shared<ReadBudget>());
 SharedReadSource MemoryReadSource(
     std::string bytes,
     std::shared_ptr<ReadBudget> budget = std::make_shared<ReadBudget>());
