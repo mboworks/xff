@@ -255,8 +255,8 @@ test_release_binaries_use_shared_configuration_and_staging() {
   if [ "$(count_lines_with 'bazel build --config=clang_release --config=xff_docs //xff/cli:xff //xff/cli:xff_full' "${main_workflow}")" -ne 1 ]; then
     fail "main workflow: release validation must rebuild only the two shipping binaries with LTO"
   fi
-  if [ "$(count_lines_with 'lean="bazel-bin/xff/cli/xff"' "${main_workflow}")" -ne 1 ] \
-    || [ "$(count_lines_with 'full="bazel-bin/xff/cli/xff_full"' "${main_workflow}")" -ne 1 ]; then
+  if [ "$(count_lines_with "lean=\"\$(bazel cquery 'config(//xff/cli:xff, target)' --config=clang_release --config=xff_docs" "${main_workflow}")" -ne 1 ] \
+    || [ "$(count_lines_with "full=\"\$(bazel cquery 'config(//xff/cli:xff_full, target)' --config=clang_release --config=xff_docs" "${main_workflow}")" -ne 1 ]; then
     fail "main workflow: staging must consume both production CLI binaries"
   fi
   if [ "$(count_lines_with 'tools/stage_release_artifacts.sh' "${main_workflow}")" -ne 1 ]; then

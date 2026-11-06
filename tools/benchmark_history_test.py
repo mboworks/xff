@@ -5,9 +5,13 @@
 import argparse
 import gzip
 import json
+import os
 from pathlib import Path
 import re
+import subprocess
+import sys
 import tempfile
+import textwrap
 import unittest
 from unittest import mock
 
@@ -265,6 +269,66 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn('--resource-launcher="${RUNNER_TEMP}/benchmark-resource-launcher"', action)
         self.assertNotIn('bazel build', action)
         self.assertNotIn('bazel run', action)
+
+    def test_benchmark_binaries_are_frozen_from_matching_configurations(self):
+        for workflow in ('main.yml', 'benchmarks.yml'):
+            with self.subTest(workflow=workflow), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                tools = root / 'tools'
+                tools.mkdir()
+                bazel = tools / 'bazel'
+                bazel.write_text('#!' + sys.executable + '\n' + textwrap.dedent("""\
+                    import pathlib
+                    import re
+                    import sys
+                    args = sys.argv[1:]
+                    config = 'production' if '--config=clang_release' in args else 'native'
+                    output = pathlib.Path('configured-output') / config
+                    def artifact(label):
+                        return output / label.removeprefix('//').replace(':', '/')
+                    if args[0] == 'build':
+                        for label in args:
+                            if label.startswith('//'):
+                                binary = artifact(label)
+                                binary.parent.mkdir(parents=True, exist_ok=True)
+                                binary.write_text(config + ' ' + label)
+                                binary.chmod(0o755)
+                        link = pathlib.Path('bazel-bin')
+                        link.unlink(missing_ok=True)
+                        link.symlink_to(output)
+                    elif args[0] == 'cquery':
+                        label = re.fullmatch(r'config[(](//[^,]+), target[)]', args[1])
+                        label = label.group(1) if label else args[1]
+                        binary = artifact(label)
+                        assert binary.is_file(), binary
+                        print(binary)
+                    else:
+                        raise AssertionError(args)
+                    """))
+                bazel.chmod(0o755)
+                source = repository_file('.github/workflows/' + workflow).read_text()
+                def step(name):
+                    block = source.split('      - name: ' + name + '\n', 1)[1].split('\n      - ', 1)[0]
+                    return textwrap.dedent(block.split('        run: |\n', 1)[1])
+                helper_name = 'Build benchmark helpers (optimized, no LTO)'
+                production_name = 'Build production benchmark CLI (ThinLTO)'
+                self.assertLess(source.index(helper_name), source.index(production_name))
+                environment = dict(os.environ, PATH=str(tools) + os.pathsep + os.environ['PATH'],
+                                   RUNNER_TEMP=str(root), GITHUB_ENV=str(root / 'github-env'))
+                subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', step(helper_name)], cwd=root,
+                               env=environment, check=True, capture_output=True, text=True)
+                launcher = root / 'benchmark-resource-launcher'
+                self.assertEqual(launcher.read_text(), 'native //tools:process_resources_native')
+                # A later configuration switch can change bazel-bin or overwrite original artifacts.
+                (root / 'configured-output/native/tools/process_resources_native').write_text('overwritten')
+                subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', step(production_name)], cwd=root,
+                               env=environment, check=True, capture_output=True, text=True)
+                frozen = root / 'benchmark-head'
+                self.assertEqual(frozen.read_text(), 'production //xff/cli:xff')
+                subprocess.run([str(bazel), 'build', '//xff/cli:xff', '--config=clang_opt'],
+                               cwd=root, env=environment, check=True, capture_output=True, text=True)
+                self.assertEqual(frozen.read_text(), 'production //xff/cli:xff')
+                self.assertEqual(launcher.read_text(), 'native //tools:process_resources_native')
 
     def test_workflow_lto_builds_select_only_shipping_cli_targets(self):
         import shlex

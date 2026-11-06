@@ -68,7 +68,9 @@ jobs:
           # Python runfiles may build a transitioned helper, not the target copied below.
           bazel build //xff/engine:read_benchmark //tools:benchmark_resources //tools:process_resources_native //xff/engine:expression_benchmark //xff/engine:expression_run_benchmark --config=clang_opt \
             --disk_cache="${HOME}/.cache/bazel-disk"
-          cp bazel-bin/xff/engine/read_benchmark "${RUNNER_TEMP}/benchmark-head-reads"
+          read_helper="$(bazel cquery 'config(//xff/engine:read_benchmark, target)' --config=clang_opt \
+            --output=starlark --starlark:expr='target.files_to_run.executable.path')"
+          cp "${read_helper}" "${RUNNER_TEMP}/benchmark-head-reads"
           launcher="$(bazel cquery 'config(//tools:process_resources_native, target)' --config=clang_opt \
             --output=starlark --starlark:expr='target.files_to_run.executable.path')"
           cp "${launcher}" "${RUNNER_TEMP}/benchmark-resource-launcher"
@@ -78,18 +80,26 @@ jobs:
       - name: Build production benchmark CLI (ThinLTO)
         run: |
           bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
-          cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-head"
+          binary="$(bazel cquery 'config(//xff/cli:xff, target)' --config=clang_release \
+            --output=starlark --starlark:expr='target.files_to_run.executable.path')"
+          cp "${binary}" "${RUNNER_TEMP}/benchmark-head"
+          shasum -a 256 "${RUNNER_TEMP}/benchmark-head"
       - name: Build baseline read helper (optimized, no LTO)
         working-directory: ${{ runner.temp }}/benchmark-base
         run: |
           # Parent revisions may predate clang_opt; disable their global ThinLTO feature explicitly.
           bazel build //xff/engine:read_benchmark --config=clang --config=release --features=-thin_lto --disk_cache="${HOME}/.cache/bazel-disk"
-          cp bazel-bin/xff/engine/read_benchmark "${RUNNER_TEMP}/benchmark-base-reads"
+          read_helper="$(bazel cquery 'config(//xff/engine:read_benchmark, target)' --config=clang --config=release --features=-thin_lto \
+            --output=starlark --starlark:expr='target.files_to_run.executable.path')"
+          cp "${read_helper}" "${RUNNER_TEMP}/benchmark-base-reads"
       - name: Build production baseline CLI (ThinLTO)
         working-directory: ${{ runner.temp }}/benchmark-base
         run: |
           bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
-          cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-base-bin"
+          binary="$(bazel cquery 'config(//xff/cli:xff, target)' --config=clang_release \
+            --output=starlark --starlark:expr='target.files_to_run.executable.path')"
+          cp "${binary}" "${RUNNER_TEMP}/benchmark-base-bin"
+          shasum -a 256 "${RUNNER_TEMP}/benchmark-base-bin"
       - name: Measure expression preparation and execution baseline
         run: |
           bazel run //xff/engine:expression_benchmark --config=clang_opt --disk_cache="${HOME}/.cache/bazel-disk" -- \

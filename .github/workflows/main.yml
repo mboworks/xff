@@ -177,8 +177,10 @@ jobs:
             *) echo "unsupported runner OS: ${RUNNER_OS}" >&2; exit 2 ;;
           esac
           arch="$(uname -m)"
-          lean="bazel-bin/xff/cli/xff"
-          full="bazel-bin/xff/cli/xff_full"
+          lean="$(bazel cquery 'config(//xff/cli:xff, target)' --config=clang_release --config=xff_docs \
+            --output=starlark --starlark:expr='target.files_to_run.executable.path')"
+          full="$(bazel cquery 'config(//xff/cli:xff_full, target)' --config=clang_release --config=xff_docs \
+            --output=starlark --starlark:expr='target.files_to_run.executable.path')"
           tools/stage_release_artifacts.sh "${platform}" "${arch}" "${lean}" "${full}" dist
           python3 tools/release_smoke.py "dist/xff-${platform}-${arch}" --expected-version="0.0.0"
           python3 tools/release_smoke.py "dist/xff_full-${platform}-${arch}" --expected-version="0.0.0"
@@ -770,7 +772,10 @@ jobs:
       - name: Build production benchmark CLI (ThinLTO)
         run: |
           bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
-          cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-head"
+          binary="$(bazel cquery 'config(//xff/cli:xff, target)' --config=clang_release \
+            --output=starlark --starlark:expr='target.files_to_run.executable.path')"
+          cp "${binary}" "${RUNNER_TEMP}/benchmark-head"
+          shasum -a 256 "${RUNNER_TEMP}/benchmark-head"
       - name: Package frozen binaries for all measurement candidates
         run: tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" benchmark-head benchmark-resource-launcher
       - name: Measure expression preparation and execution baseline
