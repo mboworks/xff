@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reuse normalized archive member-key views for immediate lookups while keeping deferred read sources owned and preserving archive paths, errors, and read-only behavior.
+
 - Avoid empty libc timestamp-formatting calls, substantially reducing metadata-output cost on macOS while preserving exact output and timezone behavior.
 
 - Avoid reading symlink targets for target-free listing templates and table columns while preserving target output and comparisons.

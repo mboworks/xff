@@ -1,0 +1,91 @@
+{
+  "decision": {
+    "benchmark_speedup_claim": false,
+    "candidate": "O24 terminal-aware CLI stream synchronization",
+    "decision": "Do not implement for the current benchmark/release toolchain: exact libc++ function only reads/writes its previous-state byte and returns, without selecting a different stream buffer or executing any I/O.",
+    "linux_assembly": "movzbl; movb; retq",
+    "macos_assembly": "adrp; ldrb; strb; mov; ret",
+    "new_runtime_code": false,
+    "next_action": "Publish both-host audit evidence and mark this hypothesis evaluated, with no runtime flag or stream-buffer change.",
+    "scope": "Clang23.1.4 hermetic libc++ on arm64 macOS and x86_64 Linux. This is not a claim about libstdc++ or future standard libraries.",
+    "validation": "Disassembled actual ios.cpp.o extracted from each exact toolchain libc++.a; source/library/object/symbol/command hashes retained."
+  },
+  "format": "xff-stdio-sync-audit-v1",
+  "hosts": {
+    "linux": {
+      "command": [
+        "/home/marcus/.cache/bazel/_bazel_marcus/cache/repos/v1/contents/d2ecbc1ad9e4d9cd7d4d3f4d1988086798cc6bce0c0d35dac834463cb3cbac36/7b8f207d-8ed8-4d35-bd9c-95b19d568069/bin/llvm-objdump",
+        "-d",
+        "--disassemble-symbols=_ZNSt3__18ios_base15sync_with_stdioEb",
+        "/tmp/xff-cli-stdio-experiment/libcxx-ios-linux.o"
+      ],
+      "disassembly": "\n/tmp/xff-cli-stdio-experiment/libcxx-ios-linux.o:\tfile format elf64-x86-64\n\nDisassembly of section .text._ZNSt3__18ios_base15sync_with_stdioEb:\n\n0000000000000000 <_ZNSt3__18ios_base15sync_with_stdioEb>:\n       0: 0f b6 05 00 00 00 00         \tmovzbl\t(%rip), %eax            # 0x7 <_ZNSt3__18ios_base15sync_with_stdioEb+0x7>\n       7: 40 88 3d 00 00 00 00         \tmovb\t%dil, (%rip)            # 0xe <_ZNSt3__18ios_base15sync_with_stdioEb+0xe>\n       e: c3                           \tretq\n",
+      "host": "linux",
+      "interpretation_pending_review": true,
+      "library": "/home/marcus/.cache/bazel/_bazel_marcus/cache/repos/v1/contents/d2ecbc1ad9e4d9cd7d4d3f4d1988086798cc6bce0c0d35dac834463cb3cbac36/7b8f207d-8ed8-4d35-bd9c-95b19d568069/lib/x86_64-unknown-linux-gnu/libc++.a",
+      "library_sha256": "7079ea14d1f55633f612bed386fda92134de44e08f10d3c417d3a5caafa73ee0",
+      "no_runtime_changes": true,
+      "no_timing_invocation": true,
+      "object_member": "ios.cpp.o",
+      "object_sha256": "9b4c8a0e628fb4a9d398624c0410f1c3a37673be1078f51f06d3d5335715517d",
+      "symbol": "_ZNSt3__18ios_base15sync_with_stdioEb"
+    },
+    "macos": {
+      "command": [
+        "/Users/marcus/Library/Caches/bazel/_bazel_marcus/cache/repos/v1/contents/c0bfb67eee34d79c02c7bbe1590f51896f7e98a909be7f12d1b0ec3cb9b75e80/a057d9f5-ffb3-446e-8cc3-eb8da2f00796/bin/llvm-objdump",
+        "-d",
+        "--disassemble-symbols=__ZNSt3__18ios_base15sync_with_stdioEb",
+        "/private/tmp/xff-cli-stdio-experiment/libcxx-ios-macos.o"
+      ],
+      "disassembly": "\n/private/tmp/xff-cli-stdio-experiment/libcxx-ios-macos.o:\tfile format mach-o arm64\n\nDisassembly of section __TEXT,__text:\n\n0000000000000c44 <__ZNSt3__18ios_base15sync_with_stdioEb>:\n     c44: 90000009     \tadrp\tx9, 0x0 <ltmp0>\n     c48: 39400128     \tldrb\tw8, [x9]\n     c4c: 39000120     \tstrb\tw0, [x9]\n     c50: aa0803e0     \tmov\tx0, x8\n     c54: d65f03c0     \tret\n",
+      "host": "macos",
+      "interpretation_pending_review": true,
+      "library": "/Users/marcus/Library/Caches/bazel/_bazel_marcus/cache/repos/v1/contents/c0bfb67eee34d79c02c7bbe1590f51896f7e98a909be7f12d1b0ec3cb9b75e80/a057d9f5-ffb3-446e-8cc3-eb8da2f00796/lib/libc++.a",
+      "library_sha256": "3783658a720ecc98668a09f116be6c1cf8cfaf437fe34f4e96720cf41e914d77",
+      "no_runtime_changes": true,
+      "no_timing_invocation": true,
+      "object_member": "ios.cpp.o",
+      "object_sha256": "b7d7901c906e42cea87ca9912fa70a625b4bd5da0834e18e4737a74609885ee9",
+      "symbol": "__ZNSt3__18ios_base15sync_with_stdioEb"
+    }
+  },
+  "interpretation_review_complete": true,
+  "retained_commands_and_diagnostics": {
+    "linux/audit-libcxx-sync.py": {
+      "bytes": 1817,
+      "sha256": "9d871aefbdd8a62239e6e45e1340a4470fc8dfb2916bcf812d28fbcba330b892",
+      "text": "from pathlib import Path\nimport hashlib,json,subprocess,sys\nr=Path(sys.argv[1]);h='linux' if sys.platform=='linux' else 'macos';root=r.parent\nassert not (root/'xff-context-render-experiment'/('TIMING-'+h.upper()+'.ACTIVE')).exists()\nassert not (root/'xff-bulk-metadata-experiment'/('PAUSE-'+h.upper())).exists()\nproof=json.loads((root/'xff-cctz-empty-format-experiment'/('actual-release-provenance-'+h+'.json')).read_text());compiler=Path(proof['compiler']);package=compiler.parent.parent\nlibraries=list(package.glob('lib/**/libc++.a'));assert len(libraries)==1, libraries;library=libraries[0]\nlisting=subprocess.check_output([str(compiler.parent/'llvm-ar'),'t',str(library)],text=True);members=[v for v in listing.splitlines() if v.endswith('ios.cpp.o')];assert len(members)==1,members\nobj=r/('libcxx-ios-'+h+'.o');obj.write_bytes(subprocess.check_output([str(compiler.parent/'llvm-ar'),'p',str(library),members[0]]))\nnm=subprocess.check_output([str(compiler.parent/'llvm-nm'),'--defined-only',str(obj)],text=True);symbols=[v.split()[-1] for v in nm.splitlines() if v.split()[-1].endswith('15sync_with_stdioEb')];assert len(symbols)==1,symbols\ncommand=[str(compiler.parent/'llvm-objdump'),'-d','--disassemble-symbols='+symbols[0],str(obj)];p=subprocess.run(command,capture_output=True,text=True,check=True)\n(r/('libcxx-sync-with-stdio-'+h+'.txt')).write_text(p.stdout+'\\n'+p.stderr)\nv=dict(host=h,library=str(library),library_sha256=hashlib.sha256(library.read_bytes()).hexdigest(),object_member=members[0],object_sha256=hashlib.sha256(obj.read_bytes()).hexdigest(),symbol=symbols[0],command=command,disassembly=p.stdout,interpretation_pending_review=True,no_runtime_changes=True,no_timing_invocation=True)\n(r/('libcxx-sync-with-stdio-'+h+'.json')).write_text(json.dumps(v,indent=2)+'\\n');print(p.stdout,flush=True)\n"
+    },
+    "linux/libcxx-sync-with-stdio-linux.txt": {
+      "bytes": 490,
+      "sha256": "d7953384bda9125c3c6cd22a8450eb725b14c2b210f481c0b104190857b51ca9",
+      "text": "\n/tmp/xff-cli-stdio-experiment/libcxx-ios-linux.o:\tfile format elf64-x86-64\n\nDisassembly of section .text._ZNSt3__18ios_base15sync_with_stdioEb:\n\n0000000000000000 <_ZNSt3__18ios_base15sync_with_stdioEb>:\n       0: 0f b6 05 00 00 00 00         \tmovzbl\t(%rip), %eax            # 0x7 <_ZNSt3__18ios_base15sync_with_stdioEb+0x7>\n       7: 40 88 3d 00 00 00 00         \tmovb\t%dil, (%rip)            # 0xe <_ZNSt3__18ios_base15sync_with_stdioEb+0xe>\n       e: c3                           \tretq\n\n"
+    },
+    "linux/xff-stdio-sync-audit-linux-v2.log": {
+      "bytes": 490,
+      "sha256": "d7953384bda9125c3c6cd22a8450eb725b14c2b210f481c0b104190857b51ca9",
+      "text": "\n/tmp/xff-cli-stdio-experiment/libcxx-ios-linux.o:\tfile format elf64-x86-64\n\nDisassembly of section .text._ZNSt3__18ios_base15sync_with_stdioEb:\n\n0000000000000000 <_ZNSt3__18ios_base15sync_with_stdioEb>:\n       0: 0f b6 05 00 00 00 00         \tmovzbl\t(%rip), %eax            # 0x7 <_ZNSt3__18ios_base15sync_with_stdioEb+0x7>\n       7: 40 88 3d 00 00 00 00         \tmovb\t%dil, (%rip)            # 0xe <_ZNSt3__18ios_base15sync_with_stdioEb+0xe>\n       e: c3                           \tretq\n\n"
+    },
+    "linux/xff-stdio-sync-audit-linux.log": {
+      "bytes": 640,
+      "sha256": "e9bbe2d6fa71708f7a4f905ebab8ca5b53c5039e8f349286997450f2a8ecf9bd",
+      "text": "Traceback (most recent call last):\n  File \"/tmp/xff-cli-stdio-experiment/audit-libcxx-sync.py\", line 10, in <module>\n    nm=subprocess.check_output([str(compiler.parent/'llvm-nm'),'--defined-only',str(obj)],text=True);symbols=[v.split()[-1] for v in nm.splitlines() if 'sync_with_stdio' in v];assert len(symbols)==1,symbols\n                                                                                                                                                                                       ^^^^^^^^^^^^^^^\nAssertionError: ['_ZNSt3__18ios_base15sync_with_stdioEb', '_ZZNSt3__18ios_base15sync_with_stdioEbE14previous_state']\n"
+    },
+    "macos/audit-libcxx-sync-macos.log": {
+      "bytes": 368,
+      "sha256": "17794aca04bc43a163c0cb9b8d328811610217b3e79c4748711030169b2f7932",
+      "text": "\n/private/tmp/xff-cli-stdio-experiment/libcxx-ios-macos.o:\tfile format mach-o arm64\n\nDisassembly of section __TEXT,__text:\n\n0000000000000c44 <__ZNSt3__18ios_base15sync_with_stdioEb>:\n     c44: 90000009     \tadrp\tx9, 0x0 <ltmp0>\n     c48: 39400128     \tldrb\tw8, [x9]\n     c4c: 39000120     \tstrb\tw0, [x9]\n     c50: aa0803e0     \tmov\tx0, x8\n     c54: d65f03c0     \tret\n\n"
+    },
+    "macos/audit-libcxx-sync.py": {
+      "bytes": 1817,
+      "sha256": "9d871aefbdd8a62239e6e45e1340a4470fc8dfb2916bcf812d28fbcba330b892",
+      "text": "from pathlib import Path\nimport hashlib,json,subprocess,sys\nr=Path(sys.argv[1]);h='linux' if sys.platform=='linux' else 'macos';root=r.parent\nassert not (root/'xff-context-render-experiment'/('TIMING-'+h.upper()+'.ACTIVE')).exists()\nassert not (root/'xff-bulk-metadata-experiment'/('PAUSE-'+h.upper())).exists()\nproof=json.loads((root/'xff-cctz-empty-format-experiment'/('actual-release-provenance-'+h+'.json')).read_text());compiler=Path(proof['compiler']);package=compiler.parent.parent\nlibraries=list(package.glob('lib/**/libc++.a'));assert len(libraries)==1, libraries;library=libraries[0]\nlisting=subprocess.check_output([str(compiler.parent/'llvm-ar'),'t',str(library)],text=True);members=[v for v in listing.splitlines() if v.endswith('ios.cpp.o')];assert len(members)==1,members\nobj=r/('libcxx-ios-'+h+'.o');obj.write_bytes(subprocess.check_output([str(compiler.parent/'llvm-ar'),'p',str(library),members[0]]))\nnm=subprocess.check_output([str(compiler.parent/'llvm-nm'),'--defined-only',str(obj)],text=True);symbols=[v.split()[-1] for v in nm.splitlines() if v.split()[-1].endswith('15sync_with_stdioEb')];assert len(symbols)==1,symbols\ncommand=[str(compiler.parent/'llvm-objdump'),'-d','--disassemble-symbols='+symbols[0],str(obj)];p=subprocess.run(command,capture_output=True,text=True,check=True)\n(r/('libcxx-sync-with-stdio-'+h+'.txt')).write_text(p.stdout+'\\n'+p.stderr)\nv=dict(host=h,library=str(library),library_sha256=hashlib.sha256(library.read_bytes()).hexdigest(),object_member=members[0],object_sha256=hashlib.sha256(obj.read_bytes()).hexdigest(),symbol=symbols[0],command=command,disassembly=p.stdout,interpretation_pending_review=True,no_runtime_changes=True,no_timing_invocation=True)\n(r/('libcxx-sync-with-stdio-'+h+'.json')).write_text(json.dumps(v,indent=2)+'\\n');print(p.stdout,flush=True)\n"
+    },
+    "macos/libcxx-sync-with-stdio-macos.txt": {
+      "bytes": 368,
+      "sha256": "17794aca04bc43a163c0cb9b8d328811610217b3e79c4748711030169b2f7932",
+      "text": "\n/private/tmp/xff-cli-stdio-experiment/libcxx-ios-macos.o:\tfile format mach-o arm64\n\nDisassembly of section __TEXT,__text:\n\n0000000000000c44 <__ZNSt3__18ios_base15sync_with_stdioEb>:\n     c44: 90000009     \tadrp\tx9, 0x0 <ltmp0>\n     c48: 39400128     \tldrb\tw8, [x9]\n     c4c: 39000120     \tstrb\tw0, [x9]\n     c50: aa0803e0     \tmov\tx0, x8\n     c54: d65f03c0     \tret\n\n"
+    }
+  },
+  "scope": "Exact Clang23.1.4 hermetic libc++ libraries; no runtime change or timing claim"
+}

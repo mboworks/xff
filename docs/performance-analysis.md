@@ -4567,11 +4567,10 @@ drift or repeat until a preferred answer appears.
 
 The following remain independent experiments, not promised speedups:
 
-- O19f2: skip indexed descendant runs after reaching a nondirect child. Preserve punctuation
-  siblings, absolute and repeated-slash keys, metadata and exact order. Check first-indexed CLI
-  cost and root/chain/flat controls as well as isolated listing speed. The earlier full Linux trial and intentionally partial Mac screen remain retained while O26
-  removes the formatter bottleneck before fresh combined-parent qualification. No additional
-  child index, per-file owner, count, lock or worker threshold is needed by this prototype.
+- O19f2: [evaluated without adoption](benchmarks/archive-descendant-skipping-20261105.md).
+  Deep-root gains do not erase repeatedly slower wide/root listing controls. Preserve the old
+  Linux full trial and deliberately partial Mac population separately from the new complete
+  formatter-parent screens. A future loop/layout combination needs fresh qualification.
 - O19k: replace only the private immutable archive node map with Abseil's B-tree. Index is the
   sole mutation phase; later APIs return owned values/sources and do not retain node iterators.
   Verify that audit and insertion/large-Node relocation costs on both systems. The pinned default
@@ -4580,10 +4579,10 @@ The following remain independent experiments, not promised speedups:
 - O19i2: bounded direct-child capacity hints could reduce repeated Entry/observation growth.
   Establish actual Node padding and insertion bookkeeping cost before adding persistent storage;
   a new full-width counter per node is not free. Prefer simpler subtree skipping first.
-- O24: evaluate CLI iostream synchronization only at the real process entry. Existing listing
-  already emits complete records using `cout.write`; this is no proof of another buffering bug.
-  Preserve terminal latency, confirmation stream ties, pager replacement, child output order and
-  the final flush. A process-global change in reusable `cli::Run` would be the wrong boundary.
+- O24: [actual-library audit completed](benchmarks/cli-stream-sync-audit-20261105.md).
+  Both current hermetic libc++ functions only read/write their previous-state byte. Add no
+  runtime call and claim no buffering speedup. This says nothing about GNU libstdc++ or a future
+  implementation; output latency, pager/confirmation ordering and final flush still matter.
 - O25: embedded language JSON decoding currently zero-initializes a byte vector, copies it into
   a string and then copies the const owned result into a lazy static string. The exact embedded
   JSON is 109,261 bytes. Independently test owned return transfer and direct final-string decoding,
@@ -4616,4 +4615,76 @@ setup, real lint findings and scoped temporary-quota recovery remain in lossless
 
 Previous independent trial baselines did not capture every locale/timezone environment value;
 this diagnosis does not retroactively prove why all historical absolute times changed. Archive
-descendant skipping remains an independent candidate to measure on this faster common parent.
+descendant skipping was subsequently evaluated on this faster common parent; its retained
+wide/root regressions remain a reason not to adopt that loop.
+
+### O28: archive observation-mode specialization not selected
+
+[The independent observation-mode report](benchmarks/archive-observation-mode-20261105.md)
+retains actual parent release disassembly, both complete 82-command and 88-listing screens,
+focused tests, nine affected header consumers and image identities. The runtime branch really
+survives ThinLTO, but its removal does not establish a consistent cross-platform gain. No full
+332-target or full three-session qualification is claimed for this rejected screen. Do not add
+its percentages to another change or treat an eliminated branch as a measured improvement.
+
+### Further independent archive allocation candidates
+
+O27 examines construction work that the existing hot-listing benchmark explicitly excludes.
+The current index constructs an owned long ancestor key before a transparent lookup even when
+that ancestor already exists. First defer that construction until absence is established. A
+separate lower_bound/emplace_hint variant can avoid another ancestor search; separately compare
+member insert_or_assign and known-missing-parent try_emplace to default mapped construction.
+Keep duplicate overwrite, synthesized flags, ancestor break behavior and inode assignment order.
+
+Measure the real public archive construction lifecycle, including destruction, and name any
+parsing/source-copy cost included in that path. Do not introduce a benchmark-only public/friend
+API or pretend an untimed setup benchmark measures indexing. Preserve flat/wide/deep/chain
+construction, complete command/listing controls, tiny cases, allocation/RSS limits and both hosts.
+Do not retain map key views across a future B-tree insertion: relocated small-string keys can
+invalidate them. These insertion prototypes remain uninstalled and unqualified.
+
+O29 examines borrowed normalized member-key views for immediate stat/access/readlink/cache
+lookups. Normalization only selects a contiguous input subview. Stored index keys and both
+delayed MemberReadSource boundaries must still own their text. A deferred-source regression
+must destroy/overwrite the caller path and archive filesystem before opening the retained source.
+The initial broad variant's Linux flat-listing regression remains retained separately; explicitly
+bypassing an empty direct-parent byte comparison is a new candidate to measure, not an excuse
+to relabel or discard the original negative results. That revision's full trials pass their
+oracles and both complete release suites, but canonical changed coverage exposes an unreachable
+final string-inequality outcome. The existing ordered subtree interval already guarantees the
+parent prefix: matching parent length implies matching bytes. A simpler length-only candidate
+has an independent sibling/boundary regression, an exhaustive ordered-index model and 100%
+changed-line/branch coverage. [The complete member-key report](benchmarks/archive-member-keys-20261105.md)
+retains both full 82-command/14-lookup/88-listing trials, 333 release targets on both hosts,
+relevant sanitizers, actual changed-TU lint and exact normal-release image/flag proofs. All
+14 targeted operations improve in every session on both hosts; whole commands remain mostly
+modest. The isolated Mac screen and full large-deep-root slowdowns remain in the evidence.
+
+One predeclared independent 12-case corroboration uses the exact same qualified images and
+includes all flat/wide/deep root 10,000/100,000 ordinary and observed controls. All Mac medians
+improve there; the Linux large-deep-root listing cost remains around 5%. Keep the two populations
+separate, do not assign a cause to the Mac reversal, and do not subtract copied-parent drift to
+manufacture a result. Adopt the simpler immediate-key ownership improvement with that explicit
+tradeoff rather than promise a universal command-level speedup. Required current-base PR CI and
+post-merge checks remain separate from the development qualification. A removed allocation or
+branch is not itself a measured command-level improvement.
+
+O30 identifies an actual complete-buffer copy in `ArchiveFileSystem::OpenBytes`: its input is
+already owned by value, but it is passed as an lvalue to `MemoryReadSource`. A narrow prototype
+moves that input into the existing source and materializes contiguous bytes only if the legacy
+parser fallback is needed. The source must then be released before fallback parsing to avoid
+holding two complete buffers longer than necessary. Preserve exact failure classifications,
+empty/corrupt/phar/compression behavior and later content-source ownership. Benchmark both
+ordinary and fallback lifecycles, including the fresh input required by each invocation, and
+record RSS. Host-backed `Open` and `OpenSource` do not have this input-copy cost. The prototype
+is outside the worktree, uncompiled and unmeasured; no new public VFS API is proposed.
+
+O19f3 is a smaller alternative to the rejected descendant-jump loop. Within the already bounded
+subtree, classify a direct child by looking for the next slash after the known directory prefix
+instead of reverse-scanning the whole key for its last slash. At the archive root, searching
+from byte one preserves a possible leading absolute slash. The same 160-set ordered-index
+model checks 25,054 directory keys and 59,256 bounded members without a semantic difference.
+This remains a model, not a runtime improvement. Inspect actual generated code before assuming
+the forward search uses a faster primitive; long initial path components can make it worse
+than a reverse scan. Keep it independent of map successor searches, layout, insertion and worker
+changes, and do not delay publishing the current borrowed-key decision to add another variant.

@@ -10,6 +10,7 @@ keeps the two sets identical.
 
 CLANG_TIDY_MANUAL_TARGETS = [
     "//tools:archive_directory_benchmark",
+    "//tools:archive_member_key_benchmark",
     "//tools:archive_source_benchmark",
     "//tools:read_source_benchmark",
     "//tools:time_format_benchmark",

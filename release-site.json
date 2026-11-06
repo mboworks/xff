@@ -123,7 +123,11 @@
     "docs/benchmarks/readlink-short-target-20261105.md": "docs/benchmarks/readlink-short-target-20261105.html",
     "docs/benchmarks/cctz-empty-format-20261105.md": "docs/benchmarks/cctz-empty-format-20261105.html",
     "docs/benchmarks/readlink-input-path-20261105.md": "docs/benchmarks/readlink-input-path-20261105.html",
-    "docs/benchmarks/readlink-owned-transfer-20261105.md": "docs/benchmarks/readlink-owned-transfer-20261105.html"
+    "docs/benchmarks/readlink-owned-transfer-20261105.md": "docs/benchmarks/readlink-owned-transfer-20261105.html",
+    "docs/benchmarks/archive-descendant-skipping-20261105.md": "docs/benchmarks/archive-descendant-skipping-20261105.html",
+    "docs/benchmarks/archive-observation-mode-20261105.md": "docs/benchmarks/archive-observation-mode-20261105.html",
+    "docs/benchmarks/cli-stream-sync-audit-20261105.md": "docs/benchmarks/cli-stream-sync-audit-20261105.html",
+    "docs/benchmarks/archive-member-keys-20261105.md": "docs/benchmarks/archive-member-keys-20261105.html"
   },
   "generated_html": {
     "XFF.md": {
