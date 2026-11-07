@@ -193,8 +193,12 @@ def export_viewer(output, contract, revisions, renderer, incomplete=False):
              'Each historical run is interleaved with the fixed current binary and a traditional tool. '
              f'{len(revisions)} complete revisions are shown, including regressions and unchanged controls.</p>'
              '<p>The XFF history dataset compares the selected historical binary with the fixed current one. '
-             'Its current revision is an identical-binary control and should be near zero.</p>')
-    panel = landscape.history_panel(catalog).replace('<option value="raw">Raw</option>', '<option value="raw" selected>Raw</option>')
+             'Its current revision is an identical-binary control and should be near zero.</p>'
+             '<p>Download: <a href="cells.csv">Measurements</a> &middot; '
+             '<a href="history-by-task.csv">History by task</a> &middot; '
+             '<a href="current-versus-reference.csv">Current tool comparisons</a> (CSV).</p>')
+    panel = landscape.history_panel(catalog, include_overview=False).replace(
+        '<option value="raw">Raw</option>', '<option value="raw" selected>Raw</option>')
     (output / 'index.html').write_text(intro + panel + '</html>')
 
 

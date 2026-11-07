@@ -405,9 +405,12 @@ def view_controls(attribute):
             '<option value="reference">Reference normalized</option><option value="raw">Raw</option></select></label> ')
 
 
-def history_panel(catalog):
+def history_panel(catalog, *, include_overview=True):
     """A bounded catalog; only the selected report's six views are downloaded."""
     data = json.dumps(catalog, allow_nan=False).replace('<', '\\u003c')
+    overview = ('<section data-overview aria-live="polite"><h2>Performance overview</h2>'
+                '<p>Select a measurement to compare it with its recorded merged baseline.</p></section>'
+                if include_overview else '')
     return ('<section id="benchmark-explorer">'
             '<details id="benchmark-history-chart" open><summary hidden>3D comparison chart</summary>'
             '<details data-help-panel class="landscape-card">'
@@ -466,8 +469,7 @@ def history_panel(catalog):
             '<input data-control="version" type="range" min="0" max="0" step="1" value="0" '
             'aria-label="Version"><button type="button" data-version-next aria-label="Next version">+</button>'
             '</div></div></details></div></details>'
-            '<section data-overview aria-live="polite"><h2>Performance overview</h2>'
-            '<p>Select a measurement to compare it with its recorded merged baseline.</p></section>'
+            + overview +
             '<script src="assets/three-landscape.js"></script><script>'
             'window.XffBenchmarkHistory(document.getElementById("benchmark-explorer"),' + data + ');'
             '</script></section>')

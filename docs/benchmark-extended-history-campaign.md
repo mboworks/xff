@@ -22,7 +22,7 @@ is outside this investigation.
 | `content-regex` | Match a status regex in text files                         | ripgrep                     | Traversal, filename filtering and content matching |
 | `archive-tar`   | List matching regular-file members in a TAR                | GNU tar                     | Archive indexing and virtual directory traversal   |
 
-Each task has broad/deep fixtures and one/three allowed physical CPU cores. Native tasks use
+Each task has broad/deep fixtures and one/three allowed CPUs. Native tasks use
 100, 10,000 and 100,000 files; archives use 100, 1,000 and 10,000 members: 60 cells per revision,
 7,800 historical cells in total. Missing sizes remain missing in the renderer.
 
@@ -31,6 +31,12 @@ matching and nonmatching files, and 256-byte/8-KiB contents. Archive fixtures co
 members without explicit directory entries. Fixture contents and metadata are verified before
 and after collection. Native fixtures require Linux case-sensitive tmpfs; this qualification
 does not establish the same case semantics on a macOS filesystem.
+
+Drogon runs this campaign in a KVM guest. The guest reports an AMD Ryzen 9 9950X CPU model and
+ten cores; the measurement affinity uses guest CPUs `0`, `1`, and `2`, selected from distinct
+core IDs reported by Linux. This does not establish how the host pins those virtual CPUs to
+physical cores. The guest kernel is `7.0.0-38-generic`, with glibc 2.43. The independently read
+virtualization/DMI details are retained in `machine-environment.json` beside the campaign.
 
 The TAR reference transforms displayed names to the same `fixture.tar/member` spelling as XFF.
 Native references use identical roots and output delimiters. Every invocation must succeed
@@ -105,6 +111,60 @@ actions and records their hashes. XFF itself does not link ICU. The package SHA-
 `223c1e6cebf2a6748637303227d8b84337c14a2d30eacbc46a68d02557dcff3e`.
 The package, download URL, hashes and library list are retained in `installed-dependencies.json`.
 
+## Completed results and workload selection
+
+All 130 revisions and 7,800 cells completed successfully, followed by a separate 120-cell
+endpoint repetition with 27 measured rounds retaining 21. Across the two populations, all
+244,080 invocations, including warm-ups, passed their output checks. The
+[compact results](benchmarks/extended-history-results-20261107.json) retain every task/size
+endpoint comparison, the selected adjacent-source transitions, and the small regex cases.
+
+The ratios below are geometric means over broad/deep layouts and one/three allowed CPUs.
+Old/current greater than one means current is faster; current/tool greater than one means XFF
+takes longer than the traditional tool. Endpoint repetition is a separate population, not
+additional samples merged into the historical estimates.
+
+| Task                       | Files or members | Old/current, history | Old/current, repeat | Current/tool, repeat |
+| :------------------------- | ---------------: | -------------------: | ------------------: | -------------------: |
+| Exact file listing         |          100,000 |                 1.09 |                1.09 |                1.159 |
+| Native-case name filtering |          100,000 |                 2.64 |                2.45 |                1.090 |
+| Metadata and UTC date      |          100,000 |                 1.08 |                1.08 |                1.137 |
+| Content regex              |          100,000 |                 1.09 |                1.11 |                0.721 |
+| TAR member filtering       |           10,000 |                 1.60 |                1.63 |                0.860 |
+
+Retain these workloads as a separate full-production suite. Native-case name filtering, TAR
+member filtering, and small content searches with multiple workers expose substantial changes
+that the existing exact-case, non-archive tasks cannot demonstrate. Keep exact listing and
+metadata formatting as controls and as remaining performance targets. A positive historical
+change is not sufficient reason to hide a slower comparison against a traditional tool.
+
+The measured transitions agree with specific source changes:
+
+- PR #1091's uniform filesystem case policy removes unnecessary leaf metadata lookups. At
+  100,000 files, the immediately preceding/current-control ratio changes from 2.409 at #1090
+  to 1.075 at #1091, while exact listing and metadata controls remain nearly unchanged.
+- PR #1105's bounded archive-directory lookup changes the 10,000-member ratio from 1.446 at
+  #1104 to 1.010 at #1105. Native listing/name/content controls remain close to parity.
+- PR #1034 removes Abseil hardware-clock calibration from worker startup. The small broad
+  regex case with three allowed CPUs changes from about 2.74 times current to about 1.20;
+  the one-CPU control barely changes. In the separate endpoint repeat, current completes
+  100-file searches 2.75 times as fast on the broad layout and 2.52 times as fast on the deep
+  layout with three allowed CPUs. One-CPU results do not show that improvement.
+
+The remaining simple-task gap is reproducible. At 100,000 files, current takes about 16% longer
+than find for exact listing, 9% longer for native-case filtering, and 14% longer for metadata/date
+output. At 10,000 files, exact listing takes about 35% longer. Small 100-file listing/metadata
+cases show no historical improvement beyond the observed control variation. Content regex is
+about 28% faster than rg in the largest repeated case; TAR listing is about 14% faster than tar
+at 10,000 members, although the original current endpoint consumes about 3% more total CPU than
+tar there. These are workload-specific results from this Linux guest.
+
+All three byte-identical current revisions provide 180 control cells. Their 95th percentile
+multiplicative distance from parity is 1.0305. This describes the observed noise and does not
+make it a universal significance threshold. Native-case speedup changes from 2.64 to 2.45 between
+populations, and small deep regex speedup also varies: interleaving does not eliminate every
+effect of shared-machine load. Preserve the individual cells and host snapshots.
+
 ## Evidence and status
 
 On `drogon.boerger.online`, the root is `/home/marcus/Documents/xff-chart-campaign-20261107`:
@@ -127,15 +187,39 @@ completed before timing collection. The
 hashes; 53 adjacent revision pairs have identical executable bytes. PRs #1128, #1129 and #1130
 also share the current executable hash, providing identical-binary controls in the campaign.
 
-Measurement collection is in progress. A separate endpoint repeat is queued after successful
-completion: every one of the 60 predeclared cases at both endpoints, fresh tmpfs fixtures,
-27 measured rounds retaining the fastest 21. It uses the same frozen production binaries and
-does not select only favorable cases. The repeated data has its own contract and directory
-(`confirmation/`) and must not be merged with the nine-round historical population. Before the
-repeat, an independent pass rehashes all 130 retained binaries and their build/link evidence.
-Select CI workloads from completed results, retain the simple control, and report flat or
-regressing cases alongside improvements. A historical improvement alone does not establish that
-XFF is competitive with its traditional reference.
+The independent post-collection audit rehashed all 130 retained binaries and their build/link
+evidence successfully. The endpoint repeat used every predeclared case, including slower and
+unchanged cases, with fresh tmpfs fixtures and the same frozen production binaries. Its own
+contract and directory (`confirmation/`) remain separate from the nine-round history.
+
+The [completion audit](benchmarks/extended-history-complete-audit-20261107.json) records independent
+raw-sample replay of all 93,600 historical plotted values and 31,200 missing positions, plus
+1,440 values and 480 missing positions in the repeat. Maximum floating-point difference is
+1.12e-16. Chromium checked 96 historical viewer states and 24 repeated-endpoint states across
+both dataset views, all task orders and both metrics, without JavaScript or loading errors.
+The viewer includes all 130 revisions and direct CSV download links.
+
+After confirmation, ten diagnostic CPU profiles compared the retained current binary with GNU find
+on small and large listings and metadata formatting. Profiled commands write to `/dev/null`;
+their results describe CPU attribution and never enter the timing population. In the broad
+100,000-file XFF listing, approximate self shares of sampled user cycles are 19.8% in prepared
+expression evaluation, 13.6% in the per-entry driver callback, 11.2% in string append, and 8.8%
+in `EvalPrint0`; readdir contributes 16.8%. These point to evaluation, entry setup and output
+construction as further targets. They are not percentages of total wall time. The short find
+profile has only 48 samples and is insufficient for a useful startup breakdown. Perf also
+reports an event-description-header warning; raw recordings, commands, sample counts and
+reports are retained, and these profiles serve only as diagnostics.
+
+A separate experiment follows those profiles: construct the per-entry content snapshot's cache
+state only on demand, using inline `std::optional<State>` storage. Its source is
+`90abd2b3ef63b35833e8f9d96745475c6b9f182a`, based on the unchanged PR #1130 baseline. The
+experiment repeats all 60 cases for the candidate and an identical-baseline control, with
+27 measured rounds retaining 21. It includes active-content workloads to detect added overhead.
+The candidate has no PR number; its standalone measurement manifest uses zero as an explicit
+experiment label. It must not enter the merged-PR history or be combined with either earlier
+population. Source, tests, build identities and samples live under `lazy-content/` in the same
+campaign root. The empty map previously allocated nothing: the hypothesis concerns construction,
+destruction and movement of unused cache state, not removing a per-file map allocation.
 
 The [synthetic viewer check](benchmarks/extended-history-viewer-check-20261107.json) verifies
 both exported dataset views in Chromium. Both historical versions produce their exact expected

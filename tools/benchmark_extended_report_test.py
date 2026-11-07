@@ -3,6 +3,8 @@
 """Check historical ratios, paired uncertainty, and real-only renderer populations."""
 
 import copy
+from pathlib import Path
+import tempfile
 import unittest
 
 import benchmark_extended_report as report
@@ -39,6 +41,24 @@ class BenchmarkExtendedReportTest(unittest.TestCase):
         self.assertEqual(result['xff_system_cpu_seconds'], 1)
         self.assertEqual(result['xff_rss_bytes'], 4000)
         self.assertEqual(result['xff_first_stdout_seconds'], .4)
+
+    def test_export_links_tables_without_an_unrelated_merged_baseline_overview(self):
+        row = self.row()
+        row['revision']['date'] = '2026-11-07'
+        row['after'] = {'utc': '2026-11-07T12:00:00Z'}
+        rows = [dict(row, case=dict(row['case'], shape=shape, files=files, cpus=cpus))
+                for shape in ('broad', 'deep') for files in (100, 1000) for cpus in (1, 3)]
+        contract = dict(self.contract(), cases=[item['case'] for item in rows])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            renderer = root / 'renderer.js'
+            renderer.write_text('/* renderer fixture */')
+            report.export_viewer(root, contract, [(row['revision'], rows)], renderer)
+            document = (root / 'index.html').read_text()
+            self.assertNotIn('data-overview', document)
+            for name in ('cells.csv', 'history-by-task.csv', 'current-versus-reference.csv'):
+                self.assertIn(f'href="{name}"', document)
+            self.assertIn('1 complete revisions', document)
 
     def test_missing_duplicate_and_incorrect_samples_are_rejected(self):
         row = self.row()
