@@ -185,6 +185,13 @@ class BenchmarkHistoryTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "head binary"):
                 history.retain(Path(directory), value, source(2))
 
+    def test_main_measurement_queue_preserves_pending_merged_revisions(self):
+        workflow = repository_file('.github/workflows/benchmarks.yml').read_text()
+        concurrency = workflow.split('\nconcurrency:\n', 1)[1].split('\njobs:', 1)[0]
+        self.assertIn('group: benchmarks-${{ github.ref }}', concurrency)
+        self.assertRegex(concurrency, r'(?m)^  queue: max$')
+        self.assertRegex(concurrency, r'(?m)^  cancel-in-progress: false$')
+
     def test_workflow_keeps_measurement_unprivileged_and_publication_serialized(self):
         measure = repository_file(".github/workflows/benchmarks.yml").read_text()
         shard_action = repository_file(".github/actions/benchmark-measure/action.yml").read_text()
