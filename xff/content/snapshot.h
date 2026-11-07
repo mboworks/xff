@@ -41,7 +41,7 @@ class Snapshot final {
  public:
   // Keep unused inline storage unconstructed, including when an enclosing context is
   // value-initialized. A defaulted constructor could zero-initialize the whole snapshot.
-  Snapshot() : state_(std::nullopt) {}
+  Snapshot() noexcept : state_(std::nullopt) {}
 
   absl::StatusOr<std::string_view> Read(const vfs::FileSystem& fs, std::string_view path) const;
   std::optional<std::string> Digest(const vfs::FileSystem& fs, std::string_view path, const hash::AlgoEncoding& spec)
