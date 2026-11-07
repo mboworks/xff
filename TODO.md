@@ -609,6 +609,14 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       Separately assess skipping bulk reads when prepared expression metadata proves no eligible
       regular files or non-followed symlinks can contribute; preserve directory/link/mount stat
       semantics and avoid ad hoc flag-name, count or timer gates. Publish only measured improvements.
+- [x] O31: Qualify compiled stat demand for implicit output and select template-only admission.
+      [Both-host raw evidence, all-cell results and explicit costs](docs/benchmarks/compiled-field-stat-demand-20261107.md)
+      reject the combined columns policy; preserve column eager behavior, fuzzy scores, mixed/
+      unknown/denied metadata semantics and all independent traversal/safety requirements.
+- [ ] O31 follow-ups: Identify the Linux many-directory TSV pipeline cost before admitting lexical
+      columns without metadata. Separately qualify score-consumer-specific demand and conditional
+      stat-bearing field admission; preserve error ordering and existing traversal requirements.
+      No ad hoc file-count, worker, timer or operating-system gate; retain current control costs.
 - [x] O20k: Qualify complete native non-followed symlink observations against every ordinary stat
       field, including dangling, long and hardlinked links. Preserve returned-attribute requirements,
       other special-type fallback, followed-target behavior and unchanged backend worker preference.
