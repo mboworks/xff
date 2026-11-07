@@ -33,13 +33,13 @@
     "number": 1137,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": null
+    "merge_commit_sha": "fa7655e29b5b37d01919935bcddd5515c2e9b48f"
   },
   {
     "number": 1136,
-    "state": "open",
-    "merged_at": null,
-    "merge_commit_sha": "bb395c8749a6fee830645cf39416f7f479d40111"
+    "state": "closed",
+    "merged_at": "2026-11-07T17:59:24Z",
+    "merge_commit_sha": "1f25ba6d4ae0c9d69d6a2143940f08c2ed41acbe"
   },
   {
     "number": 1135,
