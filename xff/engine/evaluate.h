@@ -224,10 +224,14 @@ struct EvalContext {
   // FS-native name matching: when true, the case-sensitive name predicates
   // (-name/-path) fold case for this entry because it lives on a case-folding
   // volume and the xff-style default is in effect (no --exact). The driver
-  // resolves it per entry from a per-device IsCaseSensitive probe; it is always
-  // false in the find style and under --exact (byte-exact matching). The `i`
-  // variants (-iname/-ipath) fold regardless.
+  // supplies uniform answers directly and defers unknown native case to the resolver below;
+  // it is always false in the find style and under --exact (byte-exact matching).
+  // The `i` variants (-iname/-ipath) fold regardless.
   bool fold_name_case = false;
+  // Optional per-entry native-case resolution. A glob consults this only when its exact and
+  // folded answers differ; explicit folding and uniform filesystem answers need no lookup.
+  // A failed required metadata lookup records control.metadata_error before returning false.
+  std::optional<absl::FunctionRef<bool()>> resolve_name_case;
   // The normalized 0..100 fuzzy quality composed across the expression for {fuzzy}, --sort=score,
   // and -top. Null when no consumer needs it; reset by the driver per entry.
   mbo::types::OptionalRef<std::optional<int>> fuzzy_score;

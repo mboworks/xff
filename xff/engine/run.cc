@@ -6143,9 +6143,8 @@ RunResult RunFindCore(
   for (std::size_t index = 0; index < deferred_nodes.size(); ++index) {
     deferred_node_order.emplace(deferred_nodes[index], index);
   }
-  const bool full_metadata = (fs_native_case && !uniform_native_case) || colorize || any_reduction
-                             || matched_entry.has_value() || !column_templates.empty() || compiled_tmpl.has_value()
-                             || collections.Active() || !deferred_nodes.empty();
+  const bool full_metadata = colorize || any_reduction || matched_entry.has_value() || !column_templates.empty()
+                             || compiled_tmpl.has_value() || collections.Active() || !deferred_nodes.empty();
   options.metadata = full_metadata            ? MetadataDemand::kAlways
                      : expression.has_value() ? ExpressionMetadata(*expression)
                                               : MetadataDemand::kNever;
@@ -6374,17 +6373,24 @@ RunResult RunFindCore(
         Control control;
         std::vector<std::string> captures;           // -regex groups for this entry; consumed by gated -exec {0}..{N}
         std::map<std::string, std::string> outputs;  // -capture results for this entry; read by {capture.NAME}
-        // FS-native name matching: fold -name/-path case on a case-folding volume
-        // (xff style, no --exact). Probe each device once, defaulting to
-        // case-sensitive (byte-exact) on the miss and on any probe error.
-        bool fold_name_case = uniform_fold_name_case;
-        if (fs_native_case && !uniform_native_case) {
+        // Resolve native case only when a reached predicate needs the distinction. No device
+        // observation is required when exact and folded glob results already agree.
+        std::optional<bool> native_fold;
+        const auto resolve_name_case = [&] {
+          if (native_fold) {
+            return *native_fold;
+          }
+          control.metadata_error = visit.EnsureMetadata();
+          if (!control.metadata_error.ok()) {
+            return false;
+          }
           auto [it, inserted] = case_sensitive_by_dev.try_emplace(visit.metadata.dev, true);
           if (inserted) {
             it->second = walk_fs.IsCaseSensitive(visit.path).value_or(true);
           }
-          fold_name_case = !it->second;
-        }
+          native_fold = !it->second;
+          return *native_fold;
+        };
         // The entry's colour, from the one palette this run resolved: used by the plain listing below
         // and by -ls's name column, so the two cannot disagree about what a file looks like.
         const std::string_view entry_color = colorize ? palette.CodeFor(
@@ -6415,7 +6421,10 @@ RunResult RunFindCore(
             .time_format = time_format,
             .zone_suffix = zone_suffix,
             .block_size = block_size,
-            .fold_name_case = fold_name_case,
+            .fold_name_case = uniform_fold_name_case,
+            .resolve_name_case = fs_native_case && !uniform_native_case
+                                     ? std::optional<absl::FunctionRef<bool()>>(resolve_name_case)
+                                     : std::nullopt,
             .fuzzy_score = full_metadata || rank_by_score ? mbo::types::OptionalRef{fuzzy_score}
                                                           : mbo::types::OptionalRef<std::optional<int>>{},
             .fuzzy_workspace = fuzzy_workspace,

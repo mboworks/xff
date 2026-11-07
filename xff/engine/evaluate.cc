@@ -976,20 +976,39 @@ bool EvalFalse(const parser::Expr&, EvalContext&) {
 // folds the case-sensitive variant when FS-native matching is in effect (the
 // entry is on a case-folding volume, xff style, no --exact), so -name matches
 // the way the filesystem itself resolves names.
+template<typename Matches>
+bool MatchNativeGlob(const parser::Expr& expr, const EvalContext& ctx, Matches&& matches) {
+  if (expr.descriptor->fold_case || ctx.fold_name_case || expr.case_fold) {
+    return matches(FNM_CASEFOLD);
+  }
+  const bool exact = matches(0);
+  if (!ctx.resolve_name_case) {
+    return exact;
+  }
+  const bool folded = matches(FNM_CASEFOLD);
+  // Folding can also remove a match (for example [!A] against a). Compare both truth values
+  // rather than assuming that case-insensitive matching is always a superset.
+  if (exact == folded) {
+    return exact;
+  }
+  return (*ctx.resolve_name_case)() ? folded : exact;
+}
+
 // NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalName(const parser::Expr& expr, EvalContext& ctx) {
-  const int flags = (expr.descriptor->fold_case || ctx.fold_name_case || expr.case_fold) ? FNM_CASEFOLD : 0;
-  return !expr.args.empty() && Fnmatch(expr.args.front(), ctx.visit.name, flags);
+  return !expr.args.empty()
+         && MatchNativeGlob(expr, ctx, [&](int flags) { return Fnmatch(expr.args.front(), ctx.visit.name, flags); });
 }
 
 // The selected fuzzy model (see //xff/fuzzy), over whichever text the primary matches. Case follows
 // the same three-way rule -name uses: the always-folding variant, the FS-native default, or an
 // explicit --case.
 bool EvalFuzzyOn(const parser::Expr& expr, EvalContext& ctx, std::string_view subject) {
-  const bool fold = expr.descriptor->fold_case || ctx.fold_name_case || expr.case_fold;
   if (expr.args.empty()) {
     return false;
   }
+  const bool fold = expr.descriptor->fold_case || ctx.fold_name_case || expr.case_fold
+                    || (ctx.resolve_name_case && (*ctx.resolve_name_case)());
   if (!ctx.fuzzy_score.has_value() && !expr.fuzzy_threshold.has_value()) {
     if (expr.fuzzy_model == parser::FuzzyModel::kSequence) {
       return fuzzy::Matches(expr.args.front(), subject, fold);
@@ -1071,8 +1090,8 @@ bool EvalFuzzyPath(const parser::Expr& expr, EvalContext& ctx) {
 
 // NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalPath(const parser::Expr& expr, EvalContext& ctx) {
-  const int flags = (expr.descriptor->fold_case || ctx.fold_name_case || expr.case_fold) ? FNM_CASEFOLD : 0;
-  return !expr.args.empty() && Fnmatch(expr.args.front(), ctx.visit.path, flags);
+  return !expr.args.empty()
+         && MatchNativeGlob(expr, ctx, [&](int flags) { return Fnmatch(expr.args.front(), ctx.visit.path, flags); });
 }
 
 // {target} render support: a symlink's target text (find %l) for the field
@@ -3315,9 +3334,9 @@ bool EvalPreparedName(
     ExecutionSlots,
     // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
     EvalContext& context) {
-  const int flags =
-      (expression.descriptor->fold_case || context.fold_name_case || expression.case_fold) ? FNM_CASEFOLD : 0;
-  return MatchesPreparedGlob(expression, operand, context.visit.name, flags);
+  return MatchNativeGlob(expression, context, [&](int flags) {
+    return MatchesPreparedGlob(expression, operand, context.visit.name, flags);
+  });
 }
 
 bool EvalPreparedPath(
@@ -3326,9 +3345,9 @@ bool EvalPreparedPath(
     ExecutionSlots,
     // NOLINTNEXTLINE(misc-const-correctness): PreparedEvalFn requires a mutable context.
     EvalContext& context) {
-  const int flags =
-      (expression.descriptor->fold_case || context.fold_name_case || expression.case_fold) ? FNM_CASEFOLD : 0;
-  return MatchesPreparedGlob(expression, operand, context.visit.path, flags);
+  return MatchNativeGlob(expression, context, [&](int flags) {
+    return MatchesPreparedGlob(expression, operand, context.visit.path, flags);
+  });
 }
 
 PreparedOperand PrepareTypeOperand(std::string_view argument) {
@@ -4076,7 +4095,7 @@ Result EvaluatePredicateResult(Cursor cursor, EvalContext& context) {
     }
   }
   const bool matched = cursor.Predicate(context);
-  if (!context.control.output_error.ok()) {
+  if (!context.control.output_error.ok() || !context.control.metadata_error.ok()) {
     return {.unknown = true};
   }
   if (invalidate) {
