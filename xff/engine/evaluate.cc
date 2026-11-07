@@ -2191,7 +2191,7 @@ absl::StatusOr<GrepLineResult<kPublishRecords>> RenderGrepLines(
   content::LineContext selection(with_context ? ctx.grep_before : 0, with_context ? ctx.grep_after : 0);
   std::string rendered = std::move(records);
   rendered.clear();
-  std::vector<std::size_t> record_ends;
+  std::conditional_t<kPublishRecords, std::vector<std::size_t>, const std::vector<std::size_t>> record_ends;
   const auto buffer = [&](std::string_view text) {
     rendered.append(text);
     if constexpr (kPublishRecords) {
@@ -2214,7 +2214,7 @@ absl::StatusOr<GrepLineResult<kPublishRecords>> RenderGrepLines(
   };
   const auto visit = [&](std::size_t number, std::string_view text) {
     const bool selected = matcher.PartialMatch(text) != ctx.grep.invert;
-    matched = matched || selected;
+    matched |= selected;
     selection.Push(number, text, selected, emit_line);
     return true;
   };
@@ -4817,7 +4817,7 @@ absl::StatusOr<RenderedRgOutput> RenderRgRecords(
   const auto sink = context.emit;
   const auto buffer = [&](std::string_view text) { records.append(text); };
   context.emit = buffer;
-  const auto result = [&]() -> absl::StatusOr<bool> {
+  const auto result = [&] -> absl::StatusOr<bool> {
     if (search.multiline) {
       return EmitMultilineRg(output, search, context);
     }

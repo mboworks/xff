@@ -27,8 +27,10 @@ absl::StatusOr<std::string> Decode(std::span<const std::uint8_t> compressed, std
   // XFF_ABI_POINTER: Brotli's C API writes decoded bytes through a uint8_t pointer.
   result.resize_and_overwrite(expected_uncompressed_size, [&](char* buffer, std::size_t writable_bytes) noexcept {
     size = writable_bytes;
-    decode =
-        BrotliDecoderDecompress(compressed.size(), compressed.data(), &size, reinterpret_cast<std::uint8_t*>(buffer));
+    decode = BrotliDecoderDecompress(
+        compressed.size(), compressed.data(), &size,
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast) -- Brotli writes into char storage as bytes.
+        reinterpret_cast<std::uint8_t*>(buffer));
     return decode == BROTLI_DECODER_RESULT_SUCCESS ? size : 0;
   });
   if (decode != BROTLI_DECODER_RESULT_SUCCESS) {
