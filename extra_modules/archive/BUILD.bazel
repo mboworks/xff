@@ -735,3 +735,18 @@ cc_binary(
         "@zlib",
     ],
 )
+
+cc_test(
+    name = "archive_read_buffer_test",
+    size = "small",
+    srcs = ["archive_read_buffer_test.cc"],
+    deps = [
+        ":archive_reader_cc",
+        ":memory_archive_test_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)

@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Avoid redundant 64 KiB buffer clearing in legacy archive extraction.
+
 - Reduce temporary allocations and copies when lazily decoding the embedded language database.
 
 - Transfer validated rg output directly into matcher results, reusing retained buffers while preserving
