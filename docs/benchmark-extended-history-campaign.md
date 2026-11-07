@@ -213,8 +213,16 @@ reports are retained, and these profiles serve only as diagnostics.
 A separate experiment follows those profiles: construct the per-entry content snapshot's cache
 state only on demand, using inline `std::optional<State>` storage. Its source is
 `90abd2b3ef63b35833e8f9d96745475c6b9f182a`, based on the unchanged PR #1130 baseline. The
-experiment repeats all 60 cases for the candidate and an identical-baseline control, with
-27 measured rounds retaining 21. It includes active-content workloads to detect added overhead.
+experiment completed all 60 cases for the candidate and an identical-baseline control, with
+27 measured rounds retaining 21: 120 cells and 10,080 validated invocations. A separate targeted
+repeat adds 16 cells and 1,344 validated invocations. Broad 100,000-file listing is about 1% faster
+in both populations; broad metadata/date output is about 0.5% slower in both. Instruction counters
+show approximately 66 fewer user-space instructions per file in broad listing, a 2.75% reduction
+at 100,000 files. The snapshot grows from 88 to 96 bytes in the macOS construction probe. This is
+a separately reviewable candidate on `benchmark/lazy-content-state-20261107`, with the tradeoff
+documented in that branch's `docs/benchmarks/lazy-content-state-20261107.md`; it is not adopted by
+the benchmark tooling branch. macOS whole-command performance and hash-heavy workloads have not
+been qualified for this candidate.
 The candidate has no PR number; its standalone measurement manifest uses zero as an explicit
 experiment label. It must not enter the merged-PR history or be combined with either earlier
 population. Source, tests, build identities and samples live under `lazy-content/` in the same
