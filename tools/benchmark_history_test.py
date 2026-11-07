@@ -250,16 +250,16 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn('PREVIEW: ${{ steps.preview.outputs.available }}', publish)
         self.assertNotIn('PREVIEW: ${{ needs.preview.outputs.available }}', publish)
 
-    def test_fourth_candidate_always_schedules_fifth_after_unresolved_initial_set(self):
+    def test_fifth_candidate_requires_unresolved_fourth_agreement(self):
         workflow = repository_file('.github/workflows/benchmarks.yml').read_text()
         for platform_name in ('linux', 'macos'):
             with self.subTest(platform=platform_name):
                 job = workflow.split(f'  measure-fifth-{platform_name}:', 1)[1]
                 job = re.split(r'\n  [a-z][a-z-]*:', job, maxsplit=1)[0]
-                self.assertIn(f'needs: [select-initial, measure-fourth-{platform_name}]', job)
-                self.assertIn(f"needs.select-initial.outputs.{platform_name}_fourth == 'true'", job)
-                self.assertIn(f"needs.measure-fourth-{platform_name}.result == 'success'", job)
-                self.assertNotIn('select-fourth.outputs', job)
+                self.assertIn('needs: select-fourth', job)
+                self.assertIn("needs.select-fourth.result == 'success'", job)
+                self.assertIn(f"needs.select-fourth.outputs.{platform_name}_fifth == 'true'", job)
+                self.assertNotIn('needs.select-initial.outputs', job)
 
     def test_pr_and_main_measurements_use_the_same_runner_identity(self):
         main = repository_file(".github/workflows/benchmarks.yml").read_text()

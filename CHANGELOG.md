@@ -3,6 +3,11 @@
 
 # 0.11.0
 
+- Avoid unnecessary per-entry stat requests for lexical listing templates while preserving required
+  metadata, fuzzy scores and conservative column output.
+
+- Skip a fifth main-branch benchmark measurement once four candidates provide a compatible quorum.
+
 - Reduce temporary allocations and copies when lazily decoding the embedded language database.
 
 - Transfer validated rg output directly into matcher results, reusing retained buffers while preserving

@@ -226,6 +226,89 @@ TEST_F(FieldsTest, TimeZoneDemandIncludesTransformedTimeFields) {
   EXPECT_THAT(Template::Compile("{{mtime}} {name} {size} {text}").NeedsTimeZone(), IsFalse());
 }
 
+TEST_F(FieldsTest, StatDemandComesFromCompiledFieldBindingsIncludingAliasesAndTransforms) {
+  constexpr auto kStatFields = std::to_array<std::string_view>({
+      "{access}",
+      "{atime}",
+      "{blocks:h}",
+      "{btime:epoch}",
+      "{ctime}",
+      "{dev}",
+      "{gid}",
+      "{group}",
+      "{hash}",
+      "{hash:md5}",
+      "{inode}",
+      "{lines}",
+      "{links}",
+      "{mode}",
+      "{mtime}",
+      "{owner}",
+      "{perm}",
+      "{size}",
+      "{target}",
+      "{type}",
+      "{uid}",
+      "{user}",
+      "{name}:{size:s/7/seven/}",
+  });
+  constexpr auto kContextFields = std::to_array<std::string_view>({
+      "",
+      "literal",
+      "{{size}}",
+      "{}",
+      "{path}",
+      "{relpath}",
+      "{name}",
+      "{file}",
+      "{root}",
+      "{dir}",
+      "{ext}",
+      "{extension}",
+      "{stem}",
+      "{core}",
+      "{suffix}",
+      "{suffixes}",
+      "{depth}",
+      "{lang}",
+      "{language}",
+      "{lang-type}",
+      "{lang-color}",
+      "{lang-group}",
+      "{lang-source}",
+      "{mime}",
+      "{mime-category}",
+      "{mime-charset}",
+      "{mime-compressible}",
+      "{mime-description}",
+      "{mime-source}",
+      "{line}",
+      "{text}",
+      "{match}",
+      "{column}",
+      "{fuzzy}",
+      "{shard}",
+      "{0}",
+      "{def.size}",
+      "{env.XFF_TEST_UNUSED}",
+      "{capture.size}",
+      "{name:s/txt/log/}",
+      "{def.value:m/x/y/;join(,)}",
+  });
+  for (const auto text : kStatFields) {
+    SCOPED_TRACE(text);
+    const auto field = Template::Compile(text);
+    ASSERT_THAT(field.Validate(), IsOk());
+    EXPECT_THAT(field.NeedsStatMetadata(), IsTrue());
+  }
+  for (const auto text : kContextFields) {
+    SCOPED_TRACE(text);
+    const auto field = Template::Compile(text);
+    ASSERT_THAT(field.Validate(), IsOk());
+    EXPECT_THAT(field.NeedsStatMetadata(), IsFalse());
+  }
+}
+
 TEST_F(FieldsTest, LinkTargetDemandUsesCompiledBindingsIncludingTransforms) {
   static constexpr auto kTargetFields = std::to_array<std::string_view>({
       "{target}",
