@@ -224,6 +224,32 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertNotIn('shards/*/*.json', measure)
         self.assertIn("git -C site add --all", publish)
 
+    def test_obsolete_queued_previews_skip_site_loading_and_collection_races_skip_rendering(self):
+        workflow = repository_file('.github/workflows/benchmark_pages.yml').read_text()
+        publish = workflow.split('  publish:', 1)[1]
+        admission = "needs.preview.outputs.available != 'true' || steps.preview-current.outputs.available == 'true'"
+        collected = "needs.preview.outputs.available != 'true' || steps.preview.outputs.available == 'true'"
+        check = publish.split('      - name: Recheck queued PR preview before loading the retained site', 1)[1]
+        check = check.split('\n      - ', 1)[0]
+        self.assertIn("if: needs.preview.outputs.available == 'true'", check)
+        self.assertIn('id: preview-current', check)
+        self.assertIn('benchmark_preview_ci.py current', check)
+        self.assertIn('--output="${GITHUB_OUTPUT}"', check)
+        self.assertLess(publish.index('id: preview-current'), publish.index('ref: coverage-pages'))
+        self.assertIn('      - uses: actions/checkout@v7\n        if: ' + admission + '\n        with:\n'
+                      '          ref: coverage-pages', publish)
+        for marker, condition in (
+                ('name: Expand retained benchmark inputs', admission),
+                ('name: Verify and retain current PR benchmark JSON', "steps.preview-current.outputs.available == 'true'"),
+                ('uses: actions/setup-node@v7', collected),
+                ('name: Build pinned benchmark renderer', collected),
+                ('name: Refresh and retain stable benchmark references', collected)):
+            with self.subTest(step=marker):
+                step = publish.split('      - ' + marker, 1)[1].split('\n      - ', 1)[0]
+                self.assertIn('if: ' + condition, step)
+        self.assertIn('PREVIEW: ${{ steps.preview.outputs.available }}', publish)
+        self.assertNotIn('PREVIEW: ${{ needs.preview.outputs.available }}', publish)
+
     def test_fifth_candidate_requires_unresolved_fourth_agreement(self):
         workflow = repository_file('.github/workflows/benchmarks.yml').read_text()
         for platform_name in ('linux', 'macos'):

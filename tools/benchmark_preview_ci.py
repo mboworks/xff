@@ -215,7 +215,7 @@ def update_retained_comments(api, root, site_url):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation', choices=('wait', 'collect', 'comment', 'comment-retained'))
+    parser.add_argument('operation', choices=('wait', 'current', 'collect', 'comment', 'comment-retained'))
     parser.add_argument('--repository', required=True)
     parser.add_argument('--run', type=int)
     parser.add_argument('--attempt', type=int)
@@ -233,6 +233,9 @@ def main():
         parser.error('comment-retained selects source runs from the deployed snapshot')
     if args.operation == 'wait':
         available = wait(api, args.run, args.attempt)
+    elif args.operation == 'current':
+        available = context(api, args.run, args.attempt) is not None
+        print(f'Benchmark preview {args.run}/{args.attempt}: {"current" if available else "obsolete"}', flush=True)
     elif args.root is None:
         parser.error('--root is required')
     elif args.operation == 'collect':

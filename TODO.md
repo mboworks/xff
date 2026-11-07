@@ -163,6 +163,9 @@ scope or declaring new flags implemented. See
 
 ## Pages deployment size
 
+- [x] Recheck queued PR preview freshness after acquiring the writer lock; skip site loading for
+      obsolete heads/attempts and skip rendering if collection discovers a later race. Preserve
+      normal main/release/backfill/manual reconciliation and all retained measurements.
 - [x] Separate retained-site writers from latest-snapshot deployment; coalesce deployment
       notifications only, preserve every source ingestion, and update current PR comments only
       after verifying the deployed snapshot.

@@ -4952,3 +4952,21 @@ rejections require the separate deployment/recovery work; this optimization cann
 recover missing source events. A sampled 728 MB site also exceeds the existing 200 MB
 storage-review threshold. Keep historical rendering and storage reduction open without
 dropping release/main observations or coverage aggregates.
+
+## Queued preview admission, 2026-11-07
+
+A benchmark preview can become obsolete after its waiter succeeds but before the
+serialized writer starts. The old workflow still checked out and expanded the retained
+site, then built the renderer and refreshed reports after collection returned no data.
+The recorded example rendered zero preview pages and pushed no changes, while paying
+for the full preparation/compaction interval. This is unnecessary work rather than an
+executable-performance change.
+
+Check current PR head, repository and source attempt again inside the writer job,
+before retained-site checkout. An explicitly obsolete preview skips that loading and
+all later preview work. If it becomes obsolete during site loading, collection's
+existing final check suppresses renderer setup and publication. Main/release/backfill/
+manual metadata reconciliation continues normally. API failures still fail rather
+than masquerading as obsolete data. Fresh previews pay one bounded source/PR API check;
+no fixed elapsed-time improvement is claimed. Old queued workflow definitions retain
+their original steps, and rejected producer events still need independent recovery.

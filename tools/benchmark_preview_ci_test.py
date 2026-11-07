@@ -40,6 +40,44 @@ def artifacts():
 
 
 class BenchmarkPreviewCiTest(unittest.TestCase):
+    def test_queued_preview_check_rejects_stale_source_without_loading_site_or_artifacts(self):
+        cases = (
+            ('current', source(), pull(), True),
+            ('new-attempt', dict(source(), run_attempt=3), pull(), False),
+            ('new-head', source(), dict(pull(), head={'sha': 'd' * 40, 'repo': {'id': 2}}), False),
+            ('closed', source(), dict(pull(), state='closed'), False),
+            ('wrong-repository', source(), dict(pull(), head={'sha': 'b' * 40, 'repo': {'id': 3}}), False),
+        )
+        for name, run, pr, available in cases:
+            with self.subTest(case=name), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / 'output'
+                api = mock.Mock(repository='owner/repo')
+                api.request.side_effect = lambda path: run if path == 'actions/runs/10' else pr
+                arguments = ['preview', 'current', '--repository=owner/repo', '--run=10', '--attempt=2',
+                             '--output=' + str(output)]
+                with mock.patch.object(sys, 'argv', arguments), mock.patch.object(ci, 'GitHub', return_value=api), \
+                        mock.patch.object(ci, 'collect') as collect, mock.patch.object(ci, 'wait') as wait:
+                    ci.main()
+                self.assertEqual(output.read_text(), f'available={str(available).lower()}\n')
+                api.pages.assert_not_called()
+                collect.assert_not_called()
+                wait.assert_not_called()
+                self.assertEqual(api.request.call_count, 1 if name == 'new-attempt' else 2)
+                self.assertEqual(list(Path(directory).iterdir()), [output])
+
+    def test_queued_preview_api_failure_is_an_error_not_an_obsolete_result(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'output'
+            arguments = ['preview', 'current', '--repository=owner/repo', '--run=10', '--attempt=2',
+                         '--output=' + str(output)]
+            api = mock.Mock()
+            failure = subprocess.CalledProcessError(1, ['gh'], stderr=b'gh: HTTP 503\n')
+            api.request.side_effect = failure
+            with mock.patch.object(sys, 'argv', arguments), mock.patch.object(ci, 'GitHub', return_value=api), \
+                    self.assertRaises(subprocess.CalledProcessError):
+                ci.main()
+            self.assertFalse(output.exists())
+
     def test_coalesced_deployment_comments_on_every_current_pr_once(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -79,7 +117,7 @@ class BenchmarkPreviewCiTest(unittest.TestCase):
             self.assertFalse(any(len(call.args) > 1 for call in api.request.call_args_list))
 
     def test_source_operations_still_require_both_run_and_attempt(self):
-        for operation in ('wait', 'collect', 'comment'):
+        for operation in ('wait', 'current', 'collect', 'comment'):
             for arguments in ([], ['--run=10'], ['--attempt=2']):
                 with self.subTest(operation=operation, arguments=arguments), \
                         mock.patch.object(sys, 'argv', ['preview', operation, '--repository=owner/repo', *arguments]), \
