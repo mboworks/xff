@@ -4581,11 +4581,10 @@ The following remain independent experiments, not promised speedups:
   Deep-root gains do not erase repeatedly slower wide/root listing controls. Preserve the old
   Linux full trial and deliberately partial Mac population separately from the new complete
   formatter-parent screens. A future loop/layout combination needs fresh qualification.
-- O19k: replace only the private immutable archive node map with Abseil's B-tree. Index is the
-  sole mutation phase; later APIs return owned values/sources and do not retain node iterators.
-  Verify that audit and insertion/large-Node relocation costs on both systems. The pinned default
-  string comparator enables transparent three-way lookup; explicitly passing `less<>` would skip
-  that specialization. Keep this independent of descendant skipping before testing integration.
+- O19k: [historical B-tree evaluation reconciled without adoption](benchmarks/archive-btree-historical-decision-20261107.md).
+  Construction and chain gains do not erase wide/deep query costs. Original source/linking settings
+  differ from current production and contemporaneous image receipts are incomplete; do not claim
+  current-main qualification. A directory-specific child index remains a distinct future design.
 - O19i2: [qualified bounded direct-child capacity hint](benchmarks/archive-directory-child-capacity-20261106.md).
   The count fits existing `Node` padding, while the root count adds 8 bytes per archive FS.
   Mac and Linux measurements show large flat/wide-root listing gains, neutral construction, and
@@ -4657,8 +4656,9 @@ No production index, CLI, comparator, safety setting or ownership behavior chang
 Transparent `lower_bound` plus hinted ancestor insertion remains an independent unmeasured
 candidate. Preserve duplicate replacement, synthesized flags, child counts and inode order.
 Measure public construction and destruction including parsing, not only hot listings whose
-index setup is untimed. A future B-tree audit still must account for relocated small-string
-map keys and escaping references.
+index setup is untimed. The [historical B-tree audit and trial](benchmarks/archive-btree-historical-decision-20261107.md)
+found no escaping node references but rejected the container policy after wide/deep costs.
+Its older source/settings and missing contemporaneous image receipts do not establish current-head qualification.
 
 O29 examines borrowed normalized member-key views for immediate stat/access/readlink/cache
 lookups. Normalization only selects a contiguous input subview. Stored index keys and both
@@ -4836,6 +4836,102 @@ until favorable. No full three-session population, native/listing expansion or n
 full-root/sanitizer qualification is claimed. Preserve both complete populations,
 source/image identities, the failed pre-timing executable-mode setup and raw controls.
 O27a, O27b and O27c are now separately evaluated without changing the production index.
+
+### O19b3: immutable-memory ZIP locators (runtime deferred)
+
+A complete budget-admitted prototype records positions during the existing ZIP listing and
+transfers them to synthetic inode IDs without another path index or larger member/node records.
+Immutable-memory sources have cheap independent positions; host, member, decoded and unknown
+sources retain sequential fallback. The selected streaming reader handles optional ZIP descriptor
+signatures, independently validated with a small fixture. The complete prototype, source phases,
+regression tests, raw populations and diagnostics are retained in the
+[immutable ZIP locator evaluation](benchmarks/immutable-zip-locator-evaluation-20261107.md)
+and its individually hashed lossless artifact.
+
+Both hosts complete 90 production filesystem API cases across three sessions of nine raw
+repetitions and an exact-image repeat control, retaining fastest-seven means. Opening and reading
+later members improves about 47%, and opening/reading first/middle/last improves about 57%.
+Native full-CLI controls cover 48 cases per host, 4,320 oracle-checked invocations each, and show
+no material gain. Frozen full image costs are +36,864 bytes on Mac and +63,240 bytes on Linux.
+
+Defer runtime adoption: a large first deflate read costs +27.17% on Mac (same-image control +0.50%),
+and two large stored first reads cost +10.95%/+11.45% on Linux (controls -1.12%/-0.42%). The isolated
+root-offset variant does not remove the Linux cost and loses small-first gains. Same-binary input
+traffic is identical (17 calls/1,048,805 bytes). Sampled hot-loop instructions match after relative
+address/string-symbol normalization; placement/allocation causes remain hypotheses. Keep the slower
+cells and noisy small Mac cohorts rather than averaging away the decision.
+
+The prototype passes 324 release targets on each host before final test-only boundary extensions;
+six affected ASan targets pass on each host, six Linux MSan targets pass, and concurrency passes
+Linux TSan. The revised Zip64/single-byte-read/traffic target passes optimized/ASan on Mac and
+optimized/ASan/MSan/TSan on Linux. Exploratory six-target coverage covers 139/143 changed production
+lines and 66/76 branches; it is not final PR CI. No local clang-tidy ran. Eliminate repeatable
+first-read costs before a new runtime proposal, then qualify the changed implementation on both
+hosts. Stable native identity and streamed-ZIP metadata-size recovery remain separately open.
+
+### O18a: queued read cancellation policies remain unselected
+
+The current-main ownership audit reproduces five avoidable queued reads after an explicit stop.
+Both-host deterministic tests hold two active readers, stop at the available child, then release
+them only after frontier leases unwind; parent nine-call behavior becomes four with exact serial
+visits/errors and request-recycling coverage. Active I/O remains uninterruptible.
+
+Neither policy qualifies from bounded ordinary cost screens. A per-dispatch acquire load costs
+about 2-4% in Mac API cohort medians and 1-2% in Linux parallel medians. An explicit stop under
+the existing pool mutex avoids the new task load but shows roughly 6-9% Mac serial API costs;
+native Mac cohort costs range roughly 0.7-3.2%. All slower cells and same-image repeat controls
+remain visible; these are one-session 3/2 screens, not full 3-session 9/7 qualification.
+A destructor-only draft is unmeasured because audit found cleanup can precede setting stop.
+
+Retain all three sources and phase-specific tests in
+[the cancellation decision](benchmarks/queued-read-cancellation-20261107.md). Dispatch-policy full 323-target suites pass
+both hosts; explicit-stop focused optimized/ASan and Linux MSan/TSan pass, with no final full
+runtime CI claim. Publish only report/evidence; retain broader O18 byte backpressure, fairness,
+ordered publication and a lower-cost cancellation redesign as open work.
+
+### O19k: reconcile the historical B-tree trial without adoption
+
+[The historical decision](benchmarks/archive-btree-historical-decision-20261107.md) recovers the completed both-host trial that
+tracking still called unmeasured. Replacing only the private node map improved construction
+medians about 7.06% on Mac and 0.66% on Linux, but directory medians cost 1.92%/2.60%; most wide
+and deep queries regress, including Linux individual costs near 15-19%. Keep the container swap
+unselected rather than choosing by a geometric mean dominated by strong chain/root cells.
+
+All corrected three-session nine-repeat/seven-retained raw data, overwritten-control initial
+screens, source patch and analysis are preserved. Historical base `45f4c5e` differs from current
+archive ownership/scanning and release linking; original exact-image/compiler receipts are
+incomplete. Later captures are explicitly later. This is not current-main runtime qualification.
+A duplicate fresh draft was stopped before compilation/timing. Retain future directory-specific
+index designs separately and do not repeat this unchanged container policy until favorable.
+
+### O31: compiled field demand, template-only admission and retained costs
+
+Implicit output previously forced eager metadata for every compiled template or column, even
+literal/path-only output. The field registry now owns a conservative stat requirement; compiled
+segments retain it and planning queries it once. Only implicit templates use it for admission.
+Columns remain eager after a repeated Linux many-directory/10,000-file/three-CPU TSV cost of
+about +24% rejected the combined policy. There is no OS, timer, count or CPU threshold.
+Fuzzy-score observation stays independent, preserving template/column scores and per-entry reset.
+
+[The complete decision, raw capsule and all-cell analysis](benchmarks/compiled-field-stat-demand-20261107.md)
+retain initial screens, the original fuzzy correctness failure, corrected combined runs and the
+separate template-only current-main experiment. Template-only native cohort medians improve
+about 1-4% on Mac and 2-11% on Linux; memory targets improve about 6-17%. Costs are not hidden:
+Mac serial memory plain/size cohorts are +3.24%/+4.04%, individual Linux native size controls
+reach about +5.6%/+7.7%, and Mac parallel memory repeat variability limits precision. This is a
+targeted optimization with documented tradeoffs, not a universal no-regression claim.
+
+The separate variant is based on `1786340680499f50b08dee5b1ceffbc20fd7b533`. Both-host seven
+focused suites and all 323 targets pass, as do ASan on both hosts and focused MSan/TSan on Linux.
+Parent proofs reproduce 1,001 stat requests rather than one for four template forms at one/three
+workers;
+columns retain their old eager expectations. Actual shipping-config compile/link action and
+frozen-image receipts are retained; the measurement-only harness is restored. These development
+results do not substitute for current synchronized public-head checks.
+
+Column pipeline causes, score-consumer-specific demand and conditional stat-bearing field
+admission remain separate future work. Do not reopen the combined policy unchanged or use a
+cohort median to hide its slower case.
 
 ## Repeated publication compression, 2026-11-07
 
