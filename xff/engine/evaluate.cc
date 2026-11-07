@@ -4028,8 +4028,15 @@ void PreviewExecution(const parser::Expr& expr, const EvalContext& context) {
   context.emit(preview);
 }
 
-template<typename Cursor>
-EvaluationResult EvaluatePredicateResult(Cursor cursor, EvalContext& context) {
+// Ordinary expressions need only truth and failure. Keep their recursive return value in
+// registers instead of transporting score and deferred-node storage through every operator.
+struct BooleanResult {
+  bool matched = false;
+  bool unknown = false;
+};
+
+template<typename Result = EvaluationResult, typename Cursor>
+Result EvaluatePredicateResult(Cursor cursor, EvalContext& context) {
   const auto& expr = cursor.Get();
   const bool invalidate = !expr.descriptor->pure || expr.descriptor->kind == registry::Kind::kAction;
   if (invalidate) {
@@ -4046,10 +4053,18 @@ EvaluationResult EvaluatePredicateResult(Cursor cursor, EvalContext& context) {
     return {.unknown = true};
   }
   if (expr.descriptor->control == registry::Control::kTop) {
-    return EvaluateTop(expr, context);
+    if constexpr (std::is_same_v<Result, EvaluationResult>) {
+      return EvaluateTop(expr, context);
+    } else {
+      return {};  // The boolean evaluator is selected only without deferred state.
+    }
   }
   if (expr.descriptor->control == registry::Control::kShardStatus) {
-    return EvaluateShardStatus(expr, context);
+    if constexpr (std::is_same_v<Result, EvaluationResult>) {
+      return EvaluateShardStatus(expr, context);
+    } else {
+      return {};
+    }
   }
   const bool matched = cursor.Predicate(context);
   if (!context.control.output_error.ok()) {
@@ -4059,7 +4074,51 @@ EvaluationResult EvaluatePredicateResult(Cursor cursor, EvalContext& context) {
     // An action may read fields before mutating this same file through its sink.
     context.content.Invalidate();
   }
-  return {.fuzzy = context.fuzzy_score.has_value() ? *context.fuzzy_score : std::nullopt, .matched = matched};
+  if constexpr (std::is_same_v<Result, EvaluationResult>) {
+    return {.fuzzy = context.fuzzy_score.has_value() ? *context.fuzzy_score : std::nullopt, .matched = matched};
+  } else {
+    return {.matched = matched};
+  }
+}
+
+template<typename Cursor>
+BooleanResult EvaluateBoolean(Cursor cursor, EvalContext& context) {
+  using Kind = parser::Expr::Kind;
+  const Kind kind = cursor.Get().kind;
+  if (kind == Kind::kPredicate) {
+    return EvaluatePredicateResult<BooleanResult>(cursor, context);
+  }
+  const BooleanResult lhs = EvaluateBoolean(cursor.Left(), context);
+  if (lhs.unknown) {
+    return lhs;
+  }
+  switch (kind) {
+    case Kind::kNot: return {.matched = !lhs.matched};
+    case Kind::kAnd:
+    case Kind::kNand:
+      if (!lhs.matched) {
+        return {.matched = kind == Kind::kNand};
+      }
+      break;
+    case Kind::kOr:
+    case Kind::kNor:
+      if (lhs.matched) {
+        return {.matched = kind == Kind::kOr};
+      }
+      break;
+    default: break;
+  }
+  const BooleanResult rhs = EvaluateBoolean(cursor.Right(), context);
+  if (rhs.unknown) {
+    return rhs;
+  }
+  switch (kind) {
+    case Kind::kNand:
+    case Kind::kNor: return {.matched = !rhs.matched};
+    case Kind::kXor: return {.matched = lhs.matched != rhs.matched};
+    case Kind::kXnor: return {.matched = lhs.matched == rhs.matched};
+    default: return rhs;
+  }
 }
 
 template<typename Cursor>
@@ -4083,6 +4142,15 @@ EvaluationResult EvaluateResult(Cursor cursor, EvalContext& context) {
     }
   }
   return {.matched = true};
+}
+
+template<typename Cursor>
+EvaluationResult EvaluatePrepared(Cursor cursor, EvalContext& context) {
+  if (!context.fuzzy_score.has_value() && !context.deferred.has_value()) {
+    const BooleanResult result = EvaluateBoolean(cursor, context);
+    return {.matched = result.matched, .unknown = result.unknown};
+  }
+  return EvaluateResult(cursor, context);
 }
 
 }  // namespace
@@ -4295,7 +4363,7 @@ absl::StatusOr<PreparedExpression> PreparedExpression::Prepare(const parser::Exp
 
 EvaluationResult PreparedExpression::Evaluate(EvalContext& context) const {
   const Cursor::Environment environment{.data = *data_};
-  const auto result = EvaluateResult(Cursor{.environment = environment, .node = data_->nodes.front()}, context);
+  const auto result = EvaluatePrepared(Cursor{.environment = environment, .node = data_->nodes.front()}, context);
   if (context.fuzzy_score.has_value()) {
     *context.fuzzy_score = result.fuzzy;
   }
@@ -4538,7 +4606,7 @@ PreparedExpression::Worker PreparedExpression::MakeWorker(MatcherInitialization 
 EvaluationResult PreparedExpression::Worker::Evaluate(EvalContext& context) const {
   const auto& environment = state_->environment;
   const auto result =
-      EvaluateResult(Cursor{.environment = environment, .node = environment.data.nodes.front()}, context);
+      EvaluatePrepared(Cursor{.environment = environment, .node = environment.data.nodes.front()}, context);
   if (context.fuzzy_score.has_value()) {
     *context.fuzzy_score = result.fuzzy;
   }

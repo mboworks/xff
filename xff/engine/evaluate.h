@@ -369,6 +369,8 @@ class BoundExpression final {
 
 // Bound tree with typed immutable operand pools. Source ownership follows
 // BoundExpression. Preparation performs no filesystem or account-database observations.
+// Evaluation without scoring or deferred state uses compact boolean results internally;
+// both paths share predicate effects, metadata checks, and failure handling.
 class PreparedExpression final {
  private:
   struct Data;

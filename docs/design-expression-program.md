@@ -775,6 +775,14 @@ batches can return to the coordinator. Capture state stays in each evaluation co
 worker object may be evaluated concurrently with itself. Plans and source expressions outlive
 workers; moving a plan preserves its backing storage.
 
+Prepared evaluation selects compact boolean recursion when the entry has neither a fuzzy-score
+observer nor deferred evaluation state. Each recursive result then carries only truth and an
+unknown/error flag; score and waiting-node storage is constructed once for the public result.
+The predicate wrapper remains shared with general evaluation, including metadata observations,
+dry-run previews, cache invalidation and output errors. Scoring or deferred contexts retain the
+general evaluator. This selection preserves source order and every boolean operator's
+short-circuit behavior; it performs no expression rewriting.
+
 The driver avoids preparation for unused parallel paths and shares preparation when the serial
 and pooled expressions are the same source node. A split filter/output expression retains its own
 preparation because each side has a different root. Deferred replay continues through the serial
