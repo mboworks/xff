@@ -1468,9 +1468,11 @@ this as intentional accounting.
 - [x] O27b: Screen direct mapped-node construction on current main. All 28 fixture oracles and
       focused tests pass on both hosts, but the screen does not justify adoption or full timing.
       Both decisions and the lossless evidence are in the [O27 report](docs/benchmarks/archive-index-insertion-20261107.md).
-- [ ] O27c: Independently measure transparent lower_bound plus hinted ancestor insertion.
-      Preserve duplicate overwrite, synthesis flags, child counts and inode order. Public
-      construction/destruction benchmarks include parsing/source costs; hot-listing setup does not.
+- [x] O27c: Screen transparent lower_bound plus hinted archive ancestor insertion on both hosts.
+      All 28 construction oracles and focused tests pass. Linux shape medians improve 2.89-4.35%,
+      but Mac flat/100,000 costs 13.97% with same-image repeat -0.79%; do not adopt the runtime.
+      Retain the isolated prototype and every raw case in the [hinted-insertion report](docs/benchmarks/archive-ancestor-hint-20261107.md).
+      All three requested O27 mechanisms are now evaluated; further index work needs a new hypothesis.
 - [x] O29: [Qualify borrowed archive member keys and bounded parent-length checks](docs/benchmarks/archive-member-keys-20261105.md).
       Both full 333-target release suites, relevant sanitizers, actual changed-TU lint, exact
       ordinary release images and 15/15 lines plus 2/2 branches pass. All 14 targeted operations
