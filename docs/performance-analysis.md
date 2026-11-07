@@ -4928,3 +4928,22 @@ A valid empty gzip is rejected by the unchanged legacy API before this buffer; i
 expected errors per participant/session remain availability data with no speed ratio.
 That separate defect is tracked. All 2,114 hashed evidence records are retained; no
 research benchmark target/source is published. Current public integration CI remains required.
+
+### O14 follow-up: exact JSON list reservation not selected
+
+A one-line `StringList` prototype reserves the already-known JSON array length.
+Six focused release suites pass on each host, and complete fresh-process controls
+preserve every list value. Three balanced sessions per host (16 cases, nine rounds,
+fastest seven, identical parent copy) show modest linked cold snapshot/catalog gains:
+Mac -1.121%/-0.474%, Linux -0.627%/-0.556%. The complete earlier Linux driver and
+unchanged/empty-list controls retain variability and costs; no convincing practical
+whole-command gain is established. Keep the current runtime and preserve both
+harness versions, the complete final 1,296 timed observations plus 144 warmups per
+host, and the partial first Mac attempt in
+[the decision report](benchmarks/language-list-reserve-20261107.md).
+This does not qualify generated immutable catalogs or close the broader O14 design.
+
+The [candidate completion audit](performance-candidate-completion-audit.md) preserves
+the original 22families, distinguishes rejected trials from unimplemented parent
+requirements, and identifies the next ownership/admission gates for O18. It does
+not substitute historical or child checks for current integration and main health.
