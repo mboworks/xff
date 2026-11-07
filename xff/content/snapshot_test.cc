@@ -60,6 +60,49 @@ struct SnapshotTest : ::testing::Test {
   Snapshot snapshot;
 };
 
+TEST_F(SnapshotTest, EmptySnapshotsRemainLazyAcrossCopyMoveAndInvalidation) {
+  Snapshot copied(snapshot);
+  Snapshot moved(std::move(copied));
+  snapshot.Invalidate();
+  snapshot.Invalidate();
+  moved.Invalidate();
+  const auto derived = std::move(moved).TakeDerived({.lines = true}, fs, "file");
+  EXPECT_THAT(snapshot.Loaded(), IsFalse());
+  EXPECT_THAT(derived.Loaded(), IsFalse());
+  EXPECT_THAT(fs.reads, Eq(0));
+  EXPECT_THAT(derived.Lines(fs, "file"), Optional(2));
+  EXPECT_THAT(fs.reads, Eq(1));
+}
+
+TEST_F(SnapshotTest, AssignmentReplacesCachedContentAndDerivedValues) {
+  EXPECT_THAT(snapshot.Lines(fs, "file"), Optional(2));
+  const auto digest = snapshot.Digest(fs, "file", {.algo = "sha256"});
+  Snapshot copied(snapshot);
+  snapshot = Snapshot{};
+  EXPECT_THAT(snapshot.Loaded(), IsFalse());
+  fs.bytes = "replacement";
+  EXPECT_THAT(snapshot.Lines(fs, "file"), Optional(1));
+  snapshot = copied;
+  EXPECT_THAT(snapshot.Lines(fs, "file"), Optional(2));
+  EXPECT_THAT(snapshot.Digest(fs, "file", {.algo = "sha256"}), Eq(digest));
+  copied.Invalidate();
+  EXPECT_THAT(snapshot.Lines(fs, "file"), Optional(2));
+  snapshot = std::move(copied);
+  EXPECT_THAT(snapshot.Loaded(), IsFalse());
+  EXPECT_THAT(snapshot.Lines(fs, "file"), Optional(1));
+  EXPECT_THAT(fs.reads, Eq(3));
+}
+
+TEST_F(SnapshotTest, EmptyDerivationTransfersNoCachesOrBytes) {
+  EXPECT_THAT(snapshot.Lines(fs, "file"), Optional(2));
+  const auto derived = std::move(snapshot).TakeDerived({}, fs, "file");
+  EXPECT_THAT(derived.Loaded(), IsFalse());
+  EXPECT_THAT(fs.reads, Eq(1));
+  fs.bytes = "replacement";
+  EXPECT_THAT(derived.Lines(fs, "file"), Optional(1));
+  EXPECT_THAT(fs.reads, Eq(2));
+}
+
 TEST_F(SnapshotTest, DerivedTransferRetainsRequestedValuesWithoutRetainingBytes) {
   EXPECT_THAT(snapshot.Read(fs, "file"), IsOkAndHolds(EqualsText(fs.bytes)));
   const auto digest = hash::HashData("md5", fs.bytes).value_or("unsupported");

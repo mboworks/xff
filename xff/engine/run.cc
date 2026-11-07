@@ -5842,6 +5842,7 @@ RunResult RunFindCore(
       emit(text);
     }
   };
+  render::RawRecordBuffer action_records('\n');
   std::optional<render::RawRecordBuffer> raw_records;
   if (format == render::Format::kNul
       || (format == render::Format::kPlain && path_encoding == render::PathEncoding::kRaw && !colorize)) {
@@ -6142,9 +6143,15 @@ RunResult RunFindCore(
   for (std::size_t index = 0; index < deferred_nodes.size(); ++index) {
     deferred_node_order.emplace(deferred_nodes[index], index);
   }
-  const bool full_metadata = (fs_native_case && !uniform_native_case) || colorize || any_reduction
-                             || matched_entry.has_value() || !column_templates.empty() || compiled_tmpl.has_value()
+  // Keep columns conservative: metadata-free tabular output still has an unresolved
+  // multi-directory Linux cost. Qualify template admission separately.
+  const bool listing_stat_metadata = !column_templates.empty() || (compiled_tmpl && compiled_tmpl->NeedsStatMetadata());
+  const bool full_metadata = colorize || any_reduction || matched_entry.has_value() || listing_stat_metadata
                              || collections.Active() || !deferred_nodes.empty();
+  // Template score collection is independent of filesystem metadata. Preserve the
+  // previous output contract even when lexical/context fields avoid eager stats.
+  const bool collect_fuzzy_score =
+      full_metadata || rank_by_score || compiled_tmpl.has_value() || !column_templates.empty();
   options.metadata = full_metadata            ? MetadataDemand::kAlways
                      : expression.has_value() ? ExpressionMetadata(*expression)
                                               : MetadataDemand::kNever;
@@ -6238,8 +6245,8 @@ RunResult RunFindCore(
       }
     }
     parallel_match.emplace(
-        parallel_expression, options.workers, full_metadata || rank_by_score, std::move(content_output),
-        executions->Parallel(), std::move(derivation));
+        parallel_expression, options.workers, collect_fuzzy_score, std::move(content_output), executions->Parallel(),
+        std::move(derivation));
   }
   std::vector<OwnedVisit> pending_matches;
   // Decision-only batches retain no file bytes or rendered line records. Give them more work
@@ -6265,6 +6272,7 @@ RunResult RunFindCore(
             .now = now,
             .tz = tz,
             .control = control,
+            .path_records = action_records,
         };
         if (output_evaluator) {
           output_evaluator->Evaluate(context);
@@ -6372,17 +6380,24 @@ RunResult RunFindCore(
         Control control;
         std::vector<std::string> captures;           // -regex groups for this entry; consumed by gated -exec {0}..{N}
         std::map<std::string, std::string> outputs;  // -capture results for this entry; read by {capture.NAME}
-        // FS-native name matching: fold -name/-path case on a case-folding volume
-        // (xff style, no --exact). Probe each device once, defaulting to
-        // case-sensitive (byte-exact) on the miss and on any probe error.
-        bool fold_name_case = uniform_fold_name_case;
-        if (fs_native_case && !uniform_native_case) {
+        // Resolve native case only when a reached predicate needs the distinction. No device
+        // observation is required when exact and folded glob results already agree.
+        std::optional<bool> native_fold;
+        const auto resolve_name_case = [&] {
+          if (native_fold) {
+            return *native_fold;
+          }
+          control.metadata_error = visit.EnsureMetadata();
+          if (!control.metadata_error.ok()) {
+            return false;
+          }
           auto [it, inserted] = case_sensitive_by_dev.try_emplace(visit.metadata.dev, true);
           if (inserted) {
             it->second = walk_fs.IsCaseSensitive(visit.path).value_or(true);
           }
-          fold_name_case = !it->second;
-        }
+          native_fold = !it->second;
+          return *native_fold;
+        };
         // The entry's colour, from the one palette this run resolved: used by the plain listing below
         // and by -ls's name column, so the two cannot disagree about what a file looks like.
         const std::string_view entry_color = colorize ? palette.CodeFor(
@@ -6413,9 +6428,12 @@ RunResult RunFindCore(
             .time_format = time_format,
             .zone_suffix = zone_suffix,
             .block_size = block_size,
-            .fold_name_case = fold_name_case,
-            .fuzzy_score = full_metadata || rank_by_score ? mbo::types::OptionalRef{fuzzy_score}
-                                                          : mbo::types::OptionalRef<std::optional<int>>{},
+            .fold_name_case = uniform_fold_name_case,
+            .resolve_name_case = fs_native_case && !uniform_native_case
+                                     ? std::optional<absl::FunctionRef<bool()>>(resolve_name_case)
+                                     : std::nullopt,
+            .fuzzy_score = collect_fuzzy_score ? mbo::types::OptionalRef{fuzzy_score}
+                                               : mbo::types::OptionalRef<std::optional<int>>{},
             .fuzzy_workspace = fuzzy_workspace,
             .hash_verification = hash_verification_summary ? mbo::types::OptionalRef{hash_verification}
                                                            : mbo::types::OptionalRef<std::optional<bool>>{},
@@ -6452,6 +6470,7 @@ RunResult RunFindCore(
             .mounts = mounted_containers,
             .archive_deletions = archive_delete ? mbo::types::OptionalRef{archive_deletions}
                                                 : mbo::types::OptionalRef<std::vector<std::string>>{},
+            .path_records = action_records,
         };
         const EvaluationResult evaluated = serial_evaluator ? serial_evaluator->Evaluate(eval_context)
                                            : expression     ? EvaluateDeferred(*expression, eval_context)
@@ -6611,6 +6630,7 @@ RunResult RunFindCore(
           .mounts = mounted_containers,
           .archive_deletions = archive_delete ? mbo::types::OptionalRef{archive_deletions}
                                               : mbo::types::OptionalRef<std::vector<std::string>>{},
+          .path_records = action_records,
       };
       const EvaluationResult evaluated =
           serial_evaluator ? serial_evaluator->Evaluate(eval_context) : EvaluateDeferred(*expression, eval_context);

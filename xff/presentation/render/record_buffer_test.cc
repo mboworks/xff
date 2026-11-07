@@ -47,6 +47,23 @@ TEST_F(RawRecordBufferTest, QueuedConsumersKeepIndependentRecords) {
   EXPECT_THAT(rows, ElementsAre(EqualsText("first\n"), EqualsText(std::string(160, 'x') + "\n"), EqualsText("last\n")));
 }
 
+TEST_F(RawRecordBufferTest, ExplicitTerminatorsAlternateWithoutChangingTheDefault) {
+  RawRecordBuffer buffer('\n');
+  std::vector<std::string> rows;
+  const auto keep = [&](std::string_view text) { rows.emplace_back(text); };
+  const std::string long_path(160, 'x');
+  buffer.EmitRecord(long_path, '\0', keep);
+  const auto grown = buffer.RetainedCapacity();
+  buffer.EmitRecord("short", '\n', keep);
+  buffer.EmitRecord("another", '\0', keep);
+  buffer.EmitRecord("default", keep);
+  EXPECT_THAT(buffer.RetainedCapacity(), Ge(grown));
+  EXPECT_THAT(
+      rows, ElementsAre(
+                EqualsText(long_path + '\0'), EqualsText("short\n"), EqualsText(std::string("another\0", 8)),
+                EqualsText("default\n")));
+}
+
 TEST_F(RawRecordBufferTest, RetainsUsefulCapacityButReleasesOversizedRecordsAfterConsumption) {
   RawRecordBuffer buffer('\n');
   const auto consume = [](std::string_view) {};

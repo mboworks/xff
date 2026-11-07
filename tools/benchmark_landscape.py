@@ -405,9 +405,12 @@ def view_controls(attribute):
             '<option value="reference">Reference normalized</option><option value="raw">Raw</option></select></label> ')
 
 
-def history_panel(catalog):
+def history_panel(catalog, *, include_overview=True):
     """A bounded catalog; only the selected report's six views are downloaded."""
     data = json.dumps(catalog, allow_nan=False).replace('<', '\\u003c')
+    overview = ('<section data-overview aria-live="polite"><h2>Performance overview</h2>'
+                '<p>Select a measurement to compare it with its recorded merged baseline.</p></section>'
+                if include_overview else '')
     return ('<section id="benchmark-explorer">'
             '<details id="benchmark-history-chart" open><summary hidden>3D comparison chart</summary>'
             '<details data-help-panel class="landscape-card">'
@@ -449,6 +452,7 @@ def history_panel(catalog):
             '<summary><strong>Version</strong></summary><div data-version-body>'
             '<table class="landscape-version-table"><tbody>'
             '<tr><th scope="row">Version</th><td data-version-count></td></tr>'
+            '<tr data-comparison-row hidden><th scope="row">Comparison</th><td data-comparison-role></td></tr>'
             '<tr><th scope="row">Commit</th><td><a data-report title="Open the full benchmark report"></a></td></tr>'
             '<tr data-links-row><th scope="row">PR / Release</th><td data-version-links>Not available</td></tr>'
             '<tr><th scope="row">Revision date</th><td data-revision-date></td></tr>'
@@ -466,8 +470,7 @@ def history_panel(catalog):
             '<input data-control="version" type="range" min="0" max="0" step="1" value="0" '
             'aria-label="Version"><button type="button" data-version-next aria-label="Next version">+</button>'
             '</div></div></details></div></details>'
-            '<section data-overview aria-live="polite"><h2>Performance overview</h2>'
-            '<p>Select a measurement to compare it with its recorded merged baseline.</p></section>'
+            + overview +
             '<script src="assets/three-landscape.js"></script><script>'
             'window.XffBenchmarkHistory(document.getElementById("benchmark-explorer"),' + data + ');'
             '</script></section>')

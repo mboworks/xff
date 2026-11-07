@@ -1,5 +1,12 @@
 # Benchmark correctness audit and native investigation
 
+The [2026-11-07 chart sensitivity audit](benchmark-chart-sensitivity-audit.md) revisits whether
+the published landscape can demonstrate optimization progress. Its raw-to-figure arithmetic and
+browser sensitivity checks pass, but it identifies workloads that bypass major optimized paths,
+omitted XFF-only tasks, and limits of competitor-relative presentation in the current CI charts.
+The current assessment excludes the old local Linux v2 dataset.
+The earlier consistency checks below do not establish that the benchmark covers those improvements.
+
 ## Scope and status
 
 Implementation and native-session handoff: [PR #990](https://github.com/mboworks/xff/pull/990),
