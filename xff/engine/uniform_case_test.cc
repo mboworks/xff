@@ -209,7 +209,9 @@ TEST_F(UniformCaseTest, MixedDevicesCacheAnswersAndErrorsInOrdinaryAndDeferredPa
         result.output, EqualsText("/fixture/Foo0.TXT\n/fixture/Foo3.txt\n/fixture/Foo4.txt\n/fixture/Foo5.TXT\n"));
     EXPECT_THAT(result.diagnostics, IsEmpty());
     EXPECT_THAT(result.result.errors, Eq(0));
-    EXPECT_THAT(result.case_paths, ElementsAre("/fixture", "/fixture/Foo1.TXT", "/fixture/Foo2.TXT"));
+    // The directory fails -type f before native-case matching; each device is probed at its
+    // first reached leaf. Repeated sensitive, insensitive, and failed answers stay cached.
+    EXPECT_THAT(result.case_paths, ElementsAre("/fixture/Foo0.TXT", "/fixture/Foo1.TXT", "/fixture/Foo2.TXT"));
     EXPECT_THAT(result.case_queries, Eq(3));
   }
 }
