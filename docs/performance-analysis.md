@@ -4721,3 +4721,18 @@ The complete retained O22c2d population contains 60 cases per host: 53 improve o
 on Linux. Short-path controls also retain costs, including macOS fallback directory rendering at
 1,000 entries (+5.4%) and Linux supplied-name rendering at 10 entries (+4.1%). The displayed
 long-path table is a subset, not a claim that only two measured cells are slower.
+
+### O17: retain specialized stage pools after shared-worker qualification
+
+Six same-head macOS/drogon implementations qualify shared executor dispatch, typed
+directory drains, preserved stage allowances, per-class demand, separate matcher
+pools and separate growth/dispatch locks. None qualifies for adoption. Fixed-size
+sharing slows Linux many-directory RE2 by 27-28%; preserving allowances reduces
+that cost but leaves native regressions. Sharing only disjoint reader/comparison
+phases improves some short comparisons, yet the final implementation makes a
+1,000-pair, four-worker Linux comparison 15.55% slower across three sessions.
+Keep the existing pools and preserve [the implementations, raw samples, controls
+and correctness evidence](benchmarks/shared-stage-workers-20261107.md). The nested
+mounted-walk test also demonstrates why a run-wide worker ceiling cannot silently
+replace independent useful stage allowances. O18 and the wider performance goal
+remain open; no production worker policy changes follow from these experiments.

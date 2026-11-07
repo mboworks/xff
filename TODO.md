@@ -479,8 +479,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       CPU-pair and scale selectors. Recompute on publication; keep Alphabetical available and
       verify hover/tick mapping. Judge performance from matched cells, not surface geometry.
       [40-report validation and recipe](docs/benchmarks/shared-benchmark-order-20261104.md).
-- [ ] O17: Qualify coordinated persistent stage workers against existing pools and prior rejected
-      caller-inclusive/admission policies. Preserve leaf jobs, explicit CPU/role accounting and JC gates.
+- [x] O17: Qualify coordinated persistent stage workers against existing pools and prior rejected
+      caller-inclusive/admission policies. Six implementations fail cross-platform qualification;
+      keep the specialized pools and retain [all variants and counterexamples](docs/benchmarks/shared-stage-workers-20261107.md).
+      Future reuse designs must preserve independent root/mount allowances, leaf jobs, owner
+      draining and JC gates, and remove the repeatable Linux comparison regression before adoption.
 - [ ] O18: Qualify byte-bounded overlap with backpressure, ordered publication and cancellation;
       avoid per-batch throwaway threads and nested waits on the same saturated pool.
 - [x] O19a: Qualify reusable session-owned archive input buffers on Linux/macOS, retaining short
