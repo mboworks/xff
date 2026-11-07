@@ -4947,3 +4947,15 @@ The [candidate completion audit](performance-candidate-completion-audit.md) pres
 the original 22families, distinguishes rejected trials from unimplemented parent
 requirements, and identifies the next ownership/admission gates for O18. It does
 not substitute historical or child checks for current integration and main health.
+
+### O18: ordered rg output heap credit remains unselected
+
+The [implementation and decision record](benchmarks/ordered-output-credit-20261107.md)
+preserves every contiguous/chunked, ownership, inline-capacity and notification
+variant, both full F1 native matrices and all focused refinements. Large-output
+elapsed time and retained RSS improve, but the final H2 prototype still slows
+Linux flat10,000/three-worker filename and line output by 10.24%/10.04%; copied
+baseline controls are -0.96%/-1.57%. All six focused correctness/sanitizer configs
+pass. Keep production unchanged, retain all raw controls and partial populations,
+and leave full O18 input/slot/source/temporary admission, native output and actual
+stage overlap open. No global memory bound or public-head CI claim follows.

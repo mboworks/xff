@@ -504,6 +504,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       draining and JC gates, and remove the repeatable Linux comparison regression before adoption.
 - [ ] O18: Qualify byte-bounded overlap with backpressure, ordered publication and cancellation;
       avoid per-batch throwaway threads and nested waits on the same saturated pool.
+      Retain the [ordered-output credit experiment](docs/benchmarks/ordered-output-credit-20261107.md).
+      All runtime refinements remain unselected after repeatable ordinary Linux output costs,
+      despite large-output/RSS gains. Solve synchronization costs and missing input/slot/source/
+      renderer-temporary admission independently; native output and stage overlap remain open.
 - [x] O19a: Qualify reusable session-owned archive input buffers on Linux/macOS, retaining short
       reads, errors, decoder fallbacks and shared reservations. Preserve all representation trials
       and controls in [the qualification report](docs/benchmarks/archive-input-buffers-20261102.md).
