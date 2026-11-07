@@ -142,7 +142,11 @@
     "docs/benchmarks/queued-read-cancellation-20261107.md": "docs/benchmarks/queued-read-cancellation-20261107.html",
     "docs/benchmarks/archive-btree-historical-decision-20261107.md": "docs/benchmarks/archive-btree-historical-decision-20261107.html",
     "docs/benchmarks/compiled-field-stat-demand-20261107.md": "docs/benchmarks/compiled-field-stat-demand-20261107.html",
-    "docs/benchmarks/unchanged-site-payloads-20261107.md": "docs/benchmarks/unchanged-site-payloads-20261107.html"
+    "docs/benchmarks/unchanged-site-payloads-20261107.md": "docs/benchmarks/unchanged-site-payloads-20261107.html",
+    "docs/benchmark-chart-sensitivity-audit.md": "docs/benchmark-chart-sensitivity-audit.html",
+    "docs/benchmark-extended-history-campaign.md": "docs/benchmark-extended-history-campaign.html",
+    "docs/benchmarks/find-listing-optimization-20261107.md": "docs/benchmarks/find-listing-optimization-20261107.html",
+    "docs/benchmarks/lazy-content-state-20261107.md": "docs/benchmarks/lazy-content-state-20261107.html"
   },
   "generated_html": {
     "XFF.md": {
@@ -172,6 +176,14 @@
     "docs/benchmarks/queued-read-cancellation-20261107.json.gz": "docs/benchmarks/queued-read-cancellation-20261107.json.gz",
     "docs/benchmarks/archive-btree-historical-decision-20261107.json.gz": "docs/benchmarks/archive-btree-historical-decision-20261107.json.gz",
     "docs/benchmarks/compiled-field-stat-demand-20261107.json.gz": "docs/benchmarks/compiled-field-stat-demand-20261107.json.gz",
-    "docs/benchmarks/unchanged-site-payloads-20261107.json.gz": "docs/benchmarks/unchanged-site-payloads-20261107.json.gz"
+    "docs/benchmarks/unchanged-site-payloads-20261107.json.gz": "docs/benchmarks/unchanged-site-payloads-20261107.json.gz",
+    "docs/benchmarks/chart-sensitivity-audit-20261107.json": "docs/benchmarks/chart-sensitivity-audit-20261107.json",
+    "docs/benchmarks/extended-history-builds-20261107.json": "docs/benchmarks/extended-history-builds-20261107.json",
+    "docs/benchmarks/extended-history-complete-audit-20261107.json": "docs/benchmarks/extended-history-complete-audit-20261107.json",
+    "docs/benchmarks/extended-history-results-20261107.json": "docs/benchmarks/extended-history-results-20261107.json",
+    "docs/benchmarks/extended-history-revisions-20261107.json": "docs/benchmarks/extended-history-revisions-20261107.json",
+    "docs/benchmarks/extended-history-viewer-check-20261107.json": "docs/benchmarks/extended-history-viewer-check-20261107.json",
+    "docs/benchmarks/find-listing-optimization-20261107.json": "docs/benchmarks/find-listing-optimization-20261107.json",
+    "docs/benchmarks/lazy-content-state-20261107.json": "docs/benchmarks/lazy-content-state-20261107.json"
   }
 }
