@@ -977,7 +977,7 @@ bool EvalFalse(const parser::Expr&, EvalContext&) {
 // entry is on a case-folding volume, xff style, no --exact), so -name matches
 // the way the filesystem itself resolves names.
 template<typename Matches>
-bool MatchNativeGlob(const parser::Expr& expr, const EvalContext& ctx, Matches&& matches) {
+bool MatchNativeGlob(const parser::Expr& expr, const EvalContext& ctx, const Matches& matches) {
   if (expr.descriptor->fold_case || ctx.fold_name_case || expr.case_fold) {
     return matches(FNM_CASEFOLD);
   }

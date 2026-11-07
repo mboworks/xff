@@ -347,8 +347,9 @@ TEST_F(ArchiveBackendTest, NameGateSupportsConcurrentFirstQueriesAfterRegistrati
   std::latch ready(matches.size());
   std::latch start(1);
   std::vector<std::jthread> workers;
-  for (std::size_t index = 0; index < matches.size(); ++index) {
-    workers.emplace_back([&, index] {
+  workers.reserve(matches.size());
+  for (bool& match : matches) {
+    workers.emplace_back([&match, &ready, &start] {
       ready.count_down();
       start.wait();
       bool correct = true;
@@ -356,7 +357,7 @@ TEST_F(ArchiveBackendTest, NameGateSupportsConcurrentFirstQueriesAfterRegistrati
         correct = correct && LooksLikeContainerName("one.ZIP") && LooksLikeContainerName("two.jar")
                   && !LooksLikeContainerName("plain.txt");
       }
-      matches.at(index) = correct;
+      match = correct;
     });
   }
   ready.wait();
