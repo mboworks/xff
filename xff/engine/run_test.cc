@@ -1598,6 +1598,25 @@ TEST_F(RunTest, Print0EmitsNulTerminatedRecords) {
   EXPECT_THAT(RunExpr({"-name", "a.txt", "-print0"}), UnorderedElementsAre(Path("a.txt")));
 }
 
+TEST_F(RunTest, ExplicitPathActionsKeepWholeRecordsAndTerminatorsIndependentOfListingFormat) {
+  const std::vector<std::string> expected{
+      Path("a.txt") + '\0', Path("a.txt") + '\n',     Path("b.md") + '\0',
+      Path("b.md") + '\n',  Path("sub/c.txt") + '\0', Path("sub/c.txt") + '\n',
+  };
+  for (const std::string_view format : {"--format=plain", "--format=nul", "--format=jsonl"}) {
+    SCOPED_TRACE(format);
+    ASSERT_OK_AND_ASSIGN(
+        auto command,
+        parser::Parse({std::string(format), "--sort=dir", root_.string(), "-type", "f", "-print0", "-print"}));
+    std::vector<std::string> records;
+    const auto result = RunFind(
+        command, fs_, [&](std::string_view record) { records.emplace_back(record); },
+        [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); });
+    EXPECT_THAT(result.errors, Eq(0));
+    EXPECT_THAT(records, Eq(expected));
+  }
+}
+
 TEST_F(RunTest, MaxDepthLimitsDescent) {
   // -maxdepth 1: root + its direct children, but not sub/c.txt (depth 2).
   EXPECT_THAT(

@@ -783,6 +783,13 @@ dry-run previews, cache invalidation and output errors. Scoring or deferred cont
 general evaluator. This selection preserves source order and every boolean operator's
 short-circuit behavior; it performs no expression rewriting.
 
+Explicit `-print` and `-print0` actions borrow one coordinator-owned raw record buffer across
+entries and deferred replay. The action chooses its own terminator independently of the implicit
+listing format, and each sink still receives one complete record per action. Parallel filter
+results emit through the coordinator and use the same buffer. Direct evaluator callers without
+this scratch retain local record construction; oversized records release retained storage after
+emission according to the renderer's existing bound.
+
 The driver avoids preparation for unused parallel paths and shares preparation when the serial
 and pooled expressions are the same source node. A split filter/output expression retains its own
 preparation because each side has a different root. Deferred replay continues through the serial

@@ -54,6 +54,10 @@ namespace xff::fuzzy {
 struct ScoreWorkspace;
 }  // namespace xff::fuzzy
 
+namespace xff::render {
+class RawRecordBuffer;
+}  // namespace xff::render
+
 namespace xff::engine {
 
 // Output sink for actions: receives one fully-formed record per action firing
@@ -315,6 +319,9 @@ struct EvalContext {
   // Empty - the default - keeps `-delete` a clean refusal on a member.
   mbo::types::OptionalRef<std::vector<std::string>> archive_deletions;
   ContentSnapshot content;
+  // Serial coordinator scratch for explicit path actions. The sink must consume the borrowed
+  // record before returning and must not re-enter this buffer. Unset callers use a local record.
+  mbo::types::OptionalRef<render::RawRecordBuffer> path_records;
 };
 
 // Evaluates a parsed find expression against one visited entry and returns its

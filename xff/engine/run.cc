@@ -5842,6 +5842,7 @@ RunResult RunFindCore(
       emit(text);
     }
   };
+  render::RawRecordBuffer action_records('\n');
   std::optional<render::RawRecordBuffer> raw_records;
   if (format == render::Format::kNul
       || (format == render::Format::kPlain && path_encoding == render::PathEncoding::kRaw && !colorize)) {
@@ -6265,6 +6266,7 @@ RunResult RunFindCore(
             .now = now,
             .tz = tz,
             .control = control,
+            .path_records = action_records,
         };
         if (output_evaluator) {
           output_evaluator->Evaluate(context);
@@ -6452,6 +6454,7 @@ RunResult RunFindCore(
             .mounts = mounted_containers,
             .archive_deletions = archive_delete ? mbo::types::OptionalRef{archive_deletions}
                                                 : mbo::types::OptionalRef<std::vector<std::string>>{},
+            .path_records = action_records,
         };
         const EvaluationResult evaluated = serial_evaluator ? serial_evaluator->Evaluate(eval_context)
                                            : expression     ? EvaluateDeferred(*expression, eval_context)
@@ -6611,6 +6614,7 @@ RunResult RunFindCore(
           .mounts = mounted_containers,
           .archive_deletions = archive_delete ? mbo::types::OptionalRef{archive_deletions}
                                               : mbo::types::OptionalRef<std::vector<std::string>>{},
+          .path_records = action_records,
       };
       const EvaluationResult evaluated =
           serial_evaluator ? serial_evaluator->Evaluate(eval_context) : EvaluateDeferred(*expression, eval_context);

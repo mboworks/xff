@@ -77,6 +77,7 @@
 #include "xff/parser/ast.h"
 #include "xff/presentation/fields/fields.h"
 #include "xff/presentation/patch/patch.h"
+#include "xff/presentation/render/record_buffer.h"
 #include "xff/presentation/render/render.h"
 #include "xff/registry/descriptor.h"
 #include "xff/values/values.h"
@@ -2611,13 +2612,21 @@ std::string LsRecord(const Visit& visit, absl::Time now, absl::TimeZone tz, std:
 
 // NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalPrint(const parser::Expr&, EvalContext& ctx) {
-  ctx.emit(PrintRecord(ctx.visit));
+  if (ctx.path_records) {
+    ctx.path_records->EmitRecord(ctx.visit.path, '\n', ctx.emit);
+  } else {
+    ctx.emit(PrintRecord(ctx.visit));
+  }
   return true;
 }
 
 // NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalPrint0(const parser::Expr&, EvalContext& ctx) {
-  ctx.emit(Print0Record(ctx.visit));
+  if (ctx.path_records) {
+    ctx.path_records->EmitRecord(ctx.visit.path, '\0', ctx.emit);
+  } else {
+    ctx.emit(Print0Record(ctx.visit));
+  }
   return true;
 }
 
