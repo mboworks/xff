@@ -4778,7 +4778,6 @@ heads with full later records, giant/no-output files, preparation/read failures,
 root/mount lifetimes, actual byte peaks, first-output latency and small-case costs on
 both hosts. The complete O18 pipeline and the JC storage/admission gates remain open.
 
-
 ### O22c2h: transfer the original validated rg transaction
 
 [The complete report](benchmarks/transactional-rg-records-20261107.md) retains three
