@@ -216,10 +216,12 @@ class DirectoryAllocationFs final : public AllocationFs {
 
 class OutputAllocationFs final : public AllocationFs {
  public:
+  explicit OutputAllocationFs(std::size_t padding = 1'024) : text_(std::string(padding, 'x') + "hit\n") {}
+
   absl::StatusOr<std::string> ReadContent(std::string_view) const override { return text_; }
 
  private:
-  const std::string text_ = std::string(1'024, 'x') + "hit\n";
+  const std::string text_;
 };
 
 struct AllocationTest : ::testing::Test {
@@ -426,6 +428,56 @@ TEST_F(AllocationTest, RecordRepeatedMatcherOutputAllocationTraffic) {
   }
   // Only the coordinator is recorded; one worker keeps content reads and output allocations here.
   // Inputs, warmup, assertions and source-fixture construction are outside recording.
+}
+
+TEST_F(AllocationTest, RecordRepeatedTransactionalRgOutputAllocationTraffic) {
+  for (const std::size_t padding : {1'024UZ, 131'072UZ}) {
+    const OutputAllocationFs fs(padding);
+    const vfs::Metadata metadata{.type = vfs::FileType::kRegular};
+    const auto entries = [&] {
+      std::vector<OwnedVisit> result;
+      result.reserve(64);
+      for (std::size_t index = 0; index < 64; ++index) {
+        result.emplace_back(Visit{.path = "root/a", .name = "a", .root = "root", .metadata = metadata, .fs = fs});
+      }
+      return result;
+    };
+    MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--rg", "hit", "root"}));
+    MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareRgOutput(command, fs, false, false));
+    const auto search = command.rg.value_or(parser::RgSearch{});
+    ParallelMatch matcher(
+        {}, 1, false,
+        ParallelContentOutput{
+            .output = prepared,
+            .rg = search,
+            .grep = {.line_number = false, .filename = false},
+        });
+    const auto& warm = matcher.Match(entries());
+    EXPECT_THAT(warm, SizeIs(64));
+    std::size_t capacity = 0;
+    for (const auto& result : warm) {
+      if (result.content) {
+        capacity += result.content->text.capacity();
+      }
+    }
+    RecordProperty(absl::StrCat("rg_output_", padding, "_capacity"), std::to_string(capacity));
+    for (const int repetition : {1, 2}) {
+      auto input = entries();
+      const auto measured = MeasureAllocations([&] {
+        std::size_t bytes = 0;
+        for (const auto& result : matcher.Match(std::move(input))) {
+          if (result.content) {
+            bytes += result.content->text.size();
+          }
+        }
+        return bytes;
+      });
+      EXPECT_THAT(measured.value, Eq(64 * (padding + 4)));
+      RecordCounts(absl::StrCat("rg_output_", padding, "_", repetition), measured.counts);
+    }
+  }
+  // One inline worker keeps this isolated allocation diagnostic on the recorder thread.
+  // It exercises the production handoff; sanitizer duration is not performance evidence.
 }
 
 TEST_F(AllocationTest, ReusedFuzzyWorkspaceAvoidsHotScoreAllocations) {

@@ -465,6 +465,20 @@ absl::StatusOr<MatchOutput> PrepareRgOutput(
     const vfs::FileSystem& fs,
     bool fold_case,
     bool smart_case);
+
+struct RenderedRgOutput {
+  bool selected = false;
+  std::string text;
+};
+
+// Own the transaction until the complete read/binary checks succeed. The caller
+// may lend an old record's allocation by value; no bytes reach context.emit.
+absl::StatusOr<RenderedRgOutput> RenderRgOutput(
+    const MatchOutput& output,
+    const parser::RgSearch& search,
+    EvalContext& context,
+    std::string records = {});
+
 absl::StatusOr<bool> EmitRgOutput(const MatchOutput& output, const parser::RgSearch& search, EvalContext& context);
 
 // Validates the --diff-ignore token list and the --diff-ignore-matching regex, returning the

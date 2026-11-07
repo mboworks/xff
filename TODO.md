@@ -682,6 +682,12 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       preserve bounded view lifetimes, sparse/zero metrics, full outputs and unchanged-codec
       controls on both hosts. Retain slower cases and confirmation in
       [the direct-cell report](docs/benchmarks/direct-summary-cells-20261104.md).
+- [x] O22c2h: Integrate qualified owned transactional rg records directly into matcher results.
+      Native-in-place passes both-host 323-target release and focused ASan validation;
+      memory large-output cohorts improve 12.36% Mac/4.32% Linux while slower controls
+      remain documented. Preserve read/binary validation, callback boundaries and reused
+      capacity. Require current-head PR CI; O18 byte-bounded overlap remains separate. See
+      [the complete experiment](docs/benchmarks/transactional-rg-records-20261107.md).
 - [ ] O22c2: Qualify remaining reusable structured cell/row storage and streaming machine formats.
       Preserve synchronous view lifetimes, reentrant callbacks, coordinator ownership and ordered
       publication. Do not add a buffer/destructor to every existing stateless renderer by default.
