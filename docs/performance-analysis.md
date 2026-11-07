@@ -4750,3 +4750,49 @@ Its exact post-merge main Test run 42276661524 passed both operating systems, AS
 TSan, GCC, coverage, fuzzing, changed-file lint and policy checks. Close the stale create-PR
 instruction without removing the earlier noisy Mac populations or extending private benchmark
 image claims to a different public integration image.
+
+### O18 audit: preserve per-file output transactions before adding overlap
+
+`ParallelMatch::Match` currently waits for every result before returning a batch.
+Simple double buffering cannot make rendered output byte-bounded: a single file's
+matches can exceed any fixed limit. `RenderGrepLines` retains transactional rendered bytes until read/binary validation.
+O22c2h returns that owned transaction directly to the matcher result, reusing its old
+capacity and avoiding rg record-end indices, replay and the outer record copy.
+Native grep retains its original local buffer and callback boundaries. Reduced and
+multiline rg paths retain validated capture. This does not establish pipeline
+overlap, output backpressure or a global memory cap.
+
+O18 needs ordered per-entry completion rather than wait-for-all if producers may
+block on output credit. Later entries must not consume the credit needed to finish
+the head entry. Charge actual retained input text, slot/result capacities and output
+allocations before admission; returning a completed string to a full queue is too
+late. Worker-held completed strings are still retained output. Arbitrarily large
+head transactions need an explicit oversize or transactional-storage contract,
+without truncation, hidden extra reads or loss of late-error/binary suppression.
+Active source/decoder memory is a separate bound, not free queue storage.
+
+Preserve coordinator publication, traversal-error ordering, effect/capture/deferred
+barriers, serial archive fallback and owner draining. Cancellation must wake both
+blocked publishers and consumers before joining persistent workers. Qualify delayed
+heads with full later records, giant/no-output files, preparation/read failures,
+root/mount lifetimes, actual byte peaks, first-output latency and small-case costs on
+both hosts. The complete O18 pipeline and the JC storage/admission gates remain open.
+
+### O22c2h: transfer the original validated rg transaction
+
+[The complete report](benchmarks/transactional-rg-records-20261107.md) retains three
+source variants, every measured cell and the copied-baseline controls. The selected
+native-in-place variant removes three allocations per entry in the isolated
+64-entry diagnostic without increasing retained result capacity. Production memory
+large-output cohorts improve 12.36% on Mac and 4.32% on Linux; native whole-command
+rg-line medians change -0.23% and +0.00%, respectively. Native large-output gains up
+to 11.35%/50.56% are case-specific. This is not a general startup or search speedup.
+
+Retain Linux's +3.18% native-line memory cohort, +8.53% PCRE2 count/100/4 cell and
+Mac's +6.63% PCRE2 native-line/10,000/4 cell. Transfer-only and aggregate-return
+intermediate variants remain unselected with their complete negative evidence.
+Both hosts pass all 323 documented-surface/core/registered-extension release targets
+and four focused canonical ASan targets. These development results require the
+current integration PR's own coverage, sanitizer, GCC and CI clang-tidy checks.
+O18's byte admission, ordered completion, oversized output and cancellation work
+remains open.

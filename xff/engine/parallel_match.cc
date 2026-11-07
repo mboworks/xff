@@ -207,7 +207,14 @@ void ParallelMatch::EvaluateEntry(
       context.grep.filename = output_->root_count != 1 || visit.depth != 0;
     }
     if (output_->rg) {
-      content.selected = EmitRgOutput(prepared, *output_->rg, context);
+      auto rendered = RenderRgOutput(prepared, *output_->rg, context, std::move(content.text));
+      if (rendered.ok()) {
+        content.selected = rendered->selected;
+        content.text = std::move(rendered->text);
+      } else {
+        content.selected = rendered.status();
+        content.text.clear();
+      }
     } else {
       EmitMatchOutput(prepared, context);
     }

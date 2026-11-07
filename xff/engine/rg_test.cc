@@ -51,6 +51,7 @@ using ::mbo::testing::WithDropIndent;
 using ::testing::AllOf;
 using ::testing::Contains;
 using ::testing::ElementsAre;
+using ::testing::ElementsAreArray;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::Ge;
@@ -374,6 +375,202 @@ TEST_F(RgEngineTest, ReusedRgResultSlotsClearSelectionErrorsAndOldOutput) {
         result.content,
         Optional(
             AllOf(Field(&ContentResult::selected, IsOkAndHolds(IsFalse())), Field(&ContentResult::text, IsEmpty()))));
+  }
+}
+
+TEST_F(RgEngineTest, NativeLineTransactionsKeepCallbackBoundariesAndContextSeparators) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareMatchOutput(*command.expression));
+  fs.files.at("tree/a") = "before\nhit\nafter\nskip\nskip\nhit\nlast\n";
+  const auto entries = RepeatedEntries(1);
+  std::vector<std::string> records;
+  const auto sink = [&](std::string_view text) { records.emplace_back(text); };
+  Control control;
+  EvalContext context{
+      .visit = entries.front().AsVisit(),
+      .emit = sink,
+      .fs = fs,
+      .grep = {.line_number = false, .filename = false},
+      .grep_before = 1,
+      .grep_after = 1,
+      .control = control,
+  };
+  EXPECT_THAT(EmitMatchOutput(prepared, context), IsTrue());
+  EXPECT_THAT(
+      records, ElementsAreArray({
+                   EqualsText("before\n"),
+                   EqualsText("hit\n"),
+                   EqualsText("after\n"),
+                   EqualsText("--\n"),
+                   EqualsText("skip\n"),
+                   EqualsText("hit\n"),
+                   EqualsText("last\n"),
+               }));
+}
+
+TEST_F(RgEngineTest, NativeLineTransactionsPublishNothingAfterLateFailure) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareMatchOutput(*command.expression));
+  const auto entries = RepeatedEntries(1);
+  fs.streaming = true;
+  fs.source_override = std::make_shared<FailingSource>(false);
+  std::vector<std::string> records;
+  const auto sink = [&](std::string_view text) { records.emplace_back(text); };
+  Control control;
+  EvalContext context{
+      .visit = entries.front().AsVisit(),
+      .emit = sink,
+      .fs = fs,
+      .grep = {.line_number = false, .filename = false},
+      .control = control,
+  };
+  EXPECT_THAT(EmitMatchOutput(prepared, context), IsFalse());
+  EXPECT_THAT(records, IsEmpty());
+  context.emit("restored\n");
+  EXPECT_THAT(records, ElementsAre(EqualsText("restored\n")));
+}
+
+TEST_F(RgEngineTest, NativeLineTransactionsKeepTheirSinkWhenCallbackReplacesIt) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareMatchOutput(*command.expression));
+  fs.files.at("tree/a") = "hit\nhit\n";
+  const auto entries = RepeatedEntries(1);
+  std::vector<std::string> records;
+  std::vector<std::string> alternate_records;
+  const auto alternate = [&](std::string_view text) { alternate_records.emplace_back(text); };
+  std::function<void()> replace_sink;
+  const auto sink = [&](std::string_view text) {
+    records.emplace_back(text);
+    replace_sink();
+  };
+  Control control;
+  EvalContext context{
+      .visit = entries.front().AsVisit(),
+      .emit = sink,
+      .fs = fs,
+      .grep = {.line_number = false, .filename = false},
+      .control = control,
+  };
+  replace_sink = [&] { context.emit = alternate; };
+  EXPECT_THAT(EmitMatchOutput(prepared, context), IsTrue());
+  EXPECT_THAT(records, ElementsAre(EqualsText("hit\n"), EqualsText("hit\n")));
+  EXPECT_THAT(alternate_records, IsEmpty());
+  context.emit("tail\n");
+  EXPECT_THAT(alternate_records, ElementsAre(EqualsText("tail\n")));
+}
+
+TEST_F(RgEngineTest, OwnedRgRecordsRetainScratchAndRestoreHeadingAndSink) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--rg", "hit", "tree"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareRgOutput(command, fs, false, false));
+  const auto search = command.rg.value_or(parser::RgSearch{});
+  const auto entries = RepeatedEntries(1);
+  Control control;
+  const auto sink = [&](std::string_view text) { output.append(text); };
+  EvalContext context{
+      .visit = entries.front().AsVisit(),
+      .emit = sink,
+      .fs = fs,
+      .grep = {.heading = true, .line_number = false, .filename = true},
+      .control = control,
+  };
+  std::string scratch(1'024, 'x');
+  const auto capacity = scratch.capacity();
+  MBO_ASSERT_OK_AND_ASSIGN(const auto rendered, RenderRgOutput(prepared, search, context, std::move(scratch)));
+  EXPECT_THAT(rendered.selected, IsTrue());
+  EXPECT_THAT(rendered.text, EqualsText("tree/a\nhit\n"));
+  EXPECT_THAT(rendered.text, Property(&std::string::capacity, Ge(capacity)));
+  EXPECT_THAT(context.grep.filename, IsTrue());
+  EXPECT_THAT(output, IsEmpty());
+  context.emit("restored\n");
+  EXPECT_THAT(output, EqualsText("restored\n"));
+}
+
+TEST_F(RgEngineTest, OwnedRgRecordsDiscardLateFailureAndRestoreTheSink) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--rg", "hit", "tree"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareRgOutput(command, fs, false, false));
+  const auto search = command.rg.value_or(parser::RgSearch{});
+  const auto entries = RepeatedEntries(1);
+  fs.streaming = true;
+  fs.source_override = std::make_shared<FailingSource>(false);
+  Control control;
+  const auto sink = [&](std::string_view text) { output.append(text); };
+  EvalContext context{
+      .visit = entries.front().AsVisit(),
+      .emit = sink,
+      .fs = fs,
+      .grep = {.heading = true, .line_number = false, .filename = true},
+      .control = control,
+  };
+  EXPECT_THAT(
+      RenderRgOutput(prepared, search, context, "stale"),
+      StatusIs(absl::StatusCode::kDataLoss, HasSubstr("late read failure")));
+  EXPECT_THAT(output, IsEmpty());
+  EXPECT_THAT(context.grep.filename, IsTrue());
+  fs.source_override.reset();
+  MBO_ASSERT_OK_AND_ASSIGN(const auto rendered, RenderRgOutput(prepared, search, context));
+  EXPECT_THAT(rendered.text, EqualsText("tree/a\nhit\n"));
+  EXPECT_THAT(output, IsEmpty());
+  EXPECT_THAT(EmitRgOutput(prepared, search, context), IsOkAndHolds(IsTrue()));
+  EXPECT_THAT(output, EqualsText("tree/a\nhit\n"));
+}
+
+TEST_F(RgEngineTest, OwnedRgRecordsDiscardBinaryAndNonmatchingScratch) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--rg", "hit", "tree"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareRgOutput(command, fs, false, false));
+  const auto search = command.rg.value_or(parser::RgSearch{});
+  const auto entries = RepeatedEntries(1);
+  fs.streaming = true;
+  fs.files.at("tree/a") = "hit\n" + std::string(70'000, 'x') + '\0';
+  Control control;
+  const auto sink = [&](std::string_view text) { output.append(text); };
+  EvalContext context{
+      .visit = entries.front().AsVisit(),
+      .emit = sink,
+      .fs = fs,
+      .grep = {.line_number = false, .filename = false},
+      .control = control,
+  };
+  MBO_ASSERT_OK_AND_ASSIGN(const auto binary, RenderRgOutput(prepared, search, context, "stale"));
+  EXPECT_THAT(binary.selected, IsFalse());
+  EXPECT_THAT(binary.text, IsEmpty());
+  fs.files.at("tree/a") = "miss\n";
+  EXPECT_THAT(
+      RenderRgOutput(prepared, search, context, "old output"),
+      IsOkAndHolds(AllOf(
+          Field("selected", &RenderedRgOutput::selected, IsFalse()),
+          Field("text", &RenderedRgOutput::text, IsEmpty()))));
+  EXPECT_THAT(output, IsEmpty());
+}
+
+TEST_F(RgEngineTest, RgResultBuffersReuseTransferredCapacityWithinExistingBounds) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--rg", "hit", "tree"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareRgOutput(command, fs, false, false));
+  const auto search = command.rg.value_or(parser::RgSearch{});
+  ParallelMatch matcher(
+      {}, 4, false,
+      ParallelContentOutput{
+          .output = prepared,
+          .rg = search,
+          .grep = {.match_output = true, .line_number = false, .filename = false},
+      });
+  fs.files.at("tree/a") = std::string(1'024, 'x') + "hit\n";
+  EXPECT_THAT(matcher.Match(RepeatedEntries(64)), SizeIs(64));
+  fs.files.at("tree/a") = "hit\n";
+  for (const auto& result : matcher.Match(RepeatedEntries(64))) {
+    EXPECT_THAT(
+        result.content,
+        Optional(Field(
+            "text", &ContentResult::text, AllOf(EqualsText("hit\n"), Property(&std::string::capacity, Ge(1'024))))));
+  }
+  fs.files.at("tree/a") = std::string(2 * ParallelMatch::kReusableRecordBytes, 'x') + "hit\n";
+  EXPECT_THAT(matcher.Match(RepeatedEntries(64)), SizeIs(64));
+  fs.files.at("tree/a") = "hit\n";
+  for (const auto& result : matcher.Match(RepeatedEntries(1))) {
+    EXPECT_THAT(
+        result.content,
+        Optional(Field(
+            "text", &ContentResult::text,
+            AllOf(EqualsText("hit\n"), Property(&std::string::capacity, Le(ParallelMatch::kReusableRecordBytes))))));
   }
 }
 

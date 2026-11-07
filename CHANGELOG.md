@@ -3,6 +3,9 @@
 
 # 0.11.0
 
+- Transfer validated rg output directly into matcher results, reusing retained buffers while preserving
+  native callback boundaries, binary suppression, and read-error behavior.
+
 - Append structured `-printf` field values directly to the output buffer while preserving owning
   renders and content-snapshot lifetimes.
 
