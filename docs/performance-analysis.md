@@ -4581,11 +4581,10 @@ The following remain independent experiments, not promised speedups:
   Deep-root gains do not erase repeatedly slower wide/root listing controls. Preserve the old
   Linux full trial and deliberately partial Mac population separately from the new complete
   formatter-parent screens. A future loop/layout combination needs fresh qualification.
-- O19k: replace only the private immutable archive node map with Abseil's B-tree. Index is the
-  sole mutation phase; later APIs return owned values/sources and do not retain node iterators.
-  Verify that audit and insertion/large-Node relocation costs on both systems. The pinned default
-  string comparator enables transparent three-way lookup; explicitly passing `less<>` would skip
-  that specialization. Keep this independent of descendant skipping before testing integration.
+- O19k: [historical B-tree evaluation reconciled without adoption](benchmarks/archive-btree-historical-decision-20261107.md).
+  Construction and chain gains do not erase wide/deep query costs. Original source/linking settings
+  differ from current production and contemporaneous image receipts are incomplete; do not claim
+  current-main qualification. A directory-specific child index remains a distinct future design.
 - O19i2: [qualified bounded direct-child capacity hint](benchmarks/archive-directory-child-capacity-20261106.md).
   The count fits existing `Node` padding, while the root count adds 8 bytes per archive FS.
   Mac and Linux measurements show large flat/wide-root listing gains, neutral construction, and
@@ -4657,8 +4656,9 @@ No production index, CLI, comparator, safety setting or ownership behavior chang
 Transparent `lower_bound` plus hinted ancestor insertion remains an independent unmeasured
 candidate. Preserve duplicate replacement, synthesized flags, child counts and inode order.
 Measure public construction and destruction including parsing, not only hot listings whose
-index setup is untimed. A future B-tree audit still must account for relocated small-string
-map keys and escaping references.
+index setup is untimed. The [historical B-tree audit and trial](benchmarks/archive-btree-historical-decision-20261107.md)
+found no escaping node references but rejected the container policy after wide/deep costs.
+Its older source/settings and missing contemporaneous image receipts do not establish current-head qualification.
 
 O29 examines borrowed normalized member-key views for immediate stat/access/readlink/cache
 lookups. Normalization only selects a contiguous input subview. Stored index keys and both
@@ -4888,3 +4888,18 @@ Retain all three sources and phase-specific tests in
 both hosts; explicit-stop focused optimized/ASan and Linux MSan/TSan pass, with no final full
 runtime CI claim. Publish only report/evidence; retain broader O18 byte backpressure, fairness,
 ordered publication and a lower-cost cancellation redesign as open work.
+
+### O19k: reconcile the historical B-tree trial without adoption
+
+[The historical decision](benchmarks/archive-btree-historical-decision-20261107.md) recovers the completed both-host trial that
+tracking still called unmeasured. Replacing only the private node map improved construction
+medians about 7.06% on Mac and 0.66% on Linux, but directory medians cost 1.92%/2.60%; most wide
+and deep queries regress, including Linux individual costs near 15-19%. Keep the container swap
+unselected rather than choosing by a geometric mean dominated by strong chain/root cells.
+
+All corrected three-session nine-repeat/seven-retained raw data, overwritten-control initial
+screens, source patch and analysis are preserved. Historical base `45f4c5e` differs from current
+archive ownership/scanning and release linking; original exact-image/compiler receipts are
+incomplete. Later captures are explicitly later. This is not current-main runtime qualification.
+A duplicate fresh draft was stopped before compilation/timing. Retain future directory-specific
+index designs separately and do not repeat this unchanged container policy until favorable.
