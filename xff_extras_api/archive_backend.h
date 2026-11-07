@@ -75,6 +75,8 @@ struct ReadFormatInfo {
 // first. InvalidArgument means "not my format" and falls through; every other status is the reader's
 // definitive answer. Passing an empty opener removes that name, which keeps tests able to restore the
 // process-wide registry.
+// Register before concurrent registry use; replacement/removal requires all readers to be idle.
+// The suffix lookup is built on first use after registration, without copying format descriptions.
 void RegisterContainerReader(
     std::string name,
     ContainerOpener opener,
@@ -249,6 +251,7 @@ struct ContainerPackerRegistrar {
 
 // Installs the override opener's read-format vocabulary. Production extras register their formats
 // atomically with their opener through RegisterContainerReader.
+// Like reader registration, this requires all registry readers to be idle.
 void RegisterContainerReadFormats(std::vector<ReadFormatInfo> formats);
 
 // The read formats the linked backend declared, in its own (documentation) order. Empty when no

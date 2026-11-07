@@ -26,8 +26,14 @@ class RawRecordBuffer final {
 
   template<std::invocable<std::string_view> Consumer>
   void EmitRecord(std::string_view path, Consumer&& consume) {
+    EmitRecord(path, terminator_, std::forward<Consumer>(consume));
+  }
+
+  // Explicit actions can alternate newline and NUL records while retaining the same storage.
+  template<std::invocable<std::string_view> Consumer>
+  void EmitRecord(std::string_view path, char terminator, Consumer&& consume) {
     // XFF_ABI_POINTER: std::string::resize_and_overwrite requires a writable buffer callback.
-    bytes_.resize_and_overwrite(path.size() + 1, [path, terminator = terminator_](char* data, std::size_t) noexcept {
+    bytes_.resize_and_overwrite(path.size() + 1, [path, terminator](char* data, std::size_t) noexcept {
       const std::span<char> record(data, path.size() + 1);
       std::ranges::copy(path, record.begin());
       record.back() = terminator;

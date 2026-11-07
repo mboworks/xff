@@ -20,13 +20,14 @@ void Derivation::Include(Derivation other) {
 }
 
 absl::StatusOr<std::string_view> Snapshot::Read(const vfs::FileSystem& fs, std::string_view path) const {
-  if (!bytes_) {
-    bytes_ = fs.ReadContent(path);
+  auto& bytes = Storage().bytes;
+  if (!bytes) {
+    bytes = fs.ReadContent(path);
   }
-  if (!bytes_->ok()) {
-    return bytes_->status();
+  if (!bytes->ok()) {
+    return bytes->status();
   }
-  return std::string_view(**bytes_);
+  return std::string_view(**bytes);
 }
 
 std::optional<std::string> Snapshot::Digest(
@@ -48,7 +49,7 @@ const std::optional<std::string>& Snapshot::DigestValue(
     const vfs::FileSystem& fs,
     std::string_view path,
     const hash::AlgoEncoding& spec) const {
-  auto [entry, inserted] = digests_.try_emplace(std::pair{std::string(spec.algo), spec.encoding});
+  auto [entry, inserted] = Storage().digests.try_emplace(std::pair{std::string(spec.algo), spec.encoding});
   if (inserted) {
     const auto bytes = Read(fs, path);
     if (bytes.ok()) {
@@ -59,34 +60,35 @@ const std::optional<std::string>& Snapshot::DigestValue(
 }
 
 std::optional<std::size_t> Snapshot::Lines(const vfs::FileSystem& fs, std::string_view path) const {
-  if (!lines_) {
+  auto& lines = Storage().lines;
+  if (!lines) {
     const auto bytes = Read(fs, path);
-    lines_.emplace(bytes.ok() ? ContentLineCount(*bytes) : std::nullopt);
+    lines.emplace(bytes.ok() ? ContentLineCount(*bytes) : std::nullopt);
   }
-  return *lines_;
+  return *lines;
 }
 
 Snapshot Snapshot::TakeDerived(const Derivation& request, const vfs::FileSystem& fs, std::string_view path) && {
   Snapshot derived;
-  if (!Loaded()) {
+  if (!Loaded() || request.Empty()) {
     return derived;
   }
+  auto& source = Storage();
+  auto& target = derived.Storage();
   if (request.lines) {
     static_cast<void>(Lines(fs, path));
-    derived.lines_ = std::exchange(lines_, std::nullopt);
+    target.lines = std::exchange(source.lines, std::nullopt);
   }
   for (const auto& digest : request.digests) {
     static_cast<void>(DigestValue(fs, path, {.algo = digest.algorithm, .encoding = digest.encoding}));
-    auto node = digests_.extract(std::pair{digest.algorithm, digest.encoding});
-    derived.digests_.insert(std::move(node));
+    auto node = source.digests.extract(std::pair{digest.algorithm, digest.encoding});
+    target.digests.insert(std::move(node));
   }
   return derived;
 }
 
 void Snapshot::Invalidate() {
-  bytes_.reset();
-  digests_.clear();
-  lines_.reset();
+  state_.reset();
 }
 
 }  // namespace xff::content

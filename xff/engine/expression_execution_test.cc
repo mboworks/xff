@@ -270,6 +270,44 @@ TEST_P(ExpressionExecutionTest, SelectionOutputSummariesAndComparisonPreserveThe
   }
 }
 
+TEST_P(ExpressionExecutionTest, BooleanOperatorsPreserveTruthAndReachedOutput) {
+  constexpr auto kOperators = std::to_array<std::string_view>({"-a", "-o", "-nand", "-nor", "-xor", "-xnor", ","});
+  for (const auto op : kOperators) {
+    for (const std::string_view left : {"-true", "-false"}) {
+      for (const std::string_view right : {"-true", "-false"}) {
+        Check({
+            "root",
+            "(",
+            "(",
+            std::string(left),
+            "-printf",
+            "left\\n",
+            ")",
+            std::string(op),
+            "(",
+            std::string(right),
+            "-printf",
+            "right\\n",
+            ")",
+            ")",
+            "-print0",
+        });
+      }
+    }
+  }
+}
+
+TEST_P(ExpressionExecutionTest, BooleanOperatorsNeverHideOrNegateMetadataFailure) {
+  constexpr auto kOperators = std::to_array<std::string_view>({"-a", "-o", "-nand", "-nor", "-xor", "-xnor", ","});
+  for (const auto op : kOperators) {
+    Check({"root", "-type", "f", "(", "-size", "+1c", std::string(op), "-printf", "unreachable\\n", ")"}, true, true);
+    const std::string left = op == "-o" || op == "-nor" ? "-false" : "-true";
+    Check(
+        {"root", "-type", "f", "(", left, std::string(op), "-size", "+1c", ")", ",", "-printf", "later\\n"}, true,
+        true);
+  }
+}
+
 TEST_P(ExpressionExecutionTest, PreparedTemplatesKeepResolvedDefaultsAndConditionalFailures) {
   const std::vector<std::vector<std::string>> cases{
       {"root", "-type", "f", "-cmp", "{path}"},

@@ -426,7 +426,7 @@ test("history platform/version controls preserve selection and recover from load
 import sys, json, hashlib, io
 from pathlib import Path
 sys.path.insert(0, sys.argv[1])
-from benchmark_landscape import publish
+from benchmark_landscape import publish, history_panel
 from benchmark_landscape_test import report, preview_report
 from benchmark_provenance import verify_retention
 root = Path(sys.argv[3])
@@ -462,6 +462,9 @@ folder.mkdir(parents=True)
     source=dict(id=4, run_attempt=1, head_branch='feature', event='pull_request',
                 pull_requests=[{'number': 952}], created_at='2026-10-03T00:00:00Z'))))
 publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
+experiments = [dict(row, source='experiment', source_label='Unmerged experiments', comparison_role='Candidate')
+               for row in json.loads((root / 'catalog.json').read_text()) if row.get('source') == 'pr-952']
+(root / 'experiments.html').write_text(history_panel(experiments, include_overview=False))
 `,
     tools,
     bundle,
@@ -855,6 +858,23 @@ publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
     assert.match(
       await page.locator("[data-overview]").textContent(),
       /regression status is unknown/,
+    );
+    await page.goto(
+      `http://127.0.0.1:${server.address().port}/experiments.html`,
+    );
+    await waitCommit("d");
+    assert.equal(
+      await page.locator('[data-control="source"]').inputValue(),
+      "experiment",
+    );
+    assert.equal(await page.locator("[data-comparison-row]").isVisible(), true);
+    assert.equal(
+      await page.locator("[data-comparison-role]").textContent(),
+      "Candidate",
+    );
+    assert.equal(
+      await page.locator('[data-control="platform"]').inputValue(),
+      "linux",
     );
     assert.deepEqual(errors, []);
   } finally {

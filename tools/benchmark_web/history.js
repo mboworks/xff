@@ -109,6 +109,12 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
       reportLink.title = `Open the full benchmark report: ${reportText}`;
       root.querySelector("[data-version-count]").textContent =
         `${index + 1} of ${records.length}`;
+      const comparisonRow = root.querySelector("[data-comparison-row]");
+      if (comparisonRow) {
+        comparisonRow.hidden = !record.comparison_role;
+        comparisonRow.querySelector("[data-comparison-role]").textContent =
+          record.comparison_role || "";
+      }
       updateVersionControls();
       const parts = record.platform.split(" / ");
       const local = parts[0] === "Local";
@@ -267,8 +273,14 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     disclosure.addEventListener("toggle", (event) => {
       if (event.target.open) requestAnimationFrame(() => chart?.resize());
     });
-  if (catalog.length) selectSource();
-  else {
+  if (catalog.length) {
+    if (
+      source &&
+      !catalog.some((row) => (row.source || "merged") === source.value)
+    )
+      source.value = catalog[0].source || "merged";
+    selectSource();
+  } else {
     status.hidden = false;
     status.textContent = "No retained reports have comparison landscape data.";
   }
