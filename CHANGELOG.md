@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Skip a fifth main-branch benchmark measurement once four candidates provide a compatible quorum.
+
 - Reduce temporary allocations and copies when lazily decoding the embedded language database.
 
 - Transfer validated rg output directly into matcher results, reusing retained buffers while preserving

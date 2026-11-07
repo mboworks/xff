@@ -5,6 +5,7 @@ import copy
 import gzip
 import json
 from pathlib import Path
+import re
 import tempfile
 import unittest
 from unittest import mock
@@ -45,17 +46,36 @@ def records(cpus=(1, 4), count=3, partition='balanced', repetitions=9, keep=7, *
 
 class BenchmarkShardsTest(unittest.TestCase):
     def test_optional_candidates_override_skipped_ancestor_status(self):
-        workflow = repository_file('.github/workflows/main.yml').read_text()
-        for stage, selector in (('fourth', 'initial'), ('fifth', 'fourth')):
-            for platform in ('linux', 'macos'):
-                with self.subTest(stage=stage, platform=platform):
-                    job = workflow.split(f'  benchmark-measure-{stage}-{platform}:', 1)[1]
-                    condition = job.split('    if:', 1)[1].split('    runs-on:', 1)[0]
-                    # An explicit status function prevents GitHub's implicit success() from
-                    # suppressing a requested candidate when the other platform was skipped.
-                    self.assertIn('!cancelled()', condition)
-                    self.assertIn(f"needs.benchmark-select-{selector}.result == 'success'", condition)
-                    self.assertIn(f"outputs.{platform}_{stage} == 'true'", condition)
+        for path, prefix in (('main.yml', 'benchmark-'), ('benchmarks.yml', '')):
+            workflow = repository_file('.github/workflows/' + path).read_text()
+            for stage, selector in (('fourth', 'initial'), ('fifth', 'fourth')):
+                for platform in ('linux', 'macos'):
+                    with self.subTest(workflow=path, stage=stage, platform=platform):
+                        job = workflow.split(f'  {prefix}measure-{stage}-{platform}:', 1)[1]
+                        condition = job.split('    if:', 1)[1].split('    runs-on:', 1)[0]
+                        # Explicit status handling permits requested candidates after a skipped
+                        # optional sibling, while cancellation must still stop new measurements.
+                        self.assertIn('!cancelled()', condition)
+                        self.assertIn(f"needs.{prefix}select-{selector}.result == 'success'", condition)
+                        self.assertIn(f"outputs.{platform}_{stage} == 'true'", condition)
+
+    def test_both_workflows_decide_again_before_scheduling_fifth_candidates(self):
+        for path, prefix, aggregate in (('main.yml', 'benchmark-', 'benchmark-aggregate'),
+                                        ('benchmarks.yml', '', 'aggregate')):
+            with self.subTest(workflow=path):
+                workflow = repository_file('.github/workflows/' + path).read_text()
+                self.assertIn(f'  {prefix}select-fourth:', workflow)
+                decision = re.split(r'\n  (?=\S)',
+                                    workflow.split(f'  {prefix}select-fourth:', 1)[1], maxsplit=1)[0]
+                self.assertIn(f'{prefix}select-initial', decision)
+                for platform in ('linux', 'macos'):
+                    self.assertIn(f'{prefix}measure-fourth-{platform}', decision)
+                    self.assertIn(f'{platform}_fifth: ${{{{ steps.decision.outputs.{platform}_fifth }}}}',
+                                  decision)
+                self.assertIn('--decision-stage=fourth', decision)
+                self.assertIn('tee -a "${GITHUB_OUTPUT}"', decision)
+                needs = workflow.split(f'  {aggregate}:', 1)[1].split('    if:', 1)[0]
+                self.assertIn(f'{prefix}select-fourth', needs)
 
     def test_two_pairs_of_runner_environments_require_the_fifth_candidate(self):
         for platform, cpu_count in (('linux', 4), ('macos', 3)):

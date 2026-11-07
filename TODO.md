@@ -198,6 +198,10 @@ scope or declaring new flags implemented. See
 - [x] Use three complete-matrix sample shards on both hosted platforms: three measured rounds
       per shard for PR and main; pool raw samples before selecting the fastest seven of nine.
       Share compiled binaries, rotate participant order, and preserve per-sample shard provenance.
+- [x] Apply the after-fourth agreement decision to main benchmarks as well as PR benchmarks.
+      Main run 42330247443 selected compatible macOS candidates 0/2/3 but still ran candidate 4;
+      gate the fifth measurement on the platform decision and preserve cancellation handling,
+      strict compatibility, all raw samples and the fastest-seven-of-nine estimator.
 - [x] Verify nine-round PR artifacts retain every raw observation and the fastest-seven estimate:
       PR #952 has 440 tasks / 800 tool-case entries per platform, each with 9 raw / 7 selected samples.
       Linux jobs took 4m31s-5m17s, macOS 4m33s-7m00s, versus #951's 2m19s-3m32s one-round jobs.
