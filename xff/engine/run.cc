@@ -4332,6 +4332,20 @@ absl::StatusOr<std::string> TreeEntryPatch(
 
 using MatchedEntryFn = absl::FunctionRef<void(const Visit&)>;
 
+absl::StatusOr<bool> ProbeEntryCaseSensitivity(const vfs::FileSystem& fs, const Visit& visit) {
+  if (visit.metadata.type == vfs::FileType::kSymlink) {
+    // A native path query can follow the link into another volume or fail on a dangling target.
+    // Use its directory only after verifying that the directory belongs to the link's device.
+    const auto parent = std::filesystem::path(visit.path).parent_path();
+    const std::string parent_path = parent.empty() ? "." : parent.string();
+    const auto metadata = fs.Stat(parent_path, true);
+    if (metadata.ok() && metadata->type == vfs::FileType::kDirectory && metadata->dev == visit.metadata.dev) {
+      return fs.IsCaseSensitive(parent_path);
+    }
+  }
+  return fs.IsCaseSensitive(visit.path);
+}
+
 RunResult RunFindCore(
     const parser::Command& command,
     const std::vector<HistogramSpec>& histograms,
@@ -6393,7 +6407,7 @@ RunResult RunFindCore(
           }
           auto [it, inserted] = case_sensitive_by_dev.try_emplace(visit.metadata.dev, true);
           if (inserted) {
-            it->second = walk_fs.IsCaseSensitive(visit.path).value_or(true);
+            it->second = ProbeEntryCaseSensitivity(walk_fs, visit).value_or(true);
           }
           native_fold = !it->second;
           return *native_fold;
