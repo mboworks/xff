@@ -4868,3 +4868,23 @@ optimized/ASan/MSan/TSan on Linux. Exploratory six-target coverage covers 139/14
 lines and 66/76 branches; it is not final PR CI. No local clang-tidy ran. Eliminate repeatable
 first-read costs before a new runtime proposal, then qualify the changed implementation on both
 hosts. Stable native identity and streamed-ZIP metadata-size recovery remain separately open.
+
+### O18a: queued read cancellation policies remain unselected
+
+The current-main ownership audit reproduces five avoidable queued reads after an explicit stop.
+Both-host deterministic tests hold two active readers, stop at the available child, then release
+them only after frontier leases unwind; parent nine-call behavior becomes four with exact serial
+visits/errors and request-recycling coverage. Active I/O remains uninterruptible.
+
+Neither policy qualifies from bounded ordinary cost screens. A per-dispatch acquire load costs
+about 2-4% in Mac API cohort medians and 1-2% in Linux parallel medians. An explicit stop under
+the existing pool mutex avoids the new task load but shows roughly 6-9% Mac serial API costs;
+native Mac cohort costs range roughly 0.7-3.2%. All slower cells and same-image repeat controls
+remain visible; these are one-session 3/2 screens, not full 3-session 9/7 qualification.
+A destructor-only draft is unmeasured because audit found cleanup can precede setting stop.
+
+Retain all three sources and phase-specific tests in
+[the cancellation decision](benchmarks/queued-read-cancellation-20261107.md). Dispatch-policy full 323-target suites pass
+both hosts; explicit-stop focused optimized/ASan and Linux MSan/TSan pass, with no final full
+runtime CI claim. Publish only report/evidence; retain broader O18 byte backpressure, fairness,
+ordered publication and a lower-cost cancellation redesign as open work.
