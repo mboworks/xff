@@ -174,6 +174,11 @@ def as_report(rows, contract, view):
 
 
 def export_viewer(output, contract, revisions, renderer, incomplete=False):
+    # Experiment manifests place the fixed baseline last for collection. The version
+    # slider must instead progress from that baseline to the candidate, regardless
+    # of collection time or hash spelling. Preserve merged-history chronology.
+    if all(revision['pr'] <= 0 for revision, _ in revisions):
+        revisions = sorted(revisions, key=lambda item: item[0]['sha'] != contract['anchor']['sha'])
     assets = output / 'assets'
     assets.mkdir(exist_ok=True)
     shutil.copyfile(renderer, assets / 'three-landscape.js')
@@ -197,6 +202,8 @@ def export_viewer(output, contract, revisions, renderer, incomplete=False):
                             'commit': revision['sha'], 'date': revision['date'],
                             'label': label + (' / ' + revision.get('subject', '') if experiment else ' / ' + revision['sha'][:10]),
                             'source': 'experiment' if experiment else 'merged',
+                            'comparison_role': ('Baseline' if revision['sha'] == contract['anchor']['sha'] else 'Candidate')
+                            if experiment else '',
                             'source_label': 'Unmerged experiments' if experiment else 'Merged history', 'local': True,
                             'measured': rows[-1]['after']['utc'], 'measurement_date': rows[-1]['after']['utc'],
                             'report': revision['sha'] + '/' + view + '.html',
@@ -216,7 +223,8 @@ def export_viewer(output, contract, revisions, renderer, incomplete=False):
              f'{len(revisions)} complete revisions are shown, including regressions and unchanged controls.</p>'
              '<p>The XFF comparison dataset compares the selected binary with the fixed baseline. '
              'The baseline revision is an identical-binary control and should be near zero. '
-             'Unmerged experiments are labeled separately from merged PRs.</p>'
+             'Unmerged comparisons show the baseline first and candidates afterward; the Version card identifies each role. '
+             'Collection timestamps do not determine this order.</p>'
              '<p>Download: <a href="cells.csv">Measurements</a> &middot; '
              '<a href="history-by-task.csv">History by task</a> &middot; '
              '<a href="current-versus-reference.csv">Current tool comparisons</a> (CSV).</p>')

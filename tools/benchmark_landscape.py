@@ -452,6 +452,7 @@ def history_panel(catalog, *, include_overview=True):
             '<summary><strong>Version</strong></summary><div data-version-body>'
             '<table class="landscape-version-table"><tbody>'
             '<tr><th scope="row">Version</th><td data-version-count></td></tr>'
+            '<tr data-comparison-row hidden><th scope="row">Comparison</th><td data-comparison-role></td></tr>'
             '<tr><th scope="row">Commit</th><td><a data-report title="Open the full benchmark report"></a></td></tr>'
             '<tr data-links-row><th scope="row">PR / Release</th><td data-version-links>Not available</td></tr>'
             '<tr><th scope="row">Revision date</th><td data-revision-date></td></tr>'

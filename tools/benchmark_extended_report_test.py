@@ -88,11 +88,17 @@ class BenchmarkExtendedReportTest(unittest.TestCase):
             root = Path(directory)
             renderer = root / 'renderer.js'
             renderer.write_text('/* renderer fixture */')
-            report.export_viewer(root, contract, [(candidate, rows)], renderer)
-            for item in json.loads((root / 'catalog.json').read_text()):
+            baseline_rows = [dict(row, revision=baseline, after={'utc': '2026-11-07T13:00:00Z'}) for row in rows]
+            report.export_viewer(root, contract, [(candidate, rows), (baseline, baseline_rows)], renderer)
+            catalog = json.loads((root / 'catalog.json').read_text())
+            for platform in {item['platform'] for item in catalog}:
+                records = [item for item in catalog if item['platform'] == platform]
+                self.assertEqual([item['commit'] for item in records], ['baseline', 'candidate'])
+                self.assertEqual([item['comparison_role'] for item in records], ['Baseline', 'Candidate'])
+            for item in catalog:
                 self.assertEqual(item['source'], 'experiment')
                 self.assertEqual(item['links'], [])
-                self.assertIn('Experiment candidate', item['label'])
+                self.assertIn('Experiment ' + item['commit'], item['label'])
                 self.assertIn('Darwin', item['platform'])
             document = (root / 'index.html').read_text()
             self.assertNotIn('PR #0', document)

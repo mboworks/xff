@@ -462,7 +462,7 @@ folder.mkdir(parents=True)
     source=dict(id=4, run_attempt=1, head_branch='feature', event='pull_request',
                 pull_requests=[{'number': 952}], created_at='2026-10-03T00:00:00Z'))))
 publish(root, Path(sys.argv[2]).read_text(), [folder / 'report.json'])
-experiments = [dict(row, source='experiment', source_label='Unmerged experiments')
+experiments = [dict(row, source='experiment', source_label='Unmerged experiments', comparison_role='Candidate')
                for row in json.loads((root / 'catalog.json').read_text()) if row.get('source') == 'pr-952']
 (root / 'experiments.html').write_text(history_panel(experiments, include_overview=False))
 `,
@@ -866,6 +866,11 @@ experiments = [dict(row, source='experiment', source_label='Unmerged experiments
     assert.equal(
       await page.locator('[data-control="source"]').inputValue(),
       "experiment",
+    );
+    assert.equal(await page.locator("[data-comparison-row]").isVisible(), true);
+    assert.equal(
+      await page.locator("[data-comparison-role]").textContent(),
+      "Candidate",
     );
     assert.equal(
       await page.locator('[data-control="platform"]').inputValue(),

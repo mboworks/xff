@@ -16,6 +16,27 @@ baseline on both Linux and macOS. None of these commits is presented as a merged
 A fifth change removes unnecessary native-case metadata lookups, measured separately against
 the four-change binary. Its Mac name-filtering results and Linux controls are included below.
 
+## Three-core priority and coverage
+
+Three cores are the primary optimization target. One core diagnoses serial overhead and parallel
+speedup; ten cores expose contention and filesystem saturation. Future qualification should use
+all three settings. This completed campaign measured one and three only: it makes no ten-core
+claim, and its frozen measurements are not relabeled or extrapolated.
+
+At 100,000 files, the three-core results equally weighting broad/deep shapes are:
+
+| Platform and task  | Comparison                                   | Elapsed change | Candidate/GNU find |
+| :----------------- | :------------------------------------------- | -------------: | -----------------: |
+| Linux listing      | First four changes versus adopted baseline   |         -2.38% |             1.1396 |
+| Mac listing        | First four changes versus adopted baseline   |         -5.24% |             1.0255 |
+| Mac name filtering | Native-case change versus four-change binary |        -72.13% |             0.7563 |
+| Mac listing        | Native-case change versus four-change binary |         +0.89% |             1.0616 |
+
+The large Mac name-filtering gain is 24.37% less elapsed time than GNU find. Ordinary listing
+still has a gap, and the native-case change does not improve it. The separate comparisons must
+not be compounded into a claimed total gain. On Mac, three means requested XFF workers, not
+three pinned physical cores.
+
 ## Implemented changes
 
 1. **Archive suffix lookup:** build the lookup on first use, and borrow each reader's format
@@ -242,6 +263,10 @@ The reporting change keeps experimental endpoint summaries keyed by full source 
 colliding at PR zero. Experiment catalogs carry a separate source label and no fabricated PR link.
 The comparison's platform comes from its recorded contract. An experiment-only viewer selects
 its available source automatically instead of opening on an empty merged-history selection.
+Unmerged comparison sliders now put the baseline first and the candidate second, with an explicit
+Comparison row in the Version card. The collector manifest uses the opposite order to choose
+its fixed baseline; leaking that order into the viewer previously made the old binary appear
+to be the newer measurement. The timing data and arithmetic are unchanged.
 Nine report regression tests pass,
 including experimental endpoint identities and renderer populations.
 
@@ -276,3 +301,14 @@ populations. Local previews are served from port 56205 under `find-listing-combi
 `record-buffer` preserves an aborted build attempt whose abbreviated source SHA failed the
 builder's full-revision identity check. No measurement from that attempt was accepted. The launch
 script now resolves commit arguments to full SHAs before freezing a build manifest.
+
+## Integration with current main
+
+The PR branch merges `3b8a8a34e7` after the measurements. Its overlap with #1134 is resolved by
+keeping lexical-template metadata demand and independent fuzzy-score collection, while retaining
+lazy native-case resolution. The results above refer to their recorded source and executable
+hashes; the integrated PR binary has not been remeasured. Focused correctness checks qualify the
+combined metadata paths separately from the retained performance populations. All 14 focused
+Bazel targets passed after integration: nine engine/field targets and five extended-benchmark
+and landscape targets. The Chromium history-control regression also passed with the comparison
+role visible. The local demos were regenerated from unchanged raw measurements.
