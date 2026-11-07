@@ -42,6 +42,20 @@ local history is needed.
 Use the [historical backfill workflow](benchmark-backfill.md) to build and measure a frozen revision
 list in one host session, with a common driver and reference-tool set.
 
+## Retaining measurements for successive merges
+
+Each merge into `main` requests its own post-merge measurement. The `Benchmarks` workflow
+serializes runs for the same ref with `queue: max` and `cancel-in-progress: false`. This keeps
+up to 100 pending runs alongside the active run. GitHub's default `queue: single` replaces
+an older pending run when a newer merge arrives, even when cancellation of the active run
+is disabled. See [GitHub's concurrency queue rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
+
+The queue is bounded: additional runs are canceled once 100 are pending. This change does not
+recover earlier canceled runs or guarantee measurement completion after runner or workflow
+failures. Use the [backfill workflow](benchmark-backfill.md) for missing revisions. Queue order
+also does not establish revision order; retained reports keep their exact commit and run identity.
+PR measurements and publication use their own concurrency policies.
+
 ## Relative performance and advisory alarm
 
 Each shape also has a CPU-grouped ratio table for participants doing the same task. It shows
