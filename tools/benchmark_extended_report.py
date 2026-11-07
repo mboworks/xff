@@ -7,6 +7,7 @@ import argparse
 from collections import defaultdict
 import csv
 import hashlib
+import html
 import json
 import math
 from pathlib import Path
@@ -17,6 +18,19 @@ import statistics
 import benchmark_extended as suite
 import benchmark_landscape as landscape
 import benchmark_matrix as matrix
+
+
+def revision_label(revision):
+    if revision['pr'] > 0:
+        return f'PR #{revision["pr"]}'
+    return 'Experiment ' + revision['sha'][:12]
+
+
+def endpoint_summaries(rows, contract):
+    """Keep unmerged experiments distinct even when they share the PR-zero sentinel."""
+    return {(str(revision['pr']) if revision['pr'] > 0 else revision['sha']):
+            [row for row in rows if row['sha'] == revision['sha']]
+            for revision in (contract['revisions'][0], contract['revisions'][-1])}
 
 
 def mean_fastest(samples, keep):
@@ -140,7 +154,9 @@ def as_report(rows, contract, view):
             if ((label == 'anchor' and view == 'traditional') or
                     (label not in ('xff', 'anchor') and view == 'anchor')):
                 continue
-            name = 'xff-at-' + str(contract['anchor']['pr']) if label == 'anchor' else label
+            anchor = contract['anchor']
+            anchor_id = str(anchor['pr']) if anchor['pr'] > 0 else anchor['sha'][:12]
+            name = 'xff-at-' + anchor_id if label == 'anchor' else label
             participants[name] = {'pipeline': [command], 'cwd': row['cwd'],
                                  'samples': [sample for sample in row['samples']
                                              if sample['label'] == label and sample['phase'] == 'measured']}
@@ -162,7 +178,8 @@ def export_viewer(output, contract, revisions, renderer, incomplete=False):
     assets.mkdir(exist_ok=True)
     shutil.copyfile(renderer, assets / 'three-landscape.js')
     catalog = []
-    for view, title in [('traditional', 'Traditional tools'), ('anchor', f'XFF history (fixed PR #{contract["anchor"]["pr"]})')]:
+    anchor_label = revision_label(contract['anchor'])
+    for view, title in [('traditional', 'Traditional tools'), ('anchor', f'XFF comparison (fixed {anchor_label})')]:
         reports = [(revision, rows, as_report(rows, contract, view)) for revision, rows in revisions]
         order = landscape.common_task_order([matrix.relative_results(report) for _, _, report in reports])
         for revision, rows, report in reports:
@@ -173,27 +190,33 @@ def export_viewer(output, contract, revisions, renderer, incomplete=False):
             document = landscape.render(report, '', task_order=order).replace(
                 '<script></script>', '<script src="../assets/three-landscape.js"></script>')
             (directory / (view + '.html')).write_text(document)
-            catalog.append({'platform': 'Drogon / ' + contract['recipe'] + ' / ' + title,
+            experiment = revision['pr'] <= 0
+            label = revision_label(revision)
+            catalog.append({'platform': contract['platform'] + ' / ' + contract['recipe'] + ' / ' + title,
                             'platform_name': contract['platform'], 'dataset_type': contract['recipe'] + ' / ' + title,
                             'commit': revision['sha'], 'date': revision['date'],
-                            'label': f'PR #{revision["pr"]} / {revision["sha"][:10]}',
-                            'source': 'merged', 'source_label': 'Merged history', 'local': True,
+                            'label': label + (' / ' + revision.get('subject', '') if experiment else ' / ' + revision['sha'][:10]),
+                            'source': 'experiment' if experiment else 'merged',
+                            'source_label': 'Unmerged experiments' if experiment else 'Merged history', 'local': True,
                             'measured': rows[-1]['after']['utc'], 'measurement_date': rows[-1]['after']['utc'],
                             'report': revision['sha'] + '/' + view + '.html',
                             'figures': revision['sha'] + '/' + view + '.json',
-                            'links': [{'label': f'PR #{revision["pr"]}', 'href': f'https://github.com/mboworks/xff/pull/{revision["pr"]}'}],
+                            'links': [] if experiment else [{'label': label, 'href': f'https://github.com/mboworks/xff/pull/{revision["pr"]}'}],
                             'binary': {'state': 'Consistent', 'sha256': revision['binary_sha256'],
                                        'reason': 'Clean historical source, configured production ThinLTO build, frozen executable hash checked before and after collection.'},
-                            'identity': 'Drogon Linux extended qualification', 'platform_details': contract['platform']})
+                            'identity': contract['platform'] + ' extended qualification',
+                            'platform_details': contract['platform']})
     (output / 'catalog.json').write_text(json.dumps(catalog, indent=2) + '\n')
     status = '<p><strong>Collection in progress. Only complete revisions are shown.</strong></p>' if incomplete else ''
     intro = ('<!doctype html><html lang="en"><meta charset="utf-8"><title>Extended benchmark history</title>'
              '<style>body{font:16px system-ui;margin:1.5rem}summary{cursor:pointer}</style>'
-             '<h1>Extended benchmark history</h1>' + status + '<p>Independent extended suite; production full binaries on Linux tmpfs. '
-             'Each historical run is interleaved with the fixed current binary and a traditional tool. '
+             '<h1>Extended benchmark history</h1>' + status + '<p>Independent extended suite; production full binaries on '
+             + html.escape(contract['platform']) + '. '
+             'Each revision is interleaved with the fixed baseline binary and a traditional tool. '
              f'{len(revisions)} complete revisions are shown, including regressions and unchanged controls.</p>'
-             '<p>The XFF history dataset compares the selected historical binary with the fixed current one. '
-             'Its current revision is an identical-binary control and should be near zero.</p>'
+             '<p>The XFF comparison dataset compares the selected binary with the fixed baseline. '
+             'The baseline revision is an identical-binary control and should be near zero. '
+             'Unmerged experiments are labeled separately from merged PRs.</p>'
              '<p>Download: <a href="cells.csv">Measurements</a> &middot; '
              '<a href="history-by-task.csv">History by task</a> &middot; '
              '<a href="current-versus-reference.csv">Current tool comparisons</a> (CSV).</p>')
@@ -259,8 +282,7 @@ def main():
                'task_summary': 'Geometric means equally weight all declared shape/worker combinations; incomplete groups are omitted.',
                'current_reference_summary': 'Fixed-current/reference ratios across historical blocks; p10/p90 describe observed spread, not independent-machine confidence.',
                'contract_sha256': hashlib.sha256((root / 'contract.json').read_bytes()).hexdigest(),
-               'endpoints': {str(revision['pr']): [row for row in rows if row['sha'] == revision['sha']]
-                             for revision in (contract['revisions'][0], contract['revisions'][-1])}}
+               'endpoints': endpoint_summaries(rows, contract)}
     (output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
     if args.renderer_js and revisions:
         export_viewer(output, contract, revisions, args.renderer_js, incomplete=progress['state'] != 'complete')

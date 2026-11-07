@@ -3,6 +3,7 @@
 """Check historical ratios, paired uncertainty, and real-only renderer populations."""
 
 import copy
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -69,6 +70,33 @@ class BenchmarkExtendedReportTest(unittest.TestCase):
         for variant in variants:
             with self.assertRaises(ValueError):
                 report.summarize_cell(variant, self.contract())
+
+    def test_experiments_keep_distinct_endpoints_and_do_not_claim_merged_prs(self):
+        candidate = dict(self.row()['revision'], sha='candidate', pr=0, date='2026-11-07')
+        baseline = dict(candidate, sha='baseline')
+        rows = [dict(self.row(), revision=candidate, after={'utc': '2026-11-07T12:00:00Z'},
+                     case=dict(self.row()['case'], files=files, cpus=cpus))
+                for files in (100, 1000) for cpus in (1, 3)]
+        contract = dict(self.contract(), anchor=baseline, revisions=[candidate, baseline],
+                        cases=[row['case'] for row in rows], platform='Darwin')
+        summaries = report.endpoint_summaries([dict(sha='candidate'), dict(sha='baseline')], contract)
+        self.assertEqual(set(summaries), {'candidate', 'baseline'})
+        self.assertEqual(summaries['candidate'], [dict(sha='candidate')])
+        adapted = report.as_report(rows, contract, 'anchor')
+        self.assertEqual(set(adapted['tasks'][0]['participants']), {'xff', 'xff-at-baseline'})
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            renderer = root / 'renderer.js'
+            renderer.write_text('/* renderer fixture */')
+            report.export_viewer(root, contract, [(candidate, rows)], renderer)
+            for item in json.loads((root / 'catalog.json').read_text()):
+                self.assertEqual(item['source'], 'experiment')
+                self.assertEqual(item['links'], [])
+                self.assertIn('Experiment candidate', item['label'])
+                self.assertIn('Darwin', item['platform'])
+            document = (root / 'index.html').read_text()
+            self.assertNotIn('PR #0', document)
+            self.assertNotIn('Linux tmpfs', document)
 
     def test_fastest_estimator_and_control_interval(self):
         self.assertEqual(report.mean_fastest([{'elapsed_seconds': value} for value in (2, 5, 1)], 2), 1.5)
