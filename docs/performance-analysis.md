@@ -4640,19 +4640,25 @@ its percentages to another change or treat an eliminated branch as a measured im
 
 ### Further independent archive allocation candidates
 
-O27 examines construction work that the existing hot-listing benchmark explicitly excludes.
-The current index constructs an owned long ancestor key before a transparent lookup even when
-that ancestor already exists. First defer that construction until absence is established. A
-separate lower_bound/emplace_hint variant can avoid another ancestor search; separately compare
-member insert_or_assign and known-missing-parent try_emplace to default mapped construction.
-Keep duplicate overwrite, synthesized flags, ancestor break behavior and inode assignment order.
+[The O27 insertion report](benchmarks/archive-index-insertion-20261107.md) retains two
+unselected mechanisms separately. Deferred ancestor-key ownership completed the original
+28-construction, 82-command and 88-listing trials on both hosts, without an attributable
+cross-platform whole-command gain. Direct mapped-node construction was then screened on main
+`9bf1aad5`: all 28 public construction fixture oracles and three focused optimized archive
+suite targets pass on each host, but no Linux shape median improves. Mac's small apparent
+wins mostly track its unchanged-image control, with large tiny-case disagreement. Stop at
+that screen rather than spending full qualification cycles or repeating until favorable.
 
-Measure the real public archive construction lifecycle, including destruction, and name any
-parsing/source-copy cost included in that path. Do not introduce a benchmark-only public/friend
-API or pretend an untimed setup benchmark measures indexing. Preserve flat/wide/deep/chain
-construction, complete command/listing controls, tiny cases, allocation/RSS limits and both hosts.
-Do not retain map key views across a future B-tree insertion: relocated small-string keys can
-invalidate them. These insertion prototypes remain uninstalled and unqualified.
+Both original source/image identities, every raw observation, exact invocations and the
+previous experiment's complete archives remain available. The source-level elimination of
+an initialization/assignment sequence is not evidence of fewer costly optimized instructions.
+No production index, CLI, comparator, safety setting or ownership behavior changes.
+
+Transparent `lower_bound` plus hinted ancestor insertion remains an independent unmeasured
+candidate. Preserve duplicate replacement, synthesized flags, child counts and inode order.
+Measure public construction and destruction including parsing, not only hot listings whose
+index setup is untimed. A future B-tree audit still must account for relocated small-string
+map keys and escaping references.
 
 O29 examines borrowed normalized member-key views for immediate stat/access/readlink/cache
 lookups. Normalization only selects a contiguous input subview. Stored index keys and both
@@ -4736,3 +4742,11 @@ and correctness evidence](benchmarks/shared-stage-workers-20261107.md). The nest
 mounted-walk test also demonstrates why a run-wide worker ceiling cannot silently
 replace independent useful stage allowances. O18 and the wider performance goal
 remain open; no production worker policy changes follow from these experiments.
+
+### O30 tracking reconciliation
+
+The owned `OpenBytes` transfer is implemented by PR #1122, merge `0e95e191ba`.
+Its exact post-merge main Test run 42276661524 passed both operating systems, ASan, MSan,
+TSan, GCC, coverage, fuzzing, changed-file lint and policy checks. Close the stale create-PR
+instruction without removing the earlier noisy Mac populations or extending private benchmark
+image claims to a different public integration image.

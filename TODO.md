@@ -1438,20 +1438,25 @@ this as intentional accounting.
       Actual release assembly retains the dynamic mode branch, but its removal fails to
       establish a consistent cross-platform standalone benefit. Preserve both complete screens,
       copied-parent drift and exact source/image identities; do not adopt the private template.
-- [ ] O27: Independently measure archive-index insertion changes: defer an owned ancestor key
-      until transparent lookup proves absence; compare lower_bound plus emplace_hint to the
-      repeated search, and compare direct mapped-value construction separately. Preserve
-      duplicate overwrite, synthesis flags and inode order. Construction/destruction benchmarks
-      must include and name actual public archive parsing/source costs, not hot-listing setup.
+- [x] O27a: Evaluate deferred archive ancestor-key ownership. Complete 28-construction,
+      82-command and 88-listing trials on both hosts did not establish an attributable
+      cross-platform whole-command benefit. Retain the baseline and the original raw evidence.
+- [x] O27b: Screen direct mapped-node construction on current main. All 28 fixture oracles and
+      focused tests pass on both hosts, but the screen does not justify adoption or full timing.
+      Both decisions and the lossless evidence are in the [O27 report](docs/benchmarks/archive-index-insertion-20261107.md).
+- [ ] O27c: Independently measure transparent lower_bound plus hinted ancestor insertion.
+      Preserve duplicate overwrite, synthesis flags, child counts and inode order. Public
+      construction/destruction benchmarks include parsing/source costs; hot-listing setup does not.
 - [x] O29: [Qualify borrowed archive member keys and bounded parent-length checks](docs/benchmarks/archive-member-keys-20261105.md).
       Both full 333-target release suites, relevant sanitizers, actual changed-TU lint, exact
       ordinary release images and 15/15 lines plus 2/2 branches pass. All 14 targeted operations
       improve in each of three sessions on both hosts; whole commands remain mostly modest.
       Retain the Linux large-deep-root listing cost around 5%, the conflicting Mac full/subset
       populations, and every earlier rejected variant. PR/current-base CI remains separate.
-- [ ] O30: Move the owned OpenBytes input into its memory source instead of copying the complete
+- [x] O30: Move the owned OpenBytes input into its memory source instead of copying the complete
       buffer before streaming. TAR/PHAR correctness and full focused suites pass on macOS/Linux;
       six complete macOS pairs and three Linux pairs show large-input wins, with about 64 MiB lower
       peak RSS at 64 MiB member payload. Full protocol and raw evidence: [O30 report](docs/benchmarks/openbytes-owned-input-20261106.md).
-      Sync to current main, create the PR, and complete changed-file lint plus all required CI before
-      marking this merged candidate complete. The initial noisy macOS screen remains in the artifact.
+      Implemented in PR #1122; exact post-merge main Test run 42276661524 passed both operating
+      systems, sanitizers, coverage and changed-file lint. The initial noisy macOS screen remains
+      in the artifact.
