@@ -1437,9 +1437,12 @@ this as intentional accounting.
       Both hermetic Clang 23.1.4 libc++ implementations only read/write the prior-state byte.
       Keep the current runtime; no buffering change or measured gain follows from adding the
       call. Revisit for a different standard-library implementation or output architecture.
-- [ ] O25: Independently measure direct final-string decoding and owned-result transfer for
-      the lazy embedded language JSON. The current payload is 109,261 bytes, not an ordinary
-      startup megabyte cost. Preserve corruption/length errors and narrow ABI adapters.
+- [x] O25: Integrate qualified direct final-string decoding and owned-result transfer for
+      the lazy 109,261-byte language JSON. Current actual-function kernels improve the combined
+      decode/retention path 9.87% Mac/3.90% Linux; fresh whole-command controls remain inconclusive.
+      Both 323-target release suites, both focused ASan suites and Linux MSan pass. Preserve
+      corruption/length errors and narrow ABI adapters; current-main PR CI remains required.
+      Retain [all variants, source identities and raw data](docs/benchmarks/language-json-storage-20261107.md).
 - [x] O28: [Evaluate compile-time archive observation mode](docs/benchmarks/archive-observation-mode-20261105.md).
       Actual release assembly retains the dynamic mode branch, but its removal fails to
       establish a consistent cross-platform standalone benefit. Preserve both complete screens,

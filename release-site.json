@@ -135,7 +135,8 @@
     "docs/benchmarks/archive-member-keys-20261105.md": "docs/benchmarks/archive-member-keys-20261105.html",
     "docs/benchmarks/shared-stage-workers-20261107.md": "docs/benchmarks/shared-stage-workers-20261107.html",
     "docs/benchmarks/archive-index-insertion-20261107.md": "docs/benchmarks/archive-index-insertion-20261107.html",
-    "docs/benchmarks/transactional-rg-records-20261107.md": "docs/benchmarks/transactional-rg-records-20261107.html"
+    "docs/benchmarks/transactional-rg-records-20261107.md": "docs/benchmarks/transactional-rg-records-20261107.html",
+    "docs/benchmarks/language-json-storage-20261107.md": "docs/benchmarks/language-json-storage-20261107.html"
   },
   "generated_html": {
     "XFF.md": {
@@ -158,6 +159,7 @@
     }
   ],
   "files": {
-    "docs/benchmarks/transactional-rg-records-20261107.json.gz": "docs/benchmarks/transactional-rg-records-20261107.json.gz"
+    "docs/benchmarks/transactional-rg-records-20261107.json.gz": "docs/benchmarks/transactional-rg-records-20261107.json.gz",
+    "docs/benchmarks/language-json-storage-20261107.json.gz": "docs/benchmarks/language-json-storage-20261107.json.gz"
   }
 }

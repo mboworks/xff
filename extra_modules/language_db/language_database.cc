@@ -10,7 +10,7 @@
 #include <span>
 #include <string>
 #include <string_view>
-#include <vector>
+#include <utility>
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
@@ -21,10 +21,16 @@
 namespace xff::language_db {
 
 absl::StatusOr<std::string> Decode(std::span<const std::uint8_t> compressed, std::size_t expected_uncompressed_size) {
-  std::vector<std::uint8_t> result(expected_uncompressed_size);
-  std::size_t size = result.size();
-  const BrotliDecoderResult decode =
-      BrotliDecoderDecompress(compressed.size(), compressed.data(), &size, result.data());
+  std::size_t size = 0;
+  BrotliDecoderResult decode = BROTLI_DECODER_RESULT_ERROR;
+  std::string result;
+  // XFF_ABI_POINTER: Brotli's C API writes decoded bytes through a uint8_t pointer.
+  result.resize_and_overwrite(expected_uncompressed_size, [&](char* buffer, std::size_t writable_bytes) noexcept {
+    size = writable_bytes;
+    decode =
+        BrotliDecoderDecompress(compressed.size(), compressed.data(), &size, reinterpret_cast<std::uint8_t*>(buffer));
+    return decode == BROTLI_DECODER_RESULT_SUCCESS ? size : 0;
+  });
   if (decode != BROTLI_DECODER_RESULT_SUCCESS) {
     return absl::DataLossError("the embedded language database is not valid Brotli data");
   }
@@ -33,16 +39,16 @@ absl::StatusOr<std::string> Decode(std::span<const std::uint8_t> compressed, std
         absl::StrCat(
             "the embedded language database decoded to ", size, " bytes, expected ", expected_uncompressed_size));
   }
-  return std::string(result.begin(), result.end());
+  return result;
 }
 
 namespace {
 
 std::string_view Json() {
   static const std::string kJson = [] {
-    const absl::StatusOr<std::string> json = Decode(data::Compressed(), data::UncompressedSize());
+    absl::StatusOr<std::string> json = Decode(data::Compressed(), data::UncompressedSize());
     CHECK_OK(json);  // LCOV_EXCL_BR_LINE: fatal invariant; generated payload is verified at build time.
-    return *json;
+    return std::move(*json);
   }();  // LCOV_EXCL_BR_LINE: compiler-generated static-local initialization branches.
   return kJson;
 }

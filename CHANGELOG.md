@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Reduce temporary allocations and copies when lazily decoding the embedded language database.
+
 - Transfer validated rg output directly into matcher results, reusing retained buffers while preserving
   native callback boundaries, binary suppression, and read-error behavior.
 

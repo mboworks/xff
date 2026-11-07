@@ -49,6 +49,7 @@ cc_test(
         ":language_db_data_cc",
         ":language_db_register_cc",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
         "@xff_extras_api//:language_database_cc",
         "@xff_extras_api//:license_notice_cc",
