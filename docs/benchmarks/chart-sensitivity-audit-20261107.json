@@ -1,0 +1,310 @@
+{
+  "pages_commit": "153d58627f2132b838a091ffcfdb30dd49571b8b",
+  "source_commit": "ae8c5af3eb11dc8571f11db9b307b0db948f78c6",
+  "selected_reports": 490,
+  "checked_points": 3178656,
+  "errors": [],
+  "live_catalog_sha256": "bdfe8b375ded842ddea815f8001b816d0ad3faf31a5c3b0855f21193ba5029f8",
+  "live_catalog_matches_snapshot": true,
+  "scope": "Recorded sample to chart arithmetic and browser sensitivity; no new performance collection or full executable provenance re-verification.",
+  "current_performance_assessment": {
+    "datasets": ["linux / x86_64", "macos / arm64"],
+    "excluded_at_user_direction": "Local / linux-zen5 / x86_64 / broad/v2 + deep/v2",
+    "reason": "No recent measurements; retained Linux v2 arithmetic and clipping statistics are historical evidence only and do not explain current CI chart behavior."
+  },
+  "series": [
+    {
+      "dataset": "Local / linux-zen5 / x86_64 / broad/v1 + deep/v1",
+      "reports": 70,
+      "distinct_binary_hashes": 38,
+      "latest": {
+        "commit": "c33efe99d0df0b4866a9f77fde71dde9959d3cdb",
+        "date": "2026-10-06T02:40:08Z",
+        "links": [
+          {
+            "label": "PR #981",
+            "href": "https://github.com/mboworks/xff/pull/981"
+          }
+        ],
+        "report": "local/linux-zen5/04f25c4ca10d9ab4894b96320aa99eb84ec0ecf45368df692ed4002baf980cb2/c33efe99d0df0b4866a9f77fde71dde9959d3cdb/",
+        "default_points": 468,
+        "default_capped": 0,
+        "half_time_still_capped": 0,
+        "omitted_xff_tasks": {
+          "files-safe": 78
+        }
+      },
+      "mainline_commits_after_latest": 128
+    },
+    {
+      "dataset": "Local / linux-zen5 / x86_64 / broad/v2 + deep/v2",
+      "reports": 72,
+      "distinct_binary_hashes": 38,
+      "latest": {
+        "commit": "9210100af8007a2f17b22597a349714d9e6069e1",
+        "date": "2026-10-06T22:08:43Z",
+        "links": [
+          {
+            "label": "PR #985",
+            "href": "https://github.com/mboworks/xff/pull/985"
+          }
+        ],
+        "report": "local/linux-zen5/b7bb50f259fd384e20e29cc69874178dc2ac9221137017998cbcc709ed87f6f9/9210100af8007a2f17b22597a349714d9e6069e1/",
+        "default_points": 468,
+        "default_capped": 42,
+        "half_time_still_capped": 8,
+        "omitted_xff_tasks": {
+          "files-safe": 78
+        }
+      },
+      "mainline_commits_after_latest": 126
+    },
+    {
+      "dataset": "Local / macos-m5-pro / arm64 / broad/v1 + deep/v1",
+      "reports": 72,
+      "distinct_binary_hashes": 41,
+      "latest": {
+        "commit": "9210100af8007a2f17b22597a349714d9e6069e1",
+        "date": "2026-10-06T22:08:43Z",
+        "links": [
+          {
+            "label": "PR #985",
+            "href": "https://github.com/mboworks/xff/pull/985"
+          }
+        ],
+        "report": "local/macos-m5-pro/14620686da0d294b9bf80298fa064467e2fa3e45923e4b827ec34e77b34b9dde/9210100af8007a2f17b22597a349714d9e6069e1/",
+        "default_points": 468,
+        "default_capped": 0,
+        "half_time_still_capped": 0,
+        "omitted_xff_tasks": {
+          "files-safe": 78
+        }
+      },
+      "mainline_commits_after_latest": 126
+    },
+    {
+      "dataset": "linux / x86_64",
+      "reports": 138,
+      "distinct_binary_hashes": 80,
+      "latest": {
+        "commit": "0e95e191ba7d7ee3769217e7fbf82a825ff9b90d",
+        "date": "2026-11-06T19:06:09Z",
+        "links": [
+          {
+            "label": "PR #1122",
+            "href": "https://github.com/mboworks/xff/pull/1122"
+          }
+        ],
+        "report": "runs/42276661623/1/linux/",
+        "default_points": 468,
+        "default_capped": 0,
+        "half_time_still_capped": 0,
+        "omitted_xff_tasks": {
+          "files-safe": 52
+        }
+      },
+      "mainline_commits_after_latest": 9
+    },
+    {
+      "dataset": "macos / arm64",
+      "reports": 138,
+      "distinct_binary_hashes": 138,
+      "latest": {
+        "commit": "0e95e191ba7d7ee3769217e7fbf82a825ff9b90d",
+        "date": "2026-11-06T19:06:09Z",
+        "links": [
+          {
+            "label": "PR #1122",
+            "href": "https://github.com/mboworks/xff/pull/1122"
+          }
+        ],
+        "report": "runs/42276661623/1/macos/",
+        "default_points": 468,
+        "default_capped": 0,
+        "half_time_still_capped": 0,
+        "omitted_xff_tasks": {
+          "files-safe": 52
+        }
+      },
+      "mainline_commits_after_latest": 9
+    }
+  ],
+  "browser": {
+    "synthetic_control": "halve every XFF elapsed sample; reference samples unchanged",
+    "errors": [],
+    "latest": {
+      "commit": "0e95e191ba7d7ee3769217e7fbf82a825ff9b90d",
+      "version": "138 of 138",
+      "metric": "percent",
+      "range": "100",
+      "picks": 74,
+      "maxError": 0,
+      "heightRange": [-49.41909765688375, 83.75368932652991]
+    },
+    "previous": {
+      "commit": "2487927cc6b1de326ea3c6c058dc493214354bec",
+      "version": "137 of 138",
+      "metric": "percent",
+      "range": "100",
+      "picks": 75,
+      "maxError": 0
+    },
+    "counterfactual": {
+      "checkedPoints": 468,
+      "maxError": 1.4210854715202004e-14,
+      "picks": 66,
+      "originalScreenshot": "554cb3e9ff0d7efb57cd143a6eafeac64a51ba2b0a633616f79c65d7cf0069ad",
+      "syntheticScreenshot": "f983742aa29228392c8cb9792b0ca1deef7134c8ca8517e1413504f876da93c0"
+    }
+  },
+  "linux_1093_1094": [
+    {
+      "platform": "linux / x86_64",
+      "date": "2026-11-04T23:39:42Z",
+      "commit": "a7a6125a9358f1020fc914d6c91bbf8c6e66392f",
+      "report": "runs/41935477473/1/linux/",
+      "binary": "c4a734d126d335b293510ecb77d0f7f59aea19b942bb200a7ce5434ba56b8a33",
+      "dataset": "broad",
+      "task": "files",
+      "cpus": "1",
+      "files": "100000",
+      "reference": "rg",
+      "xff_ms": "63.65512385713958",
+      "reference_ms": "47.569683285709225",
+      "ratio": "1.3381447901349115",
+      "height": "-33.81447901349115",
+      "fixture": "4fec4112050c07e58e1c6d30ba3049d0868d9cf576a1ebab6c5bff793999b025"
+    },
+    {
+      "platform": "linux / x86_64",
+      "date": "2026-11-05T01:46:19Z",
+      "commit": "bb0185a0379075480eb8b1499f5bc5ff8cfafaa8",
+      "report": "runs/41950760925/1/linux/",
+      "binary": "b1a7bea12f32f8ded3413f4b6b99a7720f17e24227c9135b284d98f50bcf1edb",
+      "dataset": "broad",
+      "task": "files",
+      "cpus": "1",
+      "files": "100000",
+      "reference": "rg",
+      "xff_ms": "59.88791642857905",
+      "reference_ms": "48.28247728571",
+      "ratio": "1.2403654450908606",
+      "height": "-24.036544509086056",
+      "fixture": "4fec4112050c07e58e1c6d30ba3049d0868d9cf576a1ebab6c5bff793999b025"
+    }
+  ],
+  "linux_identical_binary_control": [
+    {
+      "platform": "linux / x86_64",
+      "date": "2026-11-05T17:08:19Z",
+      "commit": "55ea67e3f06e5055b43d8cb780661901731592f2",
+      "report": "runs/42071636652/1/linux/",
+      "binary": "09c997ab01d2d7dfe916bf1cced7b54757c6b6b25f8d2a9743812e9db23efb51",
+      "dataset": "broad",
+      "task": "files",
+      "cpus": "1",
+      "files": "100000",
+      "reference": "rg",
+      "xff_ms": "57.341299714279",
+      "reference_ms": "47.05371942858148",
+      "ratio": "1.2186347946693585",
+      "height": "-21.863479466935853",
+      "fixture": "4fec4112050c07e58e1c6d30ba3049d0868d9cf576a1ebab6c5bff793999b025"
+    },
+    {
+      "platform": "linux / x86_64",
+      "date": "2026-11-05T18:53:16Z",
+      "commit": "f3ec0faf7a1bb16ddb0b3b8bcee2c3e5bd970df2",
+      "report": "runs/42088571729/1/linux/",
+      "binary": "09c997ab01d2d7dfe916bf1cced7b54757c6b6b25f8d2a9743812e9db23efb51",
+      "dataset": "broad",
+      "task": "files",
+      "cpus": "1",
+      "files": "100000",
+      "reference": "rg",
+      "xff_ms": "64.83135542858268",
+      "reference_ms": "51.71553057143846",
+      "ratio": "1.2536148176808584",
+      "height": "-25.361481768085838",
+      "fixture": "4fec4112050c07e58e1c6d30ba3049d0868d9cf576a1ebab6c5bff793999b025"
+    },
+    {
+      "platform": "linux / x86_64",
+      "date": "2026-11-05T20:46:57Z",
+      "commit": "455dcd8eb5dd98b09f3117f5316136b6d43cfd8e",
+      "report": "runs/42106576310/1/linux/",
+      "binary": "09c997ab01d2d7dfe916bf1cced7b54757c6b6b25f8d2a9743812e9db23efb51",
+      "dataset": "broad",
+      "task": "files",
+      "cpus": "1",
+      "files": "100000",
+      "reference": "rg",
+      "xff_ms": "62.68778028572797",
+      "reference_ms": "48.794140857138146",
+      "ratio": "1.284739913123346",
+      "height": "-28.47399131233459",
+      "fixture": "4fec4112050c07e58e1c6d30ba3049d0868d9cf576a1ebab6c5bff793999b025"
+    },
+    {
+      "platform": "linux / x86_64",
+      "date": "2026-11-05T22:29:23Z",
+      "commit": "245e74ff6cbe6c0f84a074be669c60ac7cbc5e8f",
+      "report": "runs/42121915666/1/linux/",
+      "binary": "09c997ab01d2d7dfe916bf1cced7b54757c6b6b25f8d2a9743812e9db23efb51",
+      "dataset": "broad",
+      "task": "files",
+      "cpus": "1",
+      "files": "100000",
+      "reference": "rg",
+      "xff_ms": "60.077836714283094",
+      "reference_ms": "48.359569285712006",
+      "ratio": "1.2423153804232347",
+      "height": "-24.231538042323475",
+      "fixture": "4fec4112050c07e58e1c6d30ba3049d0868d9cf576a1ebab6c5bff793999b025"
+    },
+    {
+      "platform": "linux / x86_64",
+      "date": "2026-11-06T00:26:31Z",
+      "commit": "b60cf7a5a92609f9fadddd4759d3c55e755a69b6",
+      "report": "runs/42136840761/1/linux/",
+      "binary": "09c997ab01d2d7dfe916bf1cced7b54757c6b6b25f8d2a9743812e9db23efb51",
+      "dataset": "broad",
+      "task": "files",
+      "cpus": "1",
+      "files": "100000",
+      "reference": "rg",
+      "xff_ms": "61.81004171427925",
+      "reference_ms": "50.18462614285519",
+      "ratio": "1.2316529276980412",
+      "height": "-23.165292769804125",
+      "fixture": "4fec4112050c07e58e1c6d30ba3049d0868d9cf576a1ebab6c5bff793999b025"
+    },
+    {
+      "platform": "linux / x86_64",
+      "date": "2026-11-06T03:31:50Z",
+      "commit": "ccb1f0a202ed59b30246c14e424a400e47acc447",
+      "report": "runs/42157108661/1/linux/",
+      "binary": "09c997ab01d2d7dfe916bf1cced7b54757c6b6b25f8d2a9743812e9db23efb51",
+      "dataset": "broad",
+      "task": "files",
+      "cpus": "1",
+      "files": "100000",
+      "reference": "rg",
+      "xff_ms": "63.105239285716515",
+      "reference_ms": "48.80616985714629",
+      "ratio": "1.2929766763182406",
+      "height": "-29.297667631824066",
+      "fixture": "4fec4112050c07e58e1c6d30ba3049d0868d9cf576a1ebab6c5bff793999b025"
+    }
+  ],
+  "evidence_directory": "/private/tmp/xff-chart-evidence-20261107",
+  "artifact_hashes": {
+    "audit.py": "5109db79d01589b40c626e86618dac8602dcf0f3c596ebbf88eb66d7a5e10941",
+    "audit-summary.json": "af8f443033f40a38320b1f5192561423d73638750e886e7d4629b43ad386997f",
+    "cells.csv": "8a7dc35d997cfbd52507b2d6b3db3bd1885a3bba4915962cf7bf477c18661a02",
+    "browser-check.mjs": "35be5509a59bff8ea86b10b853d9fdfded7a6bf6d7ea61147317510004d21d7d",
+    "browser-check.json": "73b1fc94408f21998f7f4c42e3c26f97f7deda04387be00274e0144b0b0a1c58",
+    "browser-original.png": "554cb3e9ff0d7efb57cd143a6eafeac64a51ba2b0a633616f79c65d7cf0069ad",
+    "browser-synthetic-half-time.png": "f983742aa29228392c8cb9792b0ca1deef7134c8ca8517e1413504f876da93c0"
+  }
+}
