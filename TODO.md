@@ -523,6 +523,12 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       data descriptors. A nonseekable libarchive memory-writer fixture reproduces zero size for
       a 1 MiB member on the unchanged parent. Preserve the exact size oracle and parent proof in
       the O19b1 artifact; do not silently admit an unbudgeted seekable central-directory index.
+      The [current-main compatibility investigation](docs/benchmarks/deferred-zip-size-investigation-20261107.md)
+      rejects unconditional payload decoding: supported/unsupported decoder and CRC controls expose
+      new failures in successful listings. Keep unknown versus empty sizes distinct.
+- [ ] Fix deferred bzip2 ZIP content reads through streaming sources. Exact valid fixtures decode
+      through the complete-memory API and Python zipfile but report truncation through MemberReadSource.
+      Preserve the six-case both-host diagnostic and separate this from metadata-only listing.
 - [x] O19b2: Implement and qualify native ZIP seeking with conservative index admission, bounded
       source extents and sequential fallbacks. Reject the uncached policy after repeatable first-read
       regressions; retain all variants and the manual ZIP benchmark in
