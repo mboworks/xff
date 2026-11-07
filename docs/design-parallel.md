@@ -340,6 +340,16 @@ without an additional existence check, just as a name-only directory listing can
 New descriptors conservatively require basic metadata until explicitly audited; birth-time consumers
 also declare `needs_birth_time`.
 
+Implicit `--template` output uses stat requirements from compiled field bindings. Literal text,
+lexical path components and supplied context values do not force full metadata; mixed output
+such as `{name}:{size}` still does. New or unclassified bindings, content, symlink-target and type
+fields remain conservative. Expression, reduction, color and traversal requirements stay independent.
+Lexical templates have the same directory-entry semantics as ordinary metadata-free listing.
+Fuzzy-score collection is independent of stat demand, so `{fuzzy}` keeps its evaluated score.
+Column output remains eager: [qualification found a Linux multi-directory cost](benchmarks/compiled-field-stat-demand-20261107.md)
+when lexical columns used the same admission policy. The template-only policy avoids that change;
+its measured gains and remaining costs are documented there too.
+
 Field selection is independent of eager versus lazy demand. Ordinary traversal and size, owner,
 mode and modification-time consumers request portable stat fields. Birth-time predicates and compiled
 `{btime}` fields request creation time too; arbitrary entry callbacks retain complete metadata.

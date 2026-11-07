@@ -6143,8 +6143,15 @@ RunResult RunFindCore(
   for (std::size_t index = 0; index < deferred_nodes.size(); ++index) {
     deferred_node_order.emplace(deferred_nodes[index], index);
   }
-  const bool full_metadata = colorize || any_reduction || matched_entry.has_value() || !column_templates.empty()
-                             || compiled_tmpl.has_value() || collections.Active() || !deferred_nodes.empty();
+  // Keep columns conservative: metadata-free tabular output still has an unresolved
+  // multi-directory Linux cost. Qualify template admission separately.
+  const bool listing_stat_metadata = !column_templates.empty() || (compiled_tmpl && compiled_tmpl->NeedsStatMetadata());
+  const bool full_metadata = colorize || any_reduction || matched_entry.has_value() || listing_stat_metadata
+                             || collections.Active() || !deferred_nodes.empty();
+  // Template score collection is independent of filesystem metadata. Preserve the
+  // previous output contract even when lexical/context fields avoid eager stats.
+  const bool collect_fuzzy_score =
+      full_metadata || rank_by_score || compiled_tmpl.has_value() || !column_templates.empty();
   options.metadata = full_metadata            ? MetadataDemand::kAlways
                      : expression.has_value() ? ExpressionMetadata(*expression)
                                               : MetadataDemand::kNever;
@@ -6238,8 +6245,8 @@ RunResult RunFindCore(
       }
     }
     parallel_match.emplace(
-        parallel_expression, options.workers, full_metadata || rank_by_score, std::move(content_output),
-        executions->Parallel(), std::move(derivation));
+        parallel_expression, options.workers, collect_fuzzy_score, std::move(content_output), executions->Parallel(),
+        std::move(derivation));
   }
   std::vector<OwnedVisit> pending_matches;
   // Decision-only batches retain no file bytes or rendered line records. Give them more work
@@ -6425,8 +6432,8 @@ RunResult RunFindCore(
             .resolve_name_case = fs_native_case && !uniform_native_case
                                      ? std::optional<absl::FunctionRef<bool()>>(resolve_name_case)
                                      : std::nullopt,
-            .fuzzy_score = full_metadata || rank_by_score ? mbo::types::OptionalRef{fuzzy_score}
-                                                          : mbo::types::OptionalRef<std::optional<int>>{},
+            .fuzzy_score = collect_fuzzy_score ? mbo::types::OptionalRef{fuzzy_score}
+                                               : mbo::types::OptionalRef<std::optional<int>>{},
             .fuzzy_workspace = fuzzy_workspace,
             .hash_verification = hash_verification_summary ? mbo::types::OptionalRef{hash_verification}
                                                            : mbo::types::OptionalRef<std::optional<bool>>{},

@@ -12,6 +12,46 @@ import site_storage as storage
 
 
 class SiteStorageTest(unittest.TestCase):
+    def test_unchanged_expanded_measurements_reuse_exact_compressed_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'report.json'
+            original = b'{ "samples": [1.000, true, -0.0, null] }\n'
+            retained = gzip.compress(original, compresslevel=1, mtime=123)
+            path.with_suffix('.json.gz').write_bytes(retained)
+            path.write_bytes(original)
+            storage.compact_json(path)
+            self.assertFalse(path.exists())
+            self.assertEqual(path.with_suffix('.json.gz').read_bytes(), retained)
+
+    def test_changed_expanded_inputs_replace_retained_bytes_including_scalar_types_and_signs(self):
+        for before, after in ((1, True), (1, 1.0), (-0.0, 0.0), (['before'], ['after'])):
+            for intern in (False, True):
+                with self.subTest(before=before, after=after, intern=intern), tempfile.TemporaryDirectory() as directory:
+                    path = Path(directory) / 'landscape.json'
+                    path.write_text(json.dumps(before))
+                    storage.compact_json(path, intern)
+                    original = json.dumps(after).encode()
+                    path.write_bytes(original)
+                    storage.compact_json(path, intern)
+                    actual = gzip.decompress(path.with_suffix('.json.gz').read_bytes())
+                    if intern:
+                        actual = json.dumps(storage.unpacked(json.loads(actual))).encode()
+                    self.assertEqual(actual, original)
+
+    def test_missing_or_corrupt_retained_payload_is_rebuilt_from_expanded_input(self):
+        invalid_deflate = bytearray(gzip.compress(b'payload'))
+        invalid_deflate[10] = 7  # Reserved DEFLATE block type, after the ten-byte gzip header.
+        for previous in (None, b'not gzip', gzip.compress(b'stale payload'), gzip.compress(b'truncated')[:-2],
+                         invalid_deflate):
+            with self.subTest(previous=previous), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / 'report.json'
+                if previous is not None:
+                    path.with_suffix('.json.gz').write_bytes(previous)
+                original = b'{ "valid": [1, true] }\n'
+                path.write_bytes(original)
+                storage.compact_json(path)
+                self.assertEqual(gzip.decompress(path.with_suffix('.json.gz').read_bytes()), original)
+
     def test_shared_json_values_round_trip_without_type_collisions(self):
         row = {'sample': [1, True, 1.0, None, False, 0, -0.0], 'label': '</script>', '__proto__': 'literal'}
         value = {'a': row, 'b': row, 'nested': [[row] * 200]}

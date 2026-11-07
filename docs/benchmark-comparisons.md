@@ -73,7 +73,9 @@ selection on that refresh; the original observations remain archived at their im
 
 The trusted publisher starts watching when PR CI starts. Once the combined Linux/macOS comparison
 job passes, it publishes both existing JSON results without waiting for unrelated tests. It does not
-collect another set of measurements. Publication still waits for any active Pages deployment. The browser
+collect another set of measurements. Retention waits for other site writers, independently of
+deployment. A separate deployment worker publishes the newest retained snapshot after any active
+deployment finishes. The browser
 loads public data from the site and needs no GitHub credentials. Preview publication does not mean
 the rest of CI passed.
 
@@ -81,10 +83,20 @@ The publisher checks the current PR head, repository, run attempt, successful co
 artifact creation times, and the tested merge commit's parents. Reports preserve both the PR
 branch head and tested merge commit, the base parent, and artifact identity. Only code checked out
 from `main` executes with publication permissions. Uploaded HTML is ignored; bounded JSON is
-validated and rendered again. Waiting happens outside the shared deployment lock. Preview updates
+validated and rendered again. Waiting happens outside the shared writer lock. Preview updates
 reuse merged pages and their catalog instead of rebuilding every historical chart.
+After acquiring the writer lock, a queued PR preview rechecks the PR head, repository and source
+attempt before loading the retained site. An obsolete preview skips site checkout, expansion,
+artifact collection and rendering. Collection checks again after that admission check; if the PR
+becomes obsolete during loading, renderer setup and publication also skip. Current previews still
+receive the full artifact/provenance validation. Main, release, backfill and manual publications
+retain their normal processing and metadata refresh.
 Temporary GitHub read failures retry with bounded backoff; comment creation and updates are never
 blindly retried.
+
+Deployment notifications may coalesce across several PRs. After verifying the deployed benchmark
+index, the deployment worker reconciles comments for every current PR represented by its snapshot,
+not just the notification that started it. It never comments from newer, undeployed retained data.
 
 The compact **Performance overview** appears before the detailed tables, in the selected chart
 view, and in one bot comment updated on the PR after successful publication. It gives:

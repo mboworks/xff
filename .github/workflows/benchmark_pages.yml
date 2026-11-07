@@ -42,7 +42,8 @@ jobs:
   publish:
     needs: [preview]
     if: >-
-      always() && !cancelled() && (needs.preview.outputs.available == 'true' ||
+      always() && !cancelled() && github.ref == 'refs/heads/main' &&
+      (needs.preview.outputs.available == 'true' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
       (github.event.workflow_run.name == 'Release' ||
@@ -57,12 +58,7 @@ jobs:
     permissions:
       actions: read
       contents: write
-      pull-requests: write
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      pull-requests: read
     steps:
       # Only trusted publisher code executes; incoming benchmark artifacts are JSON data.
       - uses: actions/checkout@v7
@@ -71,16 +67,28 @@ jobs:
           path: source
           fetch-depth: 0
           filter: blob:none
+      - name: Recheck queued PR preview before loading the retained site
+        if: needs.preview.outputs.available == 'true'
+        id: preview-current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ github.event.workflow_run.id }}
+          SOURCE_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: |
+          python3 source/tools/benchmark_preview_ci.py current --repository="${GITHUB_REPOSITORY}" \
+            --run="${SOURCE_RUN}" --attempt="${SOURCE_ATTEMPT}" --output="${GITHUB_OUTPUT}"
       - uses: actions/checkout@v7
+        if: needs.preview.outputs.available != 'true' || steps.preview-current.outputs.available == 'true'
         with:
           ref: coverage-pages
           path: site
           fetch-depth: 0
           filter: blob:none
       - name: Expand retained benchmark inputs
+        if: needs.preview.outputs.available != 'true' || steps.preview-current.outputs.available == 'true'
         run: python3 source/tools/site_storage.py expand-benchmarks site/benchmarks
       - name: Verify and retain current PR benchmark JSON
-        if: needs.preview.outputs.available == 'true'
+        if: steps.preview-current.outputs.available == 'true'
         id: preview
         env:
           GH_TOKEN: ${{ github.token }}
@@ -133,17 +141,20 @@ jobs:
             --root=site/benchmarks --artifacts=backfill --source=source-run.json \
             --repository="${GITHUB_REPOSITORY}"
       - uses: actions/setup-node@v7
+        if: needs.preview.outputs.available != 'true' || steps.preview.outputs.available == 'true'
         with:
           node-version: "24"
       - name: Build pinned benchmark renderer
+        if: needs.preview.outputs.available != 'true' || steps.preview.outputs.available == 'true'
         working-directory: source/tools/benchmark_web
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm run build
-      - name: Refresh stable benchmark references and deploy
+      - name: Refresh and retain stable benchmark references
+        if: needs.preview.outputs.available != 'true' || steps.preview.outputs.available == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          PREVIEW: ${{ needs.preview.outputs.available }}
+          PREVIEW: ${{ steps.preview.outputs.available }}
         run: |
           set -euo pipefail
           git -C site config user.name 'github-actions[bot]'
@@ -172,30 +183,3 @@ jobs:
           export -f refresh_site
           python3 source/tools/publish_site.py --repo=site -- \
             bash -c 'set -euo pipefail; refresh_site retry'
-          mkdir -p public
-          rsync --archive --exclude='.git' site/ public/
-          python3 source/tools/site_artwork.py source/docs/assets public
-          python3 source/tools/compact_site.py public
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: public
-      - uses: actions/deploy-pages@v5
-        id: deployment
-      - name: Verify live benchmark publication
-        env:
-          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
-        run: |
-          python3 source/tools/verify_benchmark_publication.py \
-            --index=public/benchmarks/index.html --url="${PAGE_URL}benchmarks/index.html"
-      - name: Update the current PR benchmark overview after publication
-        if: steps.preview.outputs.available == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
-          SOURCE_RUN: ${{ github.event.workflow_run.id }}
-          SOURCE_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
-        run: |
-          python3 source/tools/site_storage.py expand-benchmarks site/benchmarks/previews
-          python3 source/tools/benchmark_preview_ci.py comment --repository="${GITHUB_REPOSITORY}" \
-            --run="${SOURCE_RUN}" --attempt="${SOURCE_ATTEMPT}" --root=site/benchmarks \
-            --site-url="${PAGE_URL}benchmarks/"

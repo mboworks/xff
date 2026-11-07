@@ -55,11 +55,29 @@ copied, including remote badges. Markdown conversion uses the
 browsing the result requires no Markdown renderer or CDN.
 
 After the Release workflow succeeds, `Publish release site` retains the snapshot on
-`coverage-pages` and deploys the complete Pages tree. Coverage and site publication share a
-concurrency group to preserve both trees. GitHub's latest stable release selects the root redirect;
+`coverage-pages`. Coverage, benchmark, and release producers share a writer queue to preserve every
+incoming report. A separate `Deploy retained site` workflow deploys the latest complete branch
+snapshot after a producer succeeds. GitHub's latest stable release selects the root redirect;
 backfilling an older release does not make it latest. The workflow can also be dispatched with a
 published tag to retry publication. Enable GitHub Pages with **GitHub Actions** as its source, and
 set the repository's About website to `https://mboworks.github.io/xff/`.
+
+Deployment notifications coalesce; report ingestion does not. An active deployment completes, and
+one pending deployment reads the newest retained snapshot when it starts. The deployment never
+updates the retained branch. Producers and deployment explicitly require `main`; removing the Pages
+environment from producers does not relax that branch restriction. A Pages timeout therefore cannot
+hold the writer queue or discard source measurements. The deployment verifies the served benchmark index before updating PR
+comments from that same snapshot, rechecking each PR's current head and workflow attempt.
+To retry deployment of already retained data without downloading or regenerating reports:
+
+```sh
+gh workflow run pages_deploy.yml --repo mboworks/xff --ref main
+```
+
+This separation does not recover source events previously rejected by GitHub's full writer queue.
+Those require a separate ingestion replay. Runs already queued with an older workflow definition
+retain their original steps, including deployment; allow for that overlap during rollout. Rendering
+still occurs inside each producer's writer lock and can remain the ingestion bottleneck.
 
 The release site renders `NOTICE.md` as `NOTICE.html`, with the same navigation as other pages.
 The Markdown notice is generated from the all-extras binary via `--help=notice --help-format=markdown`. `LICENSE` links remain pinned to the tagged commit on
@@ -145,7 +163,7 @@ The README uses the original transparent MBO Works logo in
 The favicon assets are derived from that same artwork: a 32-pixel PNG, a 180-pixel Apple
 Touch icon, and an ICO containing 16-, 32-, 48-, and 256-pixel PNG images.
 
-All three Pages publishers (release, coverage, and benchmarks) run `tools/site_artwork.py` on the final deployment directory.
+`Deploy retained site` runs `tools/site_artwork.py` on the final deployment directory.
 This supplies favicons to documentation, native HTML references, redirects, coverage
 reports, and benchmark reports, including existing releases. Relative links work at every nesting depth and under
 xff's project URL. Only the deployment copy receives these links; retained release files and

@@ -6,6 +6,7 @@ import io
 import json
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -39,6 +40,100 @@ def artifacts():
 
 
 class BenchmarkPreviewCiTest(unittest.TestCase):
+    def test_queued_preview_check_rejects_stale_source_without_loading_site_or_artifacts(self):
+        cases = (
+            ('current', source(), pull(), True),
+            ('new-attempt', dict(source(), run_attempt=3), pull(), False),
+            ('new-head', source(), dict(pull(), head={'sha': 'd' * 40, 'repo': {'id': 2}}), False),
+            ('closed', source(), dict(pull(), state='closed'), False),
+            ('wrong-repository', source(), dict(pull(), head={'sha': 'b' * 40, 'repo': {'id': 3}}), False),
+        )
+        for name, run, pr, available in cases:
+            with self.subTest(case=name), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / 'output'
+                api = mock.Mock(repository='owner/repo')
+                api.request.side_effect = lambda path: run if path == 'actions/runs/10' else pr
+                arguments = ['preview', 'current', '--repository=owner/repo', '--run=10', '--attempt=2',
+                             '--output=' + str(output)]
+                with mock.patch.object(sys, 'argv', arguments), mock.patch.object(ci, 'GitHub', return_value=api), \
+                        mock.patch.object(ci, 'collect') as collect, mock.patch.object(ci, 'wait') as wait:
+                    ci.main()
+                self.assertEqual(output.read_text(), f'available={str(available).lower()}\n')
+                api.pages.assert_not_called()
+                collect.assert_not_called()
+                wait.assert_not_called()
+                self.assertEqual(api.request.call_count, 1 if name == 'new-attempt' else 2)
+                self.assertEqual(list(Path(directory).iterdir()), [output])
+
+    def test_queued_preview_api_failure_is_an_error_not_an_obsolete_result(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'output'
+            arguments = ['preview', 'current', '--repository=owner/repo', '--run=10', '--attempt=2',
+                         '--output=' + str(output)]
+            api = mock.Mock()
+            failure = subprocess.CalledProcessError(1, ['gh'], stderr=b'gh: HTTP 503\n')
+            api.request.side_effect = failure
+            with mock.patch.object(sys, 'argv', arguments), mock.patch.object(ci, 'GitHub', return_value=api), \
+                    self.assertRaises(subprocess.CalledProcessError):
+                ci.main()
+            self.assertFalse(output.exists())
+
+    def test_coalesced_deployment_comments_on_every_current_pr_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            pulls = [pull(), dict(pull(), number=11)]
+            sources = {10: source(), 12: dict(source(), id=12, pull_requests=[{'number': 11}])}
+            for number, run in ((9, 10), (11, 12)):
+                for platform in ('linux', 'macos'):
+                    folder = root / f'previews/{number}/{run}/2/{platform}'
+                    folder.mkdir(parents=True)
+                    record = {'kind': 'pr-preview', 'pull_number': number, 'platform': platform,
+                              'head': 'c' * 40, 'branch_head': 'b' * 40, 'base': 'a' * 40,
+                              'source': sources[run],
+                              'tool_comparisons': {'tasks': [{'shape': 'legacy'}]}}
+                    (folder / 'report.json').write_text(json.dumps(record))
+            api = mock.Mock(repository='owner/repo')
+            api.pages.side_effect = lambda path: pulls if path == 'pulls?state=open' else []
+
+            def request(path, *args):
+                if path.startswith('actions/runs/'):
+                    return sources[int(path.rsplit('/', 1)[1])]
+                if path.startswith('pulls/'):
+                    return next(pr for pr in pulls if pr['number'] == int(path.rsplit('/', 1)[1]))
+                return {}
+
+            api.request.side_effect = request
+            url = 'https://example.org/project/benchmarks/'
+            self.assertEqual(ci.update_retained_comments(api, root, url), 2)
+            mutations = [call for call in api.request.call_args_list if len(call.args) > 1]
+            self.assertEqual([call.args[0] for call in mutations], ['issues/9/comments', 'issues/11/comments'])
+            for call, (number, run) in zip(mutations, ((9, 10), (11, 12))):
+                self.assertIn(f'{url}previews/{number}/{run}/2/linux/', call.args[1]['body'])
+            # A newer current attempt or a closed PR must never receive this snapshot's comment.
+            sources[10]['run_attempt'] = 3
+            pulls[1]['state'] = 'closed'
+            api.request.reset_mock()
+            self.assertEqual(ci.update_retained_comments(api, root, url), 0)
+            self.assertFalse(any(len(call.args) > 1 for call in api.request.call_args_list))
+
+    def test_source_operations_still_require_both_run_and_attempt(self):
+        for operation in ('wait', 'current', 'collect', 'comment'):
+            for arguments in ([], ['--run=10'], ['--attempt=2']):
+                with self.subTest(operation=operation, arguments=arguments), \
+                        mock.patch.object(sys, 'argv', ['preview', operation, '--repository=owner/repo', *arguments]), \
+                        mock.patch.object(sys, 'stderr', io.StringIO()), self.assertRaises(SystemExit) as error:
+                    ci.main()
+                self.assertEqual(error.exception.code, 2)
+
+    def test_retained_comment_command_uses_snapshot_without_a_triggering_source_run(self):
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.object(sys, 'argv', ['preview', 'comment-retained', '--repository=owner/repo',
+                                               '--root=' + directory, '--site-url=https://example.org/']), \
+                mock.patch.object(ci, 'GitHub') as github, \
+                mock.patch.object(ci, 'update_retained_comments', return_value=2) as update:
+            ci.main()
+            update.assert_called_once_with(github.return_value, Path(directory), 'https://example.org/')
+
     def test_collect_validates_tested_merge_and_retains_exact_json_from_each_platform(self):
         api = mock.Mock(repository='owner/repo')
         sample = dict.fromkeys(ci.benchmark_preview.benchmark_compare.METRICS, 1)

@@ -201,27 +201,49 @@ def update_comment(api, run, attempt, root, site_url):
     return True
 
 
+def update_retained_comments(api, root, site_url):
+    """Reconcile every current PR represented by this immutable deployed snapshot."""
+    pulls = api.pages('pulls?state=open')
+    identities = set()
+    for path in benchmark_preview.selected(root, pulls):
+        source = json.loads(path.read_text())['source']
+        identities.add((benchmark_preview.positive_id(source['id']),
+                        benchmark_preview.positive_id(source['run_attempt'])))
+    return sum(update_comment(api, run, attempt, root, site_url)
+               for run, attempt in sorted(identities))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation', choices=('wait', 'collect', 'comment'))
+    parser.add_argument('operation', choices=('wait', 'current', 'collect', 'comment', 'comment-retained'))
     parser.add_argument('--repository', required=True)
-    parser.add_argument('--run', type=int, required=True)
-    parser.add_argument('--attempt', type=int, required=True)
+    parser.add_argument('--run', type=int)
+    parser.add_argument('--attempt', type=int)
     parser.add_argument('--root', type=Path)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--site-url')
     args = parser.parse_args()
     api = GitHub(args.repository)
-    benchmark_preview.positive_id(args.run)
-    benchmark_preview.positive_id(args.attempt)
+    if args.operation != 'comment-retained':
+        if args.run is None or args.attempt is None:
+            parser.error('--run and --attempt are required')
+        benchmark_preview.positive_id(args.run)
+        benchmark_preview.positive_id(args.attempt)
+    elif args.run is not None or args.attempt is not None:
+        parser.error('comment-retained selects source runs from the deployed snapshot')
     if args.operation == 'wait':
         available = wait(api, args.run, args.attempt)
+    elif args.operation == 'current':
+        available = context(api, args.run, args.attempt) is not None
+        print(f'Benchmark preview {args.run}/{args.attempt}: {"current" if available else "obsolete"}', flush=True)
     elif args.root is None:
         parser.error('--root is required')
     elif args.operation == 'collect':
         available = bool(collect(api, args.run, args.attempt, args.root))
     elif not args.site_url:
         parser.error('--site-url is required')
+    elif args.operation == 'comment-retained':
+        available = bool(update_retained_comments(api, args.root, args.site_url))
     else:
         available = update_comment(api, args.run, args.attempt, args.root, args.site_url)
     if args.output:

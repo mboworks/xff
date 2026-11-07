@@ -11,15 +11,13 @@ from test_paths import repository_file
 
 
 class SiteArtworkTest(unittest.TestCase):
-    def test_every_pages_publisher_decorates_staged_site_before_upload(self):
-        for name in ("pages.yml", "coverage_pages.yml", "benchmark_pages.yml"):
-            with self.subTest(workflow=name):
-                workflow = repository_file(f".github/workflows/{name}").read_text()
-                stage = workflow.index("rsync --archive --exclude='.git' site/ public/")
-                decorate = workflow.index("python3 source/tools/site_artwork.py source/docs/assets public")
-                upload = workflow.index("uses: actions/upload-pages-artifact@")
-                self.assertLess(stage, decorate)
-                self.assertLess(decorate, upload)
+    def test_deployment_decorates_complete_snapshot_before_upload(self):
+        workflow = repository_file(".github/workflows/pages_deploy.yml").read_text()
+        stage = workflow.index("rsync --archive --exclude='.git' site/ public/")
+        decorate = workflow.index("python3 source/tools/site_artwork.py source/docs/assets public")
+        upload = workflow.index("uses: actions/upload-pages-artifact@")
+        self.assertLess(stage, decorate)
+        self.assertLess(decorate, upload)
 
     def test_nested_pages_and_idempotence(self):
         with tempfile.TemporaryDirectory() as temporary:
