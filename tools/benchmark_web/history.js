@@ -267,8 +267,14 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     disclosure.addEventListener("toggle", (event) => {
       if (event.target.open) requestAnimationFrame(() => chart?.resize());
     });
-  if (catalog.length) selectSource();
-  else {
+  if (catalog.length) {
+    if (
+      source &&
+      !catalog.some((row) => (row.source || "merged") === source.value)
+    )
+      source.value = catalog[0].source || "merged";
+    selectSource();
+  } else {
     status.hidden = false;
     status.textContent = "No retained reports have comparison landscape data.";
   }
