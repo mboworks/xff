@@ -498,6 +498,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       draining and JC gates, and remove the repeatable Linux comparison regression before adoption.
 - [ ] O18: Qualify byte-bounded overlap with backpressure, ordered publication and cancellation;
       avoid per-batch throwaway threads and nested waits on the same saturated pool.
+- [ ] O18a: Redesign queued cancellation after both measured policies fail cross-platform
+      qualification. The deterministic nine-to-four backend-call proof and exact serial/recycling
+      tests pass, but acquire-load and explicit-stop screens expose ordinary Mac costs. Retain
+      [all variants, bounded screens and verification phases](docs/benchmarks/queued-read-cancellation-20261107.md);
+      no runtime adopted. Active-I/O preemption and general O18 byte/fairness work remain separate.
 - [x] O19a: Qualify reusable session-owned archive input buffers on Linux/macOS, retaining short
       reads, errors, decoder fallbacks and shared reservations. Preserve all representation trials
       and controls in [the qualification report](docs/benchmarks/archive-input-buffers-20261102.md).
