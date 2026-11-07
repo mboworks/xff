@@ -67,16 +67,28 @@ jobs:
           path: source
           fetch-depth: 0
           filter: blob:none
+      - name: Recheck queued PR preview before loading the retained site
+        if: needs.preview.outputs.available == 'true'
+        id: preview-current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ github.event.workflow_run.id }}
+          SOURCE_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: |
+          python3 source/tools/benchmark_preview_ci.py current --repository="${GITHUB_REPOSITORY}" \
+            --run="${SOURCE_RUN}" --attempt="${SOURCE_ATTEMPT}" --output="${GITHUB_OUTPUT}"
       - uses: actions/checkout@v7
+        if: needs.preview.outputs.available != 'true' || steps.preview-current.outputs.available == 'true'
         with:
           ref: coverage-pages
           path: site
           fetch-depth: 0
           filter: blob:none
       - name: Expand retained benchmark inputs
+        if: needs.preview.outputs.available != 'true' || steps.preview-current.outputs.available == 'true'
         run: python3 source/tools/site_storage.py expand-benchmarks site/benchmarks
       - name: Verify and retain current PR benchmark JSON
-        if: needs.preview.outputs.available == 'true'
+        if: steps.preview-current.outputs.available == 'true'
         id: preview
         env:
           GH_TOKEN: ${{ github.token }}
@@ -129,17 +141,20 @@ jobs:
             --root=site/benchmarks --artifacts=backfill --source=source-run.json \
             --repository="${GITHUB_REPOSITORY}"
       - uses: actions/setup-node@v7
+        if: needs.preview.outputs.available != 'true' || steps.preview.outputs.available == 'true'
         with:
           node-version: "24"
       - name: Build pinned benchmark renderer
+        if: needs.preview.outputs.available != 'true' || steps.preview.outputs.available == 'true'
         working-directory: source/tools/benchmark_web
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm run build
       - name: Refresh and retain stable benchmark references
+        if: needs.preview.outputs.available != 'true' || steps.preview.outputs.available == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          PREVIEW: ${{ needs.preview.outputs.available }}
+          PREVIEW: ${{ steps.preview.outputs.available }}
         run: |
           set -euo pipefail
           git -C site config user.name 'github-actions[bot]'
