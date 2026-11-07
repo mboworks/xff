@@ -157,6 +157,10 @@ class Template {
   // Inspect parsed hash fields, including post-processing, without reading any entry content.
   hash::DefaultUsage HashDefaultsUsed() const;
 
+  // Whether any compiled field requires full stat metadata. Literal, lexical path and
+  // supplied-context values do not. Unclassified/content/link/type fields stay conservative.
+  bool NeedsStatMetadata() const;
+
   // Whether a compiled field consumes birth time, including transformed fields.
   bool NeedsBirthTime() const;
 
@@ -211,6 +215,7 @@ class Template {
     std::string qualifier;
     PostProcess post = PostProcess::kNone;
     HashBinding hash_binding;
+    bool needs_stat_metadata = false;
     std::shared_ptr<const Transform> transform;
 
     bool IsField() const { return fn != nullptr || hash_binding.algorithm != 0; }

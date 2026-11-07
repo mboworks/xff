@@ -502,66 +502,316 @@ StringOrView EmptyField(std::string_view, std::string_view, const RenderContext&
 // Constexpr field-name -> renderer table, built once at compile time via mbo's
 // LimitedMap. Aliases (file/name, ext/extension, mode/perm) share a renderer;
 // the empty name backs {}, find's full-path placeholder (an alias for {path}).
-using FieldEntry = std::pair<std::string_view, FieldFn>;
+struct FieldBinding {
+  FieldFn fn = nullptr;
+  // New/unclassified renderers conservatively require full stat metadata.
+  bool needs_stat_metadata = true;
+};
+
+using FieldEntry = std::pair<std::string_view, FieldBinding>;
 constexpr auto kFieldTable = mbo::container::MakeLimitedMap(
-    FieldEntry{"", &PathField},  // {} -> full path (find's -exec placeholder)
-    FieldEntry{"access", &AccessField},
-    FieldEntry{"atime", &AtimeField},
-    FieldEntry{"blocks", &BlocksField},
-    FieldEntry{"btime", &BtimeField},
-    FieldEntry{"column", &ColumnField},
-    FieldEntry{"core", &CoreField},
-    FieldEntry{"ctime", &CtimeField},
-    FieldEntry{"depth", &DepthField},
-    FieldEntry{"dev", &DevField},
-    FieldEntry{"dir", &DirField},
-    FieldEntry{"ext", &ExtField},
-    FieldEntry{"extension", &ExtField},
-    FieldEntry{"file", &NameField},
-    FieldEntry{"fuzzy", &FuzzyField},
-    FieldEntry{"gid", &GidField},
-    FieldEntry{"group", &GroupField},
-    FieldEntry{"hash", nullptr},  // Bound by HashBinding; no generic per-entry parser.
-    FieldEntry{"inode", &InodeField},
-    FieldEntry{"lang", &LanguageField},
-    FieldEntry{"lang-color", &LanguageColorField},
-    FieldEntry{"lang-group", &LanguageGroupField},
-    FieldEntry{"lang-source", &LanguageSourceField},
-    FieldEntry{"lang-type", &LanguageTypeField},
-    FieldEntry{"language", &LanguageField},
-    FieldEntry{"line", &LineField},
-    FieldEntry{"lines", &LinesField},
-    FieldEntry{"links", &LinksField},
-    FieldEntry{"match", &MatchField},
-    FieldEntry{"mime", &MimeField},
-    FieldEntry{"mime-category", &MimeCategoryField},
-    FieldEntry{"mime-charset", &MimeCharsetField},
-    FieldEntry{"mime-compressible", &MimeCompressibleField},
-    FieldEntry{"mime-description", &MimeDescriptionField},
-    FieldEntry{"mime-source", &MimeSourceField},
-    FieldEntry{"mode", &ModeField},
-    FieldEntry{"mtime", &MtimeField},
-    FieldEntry{"name", &NameField},
-    FieldEntry{"owner", &UserField},
-    FieldEntry{"path", &PathField},
-    FieldEntry{"perm", &ModeField},
-    FieldEntry{"relpath", &RelpathField},
-    FieldEntry{"root", &RootField},
-    FieldEntry{"shard", &ShardField},
-    FieldEntry{"size", &SizeField},
-    FieldEntry{"stem", &StemField},
-    FieldEntry{"suffix", &SuffixField},
-    FieldEntry{"suffixes", &SuffixesField},
-    FieldEntry{"target", &TargetField},
-    FieldEntry{"text", &TextField},
-    FieldEntry{"type", &TypeField},
-    FieldEntry{"uid", &UidField},
-    FieldEntry{"user", &UserField});
+    FieldEntry{
+        "",
+        {
+            .fn = &PathField,
+            .needs_stat_metadata = false,
+        }},  // {} -> full path (find's -exec placeholder)
+    FieldEntry{
+        "access",
+        {
+            .fn = &AccessField,
+        }},
+    FieldEntry{
+        "atime",
+        {
+            .fn = &AtimeField,
+        }},
+    FieldEntry{
+        "blocks",
+        {
+            .fn = &BlocksField,
+        }},
+    FieldEntry{
+        "btime",
+        {
+            .fn = &BtimeField,
+        }},
+    FieldEntry{
+        "column",
+        {
+            .fn = &ColumnField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "core",
+        {
+            .fn = &CoreField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "ctime",
+        {
+            .fn = &CtimeField,
+        }},
+    FieldEntry{
+        "depth",
+        {
+            .fn = &DepthField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "dev",
+        {
+            .fn = &DevField,
+        }},
+    FieldEntry{
+        "dir",
+        {
+            .fn = &DirField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "ext",
+        {
+            .fn = &ExtField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "extension",
+        {
+            .fn = &ExtField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "file",
+        {
+            .fn = &NameField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "fuzzy",
+        {
+            .fn = &FuzzyField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "gid",
+        {
+            .fn = &GidField,
+        }},
+    FieldEntry{
+        "group",
+        {
+            .fn = &GroupField,
+        }},
+    FieldEntry{
+        "hash",
+        {
+            .fn = nullptr,
+        }},  // Bound by HashBinding; no generic per-entry parser.
+    FieldEntry{
+        "inode",
+        {
+            .fn = &InodeField,
+        }},
+    FieldEntry{
+        "lang",
+        {
+            .fn = &LanguageField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "lang-color",
+        {
+            .fn = &LanguageColorField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "lang-group",
+        {
+            .fn = &LanguageGroupField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "lang-source",
+        {
+            .fn = &LanguageSourceField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "lang-type",
+        {
+            .fn = &LanguageTypeField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "language",
+        {
+            .fn = &LanguageField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "line",
+        {
+            .fn = &LineField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "lines",
+        {
+            .fn = &LinesField,
+        }},
+    FieldEntry{
+        "links",
+        {
+            .fn = &LinksField,
+        }},
+    FieldEntry{
+        "match",
+        {
+            .fn = &MatchField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "mime",
+        {
+            .fn = &MimeField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "mime-category",
+        {
+            .fn = &MimeCategoryField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "mime-charset",
+        {
+            .fn = &MimeCharsetField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "mime-compressible",
+        {
+            .fn = &MimeCompressibleField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "mime-description",
+        {
+            .fn = &MimeDescriptionField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "mime-source",
+        {
+            .fn = &MimeSourceField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "mode",
+        {
+            .fn = &ModeField,
+        }},
+    FieldEntry{
+        "mtime",
+        {
+            .fn = &MtimeField,
+        }},
+    FieldEntry{
+        "name",
+        {
+            .fn = &NameField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "owner",
+        {
+            .fn = &UserField,
+        }},
+    FieldEntry{
+        "path",
+        {
+            .fn = &PathField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "perm",
+        {
+            .fn = &ModeField,
+        }},
+    FieldEntry{
+        "relpath",
+        {
+            .fn = &RelpathField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "root",
+        {
+            .fn = &RootField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "shard",
+        {
+            .fn = &ShardField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "size",
+        {
+            .fn = &SizeField,
+        }},
+    FieldEntry{
+        "stem",
+        {
+            .fn = &StemField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "suffix",
+        {
+            .fn = &SuffixField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "suffixes",
+        {
+            .fn = &SuffixesField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "target",
+        {
+            .fn = &TargetField,
+        }},
+    FieldEntry{
+        "text",
+        {
+            .fn = &TextField,
+            .needs_stat_metadata = false,
+        }},
+    FieldEntry{
+        "type",
+        {
+            .fn = &TypeField,
+        }},
+    FieldEntry{
+        "uid",
+        {
+            .fn = &UidField,
+        }},
+    FieldEntry{
+        "user",
+        {
+            .fn = &UserField,
+        }});
 
 // Resolves a field name to its renderer; an unknown name renders empty.
 FieldFn LookupField(std::string_view name) {
   const auto it = kFieldTable.find(name);
-  return it == kFieldTable.end() ? &EmptyField : it->second;
+  return it == kFieldTable.end() ? &EmptyField : it->second.fn;
 }
 
 struct ParsedField {
@@ -670,20 +920,44 @@ StringOrView OutputField(std::string_view key, std::string_view, const RenderCon
 // {0}..{N} -> a regex capture; the {env.NAME} namespace -> the environment;
 // otherwise a builtin field from the table (empty key). New namespaces
 // ({def.*}, {capture.*}) slot in here.
-std::pair<FieldFn, std::string> ResolveName(std::string_view name) {
+struct ResolvedField {
+  FieldFn fn;
+  std::string key;
+  bool needs_stat_metadata = true;
+};
+
+ResolvedField ResolveName(std::string_view name) {
   if (CaptureIndex(name) >= 0) {
-    return {&CaptureField, std::string(name)};
+    return {
+        .fn = &CaptureField,
+        .key = std::string(name),
+        .needs_stat_metadata = false,
+    };
   }
   if (name.starts_with(kEnvironmentNamespace)) {
-    return {&EnvField, std::string(name.substr(kEnvironmentNamespace.size()))};
+    return {
+        .fn = &EnvField,
+        .key = std::string(name.substr(kEnvironmentNamespace.size())),
+        .needs_stat_metadata = false,
+    };
   }
   if (name.starts_with(kDefinitionNamespace)) {
-    return {&DefField, std::string(name.substr(kDefinitionNamespace.size()))};
+    return {
+        .fn = &DefField,
+        .key = std::string(name.substr(kDefinitionNamespace.size())),
+        .needs_stat_metadata = false,
+    };
   }
   if (name.starts_with(kCaptureNamespace)) {
-    return {&OutputField, std::string(name.substr(kCaptureNamespace.size()))};
+    return {
+        .fn = &OutputField,
+        .key = std::string(name.substr(kCaptureNamespace.size())),
+        .needs_stat_metadata = false,
+    };
   }
-  return {LookupField(name), std::string()};
+  const auto found = kFieldTable.find(name);
+  return found == kFieldTable.end() ? ResolvedField{.fn = &EmptyField,}
+                                   : ResolvedField{.fn = found->second.fn, .needs_stat_metadata = found->second.needs_stat_metadata,};
 }
 
 // A qualifier is a sed-style rewrite when it is `s` followed by a punctuation
@@ -1270,7 +1544,7 @@ Template Template::Compile(std::string_view tmpl) {
       }
       flush_literal();
       compiled.validation_.Update(ValidateFieldName(field->name));
-      auto [fn, key] = ResolveName(field->name);  // builtin field, {0}..{N} capture, or {env.NAME}
+      auto [fn, key, needs_stat_metadata] = ResolveName(field->name);  // builtin field, {0}..{N} capture, or {env.NAME}
       std::string& qualifier = field->qualifier;
       // Classify the qualifier: an s/// rewrite, an m/// per-line extraction, or a path-component
       // extraction is a post-render transform; anything else is the field's own format argument.
@@ -1288,6 +1562,7 @@ Template Template::Compile(std::string_view tmpl) {
           .qualifier = std::move(qualifier),
           .post = post,
           .hash_binding = binding,
+          .needs_stat_metadata = needs_stat_metadata,
           .transform = transform,
       });
       i = field->next;
@@ -1311,6 +1586,10 @@ bool Template::ReferencesCapture(std::string_view name) const {
   return std::any_of(segments_.begin(), segments_.end(), [&](const Segment& segment) {
     return segment.fn == &OutputField && segment.key == name;
   });
+}
+
+bool Template::NeedsStatMetadata() const {
+  return std::ranges::any_of(segments_, [](const Segment& segment) { return segment.needs_stat_metadata; });
 }
 
 bool Template::NeedsBirthTime() const {

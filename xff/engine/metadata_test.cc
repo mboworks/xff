@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 // SPDX-License-Identifier: Apache-2.0
 
+#include <array>
 #include <atomic>
 #include <cstddef>
 #include <string>
@@ -14,6 +15,7 @@
 #include "absl/time/time.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/engine/run.h"
 #include "xff/parser/parser.h"
@@ -22,6 +24,7 @@
 namespace xff::engine {
 namespace {
 
+using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
 using ::testing::Eq;
 using ::testing::IsEmpty;
@@ -105,6 +108,95 @@ TEST_F(MetadataTest, BasicConsumersDoNotRequestBirthTime) {
   Check({"--summary=ext"}, 1, 11);
   Check({"--template={mtime:epoch}"}, 1, 11);
   EXPECT_THAT(fs.birth_requests.load(), Eq(0));
+}
+
+TEST_F(MetadataTest, LexicalTemplatesAvoidPerEntryStatsAndColumnsStayConservative) {
+  Populate(1'000);
+  constexpr auto kWorkers = std::to_array<std::size_t>({1, 3});
+  const auto arguments = std::to_array<std::vector<std::string>>({
+      {"--template={path}:{name}:{ext}:{root}:{depth}"},
+      {"--template={name:s/txt/log/}"},
+      {"--template={{size}}:{def.label}", "--define=label=value"},
+      {"--template=literal"},
+  });
+  for (const auto workers : kWorkers) {
+    for (const auto& argument : arguments) {
+      SCOPED_TRACE(argument.front());
+      Check(argument, workers, 1);
+    }
+    Check({"--columns=path,name,ext", "--format=csv"}, workers, 1'001);
+    Check({"--columns=name:s/txt/log/", "--format=tsv"}, workers, 1'001);
+  }
+}
+
+TEST_F(MetadataTest, LexicalOutputKeepsExpressionAndMixedFieldStatRequirements) {
+  Populate(1'000);
+  constexpr auto kWorkers = std::to_array<std::size_t>({1, 3});
+  for (const auto workers : kWorkers) {
+    Check({"--template={name}", "-name", "file0.txt", "-size", "7c"}, workers, 2);
+    Check({"--template={name}", "-name", "absent", "-size", "7c"}, workers, 1);
+    Check({"--template={name}:{size}"}, workers, 1'001);
+    Check({"--columns=path,size", "--format=csv"}, workers, 1'001);
+    Check({"--template={name}", "--summary=ext"}, workers, 1'001);
+  }
+}
+
+TEST_F(MetadataTest, LexicalOutputWithUnknownTypesStillResolvesEntries) {
+  Populate(10, vfs::FileType::kUnknown);
+  constexpr auto kWorkers = std::to_array<std::size_t>({1, 3});
+  for (const auto workers : kWorkers) {
+    Check({"--template={name}"}, workers, 11);
+    Check({"--columns=path", "--format=csv"}, workers, 11);
+  }
+}
+
+TEST_F(MetadataTest, LexicalOutputDoesNotRequireDeniedFileMetadata) {
+  Populate(2);
+  fs.fail_stats = true;
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto command, parser::Parse({"--exact", "--color=never", "--template={name}", "root", "-type", "f"}));
+  std::string output;
+  std::vector<absl::Status> errors;
+  const auto result = RunFind(
+      command, fs, [&](std::string_view value) { output += value; },
+      [&](std::string_view, absl::Status status) { errors.push_back(status); });
+  EXPECT_THAT(result.errors, Eq(0));
+  EXPECT_THAT(errors, IsEmpty());
+  EXPECT_THAT(output, EqualsText("file0.txt\nfile1.txt\n"));
+  EXPECT_THAT(fs.stats.load(), Eq(1));
+}
+
+TEST_F(MetadataTest, FuzzyOutputCollectsScoresWithoutPerEntryStats) {
+  Populate(1'000);
+  constexpr auto kWorkers = std::to_array<std::size_t>({1, 3});
+  constexpr auto kFormats = std::to_array<std::string_view>({
+      "--template={name}={fuzzy}",
+      "--columns=name,fuzzy",
+  });
+  for (const auto workers : kWorkers) {
+    for (const auto format : kFormats) {
+      SCOPED_TRACE(workers);
+      SCOPED_TRACE(format);
+      MBO_ASSERT_OK_AND_ASSIGN(
+          const auto command,
+          parser::Parse(
+              {"--exact", "--color=never", absl::StrCat("--jobs=", workers), std::string(format), "--format=tsv",
+               "root", "-type", "f", "(", "-fuzzy:100%", "file0.txt", "-o", "-name", "file999.txt", ")"}));
+      fs.stats = 0;
+      std::string output;
+      std::vector<absl::Status> errors;
+      const auto result = RunFind(
+          command, fs, [&](std::string_view value) { output += value; },
+          [&](std::string_view, absl::Status status) { errors.push_back(status); });
+      EXPECT_THAT(result.errors, Eq(0));
+      EXPECT_THAT(errors, IsEmpty());
+      EXPECT_THAT(
+          output, EqualsText(
+                      format == kFormats.front() ? "path\nfile0.txt=100\nfile999.txt=\n"
+                                                 : "name\tfuzzy\nfile0.txt\t100\nfile999.txt\t\n"));
+      EXPECT_THAT(fs.stats.load(), Eq(format == kFormats.front() ? 1 : 1'001));
+    }
+  }
 }
 
 TEST_F(MetadataTest, ReferenceMetadataRequestsOnlyTheComparedFields) {
