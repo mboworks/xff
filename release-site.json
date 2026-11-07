@@ -137,7 +137,8 @@
     "docs/benchmarks/archive-index-insertion-20261107.md": "docs/benchmarks/archive-index-insertion-20261107.html",
     "docs/benchmarks/transactional-rg-records-20261107.md": "docs/benchmarks/transactional-rg-records-20261107.html",
     "docs/benchmarks/language-json-storage-20261107.md": "docs/benchmarks/language-json-storage-20261107.html",
-    "docs/benchmarks/archive-ancestor-hint-20261107.md": "docs/benchmarks/archive-ancestor-hint-20261107.html"
+    "docs/benchmarks/archive-ancestor-hint-20261107.md": "docs/benchmarks/archive-ancestor-hint-20261107.html",
+    "docs/benchmarks/unchanged-site-payloads-20261107.md": "docs/benchmarks/unchanged-site-payloads-20261107.html"
   },
   "generated_html": {
     "XFF.md": {
@@ -162,6 +163,7 @@
   "files": {
     "docs/benchmarks/transactional-rg-records-20261107.json.gz": "docs/benchmarks/transactional-rg-records-20261107.json.gz",
     "docs/benchmarks/language-json-storage-20261107.json.gz": "docs/benchmarks/language-json-storage-20261107.json.gz",
-    "docs/benchmarks/archive-ancestor-hint-20261107.json.gz": "docs/benchmarks/archive-ancestor-hint-20261107.json.gz"
+    "docs/benchmarks/archive-ancestor-hint-20261107.json.gz": "docs/benchmarks/archive-ancestor-hint-20261107.json.gz",
+    "docs/benchmarks/unchanged-site-payloads-20261107.json.gz": "docs/benchmarks/unchanged-site-payloads-20261107.json.gz"
   }
 }
