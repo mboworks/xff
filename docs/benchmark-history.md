@@ -55,6 +55,12 @@ publication, preserving their pages and every incoming measurement. After retent
 notifications coalesce; source-artifact ingestion remains serialized without cancellation. A Pages
 timeout no longer holds the writer lock. Rendering remains inside the writer queue.
 
+Repeated compaction reuses a retained non-interned JSON archive only when its decompressed bytes
+exactly match the expanded input. Changed or damaged archives are rebuilt; packed charts keep
+their existing path. This preserves original observation bytes and avoids recompressing unchanged
+data. See the [cross-platform qualification](benchmarks/unchanged-site-payloads-20261107.md),
+including changed-input costs and the rejected broader chart-reuse experiment.
+
 Local uploads can advance the retained branch while a publisher is rendering it. A rejected push
 fetches and rebases onto that update, then performs a full benchmark refresh before retrying, with
 at most three push attempts. Newly uploaded measurements remain in the branch and enter the rebuilt

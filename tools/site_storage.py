@@ -7,6 +7,7 @@ import argparse
 import gzip
 import json
 from pathlib import Path
+import zlib
 
 
 def packed(value):
@@ -53,9 +54,18 @@ def unpacked(value):
 
 def compact_json(path, intern=False):
     original = path.read_bytes()
+    destination = path.with_suffix(path.suffix + '.gz')
+    if not intern and destination.exists():
+        try:
+            retained = gzip.decompress(destination.read_bytes())
+        except (gzip.BadGzipFile, EOFError, zlib.error):
+            # The expanded input remains authoritative when an old cache is damaged.
+            retained = None
+        if retained == original:
+            path.unlink()
+            return
     data = (json.dumps(packed(json.loads(original)), ensure_ascii=False, separators=(',', ':'),
                        allow_nan=False).encode() if intern else original)
-    destination = path.with_suffix(path.suffix + '.gz')
     destination.write_bytes(gzip.compress(data, mtime=0))
     path.unlink()
 
