@@ -4836,3 +4836,35 @@ until favorable. No full three-session population, native/listing expansion or n
 full-root/sanitizer qualification is claimed. Preserve both complete populations,
 source/image identities, the failed pre-timing executable-mode setup and raw controls.
 O27a, O27b and O27c are now separately evaluated without changing the production index.
+
+### O19b3: immutable-memory ZIP locators (runtime deferred)
+
+A complete budget-admitted prototype records positions during the existing ZIP listing and
+transfers them to synthetic inode IDs without another path index or larger member/node records.
+Immutable-memory sources have cheap independent positions; host, member, decoded and unknown
+sources retain sequential fallback. The selected streaming reader handles optional ZIP descriptor
+signatures, independently validated with a small fixture. The complete prototype, source phases,
+regression tests, raw populations and diagnostics are retained in the
+[immutable ZIP locator evaluation](benchmarks/immutable-zip-locator-evaluation-20261107.md)
+and its individually hashed lossless artifact.
+
+Both hosts complete 90 production filesystem API cases across three sessions of nine raw
+repetitions and an exact-image repeat control, retaining fastest-seven means. Opening and reading
+later members improves about 47%, and opening/reading first/middle/last improves about 57%.
+Native full-CLI controls cover 48 cases per host, 4,320 oracle-checked invocations each, and show
+no material gain. Frozen full image costs are +36,864 bytes on Mac and +63,240 bytes on Linux.
+
+Defer runtime adoption: a large first deflate read costs +27.17% on Mac (same-image control +0.50%),
+and two large stored first reads cost +10.95%/+11.45% on Linux (controls -1.12%/-0.42%). The isolated
+root-offset variant does not remove the Linux cost and loses small-first gains. Same-binary input
+traffic is identical (17 calls/1,048,805 bytes). Sampled hot-loop instructions match after relative
+address/string-symbol normalization; placement/allocation causes remain hypotheses. Keep the slower
+cells and noisy small Mac cohorts rather than averaging away the decision.
+
+The prototype passes 324 release targets on each host before final test-only boundary extensions;
+six affected ASan targets pass on each host, six Linux MSan targets pass, and concurrency passes
+Linux TSan. The revised Zip64/single-byte-read/traffic target passes optimized/ASan on Mac and
+optimized/ASan/MSan/TSan on Linux. Exploratory six-target coverage covers 139/143 changed production
+lines and 66/76 branches; it is not final PR CI. No local clang-tidy ran. Eliminate repeatable
+first-read costs before a new runtime proposal, then qualify the changed implementation on both
+hosts. Stable native identity and streamed-ZIP metadata-size recovery remain separately open.
