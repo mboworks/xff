@@ -208,6 +208,10 @@ scope or declaring new flags implemented. See
 - [x] Use three complete-matrix sample shards on both hosted platforms: three measured rounds
       per shard for PR and main; pool raw samples before selecting the fastest seven of nine.
       Share compiled binaries, rotate participant order, and preserve per-sample shard provenance.
+- [x] Apply the after-fourth agreement decision to main benchmarks as well as PR benchmarks.
+      Main run 42330247443 selected compatible macOS candidates 0/2/3 but still ran candidate 4;
+      gate the fifth measurement on the platform decision and preserve cancellation handling,
+      strict compatibility, all raw samples and the fastest-seven-of-nine estimator.
 - [x] Verify nine-round PR artifacts retain every raw observation and the fastest-seven estimate:
       PR #952 has 440 tasks / 800 tool-case entries per platform, each with 9 raw / 7 selected samples.
       Linux jobs took 4m31s-5m17s, macOS 4m33s-7m00s, versus #951's 2m19s-3m32s one-round jobs.
@@ -504,6 +508,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       draining and JC gates, and remove the repeatable Linux comparison regression before adoption.
 - [ ] O18: Qualify byte-bounded overlap with backpressure, ordered publication and cancellation;
       avoid per-batch throwaway threads and nested waits on the same saturated pool.
+- [ ] O18a: Redesign queued cancellation after both measured policies fail cross-platform
+      qualification. The deterministic nine-to-four backend-call proof and exact serial/recycling
+      tests pass, but acquire-load and explicit-stop screens expose ordinary Mac costs. Retain
+      [all variants, bounded screens and verification phases](docs/benchmarks/queued-read-cancellation-20261107.md);
+      no runtime adopted. Active-I/O preemption and general O18 byte/fairness work remain separate.
 - [x] O19a: Qualify reusable session-owned archive input buffers on Linux/macOS, retaining short
       reads, errors, decoder fallbacks and shared reservations. Preserve all representation trials
       and controls in [the qualification report](docs/benchmarks/archive-input-buffers-20261102.md).
@@ -521,6 +530,12 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [ ] O19b3: Investigate immutable ZIP index/locator reuse and metadata-demand-aware reading before
       another general native-index policy. Avoid rebuilding the complete index for a first-member
       read; preserve format coverage, source identity, all visible members, exact sizes and budgets.
+      Retain the fully implemented immutable-memory locator prototype and both-host qualification in
+      [the locator evaluation](docs/benchmarks/immutable-zip-locator-evaluation-20261107.md).
+      Defer runtime adoption despite 47% later-read lifecycle gains: repeatable first-read costs are
+      +27% on Mac and +11% on Linux. Eliminate those costs without arbitrary count/size thresholds,
+      preserving identity, budgets, duplicate semantics, exact-content oracles and the rejected
+      root-offset variant. Native source identity and streamed-ZIP sizes remain separate open work.
 - [ ] O19b: Qualify archive seeking/index/replay and decoder admission independently. Investigate
       native/memory ZIP seeking before concurrency; preserve sequential-source and shared-budget fallbacks.
 - [x] O19c: Qualify caller-owned reads for immutable memory and archive-member cursors, including
@@ -604,6 +619,14 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       Separately assess skipping bulk reads when prepared expression metadata proves no eligible
       regular files or non-followed symlinks can contribute; preserve directory/link/mount stat
       semantics and avoid ad hoc flag-name, count or timer gates. Publish only measured improvements.
+- [x] O31: Qualify compiled stat demand for implicit output and select template-only admission.
+      [Both-host raw evidence, all-cell results and explicit costs](docs/benchmarks/compiled-field-stat-demand-20261107.md)
+      reject the combined columns policy; preserve column eager behavior, fuzzy scores, mixed/
+      unknown/denied metadata semantics and all independent traversal/safety requirements.
+- [ ] O31 follow-ups: Identify the Linux many-directory TSV pipeline cost before admitting lexical
+      columns without metadata. Separately qualify score-consumer-specific demand and conditional
+      stat-bearing field admission; preserve error ordering and existing traversal requirements.
+      No ad hoc file-count, worker, timer or operating-system gate; retain current control costs.
 - [x] O20k: Qualify complete native non-followed symlink observations against every ordinary stat
       field, including dangling, long and hardlinked links. Preserve returned-attribute requirements,
       other special-type fallback, followed-target behavior and unchanged backend worker preference.
@@ -1438,10 +1461,11 @@ this as intentional accounting.
       new formatter-parent screens. Do not adopt the current loop: isolated wide/root listings
       repeatedly regress around 30-44%, despite major deep-root gains. Any future combined
       layout/loop revision needs a new hypothesis and independent qualification.
-- [ ] O19k: Independently measure an Abseil B-tree for the private immutable archive node map.
-      Audit mutation-only indexing, owned returned sources/metadata and nonescaping iterators.
-      Keep the pinned default transparent three-way string comparator; include large Node
-      insertion/relocation, root/flat/chain and RSS costs before testing integration.
+- [x] O19k: Evaluate the private archive B-tree substitution without adoption. Reconcile the
+      earlier completed trial and tracking gap in [the historical decision](docs/benchmarks/archive-btree-historical-decision-20261107.md).
+      Construction gains do not erase wide/deep query costs; old source/settings and incomplete
+      contemporaneous image receipts are explicit. No new runtime or current-head claim. A future
+      directory-specific index is a distinct design, not an unchanged retry of this policy.
 - [x] O19i2: [Qualify a bounded archive direct-child capacity hint](docs/benchmarks/archive-directory-child-capacity-20261106.md).
       The count fits existing `Node` padding; the one root count adds 8 bytes per archive FS.
       Three balanced sessions on Mac and Linux show large flat/wide-root listing wins, neutral
