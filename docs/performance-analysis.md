@@ -5024,3 +5024,7 @@ A valid empty gzip is rejected by the unchanged legacy API before this buffer; i
 expected errors per participant/session remain availability data with no speed ratio.
 That separate defect is tracked. All 2,114 hashed evidence records are retained; no
 research benchmark target/source is published. Current public integration CI remains required.
+
+[Fresh post-#1143 requalification](benchmarks/archive-read-buffer-requalification-20261108.md) retains the memory-TAR
+benefit (-8.47% macOS/-3.78% Linux) with narrower native-TAR gains and every slower gzip
+case and copy control. The original report/capsule stays frozen; exact-head CI remains required.
