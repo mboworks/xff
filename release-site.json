@@ -146,7 +146,8 @@
     "docs/benchmark-chart-sensitivity-audit.md": "docs/benchmark-chart-sensitivity-audit.html",
     "docs/benchmark-extended-history-campaign.md": "docs/benchmark-extended-history-campaign.html",
     "docs/benchmarks/find-listing-optimization-20261107.md": "docs/benchmarks/find-listing-optimization-20261107.html",
-    "docs/benchmarks/lazy-content-state-20261107.md": "docs/benchmarks/lazy-content-state-20261107.html"
+    "docs/benchmarks/lazy-content-state-20261107.md": "docs/benchmarks/lazy-content-state-20261107.html",
+    "docs/benchmarks/deferred-zip-size-investigation-20261107.md": "docs/benchmarks/deferred-zip-size-investigation-20261107.html"
   },
   "generated_html": {
     "XFF.md": {
@@ -184,6 +185,7 @@
     "docs/benchmarks/extended-history-revisions-20261107.json": "docs/benchmarks/extended-history-revisions-20261107.json",
     "docs/benchmarks/extended-history-viewer-check-20261107.json": "docs/benchmarks/extended-history-viewer-check-20261107.json",
     "docs/benchmarks/find-listing-optimization-20261107.json": "docs/benchmarks/find-listing-optimization-20261107.json",
-    "docs/benchmarks/lazy-content-state-20261107.json": "docs/benchmarks/lazy-content-state-20261107.json"
+    "docs/benchmarks/lazy-content-state-20261107.json": "docs/benchmarks/lazy-content-state-20261107.json",
+    "docs/benchmarks/deferred-zip-size-investigation-20261107.json.gz": "docs/benchmarks/deferred-zip-size-investigation-20261107.json.gz"
   }
 }

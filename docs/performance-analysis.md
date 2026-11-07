@@ -4985,3 +4985,18 @@ GitHub permits up to 100 pending runs; overflow still cancels additional request
 canceled revisions need explicit reconciliation/backfill, not a claim that changing the workflow
 recovered them. Measurement commands, sampling, CPU selection, artifact identity, PR checks and
 publication policies are unchanged. There is no runtime or elapsed-time improvement claim.
+
+### Streamed ZIP sizes: reject unconditional content decoding
+
+[The current-main compatibility investigation](benchmarks/deferred-zip-size-investigation-20261107.md)
+reproduces zero deferred sizes and unchanged public entry sizes after skipping. Six private
+investigative cases pass on both hosts, and independent Python ZIP decoding validates the exact
+stored/deflate/bzip2 fixtures. Decoding every unknown payload would break successful unsupported-method
+listings and introduce CRC failures to metadata-only walks. Deferred bzip2 additionally reads through
+the complete-memory API but fails through the streaming source API for the same valid archive.
+
+Reject that blanket fallback before timing it. Keep unknown-size representation, metadata demand,
+identity-stable random access, visible-local-member association and shared read budgets as explicit
+requirements. The separate deferred-bzip2 content bug is tracked. All 19 source/configuration/log
+records are retained losslessly; no runtime implementation, speedup, full-suite/sanitizer qualification
+or public-head CI claim is made. O19b3 and streamed-size correctness remain open.
