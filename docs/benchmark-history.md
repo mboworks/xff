@@ -49,8 +49,11 @@ as JSON so summaries can be reproduced.
 
 The publisher executes trusted main-branch code and treats measurement artifacts as JSON data.
 It checks the measured head against the source workflow SHA and derives run identity from GitHub.
-It shares the `coverage-pages` deployment queue and retained branch with coverage and release
-publication, preserving their pages.
+It shares the `coverage-pages` writer queue and retained branch with coverage and release
+publication, preserving their pages and every incoming measurement. After retention succeeds,
+`Deploy retained site` reads and deploys the latest immutable branch snapshot. Only deployment
+notifications coalesce; source-artifact ingestion remains serialized without cancellation. A Pages
+timeout no longer holds the writer lock. Rendering remains inside the writer queue.
 
 Local uploads can advance the retained branch while a publisher is rendering it. A rejected push
 fetches and rebases onto that update, then performs a full benchmark refresh before retrying, with

@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+# SPDX-License-Identifier: Apache-2.0
+name: Deploy retained site
+
+on:
+  workflow_run:
+    workflows: [Publish coverage, Publish benchmarks, Publish release site]
+    types: [completed]
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  deploy:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    # Only deployment notifications coalesce. Producers retain every source report before this
+    # workflow starts; each deployment reads the newest retained branch at its own checkout.
+    concurrency:
+      group: retained-pages-deployment
+      queue: single
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+      pull-requests: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # Execute trusted default-branch tools, never files from the retained site.
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          path: source
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: coverage-pages
+          path: site
+          persist-credentials: false
+      - name: Record the immutable deployment snapshot
+        run: |
+          snapshot="$(git -C site rev-parse HEAD)"
+          echo "Retained site snapshot: ${snapshot}" >> "${GITHUB_STEP_SUMMARY}"
+      - name: Stage complete site
+        run: |
+          set -euo pipefail
+          mkdir -p public
+          rsync --archive --exclude='.git' site/ public/
+          python3 source/tools/site_artwork.py source/docs/assets public
+          python3 source/tools/compact_site.py public
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: public
+      - name: Deploy immutable snapshot
+        id: deployment
+        uses: actions/deploy-pages@v5
+      - name: Verify live benchmark publication
+        if: hashFiles('public/benchmarks/index.html') != ''
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          python3 source/tools/verify_benchmark_publication.py \
+            --index=public/benchmarks/index.html --url="${PAGE_URL}benchmarks/index.html"
+      - name: Update current PR overviews from the deployed snapshot
+        if: hashFiles('public/benchmarks/index.html') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          python3 source/tools/site_storage.py expand-benchmarks site/benchmarks/previews
+          python3 source/tools/benchmark_preview_ci.py comment-retained --repository="${GITHUB_REPOSITORY}" \
+            --root=site/benchmarks --site-url="${PAGE_URL}benchmarks/"

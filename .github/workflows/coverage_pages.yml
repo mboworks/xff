@@ -12,8 +12,8 @@ on:
     workflows: [Release, Test]
     types: [completed]
 
-# Updating the retained site and deploying it must be one serial operation: two runs restoring the
-# same branch concurrently would otherwise overwrite whichever report was pushed first.
+# Retain every source report serially: concurrent branch writers could overwrite one another.
+# Deployment runs separately, so a Pages timeout never holds this ingestion lock.
 concurrency:
   group: coverage-pages
   queue: max
@@ -23,16 +23,12 @@ permissions: read-all
 
 jobs:
   publish:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: write
-      id-token: write
-      pages: write
       pull-requests: read
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       # This workflow always comes from the trusted default branch. It consumes the report emitted
       # by an unprivileged test run; PR code never receives the token that updates Pages.
@@ -177,13 +173,3 @@ jobs:
             git -C site commit -m "coverage: publish reports and refresh PR metadata"
             git -C site push
           fi
-          mkdir -p public
-          rsync --archive --exclude='.git' site/ public/
-          python3 source/tools/site_artwork.py source/docs/assets public
-          python3 source/tools/compact_site.py public
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: public
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5

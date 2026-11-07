@@ -208,7 +208,7 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn("ref: main\n          persist-credentials: false", waiter)
         self.assertNotIn(": write", waiter)
         self.assertIn("ref: main\n          path: source", publish)
-        self.assertIn("Verify live benchmark publication", publish)
+        self.assertNotIn("actions/deploy-pages@", publish)
         self.assertIn('python3 source/tools/publish_site.py --repo=site', publish)
         self.assertIn("bash -c 'set -euo pipefail; refresh_site retry'", publish)
         self.assertIn('[ "${PREVIEW}" = \'true\' ] && [ "$1" = \'initial\' ]', publish)
@@ -596,7 +596,7 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn("workflow_dispatch: {}", publish)
         self.assertIn("fetch-depth: 0", publish)
         self.assertIn("uses: actions/download-artifact@v8\n        if: github.event.workflow_run.name == 'Benchmarks'", publish)
-        refresh = publish.split("      - name: Refresh stable benchmark references and deploy", 1)[1].split(
+        refresh = publish.split("      - name: Refresh and retain stable benchmark references", 1)[1].split(
             "      - uses: actions/upload-pages-artifact", 1)[0]
         self.assertNotIn("SOURCE_RUN", refresh)
         self.assertNotIn("download-artifact", refresh)

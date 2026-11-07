@@ -24,19 +24,24 @@ class CompactSiteTest(unittest.TestCase):
             self.assertEqual(report['sections']['site']['bytes'], 20)
             self.assertTrue(root.joinpath('site-storage.js').exists())
 
-    def test_each_publisher_compacts_retained_branch_and_complete_deployment(self):
+    def test_each_producer_compacts_retained_branch_before_commit(self):
         for name in ('coverage_pages.yml', 'benchmark_pages.yml', 'pages.yml'):
             with self.subTest(workflow=name):
                 source = repository_file('.github/workflows/' + name).read_text()
                 self.assertLess(source.index('compact_site.py site'), source.index('git -C site commit'))
-                self.assertLess(source.index('site_artwork.py'), source.index('compact_site.py public'))
-                self.assertLess(source.index('compact_site.py public'), source.index('uses: actions/upload-pages-artifact@'))
+                self.assertNotIn('actions/deploy-pages@', source)
+                self.assertNotIn('actions/upload-pages-artifact@', source)
                 self.assertIn('git -C site add --all', source)
                 if name == 'pages.yml':
                     self.assertIn('git fetch --no-tags --depth=1 origin', source)
                     self.assertNotIn('git fetch origin\n', source)
                 else:
                     self.assertIn('fetch-depth: 0\n          filter: blob:none', source)
+
+    def test_deployment_compacts_complete_snapshot_before_upload(self):
+        source = repository_file('.github/workflows/pages_deploy.yml').read_text()
+        self.assertLess(source.index('site_artwork.py'), source.index('compact_site.py public'))
+        self.assertLess(source.index('compact_site.py public'), source.index('uses: actions/upload-pages-artifact@'))
 
 
 if __name__ == '__main__':

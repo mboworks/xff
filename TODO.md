@@ -163,6 +163,14 @@ scope or declaring new flags implemented. See
 
 ## Pages deployment size
 
+- [x] Separate retained-site writers from latest-snapshot deployment; coalesce deployment
+      notifications only, preserve every source ingestion, and update current PR comments only
+      after verifying the deployed snapshot.
+- [ ] Verify the first separate Pages deployment and current-head PR comments on main. Recover
+      source events rejected by the full legacy publisher queue without canceling healthy ingestion
+      or dropping release/main observations. Old queued definitions retain their deployment steps.
+- [ ] Reduce full historical rendering inside the writer lock; preserve all raw measurements and
+      coverage aggregate history when designing coalesced rendering or ingestion replay.
 - [x] Redirect byte-identical stable coverage HTML to preserved run archives in all publishers;
       check the complete staged payload before upload and verify the served benchmark index.
 - [ ] Decide long-term coverage history hosting or retention before immutable reports alone

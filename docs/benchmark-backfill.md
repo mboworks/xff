@@ -368,7 +368,8 @@ raw reports and the frozen host/build contract under
 batch fails. Binaries, source checkouts and build logs are not uploaded. There is no automatic
 upload from the measurement machine.
 
-Publication is restricted to `main` by the Pages environment and uses trusted main code.
+Retention and deployment explicitly require `main` and use trusted main code. The separate
+deployment worker also uses the Pages environment; ingestion does not wait for Pages deployment.
 Every deployment fetches the public benchmark index and checks its digest, so a successful
 Pages response alone cannot mark stale content as successfully published.
 
