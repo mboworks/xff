@@ -1431,10 +1431,11 @@ this as intentional accounting.
       new formatter-parent screens. Do not adopt the current loop: isolated wide/root listings
       repeatedly regress around 30-44%, despite major deep-root gains. Any future combined
       layout/loop revision needs a new hypothesis and independent qualification.
-- [ ] O19k: Independently measure an Abseil B-tree for the private immutable archive node map.
-      Audit mutation-only indexing, owned returned sources/metadata and nonescaping iterators.
-      Keep the pinned default transparent three-way string comparator; include large Node
-      insertion/relocation, root/flat/chain and RSS costs before testing integration.
+- [x] O19k: Evaluate the private archive B-tree substitution without adoption. Reconcile the
+      earlier completed trial and tracking gap in [the historical decision](docs/benchmarks/archive-btree-historical-decision-20261107.md).
+      Construction gains do not erase wide/deep query costs; old source/settings and incomplete
+      contemporaneous image receipts are explicit. No new runtime or current-head claim. A future
+      directory-specific index is a distinct design, not an unchanged retry of this policy.
 - [x] O19i2: [Qualify a bounded archive direct-child capacity hint](docs/benchmarks/archive-directory-child-capacity-20261106.md).
       The count fits existing `Node` padding; the one root count adds 8 bytes per archive FS.
       Three balanced sessions on Mac and Linux show large flat/wide-root listing wins, neutral
