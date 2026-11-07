@@ -1024,14 +1024,19 @@ class Walker {
     // This buffer is local to a listing. Nested directory visits cannot invalidate it;
     // queued consumers already snapshot Visit's callback-bounded path observation.
     std::string path_scratch;
+    std::size_t prefix_size = std::string::npos;
     const auto visit_child = [&](const Stated& child, bool dived = false) {
       if (!child.path.empty()) {
         return VisitOne(child, batch.lazy, depth, dived);
       }
-      path_scratch.assign(directory);
-      if (!path_scratch.empty() && path_scratch.back() != '/') {
-        path_scratch.push_back('/');
+      if (prefix_size == std::string::npos) {
+        path_scratch.assign(directory);
+        if (!path_scratch.empty() && path_scratch.back() != '/') {
+          path_scratch.push_back('/');
+        }
+        prefix_size = path_scratch.size();
       }
+      path_scratch.resize(prefix_size);
       path_scratch.append(child.name);
       return VisitOne(child, batch.lazy, depth, false, path_scratch);
     };

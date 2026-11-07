@@ -922,6 +922,10 @@ test_suite(
         ":benchmark_campaign_test",
         ":benchmark_compare_test",
         ":benchmark_datasets_test",
+        ":benchmark_extended_build_test",
+        ":benchmark_extended_history_test",
+        ":benchmark_extended_report_test",
+        ":benchmark_extended_test",
         ":benchmark_fixture_test",
         ":benchmark_history_test",
         ":benchmark_landscape_test",
@@ -1166,6 +1170,94 @@ py_library(
         ":benchmark_shards_lib",
         ":process_resources_lib",
     ],
+)
+
+py_library(
+    name = "benchmark_extended_lib",
+    srcs = ["benchmark_extended.py"],
+    imports = ["."],
+)
+
+py_test(
+    name = "benchmark_extended_test",
+    size = "small",
+    srcs = ["benchmark_extended_test.py"],
+    deps = [":benchmark_extended_lib"],
+)
+
+py_library(
+    name = "benchmark_extended_build_lib",
+    srcs = ["benchmark_extended_build.py"],
+    imports = ["."],
+)
+
+py_binary(
+    name = "benchmark_extended_build",
+    srcs = ["benchmark_extended_build.py"],
+)
+
+py_test(
+    name = "benchmark_extended_build_test",
+    size = "small",
+    srcs = ["benchmark_extended_build_test.py"],
+    deps = [":benchmark_extended_build_lib"],
+)
+
+py_library(
+    name = "benchmark_extended_history_lib",
+    srcs = ["benchmark_extended_history.py"],
+    imports = ["."],
+    deps = [
+        ":benchmark_extended_lib",
+        ":process_resources_lib",
+    ],
+)
+
+py_binary(
+    name = "benchmark_extended_history",
+    srcs = ["benchmark_extended_history.py"],
+    deps = [
+        ":benchmark_extended_lib",
+        ":process_resources_lib",
+    ],
+)
+
+py_test(
+    name = "benchmark_extended_history_test",
+    size = "small",
+    srcs = ["benchmark_extended_history_test.py"],
+    deps = [
+        ":benchmark_extended_history_lib",
+        ":benchmark_extended_lib",
+    ],
+)
+
+py_library(
+    name = "benchmark_extended_report_lib",
+    srcs = ["benchmark_extended_report.py"],
+    imports = ["."],
+    deps = [
+        ":benchmark_extended_lib",
+        ":benchmark_landscape_lib",
+        ":benchmark_matrix_lib",
+    ],
+)
+
+py_binary(
+    name = "benchmark_extended_report",
+    srcs = ["benchmark_extended_report.py"],
+    deps = [
+        ":benchmark_extended_lib",
+        ":benchmark_landscape_lib",
+        ":benchmark_matrix_lib",
+    ],
+)
+
+py_test(
+    name = "benchmark_extended_report_test",
+    size = "small",
+    srcs = ["benchmark_extended_report_test.py"],
+    deps = [":benchmark_extended_report_lib"],
 )
 
 py_binary(

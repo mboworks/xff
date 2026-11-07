@@ -1,0 +1,782 @@
+[
+  {
+    "sha": "21c7f3656b005b23113d936c1cd2ca0fd2221ab2",
+    "date": "2026-10-06T02:23:48+01:00",
+    "subject": "Prepare peer and expected-hash field templates once (#977)",
+    "pr": 977
+  },
+  {
+    "sha": "c33efe99d0df0b4866a9f77fde71dde9959d3cdb",
+    "date": "2026-10-06T03:40:08+01:00",
+    "subject": "Adapt benchmark shard count to runner CPU agreement (#981)",
+    "pr": 981
+  },
+  {
+    "sha": "103fbf65b22979f75f5adbac67a53f15cf74d03e",
+    "date": "2026-10-06T21:09:52+01:00",
+    "subject": "Improve local benchmark backfill and upload workflow (#982)",
+    "pr": 982
+  },
+  {
+    "sha": "9210100af8007a2f17b22597a349714d9e6069e1",
+    "date": "2026-10-06T23:08:43+01:00",
+    "subject": "Add versioned prepared benchmark layouts (#985)",
+    "pr": 985
+  },
+  {
+    "sha": "61ab1ce41300aa785d6beafb46c29b29dc832b8d",
+    "date": "2026-10-07T22:29:50+01:00",
+    "subject": "Distinguish benchmark layout versions in explorer (#986)",
+    "pr": 986
+  },
+  {
+    "sha": "4bce0bb39186d1dfbe122038f17ef660447599c6",
+    "date": "2026-10-07T23:23:39+01:00",
+    "subject": "Clarify benchmark dataset selection and upload batches (#987)",
+    "pr": 987
+  },
+  {
+    "sha": "fa41587198981a5619e408c41be80cb22b8dd439",
+    "date": "2026-10-09T17:03:40+01:00",
+    "subject": "Refine benchmark viewer cards and threshold controls (#988)",
+    "pr": 988
+  },
+  {
+    "sha": "772994ab7905be77915978f06ea90ae5934aaeef",
+    "date": "2026-10-09T18:20:37+01:00",
+    "subject": "Call benchmark viewer measurement series Dataset (#989)",
+    "pr": 989
+  },
+  {
+    "sha": "4ea895f63106f05df7c90b629d20433ae1e03016",
+    "date": "2026-10-09T22:05:33+01:00",
+    "subject": "Verify benchmark build provenance and show binary evidence in the viewer (#990)",
+    "pr": 990
+  },
+  {
+    "sha": "dac3747d63cad713def0b949a934dfe36f82da63",
+    "date": "2026-10-10T11:32:31+01:00",
+    "subject": "Enable opt-in native Linux benchmark performance counters (#993)",
+    "pr": 993
+  },
+  {
+    "sha": "88d4facd15ebd00acf749222b3028de2e8916970",
+    "date": "2026-10-10T12:44:39+01:00",
+    "subject": "Correct native benchmark accounting and retain audit evidence (#994)",
+    "pr": 994
+  },
+  {
+    "sha": "bbc0bf9376c7fc41fe75094998c3c7e74bd02e94",
+    "date": "2026-10-10T13:42:01+01:00",
+    "subject": "Fix benchmark launcher staging and consolidate audit preparation (#999)",
+    "pr": 999
+  },
+  {
+    "sha": "b137c8a6800aa0c1d6f2d67342f291b25783747f",
+    "date": "2026-10-10T17:31:06+01:00",
+    "subject": "Publish executor dispatch evidence and simplify history chart folding (#1003)",
+    "pr": 1003
+  },
+  {
+    "sha": "d73eea93ac97f401fe12ba2ba139eb6b8601ec19",
+    "date": "2026-10-14T21:35:19+01:00",
+    "subject": "Bump rules_cc from 0.2.25 to 0.2.26 (#1004)",
+    "pr": 1004
+  },
+  {
+    "sha": "20095dd53c31e510aac2256fc93d34026e4f463c",
+    "date": "2026-10-14T21:58:37Z",
+    "subject": "Bump pcre2 from 10.48 to 10.49 (#1006)",
+    "pr": 1006
+  },
+  {
+    "sha": "33a01e13d7cd27ee7f866802fc2f74998fdcaabb",
+    "date": "2026-10-15T00:16:51+01:00",
+    "subject": "Bump rules_python from 2.3.4 to 2.4.2 (#1007)",
+    "pr": 1007
+  },
+  {
+    "sha": "bfe77198c06bc1e4a23e23ea292ab47cb4b6a0e4",
+    "date": "2026-10-15T00:28:32Z",
+    "subject": "Bump zstd from 1.5.7.bcr.2 to 1.5.7.bcr.3 (#1005)",
+    "pr": 1005
+  },
+  {
+    "sha": "1f85d90e3441737304d9f3647523cfc408ca54a9",
+    "date": "2026-10-15T03:34:18+01:00",
+    "subject": "Handle contract drift in adaptive benchmark sampling (#1009)",
+    "pr": 1009
+  },
+  {
+    "sha": "a5f9c9ec07419101cfe73ec4b42c3c29c529edad",
+    "date": "2026-10-17T10:57:28+01:00",
+    "subject": "Fix clang-tidy source queries and batch preparation builds (#1010)",
+    "pr": 1010
+  },
+  {
+    "sha": "a21ada79bbe9cad232a174cfdb4e8923ed891f2a",
+    "date": "2026-10-17T12:38:48+01:00",
+    "subject": "Bump toolchains_llvm from 1.11.1 to 1.11.3 (#1008)",
+    "pr": 1008
+  },
+  {
+    "sha": "ae62c828a3f3502a9bcf4805188913a1aaaf264c",
+    "date": "2026-10-18T23:31:25+01:00",
+    "subject": "Resolve golden test inputs through runfiles lookup (#1012)",
+    "pr": 1012
+  },
+  {
+    "sha": "801087f3e9a8bf192928896c7f24c369003d1e7b",
+    "date": "2026-10-23T02:56:26+01:00",
+    "subject": "Follow stable LLVM 23 releases from the pinned catalogue (#1011)",
+    "pr": 1011
+  },
+  {
+    "sha": "3dbc47cc2a1d84c0e6b60f0a497c1d3ce160351f",
+    "date": "2026-10-23T04:10:00+01:00",
+    "subject": "Bump setup-bazel to 0.19.1 and align pin checks (#1013)",
+    "pr": 1013
+  },
+  {
+    "sha": "8e95f5546187b2a6f4ec165af9cf794af18ac4a1",
+    "date": "2026-10-27T01:23:53Z",
+    "subject": "Add reverse diffs and configurable patch paths (#1019)",
+    "pr": 1019
+  },
+  {
+    "sha": "1642f49d7b400596af3ed627f5b9f42cc24e4237",
+    "date": "2026-10-27T02:19:56Z",
+    "subject": "Allow stamped release versions in the rg alias test (#1021)",
+    "pr": 1021
+  },
+  {
+    "sha": "eaa034527a286ed87f1f74b8e88ba5b7007fb31a",
+    "date": "2026-10-27T06:43:43Z",
+    "subject": "Open CHANGELOG section for 0.10.0 (#1020)",
+    "pr": 1020
+  },
+  {
+    "sha": "02292572cac61101036c032ece8e11675d580d7e",
+    "date": "2026-10-28T01:21:30Z",
+    "subject": "Add selectable ignore policies to tree comparison (#1022)",
+    "pr": 1022
+  },
+  {
+    "sha": "b52571f81b8ecec116a4249f51b7d5e72175248c",
+    "date": "2026-10-28T23:28:49Z",
+    "subject": "Unify generated help references and remove duplicate navigation (#1023)",
+    "pr": 1023
+  },
+  {
+    "sha": "f0407980edd2bc2497dc0f406b2fed1977caaaea",
+    "date": "2026-10-29T02:06:19Z",
+    "subject": "Apply explicit ignore files to both comparison roots (#1024)",
+    "pr": 1024
+  },
+  {
+    "sha": "4c87962565391caf32b669c6a8a55d7495999921",
+    "date": "2026-10-29T02:52:41Z",
+    "subject": "Produce complete Git patches for tree comparisons (#1025)",
+    "pr": 1025
+  },
+  {
+    "sha": "b7fd2c2d0c5d50d8e5895f36fe39f802ac2dcb76",
+    "date": "2026-10-29T03:30:29Z",
+    "subject": "Place comparison features under the 0.10.0 release (#1026)",
+    "pr": 1026
+  },
+  {
+    "sha": "d406f4132d067d4e87a8df1426753a7d0203abd6",
+    "date": "2026-10-29T04:10:06Z",
+    "subject": "Honor no-ignore for ordinary explicit ignore files (#1027)",
+    "pr": 1027
+  },
+  {
+    "sha": "d47b00bfeeb3b98606d806c4b21664870d3ddfaa",
+    "date": "2026-10-29T04:56:29Z",
+    "subject": "Diagnose ineffective file-diff normalization before actions (#1028)",
+    "pr": 1028
+  },
+  {
+    "sha": "3292b6f308ab92f61d8575c95ee2cef2c41e4205",
+    "date": "2026-10-29T05:34:26Z",
+    "subject": "Round-trip staged release comparison patches through Git (#1029)",
+    "pr": 1029
+  },
+  {
+    "sha": "96174bbdd64ab2325224f47bab43888fa224595b",
+    "date": "2026-10-29T21:21:24Z",
+    "subject": "Open CHANGELOG section for 0.11.0 (#1030)",
+    "pr": 1030
+  },
+  {
+    "sha": "bfae14510a3e302f524b96719a695ca4bb07ffbd",
+    "date": "2026-10-30T23:45:26Z",
+    "subject": "Recover the original 0.9.0 release without moving its tag (#1031)",
+    "pr": 1031
+  },
+  {
+    "sha": "3803544ef4a24e0a72e54a317ee5091638bc70ae",
+    "date": "2026-10-31T15:27:47Z",
+    "subject": "Upgrade five dependencies and fix Bazel integration (#1032)",
+    "pr": 1032
+  },
+  {
+    "sha": "a721b98a306dd9021d31bbc485ae4c7c82ceba00",
+    "date": "2026-10-31T19:59:00Z",
+    "subject": "Upgrade bashtest to 0.7.1 and remove launcher workaround (#1033)",
+    "pr": 1033
+  },
+  {
+    "sha": "974d137026818bba1c1deaf6cfc4fffe676b314e",
+    "date": "2026-10-31T22:11:51Z",
+    "subject": "Avoid Abseil hardware-clock calibration during worker startup (#1034)",
+    "pr": 1034
+  },
+  {
+    "sha": "66302319f016c5f459b0260a2e727bd32073ed24",
+    "date": "2026-11-01T10:43:47Z",
+    "subject": "Clarify benchmark uploader revision overlap (#1036)",
+    "pr": 1036
+  },
+  {
+    "sha": "b68a9c3a58abd219a5043d5737e23f6ebe5ee26c",
+    "date": "2026-11-01T11:35:52Z",
+    "subject": "Make local benchmark uploads and publication more reliable (#1038)",
+    "pr": 1038
+  },
+  {
+    "sha": "8ff28cde9c67bd498f9016935da01506ffb5845c",
+    "date": "2026-11-01T12:37:28Z",
+    "subject": "Isolate executor diagnostics and query download support (#1035)",
+    "pr": 1035
+  },
+  {
+    "sha": "473f73452a6b47d7a3b522f2cc6128c4fafa86d8",
+    "date": "2026-11-01T13:41:30Z",
+    "subject": "Avoid temporary key construction and retain executor audit evidence (#1037)",
+    "pr": 1037
+  },
+  {
+    "sha": "7b72a5f0a52e838dfe0b199ea0386c8e6b3dcd39",
+    "date": "2026-11-01T18:38:17Z",
+    "subject": "Bound sibling reads on the existing directory pool (#1039)",
+    "pr": 1039
+  },
+  {
+    "sha": "16e70cb97de93c7ab4ae8c9e990e1842d50cc528",
+    "date": "2026-11-01T21:40:15Z",
+    "subject": "Use fixed 1 MiB blocks for retained collection text (#1040)",
+    "pr": 1040
+  },
+  {
+    "sha": "cf23601ab3533c2acb938acda1439dcd69091f61",
+    "date": "2026-11-01T23:34:14Z",
+    "subject": "Share collection name and root storage with owned paths (#1041)",
+    "pr": 1041
+  },
+  {
+    "sha": "2b21790502fd6bf9b6e1afb53cc1444cf140f296",
+    "date": "2026-11-02T00:25:41Z",
+    "subject": "Prepare simple native globs and avoid pattern copies (#1042)",
+    "pr": 1042
+  },
+  {
+    "sha": "9e4338a6ea3b47431e612a1fa24b818b3269193d",
+    "date": "2026-11-02T01:26:44Z",
+    "subject": "Reuse fuzzy score rows and cache normalization ceilings (#1043)",
+    "pr": 1043
+  },
+  {
+    "sha": "d546fcb3d864ed18776f642c1aa0fe904e9f8bfa",
+    "date": "2026-11-02T02:30:36Z",
+    "subject": "Render lexical filename fields from borrowed path slices (#1044)",
+    "pr": 1044
+  },
+  {
+    "sha": "35479b4fe8dec5a7a9400bca69f69516df5f56f0",
+    "date": "2026-11-02T03:31:09Z",
+    "subject": "Record rejected field lookup allocation experiments (#1045)",
+    "pr": 1045
+  },
+  {
+    "sha": "7c0f507f7c815146a9b746e40269377dbc768b37",
+    "date": "2026-11-02T04:25:35Z",
+    "subject": "Avoid redundant zeroing in native bounded range reads (#1046)",
+    "pr": 1046
+  },
+  {
+    "sha": "c14d39cf281c084f8833bc877fca6999e2f9f810",
+    "date": "2026-11-02T05:40:01Z",
+    "subject": "Reuse budgeted native comparison cursor buffers (#1047)",
+    "pr": 1047
+  },
+  {
+    "sha": "7cf2a52441d626888b5840d09a4646d6dedca6b9",
+    "date": "2026-11-02T06:41:21Z",
+    "subject": "Reuse typed directory task slots with atomic completion (#1048)",
+    "pr": 1048
+  },
+  {
+    "sha": "901c8fea916124f4d0e195c5385f2a977b44093d",
+    "date": "2026-11-02T08:15:37Z",
+    "subject": "Pack owned matcher and deferred entry text (#1049)",
+    "pr": 1049
+  },
+  {
+    "sha": "2d615ea1e447e55c266a47799ad6cd64bd4e246d",
+    "date": "2026-11-02T10:02:48Z",
+    "subject": "Reuse bounded matcher output capacities across batches (#1050)",
+    "pr": 1050
+  },
+  {
+    "sha": "d903ea98a98f4220d9372ab0404ee974eccb8690",
+    "date": "2026-11-02T11:07:53Z",
+    "subject": "Limit warmed matcher participation to available work chunks (#1051)",
+    "pr": 1051
+  },
+  {
+    "sha": "76cc22da343841f9786bc9f78e21e839084a780f",
+    "date": "2026-11-02T12:17:40Z",
+    "subject": "Record direct evaluator worker qualification and rejection (#1052)",
+    "pr": 1052
+  },
+  {
+    "sha": "dc4e70237eff58916c4eb6990047904536397264",
+    "date": "2026-11-02T13:14:55Z",
+    "subject": "Reuse requested content values across worker stages (#1053)",
+    "pr": 1053
+  },
+  {
+    "sha": "96fa46b86017dc2a79bc97624af9ac98401190ed",
+    "date": "2026-11-02T13:53:40Z",
+    "subject": "Reuse immutable default catalogs across library runs (#1054)",
+    "pr": 1054
+  },
+  {
+    "sha": "00d4f84df01e00f1ce2d7c83576ac38b2eb2fb7b",
+    "date": "2026-11-02T14:57:51Z",
+    "subject": "Prepare immutable file-diff configuration once per style (#1055)",
+    "pr": 1055
+  },
+  {
+    "sha": "fc2cd316e81d7319aa44912e786e7aad4492cd0a",
+    "date": "2026-11-02T20:24:00Z",
+    "subject": "Prepare compact hash-primary operands once per expression (#1056)",
+    "pr": 1056
+  },
+  {
+    "sha": "6bebe940ba36328a399461a19434bf627118bf75",
+    "date": "2026-11-02T21:02:54Z",
+    "subject": "Aggregate ordinary comparison side totals directly (#1057)",
+    "pr": 1057
+  },
+  {
+    "sha": "c004bcc65f16df2a264fd5451e4bc7262fecd137",
+    "date": "2026-11-02T22:25:59Z",
+    "subject": "Free hosted Linux build space before LLVM extraction (#1058)",
+    "pr": 1058
+  },
+  {
+    "sha": "4b823112efb377658029a2a3d5c4c51594f03e25",
+    "date": "2026-11-03T01:21:35Z",
+    "subject": "Aggregate five Bazel dependency bumps (#1065)",
+    "pr": 1065
+  },
+  {
+    "sha": "22702c34a0bcb261238af40f82818369fa46a4ab",
+    "date": "2026-11-03T01:24:02Z",
+    "subject": "perf: reduce byte-word shingle allocation and copying (#1059)",
+    "pr": 1059
+  },
+  {
+    "sha": "09e6bbfff3275ed36eba7b98052cf5d0877d94f7",
+    "date": "2026-11-03T02:42:57Z",
+    "subject": "Reuse archive input buffers without per-chunk allocations (#1066)",
+    "pr": 1066
+  },
+  {
+    "sha": "fb726c946063d567320d76f2f3d706f0a0997e57",
+    "date": "2026-11-03T03:38:30Z",
+    "subject": "Borrow cached digests and streamline output records (#1067)",
+    "pr": 1067
+  },
+  {
+    "sha": "58ba30eeb90499f50e98da480b8d965047352b1f",
+    "date": "2026-11-03T04:47:07Z",
+    "subject": "Reuse caller-owned buffers for memory and archive member streams (#1068)",
+    "pr": 1068
+  },
+  {
+    "sha": "6d6a2c9abf972ffffd064939381a1df2f40c2776",
+    "date": "2026-11-03T05:44:49Z",
+    "subject": "Fill source results directly and reuse owned decoder blocks (#1069)",
+    "pr": 1069
+  },
+  {
+    "sha": "44e7e30102eb6c6ae122135189b6c62340c35bdb",
+    "date": "2026-11-03T07:51:58Z",
+    "subject": "Bind hash field qualifiers once without growing template segments (#1070)",
+    "pr": 1070
+  },
+  {
+    "sha": "79f8b371480551c70654e1e83712ebdb6539ca0a",
+    "date": "2026-11-03T09:06:21Z",
+    "subject": "Skip discarded archive payloads through bounded owned cursors (#1071)",
+    "pr": 1071
+  },
+  {
+    "sha": "0fe856d76f6583c3a0023cf6f8f5654bf949bd40",
+    "date": "2026-11-03T10:26:07Z",
+    "subject": "Reuse coordinator-owned raw listing records (#1072)",
+    "pr": 1072
+  },
+  {
+    "sha": "6db2de9e49f19107f49e257486b50694a764cf23",
+    "date": "2026-11-03T11:32:14Z",
+    "subject": "Borrow the similarity reference sniff prefix (#1073)",
+    "pr": 1073
+  },
+  {
+    "sha": "7173ffcbc66063560d31e04fdd58fa4a1c6ebe8c",
+    "date": "2026-11-03T13:01:55Z",
+    "subject": "Free unused hosted SDKs before extracting LLVM toolchains (#1074)",
+    "pr": 1074
+  },
+  {
+    "sha": "62400cd3b12ec42c2b1aa7dec049c2510cbf456a",
+    "date": "2026-11-03T15:49:15Z",
+    "subject": "Reuse freshly verified literal similarity references (#1075)",
+    "pr": 1075
+  },
+  {
+    "sha": "653f5ed25b68e84e0b292afa9671289eade3b534",
+    "date": "2026-11-03T17:35:11Z",
+    "subject": "Move already-owned single-word similarity keys (#1076)",
+    "pr": 1076
+  },
+  {
+    "sha": "35b810bb806aa169c075c01a449a408cd3758248",
+    "date": "2026-11-03T18:31:01Z",
+    "subject": "Probe the smaller similarity shingle set (#1077)",
+    "pr": 1077
+  },
+  {
+    "sha": "76054b3a9c60baa72afd0452bbc3ac6bc2f79efd",
+    "date": "2026-11-03T20:22:28Z",
+    "subject": "Benchmark ZIP readers and retain rejected native-seek evaluation (#1078)",
+    "pr": 1078
+  },
+  {
+    "sha": "01ace14aa38a87db7d2f1441043cd61cf0b3de49",
+    "date": "2026-11-04T00:08:29Z",
+    "subject": "Reuse bounded encoded path-record storage (#1079)",
+    "pr": 1079
+  },
+  {
+    "sha": "0d64bb3974f4e70bc5dfc36ea8647e7e7db3cbf5",
+    "date": "2026-11-04T01:50:02Z",
+    "subject": "Reduce hosted MSan debug payload to avoid cold-build disk exhaustion (#1081)",
+    "pr": 1081
+  },
+  {
+    "sha": "669f68a3e26303c06325c6beaee44019481bcaf9",
+    "date": "2026-11-04T04:13:14Z",
+    "subject": "Decide similarity thresholds with exact batched bounds (#1080)",
+    "pr": 1080
+  },
+  {
+    "sha": "6e6b25ffc8696d6d28867a1ee6ea2e9beb00a77d",
+    "date": "2026-11-04T06:06:23Z",
+    "subject": "Reuse coordinator-owned column cells and bounded CSV/TSV row storage (#1082)",
+    "pr": 1082
+  },
+  {
+    "sha": "f9a73afa1497589b49f33c99c49248adf3a7b38e",
+    "date": "2026-11-04T07:19:35Z",
+    "subject": "Preserve short-word batches and reuse long-word similarity scratch (#1083)",
+    "pr": 1083
+  },
+  {
+    "sha": "f06cea15f5b1b0b04be246501c894b79782eb0fd",
+    "date": "2026-11-04T08:19:37Z",
+    "subject": "Reuse field contexts and transfer owned scalar output (#1084)",
+    "pr": 1084
+  },
+  {
+    "sha": "790dd72d400f7ac3e8656ea48c7ba718b41badd2",
+    "date": "2026-11-04T09:42:31Z",
+    "subject": "Construct only the selected comparison-summary output (#1085)",
+    "pr": 1085
+  },
+  {
+    "sha": "ba9b2baaf8d7ed7a7ffdeac7a16bd63f43255071",
+    "date": "2026-11-04T10:43:52Z",
+    "subject": "Use fixed-size numeric summary cells (#1086)",
+    "pr": 1086
+  },
+  {
+    "sha": "f7bdc5d248e76a54278aef5030c0a3468505bd2f",
+    "date": "2026-11-04T12:25:05Z",
+    "subject": "Encode summary cells without intermediate row vectors (#1087)",
+    "pr": 1087
+  },
+  {
+    "sha": "9bd70fc9b4607cd8a586615c630706f85416e62c",
+    "date": "2026-11-04T14:51:03Z",
+    "subject": "Retain compact comparison entries and path storage (#1088)",
+    "pr": 1088
+  },
+  {
+    "sha": "bec36225c686b58914e8ab9792e822d56fe1ef07",
+    "date": "2026-11-04T16:58:29Z",
+    "subject": "Append borrowed comparison categories in merge order (#1089)",
+    "pr": 1089
+  },
+  {
+    "sha": "798c2c0a3b4f9c1acfa050f2eac1b8902ba89ae8",
+    "date": "2026-11-04T19:17:45Z",
+    "subject": "Reuse native directory paths across leaf visits (#1090)",
+    "pr": 1090
+  },
+  {
+    "sha": "e66bdbe1097f4a051580dcbb68d17e745ec5e9ba",
+    "date": "2026-11-04T20:34:21Z",
+    "subject": "Avoid leaf metadata reads for uniform case policies (#1091)",
+    "pr": 1091
+  },
+  {
+    "sha": "a89459ed819af4fa6841a9ab7eca4e554949fd72",
+    "date": "2026-11-04T21:53:43Z",
+    "subject": "Accumulate native directory entries in stable segments (#1092)",
+    "pr": 1092
+  },
+  {
+    "sha": "a7a6125a9358f1020fc914d6c91bbf8c6e66392f",
+    "date": "2026-11-04T23:39:42Z",
+    "subject": "Keep benchmark task positions stable across merged history (#1093)",
+    "pr": 1093
+  },
+  {
+    "sha": "bb0185a0379075480eb8b1499f5bc5ff8cfafaa8",
+    "date": "2026-11-05T01:46:19Z",
+    "subject": "Keep traversal records compact with listing-owned metadata (#1094)",
+    "pr": 1094
+  },
+  {
+    "sha": "6792b5030de70a737dec2878673aebaa6ddc57af",
+    "date": "2026-11-05T03:32:21Z",
+    "subject": "Reuse native stat paths for eager directory listings (#1095)",
+    "pr": 1095
+  },
+  {
+    "sha": "39282994e036bb4dc43c2ca9ffdb2a2f498bb99d",
+    "date": "2026-11-05T04:48:08Z",
+    "subject": "Use scoped terminated storage for native stat paths (#1096)",
+    "pr": 1096
+  },
+  {
+    "sha": "910e2a7bbae50a3562135784d56e2ba903e89e7c",
+    "date": "2026-11-05T05:59:37Z",
+    "subject": "Record native-case experiment decisions and device-cache regressions (#1097)",
+    "pr": 1097
+  },
+  {
+    "sha": "7c8cd64e02a84ce13f5a7d3b3dd37290307a40a9",
+    "date": "2026-11-05T07:22:18Z",
+    "subject": "Reuse prepared folded ASCII glob shapes with native fallbacks (#1098)",
+    "pr": 1098
+  },
+  {
+    "sha": "76185cb37fa2d4f6cb36876efde58b0ede0e753a",
+    "date": "2026-11-05T09:06:33Z",
+    "subject": "Retain host-specific MSan caches under their sanitizer allowance (#1099)",
+    "pr": 1099
+  },
+  {
+    "sha": "57e9287e675f180ef6a7b0cc5d4e883605b1bfdf",
+    "date": "2026-11-05T11:00:54Z",
+    "subject": "Reuse optional bulk directory metadata with ordinary stat fallbacks (#1100)",
+    "pr": 1100
+  },
+  {
+    "sha": "318edb2f60ce1a9a526fc94a15ea7cdad4c4d181",
+    "date": "2026-11-05T14:14:49Z",
+    "subject": "Check XFF-owned headers through Bazel clang-tidy aliases (#1101)",
+    "pr": 1101
+  },
+  {
+    "sha": "55ea67e3f06e5055b43d8cb780661901731592f2",
+    "date": "2026-11-05T17:08:19Z",
+    "subject": "Skip unused ordinary scopes after comparison-only summaries (#1102)",
+    "pr": 1102
+  },
+  {
+    "sha": "f3ec0faf7a1bb16ddb0b3b8bcee2c3e5bd970df2",
+    "date": "2026-11-05T18:53:16Z",
+    "subject": "Record comparison-storage experiments without adopting regressions (#1103)",
+    "pr": 1103
+  },
+  {
+    "sha": "455dcd8eb5dd98b09f3117f5316136b6d43cfd8e",
+    "date": "2026-11-05T20:46:57Z",
+    "subject": "Reuse archive session input for format detection (#1104)",
+    "pr": 1104
+  },
+  {
+    "sha": "245e74ff6cbe6c0f84a074be669c60ac7cbc5e8f",
+    "date": "2026-11-05T22:29:23Z",
+    "subject": "Bound archive directory listings to their ordered subtree (#1105)",
+    "pr": 1105
+  },
+  {
+    "sha": "b60cf7a5a92609f9fadddd4759d3c55e755a69b6",
+    "date": "2026-11-06T00:26:31Z",
+    "subject": "Allow OS-version fallback after exhausting exact benchmark quorums (#1117)",
+    "pr": 1117
+  },
+  {
+    "sha": "e7e42d01e0678590fc06bd90b9143682a84aef7d",
+    "date": "2026-11-06T01:50:29Z",
+    "subject": "Resolve Bazel virtual include aliases for local clang-tidy scope (#1106)",
+    "pr": 1106
+  },
+  {
+    "sha": "ccb1f0a202ed59b30246c14e424a400e47acc447",
+    "date": "2026-11-06T03:31:50Z",
+    "subject": "Bound initial storage for archive directory listings (#1107)",
+    "pr": 1107
+  },
+  {
+    "sha": "adae6c9cd98bdd4b15f7b2867d08b1bfe12e1fad",
+    "date": "2026-11-06T04:40:27Z",
+    "subject": "Reuse indexed metadata during archive directory walks (#1108)",
+    "pr": 1108
+  },
+  {
+    "sha": "a1ff80a81c1ff2c4fd93898aeaf07dc2fc5764ff",
+    "date": "2026-11-06T05:46:37Z",
+    "subject": "Reuse complete Darwin bulk observations for non-followed symlinks (#1109)",
+    "pr": 1109
+  },
+  {
+    "sha": "e9bebfa5bfd85137de756047795887d45248ec18",
+    "date": "2026-11-06T06:49:18Z",
+    "subject": "Record rejected native metadata and queue cleanup experiments (#1110)",
+    "pr": 1110
+  },
+  {
+    "sha": "5cade08b6701417b07343b12ac86331ed0c3b941",
+    "date": "2026-11-06T07:59:12Z",
+    "subject": "Fix benchmark preview readiness for the combined aggregate (#1111)",
+    "pr": 1111
+  },
+  {
+    "sha": "852539d084ca1c4bb1756b0f83eb4b50b2b19b85",
+    "date": "2026-11-06T09:03:22Z",
+    "subject": "Defer coverage publication when its source is retried (#1112)",
+    "pr": 1112
+  },
+  {
+    "sha": "5729026a8482a2bc331058ee658017f9aba74298",
+    "date": "2026-11-06T10:09:24Z",
+    "subject": "Avoid unnecessary symlink target reads in formatted listings (#1113)",
+    "pr": 1113
+  },
+  {
+    "sha": "713abe5fa302c9ff78e7df769304f90379566c83",
+    "date": "2026-11-06T11:21:49Z",
+    "subject": "Record the published site storage review (#1114)",
+    "pr": 1114
+  },
+  {
+    "sha": "ab909839da7d1ae34ea63eab75ec83dc62fd33fb",
+    "date": "2026-11-06T12:35:53Z",
+    "subject": "Retain measured PGO and short-readlink performance decisions (#1115)",
+    "pr": 1115
+  },
+  {
+    "sha": "f4cee33eeb6b6cf00c1b39003b11fafbb262f79b",
+    "date": "2026-11-06T13:29:25Z",
+    "subject": "Skip empty CCTZ formatter fragments before libc (#1116)",
+    "pr": 1116
+  },
+  {
+    "sha": "c7bb70cc6f3e6441ff25c999667d76f48ffe9acb",
+    "date": "2026-11-06T14:32:34Z",
+    "subject": "Avoid temporary archive member keys (#1118)",
+    "pr": 1118
+  },
+  {
+    "sha": "2487927cc6b1de326ea3c6c058dc493214354bec",
+    "date": "2026-11-06T16:42:21Z",
+    "subject": "Reserve archive listings from child counts (#1120)",
+    "pr": 1120
+  },
+  {
+    "sha": "d9bf84b04784daf1d457a213f2dba277ba32ed2e",
+    "date": "2026-11-06T17:51:54Z",
+    "subject": "Avoid redundant archive directory separator scans (#1121)",
+    "pr": 1121
+  },
+  {
+    "sha": "0e95e191ba7d7ee3769217e7fbf82a825ff9b90d",
+    "date": "2026-11-06T19:06:09Z",
+    "subject": "Avoid copying owned archive bytes before parsing (#1122)",
+    "pr": 1122
+  },
+  {
+    "sha": "83657b9dfe35adda2a4cede5a1ae71db2f2b870d",
+    "date": "2026-11-06T20:08:59Z",
+    "subject": "Append structured field values without intermediate strings (#1123)",
+    "pr": 1123
+  },
+  {
+    "sha": "de2fa3557d69e9c3eb1c52bb2b0300566f960fea",
+    "date": "2026-11-06T22:11:55Z",
+    "subject": "Record completed-frontier comparison rejection (#1124)",
+    "pr": 1124
+  },
+  {
+    "sha": "c95140674254c371844f1fab27a64951a80dac55",
+    "date": "2026-11-06T23:53:55Z",
+    "subject": "Reserve LTO links for production CLIs and share Linux fat objects (#1119)",
+    "pr": 1119
+  },
+  {
+    "sha": "9bf1aad510d843d1d6338fbdf23107a30d339730",
+    "date": "2026-11-07T02:38:27Z",
+    "subject": "Record shared-worker qualification and retain specialized pools (#1125)",
+    "pr": 1125
+  },
+  {
+    "sha": "d8cf61cccd4b0efed5058bf6fa45228e47162b48",
+    "date": "2026-11-07T04:10:09Z",
+    "subject": "Record archive insertion qualification and reconcile tracking (#1126)",
+    "pr": 1126
+  },
+  {
+    "sha": "1786340680499f50b08dee5b1ceffbc20fd7b533",
+    "date": "2026-11-07T07:02:39Z",
+    "subject": "Reuse validated rg output transactions in matcher results (#1127)",
+    "pr": 1127
+  },
+  {
+    "sha": "1278c8943a6abd236a2f20e3937cc8e23a0f95a7",
+    "date": "2026-11-07T08:14:55Z",
+    "subject": "Decode embedded language JSON into final owned storage (#1128)",
+    "pr": 1128
+  },
+  {
+    "sha": "77aa9ef9bc9475adcbdd37cf3004143a96f03060",
+    "date": "2026-11-07T09:22:56Z",
+    "subject": "Record rejected hinted archive ancestor insertion screen (#1129)",
+    "pr": 1129
+  },
+  {
+    "sha": "ae8c5af3eb11dc8571f11db9b307b0db948f78c6",
+    "date": "2026-11-07T11:11:19Z",
+    "subject": "Stop main benchmarks once three of four candidates agree (#1130)",
+    "pr": 1130
+  }
+]

@@ -1,0 +1,34 @@
+{
+  "purpose": "synthetic renderer validation; not measurements",
+  "results": [
+    {
+      "dataset": "Drogon / extended-production-v1 / Fixed XFF at PR #2",
+      "version": "0",
+      "measuredPoints": 60,
+      "missingPoints": 20,
+      "height": -100
+    },
+    {
+      "dataset": "Drogon / extended-production-v1 / Fixed XFF at PR #2",
+      "version": "1",
+      "measuredPoints": 60,
+      "missingPoints": 20,
+      "height": 0
+    },
+    {
+      "dataset": "Drogon / extended-production-v1 / Traditional tools",
+      "version": "0",
+      "measuredPoints": 60,
+      "missingPoints": 20,
+      "height": 50
+    },
+    {
+      "dataset": "Drogon / extended-production-v1 / Traditional tools",
+      "version": "1",
+      "measuredPoints": 60,
+      "missingPoints": 20,
+      "height": 75
+    }
+  ],
+  "errors": []
+}
