@@ -171,6 +171,13 @@ scope or declaring new flags implemented. See
       or dropping release/main observations. Old queued definitions retain their deployment steps.
 - [ ] Reduce full historical rendering inside the writer lock; preserve all raw measurements and
       coverage aggregate history when designing coalesced rendering or ingestion replay.
+- [x] Reuse unchanged raw JSON archives during repeated publication after byte-exact comparison;
+      qualify complete expand/compact cycles on Mac/Linux and retain changed/new-input controls
+      and the rejected broader chart-reuse trial in
+      [the storage qualification](docs/benchmarks/unchanged-site-payloads-20261107.md).
+- [ ] Review the now-observed 728 MB staged site (about 499 MB benchmarks and 202 MB coverage),
+      above the 200 MB review threshold. Profile historical rendering/compaction and preserve all
+      release/main performance observations and coverage aggregate history when reducing storage.
 - [x] Redirect byte-identical stable coverage HTML to preserved run archives in all publishers;
       check the complete staged payload before upload and verify the served benchmark index.
 - [ ] Decide long-term coverage history hosting or retention before immutable reports alone

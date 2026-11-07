@@ -4932,3 +4932,23 @@ results do not substitute for current synchronized public-head checks.
 Column pipeline causes, score-consumer-specific demand and conditional stat-bearing field
 admission remain separate future work. Do not reopen the combined policy unchanged or use a
 cohort median to hide its slower case.
+
+## Repeated publication compression, 2026-11-07
+
+[The retained qualification](benchmarks/unchanged-site-payloads-20261107.md) separates
+publication-tool performance from executable measurements. Select byte-exact reuse of
+unchanged non-interned JSON gzip archives; preserve chart packing. Three balanced
+sessions of the real two-report expand/compact cycle improve 52.1-52.4% on Mac and
+46.9-47.1% on Linux. Changed inputs cost up to 0.99%/3.77%; fresh controls remain within
+1%. Exact raw bytes and chart values are checked every iteration. Five Mac Bazel suites
+and all 48 direct tests on both hosts pass, with explicit malformed-cache coverage.
+
+Reject the initial broad chart-reuse candidate: modified charts cost 27-33%, despite
+67-72% unchanged-chart gains. Both variants, exact public fixtures, source/hash identity,
+scripts and every measured round remain in the lossless capsule. Comparing retained
+raw bytes temporarily holds one additional decompressed file; no peak-RSS improvement
+or full-hosted-publication speedup is claimed. A provider Pages timeout and queue-full
+rejections require the separate deployment/recovery work; this optimization cannot
+recover missing source events. A sampled 728 MB site also exceeds the existing 200 MB
+storage-review threshold. Keep historical rendering and storage reduction open without
+dropping release/main observations or coverage aggregates.
