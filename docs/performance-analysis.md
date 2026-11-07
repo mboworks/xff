@@ -4903,3 +4903,32 @@ archive ownership/scanning and release linking; original exact-image/compiler re
 incomplete. Later captures are explicitly later. This is not current-main runtime qualification.
 A duplicate fresh draft was stopped before compilation/timing. Retain future directory-specific
 index designs separately and do not repeat this unchanged container policy until favorable.
+
+### O31: compiled field demand, template-only admission and retained costs
+
+Implicit output previously forced eager metadata for every compiled template or column, even
+literal/path-only output. The field registry now owns a conservative stat requirement; compiled
+segments retain it and planning queries it once. Only implicit templates use it for admission.
+Columns remain eager after a repeated Linux many-directory/10,000-file/three-CPU TSV cost of
+about +24% rejected the combined policy. There is no OS, timer, count or CPU threshold.
+Fuzzy-score observation stays independent, preserving template/column scores and per-entry reset.
+
+[The complete decision, raw capsule and all-cell analysis](benchmarks/compiled-field-stat-demand-20261107.md)
+retain initial screens, the original fuzzy correctness failure, corrected combined runs and the
+separate template-only current-main experiment. Template-only native cohort medians improve
+about 1-4% on Mac and 2-11% on Linux; memory targets improve about 6-17%. Costs are not hidden:
+Mac serial memory plain/size cohorts are +3.24%/+4.04%, individual Linux native size controls
+reach about +5.6%/+7.7%, and Mac parallel memory repeat variability limits precision. This is a
+targeted optimization with documented tradeoffs, not a universal no-regression claim.
+
+The separate variant is based on `1786340680499f50b08dee5b1ceffbc20fd7b533`. Both-host seven
+focused suites and all 323 targets pass, as do ASan on both hosts and focused MSan/TSan on Linux.
+Parent proofs reproduce 1,001 stat requests rather than one for four template forms at one/three
+workers;
+columns retain their old eager expectations. Actual shipping-config compile/link action and
+frozen-image receipts are retained; the measurement-only harness is restored. These development
+results do not substitute for current synchronized public-head checks.
+
+Column pipeline causes, score-consumer-specific demand and conditional stat-bearing field
+admission remain separate future work. Do not reopen the combined policy unchanged or use a
+cohort median to hide its slower case.
