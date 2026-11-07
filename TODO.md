@@ -507,6 +507,12 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [ ] O19b3: Investigate immutable ZIP index/locator reuse and metadata-demand-aware reading before
       another general native-index policy. Avoid rebuilding the complete index for a first-member
       read; preserve format coverage, source identity, all visible members, exact sizes and budgets.
+      Retain the fully implemented immutable-memory locator prototype and both-host qualification in
+      [the locator evaluation](docs/benchmarks/immutable-zip-locator-evaluation-20261107.md).
+      Defer runtime adoption despite 47% later-read lifecycle gains: repeatable first-read costs are
+      +27% on Mac and +11% on Linux. Eliminate those costs without arbitrary count/size thresholds,
+      preserving identity, budgets, duplicate semantics, exact-content oracles and the rejected
+      root-offset variant. Native source identity and streamed-ZIP sizes remain separate open work.
 - [ ] O19b: Qualify archive seeking/index/replay and decoder admission independently. Investigate
       native/memory ZIP seeking before concurrency; preserve sequential-source and shared-budget fallbacks.
 - [x] O19c: Qualify caller-owned reads for immutable memory and archive-member cursors, including
