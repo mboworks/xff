@@ -218,11 +218,11 @@ experiment completed all 60 cases for the candidate and an identical-baseline co
 repeat adds 16 cells and 1,344 validated invocations. Broad 100,000-file listing is about 1% faster
 in both populations; broad metadata/date output is about 0.5% slower in both. Instruction counters
 show approximately 66 fewer user-space instructions per file in broad listing, a 2.75% reduction
-at 100,000 files. The snapshot grows from 88 to 96 bytes in the macOS construction probe. This is
-a separately reviewable candidate on `benchmark/lazy-content-state-20261107`, with the tradeoff
-documented in that branch's `docs/benchmarks/lazy-content-state-20261107.md`; it is not adopted by
-the benchmark tooling branch. macOS whole-command performance and hash-heavy workloads have not
-been qualified for this candidate.
+at 100,000 files. The snapshot grows from 88 to 96 bytes in the macOS construction probe. The
+measured implementation and its regression tests are now adopted unchanged on
+`benchmark/extended-history-20261107`: the repeatable listing gain is worth retaining, with the
+metadata tradeoff documented in the [experiment report](benchmarks/lazy-content-state-20261107.md).
+macOS whole-command performance and hash-heavy workloads have not been qualified for this change.
 The candidate has no PR number; its standalone measurement manifest uses zero as an explicit
 experiment label. It must not enter the merged-PR history or be combined with either earlier
 population. Source, tests, build identities and samples live under `lazy-content/` in the same

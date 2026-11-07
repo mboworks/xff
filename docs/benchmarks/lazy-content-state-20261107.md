@@ -2,12 +2,18 @@
 
 ## Conclusion
 
-The implementation reduces work in the production binary, with modest elapsed gains and a small
-repeated counterexample. Keep it as a separately reviewable candidate on
-`benchmark/lazy-content-state-20261107`; the benchmark tooling branch does not adopt it. Broad
-100,000-file listing is about 1% faster in both populations, while broad metadata/date output is
-about 0.5% slower in both. The result supports applying lazy inline state selectively, with explicit
-size and active-use measurements, rather than replacing owning pointers throughout the codebase.
+Adopt this implementation on `benchmark/extended-history-20261107`. Broad 100,000-file listing is
+about 1% faster in both measurement populations, supported by a repeatable reduction in executed
+instructions. A gain this small is still worth retaining even when it is hard to see on the 3D
+chart. Broad metadata/date output is about 0.5% slower in both populations; that measured tradeoff
+remains part of the adoption decision. This result supports this specific content-state change;
+other uses of lazy inline storage need their own size and active-use measurements.
+
+The production changes and regression tests were copied unchanged from the measured source
+`90abd2b3ef63b35833e8f9d96745475c6b9f182a`. The original experiment branch
+`benchmark/lazy-content-state-20261107` and its raw evidence remain available. The historical
+preview contains merged PRs and does not include this unmerged optimization; its timings remain
+in the separate experiment population below.
 
 ## Change and scope
 
