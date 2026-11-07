@@ -4970,3 +4970,18 @@ manual metadata reconciliation continues normally. API failures still fail rathe
 than masquerading as obsolete data. Fresh previews pay one bounded source/PR API check;
 no fixed elapsed-time improvement is claimed. Old queued workflow definitions retain
 their original steps, and rejected producer events still need independent recovery.
+
+### Post-merge measurement queue admission
+
+Main benchmark run `42354657340` for merge `1278c8943a6abd236a2f20e3937cc8e23a0f95a7`
+was automatically canceled while pending when the next main merge requested a run. The workflow
+already disabled active-run cancellation, but omitted `queue`, whose default permits only one
+pending run. This loses a requested revision before measurement and is separate from CPU-count
+agreement, runner performance, and publication backlogs. No agent cancellation caused this event.
+
+Use `queue: max` for the existing per-ref main measurement concurrency group, keeping
+`cancel-in-progress: false`. A committed workflow regression checks all three properties.
+GitHub permits up to 100 pending runs; overflow still cancels additional requests. Existing
+canceled revisions need explicit reconciliation/backfill, not a claim that changing the workflow
+recovered them. Measurement commands, sampling, CPU selection, artifact identity, PR checks and
+publication policies are unchanged. There is no runtime or elapsed-time improvement claim.
