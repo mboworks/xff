@@ -16,10 +16,12 @@
 #include "xff/archive/archive_backend.h"
 
 #include <array>
+#include <latch>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <vector>
 
 #include "absl/status/status.h"
@@ -37,6 +39,7 @@ using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
 using ::testing::AllOf;
+using ::testing::Each;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
@@ -85,6 +88,7 @@ struct ArchiveBackendTest : ::testing::Test {
     RegisterContainerOpener(ContainerOpener());
     RegisterContainerReader("test-a", ContainerOpener(), {});
     RegisterContainerReader("test-b", ContainerOpener(), {});
+    RegisterContainerReadFormats({});
     RegisterContainerMemberRemover(ContainerMemberRemover());
     RegisterContainerPacker(ContainerPacker(), {}, {});
   }
@@ -293,6 +297,72 @@ TEST_F(ArchiveBackendTest, TheNameGateRejectsEverydayFiles) {
     EXPECT_THAT(LooksLikeContainerName(name), IsFalse()) << name;
   }
   RegisterContainerReadFormats({});  // reset for the other tests in this process
+}
+
+TEST_F(ArchiveBackendTest, NameGateTracksReaderReplacementRemovalAndSharedSuffixes) {
+  const auto opener = [](std::string_view, std::optional<std::string_view>, MemberPathOptions) {
+    return std::make_unique<StubFileSystem>();
+  };
+  RegisterContainerReader("test-a", opener, {{.name = "a", .suffixes = {".a", ".shared"}}});
+  RegisterContainerReader("test-b", opener, {{.name = "b", .suffixes = {".b", ".shared"}}});
+  EXPECT_THAT(LooksLikeContainerName("one.a"), IsTrue());
+  EXPECT_THAT(LooksLikeContainerName("one.shared"), IsTrue());
+
+  RegisterContainerReader("test-a", opener, {{.name = "replacement", .suffixes = {".new"}}});
+  EXPECT_THAT(LooksLikeContainerName("one.a"), IsFalse());
+  EXPECT_THAT(LooksLikeContainerName("one.new"), IsTrue());
+  EXPECT_THAT(LooksLikeContainerName("one.shared"), IsTrue());
+
+  RegisterContainerReader("test-b", {}, {});
+  EXPECT_THAT(LooksLikeContainerName("one.b"), IsFalse());
+  EXPECT_THAT(LooksLikeContainerName("one.shared"), IsFalse());
+  EXPECT_THAT(LooksLikeContainerName("one.NEW"), IsTrue());
+  RegisterContainerReader("test-a", {}, {});
+  EXPECT_THAT(LooksLikeContainerName("one.new"), IsFalse());
+}
+
+TEST_F(ArchiveBackendTest, NameGateCombinesOverrideVocabularyWithReaderVocabulary) {
+  RegisterContainerReader(
+      "test-a",
+      [](std::string_view, std::optional<std::string_view>, MemberPathOptions) {
+        return std::make_unique<StubFileSystem>();
+      },
+      {{.name = "a", .suffixes = {".a"}}});
+  EXPECT_THAT(LooksLikeContainerName("one.a"), IsTrue());
+  EXPECT_THAT(LooksLikeContainerName("one.zip"), IsFalse());
+  RegisterContainerReadFormats({{.name = "zip", .suffixes = {".zip"}}});
+  EXPECT_THAT(LooksLikeContainerName("one.a"), IsTrue());
+  EXPECT_THAT(LooksLikeContainerName("one.zip"), IsTrue());
+  RegisterContainerReadFormats({{.name = "tar", .suffixes = {".tar.gz"}}});
+  EXPECT_THAT(LooksLikeContainerName("one.zip"), IsFalse());
+  EXPECT_THAT(LooksLikeContainerName("one.tar.GZ"), IsTrue());
+  RegisterContainerReadFormats({});
+  EXPECT_THAT(LooksLikeContainerName("one.tar.gz"), IsFalse());
+  EXPECT_THAT(LooksLikeContainerName("one.a"), IsTrue());
+}
+
+TEST_F(ArchiveBackendTest, NameGateSupportsConcurrentFirstQueriesAfterRegistration) {
+  RegisterContainerReadFormats({{.name = "zip", .suffixes = {".zip", ".jar"}}});
+  std::array<bool, 8> matches{};
+  std::latch ready(matches.size());
+  std::latch start(1);
+  std::vector<std::jthread> workers;
+  for (std::size_t index = 0; index < matches.size(); ++index) {
+    workers.emplace_back([&, index] {
+      ready.count_down();
+      start.wait();
+      bool correct = true;
+      for (int repeat = 0; repeat < 100; ++repeat) {
+        correct = correct && LooksLikeContainerName("one.ZIP") && LooksLikeContainerName("two.jar")
+                  && !LooksLikeContainerName("plain.txt");
+      }
+      matches.at(index) = correct;
+    });
+  }
+  ready.wait();
+  start.count_down();
+  workers.clear();  // Join before checking results or allowing registry teardown.
+  EXPECT_THAT(matches, Each(IsTrue()));
 }
 
 TEST_F(ArchiveBackendTest, ARegisteredOpenerIsUsedAndSeesTheMemberPathOptions) {
