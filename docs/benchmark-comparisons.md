@@ -85,6 +85,12 @@ branch head and tested merge commit, the base parent, and artifact identity. Onl
 from `main` executes with publication permissions. Uploaded HTML is ignored; bounded JSON is
 validated and rendered again. Waiting happens outside the shared writer lock. Preview updates
 reuse merged pages and their catalog instead of rebuilding every historical chart.
+After acquiring the writer lock, a queued PR preview rechecks the PR head, repository and source
+attempt before loading the retained site. An obsolete preview skips site checkout, expansion,
+artifact collection and rendering. Collection checks again after that admission check; if the PR
+becomes obsolete during loading, renderer setup and publication also skip. Current previews still
+receive the full artifact/provenance validation. Main, release, backfill and manual publications
+retain their normal processing and metadata refresh.
 Temporary GitHub read failures retry with bounded backoff; comment creation and updates are never
 blindly retried.
 
