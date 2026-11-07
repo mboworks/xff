@@ -1,5 +1,41 @@
 [
   {
+    "number": 1139,
+    "state": "open",
+    "merged_at": null,
+    "merge_commit_sha": "43d390ee3956e1c5ada138d6efee1027cd35485b"
+  },
+  {
+    "number": 1138,
+    "state": "open",
+    "merged_at": null,
+    "merge_commit_sha": "348eb72777203828f13fb592aebb04ec753c5429"
+  },
+  {
+    "number": 1137,
+    "state": "open",
+    "merged_at": null,
+    "merge_commit_sha": "76a37d0d61312619dea21cac96fac644907d13c7"
+  },
+  {
+    "number": 1136,
+    "state": "open",
+    "merged_at": null,
+    "merge_commit_sha": "617d663119e7fffca1b56daf2f83fec0db59ed4d"
+  },
+  {
+    "number": 1135,
+    "state": "open",
+    "merged_at": null,
+    "merge_commit_sha": "706faadd2f7b89c79ec14efa988275e6b1ad8a32"
+  },
+  {
+    "number": 1134,
+    "state": "open",
+    "merged_at": null,
+    "merge_commit_sha": "43882c46b3026717c08c9f8e9a90f3aa8da9930e"
+  },
+  {
     "number": 1133,
     "state": "open",
     "merged_at": null,
@@ -21,19 +57,19 @@
     "number": 1130,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": "741c4f5b46f0da652b8e165a66a9b5ca13c998c6"
+    "merge_commit_sha": "fb770314d248ea58eb593f95839aaf159e7b400b"
   },
   {
     "number": 1129,
-    "state": "open",
-    "merged_at": null,
-    "merge_commit_sha": "87d0469788df805023e7b427726260b7d551e4d7"
+    "state": "closed",
+    "merged_at": "2026-11-07T09:22:57Z",
+    "merge_commit_sha": "77aa9ef9bc9475adcbdd37cf3004143a96f03060"
   },
   {
     "number": 1128,
-    "state": "open",
-    "merged_at": null,
-    "merge_commit_sha": "dc34d1cd40cde8ea6f2a18bf799b811e6921cec5"
+    "state": "closed",
+    "merged_at": "2026-11-07T08:14:55Z",
+    "merge_commit_sha": "1278c8943a6abd236a2f20e3937cc8e23a0f95a7"
   },
   {
     "number": 1127,
