@@ -21,7 +21,7 @@ on:
 
 permissions: {}
 
-# Share the lock and retained branch with coverage: every deployment includes both.
+# Serialize retained-site updates with the other report producers.
 concurrency:
   group: coverage-pages
   queue: max
@@ -30,16 +30,11 @@ concurrency:
 jobs:
   publish:
     if: >-
-      github.event_name != 'workflow_run' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+      github.ref == 'refs/heads/main' && (github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -131,7 +126,7 @@ jobs:
             --repository "${GITHUB_REPOSITORY}" --tag "${RELEASE_TAG}" --latest "${LATEST_TAG}" \
             --generated generated \
             "${config_args[@]}"
-      - name: Retain and stage complete Pages tree
+      - name: Retain complete Pages tree
         env:
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
         run: |
@@ -145,14 +140,3 @@ jobs:
             git -C site commit -m "site: publish ${RELEASE_TAG}"
             git -C site push origin HEAD:coverage-pages
           fi
-          mkdir -p public
-          rsync --archive --exclude='.git' site/ public/
-          python3 source/tools/site_artwork.py source/docs/assets public
-          python3 source/tools/compact_site.py public
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: public
-      - name: Deploy complete site
-        id: deployment
-        uses: actions/deploy-pages@v5
