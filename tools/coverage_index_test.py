@@ -27,6 +27,33 @@ def _summary(percent: float) -> dict:
 
 
 class CoverageIndexTest(unittest.TestCase):
+    def test_deployment_coalesces_notifications_without_discarding_source_reports(self):
+        deployment = repository_file('.github/workflows/pages_deploy.yml').read_text()
+        self.assertIn('workflows: [Publish coverage, Publish benchmarks, Publish release site]', deployment)
+        self.assertIn('types: [completed]', deployment)
+        self.assertIn("github.event.workflow_run.conclusion == 'success'", deployment)
+        self.assertIn("github.ref == 'refs/heads/main'", deployment)
+        self.assertIn('    concurrency:\n      group: retained-pages-deployment\n      queue: single\n'
+                      '      cancel-in-progress: false', deployment)
+        self.assertIn('ref: coverage-pages\n          path: site\n          persist-credentials: false', deployment)
+        for forbidden in ('contents: write', 'git -C site push', 'publish_site.py', 'download-artifact@'):
+            self.assertNotIn(forbidden, deployment)
+        self.assertLess(deployment.index('actions/deploy-pages@'), deployment.index('Verify live benchmark publication'))
+        self.assertLess(deployment.index('Verify live benchmark publication'), deployment.index('comment-retained'))
+        self.assertIn('--index=public/benchmarks/index.html', deployment)
+        self.assertIn('--root=site/benchmarks', deployment)
+        self.assertNotIn('SOURCE_RUN', deployment)
+        for name in ('coverage_pages.yml', 'benchmark_pages.yml', 'pages.yml'):
+            producer = repository_file('.github/workflows/' + name).read_text()
+            with self.subTest(producer=name):
+                self.assertIn('queue: max', producer)
+                self.assertIn("github.ref == 'refs/heads/main'", producer)
+                self.assertNotIn('queue: single', producer)
+                self.assertNotIn('actions/deploy-pages@', producer)
+                self.assertNotIn('pages: write', producer)
+                self.assertNotIn('id-token: write', producer)
+                self.assertNotIn('pull-requests: write', producer)
+
     def test_metadata_refresh_shares_the_report_publication_queue(self):
         workflow = repository_file(".github/workflows/coverage_pages.yml").read_text()
         pages = repository_file(".github/workflows/pages.yml").read_text()
@@ -136,7 +163,8 @@ class CoverageIndexTest(unittest.TestCase):
             repository.mkdir()
             subprocess.run(["git", "init", "-q", str(repository)], check=True)
             subprocess.run(["git", "-C", str(repository), "-c", "user.name=Test",
-                            "-c", "user.email=test@example.com", "commit", "--allow-empty", "-qm", "merge"], check=True)
+                            "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false",
+                            "commit", "--allow-empty", "-qm", "merge"], check=True)
             sha = subprocess.check_output(["git", "-C", str(repository), "rev-parse", "HEAD"], text=True).strip()
             reports = root / "reports"
             original = {}

@@ -85,6 +85,7 @@ filegroup(
         ".github/workflows/fuzz.yml",
         ".github/workflows/main.yml",
         ".github/workflows/pages.yml",
+        ".github/workflows/pages_deploy.yml",
         ".github/workflows/release.yml",
     ],
     visibility = ["//tools:__pkg__"],

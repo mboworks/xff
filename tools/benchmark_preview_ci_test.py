@@ -6,6 +6,7 @@ import io
 import json
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -39,6 +40,62 @@ def artifacts():
 
 
 class BenchmarkPreviewCiTest(unittest.TestCase):
+    def test_coalesced_deployment_comments_on_every_current_pr_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            pulls = [pull(), dict(pull(), number=11)]
+            sources = {10: source(), 12: dict(source(), id=12, pull_requests=[{'number': 11}])}
+            for number, run in ((9, 10), (11, 12)):
+                for platform in ('linux', 'macos'):
+                    folder = root / f'previews/{number}/{run}/2/{platform}'
+                    folder.mkdir(parents=True)
+                    record = {'kind': 'pr-preview', 'pull_number': number, 'platform': platform,
+                              'head': 'c' * 40, 'branch_head': 'b' * 40, 'base': 'a' * 40,
+                              'source': sources[run],
+                              'tool_comparisons': {'tasks': [{'shape': 'legacy'}]}}
+                    (folder / 'report.json').write_text(json.dumps(record))
+            api = mock.Mock(repository='owner/repo')
+            api.pages.side_effect = lambda path: pulls if path == 'pulls?state=open' else []
+
+            def request(path, *args):
+                if path.startswith('actions/runs/'):
+                    return sources[int(path.rsplit('/', 1)[1])]
+                if path.startswith('pulls/'):
+                    return next(pr for pr in pulls if pr['number'] == int(path.rsplit('/', 1)[1]))
+                return {}
+
+            api.request.side_effect = request
+            url = 'https://example.org/project/benchmarks/'
+            self.assertEqual(ci.update_retained_comments(api, root, url), 2)
+            mutations = [call for call in api.request.call_args_list if len(call.args) > 1]
+            self.assertEqual([call.args[0] for call in mutations], ['issues/9/comments', 'issues/11/comments'])
+            for call, (number, run) in zip(mutations, ((9, 10), (11, 12))):
+                self.assertIn(f'{url}previews/{number}/{run}/2/linux/', call.args[1]['body'])
+            # A newer current attempt or a closed PR must never receive this snapshot's comment.
+            sources[10]['run_attempt'] = 3
+            pulls[1]['state'] = 'closed'
+            api.request.reset_mock()
+            self.assertEqual(ci.update_retained_comments(api, root, url), 0)
+            self.assertFalse(any(len(call.args) > 1 for call in api.request.call_args_list))
+
+    def test_source_operations_still_require_both_run_and_attempt(self):
+        for operation in ('wait', 'collect', 'comment'):
+            for arguments in ([], ['--run=10'], ['--attempt=2']):
+                with self.subTest(operation=operation, arguments=arguments), \
+                        mock.patch.object(sys, 'argv', ['preview', operation, '--repository=owner/repo', *arguments]), \
+                        mock.patch.object(sys, 'stderr', io.StringIO()), self.assertRaises(SystemExit) as error:
+                    ci.main()
+                self.assertEqual(error.exception.code, 2)
+
+    def test_retained_comment_command_uses_snapshot_without_a_triggering_source_run(self):
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.object(sys, 'argv', ['preview', 'comment-retained', '--repository=owner/repo',
+                                               '--root=' + directory, '--site-url=https://example.org/']), \
+                mock.patch.object(ci, 'GitHub') as github, \
+                mock.patch.object(ci, 'update_retained_comments', return_value=2) as update:
+            ci.main()
+            update.assert_called_once_with(github.return_value, Path(directory), 'https://example.org/')
+
     def test_collect_validates_tested_merge_and_retains_exact_json_from_each_platform(self):
         api = mock.Mock(repository='owner/repo')
         sample = dict.fromkeys(ci.benchmark_preview.benchmark_compare.METRICS, 1)
