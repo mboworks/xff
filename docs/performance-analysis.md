@@ -4796,3 +4796,27 @@ and four focused canonical ASan targets. These development results require the
 current integration PR's own coverage, sanitizer, GCC and CI clang-tidy checks.
 O18's byte admission, ordered completion, oversized output and cancellation work
 remains open.
+
+### O25: final language database string storage
+
+[Current production-function qualification](benchmarks/language-json-storage-20261107.md)
+compares the actual baseline/candidate decoder with identical byte-exact fixtures,
+source/configuration/image identities and a repeated-baseline control. Three sessions
+of nine repetitions retaining seven show direct-buffer decode-plus-copy gains of
+6.05% on Mac and 2.87% on Linux. Comparing the old decode/retained-copy path with the
+new decode/retained-move path improves 9.87%/3.90%; that comparison includes both
+mechanisms. The lazy payload is 109,261 bytes and ordinary listing does not load it.
+
+Current full-command type-list changes are -0.24% Mac/+0.58% Linux, with same-binary
+controls +1.26%/+0.36%. Unchanged listing costs +1.28%/+0.59% remain visible. There is
+no material startup-speed or measured RSS claim. Earlier kernels and an inconclusive
+500-launch summary remain separately labeled with their provenance limitations.
+Temporary benchmark rules/fixtures were archived and removed; no module dependency
+or permanent research target is added.
+
+Both hosts pass all 323 documented-surface/core/registered-extension release targets
+and three relevant canonical ASan targets; Linux also passes those three under MSan.
+Empty valid output, too-small destinations, corrupt data and exact-size mismatch
+retain committed coverage. Current integration PR checks remain authoritative. This
+small ownership cleanup does not complete the broader immutable-catalog/first-parse
+investigation or imply a user-visible command improvement.
