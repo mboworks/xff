@@ -39,6 +39,10 @@ struct Derivation {
 // Invalidate at effect boundaries and before using a different entry. Views expire on invalidation.
 class Snapshot final {
  public:
+  // Keep unused inline storage unconstructed, including when an enclosing context is
+  // value-initialized. A defaulted constructor could zero-initialize the whole snapshot.
+  Snapshot() : state_(std::nullopt) {}
+
   absl::StatusOr<std::string_view> Read(const vfs::FileSystem& fs, std::string_view path) const;
   std::optional<std::string> Digest(const vfs::FileSystem& fs, std::string_view path, const hash::AlgoEncoding& spec)
       const;
@@ -56,7 +60,7 @@ class Snapshot final {
   // a VFS read and the returned snapshot owns no raw content, including on a cached read error.
   Snapshot TakeDerived(const Derivation& request, const vfs::FileSystem& fs, std::string_view path) &&;
 
-  bool Loaded() const { return bytes_.has_value(); }
+  bool Loaded() const { return state_ && state_->bytes.has_value(); }
 
  private:
   const std::optional<std::string>& DigestValue(
@@ -64,9 +68,16 @@ class Snapshot final {
       std::string_view path,
       const hash::AlgoEncoding& spec) const;
 
-  mutable std::optional<absl::StatusOr<std::string>> bytes_;
-  mutable std::map<std::pair<std::string, hash::Encoding>, std::optional<std::string>> digests_;
-  mutable std::optional<std::optional<std::size_t>> lines_;
+  struct State {
+    std::optional<absl::StatusOr<std::string>> bytes;
+    std::map<std::pair<std::string, hash::Encoding>, std::optional<std::string>> digests;
+    std::optional<std::optional<std::size_t>> lines;
+  };
+
+  State& Storage() const { return state_ ? *state_ : state_.emplace(); }
+
+  // Reserve cache storage with the evaluator, but construct it only for a content consumer.
+  mutable std::optional<State> state_;
 };
 
 }  // namespace xff::content
