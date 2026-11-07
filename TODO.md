@@ -797,6 +797,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 
 ## Benchmark publication follow-up
 
+- [x] Preserve up to 100 pending main benchmark runs instead of replacing the previous pending
+      merge's measurement; keep active runs and exact revision identities.
+- [ ] Reconcile missing main measurements after queue cancellation or overflow against retained
+      reports and source artifacts; backfill only missing revisions, without replacing existing data.
 - [ ] Retain separate macOS and Linux HTML reports plus raw JSON, with commit, build,
       hardware/runner and measurement-contract identities. Local temporary previews are not release assets.
 - [ ] Publish post-merge reports as official results and pre-merge reports as labeled PR previews.
