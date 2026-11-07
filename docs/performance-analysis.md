@@ -4820,3 +4820,19 @@ Empty valid output, too-small destinations, corrupt data and exact-size mismatch
 retain committed coverage. Current integration PR checks remain authoritative. This
 small ownership cleanup does not complete the broader immutable-catalog/first-parse
 investigation or imply a user-visible command improvement.
+
+### O27c: reject hinted archive ancestor insertion after both-host screen
+
+[The isolated hinted-insertion report](benchmarks/archive-ancestor-hint-20261107.md)
+retains owned ancestor keys and mapped-value construction, changing only the ordered
+lookup and missing-node insertion hint. All 28 complete construction fixture oracles
+and three optimized archive targets pass on both hosts. One three-repetition screen
+retaining two improves Linux shape medians 2.89-4.35%, but Mac results are mixed:
+wide-short +10.53% and flat/100,000 +13.97%, against same-image repeats -1.09% and -0.79%.
+The ancestor branch does not execute for flat members; no causal explanation is claimed.
+
+Stop at the predeclared screen rather than selecting the Linux result or repeating
+until favorable. No full three-session population, native/listing expansion or new
+full-root/sanitizer qualification is claimed. Preserve both complete populations,
+source/image identities, the failed pre-timing executable-mode setup and raw controls.
+O27a, O27b and O27c are now separately evaluated without changing the production index.
