@@ -16,6 +16,8 @@ class BenchmarkExtendedReportTest(unittest.TestCase):
                 'commands': {'xff': ['/old/xff'], 'anchor': ['/new/xff'], 'tar': ['/bin/tar']},
                 'samples': [dict(label=label, round=repetition, phase='measured' if repetition else 'warmup',
                                  elapsed_seconds=seconds if repetition else 500,
+                                 user_cpu_seconds=seconds / 2, system_cpu_seconds=seconds / 4,
+                                 peak_child_rss_bytes=seconds * 1000, first_stdout_seconds=seconds / 10,
                                  exit_codes=[0], stderr_bytes=0, validated_records=50)
                             for repetition in range(4) for label, seconds in [('xff', 4), ('anchor', 2), ('tar', 8)]]}
 
@@ -31,6 +33,12 @@ class BenchmarkExtendedReportTest(unittest.TestCase):
         self.assertEqual(result['current_time_reduction_percent'], 50)
         self.assertEqual(result['paired_ratio_ci_low'], 2)
         self.assertEqual(result['paired_ratio_ci_high'], 2)
+        self.assertEqual(result['xff_cpu_seconds'], 3)
+        self.assertEqual(result['anchor_cpu_seconds'], 1.5)
+        self.assertEqual(result['xff_user_cpu_seconds'], 2)
+        self.assertEqual(result['xff_system_cpu_seconds'], 1)
+        self.assertEqual(result['xff_rss_bytes'], 4000)
+        self.assertEqual(result['xff_first_stdout_seconds'], .4)
 
     def test_missing_duplicate_and_incorrect_samples_are_rejected(self):
         row = self.row()
@@ -61,6 +69,46 @@ class BenchmarkExtendedReportTest(unittest.TestCase):
             self.assertEqual(set(task['participants']), expected)
             for participant in task['participants'].values():
                 self.assertEqual(len(participant['samples']), 3)
+
+    def test_task_summary_requires_complete_unique_shape_worker_population(self):
+        contract = self.contract()
+        contract['cases'].append(dict(contract['cases'][0], cpus=3))
+        first = report.summarize_cell(self.row(), contract)
+        second = dict(first, cpus=3, historical_over_current=8, reference_over_xff=8)
+        self.assertEqual(report.task_summaries([first], contract), [])
+        group = report.task_summaries([first, second], contract)[0]
+        self.assertEqual(group['cells'], 2)
+        self.assertEqual(group['historical_over_current_geomean'], 4)
+        self.assertEqual(group['xff_over_reference_geomean'], .25)
+        self.assertEqual(group['xff_over_reference_cpu_geomean'], .5)
+        with self.assertRaises(ValueError):
+            report.task_summaries([first, first, second], contract)
+
+    def test_resource_summary_uses_samples_selected_by_wall_time(self):
+        row = self.row()
+        # A slow timing with tiny CPU must not enter the fastest-two resource mean.
+        slow = next(sample for sample in row['samples']
+                    if sample['label'] == 'xff' and sample['round'] == 3)
+        slow.update(elapsed_seconds=100, user_cpu_seconds=.01, system_cpu_seconds=.01)
+        result = report.summarize_cell(row, self.contract())
+        self.assertEqual(result['xff_seconds'], 4)
+        self.assertEqual(result['xff_cpu_seconds'], 3)
+
+    def test_current_reference_summary_uses_fixed_anchor_and_preserves_cells(self):
+        first = report.summarize_cell(self.row(), self.contract())
+        second = dict(first, sha='other', xff_seconds=100, historical_over_current=50)
+        separate = dict(first, files=1000)
+        summaries = report.current_reference_summaries([first, second, separate])
+        self.assertEqual(len(summaries), 2)
+        self.assertEqual(summaries[0]['historical_contexts'], 2)
+        self.assertEqual(summaries[0]['current_over_reference_geomean'], .25)
+        self.assertEqual(summaries[0]['current_over_reference_p10'], .25)
+        self.assertEqual(summaries[0]['current_over_reference_p90'], .25)
+        self.assertEqual(summaries[0]['current_over_reference_cpu_geomean'], .25)
+        self.assertEqual(summaries[1]['historical_contexts'], 1)
+        self.assertEqual(summaries[1]['current_over_reference_p10'], .25)
+        with self.assertRaises(ValueError):
+            report.current_reference_summaries([first, first])
 
 
 if __name__ == '__main__':

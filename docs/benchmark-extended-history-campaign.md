@@ -87,9 +87,16 @@ python3.13 tools/benchmark_extended_report.py \
 ```
 
 The report exports every cell to CSV, endpoint summaries/control noise to JSON, and two datasets
-using the existing 3D history viewer: traditional tools and fixed-current XFF comparisons. Serve
-the report directory over HTTP for JSON fetches. `--allow-partial` is for monitoring; the default
-refuses incomplete campaigns.
+using the existing 3D history viewer: traditional tools and fixed-current XFF comparisons.
+The cell CSV includes user/kernel CPU, peak child RSS and first-output latency, taken from the
+same samples selected by wall time. `history-by-task.csv` equally weights the shape/worker
+combinations using geometric means at each task/size; it omits incomplete groups. These grouped
+ratios supplement the individual measured cells rather than replacing them.
+`current-versus-reference.csv` uses the fixed-current participant from every historical block
+to describe the remaining reference-tool gap for each individual case. Its 10th/90th percentiles
+describe the observed spread across those blocks, not confidence across independent machines.
+Serve the report directory over HTTP for JSON fetches. `--allow-partial` is for monitoring; the
+default refuses incomplete campaigns.
 
 The historical LLVM 22 linker on drogon requires ICU 70. System installation required interactive
 sudo authentication, so the official Ubuntu `libicu70_70.1-2ubuntu1_amd64.deb` was extracted into
@@ -114,10 +121,21 @@ On `drogon.boerger.online`, the root is `/home/marcus/Documents/xff-chart-campai
 - `measurements/cells/.../attempts/`: warm-ups, samples and failure evidence.
 - `qualified/logs/build-campaign.log` and `logs/measurements.log`: progress logs.
 
-The 240 endpoint functional checks and native-worker checks passed. Historical build/measurement
-collection is in progress; these functional checks establish no performance improvement.
+The 240 endpoint functional checks and native-worker checks passed. All 130 production builds
+completed before timing collection. The
+[build summary](benchmarks/extended-history-builds-20261107.json) records 77 distinct executable
+hashes; 53 adjacent revision pairs have identical executable bytes. PRs #1128, #1129 and #1130
+also share the current executable hash, providing identical-binary controls in the campaign.
+
+Measurement collection is in progress. A separate endpoint repeat is queued after successful
+completion: every one of the 60 predeclared cases at both endpoints, fresh tmpfs fixtures,
+27 measured rounds retaining the fastest 21. It uses the same frozen production binaries and
+does not select only favorable cases. The repeated data has its own contract and directory
+(`confirmation/`) and must not be merged with the nine-round historical population. Before the
+repeat, an independent pass rehashes all 130 retained binaries and their build/link evidence.
 Select CI workloads from completed results, retain the simple control, and report flat or
-regressing cases alongside improvements.
+regressing cases alongside improvements. A historical improvement alone does not establish that
+XFF is competitive with its traditional reference.
 
 The [synthetic viewer check](benchmarks/extended-history-viewer-check-20261107.json) verifies
 both exported dataset views in Chromium. Both historical versions produce their exact expected

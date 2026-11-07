@@ -60,13 +60,74 @@ def summarize_cell(row, contract):
         raise ValueError('expected one traditional reference')
     reference = references.pop()
     lower, upper = paired_interval(participants['xff'], participants['anchor'])
+    resources = {}
+    for label, prefix in [('xff', 'xff'), ('anchor', 'anchor'), (reference, 'reference')]:
+        selected = sorted(participants[label], key=lambda sample: sample['elapsed_seconds'])[:contract['keep']]
+        resources[prefix + '_cpu_seconds'] = statistics.fmean(
+            sample['user_cpu_seconds'] + sample['system_cpu_seconds'] for sample in selected)
+        for kind in ('user', 'system'):
+            resources[prefix + '_' + kind + '_cpu_seconds'] = statistics.fmean(
+                sample[kind + '_cpu_seconds'] for sample in selected)
+        resources[prefix + '_rss_bytes'] = statistics.fmean(sample['peak_child_rss_bytes'] for sample in selected)
+        resources[prefix + '_first_stdout_seconds'] = statistics.fmean(sample['first_stdout_seconds'] for sample in selected)
     return dict(row['case'], sha=row['revision']['sha'], pr=row['revision']['pr'],
                 binary_sha256=row['revision']['binary_sha256'], reference=reference,
                 xff_seconds=means['xff'], anchor_seconds=means['anchor'], reference_seconds=means[reference],
                 reference_over_xff=means[reference] / means['xff'],
                 historical_over_current=means['xff'] / means['anchor'],
                 current_time_reduction_percent=100 * (1 - means['anchor'] / means['xff']),
-                paired_ratio_ci_low=lower, paired_ratio_ci_high=upper)
+                paired_ratio_ci_low=lower, paired_ratio_ci_high=upper, **resources)
+
+
+def task_summaries(rows, contract):
+    """Equally weight the measured shape/worker combinations at each task and size."""
+    populations = defaultdict(list)
+    for row in rows:
+        populations[(row['sha'], row['name'], row['files'])].append(row)
+    expected = defaultdict(set)
+    for case in contract['cases']:
+        expected[(case['name'], case['files'])].add((case['shape'], case['cpus']))
+    summaries = []
+    for (sha, name, files), group in populations.items():
+        if {(row['shape'], row['cpus']) for row in group} != expected[(name, files)]:
+            continue
+        if len(group) != len(expected[(name, files)]):
+            raise ValueError('duplicate shape/worker measurements in task summary')
+        summaries.append({'sha': sha, 'pr': group[0]['pr'], 'name': name, 'files': files,
+                          'cells': len(group), 'binary_sha256': group[0]['binary_sha256'],
+                          'historical_over_current_geomean': statistics.geometric_mean(
+                              row['historical_over_current'] for row in group),
+                          'xff_over_reference_geomean': statistics.geometric_mean(
+                              1 / row['reference_over_xff'] for row in group),
+                          'xff_over_reference_cpu_geomean': statistics.geometric_mean(
+                              row['xff_cpu_seconds'] / row['reference_cpu_seconds'] for row in group)})
+    return summaries
+
+
+def current_reference_summaries(rows):
+    """Describe the repeated fixed-current/reference pairs across historical blocks.
+
+    The spread is an observed distribution, not a confidence interval over machines.
+    Historical timings do not enter these ratios.
+    """
+    populations = defaultdict(list)
+    for row in rows:
+        populations[(row['name'], row['shape'], row['files'], row['cpus'])].append(row)
+    summaries = []
+    for (name, shape, files, cpus), group in populations.items():
+        if len({row['sha'] for row in group}) != len(group):
+            raise ValueError('duplicate historical context in current/reference summary')
+        ratios = sorted(row['anchor_seconds'] / row['reference_seconds'] for row in group)
+        deciles = statistics.quantiles(ratios, n=10, method='inclusive') if len(ratios) > 1 else ratios * 9
+        summaries.append({'name': name, 'shape': shape, 'files': files, 'cpus': cpus,
+                          'historical_contexts': len(group), 'reference': group[0]['reference'],
+                          'current_over_reference_geomean': statistics.geometric_mean(ratios),
+                          'current_over_reference_median': statistics.median(ratios),
+                          'current_over_reference_p10': deciles[0],
+                          'current_over_reference_p90': deciles[8],
+                          'current_over_reference_cpu_geomean': statistics.geometric_mean(
+                              row['anchor_cpu_seconds'] / row['reference_cpu_seconds'] for row in group)})
+    return summaries
 
 
 def as_report(rows, contract, view):
@@ -96,12 +157,12 @@ def as_report(rows, contract, view):
                          'estimator': 'mean-fastest'}, 'tasks': tasks}
 
 
-def export_viewer(output, contract, revisions, renderer):
+def export_viewer(output, contract, revisions, renderer, incomplete=False):
     assets = output / 'assets'
     assets.mkdir(exist_ok=True)
     shutil.copyfile(renderer, assets / 'three-landscape.js')
     catalog = []
-    for view, title in [('traditional', 'Traditional tools'), ('anchor', f'Fixed XFF at PR #{contract["anchor"]["pr"]}')]:
+    for view, title in [('traditional', 'Traditional tools'), ('anchor', f'XFF history (fixed PR #{contract["anchor"]["pr"]})')]:
         reports = [(revision, rows, as_report(rows, contract, view)) for revision, rows in revisions]
         order = landscape.common_task_order([matrix.relative_results(report) for _, _, report in reports])
         for revision, rows, report in reports:
@@ -125,12 +186,16 @@ def export_viewer(output, contract, revisions, renderer):
                                        'reason': 'Clean historical source, configured production ThinLTO build, frozen executable hash checked before and after collection.'},
                             'identity': 'Drogon Linux extended qualification', 'platform_details': contract['platform']})
     (output / 'catalog.json').write_text(json.dumps(catalog, indent=2) + '\n')
+    status = '<p><strong>Collection in progress. Only complete revisions are shown.</strong></p>' if incomplete else ''
     intro = ('<!doctype html><html lang="en"><meta charset="utf-8"><title>Extended benchmark history</title>'
              '<style>body{font:16px system-ui;margin:1.5rem}summary{cursor:pointer}</style>'
-             '<h1>Extended benchmark history</h1><p>Independent extended suite; production full binaries on Linux tmpfs. '
+             '<h1>Extended benchmark history</h1>' + status + '<p>Independent extended suite; production full binaries on Linux tmpfs. '
              'Each historical run is interleaved with the fixed current binary and a traditional tool. '
-             f'{len(revisions)} complete revisions are shown, including regressions and unchanged controls.</p>')
-    (output / 'index.html').write_text(intro + landscape.history_panel(catalog) + '</html>')
+             f'{len(revisions)} complete revisions are shown, including regressions and unchanged controls.</p>'
+             '<p>The XFF history dataset compares the selected historical binary with the fixed current one. '
+             'Its current revision is an identical-binary control and should be near zero.</p>')
+    panel = landscape.history_panel(catalog).replace('<option value="raw">Raw</option>', '<option value="raw" selected>Raw</option>')
+    (output / 'index.html').write_text(intro + panel + '</html>')
 
 
 def main():
@@ -169,6 +234,17 @@ def main():
         writer = csv.DictWriter(file, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
+    groups = task_summaries(rows, contract)
+    if groups:
+        with (output / 'history-by-task.csv').open('w') as file:
+            writer = csv.DictWriter(file, fieldnames=list(groups[0]))
+            writer.writeheader()
+            writer.writerows(groups)
+    current = current_reference_summaries(rows)
+    with (output / 'current-versus-reference.csv').open('w') as file:
+        writer = csv.DictWriter(file, fieldnames=list(current[0]))
+        writer.writeheader()
+        writer.writerows(current)
     controls = [row for row in rows if row['binary_sha256'] == contract['anchor']['binary_sha256']]
     noise = sorted(abs(math.log(row['historical_over_current'])) for row in controls)
     summary = {'recipe': contract['recipe'], 'state': progress['state'], 'cells': len(rows),
@@ -176,12 +252,14 @@ def main():
                'identical_binary_control_cells': len(controls),
                'control_p95_factor': math.exp(noise[min(len(noise) - 1, int(len(noise) * .95))]) if noise else None,
                'interval': '95% paired-round bootstrap geometric ratio; within-cell variability only',
+               'task_summary': 'Geometric means equally weight all declared shape/worker combinations; incomplete groups are omitted.',
+               'current_reference_summary': 'Fixed-current/reference ratios across historical blocks; p10/p90 describe observed spread, not independent-machine confidence.',
                'contract_sha256': hashlib.sha256((root / 'contract.json').read_bytes()).hexdigest(),
                'endpoints': {str(revision['pr']): [row for row in rows if row['sha'] == revision['sha']]
                              for revision in (contract['revisions'][0], contract['revisions'][-1])}}
     (output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
     if args.renderer_js and revisions:
-        export_viewer(output, contract, revisions, args.renderer_js)
+        export_viewer(output, contract, revisions, args.renderer_js, incomplete=progress['state'] != 'complete')
     print(json.dumps({key: value for key, value in summary.items() if key != 'endpoints'}, indent=2))
 
 
