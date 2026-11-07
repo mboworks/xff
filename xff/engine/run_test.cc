@@ -4287,6 +4287,15 @@ TEST_F(NativeCaseRunTest, ReachedNativePredicatesShareTheEntryCaseResolution) {
   EXPECT_THAT(filesystem.case_probes, Eq(1));
 }
 
+TEST_F(NativeCaseRunTest, CaseSensitiveResolutionIsAlsoCachedAcrossReachedPredicates) {
+  const NativeCaseProbeFs filesystem(false);
+  const auto result = RunCase(filesystem, {"(", "-name", "foo.txt", "-o", "-path", "/FAKE/FOO.TXT", ")", "-print"});
+  EXPECT_THAT(result.output, IsEmpty());
+  EXPECT_THAT(result.run.errors, Eq(0));
+  EXPECT_THAT(filesystem.file_stats, Eq(1));
+  EXPECT_THAT(filesystem.case_probes, Eq(1));
+}
+
 TEST_F(NativeCaseRunTest, RequiredNativeCaseMetadataFailureCannotBeNegatedIntoAMatch) {
   NativeCaseProbeFs filesystem(true);
   filesystem.fail_metadata = true;
@@ -4305,6 +4314,28 @@ TEST_F(NativeCaseRunTest, ExplicitFoldingDoesNotResolveNativeCase) {
   EXPECT_THAT(result.output, EqualsText("/fake/Foo.txt\n"));
   EXPECT_THAT(result.run.errors, Eq(0));
   EXPECT_THAT(filesystem.file_stats, Eq(0));
+  EXPECT_THAT(filesystem.case_probes, Eq(0));
+}
+
+TEST_F(NativeCaseRunTest, NativeFuzzyMatchingStillResolvesCaseWhenReached) {
+  for (const bool folding : {false, true}) {
+    const NativeCaseProbeFs filesystem(folding);
+    const auto result = RunCase(filesystem, {"-fuzzy", "Foo", "-print"});
+    EXPECT_THAT(result.output, EqualsText("/fake/Foo.txt\n"));
+    EXPECT_THAT(result.run.errors, Eq(0));
+    EXPECT_THAT(filesystem.file_stats, Eq(1));
+    EXPECT_THAT(filesystem.case_probes, Eq(1));
+  }
+}
+
+TEST_F(NativeCaseRunTest, NativeFuzzyMetadataFailureCannotBeNegatedIntoAMatch) {
+  NativeCaseProbeFs filesystem(true);
+  filesystem.fail_metadata = true;
+  const auto result = RunCase(filesystem, {"!", "-fuzzy", "Foo", "-print"});
+  EXPECT_THAT(result.output, IsEmpty());
+  EXPECT_THAT(result.run.errors, Eq(1));
+  EXPECT_THAT(result.errors, ElementsAre(StatusIs(absl::StatusCode::kNotFound, HasSubstr("disappeared"))));
+  EXPECT_THAT(filesystem.file_stats, Eq(1));
   EXPECT_THAT(filesystem.case_probes, Eq(0));
 }
 

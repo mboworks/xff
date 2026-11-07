@@ -229,6 +229,16 @@ population. Source, tests, build identities and samples live under `lazy-content
 campaign root. The empty map previously allocated nothing: the hypothesis concerns construction,
 destruction and movement of unused cache state, not removing a per-file map allocation.
 
+The next basic-operation qualification applies four changes to startup, expression results,
+explicit output storage and directory path construction. The direct Linux comparison reduces
+large-listing userspace instructions by 6-10%, with elapsed gains smaller than those instruction
+reductions. Results, remaining find gaps, build identities and next investigation targets are in
+[the basic-operation report](benchmarks/find-listing-optimization-20261107.md). Its experiment
+catalogs remain separate from merged history. A fifth change defers native filesystem case
+resolution until it can change a match. On the Mac RAM fixture, 100,000-file name filtering
+takes 71% less time than the four-change binary and 25% less time than GNU find; the complete
+Linux controls, smaller cases and remaining listing gaps are retained in the same report.
+
 The [synthetic viewer check](benchmarks/extended-history-viewer-check-20261107.json) verifies
 both exported dataset views in Chromium. Both historical versions produce their exact expected
 heights; 60 measured points remain present and all 20 unavailable cells remain empty. This
