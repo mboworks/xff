@@ -147,13 +147,14 @@ class BenchmarkCampaignTest(unittest.TestCase):
                          [([HEAD], None, 'linux'), ([HEAD], None, 'macos')])
 
     def test_historical_linux_runner_is_pinned_and_earlier_plans_remain_valid(self):
-        self.assertEqual(campaign.PLATFORMS['linux'], ('ubuntu-22.04', 'x86_64'))
-        selected = plan()
-        for job in selected['jobs']:
-            if job['platform'] == 'linux':
-                job['os'] = 'ubuntu-latest'
-        selected['identity'] = campaign.identity({key: value for key, value in selected.items() if key != 'identity'})
-        campaign.validate_plan(selected)
+        self.assertEqual(campaign.PLATFORMS['linux'], ('ubuntu-24.04', 'x86_64'))
+        for runner in ('ubuntu-latest', 'ubuntu-22.04'):
+            selected = plan()
+            for job in selected['jobs']:
+                if job['platform'] == 'linux':
+                    job['os'] = runner
+            selected['identity'] = campaign.identity({key: value for key, value in selected.items() if key != 'identity'})
+            campaign.validate_plan(selected)
 
     def test_explicit_linux_only_retry_does_not_schedule_macos(self):
         revision = plan()['jobs'][0]['revision']
@@ -162,7 +163,7 @@ class BenchmarkCampaignTest(unittest.TestCase):
             selected = campaign.make_plan(Path('/repo'), Path('/history'), [HEAD], ['linux'])
         self.assertEqual(selected['platforms'], ['linux'])
         self.assertEqual([(job['platform'], job['os']) for job in selected['jobs']],
-                         [('linux', 'ubuntu-22.04')])
+                         [('linux', 'ubuntu-24.04')])
         campaign.validate_plan(selected)
 
     def test_plan_rejects_mutation_duplicates_partial_grid_and_missing_platform(self):

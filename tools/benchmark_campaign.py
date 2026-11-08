@@ -16,9 +16,9 @@ import benchmark_backfill as backfill
 import benchmark_compare as compare
 import benchmark_records
 
-# Historical LLVM 22/23 linkers require the Ubuntu 22.04 libxml2/ICU ABI.
-# Keep the measurement runner pinned instead of changing historical toolchains.
-PLATFORMS = {'linux': ('ubuntu-22.04', 'x86_64'), 'macos': ('macos-latest', 'arm64')}
+# Ubuntu 24.04 meets production glibc requirements; the workflow installs ICU 70
+# for historical LLVM 22/23 without changing those revisions' toolchains.
+PLATFORMS = {'linux': ('ubuntu-24.04', 'x86_64'), 'macos': ('macos-latest', 'arm64')}
 FILE_COUNTS = [*compare.DEFAULT_FILE_COUNTS, 20000, 50000, 100000]
 
 
@@ -75,7 +75,7 @@ def validate_plan(plan):
         require(re.fullmatch('[0-9a-f]{40}', sha), 'invalid historical revision')
         require(datetime.fromisoformat(job['revision']['date']).tzinfo is not None,
                 'historical commit date requires a timezone')
-        runners = {'ubuntu-latest', 'ubuntu-22.04'} if platform == 'linux' else {'macos-latest'}
+        runners = {'ubuntu-latest', 'ubuntu-22.04', 'ubuntu-24.04'} if platform == 'linux' else {'macos-latest'}
         require(platform in PLATFORMS and job['os'] in runners and job['arch'] == PLATFORMS[platform][1],
                 'invalid campaign platform')
         require(job['id'] == platform + '-' + sha and job['id'] not in ids, 'duplicate or invalid campaign job')
