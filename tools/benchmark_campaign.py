@@ -16,7 +16,9 @@ import benchmark_backfill as backfill
 import benchmark_compare as compare
 import benchmark_records
 
-PLATFORMS = {'linux': ('ubuntu-latest', 'x86_64'), 'macos': ('macos-latest', 'arm64')}
+# Historical LLVM 22/23 linkers require the Ubuntu 22.04 libxml2/ICU ABI.
+# Keep the measurement runner pinned instead of changing historical toolchains.
+PLATFORMS = {'linux': ('ubuntu-22.04', 'x86_64'), 'macos': ('macos-latest', 'arm64')}
 FILE_COUNTS = [*compare.DEFAULT_FILE_COUNTS, 20000, 50000, 100000]
 
 
@@ -29,10 +31,12 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def make_plan(repo, history_root, references=None):
+def make_plan(repo, history_root, references=None, platforms=None):
     tools = {'xff': {'path': 'xff'}, 'find': {}, 'rg': {}, 'fzf': {}}
     jobs = []
     for platform, (runner, arch) in PLATFORMS.items():
+        if platforms and platform not in platforms:
+            continue
         for revision in backfill.revisions(repo, references or [], None if references else history_root, platform):
             jobs.append({'id': platform + '-' + revision['sha'], 'platform': platform,
                          'os': runner, 'arch': arch, 'revision': revision})
@@ -43,6 +47,8 @@ def make_plan(repo, history_root, references=None):
                          'repetitions': 9, 'retained': 7, 'driver': backfill.driver_identity(),
                          'tasks': {name: sorted(participants) for name, _, participants in
                                    compare.scenarios(Path('.'), [], tools)}}}
+    if platforms:
+        plan['platforms'] = sorted(set(platforms))
     plan['identity'] = identity(plan)
     validate_plan(plan)
     return plan
@@ -66,11 +72,15 @@ def validate_plan(plan):
         require(re.fullmatch('[0-9a-f]{40}', sha), 'invalid historical revision')
         require(datetime.fromisoformat(job['revision']['date']).tzinfo is not None,
                 'historical commit date requires a timezone')
-        require(platform in PLATFORMS and (job['os'], job['arch']) == PLATFORMS[platform],
+        runners = {'ubuntu-latest', 'ubuntu-22.04'} if platform == 'linux' else {'macos-latest'}
+        require(platform in PLATFORMS and job['os'] in runners and job['arch'] == PLATFORMS[platform][1],
                 'invalid campaign platform')
         require(job['id'] == platform + '-' + sha and job['id'] not in ids, 'duplicate or invalid campaign job')
         ids.add(job['id'])
-    require({job['platform'] for job in plan['jobs']} == set(PLATFORMS), 'both CI platforms are required')
+    requested = plan.get('platforms', list(PLATFORMS))
+    require(isinstance(requested, list) and requested and set(requested) <= set(PLATFORMS),
+            'invalid requested campaign platforms')
+    require({job['platform'] for job in plan['jobs']} == set(requested), 'all requested CI platforms are required')
 
 
 def run_job(plan, job_id, repo, output, disk_cache, fixture_parent, resource_launcher=None):
@@ -246,6 +256,8 @@ def main():
     for name in ('repo', 'history-root', 'output'):
         plan.add_argument('--' + name, type=Path, required=True)
     plan.add_argument('--revision', action='append', default=[], help='Measure this revision instead of site history')
+    plan.add_argument('--platform', choices=tuple(PLATFORMS), action='append', default=[],
+                      help='Measure only selected platforms (default: both)')
     run = modes.add_parser('run')
     for name in ('plan', 'repo', 'output', 'fixture-parent'):
         run.add_argument('--' + name, type=Path, required=True)
@@ -259,7 +271,7 @@ def main():
     publish.add_argument('--repository', required=True)
     args = parser.parse_args()
     if args.mode == 'plan':
-        result = make_plan(args.repo, args.history_root, args.revision)
+        result = make_plan(args.repo, args.history_root, args.revision, args.platform)
         backfill.write_json(args.output, result)
         print(json.dumps({'include': [{key: job[key] for key in ('id', 'os', 'platform', 'arch')}
                                      for job in result['jobs']]}))
