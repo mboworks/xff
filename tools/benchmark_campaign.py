@@ -16,7 +16,9 @@ import benchmark_backfill as backfill
 import benchmark_compare as compare
 import benchmark_records
 
-PLATFORMS = {'linux': ('ubuntu-latest', 'x86_64'), 'macos': ('macos-latest', 'arm64')}
+# Historical LLVM 22/23 linkers require the Ubuntu 22.04 libxml2/ICU ABI.
+# Keep the measurement runner pinned instead of changing historical toolchains.
+PLATFORMS = {'linux': ('ubuntu-22.04', 'x86_64'), 'macos': ('macos-latest', 'arm64')}
 FILE_COUNTS = [*compare.DEFAULT_FILE_COUNTS, 20000, 50000, 100000]
 
 
@@ -29,10 +31,12 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def make_plan(repo, history_root, references=None):
+def make_plan(repo, history_root, references=None, platforms=None):
     tools = {'xff': {'path': 'xff'}, 'find': {}, 'rg': {}, 'fzf': {}}
     jobs = []
     for platform, (runner, arch) in PLATFORMS.items():
+        if platforms and platform not in platforms:
+            continue
         for revision in backfill.revisions(repo, references or [], None if references else history_root, platform):
             jobs.append({'id': platform + '-' + revision['sha'], 'platform': platform,
                          'os': runner, 'arch': arch, 'revision': revision})
@@ -40,9 +44,12 @@ def make_plan(repo, history_root, references=None):
             'history_head': backfill.git(history_root, 'rev-parse', 'HEAD'),
             'created_at': backfill.now(), 'jobs': jobs,
             'contract': {'files': FILE_COUNTS, 'cpus': [1, 3], 'depth': 40,
-                         'repetitions': 9, 'retained': 7, 'driver': backfill.driver_identity(),
+                         'repetitions': 9, 'retained': 7, 'command_timeout_seconds': 300,
+                         'driver': backfill.driver_identity(),
                          'tasks': {name: sorted(participants) for name, _, participants in
                                    compare.scenarios(Path('.'), [], tools)}}}
+    if platforms:
+        plan['platforms'] = sorted(set(platforms))
     plan['identity'] = identity(plan)
     validate_plan(plan)
     return plan
@@ -59,6 +66,8 @@ def validate_plan(plan):
             and (contract['depth'], contract['repetitions'], contract['retained']) == (40, 9, 7),
             'CI campaign requires the complete 1/3 grid and fastest seven of nine samples')
     require(contract['tasks'] and contract['driver'], 'campaign tasks and driver identities required')
+    timeout = contract.get('command_timeout_seconds', 60)
+    require(isinstance(timeout, int) and timeout > 0, 'invalid campaign command timeout')
     require(0 < len(plan['jobs']) <= 256, 'campaign requires 1 through 256 complete-revision jobs')
     ids = set()
     for job in plan['jobs']:
@@ -66,11 +75,15 @@ def validate_plan(plan):
         require(re.fullmatch('[0-9a-f]{40}', sha), 'invalid historical revision')
         require(datetime.fromisoformat(job['revision']['date']).tzinfo is not None,
                 'historical commit date requires a timezone')
-        require(platform in PLATFORMS and (job['os'], job['arch']) == PLATFORMS[platform],
+        runners = {'ubuntu-latest', 'ubuntu-22.04'} if platform == 'linux' else {'macos-latest'}
+        require(platform in PLATFORMS and job['os'] in runners and job['arch'] == PLATFORMS[platform][1],
                 'invalid campaign platform')
         require(job['id'] == platform + '-' + sha and job['id'] not in ids, 'duplicate or invalid campaign job')
         ids.add(job['id'])
-    require({job['platform'] for job in plan['jobs']} == set(PLATFORMS), 'both CI platforms are required')
+    requested = plan.get('platforms', list(PLATFORMS))
+    require(isinstance(requested, list) and requested and set(requested) <= set(PLATFORMS),
+            'invalid requested campaign platforms')
+    require({job['platform'] for job in plan['jobs']} == set(requested), 'all requested CI platforms are required')
 
 
 def run_job(plan, job_id, repo, output, disk_cache, fixture_parent, resource_launcher=None):
@@ -87,6 +100,7 @@ def run_job(plan, job_id, repo, output, disk_cache, fixture_parent, resource_lau
         revision=[job['revision']['sha']], revisions_file=None, history_root=None, history_platform=None,
         files=contract['files'], cpus=contract['cpus'], depth=contract['depth'],
         repetitions=contract['repetitions'], keep=contract['retained'],
+        command_timeout=contract.get('command_timeout_seconds', 60),
         require_cpu_affinity=job['platform'] == 'linux', require_memory=job['platform'] == 'linux',
         fixture_parent=fixture_parent, disk_cache=disk_cache, resource_launcher=resource_launcher)
     collection = {'id': int(os.environ['GITHUB_RUN_ID']), 'run_attempt': int(os.environ['GITHUB_RUN_ATTEMPT']),
@@ -99,6 +113,8 @@ def run_job(plan, job_id, repo, output, disk_cache, fixture_parent, resource_lau
 
 def validate_report(record, batch, job, plan):
     contract, expected = batch['contract'], plan['contract']
+    require(contract.get('command_timeout_seconds', 60) == expected.get('command_timeout_seconds', 60),
+            'batch command timeout does not match campaign')
     require(batch['identity'] == identity(contract), 'batch identity changed')
     require(contract['campaign'] == plan['identity'], 'batch belongs to another campaign')
     require(contract['purpose'] == 'ci-replacement', 'local series cannot replace CI history')
@@ -115,6 +131,8 @@ def validate_measurements(record, batch, revision, tasks):
     """Validate observations shared by CI replacement and independent local series."""
     contract = batch['contract']
     expected = contract
+    require(record['tool_comparisons']['contract'].get('command_timeout_seconds', 60)
+            == expected.get('command_timeout_seconds', 60), 'comparison command timeout changed')
     arch = contract['environment']['machine'].lower()
     require(record['schema'] == 1 and record['kind'] == 'backfill', 'expected a backfill report')
     for key in ('platform', 'series', 'purpose', 'replacement_target', 'allocation'):
@@ -246,6 +264,8 @@ def main():
     for name in ('repo', 'history-root', 'output'):
         plan.add_argument('--' + name, type=Path, required=True)
     plan.add_argument('--revision', action='append', default=[], help='Measure this revision instead of site history')
+    plan.add_argument('--platform', choices=tuple(PLATFORMS), action='append', default=[],
+                      help='Measure only selected platforms (default: both)')
     run = modes.add_parser('run')
     for name in ('plan', 'repo', 'output', 'fixture-parent'):
         run.add_argument('--' + name, type=Path, required=True)
@@ -259,7 +279,7 @@ def main():
     publish.add_argument('--repository', required=True)
     args = parser.parse_args()
     if args.mode == 'plan':
-        result = make_plan(args.repo, args.history_root, args.revision)
+        result = make_plan(args.repo, args.history_root, args.revision, args.platform)
         backfill.write_json(args.output, result)
         print(json.dumps({'include': [{key: job[key] for key in ('id', 'os', 'platform', 'arch')}
                                      for job in result['jobs']]}))

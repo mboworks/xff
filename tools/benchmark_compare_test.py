@@ -82,6 +82,16 @@ class BenchmarkCompareTest(unittest.TestCase):
                 compare.invoke({}, ["worker"])
             kill.assert_called_once_with(12345, signal.SIGKILL)
 
+    def test_configured_timeout_is_applied_and_reported(self):
+        child = mock.Mock(pid=12345)
+        child.communicate.side_effect = [subprocess.TimeoutExpired('worker', 300), (b'', b'')]
+        with mock.patch.object(compare.subprocess, 'Popen', return_value=child), \
+                mock.patch.object(compare.os, 'killpg') as kill:
+            with self.assertRaisesRegex(ValueError, '300 seconds'):
+                compare.invoke({'command_timeout_seconds': 300}, ['worker'])
+            self.assertEqual(child.communicate.call_args_list[0].kwargs, {'timeout': 300})
+            kill.assert_called_once_with(12345, signal.SIGKILL)
+
     def test_manifest_and_task_populations(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / 'root'

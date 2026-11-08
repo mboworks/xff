@@ -146,6 +146,25 @@ class BenchmarkCampaignTest(unittest.TestCase):
         self.assertEqual([call.args[1:] for call in revisions.call_args_list],
                          [([HEAD], None, 'linux'), ([HEAD], None, 'macos')])
 
+    def test_historical_linux_runner_is_pinned_and_earlier_plans_remain_valid(self):
+        self.assertEqual(campaign.PLATFORMS['linux'], ('ubuntu-22.04', 'x86_64'))
+        selected = plan()
+        for job in selected['jobs']:
+            if job['platform'] == 'linux':
+                job['os'] = 'ubuntu-latest'
+        selected['identity'] = campaign.identity({key: value for key, value in selected.items() if key != 'identity'})
+        campaign.validate_plan(selected)
+
+    def test_explicit_linux_only_retry_does_not_schedule_macos(self):
+        revision = plan()['jobs'][0]['revision']
+        with mock.patch.object(campaign.backfill, 'revisions', return_value=[revision]), \
+                mock.patch.object(campaign.backfill, 'git', side_effect=[DRIVER, 'c' * 40]):
+            selected = campaign.make_plan(Path('/repo'), Path('/history'), [HEAD], ['linux'])
+        self.assertEqual(selected['platforms'], ['linux'])
+        self.assertEqual([(job['platform'], job['os']) for job in selected['jobs']],
+                         [('linux', 'ubuntu-22.04')])
+        campaign.validate_plan(selected)
+
     def test_plan_rejects_mutation_duplicates_partial_grid_and_missing_platform(self):
         mutations = [lambda value: value['jobs'].append(value['jobs'][0]),
                      lambda value: value['jobs'].pop(),
