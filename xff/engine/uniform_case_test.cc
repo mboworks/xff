@@ -32,11 +32,18 @@ using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::IsEmpty;
 
+enum class ParentObservation { kDirectory, kDenied, kNotDirectory };
+
 struct CasePolicy {
   std::optional<bool> uniform;
   bool fail_leaf_metadata = false;
   bool fail_case_query = false;
   bool mixed_devices = false;
+  bool symlink_leaf = false;
+  std::optional<bool> symlink_target_case;
+  std::uint64_t leaf_device = 1;
+  bool bare_link_root = false;
+  ParentObservation parent_observation = ParentObservation::kDirectory;
 };
 
 struct DeviceEntry {
@@ -73,11 +80,26 @@ class CaseFs final : public vfs::FileSystem {
       }
       return entries;
     }
-    return std::vector<vfs::Entry>{{.path = "/fixture/f.txt", .name = "f.txt", .type = vfs::FileType::kRegular}};
+    return std::vector<vfs::Entry>{
+        {
+            .path = "/fixture/f.txt",
+            .name = "f.txt",
+            .type = policy_.symlink_leaf ? vfs::FileType::kSymlink : vfs::FileType::kRegular,
+        },
+    };
   }
 
   absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool) const override {
-    if (path == "/fixture") {
+    if (path == "/fixture" || path == ".") {
+      // Initial root metadata is valid; only the later optional parent observation can fail.
+      if (leaf_stats_.load(std::memory_order_relaxed) != 0) {
+        if (policy_.parent_observation == ParentObservation::kDenied) {
+          return absl::PermissionDeniedError("parent metadata denied after observing link");
+        }
+        if (policy_.parent_observation == ParentObservation::kNotDirectory) {
+          return vfs::Metadata{.type = vfs::FileType::kRegular, .ino = 1, .dev = 1};
+        }
+      }
       return vfs::Metadata{.type = vfs::FileType::kDirectory, .ino = 1, .dev = 1};
     }
     if (policy_.mixed_devices) {
@@ -95,14 +117,19 @@ class CaseFs final : public vfs::FileSystem {
           .dev = kDeviceEntries.at(index).device,
       };
     }
-    if (path != "/fixture/f.txt") {
+    if (path != (policy_.bare_link_root ? "f.txt" : "/fixture/f.txt")) {
       return absl::NotFoundError("unknown fixture entry");
     }
     leaf_stats_.fetch_add(1, std::memory_order_relaxed);
     if (policy_.fail_leaf_metadata) {
       return absl::PermissionDeniedError("leaf metadata denied");
     }
-    return vfs::Metadata{.type = vfs::FileType::kRegular, .mode = 0644, .ino = 2, .dev = 1};
+    return vfs::Metadata{
+        .type = policy_.symlink_leaf ? vfs::FileType::kSymlink : vfs::FileType::kRegular,
+        .mode = 0644,
+        .ino = 2,
+        .dev = policy_.leaf_device,
+    };
   }
 
   std::optional<bool> UniformCaseSensitivity() const override {
@@ -113,6 +140,13 @@ class CaseFs final : public vfs::FileSystem {
   absl::StatusOr<bool> IsCaseSensitive(std::string_view path) const override {
     case_queries_.fetch_add(1, std::memory_order_relaxed);
     query_paths_.emplace_back(path);
+    if (policy_.symlink_leaf && path != "/fixture" && path != ".") {
+      // Darwin pathconf follows its final symlink, so a dangling target cannot answer.
+      if (policy_.symlink_target_case) {
+        return *policy_.symlink_target_case;
+      }
+      return absl::NotFoundError("dangling case-query target");
+    }
     if (policy_.mixed_devices) {
       if (path == "/fixture") {
         return false;
@@ -177,11 +211,19 @@ struct UniformCaseTest : ::testing::Test {
       CasePolicy policy,
       const std::vector<std::string>& extra = {},
       std::string_view pattern = "F.TXT",
-      registry::Style style = registry::Style::kXff) {
+      registry::Style style = registry::Style::kXff,
+      bool regular_files_only = true) {
     const CaseFs filesystem(policy);
     std::vector<std::string> arguments{
-        "--color=never", "--no-ignore", "--jobs=1", "/fixture", "-type", "f", "-name", std::string(pattern),
+        "--color=never",
+        "--no-ignore",
+        "--jobs=1",
+        policy.bare_link_root ? "f.txt" : "/fixture",
     };
+    if (regular_files_only) {
+      arguments.append_range(std::vector<std::string>{"-type", "f"});
+    }
+    arguments.append_range(std::vector<std::string>{"-name", std::string(pattern)});
     arguments.append_range(extra);
     MBO_ASSIGN_OR_RETURN(auto command, parser::Parse(arguments));
     parser::BindMatchers(
@@ -303,6 +345,88 @@ TEST_F(UniformCaseTest, UnknownCaseQueryFailureKeepsTheConservativeExactFallback
   EXPECT_THAT(actual.diagnostics, IsEmpty());
   EXPECT_THAT(actual.leaf_stats, Eq(1));
   EXPECT_THAT(actual.case_queries, Eq(1));
+}
+
+TEST_F(UniformCaseTest, SymlinkNamesKeepTheVerifiedContainingDeviceCasePolicy) {
+  struct Case {
+    std::string_view name;
+    std::optional<bool> target_case;
+  };
+
+  constexpr auto kCases = std::to_array<Case>({
+      {.name = "dangling", .target_case = std::nullopt},
+      {.name = "folding-target", .target_case = false},
+      {.name = "sensitive-target-volume", .target_case = true},
+  });
+  for (const auto& scenario : kCases) {
+    SCOPED_TRACE(scenario.name);
+    for (const bool deferred : {false, true}) {
+      SCOPED_TRACE(deferred);
+      std::vector<std::string> extra{"--archive=none"};
+      if (deferred) {
+        extra.append_range(std::vector<std::string>{"-fuzzy", "f", "-top", "1", "-print"});
+      }
+      MBO_ASSERT_OK_AND_ASSIGN(
+          const auto actual, Observe(
+                                 {.symlink_leaf = true, .symlink_target_case = scenario.target_case}, extra, "F.TXT",
+                                 registry::Style::kXff, false));
+      EXPECT_THAT(actual.output, EqualsText("/fixture/f.txt\n"));
+      EXPECT_THAT(actual.result.errors, Eq(0));
+      EXPECT_THAT(actual.diagnostics, IsEmpty());
+      EXPECT_THAT(actual.case_paths, ElementsAre("/fixture"));
+    }
+  }
+}
+
+TEST_F(UniformCaseTest, SymlinkCaseNeverAssumesItsParentHasTheSameDevice) {
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto actual, Observe(
+                             {.symlink_leaf = true, .symlink_target_case = true, .leaf_device = 2}, {"--archive=none"},
+                             "F.TXT", registry::Style::kXff, false));
+  EXPECT_THAT(actual.output, IsEmpty());
+  EXPECT_THAT(actual.result.errors, Eq(0));
+  EXPECT_THAT(actual.diagnostics, IsEmpty());
+  EXPECT_THAT(actual.case_paths, ElementsAre("/fixture/f.txt"));
+}
+
+TEST_F(UniformCaseTest, UnavailableVerifiedSymlinkPolicyKeepsTheExactFallback) {
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto actual,
+      Observe(
+          {.fail_case_query = true, .symlink_leaf = true}, {"--archive=none"}, "F.TXT", registry::Style::kXff, false));
+  EXPECT_THAT(actual.output, IsEmpty());
+  EXPECT_THAT(actual.result.errors, Eq(0));
+  EXPECT_THAT(actual.diagnostics, IsEmpty());
+  EXPECT_THAT(actual.case_paths, ElementsAre("/fixture"));
+}
+
+TEST_F(UniformCaseTest, BareRelativeSymlinkRootUsesTheVerifiedCurrentDirectoryPolicy) {
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto actual,
+      Observe(
+          {.symlink_leaf = true, .bare_link_root = true}, {"--archive=none"}, "F.TXT", registry::Style::kXff, false));
+  EXPECT_THAT(actual.output, EqualsText("f.txt\n"));
+  EXPECT_THAT(actual.result.errors, Eq(0));
+  EXPECT_THAT(actual.diagnostics, IsEmpty());
+  EXPECT_THAT(actual.case_paths, ElementsAre("."));
+}
+
+TEST_F(UniformCaseTest, UnavailableOrNondirectoryParentKeepsEntryPolicyWithoutAnError) {
+  constexpr auto kCases = std::to_array<ParentObservation>({
+      ParentObservation::kDenied,
+      ParentObservation::kNotDirectory,
+  });
+  for (const auto observation : kCases) {
+    SCOPED_TRACE(static_cast<int>(observation));
+    MBO_ASSERT_OK_AND_ASSIGN(
+        const auto actual, Observe(
+                               {.symlink_leaf = true, .symlink_target_case = false, .parent_observation = observation},
+                               {"--archive=none"}, "F.TXT", registry::Style::kXff, false));
+    EXPECT_THAT(actual.output, EqualsText("/fixture/f.txt\n"));
+    EXPECT_THAT(actual.result.errors, Eq(0));
+    EXPECT_THAT(actual.diagnostics, IsEmpty());
+    EXPECT_THAT(actual.case_paths, ElementsAre("/fixture/f.txt"));
+  }
 }
 
 }  // namespace
