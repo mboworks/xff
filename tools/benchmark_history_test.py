@@ -226,6 +226,22 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertNotIn('shards/*/*.json', measure)
         self.assertIn("git -C site add --all", publish)
 
+    def test_full_suite_runs_independently_of_paired_measurements(self):
+        workflow = repository_file('.github/workflows/benchmarks.yml').read_text()
+        build = workflow.split('  build:\n', 1)[1].split('  expression:\n', 1)[0]
+        expression = workflow.split('  expression:\n', 1)[1].split('  measure:\n', 1)[0]
+        aggregate = workflow.split('  aggregate:\n', 1)[1]
+        self.assertNotIn('Measure alternating base and head workloads', build)
+        self.assertNotIn('Measure expression preparation', build)
+        self.assertIn('name: benchmark-build-${{ matrix.platform }}', build)
+        self.assertIn('needs: build', expression)
+        self.assertIn('name: benchmark-seed-${{ matrix.platform }}', expression)
+        self.assertIn('--resource-launcher="${RUNNER_TEMP}/benchmark-resource-launcher"', expression)
+        self.assertIn('  measure:\n    needs: build', workflow)
+        self.assertIn('pattern: benchmark-seed-*', aggregate)
+        self.assertIn('--seed-directory=seed-metadata', aggregate)
+        self.assertIn("needs.expression.result == 'success'", aggregate)
+
     def test_publication_coalesces_requests_and_reconciles_sources(self):
         workflow = repository_file('.github/workflows/benchmark_pages.yml').read_text()
         self.assertIn('types: [completed]', workflow)
