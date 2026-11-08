@@ -245,3 +245,17 @@ This pin needs a replacement before [GitHub retires Ubuntu 22.04 on April 17, 20
 A replacement must provide the historical build dependencies, preserve build provenance,
 and record the measurement environment. Replacing historical compilers would change
 what the backfill measures.
+
+## Historical command timeouts
+
+The macOS #986 job completed successfully. The macOS #914 job failed at the 100,000-file
+broad content-search warm-up when an invocation exceeded the fixed 60-second limit.
+New CI backfill plans use a 300-second command limit, recorded in the campaign, batch,
+and measurement contract. Earlier plans retain the implicit 60-second limit. Other
+comparison callers keep their current default. Timeout failures still terminate the
+whole worker process group and report the failed command; no timed-out sample is kept.
+
+After deployment, retry Linux #914/#986 together and macOS #914 separately. Preserve
+the completed macOS #986 report from the original campaign. The longer command limit
+has not yet been exercised on that historical macOS workload; the overall job deadline
+still bounds total measurement time.

@@ -44,7 +44,8 @@ def make_plan(repo, history_root, references=None, platforms=None):
             'history_head': backfill.git(history_root, 'rev-parse', 'HEAD'),
             'created_at': backfill.now(), 'jobs': jobs,
             'contract': {'files': FILE_COUNTS, 'cpus': [1, 3], 'depth': 40,
-                         'repetitions': 9, 'retained': 7, 'driver': backfill.driver_identity(),
+                         'repetitions': 9, 'retained': 7, 'command_timeout_seconds': 300,
+                         'driver': backfill.driver_identity(),
                          'tasks': {name: sorted(participants) for name, _, participants in
                                    compare.scenarios(Path('.'), [], tools)}}}
     if platforms:
@@ -65,6 +66,8 @@ def validate_plan(plan):
             and (contract['depth'], contract['repetitions'], contract['retained']) == (40, 9, 7),
             'CI campaign requires the complete 1/3 grid and fastest seven of nine samples')
     require(contract['tasks'] and contract['driver'], 'campaign tasks and driver identities required')
+    timeout = contract.get('command_timeout_seconds', 60)
+    require(isinstance(timeout, int) and timeout > 0, 'invalid campaign command timeout')
     require(0 < len(plan['jobs']) <= 256, 'campaign requires 1 through 256 complete-revision jobs')
     ids = set()
     for job in plan['jobs']:
@@ -97,6 +100,7 @@ def run_job(plan, job_id, repo, output, disk_cache, fixture_parent, resource_lau
         revision=[job['revision']['sha']], revisions_file=None, history_root=None, history_platform=None,
         files=contract['files'], cpus=contract['cpus'], depth=contract['depth'],
         repetitions=contract['repetitions'], keep=contract['retained'],
+        command_timeout=contract.get('command_timeout_seconds', 60),
         require_cpu_affinity=job['platform'] == 'linux', require_memory=job['platform'] == 'linux',
         fixture_parent=fixture_parent, disk_cache=disk_cache, resource_launcher=resource_launcher)
     collection = {'id': int(os.environ['GITHUB_RUN_ID']), 'run_attempt': int(os.environ['GITHUB_RUN_ATTEMPT']),
@@ -109,6 +113,8 @@ def run_job(plan, job_id, repo, output, disk_cache, fixture_parent, resource_lau
 
 def validate_report(record, batch, job, plan):
     contract, expected = batch['contract'], plan['contract']
+    require(contract.get('command_timeout_seconds', 60) == expected.get('command_timeout_seconds', 60),
+            'batch command timeout does not match campaign')
     require(batch['identity'] == identity(contract), 'batch identity changed')
     require(contract['campaign'] == plan['identity'], 'batch belongs to another campaign')
     require(contract['purpose'] == 'ci-replacement', 'local series cannot replace CI history')
@@ -125,6 +131,8 @@ def validate_measurements(record, batch, revision, tasks):
     """Validate observations shared by CI replacement and independent local series."""
     contract = batch['contract']
     expected = contract
+    require(record['tool_comparisons']['contract'].get('command_timeout_seconds', 60)
+            == expected.get('command_timeout_seconds', 60), 'comparison command timeout changed')
     arch = contract['environment']['machine'].lower()
     require(record['schema'] == 1 and record['kind'] == 'backfill', 'expected a backfill report')
     for key in ('platform', 'series', 'purpose', 'replacement_target', 'allocation'):

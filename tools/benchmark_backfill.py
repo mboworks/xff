@@ -173,6 +173,8 @@ def make_contract(args, *, campaign=None, collection=None):
         raise ValueError('local prepared layouts must be broad/v2 and deep/v2 together')
     if args.depth < 1 or not 1 <= args.keep <= args.repetitions:
         raise ValueError('positive depth and 1 <= keep <= repetitions required')
+    if getattr(args, 'command_timeout', 60) <= 0:
+        raise ValueError('comparison command timeout must be positive')
     allocation = allocation_policy(args, cpus)
     repo = args.repo.resolve(strict=True)
     references = list(args.revision)
@@ -194,6 +196,7 @@ def make_contract(args, *, campaign=None, collection=None):
         'environment': environment(getattr(args, 'resource_launcher', None)), 'driver': driver_identity(),
         'files': counts, 'cpus': cpus, 'depth': args.depth,
         'repetitions': args.repetitions, 'retained': args.keep,
+        'command_timeout_seconds': getattr(args, 'command_timeout', 60),
         'require_cpu_affinity': allocation['required'],
         'storage': compare.fixture_storage(args.fixture_parent, args.require_memory),
         'build': {'config': 'clang_release', 'bazel': str(Path(bazel).resolve()),
@@ -396,6 +399,7 @@ def run(args, batch):
                         fixture_parent=contract['storage']['parent'], require_memory=contract['storage']['memory_required'],
                         require_cpu_affinity=contract['require_cpu_affinity'], progress=progress,
                         layouts=contract.get('layouts') or None,
+                        command_timeout=contract.get('command_timeout_seconds', 60),
                         resource_launcher=contract['environment'].get('resource_launcher', {}).get('path'))
                 check_environment(contract['environment'])
                 if report['tools']['xff']['sha256'] != build_record['sha256']:
@@ -452,6 +456,7 @@ def main():
                         help='local generated layouts; hosted CI remains legacy')
     parser.add_argument('--repetitions', type=int, default=9)
     parser.add_argument('--keep', type=int, default=7)
+    parser.add_argument('--command-timeout', type=int, default=60, help='Maximum seconds per comparison command')
     parser.add_argument('--require-cpu-affinity', action='store_true')
     parser.add_argument('--fixture-parent', type=Path)
     parser.add_argument('--require-memory', action='store_true')

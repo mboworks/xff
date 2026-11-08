@@ -53,17 +53,20 @@ def measure(spec):
 
 
 def invoke(spec, worker):
+    timeout = spec.get('command_timeout_seconds', 60)
+    if not isinstance(timeout, (int, float)) or not math.isfinite(timeout) or timeout <= 0:
+        raise ValueError('comparison timeout must be finite and positive')
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as request:
         json.dump(spec, request)
         request.flush()
         child = subprocess.Popen([*worker, "--worker", request.name], stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE, start_new_session=True)
         try:
-            stdout, stderr = child.communicate(timeout=60)
+            stdout, stderr = child.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
             os.killpg(child.pid, signal.SIGKILL)
             child.communicate()
-            raise ValueError("comparison command exceeded 60 seconds") from None
+            raise ValueError(f"comparison command exceeded {timeout} seconds: {spec.get('pipeline', [])}") from None
         if child.returncode:
             raise ValueError(f"comparison worker failed: {stderr.decode(errors='replace')}")
         return json.loads(stdout)
@@ -195,7 +198,8 @@ def cpu_allocation(cpus, require_cpu_affinity=False):
 
 def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_tools=False,
             fixture_parent=None, require_memory=False, cpus=1, require_cpu_affinity=False, keep=None, fixtures=None, progress=None,
-            shapes=("broad", "deep"), round_offset=0, prepared_fixtures=None, resource_launcher=None):
+            shapes=("broad", "deep"), round_offset=0, prepared_fixtures=None, resource_launcher=None,
+            command_timeout=60):
     progress = progress or MeasurementProgress()
     keep = min(7, repetitions) if keep is None else keep
     if not 1 <= keep <= repetitions:
@@ -285,12 +289,15 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
                                  f'{shape}/{name}; {label}; {phase}')
                         sample = invoke({"pipeline": entry["pipeline"], "stdin": entry["stdin"], "cwd": entry["cwd"],
                                          "environment": environment, "cpu_affinity": affinity,
-                                         "resource_launcher": accounting["path"]}, worker)
+                                         "resource_launcher": accounting["path"],
+                                         "command_timeout_seconds": command_timeout}, worker)
                         validate_output(sample, expected, entry["pipeline"])
                         completed += 1
                         if repetition:
                             entry["samples"].append(sample)
                 progress(f'Workers: {cpus} Files: {files:,} Completed: {completed}/{total}; {shape}/{name}')
+    if command_timeout != 60:
+        report['contract']['command_timeout_seconds'] = command_timeout
     for tool in tools.values():
         if tool["status"] == "available" and digest(tool["path"]) != tool["sha256"]:
             raise ValueError("tool binary changed during measurement")
@@ -301,7 +308,8 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
 
 def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=False,
                    fixture_parent=None, require_memory=False, cpu_counts=(1, 4), require_cpu_affinity=False, keep=None, fixtures=None,
-                   shard_plan=None, shard_index=0, progress=None, layouts=None, resource_launcher=None):
+                   shard_plan=None, shard_index=0, progress=None, layouts=None, resource_launcher=None,
+                   command_timeout=60):
     """Retain independent scales without mixing sample populations or tool identities."""
     if not file_counts or len(set(file_counts)) != len(file_counts) or min(file_counts) < 1 or depth < 1:
         raise ValueError("file counts must be unique and positive; depth must be positive")
@@ -361,7 +369,7 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
                              round_offset=shard_index * sampling[0] if sampling else 0,
                              fixtures={shape: value for (shape, count), value in fixtures.items() if count == files}
                              if fixtures is not None else None, prepared_fixtures=prepared_fixtures,
-                             resource_launcher=resource_launcher)
+                             resource_launcher=resource_launcher, command_timeout=command_timeout)
             completed_scales += 1
             progress(f'Workers: {cpus} Files: {files:,} Completed scale: {completed_scales}/{total_scales}', force=True)
             for task in report["tasks"]:
