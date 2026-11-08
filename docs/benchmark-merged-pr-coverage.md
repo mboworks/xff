@@ -175,9 +175,8 @@ not the persistent automatic scheduler described above. A concurrent dispatch af
 the active-campaign check can still race; avoid starting multiple operators at once.
 
 The publisher can retain each complete validated platform from a failed campaign, so a
-failed platform does not discard another platform's results. Recovery selects the union
-of missing platforms in a batch; `--pr=NUMBER` or `--batch-size=1` allows a platform-specific
-retry without repeating a retained platform. The command does not cancel a pending publisher or
+failed platform does not discard another platform's results. A targeted retry currently
+remeasures both platforms. The command does not cancel a pending publisher or
 automatically retry a failed run.
 
 ## Decisions and limits
@@ -219,29 +218,3 @@ finish, and merge PR #1148. Then:
 5. Freeze and identify the additional workload contract before scheduling its historical
    backfill. Preserve the existing simple comparisons and make compatibility explicit;
    a new task must not silently appear as if it had been measured in earlier reports.
-
-## Historical Linux linker compatibility
-
-The November 8 campaign reached compilation but failed before any Linux measurement:
-
-- [PR #986 Linux job](https://github.com/mboworks/xff/actions/runs/42498912253/job/128787591927):
-  historical `ld.lld` could not load `libicui18n.so.70`.
-- [PR #914 Linux job](https://github.com/mboworks/xff/actions/runs/42498912253/job/128787591953):
-  historical `ld.lld` could not load `libxml2.so.2`.
-
-Both jobs used `ubuntu-latest`, which resolved to Ubuntu 26.04. New historical Linux
-campaigns select `ubuntu-22.04` and explicitly install `libicu70` and `libxml2`. This
-preserves each revision's compiler and LTO configuration. The selected runner remains
-in the campaign plan, and validation still accepts older plans using `ubuntu-latest`.
-The ordinary main benchmark workflow keeps its existing runner selection.
-
-The backfill dispatch also accepts `platforms=linux` or `platforms=macos`, so failed Linux
-jobs can be remeasured in a new campaign without repeating completed macOS work. Earlier
-plans without a platform selection still require both platforms, and the new selection
-is part of the immutable campaign identity. For this campaign, retry the two original
-revisions with `platforms=linux` after the fixed workflow is deployed on main.
-
-This pin needs a replacement before [GitHub retires Ubuntu 22.04 on April 17, 2027](https://github.com/actions/runner-images/issues/14254).
-A replacement must provide the historical build dependencies, preserve build provenance,
-and record the measurement environment. Replacing historical compilers would change
-what the backfill measures.

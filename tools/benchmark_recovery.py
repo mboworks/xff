@@ -143,13 +143,10 @@ def main():
     if any(run['status'] != 'completed' for run in campaigns):
         raise ValueError('a backfill campaign is already active or queued; retry after it finishes')
     selected = candidates[:args.batch_size]
-    platforms = sorted({platform for row in selected for platform in row['missing']})
     # The deployed workflow must support the revisions input added by PR #1147.
     subprocess.run(['gh', 'workflow', 'run', 'benchmark_backfill.yml', '--repo', api.repository,
-                    '--ref', 'main', '-f', 'revisions=' + ','.join(row['commit'] for row in selected),
-                    '-f', 'platforms=' + ','.join(platforms)], check=True)
-    print('Dispatched ' + ', '.join(platforms) + ' for '
-          + ', '.join(f"PR #{row['pr']}" for row in selected) + '.', flush=True)
+                    '--ref', 'main', '-f', 'revisions=' + ','.join(row['commit'] for row in selected)], check=True)
+    print('Dispatched both platforms for ' + ', '.join(f"PR #{row['pr']}" for row in selected) + '.', flush=True)
 
 
 if __name__ == '__main__':
