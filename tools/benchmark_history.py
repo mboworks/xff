@@ -105,6 +105,8 @@ def measure_pair(args):
                 command = [str(args.driver), str(getattr(args, f"{side}_binary")),
                            f"--output={output}", f"--files={args.files}", f"--depth={args.depth}",
                            "--repetitions=1", f"--jobs={args.jobs}", f"--build-label={record[side]};{args.build}"]
+                if getattr(args, "resource_launcher", None) is not None:
+                    command.append(f"--resource-launcher={args.resource_launcher}")
                 counter = getattr(args, f"{side}_read_counter", None)
                 if counter is not None:
                     command.append(f"--read-counter={counter}")
@@ -413,6 +415,7 @@ def main():
     measure = commands.add_parser("measure")
     for name in ("driver", "base-binary", "head-binary", "output"):
         measure.add_argument("--" + name, type=Path, required=True)
+    measure.add_argument("--resource-launcher", type=Path)
     for side in ("base", "head"):
         measure.add_argument(f"--{side}-read-counter", type=Path)
     for name in ("base", "head", "build", "runner-class", "tools", "base-build-identity", "head-build-identity"):

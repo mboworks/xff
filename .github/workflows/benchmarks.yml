@@ -79,6 +79,11 @@ jobs:
           driver="$(pwd)/$(bazel cquery //tools:benchmark_resources --config=clang_opt \
             --output=starlark --starlark:expr='target.files_to_run.executable.path')"
           echo "BENCHMARK_DRIVER=${driver}" >>"${GITHUB_ENV}"
+          for target in expression_benchmark expression_run_benchmark; do
+            executable="$(bazel cquery "config(//xff/engine:${target}, target)" --config=clang_opt \
+              --output=starlark --starlark:expr='target.files_to_run.executable.path')"
+            cp "${executable}" "${RUNNER_TEMP}/${target}"
+          done
       - name: Build production benchmark CLI (ThinLTO)
         run: |
           bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
@@ -102,9 +107,59 @@ jobs:
             --output=starlark --starlark:expr='target.files_to_run.executable.path')"
           cp "${binary}" "${RUNNER_TEMP}/benchmark-base-bin"
           shasum -a 256 "${RUNNER_TEMP}/benchmark-base-bin"
+      - name: Preserve build identities
+        run: |
+          cat "${RUNNER_TEMP}/benchmark-base/.bazelrc" "${RUNNER_TEMP}/benchmark-base/bazelmod/llvm.MODULE.bazel" | shasum -a 256 | cut -d ' ' -f 1 > "${RUNNER_TEMP}/base-build-identity"
+          cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1 > "${RUNNER_TEMP}/head-build-identity"
+          echo "$(bazel --version); module-lock=$(shasum -a 256 MODULE.bazel.lock); base-module-lock=$(shasum -a 256 "${RUNNER_TEMP}/benchmark-base/MODULE.bazel.lock")" > "${RUNNER_TEMP}/benchmark-tools"
+      - name: Plan equal sample shards and stage shared binaries
+        run: |
+          scales=()
+          for count in 10 20 50 100 200 500 1000 2000 5000 10000 20000 50000 100000; do
+            scales+=(--files="${count}")
+          done
+          python3 tools/benchmark_shards.py --plan --adaptive --count=5 "${scales[@]}" \
+            --partition=samples --repetitions=15 --keep=15 \
+            --cpus=1 --cpus=${{ matrix.cpus }} --output=benchmark-plan.json
+          tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" benchmark-head benchmark-resource-launcher expression_benchmark expression_run_benchmark benchmark-head-reads benchmark-base-reads benchmark-base-bin base-build-identity head-build-identity benchmark-tools
+      - uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-build-${{ matrix.platform }}
+          path: |
+            benchmark-build.tar
+            benchmark-plan.json
+          retention-days: 3
+          if-no-files-found: error
+
+  expression:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: macos
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@v8
+        with:
+          name: benchmark-build-${{ matrix.platform }}
+      - name: Restore benchmark executables
+        run: tar -xf benchmark-build.tar -C "${RUNNER_TEMP}"
       - name: Measure expression preparation and execution baseline
         run: |
-          bazel run //xff/engine:expression_benchmark --config=clang_opt --disk_cache="${HOME}/.cache/bazel-disk" -- \
+          "${RUNNER_TEMP}/expression_benchmark" \
             --benchmark_out="${GITHUB_WORKSPACE}/expression-baseline-${{ matrix.platform }}.json" \
             --benchmark_out_format=json --benchmark_display_aggregates_only=true \
             --benchmark_enable_random_interleaving=true \
@@ -120,7 +175,7 @@ jobs:
           PY_CHECK
       - name: Measure whole-engine expression integration
         run: |
-          bazel run //xff/engine:expression_run_benchmark --config=clang_opt --disk_cache="${HOME}/.cache/bazel-disk" -- \
+          "${RUNNER_TEMP}/expression_run_benchmark" \
             --benchmark_out="${GITHUB_WORKSPACE}/expression-engine-${{ matrix.platform }}.json" \
             --benchmark_out_format=json --benchmark_display_aggregates_only=true \
             --benchmark_enable_random_interleaving=true \
@@ -145,36 +200,28 @@ jobs:
       - name: Measure alternating base and head workloads
         run: |
           set -euo pipefail
+          chmod +x tools/benchmark_resources.py
+          BENCHMARK_HEAD="$(git rev-parse HEAD)"
+          BENCHMARK_BASE="$(git rev-parse HEAD^1)"
+          BENCHMARK_PLATFORM="${{ matrix.platform }}-$(uname -m)"
           python3 tools/benchmark_history.py measure \
-            --driver="${BENCHMARK_DRIVER}" \
+            --driver="${GITHUB_WORKSPACE}/tools/benchmark_resources.py" \
+            --resource-launcher="${RUNNER_TEMP}/benchmark-resource-launcher" \
             --head-read-counter="${RUNNER_TEMP}/benchmark-head-reads" \
             --base-read-counter="${RUNNER_TEMP}/benchmark-base-reads" \
             --head-binary="${RUNNER_TEMP}/benchmark-head" \
             --base-binary="${RUNNER_TEMP}/benchmark-base-bin" \
             --head="${BENCHMARK_HEAD}" --base="${BENCHMARK_BASE}" \
-            --base-build-identity="$(cat "${RUNNER_TEMP}/benchmark-base/.bazelrc" "${RUNNER_TEMP}/benchmark-base/bazelmod/llvm.MODULE.bazel" | shasum -a 256 | cut -d ' ' -f 1)" \
-            --head-build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)" \
+            --base-build-identity="$(cat "${RUNNER_TEMP}/base-build-identity")" \
+            --head-build-identity="$(cat "${RUNNER_TEMP}/head-build-identity")" \
             --build='bazel --config=clang_release //xff/cli:xff' \
             --runner-class='github-hosted ${{ matrix.os }}' \
-            --tools="$(bazel --version); module-lock=$(shasum -a 256 MODULE.bazel.lock); base-module-lock=$(shasum -a 256 "${RUNNER_TEMP}/benchmark-base/MODULE.bazel.lock")" \
+            --tools="$(cat "${RUNNER_TEMP}/benchmark-tools")" \
             --platform=${{ matrix.platform }} --output=benchmark-report-${BENCHMARK_PLATFORM}.json
-      - name: Plan equal sample shards and stage shared binaries
-        run: |
-          scales=()
-          for count in 10 20 50 100 200 500 1000 2000 5000 10000 20000 50000 100000; do
-            scales+=(--files="${count}")
-          done
-          python3 tools/benchmark_shards.py --plan --adaptive --count=5 "${scales[@]}" \
-            --partition=samples --repetitions=15 --keep=15 \
-            --cpus=1 --cpus=${{ matrix.cpus }} --output=benchmark-plan.json
-          tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" benchmark-head benchmark-resource-launcher
       - uses: actions/upload-artifact@v7
         with:
-          name: benchmark-build-${{ matrix.platform }}
-          path: |
-            benchmark-build.tar
-            benchmark-plan.json
-            benchmark-report-${{ env.BENCHMARK_PLATFORM }}.json
+          name: benchmark-seed-${{ matrix.platform }}
+          path: benchmark-report-${{ matrix.platform }}-*.json
           retention-days: 3
           if-no-files-found: error
 
@@ -365,6 +412,7 @@ jobs:
     needs:
       [
         build,
+        expression,
         measure,
         select-initial,
         measure-fourth-linux,
@@ -373,7 +421,7 @@ jobs:
         measure-fifth-linux,
         measure-fifth-macos,
       ]
-    if: always() && needs.build.result == 'success'
+    if: always() && needs.build.result == 'success' && needs.expression.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -401,13 +449,17 @@ jobs:
         with:
           pattern: benchmark-build-*
           path: build-metadata
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: benchmark-seed-*
+          path: seed-metadata
       - name: Select agreed candidates and render both platforms
         id: reports
         run: |
           set -euo pipefail
           git rev-list --first-parent HEAD^1 > benchmark-baseline-revisions.txt
           python3 tools/benchmark_shards.py --merge-adaptive-directory=candidate-shards \
-            --output-directory=merged --seed-directory=build-metadata \
+            --output-directory=merged --seed-directory=seed-metadata \
             --baseline-root=benchmark-baseline/benchmarks --baseline-revisions=benchmark-baseline-revisions.txt
           for platform in linux macos; do
             arch="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["tool_comparisons"]["contract"]["machine"])' "merged/benchmark-merged-${platform}.json")"
