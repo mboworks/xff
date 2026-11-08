@@ -5116,6 +5116,81 @@
             "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
           }
         },
+        "37f85db746f63d55542a6e21a7ffd91231e8b5a9fe537fae1acf33cf8263c700": {
+          "driver": {
+            "benchmark_backfill.py": "24060c971a40a030e6aaf5b55b49adfbc5d3ddf9c54c0850b7f703a2333c7f25",
+            "benchmark_compare.py": "3125c9145c69c9f2bd90a273854913dbc41674178b0017a560315f13946196aa",
+            "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+            "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+            "benchmark_matrix.py": "abfa93fc0bf5b76ec45907166eac30a828dfe31e0129ba59a197e71c56d7f620",
+            "benchmark_shards.py": "38cf664f259aafd9788660267ff7c478c66d3790fb45e232e16360233ed30011",
+            "benchmark_provenance.py": "5cfe87906f4ead07ca8cf00857ed751393cd8d4c8ce0f672bae7ad32f51c96cc",
+            "process_resources.py": "8a39146449514c519921ee153f1301621555694b3cf5a64b16edcd6538f5ac16",
+            "process_resources_native.cc": "0b72ffc7b767682dca724bb6d8de8b5f2ccaae532b5b99c9e14f68505769a010"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.7.2-arm64-arm-64bit-Mach-O",
+              "sha256": "6c0ed3efc994f93eb962f517d27fa9afb981f036ffb7a759f8ea3b0899792c76"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.5 (Homebrew)",
+              "sha256": "ffe65ac524ca5b26e281e8a95b50b49e411002ce016c1e054d5f88529eba2c0c"
+            }
+          },
+          "build": {
+            "sha256": "30fa13baa95d8dab70ce1481cd23b2018435d318545e8d7f2e49d8d259aafc4f",
+            "revision": "61ab1ce41300aa785d6beafb46c29b29dc832b8d",
+            "command": [
+              "/opt/homebrew/Cellar/bazelisk/1.30.0/bin/bazelisk",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "--config=clang_release",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "//xff/cli:xff"
+            ],
+            "source": {
+              "revision": "61ab1ce41300aa785d6beafb46c29b29dc832b8d",
+              "tree": "a0dce9fc2f1eeb67a3fd6e99d10534b8a5adc527",
+              "clean": true
+            },
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff",
+            "configuration": {
+              ".bazelrc": "126e38472aeb6d5e8fab97ab8a15089ec89365c6c42ea24b54683bbbcdb66204",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "f3226b43b5a574092398783ac37e208b10456369e35fde70990cd1cbb8399b78",
+              "MODULE.bazel.lock": "e3bef3a20dd7cbe58bd25db54c8ae44398da99034b8d376a92e1c926781e0437",
+              "bazelmod/llvm.MODULE.bazel": "32e3107010f0cace2d07a14634b38e2b0fa9a06b77ece265de2c6a97ed2aaccc"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": 3,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "parent": "/Users/runner/work/_temp",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          },
+          "resource_accounting": {
+            "sha256": "300bdf5fa3b09463f673c30d1cb5ea21976d59c85121ba25b22bc72d7544c349",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+          }
+        },
         "b04f8ea807c2c8fb3552c71aeb452e2c033f63461c99ae4dac25e72523111de1": {
           "driver": null,
           "tools": {
@@ -9637,6 +9712,16 @@
           "batch": "backfills/36952332747/2/macos/ed28be9eb60150089eb7aaae052244aad1c6e534/batch.json",
           "batch_identity": "11dc9ba92c3de8af29359dfa83acdfbe5ef0b938fb5bfd764b205610737233c5",
           "method": "ecc74da33c543f42279cb64965b61831d5b8042579e9a524840b9c6447ee3a99"
+        },
+        {
+          "commit": "61ab1ce41300aa785d6beafb46c29b29dc832b8d",
+          "date": "2026-10-07T21:29:50Z",
+          "measured": "2026-11-08T17:39:32.806776+00:00",
+          "report": "backfills/42498912253/1/macos/61ab1ce41300aa785d6beafb46c29b29dc832b8d/report.json",
+          "report_identity": "ff392b4e8923a9300e8f073c33a602ce81a0759a53f1fc4a2445b378d85fc3bc",
+          "batch": "backfills/42498912253/1/macos/61ab1ce41300aa785d6beafb46c29b29dc832b8d/batch.json",
+          "batch_identity": "b417728bf9f18dbcdd6aa228d2bb479939b428921db7d97a377f4d4566b352af",
+          "method": "37f85db746f63d55542a6e21a7ffd91231e8b5a9fe537fae1acf33cf8263c700"
         },
         {
           "commit": "d8dd4f608e030be77cdefde8575e0b1a5fffe820",

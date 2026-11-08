@@ -1,0 +1,132 @@
+{
+  "schema": 1,
+  "source_head": "1b0219369190ab8125bb85f346cc0f95d92c635f",
+  "history_head": "84b3bea88391445b63bc7c99edde1430b36bf33a",
+  "created_at": "2026-11-08T16:16:32.097453+00:00",
+  "jobs": [
+    {
+      "id": "linux-9bbee34da11e0d97b2b740cf25f4d90ca62447d9",
+      "platform": "linux",
+      "os": "ubuntu-latest",
+      "arch": "x86_64",
+      "revision": {
+        "sha": "9bbee34da11e0d97b2b740cf25f4d90ca62447d9",
+        "date": "2026-09-24T23:42:57+01:00",
+        "subject": "Explore benchmark history by measured version and platform (#914)"
+      }
+    },
+    {
+      "id": "linux-61ab1ce41300aa785d6beafb46c29b29dc832b8d",
+      "platform": "linux",
+      "os": "ubuntu-latest",
+      "arch": "x86_64",
+      "revision": {
+        "sha": "61ab1ce41300aa785d6beafb46c29b29dc832b8d",
+        "date": "2026-10-07T22:29:50+01:00",
+        "subject": "Distinguish benchmark layout versions in explorer (#986)"
+      }
+    },
+    {
+      "id": "macos-9bbee34da11e0d97b2b740cf25f4d90ca62447d9",
+      "platform": "macos",
+      "os": "macos-latest",
+      "arch": "arm64",
+      "revision": {
+        "sha": "9bbee34da11e0d97b2b740cf25f4d90ca62447d9",
+        "date": "2026-09-24T23:42:57+01:00",
+        "subject": "Explore benchmark history by measured version and platform (#914)"
+      }
+    },
+    {
+      "id": "macos-61ab1ce41300aa785d6beafb46c29b29dc832b8d",
+      "platform": "macos",
+      "os": "macos-latest",
+      "arch": "arm64",
+      "revision": {
+        "sha": "61ab1ce41300aa785d6beafb46c29b29dc832b8d",
+        "date": "2026-10-07T22:29:50+01:00",
+        "subject": "Distinguish benchmark layout versions in explorer (#986)"
+      }
+    }
+  ],
+  "contract": {
+    "files": [
+      10,
+      20,
+      50,
+      100,
+      200,
+      500,
+      1000,
+      2000,
+      5000,
+      10000,
+      20000,
+      50000,
+      100000
+    ],
+    "cpus": [
+      1,
+      3
+    ],
+    "depth": 40,
+    "repetitions": 9,
+    "retained": 7,
+    "driver": {
+      "benchmark_backfill.py": "24060c971a40a030e6aaf5b55b49adfbc5d3ddf9c54c0850b7f703a2333c7f25",
+      "benchmark_compare.py": "3125c9145c69c9f2bd90a273854913dbc41674178b0017a560315f13946196aa",
+      "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+      "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+      "benchmark_matrix.py": "abfa93fc0bf5b76ec45907166eac30a828dfe31e0129ba59a197e71c56d7f620",
+      "benchmark_shards.py": "38cf664f259aafd9788660267ff7c478c66d3790fb45e232e16360233ed30011",
+      "benchmark_provenance.py": "5cfe87906f4ead07ca8cf00857ed751393cd8d4c8ce0f672bae7ad32f51c96cc",
+      "process_resources.py": "8a39146449514c519921ee153f1301621555694b3cf5a64b16edcd6538f5ac16",
+      "process_resources_native.cc": "0b72ffc7b767682dca724bb6d8de8b5f2ccaae532b5b99c9e14f68505769a010"
+    },
+    "tasks": {
+      "files": [
+        "find",
+        "rg",
+        "xff"
+      ],
+      "files-safe": [
+        "xff"
+      ],
+      "name-txt": [
+        "find",
+        "rg",
+        "xff"
+      ],
+      "content-needle": [
+        "rg",
+        "xff"
+      ],
+      "content-absent_marker": [
+        "rg",
+        "xff"
+      ],
+      "fuzzy-discovery-itm": [
+        "find+fzf",
+        "xff"
+      ],
+      "fuzzy-list-itm": [
+        "fzf"
+      ],
+      "fuzzy-discovery-hdn": [
+        "find+fzf",
+        "xff"
+      ],
+      "fuzzy-list-hdn": [
+        "fzf"
+      ],
+      "fuzzy-discovery-zzzz": [
+        "find+fzf",
+        "xff"
+      ],
+      "fuzzy-list-zzzz": [
+        "fzf"
+      ]
+    }
+  },
+  "identity": "171f13a929e7f4fffeb5dae9ba11aac0df8cef0c1c57387af90e14bda2d8dfbe"
+}
