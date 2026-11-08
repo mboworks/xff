@@ -16658,5 +16658,67 @@
     "figures": "runs/42438412064/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.7.2-arm64-arm-64bit-Mach-O",
     "platform_details": "macOS 26.7.2 / arm64"
+  },
+  {
+    "platform": "linux / x86_64",
+    "commit": "5e622db924ff9dfefec36684319fcc1ac664ba87",
+    "label": "main / 5e622db924",
+    "platform_name": "linux / x86_64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #1142",
+        "href": "https://github.com/mboworks/xff/pull/1142"
+      }
+    ],
+    "binary": {
+      "state": "Verified against Retention",
+      "sha256": "c7f6deb1af2f21dd5e937b3fc91628997e48ec2933765960513a86bdcb27ae41",
+      "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42442346691/attempts/1 (benchmark-build-linux) at 2026-11-08T05:31:47.034036+00:00.",
+      "retention_reference": "https://github.com/mboworks/xff/actions/runs/42442346691/attempts/1 (benchmark-build-linux)",
+      "verified_at": "2026-11-08T05:31:47.034036+00:00"
+    },
+    "date": "2026-11-08T03:20:59Z",
+    "measurement_date": null,
+    "backfill": false,
+    "run": 42442346691,
+    "attempt": 1,
+    "report": "runs/42442346691/1/linux/",
+    "figures": "runs/42442346691/1/linux/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "macos / arm64",
+    "commit": "5e622db924ff9dfefec36684319fcc1ac664ba87",
+    "label": "main / 5e622db924",
+    "platform_name": "macos / arm64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #1142",
+        "href": "https://github.com/mboworks/xff/pull/1142"
+      }
+    ],
+    "binary": {
+      "state": "Verified against Retention",
+      "sha256": "9ac7fb504d571b0d94fa7b42c80a331994caa159ba4feb43e36f49c49bb17f08",
+      "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42442346691/attempts/1 (benchmark-build-macos) at 2026-11-08T05:31:48.005880+00:00.",
+      "retention_reference": "https://github.com/mboworks/xff/actions/runs/42442346691/attempts/1 (benchmark-build-macos)",
+      "verified_at": "2026-11-08T05:31:48.005880+00:00"
+    },
+    "date": "2026-11-08T03:20:59Z",
+    "measurement_date": null,
+    "backfill": false,
+    "run": 42442346691,
+    "attempt": 1,
+    "report": "runs/42442346691/1/macos/",
+    "figures": "runs/42442346691/1/macos/landscape.json",
+    "identity": "xff benchmarks - macOS-26.7.2-arm64-arm-64bit-Mach-O",
+    "platform_details": "macOS 26.7.2 / arm64"
   }
 ]
