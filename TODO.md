@@ -506,12 +506,21 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       keep the specialized pools and retain [all variants and counterexamples](docs/benchmarks/shared-stage-workers-20261107.md).
       Future reuse designs must preserve independent root/mount allowances, leaf jobs, owner
       draining and JC gates, and remove the repeatable Linux comparison regression before adoption.
+- [ ] Qualify direct span reads in `content::ScanLines` separately from O18. Native
+      profiling attributes 43.94% of sampled baseline CPU to zeroing beneath its owning
+      64 KiB read loop. Reuse `ReadInto` only with initialized-range, binary/EOF/error
+      tests and native/memory/archive controls; retain O07's rejected variants rather
+      than assuming removal of zeroing is always a win. See the current O18 qualification
+      notes in [the performance analysis](docs/performance-analysis.md).
 - [ ] O18: Qualify byte-bounded overlap with backpressure, ordered publication and cancellation;
       avoid per-batch throwaway threads and nested waits on the same saturated pool.
       Retain the [ordered-output credit experiment](docs/benchmarks/ordered-output-credit-20261107.md).
       All runtime refinements remain unselected after repeatable ordinary Linux output costs,
       despite large-output/RSS gains. Solve synchronization costs and missing input/slot/source/
       renderer-temporary admission independently; native output and stage overlap remain open.
+      Test observed-output scheduling: batch small/unknown output and overlap heavy output,
+      retaining identical byte credit in both paths. Qualify crossover/mixed workloads on
+      both hosts before selecting a threshold or exposing configuration.
 - [ ] O18a: Redesign queued cancellation after both measured policies fail cross-platform
       qualification. The deterministic nine-to-four backend-call proof and exact serial/recycling
       tests pass, but acquire-load and explicit-stop screens expose ordinary Mac costs. Retain

@@ -5066,3 +5066,94 @@ stage overlap open. No global memory bound or public-head CI claim follows.
 [Current-main requalification](benchmarks/ordered-output-credit-requalification-20261108.md) reproduces ordinary Linux
 three-worker costs (+12.85% filenames/+10.88% lines), so H2 remains unselected despite
 large-output gains. The complete case population and copied controls remain available.
+
+
+### O18 current-main overlap qualification in progress
+
+The current experiment starts a matcher generation on the existing persistent workers
+while the coordinator collects one further input batch. It publishes completed entries
+in input order, drains before serial/archive and traversal-error boundaries, and wakes
+credit waiters before worker teardown. A single transit record lets input admission check
+actual owned text capacity before queue insertion; oversized records are admitted alone.
+Output growth charges both old and new allocations against per-slot grants plus shared
+credit. Only the current ordered head may exceed the shared allowance, preserving
+arbitrarily large transactional output without truncation or a second source read.
+
+The overlap-only Linux screen improves the 10,000-file content-filter and filename-output
+cases, but the integrated credited variants repeatedly regress ordinary line output.
+Changing completion notifications, polling and layout has not qualified those costs away.
+The implementation remains an unselected development experiment; the earlier rejection
+and the remaining source/temporary/storage admission gates still apply. Current macOS
+focused TSan tests cover delayed heads/full later output, blocked-credit cancellation,
+restart, filesystem-owner teardown and long/oversized paths. These are development
+checks, not public-head/full-platform qualification or a whole-process memory bound.
+
+
+Linux user-space sampling of the same 10,000-file rg-line workload identifies a
+specific wait implementation cost: the compact atomic-wait prototype spends 7.56%
+of sampled CPU in `clock_gettime` reached through libc++ `atomic::wait`'s
+`steady_clock` polling. This is diagnostic evidence, not a timing gain. The next
+variant uses blocking condition waits for completion and output credit; notifications
+remain conditional on a registered waiter. Its outcome still requires measurement.
+
+
+Native whole-command validation then exposes a separate synchronization cost: in a
+traced 10,000-file flat-tree rg-line invocation, futex calls rise from 324 in the
+baseline to 7,550 with per-entry blocking completion. Traced wall times are not
+performance measurements. The 76-case native Linux population retains repeatable
+ordinary flat-tree costs even though the in-memory screen improved. Do not select
+that variant from the in-memory results alone.
+
+The next prototype amortizes ordinary publication in 64-entry windows, but abandons
+the window whenever any producer needs output credit. A credit waiter explicitly
+wakes the coordinator's condition; the coordinator then drains the ordered head,
+which retains its oversize guarantee. This is necessary to avoid deadlock when a
+window's later target cannot finish until earlier records release bytes. Small/tail
+batches instead evaluate and release one credited transaction at a time inline.
+Neither implementation is qualified by this design description alone.
+
+
+The native user-space profile also identifies a separate read-loop candidate. In
+500 baseline rg-line invocations over the 10,000-file flat fixture, 43.94% of sampled
+CPU reaches `memset` beneath `ScanLines`. Source inspection confirms that this loop
+calls owning `Read(65,536)`; the host implementation constructs a zero-filled
+64 KiB string before each read, including the EOF probe. This is not the earlier
+`ReadContentRange` change and not proof that removing zeroing alone improves native
+elapsed time. Qualify a direct span-read line-scanner path independently, using the
+existing native `ReadInto` capability, and retain O07's rejected memory/ten-worker
+controls. Preserve binary sniffing, short reads, EOF and late-error transactions;
+never read beyond the returned initialized byte range.
+
+
+### O18: adapt scheduling to observed output volume
+
+The fixed credited-overlap policies improve output-heavy work but retain ordinary
+Linux output costs. A larger publication window alone does not qualify them: the
+256-entry-window experiment still slows flat 10,000-file native lines, rg filenames
+and rg lines by 9.28%, 8.38% and 13.07%, respectively. Its copied-baseline controls
+are -0.36%, -1.12% and -0.62%; each candidate cost occurs in all three sessions.
+Output-heavy 1,000-file rg output improves 24.41%, so one fixed scheduling policy
+is not an adequate decision for both populations.
+
+The next private prototype chooses between batch publication and stage overlap
+from output bytes already produced. Unknown output and output-free filters start in batch mode. A completed
+batch averaging at least 1 KiB of output per visited entry enables overlap for the
+next batch; a later small-output batch switches it off again. This threshold is an
+experimental crossover, not a public option or a qualified default. It adds no
+metadata request or timer. Low-output computational work might still benefit from
+overlap; output size alone is not claimed to estimate every kind of matching cost.
+
+Both paths retain the same per-slot grants, shared excess credit, ordered-head
+oversize exception, whole-file validation, cancellation and owner-draining rules.
+Batch mode normally waits once for the batch's final publication slot, but drains
+early when any producer blocks on credit. It never waits for every producer while
+withholding the bytes that those producers need to finish. Overlap mode retains
+smaller publication windows and reserves a participant while collection is active.
+
+Tests alternate small and large transactions on reused workers and compare exact
+serial/parallel native and rg output across small-heavy-small traversal batches.
+Qualification must include output-size crossover and mixed workloads, unchanged
+listing/metadata paths, and both native and memory backends on both hosts. A useful
+heavy-output result cannot overrule a repeated ordinary-work regression. Neither
+this prototype nor the preceding tests establish the wider JC input/source/
+renderer-temporary admission contract or a whole-process memory cap.

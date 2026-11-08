@@ -479,6 +479,8 @@ absl::StatusOr<MatchOutput> PrepareRgOutput(
     bool fold_case,
     bool smart_case);
 
+class CreditedOutput;
+
 struct RenderedRgOutput {
   bool selected = false;
   std::string text;
@@ -491,6 +493,14 @@ absl::StatusOr<RenderedRgOutput> RenderRgOutput(
     const parser::RgSearch& search,
     EvalContext& context,
     std::string records = {});
+
+// Pipeline transactions reserve their actual output allocation before growth.
+absl::StatusOr<bool> RenderRgOutput(
+    const MatchOutput& output,
+    const parser::RgSearch& search,
+    EvalContext& context,
+    CreditedOutput& records);
+absl::StatusOr<bool> RenderMatchOutput(const MatchOutput& output, EvalContext& context, CreditedOutput& records);
 
 absl::StatusOr<bool> EmitRgOutput(const MatchOutput& output, const parser::RgSearch& search, EvalContext& context);
 

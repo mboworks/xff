@@ -63,6 +63,26 @@ TEST_F(ParallelMatchTest, RepeatedBatchesRetainEntryOrderAndDoNotReuseOldResults
   }
 }
 
+TEST_F(ParallelMatchTest, AsynchronousBatchesPreserveOrderedResultsAndCanRestartAfterCancellation) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-type", "f"}));
+  ParallelMatch matcher(*command.expression, 4, false);
+  // Without rendered output there is no observed-output signal for stage overlap.
+  EXPECT_THAT(matcher.CollectNextBatch(), IsFalse());
+  for (const std::size_t count : {1, 128, 16, 0, 1'024, 7}) {
+    matcher.Start(Entries(count));
+    const auto& results = matcher.Wait();
+    ASSERT_THAT(results, SizeIs(count));
+    for (std::size_t index = 0; index < count; ++index) {
+      EXPECT_THAT(results.at(index).evaluation.matched, Eq(index % 2 == 0));
+      EXPECT_THAT(matcher.Entries().at(index).Path(), EqualsText(std::to_string(index)));
+    }
+    matcher.Start(Entries(1'024));
+    matcher.Cancel();
+  }
+  // Destruction drains a still-running generation; owned filesystem observers stay live.
+  matcher.Start(Entries(1'024));
+}
+
 TEST_F(ParallelMatchTest, ZeroWorkersIsClampedAndUnusedPoolStartsNoWork) {
   MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-true"}));
   const ParallelMatch unused(*command.expression, 4, false);

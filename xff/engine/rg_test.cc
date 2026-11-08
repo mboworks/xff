@@ -35,6 +35,7 @@
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/engine/evaluate.h"
+#include "xff/engine/output_credit.h"
 #include "xff/engine/owned_visit.h"
 #include "xff/engine/parallel_match.h"
 #include "xff/engine/run.h"
@@ -104,6 +105,7 @@ struct SearchFs final : vfs::FileSystem {
   bool streaming = false;
   vfs::Source entry_source = vfs::Source::kLocalFs;
   vfs::SharedReadSource source_override;
+  std::function<void(std::string_view)> before_read;
   bool track_threads = false;
   std::size_t expected_threads = 2;
   mutable std::mutex read_mutex;
@@ -197,6 +199,9 @@ struct SearchFs final : vfs::FileSystem {
   }
 
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override {
+    if (before_read) {
+      before_read(path);
+    }
     TrackRead();
     reads.fetch_add(1, std::memory_order_relaxed);
     if (read_error || path == read_error_path) {
@@ -841,6 +846,252 @@ TEST_F(RgEngineTest, DerivedPoolSlotsClearAcrossUnmatchedEmptyAndInlineBatches) 
   EXPECT_THAT(last.Loaded(), IsFalse());
   EXPECT_THAT(last.Lines(fs, "tree/a"), Optional(2));
   EXPECT_THAT(fs.reads.load(), Eq(258));
+}
+
+TEST_F(RgEngineTest, InputByteAdmissionPreservesLongPathsAcrossPartialBatches) {
+  fs.files.clear();
+  const std::string tail(5'000, 'x');
+  for (std::size_t index = 0; index < 300; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index) + tail, "hit\n");
+  }
+  EXPECT_THAT(Run({"--jobs=1", "--archive=none", "tree", "-content", "hit"}, false).errors, Eq(0));
+  const auto expected = output;
+  EXPECT_THAT(Run({"--jobs=4", "--archive=none", "tree", "-content", "hit"}, false).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText(expected));
+  fs.files.clear();
+  fs.files.emplace("tree/" + std::string(1'100'000, 'x'), "hit\n");
+  EXPECT_THAT(Run({"--jobs=4", "--archive=none", "tree", "-content", "hit"}, false).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText(fs.files.begin()->first + "\n"));
+}
+
+TEST_F(RgEngineTest, ObservedOutputSelectsOverlapAndReturnsToBatchPublication) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--rg", "hit", "tree"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareRgOutput(command, fs, false, false));
+  const auto search = command.rg.value_or(parser::RgSearch{});
+  ParallelMatch matcher(
+      {}, 4, false,
+      ParallelContentOutput{
+          .output = prepared,
+          .rg = search,
+          .grep =
+              {
+                  .line_number = false,
+                  .filename = false,
+              },
+      });
+  EXPECT_THAT(matcher.CollectNextBatch(), IsFalse());
+  // Exercise both transitions on the same persistent workers and credited slots.
+  for (const std::size_t size : {4, 2'048, 4, 8'192, 4}) {
+    fs.files.at("tree/a") = std::string(size - 4, 'x') + "hit\n";
+    matcher.Start(RepeatedEntries(128), true);
+    for (std::size_t index = 0; index < 128; ++index) {
+      const auto& result = matcher.AwaitResult(index);
+      EXPECT_THAT(result.content, Optional(Property(&ContentResult::Text, EqualsText(fs.files.at("tree/a")))));
+      matcher.ReleaseResult(index);
+    }
+    matcher.Wait();
+    EXPECT_THAT(matcher.CollectNextBatch(), Eq(size >= 1'024));
+    EXPECT_THAT(matcher.OutputUsage().excess, Eq(0));
+  }
+}
+
+TEST_F(RgEngineTest, MixedOutputBatchesPreserveNativeAndRgRecordsAcrossSchedulingChanges) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 768; ++index) {
+    const auto prefix = std::to_string(1'000 + index);
+    fs.files.emplace("tree/" + prefix, index >= 256 && index < 512 ? std::string(8'192, 'x') + "hit\n" : "hit\n");
+  }
+  EXPECT_THAT(Run({"--jobs=1", "--archive=none", "-M", "tree", "-content", "hit"}, false).errors, Eq(0));
+  const auto native = output;
+  EXPECT_THAT(Run({"--jobs=4", "--archive=none", "-M", "tree", "-content", "hit"}, false).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText(native));
+  EXPECT_THAT(Run({"--rg", "--jobs=1", "--archive=none", "hit", "tree"}, false).errors, Eq(0));
+  const auto rg = output;
+  EXPECT_THAT(Run({"--rg", "--jobs=4", "--archive=none", "hit", "tree"}, false).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText(rg));
+}
+
+TEST_F(RgEngineTest, CreditedInlineEntriesReleaseEachTransactionBeforeReadingTheNext) {
+  fs.files.at("tree/a") = std::string(2'097'152, 'x') + "hit\n";
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--rg", "hit", "tree"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareRgOutput(command, fs, false, false));
+  const auto search = command.rg.value_or(parser::RgSearch{});
+  ParallelMatch matcher(
+      {}, 4, false,
+      ParallelContentOutput{
+          .output = prepared,
+          .rg = search,
+          .grep =
+              {
+                  .line_number = false,
+                  .filename = false,
+              },
+      });
+  fs.track_threads = true;
+  fs.expected_threads = 1;
+  matcher.Start(RepeatedEntries(10), true);
+  EXPECT_THAT(fs.reads.load(), Eq(0));
+  for (std::size_t index = 0; index < 10; ++index) {
+    const auto& result = matcher.AwaitResult(index);
+    EXPECT_THAT(result.content, Optional(Property(&ContentResult::Text, EqualsText(fs.files.at("tree/a")))));
+    EXPECT_THAT(fs.reads.load(), Eq(index + 1));
+    matcher.ReleaseResult(index);
+    EXPECT_THAT(matcher.OutputUsage().excess, Eq(0));
+  }
+  matcher.Wait();
+  EXPECT_THAT(fs.read_threads, ElementsAre(std::this_thread::get_id()));
+}
+
+TEST_F(RgEngineTest, CreditedTransactionsProgressPastDelayedHeadAndFullLaterOutput) {
+  fs.files.clear();
+  const std::string ordinary = std::string(65'536, 'x') + "hit\n";
+  const std::string giant = std::string(2'097'152, 'x') + "hit\n";
+  std::vector<OwnedVisit> entries;
+  entries.reserve(64);
+  for (std::size_t index = 0; index < 64; ++index) {
+    const auto path = "tree/" + std::to_string(index);
+    fs.files.emplace(path, index == 0 ? giant : ordinary);
+    entries.emplace_back(Visit{.path = path, .metadata = {.type = vfs::FileType::kRegular}, .fs = fs});
+  }
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--rg", "hit", "tree"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareRgOutput(command, fs, false, false));
+  const auto search = command.rg.value_or(parser::RgSearch{});
+  ParallelMatch matcher(
+      {}, 4, false,
+      ParallelContentOutput{
+          .output = prepared,
+          .rg = search,
+          .grep =
+              {
+                  .line_number = false,
+                  .filename = false,
+              },
+      });
+  std::mutex mutex;
+  std::condition_variable condition;
+  bool released = false;
+  bool timed_out = false;
+  fs.before_read = [&](std::string_view path) {
+    if (path == "tree/0") {
+      std::unique_lock lock(mutex);
+      timed_out = !condition.wait_for(lock, std::chrono::seconds(5), [&] { return released; });
+    }
+  };
+  matcher.Start(std::move(entries), true);
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+  while ((matcher.OutputUsage().waiters == 0 || matcher.OutputUsage().excess < OutputCredit::kSharedBytes - 131'072)
+         && std::chrono::steady_clock::now() < deadline) {
+    std::this_thread::yield();
+  }
+  EXPECT_THAT(matcher.OutputUsage().waiters, Gt(0));
+  EXPECT_THAT(matcher.OutputUsage().excess, Le(OutputCredit::kSharedBytes));
+  {
+    const std::scoped_lock lock(mutex);
+    released = true;
+    condition.notify_all();
+  }
+  for (std::size_t index = 0; index < 64; ++index) {
+    const auto& result = matcher.AwaitResult(index);
+    EXPECT_THAT(
+        result.content, Optional(AllOf(
+                            Field("selected", &ContentResult::selected, IsOkAndHolds(IsTrue())),
+                            Property(&ContentResult::Text, EqualsText(index == 0 ? giant : ordinary)))));
+    matcher.ReleaseResult(index);
+  }
+  matcher.Wait();
+  EXPECT_THAT(timed_out, IsFalse());
+  EXPECT_THAT(matcher.OutputUsage().excess, Eq(0));
+  EXPECT_THAT(matcher.OutputUsage().peak_excess, Gt(OutputCredit::kSharedBytes));
+}
+
+TEST_F(RgEngineTest, CancellationDrainsCreditWaitersAndUnstartedResultsBeforePoolReuse) {
+  fs.files.at("tree/a") = std::string(262'144, 'x') + "hit\n";
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--rg", "hit", "tree"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareRgOutput(command, fs, false, false));
+  const auto search = command.rg.value_or(parser::RgSearch{});
+  ParallelMatch matcher(
+      {}, 4, false,
+      ParallelContentOutput{
+          .output = prepared,
+          .rg = search,
+          .grep =
+              {
+                  .line_number = false,
+                  .filename = false,
+              },
+      });
+  matcher.Start(RepeatedEntries(128), true);
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+  while (matcher.OutputUsage().waiters == 0 && std::chrono::steady_clock::now() < deadline) {
+    std::this_thread::yield();
+  }
+  EXPECT_THAT(matcher.OutputUsage().waiters, Gt(0));
+  matcher.Cancel();
+  EXPECT_THAT(matcher.AwaitResult(127).evaluation.matched, IsFalse());
+  EXPECT_THAT(matcher.OutputUsage().waiters, Eq(0));
+  fs.files.at("tree/a") = "hit\n";
+  matcher.Start(RepeatedEntries(64), true);
+  for (std::size_t index = 0; index < 64; ++index) {
+    const auto& result = matcher.AwaitResult(index);
+    EXPECT_THAT(result.content, Optional(Property(&ContentResult::Text, EqualsText("hit\n"))));
+    matcher.ReleaseResult(index);
+  }
+  matcher.Wait();
+  EXPECT_THAT(matcher.OutputUsage().excess, Eq(0));
+}
+
+TEST_F(RgEngineTest, AsyncDestructionDrainsWorkersBeforeReleasingFilesystemOwners) {
+  auto owner = std::make_shared<SearchFs>();
+  const std::weak_ptr<const vfs::FileSystem> weak = owner;
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
+  {
+    ParallelMatch matcher(*command.expression, 4, false);
+    std::vector<OwnedVisit> entries;
+    entries.reserve(128);
+    for (std::size_t index = 0; index < 128; ++index) {
+      entries.emplace_back(
+          Visit{
+              .path = "tree/a",
+              .metadata = {.type = vfs::FileType::kRegular},
+              .fs = *owner,
+              .fs_owner = owner,
+          });
+    }
+    matcher.Start(std::move(entries));
+    owner.reset();
+    EXPECT_THAT(weak.expired(), IsFalse());
+  }
+  EXPECT_THAT(weak.expired(), IsTrue());
+}
+
+TEST_F(RgEngineTest, AsyncStartReturnsWhileAnOwnedReadIsStillBlocked) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
+  ParallelMatch matcher(*command.expression, 4, false);
+  std::mutex mutex;
+  std::condition_variable condition;
+  bool started = false;
+  bool released = false;
+  bool timed_out = false;
+  fs.before_read = [&](std::string_view) {
+    std::unique_lock lock(mutex);
+    started = true;
+    condition.notify_all();
+    timed_out |= !condition.wait_for(lock, std::chrono::seconds(2), [&] { return released; });
+  };
+  matcher.Start(RepeatedEntries(128));
+  {
+    std::unique_lock lock(mutex);
+    EXPECT_THAT(condition.wait_for(lock, std::chrono::seconds(2), [&] { return started; }), IsTrue());
+    released = true;
+    condition.notify_all();
+  }
+  const auto& results = matcher.Wait();
+  EXPECT_THAT(timed_out, IsFalse());
+  EXPECT_THAT(results, SizeIs(128));
+  for (const auto& result : results) {
+    EXPECT_THAT(result.evaluation.matched, IsTrue());
+  }
+  EXPECT_THAT(fs.reads.load(), Eq(128));
 }
 
 TEST_F(RgEngineTest, MatcherPoolGrowsForLaterBatchesAndRunsShortTailsInline) {
