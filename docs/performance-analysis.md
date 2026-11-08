@@ -5047,3 +5047,6 @@ The [candidate completion audit](performance-candidate-completion-audit.md) pres
 the original 22families, distinguishes rejected trials from unimplemented parent
 requirements, and identifies the next ownership/admission gates for O18. It does
 not substitute historical or child checks for current integration and main health.
+
+[Current-main requalification](benchmarks/language-list-reserve-requalification-20261108.md) repeats all 16 cases on both
+hosts. The linked gains remain small and mixed; the exact reservation stays unselected.
