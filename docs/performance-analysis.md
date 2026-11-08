@@ -5062,3 +5062,7 @@ baseline controls are -0.96%/-1.57%. All six focused correctness/sanitizer confi
 pass. Keep production unchanged, retain all raw controls and partial populations,
 and leave full O18 input/slot/source/temporary admission, native output and actual
 stage overlap open. No global memory bound or public-head CI claim follows.
+
+[Current-main requalification](benchmarks/ordered-output-credit-requalification-20261108.md) reproduces ordinary Linux
+three-worker costs (+12.85% filenames/+10.88% lines), so H2 remains unselected despite
+large-output gains. The complete case population and copied controls remain available.
