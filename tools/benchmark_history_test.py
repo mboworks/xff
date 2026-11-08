@@ -203,22 +203,17 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn("branches: [main]", measure)
         self.assertIn("workflow_dispatch: {}", measure)
         self.assertIn('base_sha="$(git rev-parse HEAD^1)"', measure)
-        self.assertIn("github.event.workflow_run.event == 'push'", publish)
-        self.assertIn("github.event.workflow_run.head_branch == 'main'", publish)
         self.assertIn("--config=clang_release", measure)
         self.assertIn("target.files_to_run.executable.path", measure)
         self.assertIn("namespace: default", measure)
         self.assertNotIn("bazel-cache-save", measure)
-        waiter, publisher = publish.split("  publish:", 1)
-        self.assertNotIn("group: coverage-pages", waiter)
-        self.assertIn("group: coverage-pages\n      queue: max\n      cancel-in-progress: false", publisher)
-        self.assertIn("ref: main\n          persist-credentials: false", waiter)
-        self.assertNotIn(": write", waiter)
+        self.assertIn("group: benchmark-publication-latest\n  queue: single\n  cancel-in-progress: false", publish)
+        self.assertIn("group: coverage-pages\n      queue: max\n      cancel-in-progress: false", publish)
         self.assertIn("ref: main\n          path: source", publish)
         self.assertNotIn("actions/deploy-pages@", publish)
         self.assertIn('python3 source/tools/publish_site.py --repo=site', publish)
-        self.assertIn("bash -c 'set -euo pipefail; refresh_site retry'", publish)
-        self.assertIn('[ "${PREVIEW}" = \'true\' ] && [ "$1" = \'initial\' ]', publish)
+        self.assertIn("bash -c 'set -euo pipefail; refresh_site'", publish)
+        self.assertIn("benchmark_reconcile_ci.py", publish)
         self.assertNotIn("--keep=100", publish)
         self.assertIn("retention-days: 30", shard_action)
         self.assertIn("shard: [0, 1, 2]", measure)
@@ -231,31 +226,14 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertNotIn('shards/*/*.json', measure)
         self.assertIn("git -C site add --all", publish)
 
-    def test_obsolete_queued_previews_skip_site_loading_and_collection_races_skip_rendering(self):
+    def test_publication_coalesces_requests_and_reconciles_sources(self):
         workflow = repository_file('.github/workflows/benchmark_pages.yml').read_text()
-        publish = workflow.split('  publish:', 1)[1]
-        admission = "needs.preview.outputs.available != 'true' || steps.preview-current.outputs.available == 'true'"
-        collected = "needs.preview.outputs.available != 'true' || steps.preview.outputs.available == 'true'"
-        check = publish.split('      - name: Recheck queued PR preview before loading the retained site', 1)[1]
-        check = check.split('\n      - ', 1)[0]
-        self.assertIn("if: needs.preview.outputs.available == 'true'", check)
-        self.assertIn('id: preview-current', check)
-        self.assertIn('benchmark_preview_ci.py current', check)
-        self.assertIn('--output="${GITHUB_OUTPUT}"', check)
-        self.assertLess(publish.index('id: preview-current'), publish.index('ref: coverage-pages'))
-        self.assertIn('      - uses: actions/checkout@v7\n        if: ' + admission + '\n        with:\n'
-                      '          ref: coverage-pages', publish)
-        for marker, condition in (
-                ('name: Expand retained benchmark inputs', admission),
-                ('name: Verify and retain current PR benchmark JSON', "steps.preview-current.outputs.available == 'true'"),
-                ('uses: actions/setup-node@v7', collected),
-                ('name: Build pinned benchmark renderer', collected),
-                ('name: Refresh and retain stable benchmark references', collected)):
-            with self.subTest(step=marker):
-                step = publish.split('      - ' + marker, 1)[1].split('\n      - ', 1)[0]
-                self.assertIn('if: ' + condition, step)
-        self.assertIn('PREVIEW: ${{ steps.preview.outputs.available }}', publish)
-        self.assertNotIn('PREVIEW: ${{ needs.preview.outputs.available }}', publish)
+        self.assertIn('types: [completed]', workflow)
+        self.assertIn('group: benchmark-publication-latest', workflow)
+        reconcile = repository_file('tools/benchmark_reconcile_ci.py').read_text()
+        self.assertIn('benchmark_preview_ci.collect', reconcile)
+        self.assertIn("('benchmarks.yml', 'push', retain_measurement)", reconcile)
+        self.assertIn("('benchmark_backfill.yml', 'workflow_dispatch', retain_backfill)", reconcile)
 
     def test_fifth_candidate_requires_unresolved_fourth_agreement(self):
         workflow = repository_file('.github/workflows/benchmarks.yml').read_text()
@@ -623,13 +601,13 @@ class BenchmarkHistoryTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'platform'):
                 history.retain(root, dict(record(), platform='../bad'), source(3))
 
-    def test_release_refresh_does_not_download_measurement_artifacts(self):
+    def test_release_refresh_reconciles_measurement_artifacts(self):
         publish = repository_file(".github/workflows/benchmark_pages.yml").read_text()
         self.assertIn("workflows: [Test, Benchmarks, Release, Benchmark backfill]", publish)
         self.assertIn("workflow_dispatch: {}", publish)
         self.assertIn("fetch-depth: 0", publish)
-        self.assertIn("uses: actions/download-artifact@v8\n        if: github.event.workflow_run.name == 'Benchmarks'", publish)
-        refresh = publish.split("      - name: Refresh and retain stable benchmark references", 1)[1].split(
+        self.assertIn("benchmark_reconcile_ci.py", publish)
+        refresh = publish.split("      - name: Reconcile and retain available benchmarks", 1)[1].split(
             "      - uses: actions/upload-pages-artifact", 1)[0]
         self.assertNotIn("SOURCE_RUN", refresh)
         self.assertNotIn("download-artifact", refresh)
