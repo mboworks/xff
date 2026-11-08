@@ -256,11 +256,11 @@ cc_library(
     hdrs = ["evaluate.h"],
     visibility = ["//xff:__subpackages__"],
     deps = [
-        ":output_credit_cc",
         ":collect_cc",
         ":expression_contract_cc",
         ":extract_cc",
         ":mount_cc",
+        ":output_credit_cc",
         ":walk_cc",
         "//xff/content:line_match_cc",
         "//xff/content:snapshot_cc",
@@ -384,8 +384,8 @@ cc_test(
     size = "small",
     srcs = ["output_credit_test.cc"],
     deps = [
-        "@abseil-cpp//absl/synchronization",
         ":output_credit_cc",
+        "@abseil-cpp//absl/synchronization",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:matchers_cc",
     ],
@@ -396,9 +396,9 @@ cc_library(
     srcs = ["parallel_match.cc"],
     hdrs = ["parallel_match.h"],
     deps = [
-        ":output_credit_cc",
         ":evaluate_cc",
         ":expression_execution_cc",
+        ":output_credit_cc",
         ":owned_visit_cc",
         "//xff/content:snapshot_cc",
         "//xff/fuzzy:fuzzy_cc",
@@ -737,8 +737,8 @@ cc_test(
     size = "small",
     srcs = ["rg_test.cc"],
     deps = [
-        ":output_credit_cc",
         ":evaluate_cc",
+        ":output_credit_cc",
         ":owned_visit_cc",
         ":parallel_match_cc",
         ":run_cc",

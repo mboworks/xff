@@ -5067,7 +5067,6 @@ stage overlap open. No global memory bound or public-head CI claim follows.
 three-worker costs (+12.85% filenames/+10.88% lines), so H2 remains unselected despite
 large-output gains. The complete case population and copied controls remain available.
 
-
 ### O18 current-main overlap qualification in progress
 
 The current experiment starts a matcher generation on the existing persistent workers
@@ -5088,14 +5087,12 @@ focused TSan tests cover delayed heads/full later output, blocked-credit cancell
 restart, filesystem-owner teardown and long/oversized paths. These are development
 checks, not public-head/full-platform qualification or a whole-process memory bound.
 
-
 Linux user-space sampling of the same 10,000-file rg-line workload identifies a
 specific wait implementation cost: the compact atomic-wait prototype spends 7.56%
 of sampled CPU in `clock_gettime` reached through libc++ `atomic::wait`'s
 `steady_clock` polling. This is diagnostic evidence, not a timing gain. The next
 variant uses blocking condition waits for completion and output credit; notifications
 remain conditional on a registered waiter. Its outcome still requires measurement.
-
 
 Native whole-command validation then exposes a separate synchronization cost: in a
 traced 10,000-file flat-tree rg-line invocation, futex calls rise from 324 in the
@@ -5112,7 +5109,6 @@ window's later target cannot finish until earlier records release bytes. Small/t
 batches instead evaluate and release one credited transaction at a time inline.
 Neither implementation is qualified by this design description alone.
 
-
 The native user-space profile also identifies a separate read-loop candidate. In
 500 baseline rg-line invocations over the 10,000-file flat fixture, 43.94% of sampled
 CPU reaches `memset` beneath `ScanLines`. Source inspection confirms that this loop
@@ -5123,7 +5119,6 @@ elapsed time. Qualify a direct span-read line-scanner path independently, using 
 existing native `ReadInto` capability, and retain O07's rejected memory/ten-worker
 controls. Preserve binary sniffing, short reads, EOF and late-error transactions;
 never read beyond the returned initialized byte range.
-
 
 ### O18: adapt scheduling to observed output volume
 
