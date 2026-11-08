@@ -6148,6 +6148,7 @@ RunResult RunFindCore(
   };
 
   std::vector<DeferredCandidate> deferred_candidates;
+  const DeferredDecisions initial_deferred_decisions;
   std::size_t deferred_order = 0;
   std::vector<ExprIdentity> deferred_nodes;
   if (expression.has_value()) {
@@ -6422,9 +6423,17 @@ RunResult RunFindCore(
         // no fuzzy test renders empty rather than inheriting the previous entry's score.
         fuzzy_score.reset();
         hash_verification.reset();
-        EvaluationMemo evaluation_memo;
-        const DeferredDecisions deferred_results;
-        DeferredEvaluation deferred{.decisions = deferred_results, .memo = evaluation_memo};
+        // Ordinary entries do not need deferred memo storage; unresolved result-set
+        // predicates keep their own memo while sharing the immutable initial decisions.
+        std::optional<EvaluationMemo> evaluation_memo;
+        std::optional<DeferredEvaluation> deferred;
+        if (!deferred_nodes.empty()) {
+          deferred.emplace(
+              DeferredEvaluation{
+                  .decisions = initial_deferred_decisions,
+                  .memo = evaluation_memo.emplace(),
+              });
+        }
         EvalContext eval_context{
             .visit = visit,
             .emit = emit,
@@ -6451,8 +6460,7 @@ RunResult RunFindCore(
             .fuzzy_workspace = fuzzy_workspace,
             .hash_verification = hash_verification_summary ? mbo::types::OptionalRef{hash_verification}
                                                            : mbo::types::OptionalRef<std::optional<bool>>{},
-            .deferred = deferred_nodes.empty() ? mbo::types::OptionalRef<DeferredEvaluation>{}
-                                               : mbo::types::OptionalRef{deferred},
+            .deferred = deferred ? mbo::types::OptionalRef{*deferred} : mbo::types::OptionalRef<DeferredEvaluation>{},
             .grep = grep_options,
             .grep_json = format == render::Format::kJsonl,
             .grep_before = grep_before,
@@ -6507,7 +6515,7 @@ RunResult RunFindCore(
               .entry = OwnedVisit(visit),
               .captures = std::move(captures),
               .outputs = std::move(outputs),
-              .memo = std::move(evaluation_memo),
+              .memo = std::move(evaluation_memo).value(),
               .decisions = {},
               .hash_verification = hash_verification,
               .waiting_at = evaluated.waiting_at.value(),
