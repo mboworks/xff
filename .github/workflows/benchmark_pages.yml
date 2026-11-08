@@ -13,7 +13,7 @@ on:
 # One running publisher and only the newest pending request. The pending request
 # reconciles every available source, including work from displaced requests.
 concurrency:
-  group: benchmark-publication-latest
+  group: benchmark-publication-latest-${{ github.ref }}
   queue: single
   cancel-in-progress: false
 
@@ -23,6 +23,7 @@ jobs:
   publish:
     # Every request reconciles all trusted sources. A request which replaces a
     # pending one must never be skipped based on its own triggering event.
+    if: github.ref == 'refs/heads/main'
     # Other retained-site writers use this lock too. Never cancel those writers.
     concurrency:
       group: coverage-pages

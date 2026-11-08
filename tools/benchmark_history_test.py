@@ -207,7 +207,7 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn("target.files_to_run.executable.path", measure)
         self.assertIn("namespace: default", measure)
         self.assertNotIn("bazel-cache-save", measure)
-        self.assertIn("group: benchmark-publication-latest\n  queue: single\n  cancel-in-progress: false", publish)
+        self.assertIn("group: benchmark-publication-latest-${{ github.ref }}\n  queue: single\n  cancel-in-progress: false", publish)
         self.assertIn("group: coverage-pages\n      queue: max\n      cancel-in-progress: false", publish)
         self.assertIn("ref: main\n          path: source", publish)
         self.assertNotIn("actions/deploy-pages@", publish)

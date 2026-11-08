@@ -868,7 +868,10 @@ py_test(
     name = "benchmark_history_test",
     size = "small",
     srcs = ["benchmark_history_test.py"],
-    data = ["//:python_workflow_test_data"],
+    data = [
+        ":benchmark_reconcile_ci.py",
+        "//:python_workflow_test_data",
+    ],
     deps = [
         ":benchmark_history_lib",
         ":test_paths_lib",
