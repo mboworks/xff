@@ -17,8 +17,10 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -76,11 +78,6 @@ std::vector<ReadFormatInfo>& ReadFormatsSlot() {
   return slot;
 }
 
-absl::flat_hash_set<std::string>& GateSuffixesSlot() {
-  static absl::flat_hash_set<std::string> slot;
-  return slot;
-}
-
 std::vector<ReadFormatInfo> AllReadFormats() {
   std::vector<ReadFormatInfo> formats = ReadFormatsSlot();
   for (const ContainerReader& reader : ContainerReadersSlot()) {
@@ -89,15 +86,49 @@ std::vector<ReadFormatInfo> AllReadFormats() {
   return formats;
 }
 
-void RebuildGate() {
-  absl::flat_hash_set<std::string>& gate = GateSuffixesSlot();
-  gate.clear();
-  for (const ReadFormatInfo& format : AllReadFormats()) {
-    for (const std::string& suffix : format.suffixes) {
-      const std::string::size_type dot = suffix.rfind('.');
-      gate.insert(absl::AsciiStrToLower(dot == 0 ? suffix : suffix.substr(dot)));
+absl::flat_hash_set<std::string> BuildGate() {
+  absl::flat_hash_set<std::string> gate;
+  const auto include = [&gate](absl::Span<const ReadFormatInfo> formats) {
+    for (const ReadFormatInfo& format : formats) {
+      for (const std::string& suffix : format.suffixes) {
+        const std::string::size_type dot = suffix.rfind('.');
+        gate.insert(absl::AsciiStrToLower(std::string_view(suffix).substr(dot)));
+      }
     }
+  };
+  include(ReadFormatsSlot());
+  for (const ContainerReader& reader : ContainerReadersSlot()) {
+    include(reader.formats);
   }
+  return gate;
+}
+
+// Registrations precede concurrent registry use. Only first-use construction needs a lock;
+// subsequent name checks read the immutable set after its release/acquire publication.
+class NameGate final {
+ public:
+  void Invalidate() { ready_.store(false, std::memory_order_release); }
+
+  bool Contains(std::string_view suffix) {
+    if (!ready_.load(std::memory_order_acquire)) {
+      const std::scoped_lock lock(mutex_);
+      if (!ready_.load(std::memory_order_relaxed)) {
+        suffixes_ = BuildGate();
+        ready_.store(true, std::memory_order_release);
+      }
+    }
+    return suffixes_.contains(absl::AsciiStrToLower(suffix));
+  }
+
+ private:
+  std::atomic<bool> ready_ = false;
+  std::mutex mutex_;
+  absl::flat_hash_set<std::string> suffixes_;
+};
+
+NameGate& GateSlot() {
+  static NameGate slot;
+  return slot;
 }
 
 // The process-wide member remover, empty when no backend registered one - which is the answer for a
@@ -153,7 +184,7 @@ void RegisterContainerReader(
     found->formats = std::move(formats);
   }
   std::ranges::sort(readers, {}, &ContainerReader::name);
-  RebuildGate();
+  GateSlot().Invalidate();
 }
 
 void RegisterContainerMemberRemover(ContainerMemberRemover remover) {
@@ -302,7 +333,7 @@ absl::Status PackContainer(std::string_view path, const std::vector<PackFile>& f
 
 void RegisterContainerReadFormats(std::vector<ReadFormatInfo> formats) {
   ReadFormatsSlot() = std::move(formats);
-  RebuildGate();
+  GateSlot().Invalidate();
 }
 
 std::vector<ReadFormatInfo> ContainerReadFormats() {
@@ -320,7 +351,7 @@ bool LooksLikeContainerName(std::string_view name) {
     // `.gz` is a dotfile, not a gzip called something.
     return false;
   }
-  return GateSuffixesSlot().contains(absl::AsciiStrToLower(name.substr(dot)));
+  return GateSlot().Contains(name.substr(dot));
 }
 
 absl::StatusOr<std::unique_ptr<vfs::FileSystem>> OpenContainer(std::string_view container, MemberPathOptions options) {

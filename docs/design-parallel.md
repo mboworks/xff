@@ -68,8 +68,11 @@ A bounded directory-read worker pool with a single coordinator:
   does not disable host-file parallelism: mounted/archive-member entries flush pending host results
   and use the serial evaluator. Both paths keep the same VFS and safety preflight.
 - Workers own each entry's content snapshot and rendered output. Predicates and match output reuse
-  that snapshot; source bytes are released when evaluation finishes. When templates or histograms
-  request hashes or line counts, selected workers derive those values from bytes already loaded and
+  that snapshot; source bytes are released when evaluation finishes. A snapshot reserves inline
+  cache storage but constructs its cache state only when a content consumer uses it. The
+  [lazy-state measurements](benchmarks/lazy-content-state-20261107.md) record the size/performance
+  tradeoff. When templates or histograms request hashes or line counts, selected workers derive
+  those values from bytes already loaded and
   move only requested caches to the ordered coordinator. A separate result-indexed vector exists
   only when values are requested; raw content never crosses this boundary. Streaming sources without
   loaded snapshots and result-limited listings keep lazy coordinator reads. The batch retains rendered
@@ -336,6 +339,16 @@ entry; an OR branch cannot turn the failure into a match or execute an action. M
 without an additional existence check, just as a name-only directory listing can race with removal.
 New descriptors conservatively require basic metadata until explicitly audited; birth-time consumers
 also declare `needs_birth_time`.
+
+Implicit `--template` output uses stat requirements from compiled field bindings. Literal text,
+lexical path components and supplied context values do not force full metadata; mixed output
+such as `{name}:{size}` still does. New or unclassified bindings, content, symlink-target and type
+fields remain conservative. Expression, reduction, color and traversal requirements stay independent.
+Lexical templates have the same directory-entry semantics as ordinary metadata-free listing.
+Fuzzy-score collection is independent of stat demand, so `{fuzzy}` keeps its evaluated score.
+Column output remains eager: [qualification found a Linux multi-directory cost](benchmarks/compiled-field-stat-demand-20261107.md)
+when lexical columns used the same admission policy. The template-only policy avoids that change;
+its measured gains and remaining costs are documented there too.
 
 Field selection is independent of eager versus lazy demand. Ordinary traversal and size, owner,
 mode and modification-time consumers request portable stat fields. Birth-time predicates and compiled
