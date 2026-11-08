@@ -1532,3 +1532,10 @@ this as intentional accounting.
 - [ ] Fix the legacy ReadCompressedSingleFile API's rejection of a valid empty gzip. Retain the
       unchanged-parent availability control in O32; do not turn its missing content result into
       a zero-time speed ratio or silently remove it from the measured matrix.
+
+- [x] Evaluate exact reservation for known-length language JSON lists on both hosts.
+      Retain the current runtime: small linked cold-load gains do not establish a useful
+      practical command-level improvement alongside the complete controls. Preserve both
+      harness versions, slower cases and all raw observations in
+      [the decision report](docs/benchmarks/language-list-reserve-20261107.md).
+      Generated immutable catalog representation remains a separate O14 candidate.
