@@ -26,6 +26,7 @@ exports_files([
     "extras.MODULE.bazel",
     "llvm.MODULE.bazel",
     "pcre2-jit.patch",
+    "re2-absl-mutex.patch",
     "xz-callback-types.patch",
     "xz-crc64-bounds.patch",
 ])

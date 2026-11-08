@@ -21,6 +21,10 @@ try-import %workspace%/.bazelrc.user
 
 common --consistent_labels
 common --enable_bzlmod --noenable_workspace
+# Retry transient repository download failures without unbounded exponential backoff.
+common --http_connector_attempts=20
+common --http_connector_retry_max_timeout=5s
+common --experimental_repository_downloader_retries=20
 # Disable dependency ruleset telemetry for repository evaluation.
 common --repo_env=DO_NOT_TRACK=1
 common --incompatible_disallow_empty_glob

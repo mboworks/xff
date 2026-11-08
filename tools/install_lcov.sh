@@ -12,7 +12,7 @@ work="$(mktemp -d)"
 trap 'rm -rf "${work}"' EXIT
 archive="${work}/lcov.tar.gz"
 
-curl --fail --location --retry 3 \
+curl --fail --location --retry 20 --retry-delay 5 \
   "https://github.com/linux-test-project/lcov/releases/download/v${version}/lcov-${version}.tar.gz" \
   --output "${archive}"
 printf '%s  %s\n' "${sha256}" "${archive}" | sha256sum --check --status

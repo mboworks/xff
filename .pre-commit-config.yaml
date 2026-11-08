@@ -20,7 +20,7 @@ default_language_version:
 default_stages: [pre-commit, pre-push]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
         # Retain the exact lossless cross-platform performance evidence archives.
@@ -37,7 +37,7 @@ repos:
         exclude: \.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z|xar|pkg|xip|pbzx|cpio|ipa|ipsw)$
 
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.7
+    rev: v1.7.12
     hooks:
       - id: actionlint
         name: Lint GitHub Actions workflow files
@@ -521,12 +521,12 @@ repos:
         files: ^tools/check_host_io(_test)?\.py$
 
   - repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.11.0-1
+    rev: v3.14.1-1
     hooks:
       - id: shfmt
         args: ["-bn", "-ci", "-i=2", "-w"]
 
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
+    rev: v0.11.0.1-1
     hooks:
       - id: shellcheck
