@@ -123,7 +123,7 @@ Older successful reports can exist without the viewer data required by the curre
 - At the time of the audit the backfill planner selected commits already present in retained
   history, and every job had to succeed before any result became visible. Neither behavior
   provides a durable missing-PR queue.
-- PR #1147 proposes explicit revisions for backfill, but that remains manual and does not
+- Merged PR #1147 provides explicit revisions for backfill, but that remains manual and does not
   establish automatic completeness.
 
 ## Proposed prevention
@@ -187,6 +187,34 @@ automatically retry a failed run.
 - A successful backfill is a new measurement with its own host and method, not a
   reconstruction of the original run. Preserve that distinction and do not mix incompatible
   series silently.
-- The implementation needs a persistent scheduler and partial campaign retention;
+- The implementation still needs a persistent scheduler;
   merely increasing the concurrency queue, adding retries to one workflow, or adding
   PR labels cannot guarantee eventual coverage.
+
+## Continuation after the current campaigns
+
+The main performance objective is to close the gap to equivalent plain `find` and `rg`
+commands. Coverage recovery supports that work by restoring a trustworthy history.
+
+First let the [#914/#986 campaign](https://github.com/mboworks/xff/actions/runs/42498912253)
+and the queued [#1143 campaign](https://github.com/mboworks/xff/actions/runs/42499244750)
+finish, and merge PR #1148. Then:
+
+1. Inspect campaign results and publication, including failures and partial platforms.
+   Confirm each recovered PR is selectable by PR number in the viewer; workflow success
+   or a retained report directory alone does not establish that.
+2. Recompute this inventory from the live catalog. Recover the remaining missing PRs in
+   bounded campaigns, preserving existing valid measurements and documenting failures
+   that need build or measurement fixes. Do not dispatch another campaign while one is
+   active or queued.
+3. Resume concrete optimization of basic discovery and content search, comparing equivalent
+   output and semantics with `find` and `rg` on Linux and macOS. Use production binaries,
+   verify their identities, and keep paired measurements with reference tools. The local
+   investigation requests the full 1/3/10 worker grid; the existing CI backfill contract
+   remains 1/3. Keep those contracts distinguishable.
+4. Develop a few representative combined workloads alongside the simple comparisons.
+   Select them for real use and matching semantics, rather than for a favorable result.
+   Establish correctness, repeatability, and sensitivity before adding them to the viewer.
+5. Freeze and identify the additional workload contract before scheduling its historical
+   backfill. Preserve the existing simple comparisons and make compatibility explicit;
+   a new task must not silently appear as if it had been measured in earlier reports.
