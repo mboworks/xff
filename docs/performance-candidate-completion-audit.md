@@ -51,6 +51,14 @@ obtain a favorable result; a new mechanism needs a new hypothesis and population
 | O21       | Partial: literal-reference and exact shingle verification selected          | [Report](benchmarks/similarity-reference-reuse-20261103.md)                                                                                          | Dynamic source identity, invalidation and exact candidate indexes remain unqualified.      |
 | O22       | Partial: record/cell/template/rg transaction reuse selected                 | [Report](benchmarks/transactional-rg-records-20261107.md)                                                                                            | Remaining reusable structured storage and streaming machine representations stay open.     |
 
+The [ordered-output credit experiment](benchmarks/ordered-output-credit-20261107.md)
+adds implemented but unselected ordered completion and heap-output admission to O18.
+All six focused correctness configurations pass; full F1 and focused G2/H2 matrices
+complete on both hosts, while H1 is complete on Linux and explicitly partial on Mac.
+Large-output elapsed/RSS gains coexist with repeatable ordinary Linux costs.
+Input, slot, source and renderer-temporary admission, native output and actual stage
+overlap remain open; this is neither pipeline completion nor a global cap.
+
 ## Later concrete candidates and integration
 
 - O23's native PGO experiment is retained as research. Portable training,
@@ -82,8 +90,10 @@ obtain a favorable result; a new mechanism needs a new hypothesis and population
 
 1. **O18 pipeline ownership and output admission.** The shipping matcher waits for
    an entire batch; O22c2h transfers a validated per-file rg transaction but does not
-   cap in-flight output or overlap the next batch. Implement an ordered completion
-   protocol and actual admission before output allocation. A delayed head must not
+   cap in-flight output or overlap the next batch. The retained ordered-output
+   prototype implements completion and pre-allocation heap credit but is unselected.
+   Qualify a production-ready completion/admission mechanism without its ordinary
+   Linux costs, and admit input, slots, source workspace and renderer temporaries. A delayed head must not
    lose credit to later entries. Define one explicitly oversized head transaction
    or another transactional storage contract; do not truncate results, spill through
    an unauthorized write path, or count worker-held strings as free memory.

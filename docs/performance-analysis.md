@@ -5050,3 +5050,19 @@ not substitute historical or child checks for current integration and main healt
 
 [Current-main requalification](benchmarks/language-list-reserve-requalification-20261108.md) repeats all 16 cases on both
 hosts. The linked gains remain small and mixed; the exact reservation stays unselected.
+
+### O18: ordered rg output heap credit remains unselected
+
+The [implementation and decision record](benchmarks/ordered-output-credit-20261107.md)
+preserves every contiguous/chunked, ownership, inline-capacity and notification
+variant, both full F1 native matrices and all focused refinements. Large-output
+elapsed time and retained RSS improve, but the final H2 prototype still slows
+Linux flat10,000/three-worker filename and line output by 10.24%/10.04%; copied
+baseline controls are -0.96%/-1.57%. All six focused correctness/sanitizer configs
+pass. Keep production unchanged, retain all raw controls and partial populations,
+and leave full O18 input/slot/source/temporary admission, native output and actual
+stage overlap open. No global memory bound or public-head CI claim follows.
+
+[Current-main requalification](benchmarks/ordered-output-credit-requalification-20261108.md) reproduces ordinary Linux
+three-worker costs (+12.85% filenames/+10.88% lines), so H2 remains unselected despite
+large-output gains. The complete case population and copied controls remain available.

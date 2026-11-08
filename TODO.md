@@ -508,6 +508,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       draining and JC gates, and remove the repeatable Linux comparison regression before adoption.
 - [ ] O18: Qualify byte-bounded overlap with backpressure, ordered publication and cancellation;
       avoid per-batch throwaway threads and nested waits on the same saturated pool.
+      Retain the [ordered-output credit experiment](docs/benchmarks/ordered-output-credit-20261107.md).
+      All runtime refinements remain unselected after repeatable ordinary Linux output costs,
+      despite large-output/RSS gains. Solve synchronization costs and missing input/slot/source/
+      renderer-temporary admission independently; native output and stage overlap remain open.
 - [ ] O18a: Redesign queued cancellation after both measured policies fail cross-platform
       qualification. The deterministic nine-to-four backend-call proof and exact serial/recycling
       tests pass, but acquire-load and explicit-stop screens expose ordinary Mac costs. Retain
