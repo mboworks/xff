@@ -3,9 +3,9 @@
 name: Benchmark backfill
 
 on:
-  # trunk-ignore(checkov/CKV_GHA_7): The input selects measured revisions, not the workflow or driver.
   workflow_dispatch:
     inputs:
+      # trunk-ignore(checkov/CKV_GHA_7): The input selects measured revisions, not the workflow or driver.
       revisions:
         description: Comma-separated commit IDs (empty selects published history)
         required: false
