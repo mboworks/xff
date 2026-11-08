@@ -243,3 +243,10 @@ The [synthetic viewer check](benchmarks/extended-history-viewer-check-20261107.j
 both exported dataset views in Chromium. Both historical versions produce their exact expected
 heights; 60 measured points remain present and all 20 unavailable cells remain empty. This
 artifact contains synthetic renderer checks only, not performance measurements.
+
+The [November 8 follow-up](benchmarks/lazy-evaluation-shard-setup-20261108.md)
+qualifies lazy deferred-entry state, cached predicate descriptors and conditional
+shard setup against merged PR #1149. It includes Linux/macOS production builds,
+the 1/3/10-worker grid, identical controls, rejected experiments and small-task
+regression repeats. Its experiment populations remain separate from the original
+130-revision history and the core CI benchmark contract.
