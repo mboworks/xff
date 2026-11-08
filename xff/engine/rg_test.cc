@@ -104,6 +104,7 @@ struct SearchFs final : vfs::FileSystem {
   std::string read_error_path;
   bool streaming = false;
   vfs::Source entry_source = vfs::Source::kLocalFs;
+  std::string serial_entry;
   vfs::SharedReadSource source_override;
   std::function<void(std::string_view)> before_read;
   bool track_threads = false;
@@ -140,7 +141,7 @@ struct SearchFs final : vfs::FileSystem {
             .path = name,
             .name = name.substr(5),
             .type = vfs::FileType::kRegular,
-            .source = entry_source,
+            .source = name == serial_entry ? vfs::Source::kArchiveMember : entry_source,
         });
       }
     }
@@ -160,7 +161,7 @@ struct SearchFs final : vfs::FileSystem {
     }
     return vfs::Metadata{
         .type = vfs::FileType::kRegular,
-        .source = entry_source,
+        .source = path == serial_entry ? vfs::Source::kArchiveMember : entry_source,
         .size = found->second.size(),
     };
   }
@@ -911,6 +912,36 @@ TEST_F(RgEngineTest, MixedOutputBatchesPreserveNativeAndRgRecordsAcrossSchedulin
   EXPECT_THAT(output, EqualsText(rg));
 }
 
+TEST_F(RgEngineTest, AdaptivePipelineDrainsBeforeTraversalErrors) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 768; ++index) {
+    fs.files.emplace("tree/" + std::to_string(1'000 + index), std::string(8'192, 'x') + "hit\n");
+  }
+  EXPECT_THAT(Run({"--jobs=1", "--archive=none", "hit", "tree", "missing"}).errors, Eq(1));
+  const auto expected = output;
+  bool emitted_after_error = false;
+  after_emit = [&] { emitted_after_error |= !errors.empty(); };
+  EXPECT_THAT(Run({"--jobs=4", "--archive=none", "hit", "tree", "missing"}).errors, Eq(1));
+  EXPECT_THAT(output, EqualsText(expected));
+  EXPECT_THAT(errors, SizeIs(1));
+  EXPECT_THAT(emitted_after_error, IsFalse());
+}
+
+TEST_F(RgEngineTest, AdaptivePipelinePreservesRecordsAcrossSerialArchiveMemberBoundaries) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 768; ++index) {
+    fs.files.emplace("tree/" + std::to_string(1'000 + index), std::string(8'192, 'x') + "hit\n");
+  }
+  // This source kind cannot enter the matcher pool. Force that real dispatch
+  // boundary after the pipeline has observed enough output to overlap batches.
+  fs.serial_entry = "tree/1512-serial";
+  fs.files.emplace(fs.serial_entry, "serial hit\n");
+  EXPECT_THAT(Run({"--jobs=1", "--archive=none", "hit", "tree"}).errors, Eq(0));
+  const auto expected = output;
+  EXPECT_THAT(Run({"--jobs=4", "--archive=none", "hit", "tree"}).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText(expected));
+}
+
 TEST_F(RgEngineTest, CreditedInlineEntriesReleaseEachTransactionBeforeReadingTheNext) {
   fs.files.at("tree/a") = std::string(2'097'152, 'x') + "hit\n";
   MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--rg", "hit", "tree"}));
@@ -947,8 +978,9 @@ TEST_F(RgEngineTest, CreditedTransactionsProgressPastDelayedHeadAndFullLaterOutp
   const std::string ordinary = std::string(65'536, 'x') + "hit\n";
   const std::string giant = std::string(2'097'152, 'x') + "hit\n";
   std::vector<OwnedVisit> entries;
-  entries.reserve(64);
-  for (std::size_t index = 0; index < 64; ++index) {
+  static constexpr std::size_t kEntries = 256;
+  entries.reserve(kEntries);
+  for (std::size_t index = 0; index < kEntries; ++index) {
     const auto path = "tree/" + std::to_string(index);
     fs.files.emplace(path, index == 0 ? giant : ordinary);
     entries.emplace_back(Visit{.path = path, .metadata = {.type = vfs::FileType::kRegular}, .fs = fs});
@@ -990,7 +1022,7 @@ TEST_F(RgEngineTest, CreditedTransactionsProgressPastDelayedHeadAndFullLaterOutp
     released = true;
     condition.notify_all();
   }
-  for (std::size_t index = 0; index < 64; ++index) {
+  for (std::size_t index = 0; index < kEntries; ++index) {
     const auto& result = matcher.AwaitResult(index);
     EXPECT_THAT(
         result.content, Optional(AllOf(

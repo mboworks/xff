@@ -101,9 +101,10 @@ const std::vector<ParallelResult>& ParallelMatch::Wait() {
   return results_;
 }
 
-void ParallelMatch::PrepareBatch(std::vector<OwnedVisit> entries) {
+void ParallelMatch::PrepareBatch(std::vector<OwnedVisit>& entries) {
   cancelled_.store(false, std::memory_order_relaxed);
-  entries_ = std::move(entries);
+  entries_.clear();
+  entries_.swap(entries);
   results_.resize(entries_.size());
   for (auto& slot : output_slots_) {
     slot.Release();
@@ -131,9 +132,9 @@ void ParallelMatch::PrepareBatch(std::vector<OwnedVisit> entries) {
   next_.store(0, std::memory_order_relaxed);
 }
 
-void ParallelMatch::Start(std::vector<OwnedVisit> entries, bool pipeline) {
+std::vector<OwnedVisit> ParallelMatch::Start(std::vector<OwnedVisit> entries, bool pipeline) {
   const absl::MutexLock lock(mutex_, absl::Condition(this, &ParallelMatch::Finished));
-  PrepareBatch(std::move(entries));
+  PrepareBatch(entries);
   // Very small batches cannot amortize waking the pool.
   if (workers_ == 1 || entries_.size() < 16 || (threads_.empty() && entries_.size() < 64)) {
     if (execution_ && !coordinator_) {
@@ -145,13 +146,13 @@ void ParallelMatch::Start(std::vector<OwnedVisit> entries, bool pipeline) {
       output_credit_.Reset();
       credited_output_ = true;
       coordinator_entries_ = true;
-      return;
+      return entries;
     }
     EvaluateEntries(
         coordinator_fuzzy_workspace_, {}, {},
         coordinator_ ? mbo::types::OptionalRef<const ExpressionExecution::Worker>{*coordinator_}
                      : mbo::types::OptionalRef<const ExpressionExecution::Worker>{});
-    return;
+    return entries;
   }
   output_credit_.Reset();
   credited_output_ = pipeline && output_.has_value();
@@ -179,6 +180,7 @@ void ParallelMatch::Start(std::vector<OwnedVisit> entries, bool pipeline) {
   remaining_ = active_workers_;
   coordinator_collecting_ = pipeline && CollectNextBatch() && active_workers_ > 1;
   ++generation_;
+  return entries;
 }
 
 const ParallelResult& ParallelMatch::AwaitResult(std::size_t index) {

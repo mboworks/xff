@@ -83,9 +83,10 @@ class ParallelMatch final {
   const std::vector<ParallelResult>& Match(std::vector<OwnedVisit> entries);
 
   // Start one batch on the persistent workers. The coordinator can collect the next
-  // batch until ordered consumption establishes the publication barrier. Credited small
+  // batch until ordered consumption establishes the publication barrier. Returns the
+  // consumed predecessor's empty input storage for collection reuse. Credited small
   // batches evaluate one entry at a time on that coordinator; Match() remains synchronous.
-  void Start(std::vector<OwnedVisit> entries, bool pipeline = false);
+  std::vector<OwnedVisit> Start(std::vector<OwnedVisit> entries, bool pipeline = false);
   const std::vector<ParallelResult>& Wait();
   // Stop claiming entries and drain every worker before releasing the batch's owners.
   // A subsequent Start() begins a fresh generation.
@@ -108,7 +109,7 @@ class ParallelMatch final {
 
  private:
   static constexpr std::size_t kChunkSize = 4;
-  void PrepareBatch(std::vector<OwnedVisit> entries) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void PrepareBatch(std::vector<OwnedVisit>& entries) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void RenderEntryOutput(
       std::size_t index,
       const ParallelContentOutput& specification,

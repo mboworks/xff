@@ -25,7 +25,7 @@ namespace xff::engine {
 class OutputCredit final {
  public:
   static constexpr std::size_t kSlotGrant = 4'096;
-  static constexpr std::size_t kSharedBytes = 1'048'576;
+  static constexpr std::size_t kSharedBytes = 8'388'608;
 
   OutputCredit() = default;
 

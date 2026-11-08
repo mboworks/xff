@@ -5152,3 +5152,21 @@ listing/metadata paths, and both native and memory backends on both hosts. A use
 heavy-output result cannot overrule a repeated ordinary-work regression. Neither
 this prototype nor the preceding tests establish the wider JC input/source/
 renderer-temporary admission contract or a whole-process memory cap.
+
+The next Linux policy comparison keeps the same cleared-input-reuse implementation
+and interleaves the baseline, copied baseline, 1 MiB policy, 64 KiB crossover policy
+and 8 MiB policy within every case/session. Raising the crossover alone does not
+resolve both native and rg 32 KiB-output costs. An 8 MiB shared excess allowance
+instead changes those cells from +5.85%/+4.59% to -6.70%/-4.20%, while the copied
+controls are +2.10%/-1.56%. Output-heavy 1,000-file native/rg output improves
+27.65%/26.41% with copied controls -0.33%/-0.86%. These are Linux development
+measurements, not a complete cross-platform qualification.
+
+The selected next qualification source retains the 1 KiB observed-output crossover,
+uses an 8 MiB shared excess allowance, and returns cleared predecessor input storage
+for reuse. Clearing those entries before worker dispatch matters: returning live
+records and clearing them on the coordinator after waking workers regressed ordinary
+flat-tree work. Preserve that rejected source and its raw population. The 8 MiB
+allowance remains a bound on shared excess output capacity, in addition to per-slot
+grants and the ordered-head oversize exception. It does not reserve 8 MiB eagerly,
+change the pending-input allowance or bound source/temporary/process memory.

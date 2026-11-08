@@ -6310,7 +6310,7 @@ RunResult RunFindCore(
   const auto submit_matches = [&] {
     publish_matches();
     if (!pending_matches.empty()) {
-      parallel_match->Start(std::move(pending_matches), true);
+      pending_matches = parallel_match->Start(std::move(pending_matches), true);
       pending_matches.clear();
       pending_match_bytes = 0;
       matches_running = true;

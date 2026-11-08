@@ -24,6 +24,7 @@ namespace {
 
 using ::mbo::testing::EqualsText;
 using ::testing::Eq;
+using ::testing::Ge;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::SizeIs;
@@ -81,6 +82,29 @@ TEST_F(ParallelMatchTest, AsynchronousBatchesPreserveOrderedResultsAndCanRestart
   }
   // Destruction drains a still-running generation; owned filesystem observers stay live.
   matcher.Start(Entries(1'024));
+}
+
+TEST_F(ParallelMatchTest, StartingTheNextGenerationReturnsEmptyReusableInputCapacity) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-type", "f"}));
+  ParallelMatch matcher(*command.expression, 4, false);
+  auto spare = matcher.Start(Entries(128), true);
+  EXPECT_THAT(spare, SizeIs(0));
+  matcher.Wait();
+  spare = matcher.Start(Entries(64), true);
+  EXPECT_THAT(spare, SizeIs(0));
+  EXPECT_THAT(spare.capacity(), Ge(128));
+  matcher.Wait();
+  // Populate the returned storage rather than rebuilding a fresh vector.
+  for (std::size_t index = 0; index < 128; ++index) {
+    spare.emplace_back(Visit{.path = std::to_string(index), .metadata = {.type = vfs::FileType::kRegular}, .fs = fs});
+  }
+  auto previous = matcher.Start(std::move(spare), true);
+  EXPECT_THAT(previous, SizeIs(0));
+  EXPECT_THAT(previous.capacity(), Ge(64));
+  EXPECT_THAT(matcher.Wait(), SizeIs(128));
+  for (const auto& result : matcher.Wait()) {
+    EXPECT_THAT(result.evaluation.matched, IsTrue());
+  }
 }
 
 TEST_F(ParallelMatchTest, ZeroWorkersIsClampedAndUnusedPoolStartsNoWork) {
