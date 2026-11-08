@@ -1793,7 +1793,7 @@ template<typename SchemeAllowed>
 int ResolveDeferredRound(
     std::vector<DeferredCandidate>& candidates,
     const std::map<ExprIdentity, std::size_t>& node_order,
-    const shard::Matcher& shard_matcher,
+    mbo::types::OptionalRef<const shard::Matcher> shard_matcher,
     shard::Dedup shard_dedup,
     const SchemeAllowed& scheme_allowed,
     bool report_dedup_errors) {
@@ -1816,7 +1816,7 @@ int ResolveDeferredRound(
   }
   if (next_node.Get().descriptor->control == registry::Control::kShardStatus) {
     return ResolveShardStatusRound(
-        next_node.Get(), entries, shard_matcher, shard_dedup, scheme_allowed, report_dedup_errors);
+        next_node.Get(), entries, *shard_matcher, shard_dedup, scheme_allowed, report_dedup_errors);
   }
   int limit = 0;
   // `-top` arity and its positive integer argument were validated before traversal.
@@ -4025,7 +4025,8 @@ Collections MakeCollections(
 // The selected shard policy also applies when reductions consume explicit collections.
 struct CollectionShardPolicy {
   const ShardsConfig& config;
-  const shard::Matcher& matcher;
+  // Required only when shard grouping is enabled.
+  mbo::types::OptionalRef<const shard::Matcher> matcher;
   shard::Dedup dedup;
 };
 
@@ -4039,11 +4040,12 @@ struct CollectedShardDirectory {
 std::map<std::string, CollectedShardDirectory> GroupCollectedDirectories(
     const Collections::EntriesType& entries,
     const CollectionShardPolicy& policy) {
+  const auto& matcher = *policy.matcher;
   std::map<std::string, CollectedShardDirectory> groups;
   for (const Collections::Entry& entry : entries) {
     const auto slash = entry.path.rfind('/');
     auto& group = groups[std::string(slash == std::string_view::npos ? "" : entry.path.substr(0, slash + 1))];
-    const auto match = policy.matcher.Decode(entry.name);
+    const auto match = matcher.Decode(entry.name);
     const bool selected = match.has_value()
                           && (match->scheme == shard::Scheme::kCustom || policy.config.schemes.empty()
                               || absl::c_linear_search(policy.config.schemes, match->scheme));
@@ -4067,9 +4069,10 @@ int FeedCollectedShards(
     const Collections::EntriesType& entries,
     const CollectionShardPolicy& policy,
     const Feed& feed) {
+  const auto& matcher = *policy.matcher;
   int errors = 0;
   for (const auto& [prefix, group] : GroupCollectedDirectories(entries, policy)) {
-    for (const auto& set : shard::GroupShards(group.shards, policy.matcher, policy.dedup)) {
+    for (const auto& set : shard::GroupShards(group.shards, matcher, policy.dedup)) {
       if (policy.dedup == shard::Dedup::kError) {
         errors += ReportShardDuplicateErrors(set, prefix);
       }
@@ -5459,8 +5462,11 @@ RunResult RunFindCore(
       return RunResult{.errors = 2};
     }
     shard_matcher = *std::move(matcher_or);
-  } else {
-    shard_matcher = *shard::Matcher::Make();
+  }
+  // Ordinary walks, collections and -top frontiers need no shard regex compilation.
+  mbo::types::OptionalRef<const shard::Matcher> shard_matcher_ref;
+  if (shard_matcher) {
+    shard_matcher_ref.set_ref(*shard_matcher);
   }
 
   // Comparison pairs physical entries by relative path. Collapsing a side's reductions onto
@@ -6579,7 +6585,7 @@ RunResult RunFindCore(
              || absl::c_linear_search(shards.schemes, scheme);
     };
     errors += ResolveDeferredRound(
-        deferred_candidates, deferred_node_order, *shard_matcher, shard_dedup, scheme_allowed,
+        deferred_candidates, deferred_node_order, shard_matcher_ref, shard_dedup, scheme_allowed,
         /*report_dedup_errors=*/!group_matched_shards);
     std::vector<DeferredCandidate> next_round;
     next_round.reserve(deferred_candidates.size());
@@ -6893,7 +6899,7 @@ RunResult RunFindCore(
               .hash_encoding = hash_encoding,
               .defines = defines,
           },
-          CollectionShardPolicy{.config = shards, .matcher = *shard_matcher, .dedup = shard_dedup});
+          CollectionShardPolicy{.config = shards, .matcher = shard_matcher_ref, .dedup = shard_dedup});
       collect_status != 0) {
     return RunResult{.errors = collect_status + rg_errors, .any_match = any_match};
   }
