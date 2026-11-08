@@ -231,7 +231,6 @@ jobs:
         with:
           pattern: benchmark-shard-*
           path: candidate-shards
-          if-no-artifact-found: ignore
       - name: Schedule a fourth candidate only for unresolved platforms
         id: decision
         run: |
@@ -310,7 +309,6 @@ jobs:
         with:
           pattern: benchmark-shard-*
           path: candidate-shards
-          if-no-artifact-found: ignore
       - name: Schedule a fifth candidate only without a three-shard majority
         id: decision
         run: |
