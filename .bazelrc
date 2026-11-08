@@ -27,7 +27,7 @@ common --http_connector_retry_max_timeout=5s
 common --experimental_repository_downloader_retries=20
 # The CI disk cache evicts individual CAS blobs. Check cached action results for
 # missing outputs before reuse; Bazel 9 disables this check with action rewinding.
-build --norewind_lost_inputs
+common --norewind_lost_inputs
 # Disable dependency ruleset telemetry for repository evaluation.
 common --repo_env=DO_NOT_TRACK=1
 common --incompatible_disallow_empty_glob
