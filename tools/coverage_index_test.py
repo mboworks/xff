@@ -46,9 +46,8 @@ class CoverageIndexTest(unittest.TestCase):
         for name in ('coverage_pages.yml', 'benchmark_pages.yml', 'pages.yml'):
             producer = repository_file('.github/workflows/' + name).read_text()
             with self.subTest(producer=name):
-                self.assertIn('queue: max', producer)
+                self.assertRegex(producer, r'group: coverage-pages\n( +)queue: max\n\1cancel-in-progress: false')
                 self.assertIn("github.ref == 'refs/heads/main'", producer)
-                self.assertNotIn('queue: single', producer)
                 self.assertNotIn('actions/deploy-pages@', producer)
                 self.assertNotIn('pages: write', producer)
                 self.assertNotIn('id-token: write', producer)
