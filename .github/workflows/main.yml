@@ -268,6 +268,19 @@ jobs:
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-3|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
+      # Hook environments download release assets outside Bazel's downloader.
+      - name: Install pre-commit hook environments
+        run: |
+          for attempt in {1..20}; do
+            if pre-commit install-hooks; then
+              exit 0
+            fi
+            if (( attempt == 20 )); then
+              exit 1
+            fi
+            echo "Hook installation failed; retrying ($attempt/20)..."
+            sleep 5
+          done
       - name: Run pre-commit
         run: pre-commit run --all-files --show-diff-on-failure --color=always
 
