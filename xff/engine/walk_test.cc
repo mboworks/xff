@@ -332,6 +332,35 @@ TEST_F(NameListingTest, MatchesCompletePathsAcrossOrderingDepthLinksAndWorkers) 
   }
 }
 
+TEST_F(NameListingTest, SharedPrefixSurvivesGrowingAndShrinkingEntryNames) {
+  NameListingFs filesystem(true);
+  const std::string root = "/another_directory_prefix_longer_than_small_string_storage";
+  const std::vector<std::string> names{std::string(160, 'a'), "b", std::string(320, 'c'), "d"};
+  std::vector<vfs::Entry> children;
+  std::vector<std::string> expected{root};
+  for (const auto& name : names) {
+    const std::string path = absl::StrCat(root, "/", name);
+    children.push_back(FileEntry(path, name));
+    filesystem.AddFile(path, 1);
+    expected.push_back(path);
+  }
+  filesystem.AddDir(root, 1, std::move(children));
+  const auto roots = std::to_array<std::string>({root});
+  std::vector<std::string> paths;
+  EXPECT_THAT(
+      Walk(
+          filesystem, roots, {.sort = SortOrder::kNone, .metadata = MetadataDemand::kOnDemand},
+          [&](const Visit& visit) {
+            EXPECT_THAT(visit.EnsureMetadata(), IsOk());
+            paths.emplace_back(visit.path);
+            return WalkAction::kContinue;
+          },
+          [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); }),
+      IsOk());
+  EXPECT_THAT(paths, Eq(expected));
+  EXPECT_THAT(filesystem.NameReadCount(), Eq(1));
+}
+
 TEST_F(NameListingTest, RootOnlyArchiveCallbackDoesNotDisableChildNames) {
   const NameListingFs filesystem(true);
   const auto roots = std::to_array<std::string>({"/a_directory_prefix_longer_than_small_string_storage"});

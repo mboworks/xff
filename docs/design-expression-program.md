@@ -775,6 +775,36 @@ batches can return to the coordinator. Capture state stays in each evaluation co
 worker object may be evaluated concurrently with itself. Plans and source expressions outlive
 workers; moving a plan preserves its backing storage.
 
+Prepared evaluation selects compact boolean recursion when the entry has neither a fuzzy-score
+observer nor deferred evaluation state. Each recursive result then carries only truth and an
+unknown/error flag; score and waiting-node storage is constructed once for the public result.
+The predicate wrapper remains shared with general evaluation, including metadata observations,
+dry-run previews, cache invalidation and output errors. Scoring or deferred contexts retain the
+general evaluator. This selection preserves source order and every boolean operator's
+short-circuit behavior; it performs no expression rewriting.
+
+FS-native glob matching uses an optional per-entry case resolver when the backend cannot promise
+uniform case sensitivity. Exact and folded glob answers are compared before observing metadata:
+if they agree, the filesystem cannot change the result. If they differ, the resolver loads the
+entry's metadata and consults the existing device case cache. Negated character classes can lose
+matches under folding, so an exact match alone is not sufficient to skip resolution. Required
+metadata failures remain unknown results and cannot become matches through negation. Explicit
+case folding bypasses the resolver; fuzzy matching resolves native case when reached. Deferred
+entries retain their existing complete-metadata replay path. For a non-followed symlink, a native
+path query can follow the target or fail when it is dangling. On a device-cache miss, the resolver
+therefore queries the containing directory only after VFS metadata verifies that it is a directory
+on the link's own device. A different-device or unavailable parent keeps the original entry query;
+an unavailable case answer keeps the conservative exact fallback. This optional parent check does
+not introduce a reported metadata error. It does not assume that a root's case rule applies across
+mount boundaries, and regular entries retain their existing lazy path.
+
+Explicit `-print` and `-print0` actions borrow one coordinator-owned raw record buffer across
+entries and deferred replay. The action chooses its own terminator independently of the implicit
+listing format, and each sink still receives one complete record per action. Parallel filter
+results emit through the coordinator and use the same buffer. Direct evaluator callers without
+this scratch retain local record construction; oversized records release retained storage after
+emission according to the renderer's existing bound.
+
 The driver avoids preparation for unused parallel paths and shares preparation when the serial
 and pooled expressions are the same source node. A split filter/output expression retains its own
 preparation because each side has a different root. Deferred replay continues through the serial

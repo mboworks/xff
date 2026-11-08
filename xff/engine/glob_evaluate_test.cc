@@ -71,6 +71,20 @@ struct GlobEvaluateTest : ::testing::Test {
             EXPECT_THAT(worker.Evaluate(context).matched, Eq(expected));
             EXPECT_THAT(worker.EvaluateIterative(context).matched, Eq(expected));
             EXPECT_THAT(second_worker.Evaluate(context).matched, Eq(expected));
+            int probes = 0;
+            const auto resolve = [&] {
+              ++probes;
+              return fold;
+            };
+            context.fold_name_case = false;
+            context.resolve_name_case = resolve;
+            EXPECT_THAT(Evaluate(expression, context), Eq(expected));
+            EXPECT_THAT(worker.Evaluate(context).matched, Eq(expected));
+            EXPECT_THAT(worker.EvaluateIterative(context).matched, Eq(expected));
+            EXPECT_THAT(second_worker.Evaluate(context).matched, Eq(expected));
+            const bool differs = (::fnmatch(pattern.c_str(), text.c_str(), 0) == 0)
+                                 != (::fnmatch(pattern.c_str(), text.c_str(), FNM_CASEFOLD) == 0);
+            EXPECT_THAT(probes, Eq(!expression.descriptor->fold_case && differs ? 4 : 0));
           }
         }
       }

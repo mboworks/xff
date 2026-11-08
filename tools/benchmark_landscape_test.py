@@ -570,6 +570,14 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                 self.assertNotIn('3D comparison chart (show/hide)', text)
                 self.assertNotIn('Comparison landscape history', text)
 
+    def test_history_overview_can_be_omitted_for_separate_comparison_contracts(self):
+        self.assertIn('data-overview', landscape.history_panel([]))
+        text = landscape.history_panel([], include_overview=False)
+        self.assertNotIn('data-overview', text)
+        self.assertNotIn('Performance overview', text)
+        self.assertIn('data-chart', text)
+        self.assertIn('window.XffBenchmarkHistory', text)
+
     def test_history_fold_control_is_in_page_title_and_publication_is_idempotent(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

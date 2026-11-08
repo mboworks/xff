@@ -242,7 +242,9 @@ jobs:
   measure-fourth-linux:
     name: Benchmark measurement (linux, shard 3)
     needs: select-initial
-    if: needs.select-initial.outputs.linux_fourth == 'true'
+    if: >-
+      !cancelled() && needs.select-initial.result == 'success' &&
+      needs.select-initial.outputs.linux_fourth == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -262,7 +264,9 @@ jobs:
   measure-fourth-macos:
     name: Benchmark measurement (macos, shard 3)
     needs: select-initial
-    if: needs.select-initial.outputs.macos_fourth == 'true'
+    if: >-
+      !cancelled() && needs.select-initial.result == 'success' &&
+      needs.select-initial.outputs.macos_fourth == 'true'
     runs-on: macos-latest
     timeout-minutes: 90
     permissions:
@@ -279,11 +283,48 @@ jobs:
           shard: 3
           head: ${{ github.sha }}
 
+  select-fourth:
+    name: Check benchmark agreement after fourth candidates
+    needs: [select-initial, measure-fourth-linux, measure-fourth-macos]
+    if: always() && needs.select-initial.result == 'success' &&
+      (needs.select-initial.outputs.linux_fourth == 'true' ||
+      needs.select-initial.outputs.macos_fourth == 'true') &&
+      needs.measure-fourth-linux.result != 'failure' &&
+      needs.measure-fourth-macos.result != 'failure'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      linux_fifth: ${{ steps.decision.outputs.linux_fifth }}
+      macos_fifth: ${{ steps.decision.outputs.macos_fifth }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: benchmark-shard-*
+          path: candidate-shards
+          if-no-artifact-found: ignore
+      - name: Schedule a fifth candidate only without a three-shard majority
+        id: decision
+        run: |
+          set -euo pipefail
+          mkdir -p candidate-shards
+          python3 tools/benchmark_shards.py --decide-adaptive=candidate-shards \
+            --decision-stage=fourth | tee -a "${GITHUB_OUTPUT}"
+
   measure-fifth-linux:
     name: Benchmark measurement (linux, shard 4)
-    needs: [select-initial, measure-fourth-linux]
-    if: always() && needs.select-initial.outputs.linux_fourth == 'true' &&
-      needs.measure-fourth-linux.result == 'success'
+    needs: select-fourth
+    if: >-
+      !cancelled() && needs.select-fourth.result == 'success' &&
+      needs.select-fourth.outputs.linux_fifth == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -302,9 +343,10 @@ jobs:
 
   measure-fifth-macos:
     name: Benchmark measurement (macos, shard 4)
-    needs: [select-initial, measure-fourth-macos]
-    if: always() && needs.select-initial.outputs.macos_fourth == 'true' &&
-      needs.measure-fourth-macos.result == 'success'
+    needs: select-fourth
+    if: >-
+      !cancelled() && needs.select-fourth.result == 'success' &&
+      needs.select-fourth.outputs.macos_fifth == 'true'
     runs-on: macos-latest
     timeout-minutes: 90
     permissions:
@@ -329,6 +371,7 @@ jobs:
         select-initial,
         measure-fourth-linux,
         measure-fourth-macos,
+        select-fourth,
         measure-fifth-linux,
         measure-fifth-macos,
       ]

@@ -1,0 +1,43 @@
+{
+  "historical_arithmetic": {
+    "checked_points": 93600,
+    "verified_missing_points": 31200,
+    "max_error": 1.1102230246251565e-16,
+    "complete_revisions": 130,
+    "views": 2,
+    "script_sha256": "f38036edb7ba088e7a4401d7b66012f6b7b7fdbd78d62f654d5d4147cada245c",
+    "contract_sha256": "2c3923ad84f30162321f7af4031e89d7b5b04d21b095071d478da37ab298fe89"
+  },
+  "confirmation_arithmetic": {
+    "checked_points": 1440,
+    "verified_missing_points": 480,
+    "max_error": 1.1102230246251565e-16,
+    "complete_revisions": 2,
+    "views": 2,
+    "script_sha256": "f38036edb7ba088e7a4401d7b66012f6b7b7fdbd78d62f654d5d4147cada245c",
+    "contract_sha256": "627a270f2f748c902b27bac437cb41bf01c335664a3267565a20c426568dd685"
+  },
+  "historical_browser": {
+    "campaign": "measurements",
+    "revisions": 130,
+    "statesChecked": 96,
+    "errors": [],
+    "failedResponses": [],
+    "full_receipt_sha256": "aa199502ec4587aab7adee7473eaec498482999c5e793bb24b4df2e788bbcd48"
+  },
+  "confirmation_browser": {
+    "campaign": "confirmation",
+    "revisions": 2,
+    "statesChecked": 24,
+    "errors": [],
+    "failedResponses": [],
+    "full_receipt_sha256": "b1daeebfd67fd198a1ae6f1cb7dd88ef3f5a114b1d62e6bf528d418998424d82"
+  },
+  "retained_binaries": {
+    "utc": "2026-11-07T15:39:09.285194+00:00",
+    "measurement_contract_sha256": "2c3923ad84f30162321f7af4031e89d7b5b04d21b095071d478da37ab298fe89",
+    "revisions_checked": 130,
+    "purpose": "Independent post-collection rehash of retained binaries and frozen build/link evidence.",
+    "full_receipt_sha256": "8cfefbe504c105f0efaea4f9ac1fa84e0372617a88505b89d1eb540891972574"
+  }
+}
