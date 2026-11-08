@@ -29,11 +29,11 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def make_plan(repo, history_root):
+def make_plan(repo, history_root, references=None):
     tools = {'xff': {'path': 'xff'}, 'find': {}, 'rg': {}, 'fzf': {}}
     jobs = []
     for platform, (runner, arch) in PLATFORMS.items():
-        for revision in backfill.revisions(repo, [], history_root, platform):
+        for revision in backfill.revisions(repo, references or [], None if references else history_root, platform):
             jobs.append({'id': platform + '-' + revision['sha'], 'platform': platform,
                          'os': runner, 'arch': arch, 'revision': revision})
     plan = {'schema': 1, 'source_head': backfill.git(repo, 'rev-parse', 'HEAD'),
@@ -236,6 +236,7 @@ def main():
     plan = modes.add_parser('plan')
     for name in ('repo', 'history-root', 'output'):
         plan.add_argument('--' + name, type=Path, required=True)
+    plan.add_argument('--revision', action='append', default=[], help='Measure this revision instead of site history')
     run = modes.add_parser('run')
     for name in ('plan', 'repo', 'output', 'fixture-parent'):
         run.add_argument('--' + name, type=Path, required=True)
@@ -249,7 +250,7 @@ def main():
     publish.add_argument('--repository', required=True)
     args = parser.parse_args()
     if args.mode == 'plan':
-        result = make_plan(args.repo, args.history_root)
+        result = make_plan(args.repo, args.history_root, args.revision)
         backfill.write_json(args.output, result)
         print(json.dumps({'include': [{key: job[key] for key in ('id', 'os', 'platform', 'arch')}
                                      for job in result['jobs']]}))

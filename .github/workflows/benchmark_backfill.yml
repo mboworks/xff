@@ -3,7 +3,12 @@
 name: Benchmark backfill
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      revisions:
+        description: Comma-separated commit IDs (empty selects published history)
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -35,10 +40,20 @@ jobs:
           python-version: "3.13"
       - name: Freeze the historical revision selection
         id: plan
+        env:
+          REVISIONS: ${{ inputs.revisions }}
         run: |
           set -euo pipefail
+          revision_args=()
+          IFS=',' read -ra revisions <<< "${REVISIONS}"
+          for revision in "${revisions[@]}"; do
+            revision="${revision//[[:space:]]/}"
+            if [[ -n "${revision}" ]]; then
+              revision_args+=(--revision="${revision}")
+            fi
+          done
           matrix="$(python3 tools/benchmark_campaign.py plan --repo=. \
-            --history-root=benchmark-history/benchmarks --output=campaign.json)"
+            --history-root=benchmark-history/benchmarks --output=campaign.json "${revision_args[@]}")"
           echo "matrix=${matrix}" >>"${GITHUB_OUTPUT}"
       - uses: actions/upload-artifact@v7
         with:
