@@ -643,6 +643,10 @@ def publish(root, javascript, previews=(), incremental=False, repository='mbowor
             if benchmark_records.is_backfill(record):
                 label = 'CI backfill / ' + commit[:10]
             links = version_links.get(commit, [])
+            if not local and not preview:
+                pr_links = [link['label'] for link in links if re.fullmatch(r'PR #[0-9]+', link.get('label', ''))]
+                if pr_links:
+                    label = ', '.join(pr_links) + ' / ' + commit[:10]
             if preview:
                 number = record.get('pull_number') or source['pull_requests'][0]['number']
                 links = [{'label': f'PR #{number} preview', 'href': f'https://github.com/{repository}/pull/{number}'}]
