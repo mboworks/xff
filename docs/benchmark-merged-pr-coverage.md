@@ -120,9 +120,9 @@ Older successful reports can exist without the viewer data required by the curre
 - Main benchmark runs previously used a single pending concurrency slot; #1138 changed
   the workflow to a 100-entry queue. That does not by itself retry failed or canceled runs,
   and an exhausted queue can still lose requests. Individual cancellations were not audited.
-- The existing backfill planner selects commits already present in retained history. Its
-  campaign requires every job to succeed before any result becomes visible; it is not a
-  durable missing-PR queue.
+- At the time of the audit the backfill planner selected commits already present in retained
+  history, and every job had to succeed before any result became visible. Neither behavior
+  provides a durable missing-PR queue.
 - PR #1147 proposes explicit revisions for backfill, but that remains manual and does not
   establish automatic completeness.
 
@@ -166,16 +166,18 @@ default starting date is September 19, 2026; use `--since=YYYY-MM-DD` to select 
 inclusive date, or `--pr=986` to inspect one PR. It reads GitHub through the authenticated
 `gh` CLI. An available artifact still needs validation and successful publication.
 
-Add `--dispatch-next` to dispatch the oldest PR requiring new measurements. It starts
-one targeted backfill campaign for both platforms and refuses if another backfill is
-active or queued. Run the inventory again after that campaign and its publisher finish;
+Add `--dispatch-next` to dispatch up to four of the oldest PRs requiring new measurements.
+Use `--batch-size=1` through `--batch-size=8` to change the bound. It starts one targeted
+backfill campaign for both platforms and refuses if another backfill is active or queued.
+Run the inventory again after that campaign and its publisher finish;
 repeat until the desired range is covered. This is an operator-driven recovery step,
 not the persistent automatic scheduler described above. A concurrent dispatch after
 the active-campaign check can still race; avoid starting multiple operators at once.
 
-The existing backfill campaign remains all-or-nothing. A failed platform prevents the
-campaign from being published, and retrying the PR currently reruns both platforms.
-The command does not cancel a pending publisher or automatically retry a failed run.
+The publisher can retain each complete validated platform from a failed campaign, so a
+failed platform does not discard another platform's results. A targeted retry currently
+remeasures both platforms. The command does not cancel a pending publisher or
+automatically retry a failed run.
 
 ## Decisions and limits
 

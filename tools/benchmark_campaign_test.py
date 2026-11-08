@@ -137,6 +137,15 @@ class BenchmarkCampaignTest(unittest.TestCase):
         self.assertIn('content-needle', selected['contract']['tasks'])
         campaign.validate_plan(selected)
 
+    def test_planner_uses_explicit_revisions_instead_of_published_history(self):
+        revision = plan()['jobs'][0]['revision']
+        with mock.patch.object(campaign.backfill, 'revisions', return_value=[revision]) as revisions, \
+                mock.patch.object(campaign.backfill, 'git', side_effect=[DRIVER, 'c' * 40]):
+            selected = campaign.make_plan(Path('/repo'), Path('/history'), [HEAD])
+        self.assertEqual(len(selected['jobs']), 2)
+        self.assertEqual([call.args[1:] for call in revisions.call_args_list],
+                         [([HEAD], None, 'linux'), ([HEAD], None, 'macos')])
+
     def test_plan_rejects_mutation_duplicates_partial_grid_and_missing_platform(self):
         mutations = [lambda value: value['jobs'].append(value['jobs'][0]),
                      lambda value: value['jobs'].pop(),
@@ -232,6 +241,19 @@ class BenchmarkCampaignTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     campaign.retain(site, artifacts, source(), 'owner/repo')
                 self.assertFalse(site.exists())
+
+    def test_partial_recovery_retains_only_valid_completed_platforms(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            artifacts = root / 'artifacts'
+            write_artifacts(artifacts)
+            folder = next(artifacts.glob('benchmark-backfill-macos-*'))
+            (folder / 'status.json').write_text(json.dumps({HEAD: {'status': 'measurement-failed'}}))
+            failed = dict(source(), conclusion='failure')
+            destination = campaign.retain(root / 'site', artifacts, failed, 'owner/repo', allow_partial=True)
+            self.assertTrue((destination / 'linux' / HEAD / 'report.json').exists())
+            self.assertFalse((destination / 'macos' / HEAD / 'report.json').exists())
+            campaign.retain(root / 'site', artifacts, failed, 'owner/repo', allow_partial=True)
 
     def test_report_rejects_missing_tasks_references_samples_and_changed_identity(self):
         selected = plan()

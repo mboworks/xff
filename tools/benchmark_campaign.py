@@ -170,11 +170,12 @@ def validate_measurements(record, batch, revision, tasks):
     compare.render(report)  # Validate all samples, successful commands and finite measurements.
 
 
-def retain(root, artifacts, source, repository):
-    """Validate the entire campaign before making any replacement visible."""
+def retain(root, artifacts, source, repository, allow_partial=False):
+    """Retain validated campaign records; partial retention is explicitly opt-in."""
     require(source['name'] == 'Benchmark backfill' and source['path'] == '.github/workflows/benchmark_backfill.yml'
             and source['event'] == 'workflow_dispatch' and source['head_branch'] == 'main'
-            and source['status'] == 'completed' and source['conclusion'] == 'success'
+            and source['status'] == 'completed'
+            and (source['conclusion'] == 'success' or allow_partial)
             and source['repository']['full_name'] == repository, 'expected a successful trusted main backfill workflow')
     run, attempt = int(source['id']), int(source['run_attempt'])
     require(run > 0 and attempt > 0, 'invalid source workflow identity')
@@ -182,7 +183,9 @@ def retain(root, artifacts, source, repository):
     validate_plan(plan)
     require(plan['source_head'] == source['head_sha'], 'campaign source commit mismatch')
     expected_artifacts = {'benchmark-backfill-plan', *('benchmark-backfill-' + job['id'] for job in plan['jobs'])}
-    require({path.name for path in artifacts.iterdir()} == expected_artifacts, 'incomplete or unexpected campaign artifacts')
+    actual_artifacts = {path.name for path in artifacts.iterdir()}
+    require(actual_artifacts <= expected_artifacts and (allow_partial or actual_artifacts == expected_artifacts),
+            'incomplete or unexpected campaign artifacts')
     trusted = {key: source[key] for key in ('id', 'run_attempt', 'created_at', 'head_sha', 'head_branch', 'event')}
     trusted['pull_requests'] = []
     destination = root / 'backfills' / str(run) / str(attempt)
@@ -192,24 +195,30 @@ def retain(root, artifacts, source, repository):
         originals.setdefault((benchmark_records.platform_key(old), old['head']), []).append(path.relative_to(root).as_posix())
     records = []
     for job in plan['jobs']:
-        folder = artifacts / ('benchmark-backfill-' + job['id'])
-        batch = json.loads((folder / 'batch.json').read_text())
-        status = json.loads((folder / 'status.json').read_text())
-        sha = job['revision']['sha']
-        require(set(status) == {sha} and status[sha]['status'] == 'complete', 'incomplete campaign revision')
-        reports = list(folder.glob('reports/*/*.json'))
-        expected = folder / 'reports' / sha / f"benchmark-report-{job['platform']}-{job['arch']}.json"
-        require(reports == [expected], 'unexpected campaign report set')
-        record = json.loads(expected.read_text())
-        validate_report(record, batch, job, plan)
-        collection = batch['contract']['collection']
-        require(collection['id'] == run and 1 <= collection['run_attempt'] <= attempt
-                and collection['head_sha'] == source['head_sha'], 'batch source workflow mismatch')
-        record.update(source=trusted, collection=collection, campaign=plan['identity'])
-        saved = destination / job['platform'] / sha / 'report.json'
-        record['original_reports'] = (benchmark_records.read(saved)['original_reports'] if benchmark_records.exists(saved)
-                                      else sorted(originals.get((job['platform'], sha), [])))
-        records.append((job, record, batch, status))
+        try:
+            folder = artifacts / ('benchmark-backfill-' + job['id'])
+            batch = json.loads((folder / 'batch.json').read_text())
+            status = json.loads((folder / 'status.json').read_text())
+            sha = job['revision']['sha']
+            require(set(status) == {sha} and status[sha]['status'] == 'complete', 'incomplete campaign revision')
+            reports = list(folder.glob('reports/*/*.json'))
+            expected = folder / 'reports' / sha / f"benchmark-report-{job['platform']}-{job['arch']}.json"
+            require(reports == [expected], 'unexpected campaign report set')
+            record = json.loads(expected.read_text())
+            validate_report(record, batch, job, plan)
+            collection = batch['contract']['collection']
+            require(collection['id'] == run and 1 <= collection['run_attempt'] <= attempt
+                    and collection['head_sha'] == source['head_sha'], 'batch source workflow mismatch')
+            record.update(source=trusted, collection=collection, campaign=plan['identity'])
+            saved = destination / job['platform'] / sha / 'report.json'
+            record['original_reports'] = (benchmark_records.read(saved)['original_reports'] if benchmark_records.exists(saved)
+                                          else sorted(originals.get((job['platform'], sha), [])))
+            records.append((job, record, batch, status))
+        except (ValueError, KeyError, OSError) as error:
+            if not allow_partial:
+                raise
+            print(f"::warning::backfill {run}/{attempt} {job['id']}: {error}", flush=True)
+    require(records, 'campaign has no complete validated measurements')
     payloads = {'campaign.json': plan, 'source.json': trusted}
     for job, record, batch, status in records:
         prefix = job['platform'] + '/' + job['revision']['sha'] + '/'

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 # SPDX-License-Identifier: Apache-2.0
-"""Find missing merged PR benchmarks and start one targeted CI backfill at a time."""
+"""Find missing merged PR benchmarks and start bounded targeted CI backfills."""
 
 import argparse
 import base64
@@ -40,13 +40,17 @@ def inventory(api, since, number=None):
         if platform in PLATFORMS and re.fullmatch(r'[0-9a-f]{40}', sha):
             covered.add((sha, platform))
     pulls = api.pages('pulls?state=closed&sort=updated&direction=desc')
+    target_shas = {pull.get('merge_commit_sha') for pull in pulls
+                   if pull.get('merged_at') and pull['merged_at'][:10] >= since
+                   and pull.get('base', {}).get('ref') == 'main'
+                   and (number is None or pull['number'] == number)}
     runs = api.pages('actions/workflows/benchmarks.yml/runs?branch=main', 'workflow_runs')
     by_commit = {}
     for run in runs:
         if run.get('event') == 'push':
             by_commit.setdefault(run['head_sha'], []).append(run)
     pending_backfills = set()
-    campaigns = api.pages('actions/workflows/benchmark_backfill.yml/runs?branch=main&status=success', 'workflow_runs')
+    campaigns = api.pages('actions/workflows/benchmark_backfill.yml/runs?branch=main&status=completed', 'workflow_runs')
     for run in campaigns:
         artifacts = api.pages(f"actions/runs/{run['id']}/artifacts", 'artifacts')
         available = {item['name']: item for item in artifacts if not item.get('expired')}
@@ -62,8 +66,27 @@ def inventory(api, since, number=None):
                 raise ValueError('backfill plan exceeds 16 MiB')
             manifest = json.loads(archive.read(entry))
         jobs = manifest['jobs']
-        if all('benchmark-backfill-' + job['id'] in available for job in jobs):
-            pending_backfills.update((job['revision']['sha'], job['platform']) for job in jobs)
+        for job in jobs:
+            sha = job['revision']['sha']
+            if sha not in target_shas or (sha, job['platform']) in covered:
+                continue
+            item = available.get('benchmark-backfill-' + job['id'])
+            if not item:
+                continue
+            raw = api.request(f"actions/artifacts/{item['id']}/zip", raw=True)
+            if len(raw) > 128 * 1024 * 1024:
+                raise ValueError('backfill artifact exceeds 128 MiB')
+            with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+                try:
+                    info = archive.getinfo('status.json')
+                    if info.file_size > 16 * 1024 * 1024:
+                        raise ValueError('backfill status exceeds 16 MiB')
+                    status = json.loads(archive.read(info))
+                    report = f"reports/{sha}/benchmark-report-{job['platform']}-{job['arch']}.json"
+                    if status.get(sha, {}).get('status') == 'complete' and report in archive.namelist():
+                        pending_backfills.add((sha, job['platform']))
+                except (KeyError, ValueError):
+                    continue
     rows = []
     for pull in pulls:
         if number is not None and pull['number'] != number:
@@ -101,9 +124,12 @@ def main():
     parser.add_argument('--since', default='2026-09-19', help='Inclusive merge date (YYYY-MM-DD)')
     parser.add_argument('--pr', type=int, help='Limit the inventory to one PR number')
     parser.add_argument('--dispatch-next', action='store_true',
-                        help='Start one missing PR backfill after checking for an active campaign')
+                        help='Start a bounded backfill after checking for an active campaign')
+    parser.add_argument('--batch-size', type=int, default=4, help='Maximum PRs per campaign (1 through 8)')
     args = parser.parse_args()
     date.fromisoformat(args.since)
+    if not 1 <= args.batch_size <= 8:
+        parser.error('--batch-size must be between 1 and 8')
     api = benchmark_preview_ci.GitHub(args.repository)
     rows = inventory(api, args.since, args.pr)
     print(json.dumps({'since': args.since, 'missing': rows}, indent=2), flush=True)
@@ -116,11 +142,11 @@ def main():
     campaigns = api.pages('actions/workflows/benchmark_backfill.yml/runs?branch=main', 'workflow_runs')
     if any(run['status'] != 'completed' for run in campaigns):
         raise ValueError('a backfill campaign is already active or queued; retry after it finishes')
-    selected = candidates[0]
+    selected = candidates[:args.batch_size]
     # The deployed workflow must support the revisions input added by PR #1147.
     subprocess.run(['gh', 'workflow', 'run', 'benchmark_backfill.yml', '--repo', api.repository,
-                    '--ref', 'main', '-f', 'revisions=' + selected['commit']], check=True)
-    print(f"Dispatched PR #{selected['pr']} ({selected['commit']}) for both platforms.", flush=True)
+                    '--ref', 'main', '-f', 'revisions=' + ','.join(row['commit'] for row in selected)], check=True)
+    print('Dispatched both platforms for ' + ', '.join(f"PR #{row['pr']}" for row in selected) + '.', flush=True)
 
 
 if __name__ == '__main__':

@@ -116,19 +116,25 @@ def retain_backfill(api, root, run):
             if not re.fullmatch(r'benchmark-backfill-[A-Za-z0-9_.-]+', name):
                 raise ValueError('invalid backfill artifact name')
             target = directory / name
-            target.mkdir()
-            extract(api.request(f"actions/artifacts/{item['id']}/zip", raw=True), target)
-        benchmark_campaign.retain(root, directory, run, api.repository)
+            try:
+                target.mkdir()
+                extract(api.request(f"actions/artifacts/{item['id']}/zip", raw=True), target)
+            except (ValueError, OSError, zipfile.BadZipFile, subprocess.CalledProcessError,
+                    subprocess.TimeoutExpired) as error:
+                if name == 'benchmark-backfill-plan':
+                    raise
+                print(f"::warning::backfill artifact {name}: {error}", flush=True)
+        benchmark_campaign.retain(root, directory, run, api.repository, allow_partial=True)
     return True
 
 
 def reconcile(api, root):
     since = (datetime.now(timezone.utc) - timedelta(days=30)).date().isoformat()
     failures = []
-    for workflow, event, retain in (
-            ('benchmarks.yml', 'push', retain_measurement),
-            ('benchmark_backfill.yml', 'workflow_dispatch', retain_backfill)):
-        runs = api.pages(f'actions/workflows/{workflow}/runs?status=success&branch=main&created=%3E%3D{since}',
+    for workflow, event, status, retain in (
+            ('benchmarks.yml', 'push', 'success', retain_measurement),
+            ('benchmark_backfill.yml', 'workflow_dispatch', 'completed', retain_backfill)):
+        runs = api.pages(f'actions/workflows/{workflow}/runs?status={status}&branch=main&created=%3E%3D{since}',
                          'workflow_runs')
         for run in reversed(runs):
             if run.get('event') != event or run.get('head_branch') != 'main':

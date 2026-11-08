@@ -60,14 +60,20 @@ class BenchmarkRecoveryTest(unittest.TestCase):
     def test_retained_completed_campaign_is_not_dispatched_again(self):
         api = FakeGitHub()
         api.campaigns = [{'id': 2}]
-        jobs = [{'id': platform + '-' + SHA, 'revision': {'sha': SHA}, 'platform': platform}
+        jobs = [{'id': platform + '-' + SHA, 'revision': {'sha': SHA}, 'platform': platform, 'arch': 'arch'}
                 for platform in recovery.PLATFORMS]
         archive = io.BytesIO()
         with zipfile.ZipFile(archive, 'w') as output:
             output.writestr('campaign.json', json.dumps({'jobs': jobs}))
         api.archives['actions/artifacts/3/zip'] = archive.getvalue()
-        api.artifacts['actions/runs/2/artifacts'] = [{'id': 3, 'name': 'benchmark-backfill-plan'}] + [
-            {'name': 'benchmark-backfill-' + job['id']} for job in jobs]
+        api.artifacts['actions/runs/2/artifacts'] = [{'id': 3, 'name': 'benchmark-backfill-plan'}]
+        for index, job in enumerate(jobs, 4):
+            api.artifacts['actions/runs/2/artifacts'].append({'id': index, 'name': 'benchmark-backfill-' + job['id']})
+            artifact = io.BytesIO()
+            with zipfile.ZipFile(artifact, 'w') as output:
+                output.writestr('status.json', json.dumps({SHA: {'status': 'complete'}}))
+                output.writestr(f"reports/{SHA}/benchmark-report-{job['platform']}-arch.json", '{}')
+            api.archives[f'actions/artifacts/{index}/zip'] = artifact.getvalue()
         self.assertEqual(recovery.inventory(api, '2026-09-19')[0]['state'], 'awaiting publication')
 
     def test_dispatch_refuses_active_campaign(self):
