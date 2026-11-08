@@ -160,7 +160,7 @@ absl::StatusOr<std::string> ReadPositionedEntry(
     const auto reserve = static_cast<std::uint64_t>(hint);
     contents.reserve(max_bytes != 0 ? std::min<std::uint64_t>(reserve, max_bytes) : reserve);
   }
-  std::array<char, kBlockSize> buffer{};
+  std::array<char, kBlockSize> buffer;
   while (true) {
     const ::ssize_t read = ::archive_read_data(handle, buffer.data(), buffer.size());
     if (read == 0) {

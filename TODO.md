@@ -1523,3 +1523,12 @@ this as intentional accounting.
       Implemented in PR #1122; exact post-merge main Test run 42276661524 passed both operating
       systems, sanitizers, coverage and changed-file lint. The initial noisy macOS screen remains
       in the artifact.
+
+- [ ] O32: Integrate the qualified one-line legacy archive read-buffer initialization change.
+      Both-host TAR API gains and the repeatable Mac near-64-KiB gzip costs are explicit in
+      [the complete qualification](docs/benchmarks/archive-read-buffer-clear-20261107.md).
+      Focused release/ASan tests pass both hosts and Linux MSan passes; current-base PR checks
+      and main verification remain required. Do not generalize to O07 buffers or ordinary CLI speed.
+- [ ] Fix the legacy ReadCompressedSingleFile API's rejection of a valid empty gzip. Retain the
+      unchanged-parent availability control in O32; do not turn its missing content result into
+      a zero-time speed ratio or silently remove it from the measured matrix.

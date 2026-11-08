@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Avoid redundant 64 KiB buffer clearing in legacy archive extraction.
+
 - Preserve filesystem-native name matching for dangling and cross-volume symlinks when case
   sensitivity is resolved lazily.
 

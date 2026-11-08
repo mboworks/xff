@@ -5000,3 +5000,31 @@ identity-stable random access, visible-local-member association and shared read 
 requirements. The separate deferred-bzip2 content bug is tracked. All 19 source/configuration/log
 records are retained losslessly; no runtime implementation, speedup, full-suite/sanitizer qualification
 or public-head CI claim is made. O19b3 and streamed-size correctness remain open.
+
+### O32: legacy archive extraction buffer initialization
+
+[The complete two-host qualification](benchmarks/archive-read-buffer-clear-20261107.md)
+changes only the 64 KiB stack array's value initialization in `ReadPositionedEntry`.
+The library-written prefix and existing error/limit handling remain unchanged. Three
+independently ordered sessions of nine repetitions retaining seven per case show legacy
+memory-TAR medians -8.73% Mac/-3.89% Linux and native-TAR -1.98%/-1.89%, including
+complete output consumption. The unchanged streaming path is a separate control; no
+ordinary-command or current main benchmark speedup is established.
+
+Keep the tradeoff prominent: Mac gzip at 65,535/65,536/65,537 bytes costs +2.11/+3.33/+3.08%
+per-case medians; the exact-64-KiB case is slower in every session. The weak Linux gzip
+aggregate (-0.19%) is not a general speedup. Full raw controls include noisy Mac stream
+and gzip observations; no cache/allocator explanation is claimed and no heuristic is added.
+The simpler initialization change is proposed for the reproducible TAR API gains with
+those explicit costs. Retain O07's separate one-time-clear decision.
+
+All five focused release targets pass each host, three focused ASan targets pass each,
+and three Linux MSan targets pass. The new byte-boundary tests also pass on the parent.
+A valid empty gzip is rejected by the unchanged legacy API before this buffer; its nine
+expected errors per participant/session remain availability data with no speed ratio.
+That separate defect is tracked. All 2,114 hashed evidence records are retained; no
+research benchmark target/source is published. Current public integration CI remains required.
+
+[Fresh post-#1143 requalification](benchmarks/archive-read-buffer-requalification-20261108.md) retains the memory-TAR
+benefit (-8.47% macOS/-3.78% Linux) with narrower native-TAR gains and every slower gzip
+case and copy control. The original report/capsule stays frozen; exact-head CI remains required.
