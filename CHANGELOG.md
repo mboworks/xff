@@ -3,6 +3,9 @@
 
 # 0.11.0
 
+- Preserve filesystem-native name matching for dangling and cross-volume symlinks when case
+  sensitivity is resolved lazily.
+
 - Avoid unnecessary per-entry stat requests for lexical listing templates while preserving required
   metadata, fuzzy scores and conservative column output.
 

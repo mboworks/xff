@@ -790,8 +790,13 @@ entry's metadata and consults the existing device case cache. Negated character 
 matches under folding, so an exact match alone is not sufficient to skip resolution. Required
 metadata failures remain unknown results and cannot become matches through negation. Explicit
 case folding bypasses the resolver; fuzzy matching resolves native case when reached. Deferred
-entries retain their existing complete-metadata replay path. This does not infer a directory's
-case rule for its children or assume a root's case rule applies across mount boundaries.
+entries retain their existing complete-metadata replay path. For a non-followed symlink, a native
+path query can follow the target or fail when it is dangling. On a device-cache miss, the resolver
+therefore queries the containing directory only after VFS metadata verifies that it is a directory
+on the link's own device. A different-device or unavailable parent keeps the original entry query;
+an unavailable case answer keeps the conservative exact fallback. This optional parent check does
+not introduce a reported metadata error. It does not assume that a root's case rule applies across
+mount boundaries, and regular entries retain their existing lazy path.
 
 Explicit `-print` and `-print0` actions borrow one coordinator-owned raw record buffer across
 entries and deferred replay. The action chooses its own terminator independently of the implicit
