@@ -89,7 +89,7 @@ class BenchmarkRecoveryTest(unittest.TestCase):
 
     def test_dispatch_uses_the_targeted_main_workflow(self):
         api = FakeGitHub()
-        selected = {'state': 'needs backfill', 'pr': 7, 'commit': SHA}
+        selected = {'state': 'needs backfill', 'pr': 7, 'commit': SHA, 'missing': ['linux']}
         with mock.patch.object(recovery.benchmark_preview_ci, 'GitHub', return_value=api), \
                 mock.patch.object(recovery, 'inventory', return_value=[selected]), \
                 mock.patch.object(api, 'pages', return_value=[]), \
@@ -97,7 +97,8 @@ class BenchmarkRecoveryTest(unittest.TestCase):
                 mock.patch('sys.argv', ['benchmark_recovery', '--repository', 'owner/repo', '--dispatch-next']):
             recovery.main()
             run.assert_called_once_with(['gh', 'workflow', 'run', 'benchmark_backfill.yml', '--repo',
-                                         'owner/repo', '--ref', 'main', '-f', 'revisions=' + SHA], check=True)
+                                         'owner/repo', '--ref', 'main', '-f', 'revisions=' + SHA,
+                                         '-f', 'platforms=linux'], check=True)
 
 
 if __name__ == '__main__':

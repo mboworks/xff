@@ -10,6 +10,11 @@ on:
         description: Comma-separated commit IDs (empty selects published history)
         required: false
         type: string
+      # Select the measurement platforms without changing the driver.
+      platforms:
+        description: Comma-separated platforms, linux or macos (empty selects both)
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -43,6 +48,7 @@ jobs:
         id: plan
         env:
           REVISIONS: ${{ inputs.revisions }}
+          PLATFORMS: ${{ inputs.platforms }}
         run: |
           set -euo pipefail
           revision_args=()
@@ -51,6 +57,13 @@ jobs:
             revision="${revision//[[:space:]]/}"
             if [[ -n "${revision}" ]]; then
               revision_args+=(--revision="${revision}")
+            fi
+          done
+          IFS=',' read -ra platforms <<< "${PLATFORMS}"
+          for platform in "${platforms[@]}"; do
+            platform="${platform//[[:space:]]/}"
+            if [[ -n "${platform}" ]]; then
+              revision_args+=(--platform="${platform}")
             fi
           done
           matrix="$(python3 tools/benchmark_campaign.py plan --repo=. \
@@ -100,7 +113,8 @@ jobs:
       - name: Install reference tools for this revision
         run: |
           if [[ "${RUNNER_OS}" == Linux ]]; then
-            sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
+            # Older LLVM linkers need these Ubuntu 22.04 runtime ABIs.
+            sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf libicu70 libxml2
           else
             brew install findutils ripgrep fzf
           fi
