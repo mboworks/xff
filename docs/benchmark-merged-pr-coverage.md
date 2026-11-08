@@ -152,6 +152,31 @@ Older successful reports can exist without the viewer data required by the curre
    expiry and stalled progress. After a successful publisher, confirm every eligible
    retained result is indexed; retry publication independently of measurement.
 
+## Recovery command
+
+After PR #1147 has deployed the targeted revision input, run:
+
+```sh
+bazel run //tools:benchmark_recovery -- --repository mboworks/xff
+```
+
+The command compares merged PRs with the current CI viewer catalog and reports missing
+platforms, active main measurements and retained artifacts awaiting publication. The
+default starting date is September 19, 2026; use `--since=YYYY-MM-DD` to select another
+inclusive date, or `--pr=986` to inspect one PR. It reads GitHub through the authenticated
+`gh` CLI. An available artifact still needs validation and successful publication.
+
+Add `--dispatch-next` to dispatch the oldest PR requiring new measurements. It starts
+one targeted backfill campaign for both platforms and refuses if another backfill is
+active or queued. Run the inventory again after that campaign and its publisher finish;
+repeat until the desired range is covered. This is an operator-driven recovery step,
+not the persistent automatic scheduler described above. A concurrent dispatch after
+the active-campaign check can still race; avoid starting multiple operators at once.
+
+The existing backfill campaign remains all-or-nothing. A failed platform prevents the
+campaign from being published, and retrying the PR currently reruns both platforms.
+The command does not cancel a pending publisher or automatically retry a failed run.
+
 ## Decisions and limits
 
 - Decide the supported historical starting point and platforms before scheduling a

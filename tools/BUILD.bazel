@@ -1382,6 +1382,26 @@ py_binary(
     ],
 )
 
+py_library(
+    name = "benchmark_recovery_lib",
+    srcs = ["benchmark_recovery.py"],
+    imports = ["."],
+    deps = [":benchmark_preview_ci_lib"],
+)
+
+py_binary(
+    name = "benchmark_recovery",
+    srcs = ["benchmark_recovery.py"],
+    deps = [":benchmark_preview_ci_lib"],
+)
+
+py_test(
+    name = "benchmark_recovery_test",
+    size = "small",
+    srcs = ["benchmark_recovery_test.py"],
+    deps = [":benchmark_recovery_lib"],
+)
+
 py_test(
     name = "benchmark_preview_ci_test",
     size = "small",

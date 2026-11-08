@@ -91,6 +91,23 @@ class BenchmarkLandscapeTest(unittest.TestCase):
             {'name': 'broad', 'revision': 2}, {'name': 'deep', 'revision': 2},
         ]}), 'broad/v2 + deep/v2')
 
+    def test_merged_version_uses_pr_label_from_version_links(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'index.html').write_text('<h1>History</h1>')
+            folder = root / 'runs/1/1/linux'
+            folder.mkdir(parents=True)
+            sha = 'a' * 40
+            (folder / 'report.json').write_text(json.dumps(dict(tool_comparisons=report(), platform='linux',
+                head=sha, source=dict(id=1, run_attempt=1, head_branch='main', event='push',
+                                     created_at='2026-09-01T00:00:00Z'))))
+            (folder / 'index.html').write_text('<h1>Main</h1>')
+            (root / 'version-links.json').write_text(json.dumps({sha: [
+                {'label': 'PR #1143', 'href': 'https://github.com/owner/repo/pull/1143'}]}))
+            landscape.publish(root, '/* renderer */')
+            catalog = json.loads((root / 'catalog.json').read_text())
+            self.assertEqual(catalog[0]['label'], 'PR #1143 / ' + sha[:10])
+
     def test_incremental_preview_publication_preserves_merged_pages_and_removes_stale_selection(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
