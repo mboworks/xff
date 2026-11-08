@@ -5,181 +5,81 @@ name: Publish benchmarks
 on:
   workflow_run:
     workflows: [Test, Benchmarks, Release, Benchmark backfill]
-    types: [in_progress, completed]
+    types: [completed]
   workflow_dispatch: {}
+  schedule:
+    - cron: "17 */6 * * *"
+
+# One running publisher and only the newest pending request. The pending request
+# reconciles every available source, including work from displaced requests.
+concurrency:
+  group: benchmark-publication-latest
+  queue: single
+  cancel-in-progress: false
 
 permissions: {}
 
 jobs:
-  preview:
-    if: >-
-      github.event_name == 'workflow_run' && github.event.action == 'in_progress' &&
-      github.event.workflow_run.name == 'Test' && github.event.workflow_run.event == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 125
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: read
-    outputs:
-      available: ${{ steps.wait.outputs.available }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: main
-          persist-credentials: false
-      # Waiting consumes no deployment lock and executes no incoming PR code.
-      - name: Wait for benchmark comparisons, independently of the other Test jobs
-        id: wait
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SOURCE_RUN: ${{ github.event.workflow_run.id }}
-          SOURCE_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
-        run: |
-          python3 tools/benchmark_preview_ci.py wait --repository="${GITHUB_REPOSITORY}" \
-            --run="${SOURCE_RUN}" --attempt="${SOURCE_ATTEMPT}" --output="${GITHUB_OUTPUT}"
-
   publish:
-    needs: [preview]
-    if: >-
-      always() && !cancelled() && github.ref == 'refs/heads/main' &&
-      (needs.preview.outputs.available == 'true' ||
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-      (github.event.workflow_run.name == 'Release' ||
-      (github.event.workflow_run.head_branch == 'main' &&
-      ((github.event.workflow_run.name == 'Benchmarks' && github.event.workflow_run.event == 'push') ||
-      (github.event.workflow_run.name == 'Benchmark backfill' && github.event.workflow_run.event == 'workflow_dispatch'))))))
+    # Every request reconciles all trusted sources. A request which replaces a
+    # pending one must never be skipped based on its own triggering event.
+    # Other retained-site writers use this lock too. Never cancel those writers.
     concurrency:
       group: coverage-pages
       queue: max
       cancel-in-progress: false
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     permissions:
       actions: read
       contents: write
       pull-requests: read
     steps:
-      # Only trusted publisher code executes; incoming benchmark artifacts are JSON data.
       - uses: actions/checkout@v7
         with:
           ref: main
           path: source
           fetch-depth: 0
           filter: blob:none
-      - name: Recheck queued PR preview before loading the retained site
-        if: needs.preview.outputs.available == 'true'
-        id: preview-current
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SOURCE_RUN: ${{ github.event.workflow_run.id }}
-          SOURCE_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
-        run: |
-          python3 source/tools/benchmark_preview_ci.py current --repository="${GITHUB_REPOSITORY}" \
-            --run="${SOURCE_RUN}" --attempt="${SOURCE_ATTEMPT}" --output="${GITHUB_OUTPUT}"
       - uses: actions/checkout@v7
-        if: needs.preview.outputs.available != 'true' || steps.preview-current.outputs.available == 'true'
         with:
           ref: coverage-pages
           path: site
           fetch-depth: 0
           filter: blob:none
-      - name: Expand retained benchmark inputs
-        if: needs.preview.outputs.available != 'true' || steps.preview-current.outputs.available == 'true'
-        run: python3 source/tools/site_storage.py expand-benchmarks site/benchmarks
-      - name: Verify and retain current PR benchmark JSON
-        if: steps.preview-current.outputs.available == 'true'
-        id: preview
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SOURCE_RUN: ${{ github.event.workflow_run.id }}
-          SOURCE_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
-        run: |
-          python3 source/tools/benchmark_preview_ci.py collect --repository="${GITHUB_REPOSITORY}" \
-            --run="${SOURCE_RUN}" --attempt="${SOURCE_ATTEMPT}" --root=site/benchmarks \
-            --output="${GITHUB_OUTPUT}"
-      - uses: actions/download-artifact@v8
-        if: github.event.workflow_run.name == 'Benchmarks'
-        with:
-          github-token: ${{ github.token }}
-          pattern: benchmark-report*
-          path: report
-          run-id: ${{ github.event.workflow_run.id }}
-      - name: Retain incoming benchmark measurements
-        if: github.event.workflow_run.name == 'Benchmarks'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SOURCE_RUN: ${{ github.event.workflow_run.id }}
-        run: |
-          set -euo pipefail
-          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN}" > source-run.json
-          commit="$(jq -r .head_sha source-run.json)"
-          reference="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${commit}" --jq .commit.committer.date)"
-          jq --arg reference "${reference}" '. + {reference_time: $reference}' source-run.json > source-reference.json
-          gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=100" > pulls.json
-          for report in report/*/benchmark-report*.json; do
-            python3 source/tools/benchmark_history.py publish \
-              --root=site/benchmarks --report="${report}" \
-              --source=source-reference.json --pulls=pulls.json --repository="${GITHUB_REPOSITORY}"
-          done
-      - uses: actions/download-artifact@v8
-        if: github.event.workflow_run.name == 'Benchmark backfill'
-        with:
-          github-token: ${{ github.token }}
-          pattern: benchmark-backfill-*
-          path: backfill
-          run-id: ${{ github.event.workflow_run.id }}
-      - name: Validate and retain the complete CI backfill campaign
-        if: github.event.workflow_run.name == 'Benchmark backfill'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SOURCE_RUN: ${{ github.event.workflow_run.id }}
-        run: |
-          set -euo pipefail
-          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN}" > source-run.json
-          python3 source/tools/benchmark_campaign.py publish \
-            --root=site/benchmarks --artifacts=backfill --source=source-run.json \
-            --repository="${GITHUB_REPOSITORY}"
       - uses: actions/setup-node@v7
-        if: needs.preview.outputs.available != 'true' || steps.preview.outputs.available == 'true'
         with:
           node-version: "24"
       - name: Build pinned benchmark renderer
-        if: needs.preview.outputs.available != 'true' || steps.preview.outputs.available == 'true'
         working-directory: source/tools/benchmark_web
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm run build
-      - name: Refresh and retain stable benchmark references
-        if: needs.preview.outputs.available != 'true' || steps.preview.outputs.available == 'true'
+      - name: Reconcile and retain available benchmarks
         env:
           GH_TOKEN: ${{ github.token }}
-          PREVIEW: ${{ steps.preview.outputs.available }}
         run: |
           set -euo pipefail
           git -C site config user.name 'github-actions[bot]'
           git -C site config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           refresh_site() {
             python3 source/tools/site_storage.py expand-benchmarks site/benchmarks
+            python3 source/tools/benchmark_reconcile_ci.py \
+              --repository="${GITHUB_REPOSITORY}" --root=site/benchmarks
             gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=100" > pulls.json
-            incremental=()
-            if [ "${PREVIEW}" = 'true' ] && [ "$1" = 'initial' ]; then
-              incremental+=(--incremental-previews)
-            else
-              python3 source/tools/benchmark_history.py refresh \
-                --root=site/benchmarks --pulls=pulls.json --checkout=source --repository="${GITHUB_REPOSITORY}"
-            fi
+            python3 source/tools/benchmark_history.py refresh \
+              --root=site/benchmarks --pulls=pulls.json --checkout=source --repository="${GITHUB_REPOSITORY}"
             python3 source/tools/benchmark_landscape.py --site-root=site/benchmarks \
               --renderer-js=source/tools/benchmark_web/dist/landscape.js --pulls=pulls.json \
-              --repository="${GITHUB_REPOSITORY}" "${incremental[@]}"
+              --repository="${GITHUB_REPOSITORY}"
             python3 source/tools/site_artwork.py source/docs/assets site
             python3 source/tools/compact_site.py site
             git -C site add --all
             if ! git -C site diff --cached --quiet; then
-              git -C site commit -m 'benchmarks: publish paired measurements'
+              git -C site commit -m 'benchmarks: reconcile available measurements'
             fi
           }
-          refresh_site initial
+          refresh_site
           export -f refresh_site
           python3 source/tools/publish_site.py --repo=site -- \
-            bash -c 'set -euo pipefail; refresh_site retry'
+            bash -c 'set -euo pipefail; refresh_site'

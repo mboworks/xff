@@ -1368,6 +1368,17 @@ py_library(
     ],
 )
 
+py_binary(
+    name = "benchmark_reconcile_ci",
+    srcs = ["benchmark_reconcile_ci.py"],
+    deps = [
+        ":benchmark_campaign_lib",
+        ":benchmark_history_lib",
+        ":benchmark_preview_ci_lib",
+        ":benchmark_records_lib",
+    ],
+)
+
 py_test(
     name = "benchmark_preview_ci_test",
     size = "small",
