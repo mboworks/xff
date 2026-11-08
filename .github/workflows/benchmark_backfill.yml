@@ -113,8 +113,7 @@ jobs:
       - name: Install reference tools for this revision
         run: |
           if [[ "${RUNNER_OS}" == Linux ]]; then
-            # Older LLVM linkers need these Ubuntu 22.04 runtime ABIs.
-            sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf libicu70 libxml2
+            bash tools/prepare_benchmark_runtime.sh "${RUNNER_TEMP}/historical-runtime"
           else
             brew install findutils ripgrep fzf
           fi
@@ -137,6 +136,17 @@ jobs:
             --output="${RUNNER_TEMP}/backfill" --fixture-parent="${fixture_parent}" \
             --resource-launcher="${RUNNER_TEMP}/benchmark-resource-launcher" \
             --disk-cache="${HOME}/.cache/bazel-disk"
+      - name: Preserve historical runtime receipt
+        if: always() && runner.os == 'Linux'
+        run: |
+          # Keep every artifact path under backfill, preserving its existing root layout.
+          # Stage receipts after collection: a new batch requires an empty output directory.
+          mkdir -p "${RUNNER_TEMP}/backfill/runtime"
+          for name in runtime-receipt.json package-sha256.txt sources.list; do
+            if [[ -f "${RUNNER_TEMP}/historical-runtime/${name}" ]]; then
+              cp "${RUNNER_TEMP}/historical-runtime/${name}" "${RUNNER_TEMP}/backfill/runtime/${name}"
+            fi
+          done
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -147,6 +157,7 @@ jobs:
             ${{ runner.temp }}/backfill/index.html
             ${{ runner.temp }}/backfill/reports
             ${{ runner.temp }}/backfill/binaries/*/build.log
+            ${{ runner.temp }}/backfill/runtime
           if-no-files-found: warn
           overwrite: true
           retention-days: 30

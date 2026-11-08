@@ -1,0 +1,274 @@
+{
+  "purpose": "Historical production build/runtime compatibility and independent output correctness; no performance claim.",
+  "container_image": "sha256:97bed23a34971024aa8d254abbe67b7168772340d1f494034773bc464e8dd5b6",
+  "host": "drogon.boerger.online",
+  "runtime": {
+    "preparer_sha256": "f254faf1b81d69fe08a532274a5446b3b3b270111395f8adcb51a354e2e0a451",
+    "os_release": {
+      "NAME": "Ubuntu",
+      "ID": "ubuntu",
+      "PRETTY_NAME": "Ubuntu 24.04.3 LTS",
+      "VERSION_ID": "24.04",
+      "VERSION": "24.04.3 LTS (Noble Numbat)",
+      "VERSION_CODENAME": "noble",
+      "ID_LIKE": "debian",
+      "HOME_URL": "https://www.ubuntu.com/",
+      "SUPPORT_URL": "https://help.ubuntu.com/",
+      "BUG_REPORT_URL": "https://bugs.launchpad.net/ubuntu/",
+      "PRIVACY_POLICY_URL": "https://www.ubuntu.com/legal/terms-and-policies/privacy-policy",
+      "UBUNTU_CODENAME": "noble",
+      "LOGO": "ubuntu-logo"
+    },
+    "glibc": "glibc 2.39",
+    "architecture": "x86_64",
+    "packages": [
+      "libc6\t2.39-0ubuntu8.9\tamd64",
+      "libicu70\t70.1-2\tamd64",
+      "libxml2\t2.9.14+dfsg-1.3ubuntu3.10\tamd64"
+    ],
+    "libraries": {
+      "/usr/lib/x86_64-linux-gnu/libc.so.6": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf",
+      "/usr/lib/x86_64-linux-gnu/libicudata.so.70.1": "c1404396288e178c8db2f30203cb8150e4d2c14cacee9a2883e0092f45399cc8",
+      "/usr/lib/x86_64-linux-gnu/libicui18n.so.70.1": "24fa78caa9b66c10c90711c51089f45273b643f132031172d54a3e98d711d48e",
+      "/usr/lib/x86_64-linux-gnu/libicuuc.so.70.1": "4683f3623dc47a92e862dc3c8770caff81c9f4c7e116bb672fc439737b06d88a",
+      "/usr/lib/x86_64-linux-gnu/libxml2.so.2.9.14": "209e941be9eb2eb9ab36caaa0b81d1c6b36c8f5d7268c24f19e81039137e6485"
+    },
+    "package_sha256": "58a154f6307289813da2276f900498ef536ae7c0522d2cf31a3c3c5cf62dfd9a  /tmp/runtime/libicu70_70.1-2_amd64.deb",
+    "sources": [
+      "deb [arch=amd64 signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] https://archive.ubuntu.com/ubuntu jammy main",
+      "deb [arch=amd64 signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] https://archive.ubuntu.com/ubuntu jammy-updates main",
+      "deb [arch=amd64 signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] https://security.ubuntu.com/ubuntu jammy-security main"
+    ]
+  },
+  "results": [
+    {
+      "pr": 914,
+      "source": "9bbee34da11e0d97b2b740cf25f4d90ca62447d9",
+      "tree": "e1638e6c1f6cc859404bf31576858189ab55a766",
+      "clean": true,
+      "target": "//xff/cli:xff",
+      "command": [
+        "bazel",
+        "--nosystem_rc",
+        "--nohome_rc",
+        "build",
+        "//xff/cli:xff",
+        "--config=clang_release",
+        "--jobs=6"
+      ],
+      "artifact": "bazel-out/k8-opt/bin/xff/cli/xff",
+      "binary_sha256": "3e38518d0ab55756640d3ea50e9861ea0b2417d2b35d62b8a5be234ab1459a75",
+      "bytes": 10587320,
+      "version": "xff 0.0.0",
+      "checks": [
+        {
+          "tool": "xff",
+          "filtering": false,
+          "records": 100,
+          "command": [
+            "/out/914/xff",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--exact",
+            "--gitignore=off",
+            "--hidden",
+            "--jobs=3",
+            "/tmp/xff-runtime-fixture",
+            "-type",
+            "f",
+            "-print0"
+          ],
+          "stdout_sha256": "32552ec1328ab620caf1d1623025a136462cfdadec33f95537e8b947d12f8bf9"
+        },
+        {
+          "tool": "find",
+          "filtering": false,
+          "records": 100,
+          "command": [
+            "/usr/bin/find",
+            "-P",
+            "/tmp/xff-runtime-fixture",
+            "-type",
+            "f",
+            "-print0"
+          ],
+          "stdout_sha256": "2d26c04a9c9327015a31e5c32c87cbf565271fb8e5b7b8b9f55e1d9d26ad431f"
+        },
+        {
+          "tool": "xff",
+          "filtering": true,
+          "records": 50,
+          "command": [
+            "/out/914/xff",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--exact",
+            "--gitignore=off",
+            "--hidden",
+            "--jobs=3",
+            "/tmp/xff-runtime-fixture",
+            "-type",
+            "f",
+            "-name",
+            "*.txt",
+            "-print0"
+          ],
+          "stdout_sha256": "5cfec443c23ae59225809d2d481652969f7b42ecd3ce0b983b9800aba35dd36a"
+        },
+        {
+          "tool": "find",
+          "filtering": true,
+          "records": 50,
+          "command": [
+            "/usr/bin/find",
+            "-P",
+            "/tmp/xff-runtime-fixture",
+            "-type",
+            "f",
+            "-name",
+            "*.txt",
+            "-print0"
+          ],
+          "stdout_sha256": "3d4ce56bd7ec5186edbbc6072356c12ad422f46b9d1afc64f63c5b41bf6893f4"
+        }
+      ],
+      "os_release": {
+        "NAME": "Ubuntu",
+        "ID": "ubuntu",
+        "PRETTY_NAME": "Ubuntu 24.04.3 LTS",
+        "VERSION_ID": "24.04",
+        "VERSION": "24.04.3 LTS (Noble Numbat)",
+        "VERSION_CODENAME": "noble",
+        "ID_LIKE": "debian",
+        "HOME_URL": "https://www.ubuntu.com/",
+        "SUPPORT_URL": "https://help.ubuntu.com/",
+        "BUG_REPORT_URL": "https://bugs.launchpad.net/ubuntu/",
+        "PRIVACY_POLICY_URL": "https://www.ubuntu.com/legal/terms-and-policies/privacy-policy",
+        "UBUNTU_CODENAME": "noble",
+        "LOGO": "ubuntu-logo"
+      },
+      "note": "Compatibility and correctness smoke only; no performance timing is claimed from this container.",
+      "link_actions_sha256": "139058df65992cf2c24656940dae749f31308fd58f4a7ae6e78a6193426a9dd4",
+      "build_log_sha256": "f2671a9706f6f1efd1d2f44ebf9bc005709ece1089e8a0edca804a78aa811854"
+    },
+    {
+      "pr": 986,
+      "source": "61ab1ce41300aa785d6beafb46c29b29dc832b8d",
+      "tree": "a0dce9fc2f1eeb67a3fd6e99d10534b8a5adc527",
+      "clean": true,
+      "target": "//xff/cli:xff",
+      "command": [
+        "bazel",
+        "--nosystem_rc",
+        "--nohome_rc",
+        "build",
+        "//xff/cli:xff",
+        "--config=clang_release",
+        "--jobs=6"
+      ],
+      "artifact": "bazel-out/k8-opt/bin/xff/cli/xff",
+      "binary_sha256": "01787d5feddc348d125608c8947ed45d4f8169a75fe94a2c89d234134ab98f60",
+      "bytes": 11984280,
+      "version": "xff 0.0.0",
+      "checks": [
+        {
+          "tool": "xff",
+          "filtering": false,
+          "records": 100,
+          "command": [
+            "/out/986/xff",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--exact",
+            "--gitignore=off",
+            "--hidden",
+            "--jobs=3",
+            "/tmp/xff-runtime-fixture",
+            "-type",
+            "f",
+            "-print0"
+          ],
+          "stdout_sha256": "32552ec1328ab620caf1d1623025a136462cfdadec33f95537e8b947d12f8bf9"
+        },
+        {
+          "tool": "find",
+          "filtering": false,
+          "records": 100,
+          "command": [
+            "/usr/bin/find",
+            "-P",
+            "/tmp/xff-runtime-fixture",
+            "-type",
+            "f",
+            "-print0"
+          ],
+          "stdout_sha256": "2d26c04a9c9327015a31e5c32c87cbf565271fb8e5b7b8b9f55e1d9d26ad431f"
+        },
+        {
+          "tool": "xff",
+          "filtering": true,
+          "records": 50,
+          "command": [
+            "/out/986/xff",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--exact",
+            "--gitignore=off",
+            "--hidden",
+            "--jobs=3",
+            "/tmp/xff-runtime-fixture",
+            "-type",
+            "f",
+            "-name",
+            "*.txt",
+            "-print0"
+          ],
+          "stdout_sha256": "5cfec443c23ae59225809d2d481652969f7b42ecd3ce0b983b9800aba35dd36a"
+        },
+        {
+          "tool": "find",
+          "filtering": true,
+          "records": 50,
+          "command": [
+            "/usr/bin/find",
+            "-P",
+            "/tmp/xff-runtime-fixture",
+            "-type",
+            "f",
+            "-name",
+            "*.txt",
+            "-print0"
+          ],
+          "stdout_sha256": "3d4ce56bd7ec5186edbbc6072356c12ad422f46b9d1afc64f63c5b41bf6893f4"
+        }
+      ],
+      "os_release": {
+        "NAME": "Ubuntu",
+        "ID": "ubuntu",
+        "PRETTY_NAME": "Ubuntu 24.04.3 LTS",
+        "VERSION_ID": "24.04",
+        "VERSION": "24.04.3 LTS (Noble Numbat)",
+        "VERSION_CODENAME": "noble",
+        "ID_LIKE": "debian",
+        "HOME_URL": "https://www.ubuntu.com/",
+        "SUPPORT_URL": "https://help.ubuntu.com/",
+        "BUG_REPORT_URL": "https://bugs.launchpad.net/ubuntu/",
+        "PRIVACY_POLICY_URL": "https://www.ubuntu.com/legal/terms-and-policies/privacy-policy",
+        "UBUNTU_CODENAME": "noble",
+        "LOGO": "ubuntu-logo"
+      },
+      "note": "Compatibility and correctness smoke only; no performance timing is claimed from this container.",
+      "link_actions_sha256": "213e0a5b49a63655547f0cc3c4064b8cb270a81bc10098c5815ed48bfda58726",
+      "build_log_sha256": "2d9b519f2580b5ffe2e372d4ed8ef2332c862e389003379088dbe38639f0118c"
+    }
+  ],
+  "retained_evidence": "/home/marcus/Documents/xff-per-entry-followup-20261108/runtime-compatibility/receipts"
+}
