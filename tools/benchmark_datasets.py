@@ -36,13 +36,17 @@ def recipe(report, local_contract=None):
                   cache=contract.get('cache'), output=contract.get('output'))
     if contract.get('layouts'):
         result['layouts'] = [dict(layout) for layout in contract['layouts']]
+    if contract.get('suite'):
+        result.update(suite=contract['suite'], comparison=contract.get('comparison'),
+                      production_target=contract.get('production_target'))
     return result
 
 
 def build_catalog(root):
     paths = {*records.run_paths(root), *root.glob('backfills/*/*/*/*/report.json'),
-             *root.glob('local/*/*/*/report.json')}
-    paths.update(path.with_suffix('') for pattern in ('backfills/*/*/*/*/report.json.gz', 'local/*/*/*/report.json.gz')
+             *root.glob('local/*/*/*/report.json'), *root.glob('extended/views/*/*/report.json')}
+    paths.update(path.with_suffix('') for pattern in ('backfills/*/*/*/*/report.json.gz', 'local/*/*/*/report.json.gz',
+                                                    'extended/views/*/*/report.json.gz')
                  for path in root.glob(pattern))
     datasets = {}
     for path in sorted(paths):

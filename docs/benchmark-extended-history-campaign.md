@@ -243,3 +243,65 @@ The [synthetic viewer check](benchmarks/extended-history-viewer-check-20261107.j
 both exported dataset views in Chromium. Both historical versions produce their exact expected
 heights; 60 measured points remain present and all 20 unavailable cells remain empty. This
 artifact contains synthetic renderer checks only, not performance measurements.
+
+## Continuous publication
+
+The `Benchmarks` workflow collects `extended-production-v1` independently on Linux and macOS.
+It uses the complete 60-cell grid above, one warm-up and nine measured rounds, retaining seven.
+Each platform builds the full production head and its exact first parent with ThinLTO. Each
+configured executable is copied immediately after its own build/query, before any later Bazel
+invocation. Both Bazel servers stop before measurement. The original executables and build/link
+evidence are uploaded, downloaded again, and verified before their bytes are measured.
+
+Linux creates a new directory on verified `/dev/shm` tmpfs. macOS creates a disposable 2 GiB
+case-sensitive HFS+ RAM image, records its device and volume UUID, and checks live ownership before
+formatting, use and release. Cleanup refuses changed ownership. Mac worker counts are requests;
+Linux records an allowed CPU mask. The fixture, executable, reference tools and native accounting
+launcher are checked again after collection. No timing result is accepted after an integrity
+failure. Local Linux validation can reuse an existing verified fixture with `--fixture`; this
+does not remove that fixture and is forbidden for CI collections.
+
+Head cells rotate head XFF, first-parent XFF and the traditional tool through execution order.
+A second complete grid measures the parent against itself as a diagnostic control. All successful
+outputs must match the independent oracle. Raw warm-ups, measured samples, command lines,
+environment, pressure context and failed attempts remain in the report artifact. A control
+failure leaves a complete, checked head observation recoverable, with an explicit control error;
+a failed or incomplete head never becomes a publishable observation.
+
+The existing 3D browser offers two separate views per series: traditional tools and parent XFF.
+The actual parent remains visible for each version; changing parents does not create a new
+dataset. Original local history keeps its fixed PR #1130 reference, local origin and separate
+series. Core benchmarks, local fixed-reference history and CI parent comparisons retain their
+own contracts. Extended observations do not satisfy the core merged-PR coverage inventory.
+No unavailable sizes or worker allocations are invented.
+
+The publisher recovers valid completed platform artifacts even when another job failed. A
+retry of failed jobs preserves successful platforms from their original attempts. CI publication
+checks the trusted workflow, main push, repository, run/attempt, exact head and GitHub's actual
+first parent. An artifact's own claims cannot establish that provenance. Complete observations
+are immutable under `benchmarks/extended/observations/`; generated views live under
+`benchmarks/extended/views/`. The dataset registry includes those views without putting them into
+the core benchmark normalizer or overview. Build/report artifacts retain the existing 30-day
+retention policy; publication retains the validated observations.
+
+### Import the original measured history
+
+Use the original measurement directory and retained build tree. The importer validates every
+declared cell, exact commands, output oracle, sample population, source identity and production
+link evidence. It reads and hashes the retained executables; rebuilding a revision cannot
+retroactively verify its original measurements. Incomplete or invalid campaigns are rejected.
+
+```sh
+python3.13 tools/benchmark_extended_site.py import \
+  --campaign=MEASUREMENT_ROOT --build-root=BUILD_ROOT \
+  --root=SITE/benchmarks --series=linux-zen5-extended-20261107 \
+  --platform=linux --machine=x86_64
+
+python3.13 tools/benchmark_extended_site.py publish --root=SITE/benchmarks
+```
+
+Publication runs after the ordinary core renderer and before site compaction. Existing core
+catalog entries remain intact. Tests cover known chart heights, warm-up exclusion, missing cells,
+stable parent datasets, local/CI separation, packed observations, idempotent publication,
+untrusted provenance, partial workflow recovery and RAM-resource ownership. Synthetic test
+observations are explicitly labeled and are never performance evidence.

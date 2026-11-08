@@ -33,7 +33,7 @@ def inventory(api, since, number=None):
     entries = catalog(api)
     covered = set()
     for entry in entries:
-        if entry.get('source') != 'merged' or entry.get('local'):
+        if entry.get('source') != 'merged' or entry.get('local') or entry.get('extended'):
             continue
         platform = entry.get('platform_name', '').split(' / ')[0].lower()
         sha = entry.get('commit', '')

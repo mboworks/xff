@@ -3,6 +3,8 @@
 """Keep historical source and binary provenance fail closed without invoking Bazel."""
 
 from pathlib import Path
+import json
+import shutil
 import tempfile
 import unittest
 from unittest import mock
@@ -38,6 +40,48 @@ class BenchmarkExtendedBuildTest(unittest.TestCase):
             self.assertNotEqual(build.digest(path), old)
             build.write(Path(temporary) / 'identity.json', {'hash': old})
             self.assertFalse((Path(temporary) / 'identity.json.tmp').exists())
+
+    def test_each_configured_build_is_copied_before_any_later_bazel_invocation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            checkout, directory = root / 'checkout', root / 'frozen'
+            artifact = 'bazel-out/production/bin/xff/cli/xff_full'
+            built = checkout / artifact
+            built.parent.mkdir(parents=True)
+            frozen_bytes = b'synthetic production binary'
+            events = []
+            copy = shutil.copy2
+
+            def run(command, **kwargs):
+                if 'build' in command:
+                    events.append('build')
+                    built.write_bytes(frozen_bytes)
+                else:
+                    events.append('aquery')
+                    self.assertEqual((directory / 'xff_full').read_bytes(), frozen_bytes)
+                    kwargs['stdout'].write(json.dumps({'actions': [
+                        {'arguments': ['clang++', '-flto=thin', '-o', artifact]}]}))
+                    built.write_bytes(b'alias changed after the frozen copy')
+
+            def query(command, **kwargs):
+                events.append('configured query')
+                self.assertIn('--config=clang_release', command)
+                self.assertIn('--config=xff_full', command)
+                self.assertIn('config(//xff/cli:xff_full, target)', command)
+                return artifact + '\n'
+
+            def freeze(source, destination):
+                events.append('copy')
+                return copy(source, destination)
+
+            with mock.patch.object(build, 'clean_source', return_value={'revision': 'revision', 'tree': 'tree', 'clean': True}), \
+                    mock.patch.object(build.subprocess, 'run', side_effect=run), \
+                    mock.patch.object(build.subprocess, 'check_output', side_effect=query), \
+                    mock.patch.object(build.shutil, 'copy2', side_effect=freeze):
+                saved = build.freeze_build(checkout, directory, 'revision', root / 'cache')
+            self.assertEqual(events, ['build', 'configured query', 'copy', 'aquery'])
+            self.assertEqual(saved['sha256'], build.digest(directory / 'xff_full'))
+            self.assertNotEqual(saved['sha256'], build.digest(built))
 
 
 if __name__ == '__main__':

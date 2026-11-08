@@ -926,8 +926,12 @@ test_suite(
         ":benchmark_compare_test",
         ":benchmark_datasets_test",
         ":benchmark_extended_build_test",
+        ":benchmark_extended_ci_test",
         ":benchmark_extended_history_test",
+        ":benchmark_extended_records_test",
         ":benchmark_extended_report_test",
+        ":benchmark_extended_site_test",
+        ":benchmark_extended_storage_test",
         ":benchmark_extended_test",
         ":benchmark_fixture_test",
         ":benchmark_history_test",
@@ -940,6 +944,7 @@ test_suite(
         ":benchmark_preview_ci_test",
         ":benchmark_preview_test",
         ":benchmark_provenance_test",
+        ":benchmark_reconcile_ci_test",
         ":benchmark_regex_test",
         ":benchmark_shards_test",
         ":benchmark_test",
@@ -1263,6 +1268,129 @@ py_test(
     deps = [":benchmark_extended_report_lib"],
 )
 
+py_library(
+    name = "benchmark_extended_records_lib",
+    srcs = ["benchmark_extended_records.py"],
+    imports = ["."],
+    deps = [
+        ":benchmark_extended_lib",
+        ":benchmark_extended_report_lib",
+        ":benchmark_provenance_lib",
+    ],
+)
+
+py_library(
+    name = "benchmark_extended_storage_lib",
+    srcs = ["benchmark_extended_storage.py"],
+    imports = ["."],
+)
+
+py_library(
+    name = "benchmark_extended_ci_lib",
+    srcs = ["benchmark_extended_ci.py"],
+    imports = ["."],
+    deps = [
+        ":benchmark_extended_build_lib",
+        ":benchmark_extended_history_lib",
+        ":benchmark_extended_lib",
+        ":benchmark_extended_records_lib",
+        ":benchmark_extended_storage_lib",
+        ":process_resources_lib",
+    ],
+)
+
+py_binary(
+    name = "benchmark_extended_ci",
+    srcs = ["benchmark_extended_ci.py"],
+    deps = [
+        ":benchmark_extended_build_lib",
+        ":benchmark_extended_history_lib",
+        ":benchmark_extended_lib",
+        ":benchmark_extended_records_lib",
+        ":benchmark_extended_storage_lib",
+        ":process_resources_lib",
+    ],
+)
+
+py_library(
+    name = "benchmark_extended_site_lib",
+    srcs = ["benchmark_extended_site.py"],
+    imports = ["."],
+    deps = [
+        ":benchmark_datasets_lib",
+        ":benchmark_extended_lib",
+        ":benchmark_extended_records_lib",
+        ":benchmark_landscape_lib",
+        ":benchmark_matrix_lib",
+        ":benchmark_normalization_lib",
+    ],
+)
+
+py_binary(
+    name = "benchmark_extended_site",
+    srcs = ["benchmark_extended_site.py"],
+    deps = [
+        ":benchmark_datasets_lib",
+        ":benchmark_extended_lib",
+        ":benchmark_extended_records_lib",
+        ":benchmark_landscape_lib",
+        ":benchmark_matrix_lib",
+        ":benchmark_normalization_lib",
+    ],
+)
+
+py_library(
+    name = "benchmark_extended_test_support_lib",
+    testonly = True,
+    srcs = ["benchmark_extended_test_support.py"],
+    imports = ["."],
+    deps = [
+        ":benchmark_extended_lib",
+        ":benchmark_extended_records_lib",
+    ],
+)
+
+py_test(
+    name = "benchmark_extended_records_test",
+    size = "small",
+    srcs = ["benchmark_extended_records_test.py"],
+    deps = [
+        ":benchmark_extended_records_lib",
+        ":benchmark_extended_test_support_lib",
+    ],
+)
+
+py_test(
+    name = "benchmark_extended_storage_test",
+    size = "small",
+    srcs = ["benchmark_extended_storage_test.py"],
+    deps = [
+        ":benchmark_extended_storage_lib",
+    ],
+)
+
+py_test(
+    name = "benchmark_extended_ci_test",
+    size = "small",
+    srcs = ["benchmark_extended_ci_test.py"],
+    deps = [
+        ":benchmark_extended_ci_lib",
+        ":benchmark_extended_test_support_lib",
+    ],
+)
+
+py_test(
+    name = "benchmark_extended_site_test",
+    size = "small",
+    srcs = ["benchmark_extended_site_test.py"],
+    deps = [
+        ":benchmark_extended_lib",
+        ":benchmark_extended_records_lib",
+        ":benchmark_extended_site_lib",
+        ":benchmark_extended_test_support_lib",
+    ],
+)
+
 py_binary(
     name = "benchmark_compare",
     srcs = ["benchmark_compare.py"],
@@ -1371,14 +1499,39 @@ py_library(
     ],
 )
 
+py_library(
+    name = "benchmark_reconcile_ci_lib",
+    srcs = ["benchmark_reconcile_ci.py"],
+    imports = ["."],
+    deps = [
+        ":benchmark_campaign_lib",
+        ":benchmark_extended_records_lib",
+        ":benchmark_history_lib",
+        ":benchmark_preview_ci_lib",
+        ":benchmark_records_lib",
+    ],
+)
+
 py_binary(
     name = "benchmark_reconcile_ci",
     srcs = ["benchmark_reconcile_ci.py"],
     deps = [
         ":benchmark_campaign_lib",
+        ":benchmark_extended_records_lib",
         ":benchmark_history_lib",
         ":benchmark_preview_ci_lib",
         ":benchmark_records_lib",
+    ],
+)
+
+py_test(
+    name = "benchmark_reconcile_ci_test",
+    size = "small",
+    srcs = ["benchmark_reconcile_ci_test.py"],
+    deps = [
+        ":benchmark_extended_records_lib",
+        ":benchmark_extended_test_support_lib",
+        ":benchmark_reconcile_ci_lib",
     ],
 )
 

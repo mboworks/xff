@@ -13,6 +13,7 @@ import tempfile
 import zipfile
 
 import benchmark_campaign
+import benchmark_extended_records
 import benchmark_history
 import benchmark_preview_ci
 import benchmark_records
@@ -55,13 +56,14 @@ def latest_artifacts(items):
     return list(selected.values())
 
 
-def retain_measurement(api, root, run):
+def retain_measurement(api, root, run, inventory=None):
     destination = root / 'runs' / str(run['id']) / str(run['run_attempt'])
     missing = {platform for platform in ('linux', 'macos')
                if not benchmark_records.exists(destination / platform / 'report.json')}
     if not missing:
         return False
-    selected = [item for item in latest_artifacts(artifacts(api, run, 'benchmark-report-'))
+    selected = [item for item in latest_artifacts(artifacts(api, run, 'benchmark-report-') if inventory is None else
+                                                [item for item in inventory if item['name'].startswith('benchmark-report-')])
                 if item['created_at'] >= run['run_started_at']]
     reports = {}
     for item in selected:
@@ -102,6 +104,72 @@ def retain_measurement(api, root, run):
     return retained
 
 
+def retain_extended(api, root, run, inventory=None):
+    """Recover complete platforms independently, including successful earlier attempts."""
+    selected = latest_artifacts(artifacts(api, run, 'benchmark-extended-report-') if inventory is None else
+                                [item for item in inventory if item['name'].startswith('benchmark-extended-report-')])
+    retained = False
+    for item in selected:
+        match = re.fullmatch(r'benchmark-extended-report-(linux|macos)', item['name'])
+        if not match:
+            continue
+        try:
+            retained = retain_extended_artifact(api, root, run, item, match.group(1)) or retained
+        except (ValueError, KeyError, OSError, zipfile.BadZipFile,
+                subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+            print(f"::warning::extended run {run['id']} {item['name']}: {error}", flush=True)
+    return retained
+
+
+def retain_extended_artifact(api, root, run, item, platform):
+    collections = root / 'extended' / 'collections' / str(run['id'])
+    markers = {*collections.glob('*/' + platform + '.json'),
+               *(path.with_suffix('') for path in collections.glob('*/' + platform + '.json.gz'))}
+    for marker in markers:
+        saved = benchmark_extended_records.read(marker)
+        observation = root / 'extended' / 'observations' / saved['identity'] / 'report.json'
+        if saved['artifact_id'] == item['id'] and benchmark_records.exists(observation):
+            return False
+    # A rerun of failed jobs does not recreate a successful platform's artifact.
+    # Its observation and source must keep the original attempt identity.
+    with tempfile.TemporaryDirectory(prefix='xff-extended-report-') as temporary:
+        directory = Path(temporary)
+        extract(api.request(f"actions/artifacts/{item['id']}/zip", raw=True), directory)
+        record = json.loads((directory / 'observation.json').read_text())
+    collection = record['collection']
+    if (record['origin'] != 'ci' or record['platform'] != platform
+            or collection['run_id'] != run['id']
+            or type(collection['run_attempt']) is not int
+            or not 1 <= collection['run_attempt'] <= run['run_attempt']):
+        raise ValueError('extended artifact platform/run/attempt mismatch')
+    attempt = collection['run_attempt']
+    source = dict(run if attempt == run['run_attempt'] else
+                  api.request(f"actions/runs/{run['id']}/attempts/{attempt}"))
+    commit = api.request(f"commits/{source['head_sha']}")
+    if not commit.get('parents'):
+        raise ValueError('extended source has no first parent')
+    source['base_sha'] = commit['parents'][0]['sha']
+    benchmark_extended_records.retain(root, record, source)
+    marker = collections / str(attempt) / (platform + '.json')
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(json.dumps({'identity': record['identity'], 'artifact_id': item['id']}) + '\n')
+    return True
+
+
+def retain_benchmarks(api, root, run):
+    """A failed independent job must not discard other valid platform reports."""
+    inventory = [item for item in api.pages(f"actions/runs/{run['id']}/artifacts", 'artifacts')
+                 if not item.get('expired')]
+    retained = False
+    for name, retain in (('core', retain_measurement), ('extended', retain_extended)):
+        try:
+            retained = retain(api, root, run, inventory) or retained
+        except (ValueError, KeyError, OSError, zipfile.BadZipFile,
+                subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+            print(f"::warning::benchmark run {run['id']} {name}: {error}", flush=True)
+    return retained
+
+
 def retain_backfill(api, root, run):
     destination = root / 'backfills' / str(run['id']) / str(run['run_attempt'])
     if benchmark_records.exists(destination / 'campaign.json'):
@@ -132,7 +200,7 @@ def reconcile(api, root):
     since = (datetime.now(timezone.utc) - timedelta(days=30)).date().isoformat()
     failures = []
     for workflow, event, status, retain in (
-            ('benchmarks.yml', 'push', 'success', retain_measurement),
+            ('benchmarks.yml', 'push', 'completed', retain_benchmarks),
             ('benchmark_backfill.yml', 'workflow_dispatch', 'completed', retain_backfill)):
         runs = api.pages(f'actions/workflows/{workflow}/runs?status={status}&branch=main&created=%3E%3D{since}',
                          'workflow_runs')
