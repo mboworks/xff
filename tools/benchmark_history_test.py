@@ -262,6 +262,18 @@ class BenchmarkHistoryTest(unittest.TestCase):
                 self.assertIn(f"needs.select-fourth.outputs.{platform_name}_fifth == 'true'", job)
                 self.assertNotIn('needs.select-initial.outputs', job)
 
+    def test_pr_expression_measurements_do_not_block_full_suite(self):
+        workflow = repository_file('.github/workflows/main.yml').read_text()
+        build = workflow.split('  benchmark-build:\n', 1)[1].split('  benchmark-expression:\n', 1)[0]
+        expression = workflow.split('  benchmark-expression:\n', 1)[1].split('  benchmark-measure:\n', 1)[0]
+        self.assertNotIn('Measure expression preparation', build)
+        self.assertIn('expression_benchmark expression_run_benchmark', build)
+        self.assertIn('needs: benchmark-build', expression)
+        self.assertIn('"${RUNNER_TEMP}/expression_benchmark"', expression)
+        self.assertIn('"${RUNNER_TEMP}/expression_run_benchmark"', expression)
+        self.assertIn('  benchmark-measure:\n    name:', workflow)
+        self.assertIn('        benchmark-expression,', workflow.split('  done:\n', 1)[1])
+
     def test_pr_and_main_measurements_use_the_same_runner_identity(self):
         main = repository_file(".github/workflows/benchmarks.yml").read_text()
         pr = repository_file(".github/workflows/main.yml").read_text()
