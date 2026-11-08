@@ -1189,6 +1189,35 @@
     "platform_details": "macOS 26.7.2 / arm64"
   },
   {
+    "platform": "macos / arm64",
+    "commit": "9bbee34da11e0d97b2b740cf25f4d90ca62447d9",
+    "label": "PR #914 / 9bbee34da1",
+    "platform_name": "macos / arm64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "merged",
+    "source_label": "Merged history",
+    "links": [
+      {
+        "label": "PR #914",
+        "href": "https://github.com/mboworks/xff/pull/914"
+      }
+    ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "6bd9653b0db30b88ee8fa12685bac03cd268bc35045e28c5c1f9e470e412b946",
+      "reason": "Workflow provenance does not match the recorded revision."
+    },
+    "date": "2026-09-24T22:42:57Z",
+    "measurement_date": "2026-11-08T21:11:56.828078+00:00",
+    "backfill": true,
+    "run": 42519073200,
+    "attempt": 1,
+    "report": "backfills/42519073200/1/macos/9bbee34da11e0d97b2b740cf25f4d90ca62447d9/",
+    "figures": "backfills/42519073200/1/macos/9bbee34da11e0d97b2b740cf25f4d90ca62447d9/landscape.json",
+    "identity": "xff benchmarks - macOS-26.7.2-arm64-arm-64bit-Mach-O",
+    "platform_details": "macOS 26.7.2 / arm64"
+  },
+  {
     "platform": "Local / linux-zen5 / x86_64 / broad/v1 + deep/v1",
     "commit": "21c7f3656b005b23113d936c1cd2ca0fd2221ab2",
     "label": "Local / 21c7f3656b",

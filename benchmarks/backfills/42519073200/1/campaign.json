@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "source_head": "efffe2529f26c1c7ca61763fa5fbb17efd573f6f",
+  "history_head": "732833187ab8f156a1a682f31b1a564f84ff0cf2",
+  "created_at": "2026-11-08T20:31:13.013208+00:00",
+  "jobs": [
+    {
+      "id": "macos-9bbee34da11e0d97b2b740cf25f4d90ca62447d9",
+      "platform": "macos",
+      "os": "macos-latest",
+      "arch": "arm64",
+      "revision": {
+        "sha": "9bbee34da11e0d97b2b740cf25f4d90ca62447d9",
+        "date": "2026-09-24T23:42:57+01:00",
+        "subject": "Explore benchmark history by measured version and platform (#914)"
+      }
+    }
+  ],
+  "contract": {
+    "files": [
+      10,
+      20,
+      50,
+      100,
+      200,
+      500,
+      1000,
+      2000,
+      5000,
+      10000,
+      20000,
+      50000,
+      100000
+    ],
+    "cpus": [
+      1,
+      3
+    ],
+    "depth": 40,
+    "repetitions": 9,
+    "retained": 7,
+    "command_timeout_seconds": 300,
+    "driver": {
+      "benchmark_backfill.py": "665ec2fc5f2172bb601a33ae7488698765162fece4b46a656e0c6d75aa3b8a22",
+      "benchmark_compare.py": "e28b56c6281a5ae4c557c793e9670ddeea78dd84577758ffb2d01daaceb15a75",
+      "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+      "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+      "benchmark_matrix.py": "abfa93fc0bf5b76ec45907166eac30a828dfe31e0129ba59a197e71c56d7f620",
+      "benchmark_shards.py": "38cf664f259aafd9788660267ff7c478c66d3790fb45e232e16360233ed30011",
+      "benchmark_provenance.py": "5cfe87906f4ead07ca8cf00857ed751393cd8d4c8ce0f672bae7ad32f51c96cc",
+      "process_resources.py": "8a39146449514c519921ee153f1301621555694b3cf5a64b16edcd6538f5ac16",
+      "process_resources_native.cc": "0b72ffc7b767682dca724bb6d8de8b5f2ccaae532b5b99c9e14f68505769a010"
+    },
+    "tasks": {
+      "files": [
+        "find",
+        "rg",
+        "xff"
+      ],
+      "files-safe": [
+        "xff"
+      ],
+      "name-txt": [
+        "find",
+        "rg",
+        "xff"
+      ],
+      "content-needle": [
+        "rg",
+        "xff"
+      ],
+      "content-absent_marker": [
+        "rg",
+        "xff"
+      ],
+      "fuzzy-discovery-itm": [
+        "find+fzf",
+        "xff"
+      ],
+      "fuzzy-list-itm": [
+        "fzf"
+      ],
+      "fuzzy-discovery-hdn": [
+        "find+fzf",
+        "xff"
+      ],
+      "fuzzy-list-hdn": [
+        "fzf"
+      ],
+      "fuzzy-discovery-zzzz": [
+        "find+fzf",
+        "xff"
+      ],
+      "fuzzy-list-zzzz": [
+        "fzf"
+      ]
+    }
+  },
+  "platforms": [
+    "macos"
+  ],
+  "identity": "816be993e48be60ae13f69858aa4f1ec49f60896036c42caa15b04b93453a872"
+}
