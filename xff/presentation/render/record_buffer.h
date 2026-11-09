@@ -60,11 +60,12 @@ class RawRecordBuffer final {
   }
 
   std::size_t RetainedCapacity() const {
+    return std::max({
+        bytes_.capacity(),
 #if defined(__linux__)
-    return std::max(inline_.size(), bytes_.capacity());
-#else
-    return bytes_.capacity();
+        inline_.size(),
 #endif
+    });
   }
 
  private:
