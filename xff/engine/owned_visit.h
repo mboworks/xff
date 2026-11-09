@@ -35,6 +35,10 @@ class OwnedVisit final {
   std::string_view Root() const;
   // Logical lengths remain unchanged even when their physical byte ranges overlap.
   std::size_t LogicalTextBytes() const;
+
+  // Retained text capacity, including the terminator and inline storage.
+  std::size_t TextStorageBytes() const { return bytes_.capacity() + 1; }
+
   Visit AsVisit() const;
 
  private:

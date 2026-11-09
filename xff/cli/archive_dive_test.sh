@@ -285,20 +285,23 @@ test::a_tar_gz_is_still_read_as_a_tar() {
 test::write_actions_on_a_member_refuse_loudly() {
   local root out rc
   root="$(_tree)"
+  # Reproduce the execution-marker collision in archive diagnostics deterministically.
+  mv "${root}/a.tar" "${root}/GOT.tar"
   # A member exists only inside its container: there is nothing to unlink and no path a child process
   # can open. Both must SAY so (exit 2, naming the path) rather than exit 0 having done nothing, which
   # is what -delete used to do while -exec handed the child `a.tar!one.txt`.
-  out="$("$(_xff_bin)" --archive=roots "${root}/a.tar" -name 'one.txt' -delete 2>&1)" && rc=0 || rc=$?
+  out="$("$(_xff_bin)" --archive=roots "${root}/GOT.tar" -name 'one.txt' -delete 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains "archive member" "${out}"
-  out="$("$(_xff_bin)" --archive=roots "${root}/a.tar" -name 'one.txt' -exec echo GOT {} \; 2>&1)" && rc=0 || rc=$?
+  out="$("$(_xff_bin)" --archive=roots "${root}/GOT.tar" -name 'one.txt' -exec echo GOT {} \; 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains "archive member" "${out}"
-  expect_output_not_contains "GOT" "${out}" # the child never ran
+  # Diagnostics contain the archive name; only the complete child record proves execution.
+  expect_output_not_contains "GOT ${root}/GOT.tar!one.txt" "${out}"
   # The tar itself is a real file, so a write action on IT is not refused: `-delete` on the container is
   # a legitimate request, which is why the guard keys on the entry rather than on "diving is on".
-  out="$("$(_xff_bin)" --archive=roots "${root}/a.tar" -name 'a.tar' -exec echo GOT {} \; 2>&1)"
-  expect_output_contains "GOT ${root}/a.tar" "${out}"
+  out="$("$(_xff_bin)" --archive=roots "${root}/GOT.tar" -name 'GOT.tar' -exec echo GOT {} \; 2>&1)"
+  expect_output_contains "GOT ${root}/GOT.tar" "${out}"
 }
 
 test::skip_unsupported_downgrades_a_refused_member_to_a_warning() {

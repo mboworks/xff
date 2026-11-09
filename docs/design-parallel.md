@@ -79,6 +79,21 @@ A bounded directory-read worker pool with a single coordinator:
   records for ordered emission. Full line/context output buffers each input; filename/count/quiet
   selection streams where the VFS supports it, retaining the longest line and draining the source
   for binary/error checks. Neither the entry-count batch bound nor streaming limits record size.
+- Eligible host content output shares one `N`-participant CPU allowance between matcher workers
+  and the coordinator. Each producer borrows once per generation. It returns its unit while
+  blocked on output credit and reacquires after dropping the credit mutex, including cancellation
+  drains. The coordinator returns its unit while awaiting results and borrows for collection or
+  ordered publication. Directory-read I/O retains its independent existing limit; this is not one
+  global `N`-operation budget. No per-file timer or CPU-admission lock is added.
+- Output volume already produced selects batch publication or overlap with one collecting input
+  batch. Unknown or small output starts batched. Input text admission uses actual owned capacity,
+  with one oversized record alone. Output slots have 4 KiB grants plus an 8 MiB shared excess
+  allowance, charged for old and new allocations during growth. The ordered head may exceed that
+  allowance so whole-file validation can finish. Fixed slot storage, source/decoder buffers,
+  derived caches and renderer temporaries remain separate; this is not a process-memory cap.
+  Full-file binary/late-error validation precedes publication. Serial archive and traversal-error
+  boundaries drain prior host output. Cancellation wakes credit waiters and drains producers
+  before input or filesystem ownership can be recycled.
 - Each worker binds native and output RE2 state once to avoid shared DFA-cache contention. PCRE2
   workers share compiled patterns and reuse private match scratch, with bounded retained interpreter
   heap frames and independent reentrant leases. Entry content and lazy metadata have one owner and
@@ -142,7 +157,8 @@ actions still occur in traversal order.
 ## Parallelism control
 
 A single knob, `-j N` (long form `--jobs`), configures independent limits: up to
-`N` directory-read workers, up to `N` eligible content-matcher workers, and at most
+`N` directory-read workers, up to `N` eligible content-matcher participants (including
+coordinator collection/publication when the content-output pipeline is active), and at most
 `N` outstanding semicolon-form `-exec`/`-execdir` children. These are separate
 limits, not one shared `N`-operation budget. Content matching does not run alongside
 execution actions in the same expression. `-j 1` makes each part synchronous.

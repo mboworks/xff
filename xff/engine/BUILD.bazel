@@ -260,6 +260,7 @@ cc_library(
         ":expression_contract_cc",
         ":extract_cc",
         ":mount_cc",
+        ":output_credit_cc",
         ":walk_cc",
         "//xff/content:line_match_cc",
         "//xff/content:snapshot_cc",
@@ -369,12 +370,55 @@ cc_fuzz_test(
 
 # Drives one find run: walk the roots, evaluate the expression, (implicit) print.
 cc_library(
+    name = "cpu_allowance_cc",
+    srcs = ["cpu_allowance.cc"],
+    hdrs = ["cpu_allowance.h"],
+)
+
+cc_test(
+    name = "cpu_allowance_test",
+    size = "small",
+    srcs = ["cpu_allowance_test.cc"],
+    deps = [
+        ":cpu_allowance_cc",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "output_credit_cc",
+    srcs = ["output_credit.cc"],
+    hdrs = ["output_credit.h"],
+    deps = [
+        ":cpu_allowance_cc",
+        "@abseil-cpp//absl/synchronization",
+        "@mboworks_mbo//mbo/types:optional_ref_cc",
+    ],
+)
+
+cc_test(
+    name = "output_credit_test",
+    size = "small",
+    srcs = ["output_credit_test.cc"],
+    deps = [
+        ":cpu_allowance_cc",
+        ":output_credit_cc",
+        "@abseil-cpp//absl/synchronization",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+    ],
+)
+
+cc_library(
     name = "parallel_match_cc",
     srcs = ["parallel_match.cc"],
     hdrs = ["parallel_match.h"],
     deps = [
+        ":cpu_allowance_cc",
         ":evaluate_cc",
         ":expression_execution_cc",
+        ":output_credit_cc",
         ":owned_visit_cc",
         "//xff/content:snapshot_cc",
         "//xff/fuzzy:fuzzy_cc",
@@ -714,6 +758,7 @@ cc_test(
     srcs = ["rg_test.cc"],
     deps = [
         ":evaluate_cc",
+        ":output_credit_cc",
         ":owned_visit_cc",
         ":parallel_match_cc",
         ":run_cc",
