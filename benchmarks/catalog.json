@@ -19104,5 +19104,63 @@
     "figures": "previews/1153/42602178891/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.7.2-arm64-arm-64bit-Mach-O",
     "platform_details": "macOS 26.7.2 / arm64"
+  },
+  {
+    "platform": "linux / x86_64",
+    "commit": "292293b2edb49ee61ac7438aeb444602b2b6a8e8",
+    "label": "PR 1159 / 292293b2ed",
+    "platform_name": "linux / x86_64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "pr-1159",
+    "source_label": "PR #1159 preview",
+    "links": [
+      {
+        "label": "PR #1159 preview",
+        "href": "https://github.com/mboworks/xff/pull/1159"
+      }
+    ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "61e524a1e1b6f41df2fec2c19caa3893080544817b7441f9cbc345c4ad9ca35e",
+      "reason": "Retention verification does not match this measurement."
+    },
+    "date": "2026-11-09T20:26:53Z",
+    "measurement_date": "2026-11-09T21:25:09Z",
+    "backfill": false,
+    "run": 42693049145,
+    "attempt": 1,
+    "report": "previews/1159/42693049145/1/linux/",
+    "figures": "previews/1159/42693049145/1/linux/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "macos / arm64",
+    "commit": "292293b2edb49ee61ac7438aeb444602b2b6a8e8",
+    "label": "PR 1159 / 292293b2ed",
+    "platform_name": "macos / arm64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "pr-1159",
+    "source_label": "PR #1159 preview",
+    "links": [
+      {
+        "label": "PR #1159 preview",
+        "href": "https://github.com/mboworks/xff/pull/1159"
+      }
+    ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "61ad11fd9b33cf13f57fe86c4be7a9635ad37cad68e240fd942342c92db4823c",
+      "reason": "Retention verification does not match this measurement."
+    },
+    "date": "2026-11-09T20:26:53Z",
+    "measurement_date": "2026-11-09T21:25:09Z",
+    "backfill": false,
+    "run": 42693049145,
+    "attempt": 1,
+    "report": "previews/1159/42693049145/1/macos/",
+    "figures": "previews/1159/42693049145/1/macos/landscape.json",
+    "identity": "xff benchmarks - macOS-26.7.2-arm64-arm-64bit-Mach-O",
+    "platform_details": "macOS 26.7.2 / arm64"
   }
 ]
