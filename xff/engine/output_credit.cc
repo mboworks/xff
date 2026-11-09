@@ -16,7 +16,7 @@ void OutputCredit::Reset() {
   cancelled_.store(false, std::memory_order_relaxed);
 }
 
-bool OutputCredit::Acquire(std::size_t index, std::size_t bytes) {
+bool OutputCredit::Acquire(std::size_t index, std::size_t bytes, mbo::types::OptionalRef<CpuAllowance::Lease> cpu) {
   if (bytes == 0) {
     return true;
   }
@@ -25,7 +25,14 @@ bool OutputCredit::Acquire(std::size_t index, std::size_t bytes) {
     return cancelled_.load() || index == head_.load()
            || (bytes <= kSharedBytes && usage_.excess <= kSharedBytes - bytes);
   };
+  bool paused = false;
   if (!available()) {
+    // The coordinator needs a CPU unit to return output credit. Never park while
+    // holding that unit; reacquire it only after dropping the credit mutex.
+    if (cpu) {
+      cpu->Pause();
+      paused = true;
+    }
     blocked_.fetch_add(1);
     if (progress_) {
       // A coordinator batching publication must wake and drain the ordered head
@@ -37,12 +44,16 @@ bool OutputCredit::Acquire(std::size_t index, std::size_t bytes) {
     condition_.wait(lock, available);
     blocked_.fetch_sub(1);
   }
-  if (cancelled_.load()) {
-    return false;
+  const bool admitted = !cancelled_.load();
+  if (admitted) {
+    usage_.excess += bytes;
+    usage_.peak_excess = std::max(usage_.peak_excess, usage_.excess);
   }
-  usage_.excess += bytes;
-  usage_.peak_excess = std::max(usage_.peak_excess, usage_.excess);
-  return true;
+  lock.unlock();
+  if (paused) {
+    cpu->Resume();
+  }
+  return admitted;
 }
 
 void OutputCredit::Wake() {
@@ -102,7 +113,9 @@ CreditedOutput::CreditedOutput(CreditedOutput&& other) noexcept
       capacity_(std::exchange(other.capacity_, kInlineBytes)),
       size_(std::exchange(other.size_, 0)),
       excess_(std::exchange(other.excess_, 0)),
-      cancelled_(other.cancelled_) {
+      cancelled_(other.cancelled_),
+      cpu_(other.cpu_) {
+  other.cpu_.reset();
   if (!heap_) {
     std::ranges::copy(std::span(other.inline_).first(size_), inline_.begin());
   }
@@ -130,7 +143,7 @@ bool CreditedOutput::Grow(std::size_t size) {
   const auto combined = old + next;
   const auto combined_excess = combined > OutputCredit::kSlotGrant ? combined - OutputCredit::kSlotGrant : 0;
   const auto additional = combined_excess - excess_;
-  if (!credit_.Acquire(index_, additional)) {
+  if (!credit_.Acquire(index_, additional, cpu_)) {
     cancelled_ = true;
     size_ = 0;
     return false;

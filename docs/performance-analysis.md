@@ -5170,3 +5170,16 @@ flat-tree work. Preserve that rejected source and its raw population. The 8 MiB
 allowance remains a bound on shared excess output capacity, in addition to per-slot
 grants and the ordered-head oversize exception. It does not reserve 8 MiB eagerly,
 change the pending-input allowance or bound source/temporary/process memory.
+
+The collection-only participant reservation does not account for publication running
+alongside every matcher. The next qualification source replaces that reservation
+with a shared `N`-unit allowance for coordinator and matcher work. Producers borrow
+once per generation and temporarily return their unit during output-credit waits;
+they drop the credit mutex before reacquiring CPU, even on cancellation. The
+coordinator returns its unit before waiting for a result, and borrows while collecting
+or publishing. This keeps the new pipeline inside its shared participant allowance
+without per-file CPU-admission locks or timers. Directory I/O retains the existing
+independent limit documented for `--jobs`; command-wide stage-policy/JC work remains
+separate. Deterministic tests cover actual CPU/credit waiters, mutex handoff, resumption
+and cancellation with a coordinator-owned unit. Both hosts pass the six focused
+release targets; full shared-CPU qualification remains in progress.

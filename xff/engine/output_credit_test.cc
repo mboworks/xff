@@ -6,6 +6,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <thread>
 #include <utility>
@@ -14,6 +15,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
+#include "xff/engine/cpu_allowance.h"
 
 namespace xff::engine {
 namespace {
@@ -25,6 +27,46 @@ using ::testing::IsFalse;
 using ::testing::IsTrue;
 
 struct OutputCreditTest : ::testing::Test {
+  static void CheckCpuCreditWake(bool cancel) {
+    OutputCredit credit;
+    CpuAllowance cpu(1);
+    EXPECT_THAT(credit.Acquire(2, OutputCredit::kSharedBytes), IsTrue());
+    bool admitted = false;
+    std::atomic<bool> finished = false;
+    std::jthread producer([&] {
+      CpuAllowance::Lease lease(cpu);
+      admitted = credit.Acquire(1, 1, lease);
+      finished.store(true);
+    });
+    EXPECT_THAT(AwaitBlocked(credit), IsTrue());
+    std::optional<CpuAllowance::Lease> coordinator;
+    coordinator.emplace(cpu);
+    if (cancel) {
+      credit.Cancel();
+    } else {
+      credit.Advance(1);
+    }
+    const auto end = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+    while (cpu.GetUsage().waiters == 0 && std::chrono::steady_clock::now() < end) {
+      std::this_thread::yield();
+    }
+    EXPECT_THAT(cpu.GetUsage().waiters, Eq(1));
+    EXPECT_THAT(finished.load(), IsFalse());
+    // A resumed producer cannot retain the credit mutex while waiting for CPU.
+    EXPECT_THAT(credit.GetUsage().excess, Eq(OutputCredit::kSharedBytes + (cancel ? 0UZ : 1UZ)));
+    coordinator.reset();
+    producer.join();
+    EXPECT_THAT(finished.load(), IsTrue());
+    if (cancel) {
+      EXPECT_THAT(admitted, IsFalse());
+    } else {
+      EXPECT_THAT(admitted, IsTrue());
+    }
+    credit.Release(OutputCredit::kSharedBytes + (cancel ? 0UZ : 1UZ));
+    EXPECT_THAT(credit.GetUsage().excess, Eq(0));
+    EXPECT_THAT(cpu.GetUsage().available, Eq(1));
+  }
+
   static bool AwaitBlocked(const OutputCredit& credit) {
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
     while (credit.GetUsage().waiters == 0 && std::chrono::steady_clock::now() < deadline) {
@@ -33,6 +75,14 @@ struct OutputCreditTest : ::testing::Test {
     return credit.GetUsage().waiters != 0;
   }
 };
+
+TEST_F(OutputCreditTest, BlockedOutputReturnsCpuAndReacquiresItAfterDroppingTheCreditMutex) {
+  CheckCpuCreditWake(false);
+}
+
+TEST_F(OutputCreditTest, CancelledOutputReacquiresCpuBeforeDrainingTheProducer) {
+  CheckCpuCreditWake(true);
+}
 
 TEST_F(OutputCreditTest, ContiguousGrowthAndHeadingPreserveTextAndReleaseEveryAllocation) {
   OutputCredit credit;

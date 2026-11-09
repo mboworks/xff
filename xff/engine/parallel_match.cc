@@ -45,7 +45,8 @@ ParallelMatch::ParallelMatch(
       output_(std::move(output)),
       execution_(execution),
       derivation_(std::move(derivation)),
-      output_credit_(mutex_) {}
+      output_credit_(mutex_),
+      cpu_allowance_(workers_) {}
 
 ParallelMatch::~ParallelMatch() {
   Cancel();
@@ -63,9 +64,7 @@ ContentSnapshot ParallelMatch::TakeDerived(std::size_t index) {
 }
 
 bool ParallelMatch::Ready(std::size_t generation, std::size_t worker) const {
-  return stop_
-         || (generation_ != generation && worker < active_workers_
-             && (!coordinator_collecting_ || worker + 1 < active_workers_));
+  return stop_ || (generation_ != generation && worker < active_workers_);
 }
 
 bool ParallelMatch::Finished() const {
@@ -81,7 +80,6 @@ void ParallelMatch::Cancel() {
   cancelled_.store(true, std::memory_order_relaxed);
   output_credit_.Cancel();
   const absl::MutexLock lock(mutex_);
-  coordinator_collecting_ = false;
   mutex_.Await(absl::Condition(this, &ParallelMatch::Finished));
   if (credited_output_ && !coordinator_entries_) {
     // Skipped entries have no producer to publish readiness. Wake an ordered
@@ -95,8 +93,8 @@ void ParallelMatch::Cancel() {
 }
 
 const std::vector<ParallelResult>& ParallelMatch::Wait() {
+  coordinator_cpu_.reset();
   const absl::MutexLock lock(mutex_);
-  coordinator_collecting_ = false;
   mutex_.Await(absl::Condition(this, &ParallelMatch::Finished));
   return results_;
 }
@@ -133,6 +131,7 @@ void ParallelMatch::PrepareBatch(std::vector<OwnedVisit>& entries) {
 }
 
 std::vector<OwnedVisit> ParallelMatch::Start(std::vector<OwnedVisit> entries, bool pipeline) {
+  coordinator_cpu_.reset();
   const absl::MutexLock lock(mutex_, absl::Condition(this, &ParallelMatch::Finished));
   PrepareBatch(entries);
   // Very small batches cannot amortize waking the pool.
@@ -178,27 +177,30 @@ std::vector<OwnedVisit> ParallelMatch::Start(std::vector<OwnedVisit> entries, bo
   // workers beyond the number of available chunks are redundant for a later short tail.
   active_workers_ = std::min(threads_.size(), (entries_.size() + kChunkSize - 1) / kChunkSize);
   remaining_ = active_workers_;
-  coordinator_collecting_ = pipeline && CollectNextBatch() && active_workers_ > 1;
+  if (pipeline && CollectNextBatch()) {
+    coordinator_cpu_.emplace(cpu_allowance_);
+  }
   ++generation_;
   return entries;
 }
 
 const ParallelResult& ParallelMatch::AwaitResult(std::size_t index) {
-  if (index == 0) {
-    const absl::MutexLock lock(mutex_);
-    coordinator_collecting_ = false;
-  }
   if (coordinator_entries_) {
     if (!cancelled_.load(std::memory_order_acquire)) {
+      if (!coordinator_cpu_) {
+        coordinator_cpu_.emplace(cpu_allowance_);
+      }
       EvaluateEntry(
           index, coordinator_fuzzy_workspace_, {}, {},
           coordinator_ ? mbo::types::OptionalRef<const ExpressionExecution::Worker>{*coordinator_}
-                       : mbo::types::OptionalRef<const ExpressionExecution::Worker>{});
+                       : mbo::types::OptionalRef<const ExpressionExecution::Worker>{},
+          *coordinator_cpu_);
     }
   } else if (credited_output_) {
     const auto await = [&](std::size_t target, bool allow_backpressure) {
       auto& state = CompletionState(target);
       if (state.load(std::memory_order_acquire) != kReady) {
+        coordinator_cpu_.reset();
         auto expected = kPending;
         // A publication window may already have registered this same target.
         static_cast<void>(state.compare_exchange_strong(expected, kWaiting, std::memory_order_acq_rel));
@@ -216,10 +218,14 @@ const ParallelResult& ParallelMatch::AwaitResult(std::size_t index) {
       await(std::min(index + window, entries_.size()) - 1, true);
     }
     await(index, false);
+    if (!coordinator_cpu_) {
+      coordinator_cpu_.emplace(cpu_allowance_);
+    }
   } else if (index == 0) {
     Wait();
   }
   if (cancelled_.load(std::memory_order_acquire)) {
+    coordinator_cpu_.reset();
     static const ParallelResult kCancelled{.evaluation = {.matched = false}};
     return kCancelled;
   }
@@ -270,13 +276,20 @@ void ParallelMatch::Run(std::size_t worker) {
       }
       generation = generation_;
     }
-    EvaluateEntries(
-        fuzzy_workspace,
-        local ? mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{*local}
-              : mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{},
-        matchers,
-        evaluator ? mbo::types::OptionalRef<const ExpressionExecution::Worker>{*evaluator}
-                  : mbo::types::OptionalRef<const ExpressionExecution::Worker>{});
+    {
+      std::optional<CpuAllowance::Lease> cpu;
+      if (credited_output_) {
+        cpu.emplace(cpu_allowance_);
+      }
+      EvaluateEntries(
+          fuzzy_workspace,
+          local ? mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{*local}
+                : mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{},
+          matchers,
+          evaluator ? mbo::types::OptionalRef<const ExpressionExecution::Worker>{*evaluator}
+                    : mbo::types::OptionalRef<const ExpressionExecution::Worker>{},
+          cpu ? mbo::types::OptionalRef<CpuAllowance::Lease>{*cpu} : mbo::types::OptionalRef<CpuAllowance::Lease>{});
+    }
     {
       const absl::MutexLock lock(mutex_);
       --remaining_;
@@ -288,7 +301,8 @@ void ParallelMatch::EvaluateEntries(
     fuzzy::ScoreWorkspace& workspace,
     mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
     mbo::types::OptionalRef<const WorkerMatchers> matchers,
-    mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator) {
+    mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator,
+    mbo::types::OptionalRef<CpuAllowance::Lease> cpu) {
   // Small chunks spread clustered expensive entries while amortizing atomic scheduling.
   for (;;) {
     const std::size_t first = next_.fetch_add(kChunkSize, std::memory_order_relaxed);
@@ -297,7 +311,7 @@ void ParallelMatch::EvaluateEntries(
     }
     const std::size_t end = std::min(first + kChunkSize, entries_.size());
     for (std::size_t index = first; index < end; ++index) {
-      EvaluateEntry(index, workspace, output, matchers, evaluator);
+      EvaluateEntry(index, workspace, output, matchers, evaluator, cpu);
       if (credited_output_) {
         auto& state = CompletionState(index);
         if (state.exchange(kReady, std::memory_order_release) == kWaiting) {
@@ -314,7 +328,8 @@ void ParallelMatch::RenderEntryOutput(
     std::size_t index,
     const ParallelContentOutput& specification,
     EvalContext& context,
-    mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output) {
+    mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
+    mbo::types::OptionalRef<CpuAllowance::Lease> cpu) {
   auto& result = results_.at(index);
   auto& content = result.content ? *result.content : result.content.emplace();
   content.selected = true;
@@ -337,12 +352,14 @@ void ParallelMatch::RenderEntryOutput(
     if (coordinator_entries_) {
       records.Begin(index);
     }
+    records.BindCpu(cpu);
     if (specification.rg) {
       content.selected = RenderRgOutput(prepared, *specification.rg, context, records);
     } else {
       static_cast<void>(RenderMatchOutput(prepared, context, records));
     }
     content.credited_text = records.View();
+    records.BindCpu({});
   } else if (specification.rg) {
     auto rendered = RenderRgOutput(prepared, *specification.rg, context, std::move(content.text));
     if (rendered.ok()) {
@@ -363,7 +380,8 @@ void ParallelMatch::EvaluateEntry(
     fuzzy::ScoreWorkspace& workspace,
     mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
     mbo::types::OptionalRef<const WorkerMatchers> matchers,
-    mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator) {
+    mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator,
+    mbo::types::OptionalRef<CpuAllowance::Lease> cpu) {
   const Visit visit = entries_.at(index).AsVisit();
   auto& result = results_.at(index);
   if (result.content) {
@@ -388,7 +406,7 @@ void ParallelMatch::EvaluateEntry(
                       : expression_ ? EvaluateDeferred(*expression_, context)
                                     : EvaluationResult{.matched = true};
   if (result.evaluation.matched && output_) {
-    RenderEntryOutput(index, *output_, context, output);
+    RenderEntryOutput(index, *output_, context, output, cpu);
   } else {
     result.content.reset();
   }

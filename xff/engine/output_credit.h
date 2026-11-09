@@ -15,6 +15,7 @@
 
 #include "absl/synchronization/mutex.h"
 #include "mbo/types/optional_ref.h"
+#include "xff/engine/cpu_allowance.h"
 
 namespace xff::engine {
 
@@ -38,7 +39,7 @@ class OutputCredit final {
   };
 
   void Reset();
-  bool Acquire(std::size_t index, std::size_t bytes);
+  bool Acquire(std::size_t index, std::size_t bytes, mbo::types::OptionalRef<CpuAllowance::Lease> cpu = {});
   void Release(std::size_t bytes);
   void Advance(std::size_t next);
   void Cancel();
@@ -75,6 +76,16 @@ class CreditedOutput final {
   CreditedOutput& operator=(CreditedOutput&&) = delete;
 
   void Begin(std::size_t index);
+
+  // Bound only while the producer renders; cleared before completion publication.
+  void BindCpu(mbo::types::OptionalRef<CpuAllowance::Lease> cpu) {
+    if (cpu) {
+      cpu_.set_ref(*cpu);
+    } else {
+      cpu_.reset();
+    }
+  }
+
   void Release();
   void Append(std::string_view text);
   void Prepend(std::string_view text);
@@ -110,6 +121,7 @@ class CreditedOutput final {
   std::size_t size_ = 0;
   std::size_t excess_ = 0;
   bool cancelled_ = false;
+  mbo::types::OptionalRef<CpuAllowance::Lease> cpu_;
 };
 
 }  // namespace xff::engine

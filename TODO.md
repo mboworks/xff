@@ -352,7 +352,8 @@ Measured follow-ups (see the P07/P08 sections of `docs/performance-analysis.md`)
 
 - [ ] Add archive read admission or serial extraction into byte-bounded matcher queues before enabling member workers.
 - [ ] Investigate ZIP member restart/indexing cost separately from compressed TAR decoding.
-- [ ] Design a byte-bounded ordered output queue and shared CPU allowance before enabling an overlapping pipeline.
+- [ ] Qualify the byte-bounded ordered output queue and shared coordinator/matcher CPU allowance
+      before enabling overlap. Preserve the existing independent directory-I/O limit and JC scope.
 
 ## Rg integration review (PRs 916-919)
 

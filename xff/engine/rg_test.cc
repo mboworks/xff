@@ -1079,6 +1079,51 @@ TEST_F(RgEngineTest, CancellationDrainsCreditWaitersAndUnstartedResultsBeforePoo
   EXPECT_THAT(matcher.OutputUsage().excess, Eq(0));
 }
 
+TEST_F(RgEngineTest, CancellationCanDrainWhileTheCoordinatorOwnsOneCpuUnit) {
+  fs.files.at("tree/a") = std::string(262'144, 'x') + "hit\n";
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--rg", "hit", "tree"}));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto prepared, PrepareRgOutput(command, fs, false, false));
+  const auto search = command.rg.value_or(parser::RgSearch{});
+  ParallelMatch matcher(
+      {}, 2, false,
+      ParallelContentOutput{
+          .output = prepared,
+          .rg = search,
+          .grep =
+              {
+                  .line_number = false,
+                  .filename = false,
+              },
+      });
+  matcher.Start(RepeatedEntries(64), true);
+  for (std::size_t index = 0; index < 64; ++index) {
+    EXPECT_THAT(
+        matcher.AwaitResult(index).content,
+        Optional(Property(&ContentResult::Text, EqualsText(fs.files.at("tree/a")))));
+    matcher.ReleaseResult(index);
+  }
+  matcher.Wait();
+  EXPECT_THAT(matcher.CollectNextBatch(), IsTrue());
+  matcher.Start(RepeatedEntries(128), true);
+  const auto end = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+  while (matcher.OutputUsage().waiters == 0 && std::chrono::steady_clock::now() < end) {
+    std::this_thread::yield();
+  }
+  EXPECT_THAT(matcher.OutputUsage().waiters, Gt(0));
+  std::jthread cancel([&] { matcher.Cancel(); });
+  cancel.join();
+  EXPECT_THAT(matcher.AwaitResult(127).evaluation.matched, IsFalse());
+  EXPECT_THAT(matcher.OutputUsage().waiters, Eq(0));
+  fs.files.at("tree/a") = "hit\n";
+  matcher.Start(RepeatedEntries(64), true);
+  for (std::size_t index = 0; index < 64; ++index) {
+    EXPECT_THAT(matcher.AwaitResult(index).content, Optional(Property(&ContentResult::Text, EqualsText("hit\n"))));
+    matcher.ReleaseResult(index);
+  }
+  matcher.Wait();
+  EXPECT_THAT(matcher.OutputUsage().excess, Eq(0));
+}
+
 TEST_F(RgEngineTest, AsyncDestructionDrainsWorkersBeforeReleasingFilesystemOwners) {
   auto owner = std::make_shared<SearchFs>();
   const std::weak_ptr<const vfs::FileSystem> weak = owner;

@@ -20,6 +20,7 @@
 #include "absl/synchronization/mutex.h"
 #include "mbo/types/optional_ref.h"
 #include "xff/content/snapshot.h"
+#include "xff/engine/cpu_allowance.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/expression_execution.h"
 #include "xff/engine/output_credit.h"
@@ -114,7 +115,8 @@ class ParallelMatch final {
       std::size_t index,
       const ParallelContentOutput& specification,
       EvalContext& context,
-      mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output);
+      mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
+      mbo::types::OptionalRef<CpuAllowance::Lease> cpu);
   void Run(std::size_t worker);
   bool Ready(std::size_t generation, std::size_t worker) const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   bool Finished() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
@@ -122,14 +124,16 @@ class ParallelMatch final {
       fuzzy::ScoreWorkspace& workspace,
       mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output = {},
       mbo::types::OptionalRef<const WorkerMatchers> matchers = {},
-      mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator = {});
+      mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator = {},
+      mbo::types::OptionalRef<CpuAllowance::Lease> cpu = {});
   // Each worker exclusively owns its claimed slot until publishing its completion.
   void EvaluateEntry(
       std::size_t index,
       fuzzy::ScoreWorkspace& workspace,
       mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
       mbo::types::OptionalRef<const WorkerMatchers> matchers,
-      mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator);
+      mbo::types::OptionalRef<const ExpressionExecution::Worker> evaluator,
+      mbo::types::OptionalRef<CpuAllowance::Lease> cpu);
 
   const mbo::types::OptionalRef<const parser::Expr> expression_;
   const std::size_t workers_;
@@ -146,9 +150,6 @@ class ParallelMatch final {
   // Fixed for the generation; completion must not change eligibility for delayed participants.
   std::size_t active_workers_ ABSL_GUARDED_BY(mutex_) = 0;
   std::size_t remaining_ ABSL_GUARDED_BY(mutex_) = 0;
-  // Reserve the final matcher participant for the coordinator's collection phase.
-  // Publication/cancellation releases it; CPU-heavy matching can then use the full pool.
-  bool coordinator_collecting_ ABSL_GUARDED_BY(mutex_) = false;
   // Published under mutex_, immutable until all workers have completed the batch.
   std::vector<OwnedVisit> entries_;
   std::vector<ParallelResult> results_;
@@ -156,6 +157,9 @@ class ParallelMatch final {
   std::atomic<std::size_t> next_ = 0;
   std::atomic<bool> cancelled_ = false;
   OutputCredit output_credit_;
+  CpuAllowance cpu_allowance_;
+  // Owned only by the coordinator. Cancel() must not mutate another thread's lease.
+  std::optional<CpuAllowance::Lease> coordinator_cpu_;
   std::vector<CreditedOutput> output_slots_;
   std::optional<CreditedOutput> coordinator_output_;
   bool coordinator_entries_ = false;

@@ -370,10 +370,28 @@ cc_fuzz_test(
 
 # Drives one find run: walk the roots, evaluate the expression, (implicit) print.
 cc_library(
+    name = "cpu_allowance_cc",
+    srcs = ["cpu_allowance.cc"],
+    hdrs = ["cpu_allowance.h"],
+)
+
+cc_test(
+    name = "cpu_allowance_test",
+    size = "small",
+    srcs = ["cpu_allowance_test.cc"],
+    deps = [
+        ":cpu_allowance_cc",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "output_credit_cc",
     srcs = ["output_credit.cc"],
     hdrs = ["output_credit.h"],
     deps = [
+        ":cpu_allowance_cc",
         "@abseil-cpp//absl/synchronization",
         "@mboworks_mbo//mbo/types:optional_ref_cc",
     ],
@@ -384,6 +402,7 @@ cc_test(
     size = "small",
     srcs = ["output_credit_test.cc"],
     deps = [
+        ":cpu_allowance_cc",
         ":output_credit_cc",
         "@abseil-cpp//absl/synchronization",
         "@googletest//:gtest_main",
@@ -396,6 +415,7 @@ cc_library(
     srcs = ["parallel_match.cc"],
     hdrs = ["parallel_match.h"],
     deps = [
+        ":cpu_allowance_cc",
         ":evaluate_cc",
         ":expression_execution_cc",
         ":output_credit_cc",
