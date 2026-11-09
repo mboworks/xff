@@ -10,6 +10,7 @@ from unittest import mock
 
 import benchmark_extended_ci as ci
 from benchmark_extended_test_support import ExtendedFixture
+from test_paths import repository_file
 
 
 class BenchmarkExtendedCiTest(unittest.TestCase):
@@ -94,6 +95,17 @@ class BenchmarkExtendedCiTest(unittest.TestCase):
         self.assertFalse((self.root / 'observation.json').exists())
         self.assertTrue((self.root / 'storage-release.json').exists())
 
+    def test_ci_control_failure_retains_head_with_explicit_error_and_valid_workflow_binding(self):
+        self.fail_at = len(self.fixture.cases) * 30 + 1
+        collection = self.fixture.record(origin='ci', comparison='parent')['collection']
+        with self.assertRaisesRegex(ValueError, 'head measurements retained'):
+            self.collect(collection)
+        value = ci.records.read(self.root / 'observation.json')
+        self.assertEqual(value['origin'], 'ci')
+        self.assertEqual(value['controls'], [])
+        self.assertIn('synthetic failed output', value['control_error'])
+        ci.records.validate(value, self.fixture.source())
+
     def test_changed_reference_invalidates_whole_collection_after_successful_samples(self):
         self.mutate_at = len(self.fixture.cases) * 30 * 2
         with self.assertRaisesRegex(ValueError, 'reference executable changed'):
@@ -108,6 +120,25 @@ class BenchmarkExtendedCiTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'workflow head/build mismatch'):
             self.collect(dict(collection, head_sha='f' * 40))
         self.assertEqual(self.calls, 0)
+
+    def test_workflow_keeps_collection_independent_and_measures_downloaded_production_bytes(self):
+        workflow = repository_file('.github/workflows/benchmarks.yml').read_text()
+        extended = workflow.split('  extended:\n', 1)[1].split('\n  build:', 1)[0]
+        self.assertNotIn('needs:', extended)
+        self.assertIn('fail-fast: false', extended)
+        helper = extended.index('cp "${launcher}" "${RUNNER_TEMP}/extended-resource-launcher"')
+        head = extended.index('--role=head')
+        parent = extended.index('--role=base')
+        upload = extended.index('name: benchmark-extended-build-${{ matrix.platform }}')
+        download = extended.index('actions/download-artifact@')
+        restore = extended.index('tar -xf "${RUNNER_TEMP}/extended-retention/benchmark-extended-build.tar"')
+        measure = extended.index('benchmark_extended_ci.py collect')
+        self.assertEqual(sorted((helper, head, parent, upload, download, restore, measure)),
+                         [helper, head, parent, upload, download, restore, measure])
+        self.assertIn('--build-root="${RUNNER_TEMP}/extended-retained-build"', extended)
+        diagnostics = extended.split('name: Retain extended build diagnostics', 1)[1]
+        self.assertIn('if: always()', diagnostics)
+        self.assertIn('/extended-build/binaries/*/build.log', diagnostics)
 
 
 if __name__ == '__main__':

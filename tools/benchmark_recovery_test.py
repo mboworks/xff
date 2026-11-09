@@ -4,6 +4,7 @@
 import base64
 import io
 import json
+import subprocess
 import unittest
 from unittest import mock
 import zipfile
@@ -47,15 +48,38 @@ class BenchmarkRecoveryTest(unittest.TestCase):
         api.entries = [{'source': 'merged', 'commit': SHA, 'platform_name': 'linux / x86_64'}]
         self.assertEqual(recovery.inventory(api, '2026-09-19')[0]['missing'], ['macos'])
 
+    def test_extended_views_do_not_hide_missing_core_history(self):
+        api = FakeGitHub()
+        api.entries = [{'source': 'merged', 'commit': SHA, 'platform_name': 'linux / x86_64', 'extended': True},
+                       {'source': 'merged', 'commit': SHA, 'platform_name': 'macos / arm64', 'local': True}]
+        self.assertEqual(recovery.inventory(api, '2026-09-19')[0]['missing'], ['linux', 'macos'])
+
     def test_active_run_and_available_reports_are_not_backfilled(self):
         api = FakeGitHub()
         api.runs = [{'id': 1, 'head_sha': SHA, 'event': 'push', 'status': 'in_progress', 'conclusion': None}]
         self.assertEqual(recovery.inventory(api, '2026-09-19')[0]['state'], 'measuring')
-        api.runs[0].update(status='completed', conclusion='success', run_started_at='2026-10-01T12:00:00Z')
+        api.runs[0].update(status='completed', conclusion='failure', run_started_at='2026-10-01T12:00:00Z')
         api.artifacts['actions/runs/1/artifacts'] = [
-            {'name': f'benchmark-report-{platform}-arch', 'created_at': '2026-10-01T13:00:00Z', 'expired': False}
-            for platform in recovery.PLATFORMS]
-        self.assertEqual(recovery.inventory(api, '2026-09-19')[0]['state'], 'awaiting publication')
+            {'id': index, 'name': f'benchmark-report-{platform}-arch',
+             'created_at': '2026-10-01T13:00:00Z', 'expired': False}
+            for index, platform in enumerate(recovery.PLATFORMS, 10)]
+        for artifact, platform in zip(api.artifacts['actions/runs/1/artifacts'], recovery.PLATFORMS):
+            archive = io.BytesIO()
+            with zipfile.ZipFile(archive, 'w') as output:
+                output.writestr(artifact['name'] + '.json', json.dumps(
+                    {'platform': platform, 'head': SHA, 'tool_comparisons': {'synthetic-only': True}}))
+            api.archives[f"actions/artifacts/{artifact['id']}/zip"] = archive.getvalue()
+        with mock.patch.object(recovery.benchmark_history, 'retain') as retain:
+            self.assertEqual(recovery.inventory(api, '2026-09-19')[0]['state'], 'awaiting publication')
+            self.assertEqual(retain.call_count, 2)
+        with mock.patch.object(recovery.benchmark_history, 'retain', side_effect=ValueError('incomplete report')):
+            self.assertEqual(recovery.inventory(api, '2026-09-19')[0]['state'], 'needs backfill')
+
+    def test_api_observation_timeout_never_becomes_a_request_to_repeat_measurements(self):
+        api = FakeGitHub()
+        with mock.patch.object(api, 'request', side_effect=subprocess.TimeoutExpired('gh', 120)), \
+                self.assertRaises(subprocess.TimeoutExpired):
+            recovery.report_available(api, {'id': 1, 'head_sha': SHA}, {'id': 2}, 'linux')
 
     def test_retained_completed_campaign_is_not_dispatched_again(self):
         api = FakeGitHub()
@@ -98,6 +122,22 @@ class BenchmarkRecoveryTest(unittest.TestCase):
             recovery.main()
             run.assert_called_once_with(['gh', 'workflow', 'run', 'benchmark_backfill.yml', '--repo',
                                          'owner/repo', '--ref', 'main', '-f', 'revisions=' + SHA,
+                                         '-f', 'platforms=linux'], check=True)
+
+    def test_dispatch_batches_equal_gaps_without_repeating_successful_or_available_platforms(self):
+        api = FakeGitHub()
+        rows = [{'state': 'needs backfill', 'pr': 7, 'commit': SHA, 'missing': ['linux', 'macos'],
+                 'available_artifacts': ['macos']},
+                {'state': 'needs backfill', 'pr': 8, 'commit': 'c' * 40, 'missing': ['linux', 'macos']},
+                {'state': 'needs backfill', 'pr': 9, 'commit': OTHER, 'missing': ['linux']}]
+        with mock.patch.object(recovery.benchmark_preview_ci, 'GitHub', return_value=api), \
+                mock.patch.object(recovery, 'inventory', return_value=rows), \
+                mock.patch.object(api, 'pages', return_value=[]), \
+                mock.patch.object(recovery.subprocess, 'run') as run, \
+                mock.patch('sys.argv', ['benchmark_recovery', '--repository', 'owner/repo', '--dispatch-next']):
+            recovery.main()
+            run.assert_called_once_with(['gh', 'workflow', 'run', 'benchmark_backfill.yml', '--repo',
+                                         'owner/repo', '--ref', 'main', '-f', 'revisions=' + SHA + ',' + OTHER,
                                          '-f', 'platforms=linux'], check=True)
 
 

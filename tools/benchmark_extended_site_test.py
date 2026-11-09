@@ -3,6 +3,7 @@
 """Keep extended observations separate, measured, discoverable and reproducible."""
 
 import gzip
+import copy
 import json
 import unittest
 
@@ -87,6 +88,27 @@ class BenchmarkExtendedSiteTest(unittest.TestCase):
         path.write_text(json.dumps(changed))
         with self.assertRaisesRegex(ValueError, 'untrusted extended workflow'):
             site.publish(self.root)
+
+    def test_same_head_observations_prefer_completed_controls_when_measurement_times_match(self):
+        value = self.fixture.record()
+        records.retain(self.root, value)
+        complete = copy.deepcopy(value)
+        complete['controls'] = self.fixture.rows(self.fixture.revisions[-1])
+        complete['identity'] = records.observation_identity(complete)
+        records.retain(self.root, complete)
+        selected = site.retained(self.root)
+        self.assertEqual(len(selected), 2)
+        self.assertTrue(all(item[2]['controls'] for item in selected))
+
+    def test_ci_pr_labels_use_trusted_version_links_when_subject_has_no_pr_suffix(self):
+        self.fixture.revisions[0]['pr'] = 0
+        value = self.fixture.record(origin='ci', comparison='parent')
+        records.retain(self.root, value, self.fixture.source())
+        (self.root / 'version-links.json').write_text(json.dumps({value['revision']['sha']: [
+            {'label': 'PR #999', 'href': 'https://github.com/mboworks/xff/pull/999'}]}))
+        site.publish(self.root)
+        entries = [item for item in records.read(self.root / 'catalog.json') if item.get('extended')]
+        self.assertTrue(all(item['label'] == 'PR #999 / ' + value['revision']['sha'][:10] for item in entries))
 
     def test_import_uses_complete_original_cells_and_actual_retained_builds(self):
         campaign = self.fixture.root / 'campaign'

@@ -82,6 +82,16 @@ class BenchmarkExtendedRecordsTest(unittest.TestCase):
         self.assertEqual(saved['publication_source']['id'], 12)
         self.assertEqual(saved['origin'], 'ci')
 
+    def test_ci_control_omission_requires_an_explicit_diagnostic_failure(self):
+        value = self.fixture.record(origin='ci', comparison='parent')
+        value['controls'] = []
+        value['identity'] = records.observation_identity(value)
+        with self.assertRaisesRegex(ValueError, 'explicit failure'):
+            records.validate(value, self.fixture.source())
+        value['control_error'] = 'synthetic control failure; complete head retained'
+        value['identity'] = records.observation_identity(value)
+        records.validate(value, self.fixture.source())
+
 
 if __name__ == '__main__':
     unittest.main()

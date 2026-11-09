@@ -3,6 +3,7 @@
 """Recover independently valid reports without trusting workflow or artifact claims."""
 
 import copy
+from datetime import datetime, timezone
 import gzip
 import io
 import json
@@ -117,6 +118,38 @@ class BenchmarkReconcileCiTest(unittest.TestCase):
                     zipped.writestr(info, 'data')
                 with self.assertRaises(ValueError):
                     reconcile.extract(output.getvalue(), self.fixture.root / 'extracted')
+
+    def test_settled_inventory_is_cached_but_retry_and_recent_completion_are_rechecked(self):
+        source = dict(self.api.source, updated_at='2026-11-01T00:00:00Z')
+        self.assertEqual(reconcile.run_artifacts(self.api, self.root, source), self.api.items)
+        self.api.requests.clear()
+        self.assertEqual(reconcile.run_artifacts(self.api, self.root, source), self.api.items)
+        self.assertEqual(self.api.requests, [])
+        reconcile.run_artifacts(self.api, self.root, dict(source, run_attempt=2))
+        self.assertEqual(self.api.requests, ['actions/runs/12/artifacts'])
+        self.api.requests.clear()
+        recent = dict(source, run_attempt=3, updated_at=datetime.now(timezone.utc).isoformat())
+        reconcile.run_artifacts(self.api, self.root, recent)
+        reconcile.run_artifacts(self.api, self.root, recent)
+        self.assertEqual(self.api.requests, ['actions/runs/12/artifacts', 'actions/runs/12/artifacts'])
+
+    def test_expired_cached_artifacts_are_not_downloaded_and_old_cache_is_refreshed(self):
+        source = dict(self.api.source, updated_at='2026-11-01T00:00:00Z')
+        self.api.items[0]['expires_at'] = '2000-01-01T00:00:00Z'
+        reconcile.run_artifacts(self.api, self.root, source)
+        self.api.requests.clear()
+        with mock.patch.object(reconcile, 'retain_measurement', return_value=False) as core, \
+                mock.patch.object(reconcile, 'retain_extended', return_value=False) as extended:
+            self.assertFalse(reconcile.retain_benchmarks(self.api, self.root, source))
+        self.assertEqual(core.call_args.args[-1], [])
+        self.assertEqual(extended.call_args.args[-1], [])
+        self.assertEqual(self.api.requests, [])
+        marker = self.root / 'reconciliation/12/1/artifacts.json'
+        cached = json.loads(marker.read_text())
+        cached['checked_at'] = '2000-01-01T00:00:00Z'
+        marker.write_text(json.dumps(cached))
+        reconcile.run_artifacts(self.api, self.root, source)
+        self.assertEqual(self.api.requests, ['actions/runs/12/artifacts'])
 
 
 if __name__ == '__main__':

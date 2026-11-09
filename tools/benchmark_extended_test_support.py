@@ -88,7 +88,8 @@ class ExtendedFixture:
         collection = {'run_id': 12, 'run_attempt': 1, 'repository': 'owner/repo',
                       'head_sha': self.revisions[0]['sha'], 'base_sha': self.revisions[-1]['sha']} if origin == 'ci' else None
         return records.make_record(copy.deepcopy(self.contract), self.revisions[0], self.rows(), self.builds,
-                                   'linux', 'x86_64', 'synthetic-only', comparison, origin, collection)
+                                   'linux', 'x86_64', 'synthetic-only', comparison, origin, collection,
+                                   controls=self.rows(self.revisions[-1]) if origin == 'ci' else None)
 
     def source(self):
         return {'id': 12, 'run_attempt': 1, 'head_sha': self.revisions[0]['sha'],

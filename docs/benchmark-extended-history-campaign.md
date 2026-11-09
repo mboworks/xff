@@ -305,3 +305,31 @@ catalog entries remain intact. Tests cover known chart heights, warm-up exclusio
 stable parent datasets, local/CI separation, packed observations, idempotent publication,
 untrusted provenance, partial workflow recovery and RAM-resource ownership. Synthetic test
 observations are explicitly labeled and are never performance evidence.
+
+### Native pipeline and imported-view qualification (2026-11-09)
+
+The [qualification summary](benchmarks/extended-history-continuous-qualification-20261109.json)
+records the actual import, compacted-browser and native collector checks. All 130 original
+revisions and 7,800 cells passed validation against their original retained executables and link
+evidence. Both 130-version datasets joined a copy of the published catalog without changing any
+of its 588 existing entries. Every chart order reproduces the recorded ratios: 60 measured
+coordinates and 20 unavailable coordinates per view. Chromium selected the oldest, middle and
+latest versions in both datasets with correct binary evidence and no page errors.
+
+Each native collector completed 60 head cells and 60 identical-parent control cells on Linux
+and macOS: 3,600 independently checked invocations per platform. Both source revisions produce
+byte-identical production executables on their respective host. This validates the pipeline;
+it is not evidence of a performance improvement. The frozen driver source is
+`96765e1859c3d48ac0f04092c0613b4e8ad8ae21`, against first parent
+`52950f937ad371e1450538faf7983024b324688d`. Subsequent changes tighten validation and improve
+build logging/publication without changing native commands, sampling or C++ sources.
+
+Linux preserved its explicitly borrowed tmpfs fixture. The new macOS RAM volume recorded UUID
+`A03B359F-E90E-38C0-96B4-439E7BF90389`; its image, device and volume identity were checked before
+release, and device/mount absence was checked afterward. Its former device number is not an
+authorization to detach any future device. Raw observations, builds and failed-attempt support
+remain outside the source tree, with hashes and evidence locations in the summary.
+
+The original imported observations remain local history with a fixed reference. Publishing that
+data and verifying the first actual post-merge extended CI run are separate final steps.
+Changing workloads, sampling or resource accounting requires a separately identified contract.

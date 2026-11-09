@@ -1,0 +1,412 @@
+{
+  "schema": 1,
+  "purpose": "Extended-history import and collector correctness qualification; not an optimization claim",
+  "import": {
+    "schema": 1,
+    "original_observations": 130,
+    "validated_original_cells": 7800,
+    "validated_original_invocations": 234000,
+    "retained_core_catalog_entries": 588,
+    "extended_catalog_entries": 260,
+    "series": {
+      "extended-production-v1 / Fixed XFF ae8c5af3eb11": 130,
+      "extended-production-v1 / Traditional tools": 130
+    },
+    "measured_points_per_view": 60,
+    "unavailable_points_per_view": 20,
+    "all_three_order_modes_match_actual_samples": true,
+    "normalization_cells": {
+      "available": 15600
+    },
+    "archive_sha256": "985d4c471bb91b917e54202406e662e5c19c0b5825e06e095b4b754a42b62ecc",
+    "binary_evidence": "Verified against Retention (original frozen executable bytes, both views)",
+    "published_snapshot_commit": "08a0e7ad53e559f672035e0adcbfd5ee39b6bcec"
+  },
+  "browser": {
+    "url": "http://127.0.0.1:63790/benchmarks/",
+    "checked": [
+      {
+        "dataset": "Local / linux-zen5-extended-20261107 / extended-production-v1 / Fixed XFF ae8c5af3eb11",
+        "index": 0,
+        "commit": "21c7f3656b005b23113d936c1cd2ca0fd2221ab2",
+        "binary": "f8577e4753dc90640bd926ac80ce7277be9791491bf4e15bfdcd1a3777ef8e47"
+      },
+      {
+        "dataset": "Local / linux-zen5-extended-20261107 / extended-production-v1 / Fixed XFF ae8c5af3eb11",
+        "index": 65,
+        "commit": "09e6bbfff3275ed36eba7b98052cf5d0877d94f7",
+        "binary": "c21c424a876f82db3ac4de2458c8f47b5161dd49271c1b739f2d1ac6ee0f689b"
+      },
+      {
+        "dataset": "Local / linux-zen5-extended-20261107 / extended-production-v1 / Fixed XFF ae8c5af3eb11",
+        "index": 129,
+        "commit": "ae8c5af3eb11dc8571f11db9b307b0db948f78c6",
+        "binary": "c47c904b693c8c114bb87284497b98a10e4925f25afdc3f5ec4f26896ad1a2e1"
+      },
+      {
+        "dataset": "Local / linux-zen5-extended-20261107 / extended-production-v1 / Traditional tools",
+        "index": 0,
+        "commit": "21c7f3656b005b23113d936c1cd2ca0fd2221ab2",
+        "binary": "f8577e4753dc90640bd926ac80ce7277be9791491bf4e15bfdcd1a3777ef8e47"
+      },
+      {
+        "dataset": "Local / linux-zen5-extended-20261107 / extended-production-v1 / Traditional tools",
+        "index": 65,
+        "commit": "09e6bbfff3275ed36eba7b98052cf5d0877d94f7",
+        "binary": "c21c424a876f82db3ac4de2458c8f47b5161dd49271c1b739f2d1ac6ee0f689b"
+      },
+      {
+        "dataset": "Local / linux-zen5-extended-20261107 / extended-production-v1 / Traditional tools",
+        "index": 129,
+        "commit": "ae8c5af3eb11dc8571f11db9b307b0db948f78c6",
+        "binary": "c47c904b693c8c114bb87284497b98a10e4925f25afdc3f5ec4f26896ad1a2e1"
+      }
+    ],
+    "page_errors": []
+  },
+  "native": {
+    "linux": {
+      "source": "96765e1859c3d48ac0f04092c0613b4e8ad8ae21",
+      "parent": "52950f937ad371e1450538faf7983024b324688d",
+      "origin": "local",
+      "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+      "target": "//xff/cli:xff_full",
+      "configuration": ["clang_release", "xff_full"],
+      "builds": {
+        "96765e1859c3d48ac0f04092c0613b4e8ad8ae21": {
+          "source": {
+            "revision": "96765e1859c3d48ac0f04092c0613b4e8ad8ae21",
+            "tree": "28719926a988f24150f67f9eb7947066d2488071",
+            "clean": true
+          },
+          "sha256": "4fd6b2f73f912a5f6f50b958e1a75842bcce57fcb35bbcdce13833b2ffc16877",
+          "bytes": 18473632,
+          "command": [
+            "bazel",
+            "--nosystem_rc",
+            "--nohome_rc",
+            "build",
+            "//xff/cli:xff_full",
+            "--config=clang_release",
+            "--config=xff_full",
+            "--disk_cache=/home/marcus/.cache/bazel-disk",
+            "--jobs=3"
+          ],
+          "query": [
+            "bazel",
+            "--nosystem_rc",
+            "--nohome_rc",
+            "cquery",
+            "config(//xff/cli:xff_full, target)",
+            "--config=clang_release",
+            "--config=xff_full",
+            "--disk_cache=/home/marcus/.cache/bazel-disk",
+            "--jobs=3",
+            "--output=starlark",
+            "--starlark:expr=target.files_to_run.executable.path"
+          ],
+          "artifact": "bazel-out/k8-opt/bin/xff/cli/xff_full",
+          "configuration": {
+            ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+            ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+            "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+            "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+            "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+          }
+        },
+        "52950f937ad371e1450538faf7983024b324688d": {
+          "source": {
+            "revision": "52950f937ad371e1450538faf7983024b324688d",
+            "tree": "f99e563e2f1d6762190aee03c9ed0fd2c3e846f1",
+            "clean": true
+          },
+          "sha256": "4fd6b2f73f912a5f6f50b958e1a75842bcce57fcb35bbcdce13833b2ffc16877",
+          "bytes": 18473632,
+          "command": [
+            "bazel",
+            "--nosystem_rc",
+            "--nohome_rc",
+            "build",
+            "//xff/cli:xff_full",
+            "--config=clang_release",
+            "--config=xff_full",
+            "--disk_cache=/home/marcus/.cache/bazel-disk",
+            "--jobs=3"
+          ],
+          "query": [
+            "bazel",
+            "--nosystem_rc",
+            "--nohome_rc",
+            "cquery",
+            "config(//xff/cli:xff_full, target)",
+            "--config=clang_release",
+            "--config=xff_full",
+            "--disk_cache=/home/marcus/.cache/bazel-disk",
+            "--jobs=3",
+            "--output=starlark",
+            "--starlark:expr=target.files_to_run.executable.path"
+          ],
+          "artifact": "bazel-out/k8-opt/bin/xff/cli/xff_full",
+          "configuration": {
+            ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+            ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+            "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+            "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+            "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+          }
+        }
+      },
+      "head_cells": 60,
+      "control_cells": 60,
+      "validated_invocations": 3600,
+      "sampling": {
+        "warmup": 1,
+        "measured": 9,
+        "retained": 7
+      },
+      "control_error": null,
+      "fixture": "/dev/shm/xff-per-entry-followup-20261108",
+      "storage_release": {
+        "filesystem": "tmpfs",
+        "storage": "memory",
+        "fixture": "/dev/shm/xff-per-entry-followup-20261108",
+        "borrowed": true,
+        "preserved": true,
+        "released_at": "2026-11-08T23:59:03.795281+00:00"
+      },
+      "binary_evidence": {
+        "traditional": {
+          "schema": 1,
+          "method": "sha256-retained-executable",
+          "sha256": "4fd6b2f73f912a5f6f50b958e1a75842bcce57fcb35bbcdce13833b2ffc16877",
+          "measurement_identity": "f8ff95dfcaf473df6ba5fdd2b7110b731e08c062bc824cbb541670c65d9cda70",
+          "retention_reference": "original frozen full-production executable used for local paired validation",
+          "verified_at": "2026-11-08T23:59:03.960422+00:00"
+        },
+        "anchor": {
+          "schema": 1,
+          "method": "sha256-retained-executable",
+          "sha256": "4fd6b2f73f912a5f6f50b958e1a75842bcce57fcb35bbcdce13833b2ffc16877",
+          "measurement_identity": "74d24587d2d8b9ce656166758b7db15a084a56628d97a1fe0018290129ed3688",
+          "retention_reference": "original frozen full-production executable used for local paired validation",
+          "verified_at": "2026-11-08T23:59:03.975087+00:00"
+        }
+      },
+      "raw_observation_sha256": "71fa57acbc15958232e2c245343bb470b99c55d8eafa965b1d5fa5820d635f3d",
+      "raw_evidence": "/home/marcus/Documents/xff-per-entry-followup-20261108/extended-native-validation/collection/observation.json"
+    },
+    "macos": {
+      "source": "96765e1859c3d48ac0f04092c0613b4e8ad8ae21",
+      "parent": "52950f937ad371e1450538faf7983024b324688d",
+      "origin": "local",
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "target": "//xff/cli:xff_full",
+      "configuration": ["clang_release", "xff_full"],
+      "builds": {
+        "96765e1859c3d48ac0f04092c0613b4e8ad8ae21": {
+          "source": {
+            "revision": "96765e1859c3d48ac0f04092c0613b4e8ad8ae21",
+            "tree": "28719926a988f24150f67f9eb7947066d2488071",
+            "clean": true
+          },
+          "sha256": "b014fc984a68514826c2e32c3be7816baa32ac441753a18e12c75ed7e721b8b3",
+          "bytes": 8278888,
+          "command": [
+            "bazel",
+            "--nosystem_rc",
+            "--nohome_rc",
+            "build",
+            "//xff/cli:xff_full",
+            "--config=clang_release",
+            "--config=xff_full",
+            "--disk_cache=/Users/marcus/.cache/bazel-disk",
+            "--jobs=3"
+          ],
+          "query": [
+            "bazel",
+            "--nosystem_rc",
+            "--nohome_rc",
+            "cquery",
+            "config(//xff/cli:xff_full, target)",
+            "--config=clang_release",
+            "--config=xff_full",
+            "--disk_cache=/Users/marcus/.cache/bazel-disk",
+            "--jobs=3",
+            "--output=starlark",
+            "--starlark:expr=target.files_to_run.executable.path"
+          ],
+          "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff_full",
+          "configuration": {
+            ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+            ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+            "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+            "MODULE.bazel.lock": "585f641b4aa3c00c77634b2ef3d8f73da48cf99e03ea6c3727b5d7b89fcda26f",
+            "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+          }
+        },
+        "52950f937ad371e1450538faf7983024b324688d": {
+          "source": {
+            "revision": "52950f937ad371e1450538faf7983024b324688d",
+            "tree": "f99e563e2f1d6762190aee03c9ed0fd2c3e846f1",
+            "clean": true
+          },
+          "sha256": "b014fc984a68514826c2e32c3be7816baa32ac441753a18e12c75ed7e721b8b3",
+          "bytes": 8278888,
+          "command": [
+            "bazel",
+            "--nosystem_rc",
+            "--nohome_rc",
+            "build",
+            "//xff/cli:xff_full",
+            "--config=clang_release",
+            "--config=xff_full",
+            "--disk_cache=/Users/marcus/.cache/bazel-disk",
+            "--jobs=3"
+          ],
+          "query": [
+            "bazel",
+            "--nosystem_rc",
+            "--nohome_rc",
+            "cquery",
+            "config(//xff/cli:xff_full, target)",
+            "--config=clang_release",
+            "--config=xff_full",
+            "--disk_cache=/Users/marcus/.cache/bazel-disk",
+            "--jobs=3",
+            "--output=starlark",
+            "--starlark:expr=target.files_to_run.executable.path"
+          ],
+          "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff_full",
+          "configuration": {
+            ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+            ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+            "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+            "MODULE.bazel.lock": "585f641b4aa3c00c77634b2ef3d8f73da48cf99e03ea6c3727b5d7b89fcda26f",
+            "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+          }
+        }
+      },
+      "head_cells": 60,
+      "control_cells": 60,
+      "validated_invocations": 3600,
+      "sampling": {
+        "warmup": 1,
+        "measured": 9,
+        "retained": 7
+      },
+      "control_error": null,
+      "fixture": "/private/tmp/xff-extended-native-validation-macos-20261108/collection/ram-volume/fixture",
+      "storage_release": {
+        "device": "/dev/disk4",
+        "image": "ram://4194304",
+        "storage": "memory",
+        "filesystem": "case-sensitive HFS+",
+        "created_at": "2026-11-08T23:57:15.208935+00:00",
+        "mount": "/private/tmp/xff-extended-native-validation-macos-20261108/collection/ram-volume",
+        "uuid": "A03B359F-E90E-38C0-96B4-439E7BF90389",
+        "released_at": "2026-11-09T00:20:53.956904+00:00"
+      },
+      "binary_evidence": {
+        "traditional": {
+          "schema": 1,
+          "method": "sha256-retained-executable",
+          "sha256": "b014fc984a68514826c2e32c3be7816baa32ac441753a18e12c75ed7e721b8b3",
+          "measurement_identity": "d24dba4764229a0b5e7e2f60c1e57aabc635b33efd89639736acf226fec126dd",
+          "retention_reference": "original frozen full-production executable used for local paired validation",
+          "verified_at": "2026-11-09T00:20:54.189423+00:00"
+        },
+        "anchor": {
+          "schema": 1,
+          "method": "sha256-retained-executable",
+          "sha256": "b014fc984a68514826c2e32c3be7816baa32ac441753a18e12c75ed7e721b8b3",
+          "measurement_identity": "8ea324153b17ab9845c7cc56278ac9ecfe80faaee85707943fb0464732097c8b",
+          "retention_reference": "original frozen full-production executable used for local paired validation",
+          "verified_at": "2026-11-09T00:20:54.203892+00:00"
+        }
+      },
+      "raw_observation_sha256": "4ee36606de59184ca94d958a3dd0b4ba16fb57a45271e05d4e83835f4aaa6786",
+      "raw_evidence": "/private/tmp/xff-extended-native-validation-macos-20261108/collection/observation.json"
+    }
+  },
+  "limits": [
+    "Native pipeline qualification uses byte-identical head/parent production executables and makes no performance-improvement claim.",
+    "Frozen native driver source is 96765e1859c3d48ac0f04092c0613b4e8ad8ae21; follow-ups tighten validation and improve build logging/publication without changing measured commands, sampling, or C++ sources.",
+    "Original imported observations remain local fixed-reference history; GitHub collection must establish CI provenance separately.",
+    "Historical data publication and the first real post-merge extended CI run remain required."
+  ],
+  "tests": {
+    "macos_bazel": {
+      "benchmark_extended_ci_test": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "benchmark_extended_records_test": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "benchmark_extended_site_test": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "benchmark_extended_storage_test": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "benchmark_extended_build_test": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "benchmark_extended_history_test": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "benchmark_extended_report_test": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "benchmark_extended_test": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "benchmark_reconcile_ci_test": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "benchmark_datasets_test": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "benchmark_history_test": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "benchmark_recovery_test": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      }
+    },
+    "linux_direct": {
+      "extended": 53,
+      "reconcile": 8,
+      "recovery": 8,
+      "failures": 0
+    },
+    "real_build_logging_smoke": {
+      "source": "52950f937ad371e1450538faf7983024b324688d",
+      "sha256": "b014fc984a68514826c2e32c3be7816baa32ac441753a18e12c75ed7e721b8b3",
+      "result": "passed"
+    }
+  }
+}

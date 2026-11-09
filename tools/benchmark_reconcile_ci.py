@@ -56,6 +56,27 @@ def latest_artifacts(items):
     return list(selected.values())
 
 
+def run_artifacts(api, root, run):
+    """Avoid re-enumerating settled runs on every coalesced publication request."""
+    now = datetime.now(timezone.utc)
+    source = {key: run.get(key) for key in ('id', 'run_attempt', 'head_sha', 'updated_at')}
+    marker = root / 'reconciliation' / str(run['id']) / str(run['run_attempt']) / 'artifacts.json'
+    if marker.exists():
+        saved = json.loads(marker.read_text())
+        if saved['source'] == source and now - datetime.fromisoformat(saved['checked_at']) < timedelta(hours=24):
+            return saved['artifacts']
+    inventory = api.pages(f"actions/runs/{run['id']}/artifacts", 'artifacts')
+    # Retry attempts get a different key. Recent completions are always refreshed
+    # to allow for artifact-index propagation; external deletion/expiry is refreshed daily.
+    if (run.get('status') == 'completed' and run.get('updated_at')
+            and now - datetime.fromisoformat(run['updated_at']) >= timedelta(minutes=15)):
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        temporary = marker.with_suffix('.json.tmp')
+        temporary.write_text(json.dumps({'source': source, 'checked_at': now.isoformat(), 'artifacts': inventory}) + '\n')
+        temporary.replace(marker)
+    return inventory
+
+
 def retain_measurement(api, root, run, inventory=None):
     destination = root / 'runs' / str(run['id']) / str(run['run_attempt'])
     missing = {platform for platform in ('linux', 'macos')
@@ -158,8 +179,9 @@ def retain_extended_artifact(api, root, run, item, platform):
 
 def retain_benchmarks(api, root, run):
     """A failed independent job must not discard other valid platform reports."""
-    inventory = [item for item in api.pages(f"actions/runs/{run['id']}/artifacts", 'artifacts')
-                 if not item.get('expired')]
+    inventory = [item for item in run_artifacts(api, root, run)
+                 if not item.get('expired') and (not item.get('expires_at')
+                    or datetime.fromisoformat(item['expires_at']) > datetime.now(timezone.utc))]
     retained = False
     for name, retain in (('core', retain_measurement), ('extended', retain_extended)):
         try:

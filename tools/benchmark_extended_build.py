@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import time
 
 
@@ -35,6 +36,18 @@ def clean_source(checkout, sha):
     return {'revision': sha, 'tree': git(checkout, 'rev-parse', 'HEAD^{tree}'), 'clean': True}
 
 
+def build_logged(command, checkout, log):
+    """Expose native build progress and keep the exact diagnostic output."""
+    with subprocess.Popen(command, cwd=checkout, stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT, text=True, bufsize=1) as process:
+        for line in process.stdout:
+            log.write(line)
+            log.flush()
+            print(line, end='', file=sys.stderr, flush=True)
+        if process.wait():
+            raise subprocess.CalledProcessError(process.returncode, command)
+
+
 def freeze_build(checkout, directory, sha, disk_cache, jobs=6, build_library_path=None):
     """Build and immediately freeze one exact checkout without selecting another revision."""
     directory.mkdir(parents=True, exist_ok=True)
@@ -52,8 +65,9 @@ def freeze_build(checkout, directory, sha, disk_cache, jobs=6, build_library_pat
     if build_library_path:
         options.append('--action_env=LD_LIBRARY_PATH=' + str(build_library_path.resolve()))
     command = [*bazel, 'build', '//xff/cli:xff_full', *options]
+    print(f'BUILD {sha} //xff/cli:xff_full --config=clang_release --config=xff_full ({checkout})', flush=True)
     with (directory / 'build.log').open('w') as log:
-        subprocess.run(command, cwd=checkout, stdout=log, stderr=subprocess.STDOUT, check=True)
+        build_logged(command, checkout, log)
         query = [*bazel, 'cquery', 'config(//xff/cli:xff_full, target)', *options,
                  '--output=starlark', '--starlark:expr=target.files_to_run.executable.path']
         artifact = subprocess.check_output(query, cwd=checkout, stderr=log, text=True).strip()
@@ -66,6 +80,7 @@ def freeze_build(checkout, directory, sha, disk_cache, jobs=6, build_library_pat
         shutil.copy2(built, executable)
         if digest(executable) != binary_hash:
             raise ValueError('frozen executable copy mismatch')
+        print(f'FROZEN {sha} SHA256={binary_hash} bytes={executable.stat().st_size} {executable}', flush=True)
         # Link actions record the actual production LTO command for this revision.
         with (directory / 'link-actions.json').open('w') as actions:
             subprocess.run([*bazel, 'aquery', 'mnemonic("CppLink", //xff/cli:xff_full)',

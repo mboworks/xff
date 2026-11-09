@@ -1373,9 +1373,11 @@ py_test(
     name = "benchmark_extended_ci_test",
     size = "small",
     srcs = ["benchmark_extended_ci_test.py"],
+    data = ["//:python_workflow_test_data"],
     deps = [
         ":benchmark_extended_ci_lib",
         ":benchmark_extended_test_support_lib",
+        ":test_paths_lib",
     ],
 )
 
@@ -1539,13 +1541,19 @@ py_library(
     name = "benchmark_recovery_lib",
     srcs = ["benchmark_recovery.py"],
     imports = ["."],
-    deps = [":benchmark_preview_ci_lib"],
+    deps = [
+        ":benchmark_history_lib",
+        ":benchmark_preview_ci_lib",
+    ],
 )
 
 py_binary(
     name = "benchmark_recovery",
     srcs = ["benchmark_recovery.py"],
-    deps = [":benchmark_preview_ci_lib"],
+    deps = [
+        ":benchmark_history_lib",
+        ":benchmark_preview_ci_lib",
+    ],
 )
 
 py_test(

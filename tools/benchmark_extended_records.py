@@ -148,6 +148,9 @@ def validate(record, source=None):
                 and all(flag in manifest['command'] for flag in ('//xff/cli:xff_full', '--config=clang_release', '--config=xff_full')),
                 'production link/configuration evidence missing')
     if record['origin'] == 'ci':
+        require(bool(record.get('controls')) or
+                isinstance(record.get('control_error'), str) and bool(record['control_error']),
+                'CI controls require a complete grid or an explicit failure')
         collection = record['collection']
         require(all(type(collection[key]) is int and collection[key] > 0 for key in ('run_id', 'run_attempt')),
                 'invalid extended workflow identity')
@@ -213,11 +216,14 @@ def view_report(record, view):
 
 
 def make_record(contract, revision, rows, builds, platform, machine, series, comparison,
-                origin='local', collection=None, controls=None, retention_reference='original frozen executable'):
+                origin='local', collection=None, controls=None, retention_reference='original frozen executable',
+                control_error=None):
     result = {'schema': 1, 'kind': 'extended-production', 'contract': contract, 'revision': revision,
               'rows': rows, 'builds': builds, 'platform': platform, 'machine': machine, 'series': series,
               'comparison': comparison, 'origin': origin, 'collection': collection,
               'controls': controls or [], 'completed_at': max(row['after']['utc'] for row in rows)}
+    if control_error is not None:
+        result['control_error'] = control_error
     result['view_verification'] = {}
     for view in ('traditional', 'anchor'):
         wrapper = view_report(result, view)

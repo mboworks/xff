@@ -103,6 +103,17 @@ jobs:
             ${{ runner.temp }}/extended-measurements/storage-release.json
           retention-days: 30
           if-no-files-found: warn
+      - name: Retain extended build diagnostics after success or failure
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: benchmark-extended-build-logs-${{ matrix.platform }}
+          path: |
+            ${{ runner.temp }}/extended-build/binaries/*/build.log
+            ${{ runner.temp }}/extended-build/binaries/*/build.json
+            ${{ runner.temp }}/extended-build/binaries/*/link-actions.json
+          retention-days: 30
+          if-no-files-found: warn
 
   build:
     strategy:

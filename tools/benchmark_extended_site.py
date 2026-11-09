@@ -8,6 +8,7 @@ import html
 import json
 import os
 from pathlib import Path
+import re
 
 import benchmark_datasets
 import benchmark_extended as suite
@@ -65,7 +66,8 @@ def retained(root):
             series_id = records.identity(description)
             key = series_id, record['revision']['sha']
             collection = record.get('collection') or {}
-            rank = (record['completed_at'], int(collection.get('run_id', 0)), int(collection.get('run_attempt', 0)), record['identity'])
+            rank = (record['completed_at'], int(collection.get('run_id', 0)), int(collection.get('run_attempt', 0)),
+                    bool(record.get('controls')), record['identity'])
             if key not in selected or rank > selected[key][0]:
                 selected[key] = (rank, path, record, view, description)
     return sorted(selected.values(), key=lambda item: (item[2]['revision']['date'], item[2]['revision']['sha'], item[3]))
@@ -113,6 +115,9 @@ def publish(root, repository='mboworks/xff'):
             links = version_links.get(revision['sha'], [])
             if not links and revision['pr'] > 0:
                 links = [{'label': 'PR #' + str(revision['pr']), 'href': f'https://github.com/{repository}/pull/{revision["pr"]}'}]
+            pr_labels = [link['label'] for link in links if re.fullmatch(r'PR #[0-9]+', link.get('label', ''))]
+            if not experiment and pr_labels:
+                label = ', '.join(pr_labels) + ' / ' + revision['sha'][:10]
             links = [*links, {'label': ('Parent ' if record['comparison'] == 'parent' else 'Fixed reference ') + anchor['sha'][:12],
                               'href': f'https://github.com/{repository}/commit/{anchor["sha"]}'}]
             origin_label = 'Local / ' + record['series'] if local else 'CI / ' + record['platform']
