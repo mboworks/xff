@@ -5210,3 +5210,25 @@ The capsule preserves original observations, repeated-baseline and independent-i
 controls, the contaminated earlier Mac session, failed prototypes, fixture recipes
 and exact image identities. No whole-process bound, active-I/O preemption or complete
 JC/source/temporary admission is inferred. Those parts of O18 remain open.
+
+### Prepared immutable predicate guards
+
+The [predicate-guard qualification](benchmarks/prepared-predicate-guards-20261109.md)
+prepares five immutable decisions next to each expression callback: content invalidation,
+metadata demand, security previews, top selection and shard-status selection. Reached
+predicates borrow these guards; conditional metadata reads, error propagation, short-circuiting
+and action invalidation remain in source order. The production record size for the measured
+listing expression remains 328 bytes, excluding the AST, backends and worker storage.
+
+Large Linux listings execute about 3% fewer userspace instructions. The macOS process
+instruction diagnostic falls about 0.7-1.0%; the two operating systems' counters have different
+scopes and are not compared directly. Elapsed gains are smaller: the large three-worker
+full/minimal Linux repeats give candidate/baseline ratios 0.99338/0.99213, while Linux still
+takes about 7-10% longer than GNU find. Preserve the initial slower cases, independent repeats
+and identical-baseline controls rather than infer a universal speedup from instruction counts.
+
+The report identifies measured candidate `374c2588f876` and baseline `ed0d34be2b41` explicitly,
+with full/minimal production ThinLTO build identities and durable raw archives for both hosts.
+Later synchronization does not relabel those binaries. This removes one invariant predicate
+setup cost; the remaining EP03/O15 operand families, expression-program decisions and wider
+pipeline/admission work remain open.

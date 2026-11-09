@@ -318,8 +318,8 @@ TEST_P(ExpressionExecutionTest, GrepBirthTimeGuardLoadsMetadataOnlyWhenReached) 
     args.insert(args.end(), {"-grep:{btime:epoch}", "needle"});
     ASSERT_OK_AND_ASSIGN(auto command, parser::Parse(args));
     parser::BindMatchers(command, parser::GrammarFromGlobals(command.globals), parser::CaseMode::kSensitive);
-    ASSERT_OK_AND_ASSIGN(auto execution, PrepareQualifiedExpression(*command.expression, GetParam()));
-    auto worker = execution.MakeWorker(ExpressionWorkerRole::kCoordinator);
+    ASSERT_OK_AND_ASSIGN(const auto execution, PrepareQualifiedExpression(*command.expression, GetParam()));
+    const auto worker = execution.MakeWorker(ExpressionWorkerRole::kCoordinator);
     const ExecutionFs fs;
     std::size_t metadata_loads = 0;
     const auto load_metadata = [&] {

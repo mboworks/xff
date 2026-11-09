@@ -63,6 +63,10 @@ Detailed scope, data-structure audit, benchmark matrix and decision gates:
       peer-path/expected-hash template compilation, hash spec resolution and diff option/regex
       preparation. Keep entry-dependent rendering and conditional observations dynamic; measure
       these families separately before deciding on additional run-owned records.
+      The [immutable predicate-guard follow-up](docs/benchmarks/prepared-predicate-guards-20261109.md)
+      has native full/minimal qualification on both hosts, including retained slower controls.
+      It preserves conditional metadata/effect handling and does not complete the remaining
+      operand families or the broader EP03/O15 requirements.
 - [ ] EP04: Compare contiguous opcode and bound-function programs; lower audited boolean control flow,
       reuse scratch and preserve source mapping, with explicit whole-expression fallback coverage.
       The switch/function pilot, branch-selectivity cases and storage-reuse tests are implemented;
