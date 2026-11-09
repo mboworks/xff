@@ -20,7 +20,9 @@
 #include <array>
 #include <cstddef>
 #include <iostream>
+#include <memory>
 #include <optional>
+#include <streambuf>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -67,6 +69,75 @@
 #include "xff/vfs/local_fs.h"
 
 namespace {
+
+// Batch non-interactive listing records before the existing stdout buffer. In particular,
+// retain ostream flush semantics: stderr's tie flushes these bytes before diagnostics.
+// Terminal-taking expressions and pagers keep their direct output behavior.
+class BufferedListingOutput final : public std::streambuf {
+ public:
+  static constexpr std::size_t kCapacity = 4'096;
+
+  explicit BufferedListingOutput(std::ostream& output) : output_(output), original_(*output.rdbuf()) {
+    setp(buffer_.begin(), buffer_.end());
+    output_.rdbuf(this);
+  }
+
+  ~BufferedListingOutput() override {
+    // Admission requires the ordinary non-throwing stream policy. Restore any failed
+    // state after rdbuf(), which otherwise clears it while restoring the original buffer.
+    output_.flush();
+    const auto state = output_.rdstate();
+    output_.rdbuf(&original_);
+    output_.clear(state);
+  }
+
+  BufferedListingOutput(const BufferedListingOutput&) = delete;
+  BufferedListingOutput& operator=(const BufferedListingOutput&) = delete;
+  BufferedListingOutput(BufferedListingOutput&&) = delete;
+  BufferedListingOutput& operator=(BufferedListingOutput&&) = delete;
+
+ protected:
+  int sync() override { return FlushBuffer() ? original_.pubsync() : -1; }
+
+  int_type overflow(int_type value) override {
+    if (!FlushBuffer()) {
+      return traits_type::eof();
+    }
+    if (!traits_type::eq_int_type(value, traits_type::eof())) {
+      *pptr() = traits_type::to_char_type(value);
+      pbump(1);
+    }
+    return traits_type::not_eof(value);
+  }
+
+  // XFF_ABI_POINTER: std::streambuf requires this borrowed character-buffer override.
+  std::streamsize xsputn(const char* data, std::streamsize count) override {
+    if (count <= 0) {
+      return 0;
+    }
+    if (std::cmp_greater_equal(count, buffer_.size())) {
+      return FlushBuffer() ? original_.sputn(data, count) : 0;
+    }
+    if (count > epptr() - pptr() && !FlushBuffer()) {
+      return 0;
+    }
+    traits_type::copy(pptr(), data, static_cast<std::size_t>(count));
+    pbump(static_cast<int>(count));
+    return count;
+  }
+
+ private:
+  bool FlushBuffer() {
+    const auto count = static_cast<std::streamsize>(pptr() - pbase());
+    setp(buffer_.begin(), buffer_.end());
+    return count == 0 || original_.sputn(buffer_.data(), count) == count;
+  }
+
+  std::ostream& output_;
+  std::streambuf& original_;
+  // Default initialization intentionally leaves unused byte storage untouched.
+  std::array<char, kCapacity> buffer_;
+};
 
 // Preserve failures for existing entries, including dangling symlinks.
 absl::StatusOr<std::string> ReadFile(std::string_view path) {
@@ -957,8 +1028,9 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     std::cerr << "xff: " << listing_config.status().message() << "\n";
     return 2;
   }
-  const xff::cli::PagerDecision listing_pager = xff::cli::DecidePager(
-      *listing_config, xff::cli::PagerOutput::kListing, stdout_is_tty, quiet || xff::parser::TakesTerminal(command));
+  const bool takes_terminal = xff::parser::TakesTerminal(command);
+  const xff::cli::PagerDecision listing_pager =
+      xff::cli::DecidePager(*listing_config, xff::cli::PagerOutput::kListing, stdout_is_tty, quiet || takes_terminal);
   const xff::cli::PagerStream pager_stream(listing_pager);
   const xff::vfs::LocalFs host_fs;
   std::optional<std::string> input;
@@ -979,10 +1051,25 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   }
   const xff::cli::RgInputFs input_fs(host_fs, std::move(input));
   const xff::vfs::FileSystem& fs = command.rg ? static_cast<const xff::vfs::FileSystem&>(input_fs) : host_fs;
+  // Keep initial output on the ordinary stream, and construct byte storage only
+  // after sustained output. Short runs allocate no buffer and keep a small stack frame.
+  std::unique_ptr<BufferedListingOutput> buffered_listing;
+  std::size_t direct_output_budget = 4 * BufferedListingOutput::kCapacity;
+  const bool can_buffer = !quiet && !stdout_is_tty && !takes_terminal
+                          && listing_pager.action == xff::cli::PagerAction::kDirect && std::cout.good()
+                          && std::cout.exceptions() == std::ios_base::goodbit
+                          && (std::cout.flags() & std::ios_base::unitbuf) == 0;
   const xff::engine::RunResult result = xff::engine::RunFind(
       command, fs,
-      [quiet](std::string_view record) {
+      [quiet, can_buffer, &direct_output_budget, &buffered_listing](std::string_view record) {
         if (!quiet) {  // --quiet suppresses output; the match is still recorded via `matched`
+          if (can_buffer && !buffered_listing && std::cout.good()) {
+            if (record.size() >= direct_output_budget) {
+              buffered_listing = std::make_unique<BufferedListingOutput>(std::cout);
+            } else {
+              direct_output_budget -= record.size();
+            }
+          }
           std::cout.write(record.data(), static_cast<std::streamsize>(record.size()));
         }
       },
