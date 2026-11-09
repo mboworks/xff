@@ -585,6 +585,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       +27% on Mac and +11% on Linux. Eliminate those costs without arbitrary count/size thresholds,
       preserving identity, budgets, duplicate semantics, exact-content oracles and the rejected
       root-offset variant. Native source identity and streamed-ZIP sizes remain separate open work.
+- [x] O19b4a: Make archive index metadata follow the first normalized stored header, matching
+      content selection before retaining payload locators. Preserve synthesized-parent replacement,
+      first symlink targets, file/directory types, unique listings and direct-child counts with
+      dedicated regression tests.
 - [ ] O19b4: Qualify reuse of validated plain-TAR payload locators independently of name
       preparation. The 10,000-member native search still spends roughly 8-13 seconds replaying
       headers. Preserve format validation, exact source identity, duplicate selection, nested and

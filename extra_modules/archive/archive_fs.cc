@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <optional>
 #include <ranges>
@@ -305,7 +306,7 @@ ArchiveFileSystem ArchiveFileSystem::Index(
     node.metadata.type = is_dir              ? vfs::FileType::kDirectory
                          : member.is_symlink ? vfs::FileType::kSymlink
                                              : vfs::FileType::kRegular;
-    node.metadata.size = static_cast<std::uint64_t>(member.size < 0 ? 0 : member.size);
+    node.metadata.size = static_cast<std::uint64_t>(std::max<std::int64_t>(0, member.size));
     node.metadata.mode = member.mode != 0 ? member.mode : (is_dir ? 0555U : 0444U);
     node.metadata.mtime = absl::FromUnixSeconds(member.mtime);
     node.metadata.dev = device;
@@ -317,6 +318,11 @@ ArchiveFileSystem ArchiveFileSystem::Index(
     node.metadata.source = vfs::Source::kArchiveMember;
     node.link_target = member.link_target;
     const auto [entry_it, inserted] = fs.nodes_.try_emplace(key);
+    // Content readers select the first stored header. A synthesized ancestor may still
+    // receive its first explicit header, without allowing later duplicates to replace it.
+    if (!inserted && !entry_it->second.synthesized) {
+      continue;
+    }
     const std::uint32_t direct_children = entry_it->second.direct_child_count;
     entry_it->second = std::move(node);
     entry_it->second.direct_child_count = direct_children;

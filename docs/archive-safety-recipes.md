@@ -63,6 +63,11 @@ without a suitable profile. A dry run can preview supported actions, but it does
 blocks. Inspection does not require `--archive-extract`; that flag materializes members for child
 commands and therefore involves additional writing and execution capabilities.
 
+When multiple stored members normalize to the same virtual path, inspection uses the first
+stored member for both metadata and content. Directory listings show that path once. A directory
+synthesized from a child can still receive its first explicit stored entry; later duplicates do
+not replace it. This reader rule does not change packing collision or archive-rewrite policy.
+
 ## Create a new archive
 
 ```sh
