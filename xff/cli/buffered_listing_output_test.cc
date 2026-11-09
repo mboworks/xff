@@ -64,7 +64,7 @@ struct BufferedListingOutputTest : ::testing::Test {
 };
 
 TEST_F(BufferedListingOutputTest, SmallWritesAreHeldUntilExplicitFlush) {
-  const BufferedListingOutput buffer(output);
+  BufferedListingOutput buffer(output);
   output << "first" << "second";
   EXPECT_THAT(sink.bytes, IsEmpty());
   output.flush();
@@ -75,7 +75,7 @@ TEST_F(BufferedListingOutputTest, SmallWritesAreHeldUntilExplicitFlush) {
 }
 
 TEST_F(BufferedListingOutputTest, EmptyFlushDoesNotWriteButSynchronizesDownstream) {
-  const BufferedListingOutput buffer(output);
+  BufferedListingOutput buffer(output);
   output.flush();
   EXPECT_THAT(sink.bytes, IsEmpty());
   EXPECT_THAT(sink.writes, Eq(0));
@@ -84,7 +84,7 @@ TEST_F(BufferedListingOutputTest, EmptyFlushDoesNotWriteButSynchronizesDownstrea
 
 TEST_F(BufferedListingOutputTest, DestructionFlushesPendingBytesAndRestoresOriginalBuffer) {
   {
-    const BufferedListingOutput buffer(output);
+    BufferedListingOutput buffer(output);
     output << "pending";
     EXPECT_THAT(sink.bytes, IsEmpty());
   }
@@ -97,7 +97,7 @@ TEST_F(BufferedListingOutputTest, DestructionFlushesPendingBytesAndRestoresOrigi
 
 TEST_F(BufferedListingOutputTest, LargeWriteFlushesPendingBytesThenBypassesStorage) {
   const std::string large(BufferedListingOutput::kCapacity + 1, 'x');
-  const BufferedListingOutput buffer(output);
+  BufferedListingOutput buffer(output);
   output << "prefix" << large;
   EXPECT_THAT(sink.bytes, EqualsText("prefix" + large));
   EXPECT_THAT(sink.writes, Eq(2));
@@ -106,7 +106,7 @@ TEST_F(BufferedListingOutputTest, LargeWriteFlushesPendingBytesThenBypassesStora
 
 TEST_F(BufferedListingOutputTest, ExactCapacityWriteAlsoBypassesStorage) {
   const std::string large(BufferedListingOutput::kCapacity, 'x');
-  const BufferedListingOutput buffer(output);
+  BufferedListingOutput buffer(output);
   output << large;
   EXPECT_THAT(sink.bytes, EqualsText(large));
   EXPECT_THAT(sink.writes, Eq(1));
@@ -115,7 +115,7 @@ TEST_F(BufferedListingOutputTest, ExactCapacityWriteAlsoBypassesStorage) {
 TEST_F(BufferedListingOutputTest, SmallWriteCrossingCapacityFlushesWithoutLosingTail) {
   const std::string prefix(BufferedListingOutput::kCapacity - 3, 'a');
   {
-    const BufferedListingOutput buffer(output);
+    BufferedListingOutput buffer(output);
     output << prefix << "tail";
     EXPECT_THAT(sink.bytes, EqualsText(prefix));
     EXPECT_THAT(sink.writes, Eq(1));
@@ -127,7 +127,7 @@ TEST_F(BufferedListingOutputTest, SmallWriteCrossingCapacityFlushesWithoutLosing
 TEST_F(BufferedListingOutputTest, CharacterOverflowFlushesFullStorageAndRetainsNewCharacter) {
   const std::string prefix(BufferedListingOutput::kCapacity - 1, 'a');
   {
-    const BufferedListingOutput buffer(output);
+    BufferedListingOutput buffer(output);
     output << prefix;
     output.put('b');
     EXPECT_THAT(sink.bytes, IsEmpty());
@@ -151,7 +151,7 @@ TEST_F(BufferedListingOutputTest, NonpositiveWritesDoNotTouchDownstreamOrPending
 TEST_F(BufferedListingOutputTest, FailedFlushPreservesBadStateWhenRestoringOriginalBuffer) {
   sink.write_limit = 2;
   {
-    const BufferedListingOutput buffer(output);
+    BufferedListingOutput buffer(output);
     output << "pending";
     output.flush();
     EXPECT_THAT(output.bad(), IsTrue());
@@ -166,7 +166,7 @@ TEST_F(BufferedListingOutputTest, FailedFlushPreservesBadStateWhenRestoringOrigi
 TEST_F(BufferedListingOutputTest, DestructionDetectsFailedFlush) {
   sink.write_limit = 0;
   {
-    const BufferedListingOutput buffer(output);
+    BufferedListingOutput buffer(output);
     output << "pending";
   }
   EXPECT_THAT(output.rdbuf(), Eq(&sink));
@@ -177,7 +177,7 @@ TEST_F(BufferedListingOutputTest, DestructionDetectsFailedFlush) {
 TEST_F(BufferedListingOutputTest, FailedFlushPreventsLargeBypassWrite) {
   const std::string large(BufferedListingOutput::kCapacity, 'x');
   sink.write_limit = 0;
-  const BufferedListingOutput buffer(output);
+  BufferedListingOutput buffer(output);
   output << "pending" << large;
   EXPECT_THAT(output.bad(), IsTrue());
   EXPECT_THAT(sink.bytes, IsEmpty());
@@ -187,7 +187,7 @@ TEST_F(BufferedListingOutputTest, FailedFlushPreventsLargeBypassWrite) {
 TEST_F(BufferedListingOutputTest, ShortLargeBypassWriteSetsBadState) {
   const std::string large(BufferedListingOutput::kCapacity, 'x');
   sink.write_limit = 2;
-  const BufferedListingOutput buffer(output);
+  BufferedListingOutput buffer(output);
   output << large;
   EXPECT_THAT(output.bad(), IsTrue());
   EXPECT_THAT(sink.bytes, EqualsText("xx"));
@@ -196,7 +196,7 @@ TEST_F(BufferedListingOutputTest, ShortLargeBypassWriteSetsBadState) {
 TEST_F(BufferedListingOutputTest, FailedFlushPreventsSmallCrossingWrite) {
   const std::string prefix(BufferedListingOutput::kCapacity - 1, 'a');
   sink.write_limit = 0;
-  const BufferedListingOutput buffer(output);
+  BufferedListingOutput buffer(output);
   output << prefix << "tail";
   EXPECT_THAT(output.bad(), IsTrue());
   EXPECT_THAT(sink.bytes, IsEmpty());
@@ -206,7 +206,7 @@ TEST_F(BufferedListingOutputTest, FailedFlushPreventsSmallCrossingWrite) {
 TEST_F(BufferedListingOutputTest, FailedCharacterOverflowReturnsFailureToOstream) {
   const std::string prefix(BufferedListingOutput::kCapacity - 1, 'a');
   sink.write_limit = 0;
-  const BufferedListingOutput buffer(output);
+  BufferedListingOutput buffer(output);
   output << prefix;
   output.put('b');
   output.put('c');
@@ -217,7 +217,7 @@ TEST_F(BufferedListingOutputTest, FailedCharacterOverflowReturnsFailureToOstream
 
 TEST_F(BufferedListingOutputTest, DownstreamSynchronizationFailureSetsBadState) {
   sink.sync_result = -1;
-  const BufferedListingOutput buffer(output);
+  BufferedListingOutput buffer(output);
   output << "pending";
   output.flush();
   EXPECT_THAT(sink.bytes, EqualsText("pending"));
@@ -226,7 +226,7 @@ TEST_F(BufferedListingOutputTest, DownstreamSynchronizationFailureSetsBadState) 
 }
 
 TEST_F(BufferedListingOutputTest, TiedDiagnosticStreamFlushesListingFirst) {
-  const BufferedListingOutput buffer(output);
+  BufferedListingOutput buffer(output);
   std::ostream diagnostics(&sink);
   diagnostics.tie(&output);
   output << "listing";

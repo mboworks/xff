@@ -15,8 +15,10 @@ nor parity with find across all sizes is established.
 The exact measured candidate is `268bb2ef0f8b6887ac3924c94c9fb44d10f172a9`, compared with
 `374c2588f876d054c82e017b3d3ad0b4b993dc41`, the prepared-predicate-guard implementation
 merged in #1155. Later integration keeps those source identities and binary hashes unchanged
-in the evidence. Its runtime sources and Bazel inputs match the measured candidate; the only
-C++ difference is the parent PR's two const test locals.
+in the evidence. The initial integration runtime and Bazel inputs matched the measured candidate,
+apart from the parent PR's two const test locals. The coverage follow-up below relocates
+the unchanged buffer definition to a private header and adds independent contract tests.
+The measured source and binary identities continue to refer to the original layout.
 
 The [qualification data](bounded-stdout-buffer-20261109.json.gz) retain all 1,004 cells,
 including controls, initial adverse results, every independent repeat, build identities and
@@ -199,7 +201,8 @@ private CLI header with the same implementation bytes and unchanged admission po
 A dedicated memory-only test target exercises short and exact-capacity writes,
 large-write bypass, character overflow, nonpositive writes, downstream short writes
 and synchronization failures, destructor restoration, and tied diagnostic ordering.
-These correctness tests do not supply performance measurements. Frozen measured
+The test buffers remain mutable because their owning ostream writes through the
+installed streambuf. These correctness tests do not supply performance measurements. Frozen measured
 binaries and their original revision identities remain unchanged.
 
 The performance-analysis index entry links to this complete report so its GitHub
