@@ -5,6 +5,7 @@
 #define XFF_PRESENTATION_RENDER_RECORD_BUFFER_H_
 
 #include <algorithm>
+#include <array>
 #include <concepts>
 #include <cstddef>
 #include <functional>
@@ -21,6 +22,7 @@ namespace xff::render {
 class RawRecordBuffer final {
  public:
   static constexpr std::size_t kMaxRetainedBytes = 1UZ << 20U;
+  static constexpr std::size_t kInlineBytes = 256;
 
   explicit RawRecordBuffer(char terminator) : terminator_(terminator) {}
 
@@ -32,6 +34,15 @@ class RawRecordBuffer final {
   // Explicit actions can alternate newline and NUL records while retaining the same storage.
   template<std::invocable<std::string_view> Consumer>
   void EmitRecord(std::string_view path, char terminator, Consumer&& consume) {
+    // The common short-path record needs only a copy and a terminator. Leave unused bytes
+    // uninitialized and avoid growing or resizing the fallback string for these records.
+    if (path.size() < inline_.size()) {
+      const std::span<char> record = std::span(inline_).first(path.size() + 1);
+      std::ranges::copy(path, record.begin());
+      record.back() = terminator;
+      std::invoke(std::forward<Consumer>(consume), std::string_view(record.data(), record.size()));
+      return;
+    }
     // XFF_ABI_POINTER: std::string::resize_and_overwrite requires a writable buffer callback.
     bytes_.resize_and_overwrite(path.size() + 1, [path, terminator](char* data, std::size_t) noexcept {
       const std::span<char> record(data, path.size() + 1);
@@ -45,10 +56,11 @@ class RawRecordBuffer final {
     }
   }
 
-  std::size_t RetainedCapacity() const { return bytes_.capacity(); }
+  std::size_t RetainedCapacity() const { return std::max(inline_.size(), bytes_.capacity()); }
 
  private:
   std::string bytes_;
+  std::array<char, kInlineBytes> inline_;
   char terminator_;
 };
 
