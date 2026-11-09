@@ -398,7 +398,7 @@
       }
     },
     "linux_direct": {
-      "extended": 53,
+      "extended": 54,
       "reconcile": 8,
       "recovery": 8,
       "failures": 0
@@ -408,5 +408,11 @@
       "sha256": "b014fc984a68514826c2e32c3be7816baa32ac441753a18e12c75ed7e721b8b3",
       "result": "passed"
     }
+  },
+  "cpu_allocation_policy": {
+    "ci_linux": "Three allowed logical CPUs, including sibling threads; capacity checked before builds.",
+    "local_linux": "Distinct allowed guest-topology cores, preserving original history policy.",
+    "macos": "Worker requests without CPU affinity.",
+    "verification": "Allocation policy is unit-tested on Linux and macOS; the first actual extended GitHub run remains required."
   }
 }

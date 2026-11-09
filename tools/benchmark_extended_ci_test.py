@@ -55,6 +55,7 @@ class BenchmarkExtendedCiTest(unittest.TestCase):
         with mock.patch.object(ci.sys, 'platform', 'linux'), \
                 mock.patch.object(ci.platform, 'platform', return_value='Linux-synthetic-x86_64'), \
                 mock.patch.object(ci.platform, 'machine', return_value='x86_64'), \
+                mock.patch.object(ci.os, 'sched_getaffinity', return_value={0, 1, 2}, create=True), \
                 mock.patch.object(ci.shutil, 'which', side_effect=self.tools.get), \
                 mock.patch.object(ci.subprocess, 'check_output', return_value='synthetic tool'), \
                 mock.patch.object(ci.history, 'cpu_allocation', return_value=[0, 1, 2]), \
@@ -121,12 +122,26 @@ class BenchmarkExtendedCiTest(unittest.TestCase):
             self.collect(dict(collection, head_sha='f' * 40))
         self.assertEqual(self.calls, 0)
 
+    def test_ci_accepts_allowed_logical_cpus_without_requiring_three_distinct_cores(self):
+        with mock.patch.object(ci.sys, 'platform', 'linux'), \
+                mock.patch.object(ci.os, 'sched_getaffinity', return_value={0, 1, 2, 3}, create=True), \
+                mock.patch.object(ci.history, 'cpu_allocation', side_effect=ValueError('not enough distinct cores')) as physical:
+            self.assertEqual(ci.cpu_allocation(3, ci=True), [0, 1, 2])
+            physical.assert_not_called()
+            with self.assertRaisesRegex(ValueError, 'not enough distinct cores'):
+                ci.cpu_allocation(3, ci=False)
+        with mock.patch.object(ci.sys, 'platform', 'linux'), \
+                mock.patch.object(ci.os, 'sched_getaffinity', return_value={0, 1}, create=True), \
+                self.assertRaisesRegex(ValueError, 'not enough allowed logical CPUs'):
+            ci.cpu_allocation(3, ci=True)
+
     def test_workflow_keeps_collection_independent_and_measures_downloaded_production_bytes(self):
         workflow = repository_file('.github/workflows/benchmarks.yml').read_text()
         extended = workflow.split('  extended:\n', 1)[1].split('\n  build:', 1)[0]
         self.assertNotIn('needs:', extended)
         self.assertIn('fail-fast: false', extended)
         helper = extended.index('cp "${launcher}" "${RUNNER_TEMP}/extended-resource-launcher"')
+        self.assertLess(extended.index('Check extended runner capacity before building'), helper)
         head = extended.index('--role=head')
         parent = extended.index('--role=base')
         upload = extended.index('name: benchmark-extended-build-${{ matrix.platform }}')

@@ -5,6 +5,7 @@
 import argparse
 from dataclasses import asdict
 import json
+import os
 from pathlib import Path
 import platform
 import re
@@ -18,6 +19,15 @@ import benchmark_extended_history as history
 import benchmark_extended_records as records
 import benchmark_extended_storage as storage
 import process_resources
+
+
+def cpu_allocation(count, ci):
+    """CI budgets logical CPUs; local history keeps distinct guest-topology cores."""
+    if ci and sys.platform == 'linux':
+        allowed = sorted(os.sched_getaffinity(0))
+        records.require(len(allowed) >= count, 'not enough allowed logical CPUs')
+        return allowed[:count]
+    return history.cpu_allocation(count)
 
 
 def revision(repo):
@@ -62,7 +72,7 @@ def collect(build_root, root, launcher_path, collection=None, series=None, exist
         collection = dict(collection, base_sha=anchor['sha'])
     series = series or ('github-ci-' + platform_name)
     cases = suite.cases()
-    affinity = history.cpu_allocation(max(case.cpus for case in cases))
+    affinity = cpu_allocation(max(case.cpus for case in cases), origin == 'ci')
     tools = {}
     for name in ('find', 'rg', 'tar'):
         executable = shutil.which({'find': 'gfind', 'tar': 'gtar'}.get(name, name) if sys.platform == 'darwin' else name)
@@ -80,6 +90,9 @@ def collect(build_root, root, launcher_path, collection=None, series=None, exist
                     'anchor': anchor, 'fixture': str(fixture),
                     'filesystem': 'tmpfs' if sys.platform == 'linux' else filesystem,
                     'tools': tools, 'launcher': launcher, 'affinity': affinity, 'platform': platform.platform(),
+                    'logical_cpu_count': os.cpu_count(),
+                    'cpu_policy': ('allowed-logical-cpus' if origin == 'ci' else 'guest-topology-cores')
+                                  if sys.platform == 'linux' else 'unpinned-workers',
                     'comparison': 'parent', 'python': sys.version,
                     'drivers': {Path(module).name: build.digest(Path(module)) for module in
                                 (__file__, suite.__file__, history.__file__, storage.__file__, process_resources.__file__)},

@@ -41,6 +41,14 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
+      - name: Check extended runner capacity before building
+        run: |
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0, 'tools')
+          from benchmark_extended_ci import cpu_allocation
+          print('Extended allocation for three workers:', cpu_allocation(3, ci=True))
+          PY
       - uses: ./.github/actions/bazel-cache-restore
         with:
           namespace: default

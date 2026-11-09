@@ -186,6 +186,8 @@ def view_report(record, view):
             for task in adapted['tasks']:
                 task['participants'][name] = task['participants'].pop(old)
     adapted['tools'] = tools
+    if 'cpu_policy' in record['contract']:
+        adapted['contract']['cpu_policy'] = record['contract']['cpu_policy']
     for task in adapted['tasks']:
         task['fixture_identity'] = fixture_identity(task['dataset'], task['files'], task['name'] == 'archive-tar')
     adapted['contract'].update(comparison=record['comparison'] if view == 'anchor' else 'traditional',

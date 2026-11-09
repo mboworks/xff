@@ -261,6 +261,11 @@ launcher are checked again after collection. No timing result is accepted after 
 failure. Local Linux validation can reuse an existing verified fixture with `--fixture`; this
 does not remove that fixture and is forbidden for CI collections.
 
+CI Linux budgets three allowed logical CPUs, including hosts where those logical CPUs share
+guest-topology cores. The original local-history collector retains its distinct-core policy.
+The workflow checks capacity before production builds and records the allocation policy and
+logical CPU count. Actual post-merge CI collection still needs to be verified on its runner.
+
 Head cells rotate head XFF, first-parent XFF and the traditional tool through execution order.
 A second complete grid measures the parent against itself as a diagnostic control. All successful
 outputs must match the independent oracle. Raw warm-ups, measured samples, command lines,
