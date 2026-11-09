@@ -5981,7 +5981,7 @@ RunResult RunFindCore(
       }
       const auto selected = prepared ? prepared->selected : EmitRgOutput(*rg_output, *command.rg, context);
       if (prepared && selected.ok()) {
-        context.emit(prepared->text);
+        context.emit(prepared->Text());
       }
       content = std::move(context.content);
       if (!selected.ok()) {
@@ -6084,7 +6084,7 @@ RunResult RunFindCore(
             .content = std::move(content),
         };
         if (prepared) {
-          emit(prepared->text);
+          emit(prepared->Text());
         } else {
           EmitMatchOutput(*match_output, context);
         }
@@ -6266,14 +6266,18 @@ RunResult RunFindCore(
   // Decision-only batches retain no file bytes or rendered line records. Give them more work
   // between coordinator barriers; keep content-output batches smaller because a line is unbounded.
   const std::size_t match_batch_size = rg_output || match_output ? 256 : 1'024;
-  const auto flush_matches = [&] {
-    if (pending_matches.empty()) {
+  // One collecting batch overlaps a matcher generation. Slot counts stay fixed;
+  // text admission includes the owned capacity, with one oversized input alone.
+  static constexpr std::size_t kPendingMatchTextBytes = 1'048'576;
+  std::size_t pending_match_bytes = 0;
+  bool matches_running = false;
+  const auto publish_matches = [&] {
+    if (!matches_running) {
       return;
     }
-    const auto& results = parallel_match->Match(std::move(pending_matches));
-    pending_matches.clear();
-    for (std::size_t index = 0; index < results.size(); ++index) {
-      const auto& result = results.at(index);
+    matches_running = false;
+    for (std::size_t index = 0; index < parallel_match->Entries().size(); ++index) {
+      const auto& result = parallel_match->AwaitResult(index);
       const auto& evaluated = result.evaluation;
       const Visit visit = parallel_match->Entries().at(index).AsVisit();
       fuzzy_score = evaluated.fuzzy;
@@ -6299,6 +6303,29 @@ RunResult RunFindCore(
           visit, outputs, evaluated.matched, std::nullopt, parallel_match->TakeDerived(index),
           result.content ? mbo::types::OptionalRef<const ContentResult>{*result.content}
                          : mbo::types::OptionalRef<const ContentResult>{});
+      parallel_match->ReleaseResult(index);
+    }
+    parallel_match->Wait();
+  };
+  const auto submit_matches = [&] {
+    publish_matches();
+    if (!pending_matches.empty()) {
+      pending_matches = parallel_match->Start(std::move(pending_matches), true);
+      pending_matches.clear();
+      pending_match_bytes = 0;
+      matches_running = true;
+      if (!parallel_match->CollectNextBatch()) {
+        publish_matches();
+      }
+    }
+  };
+  const auto flush_matches = [&] {
+    submit_matches();
+    publish_matches();
+  };
+  const auto reserve_match_slot = [&] {
+    if (pending_matches.size() == pending_matches.capacity()) {
+      pending_matches.reserve(std::min(match_batch_size, std::max(16UZ, 2 * pending_matches.capacity())));
     }
   };
   const absl::Status status = Walk(
@@ -6382,9 +6409,22 @@ RunResult RunFindCore(
           return WalkAction::kContinue;
         }
         if (parallel_entry) {
+          // The last constructed slot is a transit record until its actual text
+          // capacity is admitted. Only a full predecessor needs an ownership move.
+          reserve_match_slot();
           pending_matches.emplace_back(visit);
-          if (pending_matches.size() >= match_batch_size) {
-            flush_matches();
+          const auto text_bytes = pending_matches.back().TextStorageBytes();
+          if (pending_matches.size() > 1
+              && text_bytes > kPendingMatchTextBytes - std::min(pending_match_bytes, kPendingMatchTextBytes)) {
+            OwnedVisit entry(std::move(pending_matches.back()));
+            pending_matches.pop_back();
+            submit_matches();
+            reserve_match_slot();
+            pending_matches.push_back(std::move(entry));
+          }
+          pending_match_bytes += text_bytes;
+          if (pending_matches.size() >= match_batch_size || pending_match_bytes >= kPendingMatchTextBytes) {
+            submit_matches();
           }
           return WalkAction::kContinue;
         }

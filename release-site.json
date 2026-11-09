@@ -154,7 +154,8 @@
     "docs/performance-candidate-completion-audit.md": "docs/performance-candidate-completion-audit.html",
     "docs/benchmarks/language-list-reserve-requalification-20261108.md": "docs/benchmarks/language-list-reserve-requalification-20261108.html",
     "docs/benchmarks/ordered-output-credit-20261107.md": "docs/benchmarks/ordered-output-credit-20261107.html",
-    "docs/benchmarks/ordered-output-credit-requalification-20261108.md": "docs/benchmarks/ordered-output-credit-requalification-20261108.html"
+    "docs/benchmarks/ordered-output-credit-requalification-20261108.md": "docs/benchmarks/ordered-output-credit-requalification-20261108.html",
+    "docs/benchmarks/adaptive-ordered-output-20261109.md": "docs/benchmarks/adaptive-ordered-output-20261109.html"
   },
   "generated_html": {
     "XFF.md": {
@@ -199,6 +200,7 @@
     "docs/benchmarks/language-list-reserve-20261107.json.gz": "docs/benchmarks/language-list-reserve-20261107.json.gz",
     "docs/benchmarks/language-list-reserve-requalification-20261108.json.gz": "docs/benchmarks/language-list-reserve-requalification-20261108.json.gz",
     "docs/benchmarks/ordered-output-credit-20261107.json.gz": "docs/benchmarks/ordered-output-credit-20261107.json.gz",
-    "docs/benchmarks/ordered-output-credit-requalification-20261108.json.gz": "docs/benchmarks/ordered-output-credit-requalification-20261108.json.gz"
+    "docs/benchmarks/ordered-output-credit-requalification-20261108.json.gz": "docs/benchmarks/ordered-output-credit-requalification-20261108.json.gz",
+    "docs/benchmarks/adaptive-ordered-output-20261109.json.gz": "docs/benchmarks/adaptive-ordered-output-20261109.json.gz"
   }
 }

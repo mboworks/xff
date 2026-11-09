@@ -333,8 +333,10 @@ TEST_F(ConformanceTest, UidMatchesCurrentUser) {
   ExpectXff({"-uid", std::to_string(::geteuid())}, All());  // every entry is owned by the test user
 }
 
-TEST_F(ConformanceTest, GidMatchesCurrentGroup) {
-  ExpectXff({"-gid", std::to_string(::getegid())}, All());
+TEST_F(ConformanceTest, GidMatchesFixtureGroup) {
+  // The temporary directory's inherited group can differ from the process group.
+  MBO_ASSERT_OK_AND_ASSIGN(const auto metadata, fs_.Stat(Rel(""), false));
+  ExpectXff({"-gid", std::to_string(metadata.gid)}, All());
 }
 
 TEST_F(ConformanceTest, UserMatchesCurrentUser) {
@@ -346,11 +348,12 @@ TEST_F(ConformanceTest, UserMatchesCurrentUser) {
   ExpectXff({"-user", pw->pw_name}, All());
 }
 
-TEST_F(ConformanceTest, GroupMatchesCurrentGroup) {
+TEST_F(ConformanceTest, GroupMatchesFixtureGroup) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto metadata, fs_.Stat(Rel(""), false));
   // NOLINTNEXTLINE(concurrency-mt-unsafe): single-threaded CLI/test path
-  const struct group* const gr = ::getgrgid(::getegid());
+  const struct group* const gr = ::getgrgid(static_cast<gid_t>(metadata.gid));
   if (gr == nullptr) {
-    GTEST_SKIP() << "no group entry for egid";
+    GTEST_SKIP() << "no group entry for fixture gid";
   }
   ExpectXff({"-group", gr->gr_name}, All());
 }

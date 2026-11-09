@@ -352,7 +352,8 @@ Measured follow-ups (see the P07/P08 sections of `docs/performance-analysis.md`)
 
 - [ ] Add archive read admission or serial extraction into byte-bounded matcher queues before enabling member workers.
 - [ ] Investigate ZIP member restart/indexing cost separately from compressed TAR decoding.
-- [ ] Design a byte-bounded ordered output queue and shared CPU allowance before enabling an overlapping pipeline.
+- [ ] Qualify the byte-bounded ordered output queue and shared coordinator/matcher CPU allowance
+      before enabling overlap. Preserve the existing independent directory-I/O limit and JC scope.
 
 ## Rg integration review (PRs 916-919)
 
@@ -506,12 +507,25 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       keep the specialized pools and retain [all variants and counterexamples](docs/benchmarks/shared-stage-workers-20261107.md).
       Future reuse designs must preserve independent root/mount allowances, leaf jobs, owner
       draining and JC gates, and remove the repeatable Linux comparison regression before adoption.
+- [ ] Qualify direct span reads in `content::ScanLines` separately from O18. Native
+      profiling attributes 43.94% of sampled baseline CPU to zeroing beneath its owning
+      64 KiB read loop. Reuse `ReadInto` only with initialized-range, binary/EOF/error
+      tests and native/memory/archive controls; retain O07's rejected variants rather
+      than assuming removal of zeroing is always a win. See the current O18 qualification
+      notes in [the performance analysis](docs/performance-analysis.md).
 - [ ] O18: Qualify byte-bounded overlap with backpressure, ordered publication and cancellation;
       avoid per-batch throwaway threads and nested waits on the same saturated pool.
       Retain the [ordered-output credit experiment](docs/benchmarks/ordered-output-credit-20261107.md).
-      All runtime refinements remain unselected after repeatable ordinary Linux output costs,
-      despite large-output/RSS gains. Solve synchronization costs and missing input/slot/source/
-      renderer-temporary admission independently; native output and stage overlap remain open.
+      Adaptive native/rg output, owned-text admission, byte backpressure and a shared matcher/
+      coordinator CPU allowance pass cross-platform qualification in
+      [the adaptive-output report](docs/benchmarks/adaptive-ordered-output-20261109.md).
+      Retain ordinary-path costs and anomalous Linux populations alongside large-output gains.
+      Keep full source/decoder/derived-cache/renderer-temporary admission and broader JC gates
+      open; output credit is not a whole-process cap. No public crossover setting is exposed.
+- [ ] Benchmark qualification: distinguish repeated execution of one image from independent
+      file-backed baseline copies. Retain both controls when investigating unexplained native
+      costs, and compare loaded code/data identities before repeating full populations for a
+      build-ID-only change. Preserve all observations rather than choosing a favorable cohort.
 - [ ] O18a: Redesign queued cancellation after both measured policies fail cross-platform
       qualification. The deterministic nine-to-four backend-call proof and exact serial/recycling
       tests pass, but acquire-load and explicit-stop screens expose ordinary Mac costs. Retain

@@ -3,6 +3,8 @@
 
 # 0.11.0
 
+- Adapt ordered content-output scheduling to heavy batches, apply byte backpressure, and share the matcher/coordinator CPU allowance while preserving whole-file validation and cancellation.
+
 - Avoid redundant 64 KiB buffer clearing in legacy archive extraction.
 
 - Preserve filesystem-native name matching for dangling and cross-volume symlinks when case
