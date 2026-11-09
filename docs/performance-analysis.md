@@ -5235,21 +5235,5 @@ pipeline/admission work remain open.
 
 ### Delayed listing output buffer
 
-The [bounded stdout qualification](benchmarks/bounded-stdout-buffer-20261109.md) adds a
-4 KiB output buffer only after a record crosses the 16 KiB direct-output admission budget.
-Short output allocates no buffer; pagers, TTYs, quiet and terminal-taking expressions keep
-the direct path. Explicit flushes preserve stderr/stdout ordering and the original stream
-error state. The bound applies to this added byte storage, not the process or entire pipeline.
-
-In independent large three-CPU-budget repeats, full/minimal candidate/baseline ratios are
-0.99146/0.99122 on Linux and 0.95615/0.95496 on macOS. Linux remains about 9% behind GNU find;
-those macOS cases finish about 4-5% ahead. Separate Linux diagnostics show about 4.4-5.3%
-fewer large-listing userspace instructions. Small results remain mixed. Initial adverse
-listing, metadata, archive and native-case populations are retained alongside targeted
-confirmations; their paired intervals do not describe the fastest-round chart estimator.
-
-Both production CLI configurations passed output oracles across 66,192 elapsed/warmup calls,
-with 14 existing CLI correctness suites and actual changed-file lint on each host. Exact
-source/binary identities, all populations and verified raw archives are retained. This removes
-some ostream overhead; it does not establish universal find parity, a first-output latency
-gain or completion of the wider output-admission work.
+See the [qualification report](benchmarks/bounded-stdout-buffer-20261109.md) for the
+4 KiB buffer, production comparisons on both hosts, adverse results and retained evidence.

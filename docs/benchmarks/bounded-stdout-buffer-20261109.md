@@ -190,3 +190,18 @@ That experiment is not relabeled as the final candidate or pooled into its resul
 This implementation does not change the measurement contract or publish local experiments
 as viewer history. Continuous extended-production-v1 history and filling missing merged-PR
 viewer entries remain separate work.
+
+## CI coverage follow-up
+
+The first PR run exposed missing stream-contract tests: changed-line coverage was
+41/57 and changed-branch coverage was 29/46. The buffer definition now lives in a
+private CLI header with the same implementation bytes and unchanged admission policy.
+A dedicated memory-only test target exercises short and exact-capacity writes,
+large-write bypass, character overflow, nonpositive writes, downstream short writes
+and synchronization failures, destructor restoration, and tied diagnostic ordering.
+These correctness tests do not supply performance measurements. Frozen measured
+binaries and their original revision identities remain unchanged.
+
+The performance-analysis index entry links to this complete report so its GitHub
+Markdown rendering request stays within the service's size limit. No findings or
+raw qualification evidence are removed.
