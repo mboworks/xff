@@ -308,6 +308,54 @@ TEST_P(ExpressionExecutionTest, BooleanOperatorsNeverHideOrNegateMetadataFailure
   }
 }
 
+TEST_P(ExpressionExecutionTest, GrepBirthTimeGuardLoadsMetadataOnlyWhenReached) {
+  for (const bool reached : {false, true}) {
+    SCOPED_TRACE(reached);
+    std::vector<std::string> args{"root"};
+    if (!reached) {
+      args.insert(args.end(), {"-false", "-a"});
+    }
+    args.insert(args.end(), {"-grep:{btime:epoch}", "needle"});
+    ASSERT_OK_AND_ASSIGN(auto command, parser::Parse(args));
+    parser::BindMatchers(command, parser::GrammarFromGlobals(command.globals), parser::CaseMode::kSensitive);
+    ASSERT_OK_AND_ASSIGN(const auto execution, PrepareQualifiedExpression(*command.expression, GetParam()));
+    const auto worker = execution.MakeWorker(ExpressionWorkerRole::kCoordinator);
+    const ExecutionFs fs;
+    std::size_t metadata_loads = 0;
+    const auto load_metadata = [&] {
+      ++metadata_loads;
+      return absl::PermissionDeniedError("blocked birth metadata");
+    };
+    const Visit visit{
+        .path = "root/file0.txt",
+        .metadata = {.type = vfs::FileType::kRegular},
+        .fs = fs,
+        .load_metadata = load_metadata,
+    };
+    Control control;
+    std::string output;
+    const auto emit = [&](std::string_view text) { output.append(text); };
+    EvalContext context{
+        .visit = visit,
+        .emit = emit,
+        .fs = fs,
+        .now = absl::UnixEpoch(),
+        .tz = absl::UTCTimeZone(),
+        .control = control,
+    };
+    const auto result = worker.Evaluate(context);
+    EXPECT_THAT(result.unknown, Eq(reached));
+    EXPECT_THAT(metadata_loads, Eq(reached ? 1 : 0));
+    EXPECT_THAT(fs.counts->reads.load(), Eq(0));
+    EXPECT_THAT(output, IsEmpty());
+    if (reached) {
+      EXPECT_THAT(control.metadata_error, StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("blocked birth")));
+    } else {
+      EXPECT_THAT(control.metadata_error, IsOk());
+    }
+  }
+}
+
 TEST_P(ExpressionExecutionTest, PreparedTemplatesKeepResolvedDefaultsAndConditionalFailures) {
   const std::vector<std::vector<std::string>> cases{
       {"root", "-type", "f", "-cmp", "{path}"},

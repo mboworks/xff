@@ -158,7 +158,8 @@
     "docs/benchmarks/lazy-evaluation-shard-setup-20261108.md": "docs/benchmarks/lazy-evaluation-shard-setup-20261108.html",
     "docs/benchmarks/linux-inline-raw-records-20261109.md": "docs/benchmarks/linux-inline-raw-records-20261109.html",
     "docs/benchmark-merged-pr-coverage.md": "docs/benchmark-merged-pr-coverage.html",
-    "docs/benchmarks/adaptive-ordered-output-20261109.md": "docs/benchmarks/adaptive-ordered-output-20261109.html"
+    "docs/benchmarks/adaptive-ordered-output-20261109.md": "docs/benchmarks/adaptive-ordered-output-20261109.html",
+    "docs/benchmarks/prepared-predicate-guards-20261109.md": "docs/benchmarks/prepared-predicate-guards-20261109.html"
   },
   "generated_html": {
     "XFF.md": {
@@ -207,6 +208,7 @@
     "docs/benchmarks/ordered-output-credit-requalification-20261108.json.gz": "docs/benchmarks/ordered-output-credit-requalification-20261108.json.gz",
     "docs/benchmarks/lazy-evaluation-shard-setup-20261108.json": "docs/benchmarks/lazy-evaluation-shard-setup-20261108.json",
     "docs/benchmarks/linux-inline-raw-records-20261109.json": "docs/benchmarks/linux-inline-raw-records-20261109.json",
-    "docs/benchmarks/adaptive-ordered-output-20261109.json.gz": "docs/benchmarks/adaptive-ordered-output-20261109.json.gz"
+    "docs/benchmarks/adaptive-ordered-output-20261109.json.gz": "docs/benchmarks/adaptive-ordered-output-20261109.json.gz",
+    "docs/benchmarks/prepared-predicate-guards-20261109.json.gz": "docs/benchmarks/prepared-predicate-guards-20261109.json.gz"
   }
 }
