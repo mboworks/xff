@@ -4091,28 +4091,29 @@ struct BooleanResult {
 template<typename Result = EvaluationResult, typename Cursor>
 Result EvaluatePredicateResult(Cursor cursor, EvalContext& context) {
   const auto& expr = cursor.Get();
-  const bool invalidate = !expr.descriptor->pure || expr.descriptor->kind == registry::Kind::kAction;
+  const auto& descriptor = *expr.descriptor;
+  const bool invalidate = !descriptor.pure || descriptor.kind == registry::Kind::kAction;
   if (invalidate) {
     context.content.Invalidate();
   }
-  if (expr.descriptor->needs_metadata || (expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
+  if (descriptor.needs_metadata || (expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
     context.control.metadata_error = context.visit.EnsureMetadata();
     if (!context.control.metadata_error.ok()) {
       return {.unknown = true};
     }
   }
-  if (context.dry_run && expr.descriptor->safety == registry::Safety::kSecurity) {
+  if (context.dry_run && descriptor.safety == registry::Safety::kSecurity) {
     PreviewExecution(expr, context);
     return {.unknown = true};
   }
-  if (expr.descriptor->control == registry::Control::kTop) {
+  if (descriptor.control == registry::Control::kTop) {
     if constexpr (std::is_same_v<Result, EvaluationResult>) {
       return EvaluateTop(expr, context);
     } else {
       return {};  // The boolean evaluator is selected only without deferred state.
     }
   }
-  if (expr.descriptor->control == registry::Control::kShardStatus) {
+  if (descriptor.control == registry::Control::kShardStatus) {
     if constexpr (std::is_same_v<Result, EvaluationResult>) {
       return EvaluateShardStatus(expr, context);
     } else {
