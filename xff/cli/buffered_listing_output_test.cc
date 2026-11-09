@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <ostream>
 #include <streambuf>
 #include <string>
@@ -64,7 +65,7 @@ struct BufferedListingOutputTest : ::testing::Test {
 };
 
 TEST_F(BufferedListingOutputTest, SmallWritesAreHeldUntilExplicitFlush) {
-  BufferedListingOutput buffer(output);
+  const auto buffer = std::make_unique<BufferedListingOutput>(output);
   output << "first" << "second";
   EXPECT_THAT(sink.bytes, IsEmpty());
   output.flush();
@@ -75,7 +76,7 @@ TEST_F(BufferedListingOutputTest, SmallWritesAreHeldUntilExplicitFlush) {
 }
 
 TEST_F(BufferedListingOutputTest, EmptyFlushDoesNotWriteButSynchronizesDownstream) {
-  BufferedListingOutput buffer(output);
+  const auto buffer = std::make_unique<BufferedListingOutput>(output);
   output.flush();
   EXPECT_THAT(sink.bytes, IsEmpty());
   EXPECT_THAT(sink.writes, Eq(0));
@@ -84,7 +85,7 @@ TEST_F(BufferedListingOutputTest, EmptyFlushDoesNotWriteButSynchronizesDownstrea
 
 TEST_F(BufferedListingOutputTest, DestructionFlushesPendingBytesAndRestoresOriginalBuffer) {
   {
-    BufferedListingOutput buffer(output);
+    const auto buffer = std::make_unique<BufferedListingOutput>(output);
     output << "pending";
     EXPECT_THAT(sink.bytes, IsEmpty());
   }
@@ -97,7 +98,7 @@ TEST_F(BufferedListingOutputTest, DestructionFlushesPendingBytesAndRestoresOrigi
 
 TEST_F(BufferedListingOutputTest, LargeWriteFlushesPendingBytesThenBypassesStorage) {
   const std::string large(BufferedListingOutput::kCapacity + 1, 'x');
-  BufferedListingOutput buffer(output);
+  const auto buffer = std::make_unique<BufferedListingOutput>(output);
   output << "prefix" << large;
   EXPECT_THAT(sink.bytes, EqualsText("prefix" + large));
   EXPECT_THAT(sink.writes, Eq(2));
@@ -106,7 +107,7 @@ TEST_F(BufferedListingOutputTest, LargeWriteFlushesPendingBytesThenBypassesStora
 
 TEST_F(BufferedListingOutputTest, ExactCapacityWriteAlsoBypassesStorage) {
   const std::string large(BufferedListingOutput::kCapacity, 'x');
-  BufferedListingOutput buffer(output);
+  const auto buffer = std::make_unique<BufferedListingOutput>(output);
   output << large;
   EXPECT_THAT(sink.bytes, EqualsText(large));
   EXPECT_THAT(sink.writes, Eq(1));
@@ -115,7 +116,7 @@ TEST_F(BufferedListingOutputTest, ExactCapacityWriteAlsoBypassesStorage) {
 TEST_F(BufferedListingOutputTest, SmallWriteCrossingCapacityFlushesWithoutLosingTail) {
   const std::string prefix(BufferedListingOutput::kCapacity - 3, 'a');
   {
-    BufferedListingOutput buffer(output);
+    const auto buffer = std::make_unique<BufferedListingOutput>(output);
     output << prefix << "tail";
     EXPECT_THAT(sink.bytes, EqualsText(prefix));
     EXPECT_THAT(sink.writes, Eq(1));
@@ -127,7 +128,7 @@ TEST_F(BufferedListingOutputTest, SmallWriteCrossingCapacityFlushesWithoutLosing
 TEST_F(BufferedListingOutputTest, CharacterOverflowFlushesFullStorageAndRetainsNewCharacter) {
   const std::string prefix(BufferedListingOutput::kCapacity - 1, 'a');
   {
-    BufferedListingOutput buffer(output);
+    const auto buffer = std::make_unique<BufferedListingOutput>(output);
     output << prefix;
     output.put('b');
     EXPECT_THAT(sink.bytes, IsEmpty());
@@ -139,10 +140,10 @@ TEST_F(BufferedListingOutputTest, CharacterOverflowFlushesFullStorageAndRetainsN
 }
 
 TEST_F(BufferedListingOutputTest, NonpositiveWritesDoNotTouchDownstreamOrPendingBytes) {
-  BufferedListingOutput buffer(output);
+  const auto buffer = std::make_unique<BufferedListingOutput>(output);
   output << "pending";
-  EXPECT_THAT(buffer.sputn("", 0), Eq(0));
-  EXPECT_THAT(buffer.sputn("", -1), Eq(0));
+  EXPECT_THAT(buffer->sputn("", 0), Eq(0));
+  EXPECT_THAT(buffer->sputn("", -1), Eq(0));
   EXPECT_THAT(sink.writes, Eq(0));
   output.flush();
   EXPECT_THAT(sink.bytes, EqualsText("pending"));
@@ -151,7 +152,7 @@ TEST_F(BufferedListingOutputTest, NonpositiveWritesDoNotTouchDownstreamOrPending
 TEST_F(BufferedListingOutputTest, FailedFlushPreservesBadStateWhenRestoringOriginalBuffer) {
   sink.write_limit = 2;
   {
-    BufferedListingOutput buffer(output);
+    const auto buffer = std::make_unique<BufferedListingOutput>(output);
     output << "pending";
     output.flush();
     EXPECT_THAT(output.bad(), IsTrue());
@@ -166,7 +167,7 @@ TEST_F(BufferedListingOutputTest, FailedFlushPreservesBadStateWhenRestoringOrigi
 TEST_F(BufferedListingOutputTest, DestructionDetectsFailedFlush) {
   sink.write_limit = 0;
   {
-    BufferedListingOutput buffer(output);
+    const auto buffer = std::make_unique<BufferedListingOutput>(output);
     output << "pending";
   }
   EXPECT_THAT(output.rdbuf(), Eq(&sink));
@@ -177,7 +178,7 @@ TEST_F(BufferedListingOutputTest, DestructionDetectsFailedFlush) {
 TEST_F(BufferedListingOutputTest, FailedFlushPreventsLargeBypassWrite) {
   const std::string large(BufferedListingOutput::kCapacity, 'x');
   sink.write_limit = 0;
-  BufferedListingOutput buffer(output);
+  const auto buffer = std::make_unique<BufferedListingOutput>(output);
   output << "pending" << large;
   EXPECT_THAT(output.bad(), IsTrue());
   EXPECT_THAT(sink.bytes, IsEmpty());
@@ -187,7 +188,7 @@ TEST_F(BufferedListingOutputTest, FailedFlushPreventsLargeBypassWrite) {
 TEST_F(BufferedListingOutputTest, ShortLargeBypassWriteSetsBadState) {
   const std::string large(BufferedListingOutput::kCapacity, 'x');
   sink.write_limit = 2;
-  BufferedListingOutput buffer(output);
+  const auto buffer = std::make_unique<BufferedListingOutput>(output);
   output << large;
   EXPECT_THAT(output.bad(), IsTrue());
   EXPECT_THAT(sink.bytes, EqualsText("xx"));
@@ -196,7 +197,7 @@ TEST_F(BufferedListingOutputTest, ShortLargeBypassWriteSetsBadState) {
 TEST_F(BufferedListingOutputTest, FailedFlushPreventsSmallCrossingWrite) {
   const std::string prefix(BufferedListingOutput::kCapacity - 1, 'a');
   sink.write_limit = 0;
-  BufferedListingOutput buffer(output);
+  const auto buffer = std::make_unique<BufferedListingOutput>(output);
   output << prefix << "tail";
   EXPECT_THAT(output.bad(), IsTrue());
   EXPECT_THAT(sink.bytes, IsEmpty());
@@ -206,7 +207,7 @@ TEST_F(BufferedListingOutputTest, FailedFlushPreventsSmallCrossingWrite) {
 TEST_F(BufferedListingOutputTest, FailedCharacterOverflowReturnsFailureToOstream) {
   const std::string prefix(BufferedListingOutput::kCapacity - 1, 'a');
   sink.write_limit = 0;
-  BufferedListingOutput buffer(output);
+  const auto buffer = std::make_unique<BufferedListingOutput>(output);
   output << prefix;
   output.put('b');
   output.put('c');
@@ -217,7 +218,7 @@ TEST_F(BufferedListingOutputTest, FailedCharacterOverflowReturnsFailureToOstream
 
 TEST_F(BufferedListingOutputTest, DownstreamSynchronizationFailureSetsBadState) {
   sink.sync_result = -1;
-  BufferedListingOutput buffer(output);
+  const auto buffer = std::make_unique<BufferedListingOutput>(output);
   output << "pending";
   output.flush();
   EXPECT_THAT(sink.bytes, EqualsText("pending"));
@@ -226,7 +227,7 @@ TEST_F(BufferedListingOutputTest, DownstreamSynchronizationFailureSetsBadState) 
 }
 
 TEST_F(BufferedListingOutputTest, TiedDiagnosticStreamFlushesListingFirst) {
-  BufferedListingOutput buffer(output);
+  const auto buffer = std::make_unique<BufferedListingOutput>(output);
   std::ostream diagnostics(&sink);
   diagnostics.tie(&output);
   output << "listing";
