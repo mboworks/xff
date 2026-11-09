@@ -750,3 +750,22 @@ cc_test(
         "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )
+
+cc_test(
+    name = "archive_member_source_test",
+    size = "small",
+    srcs = ["archive_member_source_test.cc"],
+    deps = [
+        ":archive_reader_cc",
+        ":memory_archive_test_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@libarchive//libarchive",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+        "@xff_extras_api//:read_source_cc",
+    ],
+)
