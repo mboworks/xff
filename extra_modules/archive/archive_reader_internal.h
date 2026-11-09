@@ -5,6 +5,7 @@
 #define XFF_ARCHIVE_ARCHIVE_READER_INTERNAL_H_
 
 #include <archive.h>
+#include <archive_entry.h>
 
 #include <cstdint>
 #include <string>
@@ -27,5 +28,13 @@ absl::StatusOr<std::string> ReadCompressedSingleFileWithFilterEnabler(
     FilterEnabler enable_filters);
 
 }  // namespace xff::archive::internal
+
+namespace xff::archive::archive_reader_internal {
+
+// The requested name is already normalized once by its caller. Keep the C API's
+// nullable borrowed pathname inside this adapter; no borrowed pointer escapes.
+[[nodiscard]] bool EntryMatchesNormalizedName(struct ::archive_entry& entry, std::string_view wanted);
+
+}  // namespace xff::archive::archive_reader_internal
 
 #endif  // XFF_ARCHIVE_ARCHIVE_READER_INTERNAL_H_
