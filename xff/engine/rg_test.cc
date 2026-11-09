@@ -881,11 +881,18 @@ TEST_F(RgEngineTest, ObservedOutputSelectsOverlapAndReturnsToBatchPublication) {
               },
       });
   EXPECT_THAT(matcher.CollectNextBatch(), IsFalse());
-  // Exercise both transitions on the same persistent workers and credited slots.
-  for (const std::size_t size : {4, 2'048, 4, 8'192, 4}) {
+  // Cross inline/worker and small/heavy boundaries on reused transactions.
+  constexpr auto kBatches = std::to_array<std::pair<std::size_t, std::size_t>>({
+      {128, 4},
+      {10, 2'048},
+      {64, 4},
+      {128, 8'192},
+      {7, 4},
+  });
+  for (const auto& [count, size] : kBatches) {
     fs.files.at("tree/a") = std::string(size - 4, 'x') + "hit\n";
-    matcher.Start(RepeatedEntries(128), true);
-    for (std::size_t index = 0; index < 128; ++index) {
+    matcher.Start(RepeatedEntries(count), true);
+    for (std::size_t index = 0; index < count; ++index) {
       const auto& result = matcher.AwaitResult(index);
       EXPECT_THAT(result.content, Optional(Property(&ContentResult::Text, EqualsText(fs.files.at("tree/a")))));
       matcher.ReleaseResult(index);

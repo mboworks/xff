@@ -98,7 +98,7 @@ TEST_F(ParallelMatchTest, StartingTheNextGenerationReturnsEmptyReusableInputCapa
   for (std::size_t index = 0; index < 128; ++index) {
     spare.emplace_back(Visit{.path = std::to_string(index), .metadata = {.type = vfs::FileType::kRegular}, .fs = fs});
   }
-  auto previous = matcher.Start(std::move(spare), true);
+  const auto previous = matcher.Start(std::move(spare), true);
   EXPECT_THAT(previous, SizeIs(0));
   EXPECT_THAT(previous.capacity(), Ge(64));
   EXPECT_THAT(matcher.Wait(), SizeIs(128));
