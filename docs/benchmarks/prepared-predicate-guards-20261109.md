@@ -45,6 +45,12 @@ Negative elapsed changes mean less time. Candidate/find above one means XFF take
 These point estimates describe these hosts and fixtures. Equal weighting is descriptive;
 within-cell paired intervals do not establish confidence across independent machines.
 
+The chart-style elapsed ratio uses independently selected fastest-round means. Paired
+intervals instead describe the geometric ratio across all measured round pairs, including
+rounds excluded by the chart estimator. They are a separate diagnostic, not confidence
+intervals for the reported fastest-round ratio. Instruction-count intervals likewise use
+all measured pairs and no fastest-round selection.
+
 ### Independent repeats, including adverse results
 
 Linux repeated all six three-worker cases for both CLIs: 100/10,000/100,000 files and both
