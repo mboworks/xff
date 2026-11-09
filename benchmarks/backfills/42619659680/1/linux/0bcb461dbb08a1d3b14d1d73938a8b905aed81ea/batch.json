@@ -1,0 +1,123 @@
+{
+  "created_at": "2026-11-09T12:55:07.475269+00:00",
+  "contract": {
+    "schema": 1,
+    "series": "github-ci-linux",
+    "revisions": [
+      {
+        "sha": "0bcb461dbb08a1d3b14d1d73938a8b905aed81ea",
+        "date": "2026-09-19T22:27:07+01:00",
+        "subject": "Publish paired benchmark history with reproducible raw observations (#887)"
+      }
+    ],
+    "platform": "linux",
+    "purpose": "ci-replacement",
+    "allocation": {
+      "kind": "logical-cpus",
+      "cpu_ids": [
+        0,
+        1,
+        2
+      ],
+      "required": true
+    },
+    "replacement_target": "github-ci-linux",
+    "environment": {
+      "host_id": "9c78f0092be108901feac1b11707e59ee8c412bb406c32dd8127614ad968a323",
+      "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+      "machine": "x86_64",
+      "cpu_count": 4,
+      "allowed_cpus": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "python": "3.13.18 (main, Oct 26 2026, 14:20:56) [GCC 13.3.0]",
+      "tools": {
+        "find": {
+          "status": "available",
+          "path": "/usr/bin/find",
+          "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+          "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b"
+        },
+        "rg": {
+          "status": "available",
+          "path": "/usr/bin/rg",
+          "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+          "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb"
+        },
+        "fzf": {
+          "status": "available",
+          "path": "/usr/bin/fzf",
+          "version": "0.44.1 (debian)",
+          "sha256": "f0949769ebc72cd1f8c30d91a84e1d2f1ecaa935b9a43adb68575a5a6bf78dba"
+        }
+      },
+      "resource_launcher": {
+        "path": "/home/runner/work/_temp/benchmark-resource-launcher",
+        "sha256": "5bcc8c7fdb9d1cfd9f981b7e0eea3db76f2b8fc453aff35113b55e75d3061251",
+        "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+        "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+      }
+    },
+    "driver": {
+      "benchmark_backfill.py": "665ec2fc5f2172bb601a33ae7488698765162fece4b46a656e0c6d75aa3b8a22",
+      "benchmark_compare.py": "e28b56c6281a5ae4c557c793e9670ddeea78dd84577758ffb2d01daaceb15a75",
+      "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+      "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+      "benchmark_matrix.py": "abfa93fc0bf5b76ec45907166eac30a828dfe31e0129ba59a197e71c56d7f620",
+      "benchmark_shards.py": "38cf664f259aafd9788660267ff7c478c66d3790fb45e232e16360233ed30011",
+      "benchmark_provenance.py": "5cfe87906f4ead07ca8cf00857ed751393cd8d4c8ce0f672bae7ad32f51c96cc",
+      "process_resources.py": "8a39146449514c519921ee153f1301621555694b3cf5a64b16edcd6538f5ac16",
+      "process_resources_native.cc": "0b72ffc7b767682dca724bb6d8de8b5f2ccaae532b5b99c9e14f68505769a010"
+    },
+    "files": [
+      10,
+      20,
+      50,
+      100,
+      200,
+      500,
+      1000,
+      2000,
+      5000,
+      10000,
+      20000,
+      50000,
+      100000
+    ],
+    "cpus": [
+      1,
+      3
+    ],
+    "depth": 40,
+    "repetitions": 9,
+    "retained": 7,
+    "command_timeout_seconds": 300,
+    "require_cpu_affinity": true,
+    "storage": {
+      "parent": "/dev/shm",
+      "filesystem": "tmpfs",
+      "memory_required": true,
+      "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+    },
+    "build": {
+      "config": "clang_release",
+      "bazel": "/usr/local/lib/node_modules/@bazel/bazelisk/bazelisk.js",
+      "startup_flags": [
+        "--nosystem_rc",
+        "--nohome_rc"
+      ],
+      "version": "bazel 9.3.2",
+      "library_path": null
+    },
+    "campaign": "7351b4ab2b97fcda19aa8441f5b0064a52b96397b19d713e891dae10c893481a",
+    "collection": {
+      "id": 42619659680,
+      "run_attempt": 1,
+      "head_sha": "cc30ffd2f85cd32fb902750af5023b6596889faf"
+    }
+  },
+  "identity": "564aa4ec2f59c4e58b9562130b54525a5e68f4f4f448dfd0dc3769160b9166de"
+}

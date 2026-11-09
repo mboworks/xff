@@ -2359,6 +2359,330 @@
             "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
           }
         },
+        "2317642e9245ca3ebf3a06482fa8487ffbd8cff31cf06ad459eb0fab9e3b482e": {
+          "driver": {
+            "benchmark_backfill.py": "665ec2fc5f2172bb601a33ae7488698765162fece4b46a656e0c6d75aa3b8a22",
+            "benchmark_compare.py": "e28b56c6281a5ae4c557c793e9670ddeea78dd84577758ffb2d01daaceb15a75",
+            "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+            "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+            "benchmark_matrix.py": "abfa93fc0bf5b76ec45907166eac30a828dfe31e0129ba59a197e71c56d7f620",
+            "benchmark_shards.py": "38cf664f259aafd9788660267ff7c478c66d3790fb45e232e16360233ed30011",
+            "benchmark_provenance.py": "5cfe87906f4ead07ca8cf00857ed751393cd8d4c8ce0f672bae7ad32f51c96cc",
+            "process_resources.py": "8a39146449514c519921ee153f1301621555694b3cf5a64b16edcd6538f5ac16",
+            "process_resources_native.cc": "0b72ffc7b767682dca724bb6d8de8b5f2ccaae532b5b99c9e14f68505769a010"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.44.1 (debian)",
+              "sha256": "f0949769ebc72cd1f8c30d91a84e1d2f1ecaa935b9a43adb68575a5a6bf78dba"
+            }
+          },
+          "build": {
+            "sha256": "fbe2cd0dc9f2de5309564c9816cceb55806e2970652e4a082bd9e6b0b137dc8f",
+            "revision": "0bcb461dbb08a1d3b14d1d73938a8b905aed81ea",
+            "command": [
+              "/usr/local/lib/node_modules/@bazel/bazelisk/bazelisk.js",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "--config=clang_release",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "//xff/cli:xff"
+            ],
+            "source": {
+              "revision": "0bcb461dbb08a1d3b14d1d73938a8b905aed81ea",
+              "tree": "2e86201692e772b2888556fbd7786cfcf5a5aa6f",
+              "clean": true
+            },
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff",
+            "configuration": {
+              ".bazelrc": "33c020bc2b849e393a1aaae69a24eb6ac53790a090381fff89c8139ada1e5305",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "282752dc3adf3c8d3a53374c3243b50d97cb56ea2791328566f4c98f13358db6",
+              "MODULE.bazel.lock": "d2585ec8fa7b67d18f1b2e1ee0ea8370c4e5fd5ecf49c59148b741b8df3c3942",
+              "bazelmod/llvm.MODULE.bazel": "1213aae1bccc3e6d78bd49b885b1cc6faaadb1ce221d249112b2e7c8cc75419a"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+          "cpu_count": 4,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          },
+          "resource_accounting": {
+            "sha256": "5bcc8c7fdb9d1cfd9f981b7e0eea3db76f2b8fc453aff35113b55e75d3061251",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+          }
+        },
+        "a8083531d1e9b77ae9ae9bc69baeb8956b44a88fbd2dfd805276843cf8660776": {
+          "driver": {
+            "benchmark_backfill.py": "665ec2fc5f2172bb601a33ae7488698765162fece4b46a656e0c6d75aa3b8a22",
+            "benchmark_compare.py": "e28b56c6281a5ae4c557c793e9670ddeea78dd84577758ffb2d01daaceb15a75",
+            "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+            "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+            "benchmark_matrix.py": "abfa93fc0bf5b76ec45907166eac30a828dfe31e0129ba59a197e71c56d7f620",
+            "benchmark_shards.py": "38cf664f259aafd9788660267ff7c478c66d3790fb45e232e16360233ed30011",
+            "benchmark_provenance.py": "5cfe87906f4ead07ca8cf00857ed751393cd8d4c8ce0f672bae7ad32f51c96cc",
+            "process_resources.py": "8a39146449514c519921ee153f1301621555694b3cf5a64b16edcd6538f5ac16",
+            "process_resources_native.cc": "0b72ffc7b767682dca724bb6d8de8b5f2ccaae532b5b99c9e14f68505769a010"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.44.1 (debian)",
+              "sha256": "f0949769ebc72cd1f8c30d91a84e1d2f1ecaa935b9a43adb68575a5a6bf78dba"
+            }
+          },
+          "build": {
+            "sha256": "fbe2cd0dc9f2de5309564c9816cceb55806e2970652e4a082bd9e6b0b137dc8f",
+            "revision": "2448257a8d4dba3d7fc4e4c824e8ae699ef8e519",
+            "command": [
+              "/usr/local/lib/node_modules/@bazel/bazelisk/bazelisk.js",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "--config=clang_release",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "//xff/cli:xff"
+            ],
+            "source": {
+              "revision": "2448257a8d4dba3d7fc4e4c824e8ae699ef8e519",
+              "tree": "96114205529e186890c4a6a7a818431e20a17c2b",
+              "clean": true
+            },
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff",
+            "configuration": {
+              ".bazelrc": "33c020bc2b849e393a1aaae69a24eb6ac53790a090381fff89c8139ada1e5305",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "282752dc3adf3c8d3a53374c3243b50d97cb56ea2791328566f4c98f13358db6",
+              "MODULE.bazel.lock": "d2585ec8fa7b67d18f1b2e1ee0ea8370c4e5fd5ecf49c59148b741b8df3c3942",
+              "bazelmod/llvm.MODULE.bazel": "1213aae1bccc3e6d78bd49b885b1cc6faaadb1ce221d249112b2e7c8cc75419a"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+          "cpu_count": 4,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          },
+          "resource_accounting": {
+            "sha256": "5bcc8c7fdb9d1cfd9f981b7e0eea3db76f2b8fc453aff35113b55e75d3061251",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+          }
+        },
+        "f1b5821fb5c348d9b14253c60804eeade3e983e13af54c07457ebf36fdd2256e": {
+          "driver": {
+            "benchmark_backfill.py": "665ec2fc5f2172bb601a33ae7488698765162fece4b46a656e0c6d75aa3b8a22",
+            "benchmark_compare.py": "e28b56c6281a5ae4c557c793e9670ddeea78dd84577758ffb2d01daaceb15a75",
+            "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+            "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+            "benchmark_matrix.py": "abfa93fc0bf5b76ec45907166eac30a828dfe31e0129ba59a197e71c56d7f620",
+            "benchmark_shards.py": "38cf664f259aafd9788660267ff7c478c66d3790fb45e232e16360233ed30011",
+            "benchmark_provenance.py": "5cfe87906f4ead07ca8cf00857ed751393cd8d4c8ce0f672bae7ad32f51c96cc",
+            "process_resources.py": "8a39146449514c519921ee153f1301621555694b3cf5a64b16edcd6538f5ac16",
+            "process_resources_native.cc": "0b72ffc7b767682dca724bb6d8de8b5f2ccaae532b5b99c9e14f68505769a010"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.44.1 (debian)",
+              "sha256": "f0949769ebc72cd1f8c30d91a84e1d2f1ecaa935b9a43adb68575a5a6bf78dba"
+            }
+          },
+          "build": {
+            "sha256": "fbe2cd0dc9f2de5309564c9816cceb55806e2970652e4a082bd9e6b0b137dc8f",
+            "revision": "2bd76d6e682f7ca9c987f364fda485a2eb906d62",
+            "command": [
+              "/usr/local/lib/node_modules/@bazel/bazelisk/bazelisk.js",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "--config=clang_release",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "//xff/cli:xff"
+            ],
+            "source": {
+              "revision": "2bd76d6e682f7ca9c987f364fda485a2eb906d62",
+              "tree": "f7c09d6daa8f7813fced6e907dc6f103244ffc8e",
+              "clean": true
+            },
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff",
+            "configuration": {
+              ".bazelrc": "33c020bc2b849e393a1aaae69a24eb6ac53790a090381fff89c8139ada1e5305",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "282752dc3adf3c8d3a53374c3243b50d97cb56ea2791328566f4c98f13358db6",
+              "MODULE.bazel.lock": "d2585ec8fa7b67d18f1b2e1ee0ea8370c4e5fd5ecf49c59148b741b8df3c3942",
+              "bazelmod/llvm.MODULE.bazel": "1213aae1bccc3e6d78bd49b885b1cc6faaadb1ce221d249112b2e7c8cc75419a"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+          "cpu_count": 4,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          },
+          "resource_accounting": {
+            "sha256": "5bcc8c7fdb9d1cfd9f981b7e0eea3db76f2b8fc453aff35113b55e75d3061251",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+          }
+        },
+        "35f502089d333c8058a4a09207f31aec1385df44df5146a4cbde24241b91deac": {
+          "driver": {
+            "benchmark_backfill.py": "665ec2fc5f2172bb601a33ae7488698765162fece4b46a656e0c6d75aa3b8a22",
+            "benchmark_compare.py": "e28b56c6281a5ae4c557c793e9670ddeea78dd84577758ffb2d01daaceb15a75",
+            "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+            "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+            "benchmark_matrix.py": "abfa93fc0bf5b76ec45907166eac30a828dfe31e0129ba59a197e71c56d7f620",
+            "benchmark_shards.py": "38cf664f259aafd9788660267ff7c478c66d3790fb45e232e16360233ed30011",
+            "benchmark_provenance.py": "5cfe87906f4ead07ca8cf00857ed751393cd8d4c8ce0f672bae7ad32f51c96cc",
+            "process_resources.py": "8a39146449514c519921ee153f1301621555694b3cf5a64b16edcd6538f5ac16",
+            "process_resources_native.cc": "0b72ffc7b767682dca724bb6d8de8b5f2ccaae532b5b99c9e14f68505769a010"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.44.1 (debian)",
+              "sha256": "f0949769ebc72cd1f8c30d91a84e1d2f1ecaa935b9a43adb68575a5a6bf78dba"
+            }
+          },
+          "build": {
+            "sha256": "fbe2cd0dc9f2de5309564c9816cceb55806e2970652e4a082bd9e6b0b137dc8f",
+            "revision": "b7d28411a9cc88b1b3e71da2247702a47d0d32db",
+            "command": [
+              "/usr/local/lib/node_modules/@bazel/bazelisk/bazelisk.js",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "--config=clang_release",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "//xff/cli:xff"
+            ],
+            "source": {
+              "revision": "b7d28411a9cc88b1b3e71da2247702a47d0d32db",
+              "tree": "01213d937db570f4d387a8ced0aeecfb435a1213",
+              "clean": true
+            },
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff",
+            "configuration": {
+              ".bazelrc": "33c020bc2b849e393a1aaae69a24eb6ac53790a090381fff89c8139ada1e5305",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "282752dc3adf3c8d3a53374c3243b50d97cb56ea2791328566f4c98f13358db6",
+              "MODULE.bazel.lock": "d2585ec8fa7b67d18f1b2e1ee0ea8370c4e5fd5ecf49c59148b741b8df3c3942",
+              "bazelmod/llvm.MODULE.bazel": "1213aae1bccc3e6d78bd49b885b1cc6faaadb1ce221d249112b2e7c8cc75419a"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+          "cpu_count": 4,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "parent": "/dev/shm",
+            "filesystem": "tmpfs",
+            "memory_required": true,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          },
+          "resource_accounting": {
+            "sha256": "5bcc8c7fdb9d1cfd9f981b7e0eea3db76f2b8fc453aff35113b55e75d3061251",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+          }
+        },
         "8293cfac59237c280017b0378901e2d0737ff2aca9fe0127626c598409ee79bd": {
           "driver": null,
           "tools": {
@@ -3258,6 +3582,46 @@
           "batch": "backfills/42589939294/1/linux/b1df434503a3c274bfe0aecbb9244006eda40521/batch.json",
           "batch_identity": "0f45514473977554a626739579866d95119aa6f84578681f7c3daeef7d517422",
           "method": "f7a4190fdc9f56d6f5f04416e5ff1273c43fadb02d92346525b7a26fb5a39936"
+        },
+        {
+          "commit": "0bcb461dbb08a1d3b14d1d73938a8b905aed81ea",
+          "date": "2026-09-19T21:27:07Z",
+          "measured": "2026-11-09T13:25:00.874959+00:00",
+          "report": "backfills/42619659680/1/linux/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea/report.json",
+          "report_identity": "cc8d8493b4865074c5398d8f503333ff5a612e1e1572a3e82bc66004fcaaaf42",
+          "batch": "backfills/42619659680/1/linux/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea/batch.json",
+          "batch_identity": "fc3fe6277ed9bb6034f310d11780fddaa2efa4fc81b66ca8317f80ee5bdd24f2",
+          "method": "2317642e9245ca3ebf3a06482fa8487ffbd8cff31cf06ad459eb0fab9e3b482e"
+        },
+        {
+          "commit": "2448257a8d4dba3d7fc4e4c824e8ae699ef8e519",
+          "date": "2026-09-19T20:05:02Z",
+          "measured": "2026-11-09T13:25:41.617828+00:00",
+          "report": "backfills/42619659680/1/linux/2448257a8d4dba3d7fc4e4c824e8ae699ef8e519/report.json",
+          "report_identity": "90b4e152cc65b9060f61da272edae60ffa66e25fde3670b211bb1170f73cfe1c",
+          "batch": "backfills/42619659680/1/linux/2448257a8d4dba3d7fc4e4c824e8ae699ef8e519/batch.json",
+          "batch_identity": "45eb95dc3444079afc2f361dcd289b099c1038a30394947f7daa78486141d078",
+          "method": "a8083531d1e9b77ae9ae9bc69baeb8956b44a88fbd2dfd805276843cf8660776"
+        },
+        {
+          "commit": "2bd76d6e682f7ca9c987f364fda485a2eb906d62",
+          "date": "2026-09-19T20:20:55Z",
+          "measured": "2026-11-09T13:24:14.322954+00:00",
+          "report": "backfills/42619659680/1/linux/2bd76d6e682f7ca9c987f364fda485a2eb906d62/report.json",
+          "report_identity": "d65e6d8fa62ab2e634273c5b9bac454ccb4f9eae6dc89716e996ebf0f52b3aa1",
+          "batch": "backfills/42619659680/1/linux/2bd76d6e682f7ca9c987f364fda485a2eb906d62/batch.json",
+          "batch_identity": "c23dc5aa4031bdac2c4e9ce88986227ebd0755dedbd2bb16dccb936cfae65291",
+          "method": "f1b5821fb5c348d9b14253c60804eeade3e983e13af54c07457ebf36fdd2256e"
+        },
+        {
+          "commit": "b7d28411a9cc88b1b3e71da2247702a47d0d32db",
+          "date": "2026-09-19T22:33:33Z",
+          "measured": "2026-11-09T13:31:23.187549+00:00",
+          "report": "backfills/42619659680/1/linux/b7d28411a9cc88b1b3e71da2247702a47d0d32db/report.json",
+          "report_identity": "e93f02fbd5406ddb4f7fd2312dca3de900cb2acfc10e02975efd75e3d65da390",
+          "batch": "backfills/42619659680/1/linux/b7d28411a9cc88b1b3e71da2247702a47d0d32db/batch.json",
+          "batch_identity": "b0df97fe9d4cf82c83bb47f72c0254f60205c862f4606c187731366390f849c9",
+          "method": "35f502089d333c8058a4a09207f31aec1385df44df5146a4cbde24241b91deac"
         },
         {
           "commit": "d8dd4f608e030be77cdefde8575e0b1a5fffe820",
@@ -7406,6 +7770,306 @@
           },
           "resource_accounting": {
             "sha256": "455a241673656cdf6969a38d9644b7375dc1cb18ab66a6bf8c49a7ae970a1483",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+          }
+        },
+        "2b07373ac2583ee4dc133a49fb4397731b0853d411938a2a803d7e0682bb6a8f": {
+          "driver": {
+            "benchmark_backfill.py": "665ec2fc5f2172bb601a33ae7488698765162fece4b46a656e0c6d75aa3b8a22",
+            "benchmark_compare.py": "e28b56c6281a5ae4c557c793e9670ddeea78dd84577758ffb2d01daaceb15a75",
+            "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+            "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+            "benchmark_matrix.py": "abfa93fc0bf5b76ec45907166eac30a828dfe31e0129ba59a197e71c56d7f620",
+            "benchmark_shards.py": "38cf664f259aafd9788660267ff7c478c66d3790fb45e232e16360233ed30011",
+            "benchmark_provenance.py": "5cfe87906f4ead07ca8cf00857ed751393cd8d4c8ce0f672bae7ad32f51c96cc",
+            "process_resources.py": "8a39146449514c519921ee153f1301621555694b3cf5a64b16edcd6538f5ac16",
+            "process_resources_native.cc": "0b72ffc7b767682dca724bb6d8de8b5f2ccaae532b5b99c9e14f68505769a010"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.7.2-arm64-arm-64bit-Mach-O",
+              "sha256": "6c0ed3efc994f93eb962f517d27fa9afb981f036ffb7a759f8ea3b0899792c76"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.5 (Homebrew)",
+              "sha256": "ffe65ac524ca5b26e281e8a95b50b49e411002ce016c1e054d5f88529eba2c0c"
+            }
+          },
+          "build": {
+            "sha256": "00db52d42ff586ba39000527d6e66ddf14f71eeeac9aa79f70e70f10316aa4eb",
+            "revision": "0bcb461dbb08a1d3b14d1d73938a8b905aed81ea",
+            "command": [
+              "/opt/homebrew/Cellar/bazelisk/1.30.0/bin/bazelisk",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "--config=clang_release",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "//xff/cli:xff"
+            ],
+            "source": {
+              "revision": "0bcb461dbb08a1d3b14d1d73938a8b905aed81ea",
+              "tree": "2e86201692e772b2888556fbd7786cfcf5a5aa6f",
+              "clean": true
+            },
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff",
+            "configuration": {
+              ".bazelrc": "33c020bc2b849e393a1aaae69a24eb6ac53790a090381fff89c8139ada1e5305",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "282752dc3adf3c8d3a53374c3243b50d97cb56ea2791328566f4c98f13358db6",
+              "MODULE.bazel.lock": "d2585ec8fa7b67d18f1b2e1ee0ea8370c4e5fd5ecf49c59148b741b8df3c3942",
+              "bazelmod/llvm.MODULE.bazel": "1213aae1bccc3e6d78bd49b885b1cc6faaadb1ce221d249112b2e7c8cc75419a"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": 3,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "parent": "/Users/runner/work/_temp",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          },
+          "resource_accounting": {
+            "sha256": "7e2305de97efbbd076da2c5f8ef16ee0eea60bd4da0af5f83529836c7f1e8d1d",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+          }
+        },
+        "8e62b9efb3e041b41731f389af1cb7c495ef2df813c4e6d1df88cbf1036a59aa": {
+          "driver": {
+            "benchmark_backfill.py": "665ec2fc5f2172bb601a33ae7488698765162fece4b46a656e0c6d75aa3b8a22",
+            "benchmark_compare.py": "e28b56c6281a5ae4c557c793e9670ddeea78dd84577758ffb2d01daaceb15a75",
+            "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+            "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+            "benchmark_matrix.py": "abfa93fc0bf5b76ec45907166eac30a828dfe31e0129ba59a197e71c56d7f620",
+            "benchmark_shards.py": "38cf664f259aafd9788660267ff7c478c66d3790fb45e232e16360233ed30011",
+            "benchmark_provenance.py": "5cfe87906f4ead07ca8cf00857ed751393cd8d4c8ce0f672bae7ad32f51c96cc",
+            "process_resources.py": "8a39146449514c519921ee153f1301621555694b3cf5a64b16edcd6538f5ac16",
+            "process_resources_native.cc": "0b72ffc7b767682dca724bb6d8de8b5f2ccaae532b5b99c9e14f68505769a010"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.7.2-arm64-arm-64bit-Mach-O",
+              "sha256": "6c0ed3efc994f93eb962f517d27fa9afb981f036ffb7a759f8ea3b0899792c76"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.5 (Homebrew)",
+              "sha256": "ffe65ac524ca5b26e281e8a95b50b49e411002ce016c1e054d5f88529eba2c0c"
+            }
+          },
+          "build": {
+            "sha256": "7863848afb45494af5ec1440ae26497a801003c92dd11325cef50a7d5fb88072",
+            "revision": "2448257a8d4dba3d7fc4e4c824e8ae699ef8e519",
+            "command": [
+              "/opt/homebrew/Cellar/bazelisk/1.30.0/bin/bazelisk",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "--config=clang_release",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "//xff/cli:xff"
+            ],
+            "source": {
+              "revision": "2448257a8d4dba3d7fc4e4c824e8ae699ef8e519",
+              "tree": "96114205529e186890c4a6a7a818431e20a17c2b",
+              "clean": true
+            },
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff",
+            "configuration": {
+              ".bazelrc": "33c020bc2b849e393a1aaae69a24eb6ac53790a090381fff89c8139ada1e5305",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "282752dc3adf3c8d3a53374c3243b50d97cb56ea2791328566f4c98f13358db6",
+              "MODULE.bazel.lock": "d2585ec8fa7b67d18f1b2e1ee0ea8370c4e5fd5ecf49c59148b741b8df3c3942",
+              "bazelmod/llvm.MODULE.bazel": "1213aae1bccc3e6d78bd49b885b1cc6faaadb1ce221d249112b2e7c8cc75419a"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": 3,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "parent": "/Users/runner/work/_temp",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          },
+          "resource_accounting": {
+            "sha256": "6e04e62e6ab55cadad75b8a9e48499722545e81fad4a5f5504657d8b737d7e75",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+          }
+        },
+        "14b4fbea7138950ffb3d22686a5c37a02c769f81a87a9c10147e84e807fb7b3a": {
+          "driver": {
+            "benchmark_backfill.py": "665ec2fc5f2172bb601a33ae7488698765162fece4b46a656e0c6d75aa3b8a22",
+            "benchmark_compare.py": "e28b56c6281a5ae4c557c793e9670ddeea78dd84577758ffb2d01daaceb15a75",
+            "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+            "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+            "benchmark_matrix.py": "abfa93fc0bf5b76ec45907166eac30a828dfe31e0129ba59a197e71c56d7f620",
+            "benchmark_shards.py": "38cf664f259aafd9788660267ff7c478c66d3790fb45e232e16360233ed30011",
+            "benchmark_provenance.py": "5cfe87906f4ead07ca8cf00857ed751393cd8d4c8ce0f672bae7ad32f51c96cc",
+            "process_resources.py": "8a39146449514c519921ee153f1301621555694b3cf5a64b16edcd6538f5ac16",
+            "process_resources_native.cc": "0b72ffc7b767682dca724bb6d8de8b5f2ccaae532b5b99c9e14f68505769a010"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.7.2-arm64-arm-64bit-Mach-O",
+              "sha256": "6c0ed3efc994f93eb962f517d27fa9afb981f036ffb7a759f8ea3b0899792c76"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.5 (Homebrew)",
+              "sha256": "ffe65ac524ca5b26e281e8a95b50b49e411002ce016c1e054d5f88529eba2c0c"
+            }
+          },
+          "build": {
+            "sha256": "0983a0f682ded8b6dcd8291ab6fe8faf8ba53829e758468f5778f85bc85a2bac",
+            "revision": "2bd76d6e682f7ca9c987f364fda485a2eb906d62",
+            "command": [
+              "/opt/homebrew/Cellar/bazelisk/1.30.0/bin/bazelisk",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "--config=clang_release",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "//xff/cli:xff"
+            ],
+            "source": {
+              "revision": "2bd76d6e682f7ca9c987f364fda485a2eb906d62",
+              "tree": "f7c09d6daa8f7813fced6e907dc6f103244ffc8e",
+              "clean": true
+            },
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff",
+            "configuration": {
+              ".bazelrc": "33c020bc2b849e393a1aaae69a24eb6ac53790a090381fff89c8139ada1e5305",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "282752dc3adf3c8d3a53374c3243b50d97cb56ea2791328566f4c98f13358db6",
+              "MODULE.bazel.lock": "d2585ec8fa7b67d18f1b2e1ee0ea8370c4e5fd5ecf49c59148b741b8df3c3942",
+              "bazelmod/llvm.MODULE.bazel": "1213aae1bccc3e6d78bd49b885b1cc6faaadb1ce221d249112b2e7c8cc75419a"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": 3,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "parent": "/Users/runner/work/_temp",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          },
+          "resource_accounting": {
+            "sha256": "ae4a05a3e0e14db8922b89458571d8ef44e54aa1159799565521d2d9cd0a9cba",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+          }
+        },
+        "84164ee4b59ffd0abd8c1df0efdbfcabd79c2753baed9162cb99bc188c7465fc": {
+          "driver": {
+            "benchmark_backfill.py": "665ec2fc5f2172bb601a33ae7488698765162fece4b46a656e0c6d75aa3b8a22",
+            "benchmark_compare.py": "e28b56c6281a5ae4c557c793e9670ddeea78dd84577758ffb2d01daaceb15a75",
+            "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+            "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+            "benchmark_matrix.py": "abfa93fc0bf5b76ec45907166eac30a828dfe31e0129ba59a197e71c56d7f620",
+            "benchmark_shards.py": "38cf664f259aafd9788660267ff7c478c66d3790fb45e232e16360233ed30011",
+            "benchmark_provenance.py": "5cfe87906f4ead07ca8cf00857ed751393cd8d4c8ce0f672bae7ad32f51c96cc",
+            "process_resources.py": "8a39146449514c519921ee153f1301621555694b3cf5a64b16edcd6538f5ac16",
+            "process_resources_native.cc": "0b72ffc7b767682dca724bb6d8de8b5f2ccaae532b5b99c9e14f68505769a010"
+          },
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.7.2-arm64-arm-64bit-Mach-O",
+              "sha256": "6c0ed3efc994f93eb962f517d27fa9afb981f036ffb7a759f8ea3b0899792c76"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.5 (Homebrew)",
+              "sha256": "ffe65ac524ca5b26e281e8a95b50b49e411002ce016c1e054d5f88529eba2c0c"
+            }
+          },
+          "build": {
+            "sha256": "a874ca20501b65eb8c14d5a9cd2a31c22063a59df9d08ba386415f51ad164d41",
+            "revision": "b7d28411a9cc88b1b3e71da2247702a47d0d32db",
+            "command": [
+              "/opt/homebrew/Cellar/bazelisk/1.30.0/bin/bazelisk",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "--config=clang_release",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "//xff/cli:xff"
+            ],
+            "source": {
+              "revision": "b7d28411a9cc88b1b3e71da2247702a47d0d32db",
+              "tree": "01213d937db570f4d387a8ced0aeecfb435a1213",
+              "clean": true
+            },
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff",
+            "configuration": {
+              ".bazelrc": "33c020bc2b849e393a1aaae69a24eb6ac53790a090381fff89c8139ada1e5305",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "282752dc3adf3c8d3a53374c3243b50d97cb56ea2791328566f4c98f13358db6",
+              "MODULE.bazel.lock": "d2585ec8fa7b67d18f1b2e1ee0ea8370c4e5fd5ecf49c59148b741b8df3c3942",
+              "bazelmod/llvm.MODULE.bazel": "1213aae1bccc3e6d78bd49b885b1cc6faaadb1ce221d249112b2e7c8cc75419a"
+            }
+          },
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": 3,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "parent": "/Users/runner/work/_temp",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          },
+          "resource_accounting": {
+            "sha256": "a843c492359bf897f7a2a7bdffaba58abc11451a89b55615c6a7beb6062bb0f3",
             "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
             "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
           }
@@ -12421,6 +13085,46 @@
           "batch": "backfills/42589939294/1/macos/b1df434503a3c274bfe0aecbb9244006eda40521/batch.json",
           "batch_identity": "4b72461ce28c85ab8228f42a0fb850d2806859041b4c31d853537248641e02b9",
           "method": "f692043e288245a6238dfb01a3ddb57c3487011c707f6b5a9ea775ee3f2ad7ff"
+        },
+        {
+          "commit": "0bcb461dbb08a1d3b14d1d73938a8b905aed81ea",
+          "date": "2026-09-19T21:27:07Z",
+          "measured": "2026-11-09T14:55:15.407220+00:00",
+          "report": "backfills/42619659680/1/macos/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea/report.json",
+          "report_identity": "20b88aacb09e790e7ba7c69d7f4f8745c234c8eb557ba9902105d07e25b543bd",
+          "batch": "backfills/42619659680/1/macos/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea/batch.json",
+          "batch_identity": "e1c9565f2f975cce3c466ebbbc6d9745fb1d54493b26f0a509c795ab463443d6",
+          "method": "2b07373ac2583ee4dc133a49fb4397731b0853d411938a2a803d7e0682bb6a8f"
+        },
+        {
+          "commit": "2448257a8d4dba3d7fc4e4c824e8ae699ef8e519",
+          "date": "2026-09-19T20:05:02Z",
+          "measured": "2026-11-09T14:39:55.534382+00:00",
+          "report": "backfills/42619659680/1/macos/2448257a8d4dba3d7fc4e4c824e8ae699ef8e519/report.json",
+          "report_identity": "5a358d67b4a402a9219fd19bb787105ea1177c6868b9c90055e6ddd57ee484d7",
+          "batch": "backfills/42619659680/1/macos/2448257a8d4dba3d7fc4e4c824e8ae699ef8e519/batch.json",
+          "batch_identity": "8ea3370736ba023e5f4ee0f284d726845a7c11d88cdb4bebce54b2a892eb1d69",
+          "method": "8e62b9efb3e041b41731f389af1cb7c495ef2df813c4e6d1df88cbf1036a59aa"
+        },
+        {
+          "commit": "2bd76d6e682f7ca9c987f364fda485a2eb906d62",
+          "date": "2026-09-19T20:20:55Z",
+          "measured": "2026-11-09T14:55:39.663484+00:00",
+          "report": "backfills/42619659680/1/macos/2bd76d6e682f7ca9c987f364fda485a2eb906d62/report.json",
+          "report_identity": "a324ec52f3c7892cf80fd206b7c18baa0f6190b4544c56e80168423affed0095",
+          "batch": "backfills/42619659680/1/macos/2bd76d6e682f7ca9c987f364fda485a2eb906d62/batch.json",
+          "batch_identity": "510e3c8976ae445f293f5d5ef86b99e7ff320f84ddd22bf62cfb2f497e532816",
+          "method": "14b4fbea7138950ffb3d22686a5c37a02c769f81a87a9c10147e84e807fb7b3a"
+        },
+        {
+          "commit": "b7d28411a9cc88b1b3e71da2247702a47d0d32db",
+          "date": "2026-09-19T22:33:33Z",
+          "measured": "2026-11-09T14:48:41.794944+00:00",
+          "report": "backfills/42619659680/1/macos/b7d28411a9cc88b1b3e71da2247702a47d0d32db/report.json",
+          "report_identity": "f690f67404eacfd037d10ec31a6b8bc2abd47556c869f9aef1a850b07e05ce81",
+          "batch": "backfills/42619659680/1/macos/b7d28411a9cc88b1b3e71da2247702a47d0d32db/batch.json",
+          "batch_identity": "7595904a8cd2e2016f12032e4cfb3d182b0b7164c4c04174b0f0baef790ab19d",
+          "method": "84164ee4b59ffd0abd8c1df0efdbfcabd79c2753baed9162cb99bc188c7465fc"
         },
         {
           "commit": "d8dd4f608e030be77cdefde8575e0b1a5fffe820",
