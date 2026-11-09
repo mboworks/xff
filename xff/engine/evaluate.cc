@@ -3878,6 +3878,31 @@ bool IsFuzzyOnlyExpression(const parser::Expr& expr) {
   return false;
 }
 
+// These guards depend only on the immutable source expression. Prepared nodes keep them
+// beside their callback; reference cursors derive the same guards when a predicate is reached.
+struct PredicatePolicy {
+  bool invalidates_content = false;
+  bool needs_metadata = false;
+  bool preview_execution = false;
+  bool selects_top = false;
+  bool selects_shard_status = false;
+};
+
+PredicatePolicy PolicyFor(const parser::Expr& expression) {
+  if (expression.kind != parser::Expr::Kind::kPredicate) {
+    return {};
+  }
+  const auto& descriptor = *expression.descriptor;
+  return {
+      .invalidates_content = !descriptor.pure || descriptor.kind == registry::Kind::kAction,
+      .needs_metadata = descriptor.needs_metadata
+                        || (expression.grep_template != nullptr && expression.grep_template->NeedsBirthTime()),
+      .preview_execution = descriptor.safety == registry::Safety::kSecurity,
+      .selects_top = descriptor.control == registry::Control::kTop,
+      .selects_shard_status = descriptor.control == registry::Control::kShardStatus,
+  };
+}
+
 struct TreeCursor {
   std::reference_wrapper<const parser::Expr> expression;
 
@@ -3890,6 +3915,8 @@ struct TreeCursor {
   bool Predicate(EvalContext& context) const { return EvaluatePredicate(Get(), context); }
 
   bool FuzzyOnly() const { return IsFuzzyOnlyExpression(Get()); }
+
+  PredicatePolicy Policy() const { return PolicyFor(Get()); }
 };
 
 std::optional<int> MinScore(std::optional<int> lhs, std::optional<int> rhs) {
@@ -4091,29 +4118,28 @@ struct BooleanResult {
 template<typename Result = EvaluationResult, typename Cursor>
 Result EvaluatePredicateResult(Cursor cursor, EvalContext& context) {
   const auto& expr = cursor.Get();
-  const auto& descriptor = *expr.descriptor;
-  const bool invalidate = !descriptor.pure || descriptor.kind == registry::Kind::kAction;
-  if (invalidate) {
+  const auto& policy = cursor.Policy();
+  if (policy.invalidates_content) {
     context.content.Invalidate();
   }
-  if (descriptor.needs_metadata || (expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
+  if (policy.needs_metadata) {
     context.control.metadata_error = context.visit.EnsureMetadata();
     if (!context.control.metadata_error.ok()) {
       return {.unknown = true};
     }
   }
-  if (context.dry_run && descriptor.safety == registry::Safety::kSecurity) {
+  if (context.dry_run && policy.preview_execution) {
     PreviewExecution(expr, context);
     return {.unknown = true};
   }
-  if (descriptor.control == registry::Control::kTop) {
+  if (policy.selects_top) {
     if constexpr (std::is_same_v<Result, EvaluationResult>) {
       return EvaluateTop(expr, context);
     } else {
       return {};  // The boolean evaluator is selected only without deferred state.
     }
   }
-  if (descriptor.control == registry::Control::kShardStatus) {
+  if (policy.selects_shard_status) {
     if constexpr (std::is_same_v<Result, EvaluationResult>) {
       return EvaluateShardStatus(expr, context);
     } else {
@@ -4124,7 +4150,7 @@ Result EvaluatePredicateResult(Cursor cursor, EvalContext& context) {
   if (!context.control.output_error.ok() || !context.control.metadata_error.ok()) {
     return {.unknown = true};
   }
-  if (invalidate) {
+  if (policy.invalidates_content) {
     // An action may read fields before mutating this same file through its sink.
     context.content.Invalidate();
   }
@@ -4222,6 +4248,8 @@ struct BoundExpression::Cursor {
   bool Predicate(EvalContext& context) const { return node.evaluate(Get(), context); }
 
   bool FuzzyOnly() const { return node.fuzzy_only; }
+
+  PredicatePolicy Policy() const { return PolicyFor(Get()); }
 };
 
 absl::StatusOr<BoundExpression> BoundExpression::Prepare(const parser::Expr& expression) {
@@ -4283,6 +4311,7 @@ struct PreparedExpression::Data {
     ExpressionSourceId lhs;
     ExpressionSourceId rhs;
     OperandId operand{0};
+    PredicatePolicy policy;
     bool fuzzy_only = false;
   };
 
@@ -4303,6 +4332,7 @@ struct PreparedExpression::Data {
     Node node{
         .expression = source.expression,
         .evaluate = binding.prepared_eval,
+        .policy = PolicyFor(expr),
     };
     if (binding.slot_kind == WorkerSlotKind::kMatcher
         || (binding.prepare != nullptr && (!expr.args.empty() || binding.prepare_without_argument))) {
@@ -4364,6 +4394,8 @@ struct PreparedExpression::Cursor {
   }
 
   bool FuzzyOnly() const { return node.fuzzy_only; }
+
+  const PredicatePolicy& Policy() const { return node.policy; }
 };
 
 PreparedExpression::PreparedExpression(std::unique_ptr<Data> data) : data_(std::move(data)) {}
