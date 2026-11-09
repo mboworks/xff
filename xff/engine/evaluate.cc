@@ -66,6 +66,7 @@
 #include "xff/content/line_match.h"
 #include "xff/content/word.h"
 #include "xff/datetime/datetime.h"
+#include "xff/engine/output_credit.h"
 #include "xff/engine/walk.h"
 #include "xff/exec/exec.h"
 #include "xff/fuzzy/fuzzy.h"
@@ -2193,29 +2194,57 @@ void EmitSelectedGrepLine(
 
 // Source bytes are consumed incrementally. Buffer rendered records until the complete scan
 // has validated binary detection and read errors; source and all-line vectors are never retained.
-template<bool kPublishRecords>
-using GrepLineResult = std::conditional_t<kPublishRecords, bool, RenderedRgOutput>;
+void AppendRecords(std::string& records, std::string_view text) {
+  records.append(text);
+}
 
-template<bool kPublishRecords>
-absl::StatusOr<GrepLineResult<kPublishRecords>> RenderGrepLines(
+void AppendRecords(CreditedOutput& records, std::string_view text) {
+  records.Append(text);
+}
+
+std::string_view RecordsView(std::string_view records) {
+  return records;
+}
+
+std::string_view RecordsView(const CreditedOutput& records) {
+  return records.View();
+}
+
+void ClearRecords(std::string& records) {
+  records.clear();
+}
+
+void ClearRecords(CreditedOutput& records) {
+  records.Clear();
+}
+
+void InsertHeading(std::string& records, std::string_view heading) {
+  records.insert(0, heading);
+}
+
+void InsertHeading(CreditedOutput& records, std::string_view heading) {
+  records.Prepend(heading);
+}
+
+template<bool kPublishRecords, typename Buffer>
+absl::StatusOr<bool> RenderGrepLinesInto(
     const parser::Expr& expr,
     EvalContext& ctx,
     const GrepMatchers& matcher,
     std::uint64_t sniff,
-    std::string records = {}) {
+    Buffer& rendered) {
   if (ctx.visit.metadata.type != vfs::FileType::kRegular) {
-    return GrepLineResult<kPublishRecords>{};
+    return false;
   }
   const bool only_matching = ctx.grep.only_matching && !(ctx.grep.rg_mode && ctx.grep.invert);
   const bool with_context = !only_matching && (ctx.grep_before != 0 || ctx.grep_after != 0);
   content::LineContext selection(with_context ? ctx.grep_before : 0, with_context ? ctx.grep_after : 0);
-  std::string rendered = std::move(records);
-  rendered.clear();
+  ClearRecords(rendered);
   std::conditional_t<kPublishRecords, std::vector<std::size_t>, const std::vector<std::size_t>> record_ends;
   const auto buffer = [&](std::string_view text) {
-    rendered.append(text);
+    AppendRecords(rendered, text);
     if constexpr (kPublishRecords) {
-      record_ends.push_back(rendered.size());
+      record_ends.push_back(RecordsView(rendered).size());
     }
   };
   const auto sink = ctx.emit;
@@ -2241,7 +2270,7 @@ absl::StatusOr<GrepLineResult<kPublishRecords>> RenderGrepLines(
   if (ctx.content.Loaded()) {
     MBO_ASSIGN_OR_RETURN(const auto text, ctx.content.Read(ctx.fs, ctx.visit.path));
     if (text.substr(0, static_cast<std::size_t>(std::min<std::uint64_t>(text.size(), sniff))).contains('\0')) {
-      return GrepLineResult<kPublishRecords>{};
+      return false;
     }
     content::VisitLines(text, visit);
   } else {
@@ -2249,22 +2278,17 @@ absl::StatusOr<GrepLineResult<kPublishRecords>> RenderGrepLines(
     MBO_ASSIGN_OR_RETURN(const auto stream, source->Open());
     MBO_ASSIGN_OR_RETURN(const auto scan, content::ScanLines(*stream, sniff, visit));
     if (scan.binary) {
-      return GrepLineResult<kPublishRecords>{};
+      return false;
     }
   }
   if constexpr (kPublishRecords) {
     std::size_t start = 0;
     for (const std::size_t end : record_ends) {
-      sink(std::string_view(rendered).substr(start, end - start));
+      sink(RecordsView(rendered).substr(start, end - start));
       start = end;
     }
-    return matched;
-  } else {
-    return RenderedRgOutput{
-        .selected = matched,
-        .text = std::move(rendered),
-    };
   }
+  return matched;
 }
 
 bool EvalGrepMatchers(const parser::Expr& expr, EvalContext& ctx, const GrepMatchers& matcher) {
@@ -2275,7 +2299,8 @@ bool EvalGrepMatchers(const parser::Expr& expr, EvalContext& ctx, const GrepMatc
     const auto summary = SummarizeGrep(ctx, matcher, content::kBinaryNulSniffBytes);
     return summary.ok() && EmitGrepSummary(expr, ctx, *summary);
   }
-  return RenderGrepLines<true>(expr, ctx, matcher, content::kBinaryNulSniffBytes).value_or(false);
+  std::string records;
+  return RenderGrepLinesInto<true>(expr, ctx, matcher, content::kBinaryNulSniffBytes, records).value_or(false);
 }
 
 bool EvalGrep(const parser::Expr& expr, EvalContext& ctx) {
@@ -4066,28 +4091,29 @@ struct BooleanResult {
 template<typename Result = EvaluationResult, typename Cursor>
 Result EvaluatePredicateResult(Cursor cursor, EvalContext& context) {
   const auto& expr = cursor.Get();
-  const bool invalidate = !expr.descriptor->pure || expr.descriptor->kind == registry::Kind::kAction;
+  const auto& descriptor = *expr.descriptor;
+  const bool invalidate = !descriptor.pure || descriptor.kind == registry::Kind::kAction;
   if (invalidate) {
     context.content.Invalidate();
   }
-  if (expr.descriptor->needs_metadata || (expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
+  if (descriptor.needs_metadata || (expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
     context.control.metadata_error = context.visit.EnsureMetadata();
     if (!context.control.metadata_error.ok()) {
       return {.unknown = true};
     }
   }
-  if (context.dry_run && expr.descriptor->safety == registry::Safety::kSecurity) {
+  if (context.dry_run && descriptor.safety == registry::Safety::kSecurity) {
     PreviewExecution(expr, context);
     return {.unknown = true};
   }
-  if (expr.descriptor->control == registry::Control::kTop) {
+  if (descriptor.control == registry::Control::kTop) {
     if constexpr (std::is_same_v<Result, EvaluationResult>) {
       return EvaluateTop(expr, context);
     } else {
       return {};  // The boolean evaluator is selected only without deferred state.
     }
   }
-  if (expr.descriptor->control == registry::Control::kShardStatus) {
+  if (descriptor.control == registry::Control::kShardStatus) {
     if constexpr (std::is_same_v<Result, EvaluationResult>) {
       return EvaluateShardStatus(expr, context);
     } else {
@@ -4895,23 +4921,23 @@ absl::StatusOr<bool> EmitMultilineRg(const MatchOutput& output, const parser::Rg
   return selected_lines != 0;
 }
 
-absl::StatusOr<RenderedRgOutput> RenderRgRecords(
+template<typename Buffer>
+absl::StatusOr<bool> RenderRgRecordsInto(
     const MatchOutput& output,
     const parser::RgSearch& search,
     EvalContext& context,
-    std::string records) {
+    Buffer& records) {
+  ClearRecords(records);
   if (context.visit.metadata.type != vfs::FileType::kRegular) {
-    return RenderedRgOutput{};
+    return false;
   }
   if (!search.multiline && !ReducedGrepOutput(context)) {
     const GrepMatchers matcher(output.matchers, search);
-    return RenderGrepLines<false>(
-        *output.source, context, matcher, search.text ? 0 : std::numeric_limits<std::uint64_t>::max(),
-        std::move(records));
+    return RenderGrepLinesInto<false>(
+        *output.source, context, matcher, search.text ? 0 : std::numeric_limits<std::uint64_t>::max(), records);
   }
-  records.clear();
   const auto sink = context.emit;
-  const auto buffer = [&](std::string_view text) { records.append(text); };
+  const auto buffer = [&](std::string_view text) { AppendRecords(records, text); };
   context.emit = buffer;
   const auto result = [&] -> absl::StatusOr<bool> {
     if (search.multiline) {
@@ -4924,11 +4950,31 @@ absl::StatusOr<RenderedRgOutput> RenderRgRecords(
     return EmitGrepSummary(*output.source, context, summary);
   }();
   context.emit = sink;
+  return result;
+}
+
+template<typename Buffer>
+absl::StatusOr<bool> RenderRgOutputInto(
+    const MatchOutput& output,
+    const parser::RgSearch& search,
+    EvalContext& context,
+    Buffer& records) {
+  const bool filename = context.grep.filename;
+  const bool heading =
+      context.grep.heading && filename && !context.grep_json && context.grep.output == GrepOptions::Output::kLines;
+  if (heading) {
+    context.grep.filename = false;
+  }
+  const auto result = RenderRgRecordsInto(output, search, context, records);
+  context.grep.filename = filename;
   MBO_ASSIGN_OR_RETURN(const bool selected, result);
-  return RenderedRgOutput{
-      .selected = selected,
-      .text = std::move(records),
-  };
+  if (heading && !RecordsView(records).empty()) {
+    InsertHeading(
+        records,
+        absl::StrCat(
+            context.grep.color ? "\x1b[35m" : "", context.visit.path, context.grep.color ? "\x1b[0m" : "", "\n"));
+  }
+  return selected;
 }
 }  // namespace
 
@@ -4937,21 +4983,45 @@ absl::StatusOr<RenderedRgOutput> RenderRgOutput(
     const parser::RgSearch& search,
     EvalContext& context,
     std::string records) {
-  const bool filename = context.grep.filename;
-  const bool heading =
-      context.grep.heading && filename && !context.grep_json && context.grep.output == GrepOptions::Output::kLines;
-  if (heading) {
-    context.grep.filename = false;
+  MBO_ASSIGN_OR_RETURN(const bool selected, RenderRgOutputInto(output, search, context, records));
+  if (!selected) {
+    records.clear();
   }
-  auto result = RenderRgRecords(output, search, context, std::move(records));
-  context.grep.filename = filename;
-  MBO_ASSIGN_OR_RETURN(auto rendered, std::move(result));
-  if (heading && !rendered.text.empty()) {
-    rendered.text.insert(
-        0, absl::StrCat(
-               context.grep.color ? "\x1b[35m" : "", context.visit.path, context.grep.color ? "\x1b[0m" : "", "\n"));
+  return RenderedRgOutput{
+      .selected = selected,
+      .text = std::move(records),
+  };
+}
+
+absl::StatusOr<bool> RenderRgOutput(
+    const MatchOutput& output,
+    const parser::RgSearch& search,
+    EvalContext& context,
+    CreditedOutput& records) {
+  const auto selected = RenderRgOutputInto(output, search, context, records);
+  if (!selected.ok() || !*selected) {
+    records.Clear();
   }
-  return rendered;
+  return selected;
+}
+
+absl::StatusOr<bool> RenderMatchOutput(const MatchOutput& output, EvalContext& context, CreditedOutput& records) {
+  records.Clear();
+  if (ReducedGrepOutput(context)) {
+    const auto sink = context.emit;
+    const auto buffer = [&](std::string_view text) { records.Append(text); };
+    context.emit = buffer;
+    const auto summary = SummarizeGrep(context, GrepMatchers(output.matchers), content::kBinaryNulSniffBytes);
+    const bool selected = summary.ok() && EmitGrepSummary(*output.source, context, *summary);
+    context.emit = sink;
+    return selected;
+  }
+  const auto selected = RenderGrepLinesInto<false>(
+      *output.source, context, GrepMatchers(output.matchers), content::kBinaryNulSniffBytes, records);
+  if (!selected.ok() || !*selected) {
+    records.Clear();
+  }
+  return selected;
 }
 
 absl::StatusOr<bool> EmitRgOutput(const MatchOutput& output, const parser::RgSearch& search, EvalContext& context) {

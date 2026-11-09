@@ -1793,7 +1793,7 @@ template<typename SchemeAllowed>
 int ResolveDeferredRound(
     std::vector<DeferredCandidate>& candidates,
     const std::map<ExprIdentity, std::size_t>& node_order,
-    const shard::Matcher& shard_matcher,
+    mbo::types::OptionalRef<const shard::Matcher> shard_matcher,
     shard::Dedup shard_dedup,
     const SchemeAllowed& scheme_allowed,
     bool report_dedup_errors) {
@@ -1816,7 +1816,7 @@ int ResolveDeferredRound(
   }
   if (next_node.Get().descriptor->control == registry::Control::kShardStatus) {
     return ResolveShardStatusRound(
-        next_node.Get(), entries, shard_matcher, shard_dedup, scheme_allowed, report_dedup_errors);
+        next_node.Get(), entries, *shard_matcher, shard_dedup, scheme_allowed, report_dedup_errors);
   }
   int limit = 0;
   // `-top` arity and its positive integer argument were validated before traversal.
@@ -4025,7 +4025,8 @@ Collections MakeCollections(
 // The selected shard policy also applies when reductions consume explicit collections.
 struct CollectionShardPolicy {
   const ShardsConfig& config;
-  const shard::Matcher& matcher;
+  // Required only when shard grouping is enabled.
+  mbo::types::OptionalRef<const shard::Matcher> matcher;
   shard::Dedup dedup;
 };
 
@@ -4039,11 +4040,12 @@ struct CollectedShardDirectory {
 std::map<std::string, CollectedShardDirectory> GroupCollectedDirectories(
     const Collections::EntriesType& entries,
     const CollectionShardPolicy& policy) {
+  const auto& matcher = *policy.matcher;
   std::map<std::string, CollectedShardDirectory> groups;
   for (const Collections::Entry& entry : entries) {
     const auto slash = entry.path.rfind('/');
     auto& group = groups[std::string(slash == std::string_view::npos ? "" : entry.path.substr(0, slash + 1))];
-    const auto match = policy.matcher.Decode(entry.name);
+    const auto match = matcher.Decode(entry.name);
     const bool selected = match.has_value()
                           && (match->scheme == shard::Scheme::kCustom || policy.config.schemes.empty()
                               || absl::c_linear_search(policy.config.schemes, match->scheme));
@@ -4067,9 +4069,10 @@ int FeedCollectedShards(
     const Collections::EntriesType& entries,
     const CollectionShardPolicy& policy,
     const Feed& feed) {
+  const auto& matcher = *policy.matcher;
   int errors = 0;
   for (const auto& [prefix, group] : GroupCollectedDirectories(entries, policy)) {
-    for (const auto& set : shard::GroupShards(group.shards, policy.matcher, policy.dedup)) {
+    for (const auto& set : shard::GroupShards(group.shards, matcher, policy.dedup)) {
       if (policy.dedup == shard::Dedup::kError) {
         errors += ReportShardDuplicateErrors(set, prefix);
       }
@@ -5459,8 +5462,11 @@ RunResult RunFindCore(
       return RunResult{.errors = 2};
     }
     shard_matcher = *std::move(matcher_or);
-  } else {
-    shard_matcher = *shard::Matcher::Make();
+  }
+  // Ordinary walks, collections and -top frontiers need no shard regex compilation.
+  mbo::types::OptionalRef<const shard::Matcher> shard_matcher_ref;
+  if (shard_matcher) {
+    shard_matcher_ref.set_ref(*shard_matcher);
   }
 
   // Comparison pairs physical entries by relative path. Collapsing a side's reductions onto
@@ -5981,7 +5987,7 @@ RunResult RunFindCore(
       }
       const auto selected = prepared ? prepared->selected : EmitRgOutput(*rg_output, *command.rg, context);
       if (prepared && selected.ok()) {
-        context.emit(prepared->text);
+        context.emit(prepared->Text());
       }
       content = std::move(context.content);
       if (!selected.ok()) {
@@ -6084,7 +6090,7 @@ RunResult RunFindCore(
             .content = std::move(content),
         };
         if (prepared) {
-          emit(prepared->text);
+          emit(prepared->Text());
         } else {
           EmitMatchOutput(*match_output, context);
         }
@@ -6148,6 +6154,7 @@ RunResult RunFindCore(
   };
 
   std::vector<DeferredCandidate> deferred_candidates;
+  const DeferredDecisions initial_deferred_decisions;
   std::size_t deferred_order = 0;
   std::vector<ExprIdentity> deferred_nodes;
   if (expression.has_value()) {
@@ -6266,14 +6273,18 @@ RunResult RunFindCore(
   // Decision-only batches retain no file bytes or rendered line records. Give them more work
   // between coordinator barriers; keep content-output batches smaller because a line is unbounded.
   const std::size_t match_batch_size = rg_output || match_output ? 256 : 1'024;
-  const auto flush_matches = [&] {
-    if (pending_matches.empty()) {
+  // One collecting batch overlaps a matcher generation. Slot counts stay fixed;
+  // text admission includes the owned capacity, with one oversized input alone.
+  static constexpr std::size_t kPendingMatchTextBytes = 1'048'576;
+  std::size_t pending_match_bytes = 0;
+  bool matches_running = false;
+  const auto publish_matches = [&] {
+    if (!matches_running) {
       return;
     }
-    const auto& results = parallel_match->Match(std::move(pending_matches));
-    pending_matches.clear();
-    for (std::size_t index = 0; index < results.size(); ++index) {
-      const auto& result = results.at(index);
+    matches_running = false;
+    for (std::size_t index = 0; index < parallel_match->Entries().size(); ++index) {
+      const auto& result = parallel_match->AwaitResult(index);
       const auto& evaluated = result.evaluation;
       const Visit visit = parallel_match->Entries().at(index).AsVisit();
       fuzzy_score = evaluated.fuzzy;
@@ -6299,6 +6310,29 @@ RunResult RunFindCore(
           visit, outputs, evaluated.matched, std::nullopt, parallel_match->TakeDerived(index),
           result.content ? mbo::types::OptionalRef<const ContentResult>{*result.content}
                          : mbo::types::OptionalRef<const ContentResult>{});
+      parallel_match->ReleaseResult(index);
+    }
+    parallel_match->Wait();
+  };
+  const auto submit_matches = [&] {
+    publish_matches();
+    if (!pending_matches.empty()) {
+      pending_matches = parallel_match->Start(std::move(pending_matches), true);
+      pending_matches.clear();
+      pending_match_bytes = 0;
+      matches_running = true;
+      if (!parallel_match->CollectNextBatch()) {
+        publish_matches();
+      }
+    }
+  };
+  const auto flush_matches = [&] {
+    submit_matches();
+    publish_matches();
+  };
+  const auto reserve_match_slot = [&] {
+    if (pending_matches.size() == pending_matches.capacity()) {
+      pending_matches.reserve(std::min(match_batch_size, std::max(16UZ, 2 * pending_matches.capacity())));
     }
   };
   const absl::Status status = Walk(
@@ -6382,9 +6416,22 @@ RunResult RunFindCore(
           return WalkAction::kContinue;
         }
         if (parallel_entry) {
+          // The last constructed slot is a transit record until its actual text
+          // capacity is admitted. Only a full predecessor needs an ownership move.
+          reserve_match_slot();
           pending_matches.emplace_back(visit);
-          if (pending_matches.size() >= match_batch_size) {
-            flush_matches();
+          const auto text_bytes = pending_matches.back().TextStorageBytes();
+          if (pending_matches.size() > 1
+              && text_bytes > kPendingMatchTextBytes - std::min(pending_match_bytes, kPendingMatchTextBytes)) {
+            OwnedVisit entry(std::move(pending_matches.back()));
+            pending_matches.pop_back();
+            submit_matches();
+            reserve_match_slot();
+            pending_matches.push_back(std::move(entry));
+          }
+          pending_match_bytes += text_bytes;
+          if (pending_matches.size() >= match_batch_size || pending_match_bytes >= kPendingMatchTextBytes) {
+            submit_matches();
           }
           return WalkAction::kContinue;
         }
@@ -6422,9 +6469,17 @@ RunResult RunFindCore(
         // no fuzzy test renders empty rather than inheriting the previous entry's score.
         fuzzy_score.reset();
         hash_verification.reset();
-        EvaluationMemo evaluation_memo;
-        const DeferredDecisions deferred_results;
-        DeferredEvaluation deferred{.decisions = deferred_results, .memo = evaluation_memo};
+        // Ordinary entries do not need deferred memo storage; unresolved result-set
+        // predicates keep their own memo while sharing the immutable initial decisions.
+        std::optional<EvaluationMemo> evaluation_memo;
+        std::optional<DeferredEvaluation> deferred;
+        if (!deferred_nodes.empty()) {
+          deferred.emplace(
+              DeferredEvaluation{
+                  .decisions = initial_deferred_decisions,
+                  .memo = evaluation_memo.emplace(),
+              });
+        }
         EvalContext eval_context{
             .visit = visit,
             .emit = emit,
@@ -6451,8 +6506,7 @@ RunResult RunFindCore(
             .fuzzy_workspace = fuzzy_workspace,
             .hash_verification = hash_verification_summary ? mbo::types::OptionalRef{hash_verification}
                                                            : mbo::types::OptionalRef<std::optional<bool>>{},
-            .deferred = deferred_nodes.empty() ? mbo::types::OptionalRef<DeferredEvaluation>{}
-                                               : mbo::types::OptionalRef{deferred},
+            .deferred = deferred ? mbo::types::OptionalRef{*deferred} : mbo::types::OptionalRef<DeferredEvaluation>{},
             .grep = grep_options,
             .grep_json = format == render::Format::kJsonl,
             .grep_before = grep_before,
@@ -6507,7 +6561,7 @@ RunResult RunFindCore(
               .entry = OwnedVisit(visit),
               .captures = std::move(captures),
               .outputs = std::move(outputs),
-              .memo = std::move(evaluation_memo),
+              .memo = std::move(evaluation_memo).value(),
               .decisions = {},
               .hash_verification = hash_verification,
               .waiting_at = evaluated.waiting_at.value(),
@@ -6571,7 +6625,7 @@ RunResult RunFindCore(
              || absl::c_linear_search(shards.schemes, scheme);
     };
     errors += ResolveDeferredRound(
-        deferred_candidates, deferred_node_order, *shard_matcher, shard_dedup, scheme_allowed,
+        deferred_candidates, deferred_node_order, shard_matcher_ref, shard_dedup, scheme_allowed,
         /*report_dedup_errors=*/!group_matched_shards);
     std::vector<DeferredCandidate> next_round;
     next_round.reserve(deferred_candidates.size());
@@ -6885,7 +6939,7 @@ RunResult RunFindCore(
               .hash_encoding = hash_encoding,
               .defines = defines,
           },
-          CollectionShardPolicy{.config = shards, .matcher = *shard_matcher, .dedup = shard_dedup});
+          CollectionShardPolicy{.config = shards, .matcher = shard_matcher_ref, .dedup = shard_dedup});
       collect_status != 0) {
     return RunResult{.errors = collect_status + rg_errors, .any_match = any_match};
   }

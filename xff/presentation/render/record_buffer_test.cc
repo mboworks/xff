@@ -47,6 +47,30 @@ TEST_F(RawRecordBufferTest, QueuedConsumersKeepIndependentRecords) {
   EXPECT_THAT(rows, ElementsAre(EqualsText("first\n"), EqualsText(std::string(160, 'x') + "\n"), EqualsText("last\n")));
 }
 
+TEST_F(RawRecordBufferTest, AlternatesInlineBoundaryAndFallbackWithoutExposingStaleBytes) {
+  static constexpr auto kSizes = std::to_array<std::size_t>({
+      RawRecordBuffer::kInlineBytes - 2,
+      RawRecordBuffer::kInlineBytes - 1,
+      RawRecordBuffer::kInlineBytes,
+      RawRecordBuffer::kInlineBytes + 1,
+      0,
+      RawRecordBuffer::kInlineBytes - 1,
+      1,
+  });
+  RawRecordBuffer buffer('\n');
+  for (const auto size : kSizes) {
+    SCOPED_TRACE(size);
+    std::string path(size, 'x');
+    if (!path.empty()) {
+      path.at(size / 2) = '\0';
+    }
+    for (const char terminator : {'\n', '\0'}) {
+      const std::string expected = path + terminator;
+      buffer.EmitRecord(path, terminator, [&](std::string_view text) { EXPECT_THAT(text, EqualsText(expected)); });
+    }
+  }
+}
+
 TEST_F(RawRecordBufferTest, ExplicitTerminatorsAlternateWithoutChangingTheDefault) {
   RawRecordBuffer buffer('\n');
   std::vector<std::string> rows;
