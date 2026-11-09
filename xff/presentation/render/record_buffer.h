@@ -34,8 +34,10 @@ class RawRecordBuffer final {
   // Explicit actions can alternate newline and NUL records while retaining the same storage.
   template<std::invocable<std::string_view> Consumer>
   void EmitRecord(std::string_view path, char terminator, Consumer&& consume) {
+#if defined(__linux__)
     // The common short-path record needs only a copy and a terminator. Leave unused bytes
     // uninitialized and avoid growing or resizing the fallback string for these records.
+    // Linux qualification establishes reduced instructions; macOS retains its qualified layout.
     if (path.size() < inline_.size()) {
       const std::span<char> record = std::span(inline_).first(path.size() + 1);
       std::ranges::copy(path, record.begin());
@@ -43,6 +45,7 @@ class RawRecordBuffer final {
       std::invoke(std::forward<Consumer>(consume), std::string_view(record.data(), record.size()));
       return;
     }
+#endif
     // XFF_ABI_POINTER: std::string::resize_and_overwrite requires a writable buffer callback.
     bytes_.resize_and_overwrite(path.size() + 1, [path, terminator](char* data, std::size_t) noexcept {
       const std::span<char> record(data, path.size() + 1);
@@ -56,11 +59,19 @@ class RawRecordBuffer final {
     }
   }
 
-  std::size_t RetainedCapacity() const { return std::max(inline_.size(), bytes_.capacity()); }
+  std::size_t RetainedCapacity() const {
+#if defined(__linux__)
+    return std::max(inline_.size(), bytes_.capacity());
+#else
+    return bytes_.capacity();
+#endif
+  }
 
  private:
   std::string bytes_;
+#if defined(__linux__)
   std::array<char, kInlineBytes> inline_;
+#endif
   char terminator_;
 };
 
