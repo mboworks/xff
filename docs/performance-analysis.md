@@ -5232,3 +5232,8 @@ with full/minimal production ThinLTO build identities and durable raw archives f
 Later synchronization does not relabel those binaries. This removes one invariant predicate
 setup cost; the remaining EP03/O15 operand families, expression-program decisions and wider
 pipeline/admission work remain open.
+
+### Delayed listing output buffer
+
+See the [qualification report](benchmarks/bounded-stdout-buffer-20261109.md) for the
+4 KiB buffer, production comparisons on both hosts, adverse results and retained evidence.
