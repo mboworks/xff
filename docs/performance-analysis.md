@@ -5233,3 +5233,11 @@ contracts. Both-host native, engine, legacy/direct kernel and independent-image
 qualification select stack storage, retaining the heap variant and every slower
 observation. Full implementation-head release and affected sanitizer suites pass;
 the report/data commit receives its own current-head checks. Broader O18 remains open.
+
+### Prepared streamed archive member names
+
+The [member-name qualification](benchmarks/prepared-member-name-20261109.md) prepares a requested
+name once per streamed open. Preserve nullable C names, ownership, duplicate selection and errors.
+Both-host shipping CLI, last-member/listing and first/missing controls retain slower results,
+including the Linux missing-member tradeoff. Plain-TAR payload locators and host-wide measurement
+coordination remain separate open tasks; broader O19 work is not complete.

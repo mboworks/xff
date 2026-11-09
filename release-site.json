@@ -161,7 +161,8 @@
     "docs/benchmarks/adaptive-ordered-output-20261109.md": "docs/benchmarks/adaptive-ordered-output-20261109.html",
     "docs/benchmarks/prepared-predicate-guards-20261109.md": "docs/benchmarks/prepared-predicate-guards-20261109.html",
     "docs/benchmarks/bounded-stdout-buffer-20261109.md": "docs/benchmarks/bounded-stdout-buffer-20261109.html",
-    "docs/benchmarks/direct-line-scan-spans-20261109.md": "docs/benchmarks/direct-line-scan-spans-20261109.html"
+    "docs/benchmarks/direct-line-scan-spans-20261109.md": "docs/benchmarks/direct-line-scan-spans-20261109.html",
+    "docs/benchmarks/prepared-member-name-20261109.md": "docs/benchmarks/prepared-member-name-20261109.html"
   },
   "generated_html": {
     "XFF.md": {
@@ -213,6 +214,8 @@
     "docs/benchmarks/prepared-predicate-guards-20261109.json.gz": "docs/benchmarks/prepared-predicate-guards-20261109.json.gz",
     "docs/benchmarks/bounded-stdout-buffer-20261109.json.gz": "docs/benchmarks/bounded-stdout-buffer-20261109.json.gz",
     "docs/benchmarks/direct-line-scan-spans-20261109-linux.json.gz": "docs/benchmarks/direct-line-scan-spans-20261109-linux.json.gz",
-    "docs/benchmarks/direct-line-scan-spans-20261109-macos.json.gz": "docs/benchmarks/direct-line-scan-spans-20261109-macos.json.gz"
+    "docs/benchmarks/direct-line-scan-spans-20261109-macos.json.gz": "docs/benchmarks/direct-line-scan-spans-20261109-macos.json.gz",
+    "docs/benchmarks/prepared-member-name-20261109-linux.json.gz": "docs/benchmarks/prepared-member-name-20261109-linux.json.gz",
+    "docs/benchmarks/prepared-member-name-20261109-macos.json.gz": "docs/benchmarks/prepared-member-name-20261109-macos.json.gz"
   }
 }

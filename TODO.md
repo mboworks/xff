@@ -585,6 +585,10 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       +27% on Mac and +11% on Linux. Eliminate those costs without arbitrary count/size thresholds,
       preserving identity, budgets, duplicate semantics, exact-content oracles and the rejected
       root-offset variant. Native source identity and streamed-ZIP sizes remain separate open work.
+- [ ] O19b4: Qualify reuse of validated plain-TAR payload locators independently of name
+      preparation. The 10,000-member native search still spends roughly 8-13 seconds replaying
+      headers. Preserve format validation, exact source identity, duplicate selection, nested and
+      sequential-source fallbacks, and shared read budgets; do not bypass decoder checks.
 - [ ] O19b: Qualify archive seeking/index/replay and decoder admission independently. Investigate
       native/memory ZIP seeking before concurrency; preserve sequential-source and shared-budget fallbacks.
 - [x] O19c: Qualify caller-owned reads for immutable memory and archive-member cursors, including
@@ -611,13 +615,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       separate hardware diagnostics are retained in
       [the allocation decisions](docs/benchmarks/archive-directory-allocation-20261105.md);
       microbenchmark gains alone do not qualify either runtime implementation.
-- [ ] O19g3: Prepare the requested member's normalized name once per streamed open,
-      preserving null-header, normalization, error and duplicate-selection behavior. The
-      current `MemberSource::Open` repeats `NormalizeMemberName(member_)` while walking
-      preceding headers. Retain cold/first-member/missing-member controls and measure on
-      both hosts before adoption. The scanner qualification also exposes roughly eight
-      seconds for the broad 10,000-member, single-worker TAR invocation; reuse observed plain-TAR payload locators
-      as a separate, format-validated O19b experiment rather than bypass decoder checks.
+- [x] O19g3: Qualify once-per-open requested member-name normalization, preserving nullable
+      C pathnames, normalization, duplicate/nonregular selection, source ownership and errors.
+      [Both-host measurements and complete data](docs/benchmarks/prepared-member-name-20261109.md)
+      retain first/missing/reopened/fresh-wrapper controls, slower results, and the Linux
+      missing-member microbenchmark tradeoff; no universal speedup is claimed.
 - [x] O19i: Bound initial archive-directory result storage to reduce small-listing vector
       reallocations, retaining tiny/root/chain costs and complete native controls. Full both-host
       qualification and the held O19g variants are in
@@ -1589,3 +1591,11 @@ this as intentional accounting.
       harness versions, slower cases and all raw observations in
       [the decision report](docs/benchmarks/language-list-reserve-20261107.md).
       Generated immutable catalog representation remains a separate O14 candidate.
+
+### Shared local measurement ownership
+
+- [ ] Coordinate performance measurements and compiler work across simultaneous worktrees/tasks
+      with an explicit host-level lease. Per-campaign locks alone do not prevent contamination;
+      retain contention records, wait for foreign work rather than terminating it, and qualify
+      each affected cohort only after an uncontended rerun. The member-name report records a
+      concrete benchmark overlap and an independently started MSan compiler.
