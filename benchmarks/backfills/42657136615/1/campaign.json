@@ -1,0 +1,181 @@
+{
+  "schema": 1,
+  "source_head": "cc30ffd2f85cd32fb902750af5023b6596889faf",
+  "history_head": "727c8e781e7217e7aafbbcfc5f064d2e678b1876",
+  "created_at": "2026-11-09T16:41:59.435443+00:00",
+  "jobs": [
+    {
+      "id": "linux-1f568ceecd2854ca302bb7213a47a21e6805069a",
+      "platform": "linux",
+      "os": "ubuntu-24.04",
+      "arch": "x86_64",
+      "revision": {
+        "sha": "1f568ceecd2854ca302bb7213a47a21e6805069a",
+        "date": "2026-09-19T23:46:18+01:00",
+        "subject": "Add stable release and PR benchmark links (#890)"
+      }
+    },
+    {
+      "id": "linux-a39758eff8ac2d514d434d15923ec38dc6514b61",
+      "platform": "linux",
+      "os": "ubuntu-24.04",
+      "arch": "x86_64",
+      "revision": {
+        "sha": "a39758eff8ac2d514d434d15923ec38dc6514b61",
+        "date": "2026-09-20T09:33:49+01:00",
+        "subject": "Refresh retained release sites with explicit configuration overrides (#891)"
+      }
+    },
+    {
+      "id": "linux-c9b56c2f009ef94dc8fd58964ae8393beaced266",
+      "platform": "linux",
+      "os": "ubuntu-24.04",
+      "arch": "x86_64",
+      "revision": {
+        "sha": "c9b56c2f009ef94dc8fd58964ae8393beaced266",
+        "date": "2026-09-20T10:35:40+01:00",
+        "subject": "Refresh coverage metadata without privileged PR lifecycle events (#892)"
+      }
+    },
+    {
+      "id": "linux-29c75be4052915c7bd221295df8639bae16fb2d1",
+      "platform": "linux",
+      "os": "ubuntu-24.04",
+      "arch": "x86_64",
+      "revision": {
+        "sha": "29c75be4052915c7bd221295df8639bae16fb2d1",
+        "date": "2026-09-20T09:48:39Z",
+        "subject": "Double deep-fuzz campaign time per target (#893)"
+      }
+    },
+    {
+      "id": "macos-1f568ceecd2854ca302bb7213a47a21e6805069a",
+      "platform": "macos",
+      "os": "macos-latest",
+      "arch": "arm64",
+      "revision": {
+        "sha": "1f568ceecd2854ca302bb7213a47a21e6805069a",
+        "date": "2026-09-19T23:46:18+01:00",
+        "subject": "Add stable release and PR benchmark links (#890)"
+      }
+    },
+    {
+      "id": "macos-a39758eff8ac2d514d434d15923ec38dc6514b61",
+      "platform": "macos",
+      "os": "macos-latest",
+      "arch": "arm64",
+      "revision": {
+        "sha": "a39758eff8ac2d514d434d15923ec38dc6514b61",
+        "date": "2026-09-20T09:33:49+01:00",
+        "subject": "Refresh retained release sites with explicit configuration overrides (#891)"
+      }
+    },
+    {
+      "id": "macos-c9b56c2f009ef94dc8fd58964ae8393beaced266",
+      "platform": "macos",
+      "os": "macos-latest",
+      "arch": "arm64",
+      "revision": {
+        "sha": "c9b56c2f009ef94dc8fd58964ae8393beaced266",
+        "date": "2026-09-20T10:35:40+01:00",
+        "subject": "Refresh coverage metadata without privileged PR lifecycle events (#892)"
+      }
+    },
+    {
+      "id": "macos-29c75be4052915c7bd221295df8639bae16fb2d1",
+      "platform": "macos",
+      "os": "macos-latest",
+      "arch": "arm64",
+      "revision": {
+        "sha": "29c75be4052915c7bd221295df8639bae16fb2d1",
+        "date": "2026-09-20T09:48:39Z",
+        "subject": "Double deep-fuzz campaign time per target (#893)"
+      }
+    }
+  ],
+  "contract": {
+    "files": [
+      10,
+      20,
+      50,
+      100,
+      200,
+      500,
+      1000,
+      2000,
+      5000,
+      10000,
+      20000,
+      50000,
+      100000
+    ],
+    "cpus": [
+      1,
+      3
+    ],
+    "depth": 40,
+    "repetitions": 9,
+    "retained": 7,
+    "command_timeout_seconds": 300,
+    "driver": {
+      "benchmark_backfill.py": "665ec2fc5f2172bb601a33ae7488698765162fece4b46a656e0c6d75aa3b8a22",
+      "benchmark_compare.py": "e28b56c6281a5ae4c557c793e9670ddeea78dd84577758ffb2d01daaceb15a75",
+      "benchmark_fixture.py": "bee7eb2bd51ae7c69ba8df7e923985daf3eb617ab1e43a076cc01152f608c0c0",
+      "benchmark_layouts.py": "823cfc115cc2a556fea0c6ce0976caf5b1a58ef0d9d1f371a6f49d2ee4b326db",
+      "benchmark_matrix.py": "abfa93fc0bf5b76ec45907166eac30a828dfe31e0129ba59a197e71c56d7f620",
+      "benchmark_shards.py": "38cf664f259aafd9788660267ff7c478c66d3790fb45e232e16360233ed30011",
+      "benchmark_provenance.py": "5cfe87906f4ead07ca8cf00857ed751393cd8d4c8ce0f672bae7ad32f51c96cc",
+      "process_resources.py": "8a39146449514c519921ee153f1301621555694b3cf5a64b16edcd6538f5ac16",
+      "process_resources_native.cc": "0b72ffc7b767682dca724bb6d8de8b5f2ccaae532b5b99c9e14f68505769a010"
+    },
+    "tasks": {
+      "files": [
+        "find",
+        "rg",
+        "xff"
+      ],
+      "files-safe": [
+        "xff"
+      ],
+      "name-txt": [
+        "find",
+        "rg",
+        "xff"
+      ],
+      "content-needle": [
+        "rg",
+        "xff"
+      ],
+      "content-absent_marker": [
+        "rg",
+        "xff"
+      ],
+      "fuzzy-discovery-itm": [
+        "find+fzf",
+        "xff"
+      ],
+      "fuzzy-list-itm": [
+        "fzf"
+      ],
+      "fuzzy-discovery-hdn": [
+        "find+fzf",
+        "xff"
+      ],
+      "fuzzy-list-hdn": [
+        "fzf"
+      ],
+      "fuzzy-discovery-zzzz": [
+        "find+fzf",
+        "xff"
+      ],
+      "fuzzy-list-zzzz": [
+        "fzf"
+      ]
+    }
+  },
+  "platforms": [
+    "linux",
+    "macos"
+  ],
+  "identity": "ef5b457aba600d70e4761a5bea30fa0e6b26f380d46f267417b54c82c812556b"
+}
