@@ -5229,5 +5229,7 @@ See the [qualification report](benchmarks/bounded-stdout-buffer-20261109.md) for
 The [scanner qualification](benchmarks/direct-line-scan-spans-20261109.md) compares
 caller-owned stack and lazy heap storage with owning reads. Preserve short-read,
 initialized-prefix, changing-capability, EOF, binary, late-error and reentrant
-contracts. Cross-platform development checks pass; native, memory, archive and
-legacy-path performance verification must finish before runtime selection.
+contracts. Both-host native, engine, legacy/direct kernel and independent-image
+qualification select stack storage, retaining the heap variant and every slower
+observation. Full implementation-head release and affected sanitizer suites pass;
+the report/data commit receives its own current-head checks. Broader O18 remains open.
