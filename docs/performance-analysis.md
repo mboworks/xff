@@ -5183,3 +5183,30 @@ independent limit documented for `--jobs`; command-wide stage-policy/JC work rem
 separate. Deterministic tests cover actual CPU/credit waiters, mutex handoff, resumption
 and cancellation with a coordinator-owned unit. Both hosts pass the six focused
 release targets; full shared-CPU qualification remains in progress.
+
+### O18: adaptive output qualification
+
+The [adaptive-output report](benchmarks/adaptive-ordered-output-20261109.md) retains
+all fixed/adaptive/CPU-accounting variants and their source, tests and raw observations.
+The selected runtime keeps small/unknown output batched, shares CPU admission across
+coordinator/matchers, and applies output credit to native and rg transactions. Both
+hosts pass the 270-target root release invocation and the 73-target standalone
+extension/API invocation, with six focused ASan/TSan targets per host and Linux MSan.
+
+The 1,000-file heavy-output rg workload improves 28.88% on Linux and 33.16% on Mac;
+peak RSS falls from 38.80 to 18.52 MiB and from 79.30 to 38.12 MiB. First-visible
+pipe output also improves. Ordinary results remain mixed: Linux many-directory rg
+filename output costs 3.78%; mixed-output transitions retain small costs. Preserve
+all 76 native and 32 crossover cells per host and the independent-image confirmations.
+
+One Linux population reports a 26.07% ordinary name cost; later cohorts change its
+sign. All loaded sections/addresses of the preceding/current CPU builds match except
+for the build-ID note. Separate instruction diagnostics show about 0.02%/0.69% more
+retired user instructions for flat/many-directory names, not a 26% increase. This
+explains why that large observation cannot be assigned to the declaration edit;
+it does not establish zero ordinary elapsed cost or a specific host cause.
+
+The capsule preserves original observations, repeated-baseline and independent-image
+controls, the contaminated earlier Mac session, failed prototypes, fixture recipes
+and exact image identities. No whole-process bound, active-I/O preemption or complete
+JC/source/temporary admission is inferred. Those parts of O18 remain open.

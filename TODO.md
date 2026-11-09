@@ -516,12 +516,16 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
 - [ ] O18: Qualify byte-bounded overlap with backpressure, ordered publication and cancellation;
       avoid per-batch throwaway threads and nested waits on the same saturated pool.
       Retain the [ordered-output credit experiment](docs/benchmarks/ordered-output-credit-20261107.md).
-      All runtime refinements remain unselected after repeatable ordinary Linux output costs,
-      despite large-output/RSS gains. Solve synchronization costs and missing input/slot/source/
-      renderer-temporary admission independently; native output and stage overlap remain open.
-      Test observed-output scheduling: batch small/unknown output and overlap heavy output,
-      retaining identical byte credit in both paths. Qualify crossover/mixed workloads on
-      both hosts before selecting a threshold or exposing configuration.
+      Adaptive native/rg output, owned-text admission, byte backpressure and a shared matcher/
+      coordinator CPU allowance pass cross-platform qualification in
+      [the adaptive-output report](docs/benchmarks/adaptive-ordered-output-20261109.md).
+      Retain ordinary-path costs and anomalous Linux populations alongside large-output gains.
+      Keep full source/decoder/derived-cache/renderer-temporary admission and broader JC gates
+      open; output credit is not a whole-process cap. No public crossover setting is exposed.
+- [ ] Benchmark qualification: distinguish repeated execution of one image from independent
+      file-backed baseline copies. Retain both controls when investigating unexplained native
+      costs, and compare loaded code/data identities before repeating full populations for a
+      build-ID-only change. Preserve all observations rather than choosing a favorable cohort.
 - [ ] O18a: Redesign queued cancellation after both measured policies fail cross-platform
       qualification. The deterministic nine-to-four backend-call proof and exact serial/recycling
       tests pass, but acquire-load and explicit-stop screens expose ordinary Mac costs. Retain
