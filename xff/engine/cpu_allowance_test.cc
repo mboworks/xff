@@ -53,7 +53,7 @@ TEST_F(CpuAllowanceTest, ABlockedProducerReturnsItsUnitForTheCoordinatorAndCanRe
   std::atomic<bool> entered = false;
   std::latch leave(1);
   std::jthread coordinator([&] {
-    CpuAllowance::Lease lease(allowance);
+    const CpuAllowance::Lease lease(allowance);
     entered.store(true);
     leave.wait();
   });
@@ -82,7 +82,7 @@ TEST_F(CpuAllowanceTest, ConcurrentOwnersStayWithinTheSharedAllowance) {
   for (std::size_t index = 0; index < 8; ++index) {
     participants.emplace_back([&] {
       start.arrive_and_wait();
-      CpuAllowance::Lease lease(allowance);
+      const CpuAllowance::Lease lease(allowance);
       const auto count = active.fetch_add(1) + 1;
       auto previous = peak.load();
       while (previous < count && !peak.compare_exchange_weak(previous, count)) {}

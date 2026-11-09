@@ -15,8 +15,11 @@ namespace xff::engine {
 class CpuAllowance final {
  public:
   explicit CpuAllowance(std::size_t participants);
+  ~CpuAllowance() = default;
   CpuAllowance(const CpuAllowance&) = delete;
   CpuAllowance& operator=(const CpuAllowance&) = delete;
+  CpuAllowance(CpuAllowance&&) = delete;
+  CpuAllowance& operator=(CpuAllowance&&) = delete;
 
   class Lease final {
    public:
@@ -24,6 +27,8 @@ class CpuAllowance final {
     ~Lease();
     Lease(const Lease&) = delete;
     Lease& operator=(const Lease&) = delete;
+    Lease(Lease&&) = delete;
+    Lease& operator=(Lease&&) = delete;
 
     void Pause();
     void Resume();
