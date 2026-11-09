@@ -530,6 +530,14 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       file-backed baseline copies. Retain both controls when investigating unexplained native
       costs, and compare loaded code/data identities before repeating full populations for a
       build-ID-only change. Preserve all observations rather than choosing a favorable cohort.
+- [ ] Qualify delayed, bounded stdout buffering independently of broader O18 admission.
+      PR #1156 retains full/minimal native production measurements on both hosts and all
+      adverse controls in [the report](docs/benchmarks/bounded-stdout-buffer-20261109.md).
+      Complete the stream-contract coverage follow-up and current-head verification before
+      merging; a 4 KiB stdout buffer does not complete source/decoder/derived-cache budgets.
+- [ ] Keep the performance-analysis index below the Markdown service request limit before
+      appending further findings. Retain full results and sources in linked qualification
+      reports; consider local rendering or independently renderable sections for further growth.
 - [ ] O18a: Redesign queued cancellation after both measured policies fail cross-platform
       qualification. The deterministic nine-to-four backend-call proof and exact serial/recycling
       tests pass, but acquire-load and explicit-stop screens expose ordinary Mac costs. Retain

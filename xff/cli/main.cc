@@ -20,6 +20,7 @@
 #include <array>
 #include <cstddef>
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -36,6 +37,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "mbo/status/status_macros.h"
+#include "xff/cli/buffered_listing_output.h"
 #include "xff/cli/config_validation.h"
 #include "xff/cli/diagnostics.h"
 #include "xff/cli/globals.h"
@@ -957,8 +959,9 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     std::cerr << "xff: " << listing_config.status().message() << "\n";
     return 2;
   }
-  const xff::cli::PagerDecision listing_pager = xff::cli::DecidePager(
-      *listing_config, xff::cli::PagerOutput::kListing, stdout_is_tty, quiet || xff::parser::TakesTerminal(command));
+  const bool takes_terminal = xff::parser::TakesTerminal(command);
+  const xff::cli::PagerDecision listing_pager =
+      xff::cli::DecidePager(*listing_config, xff::cli::PagerOutput::kListing, stdout_is_tty, quiet || takes_terminal);
   const xff::cli::PagerStream pager_stream(listing_pager);
   const xff::vfs::LocalFs host_fs;
   std::optional<std::string> input;
@@ -979,10 +982,25 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   }
   const xff::cli::RgInputFs input_fs(host_fs, std::move(input));
   const xff::vfs::FileSystem& fs = command.rg ? static_cast<const xff::vfs::FileSystem&>(input_fs) : host_fs;
+  // Keep initial output on the ordinary stream, and construct byte storage only
+  // after sustained output. Short runs allocate no buffer and keep a small stack frame.
+  std::unique_ptr<xff::cli::BufferedListingOutput> buffered_listing;
+  std::size_t direct_output_budget = 4 * xff::cli::BufferedListingOutput::kCapacity;
+  const bool can_buffer = !quiet && !stdout_is_tty && !takes_terminal
+                          && listing_pager.action == xff::cli::PagerAction::kDirect && std::cout.good()
+                          && std::cout.exceptions() == std::ios_base::goodbit
+                          && (std::cout.flags() & std::ios_base::unitbuf) == 0;
   const xff::engine::RunResult result = xff::engine::RunFind(
       command, fs,
-      [quiet](std::string_view record) {
+      [quiet, can_buffer, &direct_output_budget, &buffered_listing](std::string_view record) {
         if (!quiet) {  // --quiet suppresses output; the match is still recorded via `matched`
+          if (can_buffer && !buffered_listing && std::cout.good()) {
+            if (record.size() >= direct_output_budget) {
+              buffered_listing = std::make_unique<xff::cli::BufferedListingOutput>(std::cout);
+            } else {
+              direct_output_budget -= record.size();
+            }
+          }
           std::cout.write(record.data(), static_cast<std::streamsize>(record.size()));
         }
       },
