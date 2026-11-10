@@ -185,6 +185,7 @@
     }
   ],
   "files": {
+    "docs/benchmarks/extended-history-continuous-qualification-20261109.json": "docs/benchmarks/extended-history-continuous-qualification-20261109.json",
     "docs/benchmarks/transactional-rg-records-20261107.json.gz": "docs/benchmarks/transactional-rg-records-20261107.json.gz",
     "docs/benchmarks/language-json-storage-20261107.json.gz": "docs/benchmarks/language-json-storage-20261107.json.gz",
     "docs/benchmarks/archive-ancestor-hint-20261107.json.gz": "docs/benchmarks/archive-ancestor-hint-20261107.json.gz",

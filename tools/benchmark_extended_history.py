@@ -49,6 +49,10 @@ def freeze(path, value):
 
 def cpu_allocation(count):
     """Prefer separate physical cores over sibling hardware threads."""
+    if sys.platform == 'darwin':
+        if count > (os.cpu_count() or 0):
+            raise ValueError('worker count exceeds available logical CPUs')
+        return []
     cores = {}
     for cpu in sorted(os.sched_getaffinity(0)):
         topology = Path(f'/sys/devices/system/cpu/cpu{cpu}/topology')
@@ -65,7 +69,8 @@ def worker(connection, spec, wanted, separator, failure_path):
     sample = None
     try:
         os.setsid()
-        os.sched_setaffinity(0, spec['affinity'])
+        if spec['affinity']:
+            os.sched_setaffinity(0, spec['affinity'])
         with open(spec['stdin'], 'rb') as source:
             sample = process_resources.measure_pipeline(
                 [spec['command']], source=source, cwd=spec['cwd'], environment=spec['environment'],
@@ -110,6 +115,10 @@ def invoke(spec, wanted, separator, failure_path, timeout=120):
 
 
 def host_context():
+    if sys.platform == 'darwin':
+        return {'utc': datetime.now(timezone.utc).isoformat(), 'loadavg': os.getloadavg(),
+                'vm_stat': subprocess.check_output(['vm_stat'], text=True),
+                'memory_pressure': subprocess.check_output(['sysctl', 'vm.swapusage'], text=True)}
     return {'utc': datetime.now(timezone.utc).isoformat(), 'loadavg': os.getloadavg(),
             'meminfo': Path('/proc/meminfo').read_text(),
             'cpu_stat': Path('/proc/stat').read_text(),

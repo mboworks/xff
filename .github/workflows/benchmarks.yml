@@ -17,6 +17,112 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  extended:
+    name: Extended production (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            timeout: 120
+          - os: macos-latest
+            platform: macos
+            timeout: 180
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.timeout }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: bazel-contrib/setup-bazel@0.19.1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Check extended runner capacity before building
+        run: |
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0, 'tools')
+          from benchmark_extended_ci import cpu_allocation
+          print('Extended allocation for three workers:', cpu_allocation(3, ci=True))
+          PY
+      - uses: ./.github/actions/bazel-cache-restore
+        with:
+          namespace: default
+      - name: Install extended reference tools
+        run: |
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            sudo apt-get update && sudo apt-get install -y findutils ripgrep tar
+          else
+            brew install findutils ripgrep gnu-tar
+          fi
+      - name: Freeze native accounting helper before production builds
+        run: |
+          set -euo pipefail
+          bazel build //tools:process_resources_native --config=clang_opt --disk_cache="${HOME}/.cache/bazel-disk"
+          launcher="$(bazel cquery 'config(//tools:process_resources_native, target)' --config=clang_opt \
+            --output=starlark --starlark:expr='target.files_to_run.executable.path')"
+          cp "${launcher}" "${RUNNER_TEMP}/extended-resource-launcher"
+      - name: Freeze full production head and first parent
+        run: |
+          set -euo pipefail
+          git worktree add --detach "${RUNNER_TEMP}/extended-base" HEAD^1
+          python3 tools/benchmark_extended_ci.py build --repo="${GITHUB_WORKSPACE}" --role=head \
+            --root="${RUNNER_TEMP}/extended-build" --disk-cache="${HOME}/.cache/bazel-disk"
+          python3 tools/benchmark_extended_ci.py build --repo="${RUNNER_TEMP}/extended-base" --role=base \
+            --root="${RUNNER_TEMP}/extended-build" --disk-cache="${HOME}/.cache/bazel-disk"
+          tar -cf "${RUNNER_TEMP}/benchmark-extended-build.tar" -C "${RUNNER_TEMP}/extended-build" .
+          bazel --nosystem_rc --nohome_rc shutdown
+          (cd "${RUNNER_TEMP}/extended-base" && bazel --nosystem_rc --nohome_rc shutdown)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-extended-build-${{ matrix.platform }}
+          path: ${{ runner.temp }}/benchmark-extended-build.tar
+          retention-days: 30
+          if-no-files-found: error
+      - uses: actions/download-artifact@v8
+        with:
+          name: benchmark-extended-build-${{ matrix.platform }}
+          path: ${{ runner.temp }}/extended-retention
+      - name: Restore the original retained production bytes
+        run: |
+          mkdir -p "${RUNNER_TEMP}/extended-retained-build"
+          tar -xf "${RUNNER_TEMP}/extended-retention/benchmark-extended-build.tar" -C "${RUNNER_TEMP}/extended-retained-build"
+      - name: Measure the complete extended contract in memory
+        run: |
+          set -euo pipefail
+          cat >"${RUNNER_TEMP}/extended-collection.json" <<'JSON'
+          {"run_id":${{ github.run_id }},"run_attempt":${{ github.run_attempt }},"head_sha":"${{ github.sha }}","repository":"${{ github.repository }}"}
+          JSON
+          python3 tools/benchmark_extended_ci.py collect \
+            --build-root="${RUNNER_TEMP}/extended-retained-build" --root="${RUNNER_TEMP}/extended-measurements" \
+            --resource-launcher="${RUNNER_TEMP}/extended-resource-launcher" --collection="${RUNNER_TEMP}/extended-collection.json"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: benchmark-extended-report-${{ matrix.platform }}
+          path: |
+            ${{ runner.temp }}/extended-measurements/observation.json
+            ${{ runner.temp }}/extended-measurements/measurements
+            ${{ runner.temp }}/extended-measurements/storage.json
+            ${{ runner.temp }}/extended-measurements/storage-release.json
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Retain extended build diagnostics after success or failure
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: benchmark-extended-build-logs-${{ matrix.platform }}
+          path: |
+            ${{ runner.temp }}/extended-build/binaries/*/build.log
+            ${{ runner.temp }}/extended-build/binaries/*/build.json
+            ${{ runner.temp }}/extended-build/binaries/*/link-actions.json
+          retention-days: 30
+          if-no-files-found: warn
+
   build:
     strategy:
       fail-fast: false

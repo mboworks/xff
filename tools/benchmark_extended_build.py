@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import time
 
 
@@ -30,9 +31,70 @@ def git(checkout, *args):
 def clean_source(checkout, sha):
     if git(checkout, 'rev-parse', 'HEAD') != sha or git(checkout, 'status', '--porcelain'):
         raise ValueError('historical checkout must exactly match its clean revision')
-    if (checkout / '.bazelrc.user').exists():
+    if any((checkout / name).exists() for name in ('.bazelrc.user', '.bazelrc.user.end')):
         raise ValueError('workspace Bazel override is forbidden')
     return {'revision': sha, 'tree': git(checkout, 'rev-parse', 'HEAD^{tree}'), 'clean': True}
+
+
+def build_logged(command, checkout, log):
+    """Expose native build progress and keep the exact diagnostic output."""
+    with subprocess.Popen(command, cwd=checkout, stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT, text=True, bufsize=1) as process:
+        for line in process.stdout:
+            log.write(line)
+            log.flush()
+            print(line, end='', file=sys.stderr, flush=True)
+        if process.wait():
+            raise subprocess.CalledProcessError(process.returncode, command)
+
+
+def freeze_build(checkout, directory, sha, disk_cache, jobs=6, build_library_path=None):
+    """Build and immediately freeze one exact checkout without selecting another revision."""
+    directory.mkdir(parents=True, exist_ok=True)
+    executable = directory / 'xff_full'
+    if (directory / 'build.json').exists():
+        saved = json.loads((directory / 'build.json').read_text())
+        if saved['source'] != clean_source(checkout, sha) or saved['sha256'] != digest(executable):
+            raise ValueError('retained executable mismatch: ' + sha)
+        return saved
+    started = time.monotonic()
+    source = clean_source(checkout, sha)
+    bazel = ['bazel', '--nosystem_rc', '--nohome_rc']
+    options = ['--config=clang_release', '--config=xff_full',
+               '--disk_cache=' + str(disk_cache.resolve()), '--jobs=' + str(jobs)]
+    if build_library_path:
+        options.append('--action_env=LD_LIBRARY_PATH=' + str(build_library_path.resolve()))
+    command = [*bazel, 'build', '//xff/cli:xff_full', *options]
+    print(f'BUILD {sha} //xff/cli:xff_full --config=clang_release --config=xff_full ({checkout})', flush=True)
+    with (directory / 'build.log').open('w') as log:
+        build_logged(command, checkout, log)
+        query = [*bazel, 'cquery', 'config(//xff/cli:xff_full, target)', *options,
+                 '--output=starlark', '--starlark:expr=target.files_to_run.executable.path']
+        artifact = subprocess.check_output(query, cwd=checkout, stderr=log, text=True).strip()
+        if not artifact or len(artifact.splitlines()) != 1:
+            raise ValueError('configured executable query is ambiguous')
+        if clean_source(checkout, sha) != source:
+            raise ValueError('source identity changed during build')
+        built = checkout / artifact
+        binary_hash = digest(built)
+        shutil.copy2(built, executable)
+        if digest(executable) != binary_hash:
+            raise ValueError('frozen executable copy mismatch')
+        print(f'FROZEN {sha} SHA256={binary_hash} bytes={executable.stat().st_size} {executable}', flush=True)
+        # Link actions record the actual production LTO command for this revision.
+        with (directory / 'link-actions.json').open('w') as actions:
+            subprocess.run([*bazel, 'aquery', 'mnemonic("CppLink", //xff/cli:xff_full)',
+                            *options, '--output=jsonproto'], cwd=checkout, stdout=actions,
+                           stderr=log, check=True)
+    saved = {'source': source, 'sha256': binary_hash, 'bytes': executable.stat().st_size,
+             'command': command, 'query': query, 'artifact': artifact,
+             'elapsed_seconds': time.monotonic() - started,
+             'completed_at': datetime.now(timezone.utc).isoformat(),
+             'configuration': {name: digest(checkout / name) for name in
+                               ('.bazelrc', '.bazelversion', 'MODULE.bazel', 'MODULE.bazel.lock',
+                                'bazelmod/llvm.MODULE.bazel') if (checkout / name).is_file()}}
+    write(directory / 'build.json', saved)
+    return saved
 
 
 def main():
@@ -79,40 +141,8 @@ def main():
         write(status_path, status)
         try:
             subprocess.run(['git', '-C', str(checkout), 'checkout', '--detach', sha], check=True)
-            source = clean_source(checkout, sha)
-            bazel = ['bazel', *policy['startup_flags']]
-            options = ['--config=clang_release', '--config=xff_full',
-                       '--disk_cache=' + str(args.disk_cache.resolve()), '--jobs=' + str(args.jobs)]
-            if args.build_library_path:
-                options.append('--action_env=LD_LIBRARY_PATH=' + str(args.build_library_path.resolve()))
-            command = [*bazel, 'build', '//xff/cli:xff_full', *options]
-            with (directory / 'build.log').open('w') as log:
-                subprocess.run(command, cwd=checkout, stdout=log, stderr=subprocess.STDOUT, check=True)
-                query = [*bazel, 'cquery', 'config(//xff/cli:xff_full, target)', *options,
-                         '--output=starlark', '--starlark:expr=target.files_to_run.executable.path']
-                artifact = subprocess.check_output(query, cwd=checkout, stderr=log, text=True).strip()
-                if not artifact or len(artifact.splitlines()) != 1:
-                    raise ValueError('configured executable query is ambiguous')
-                if clean_source(checkout, sha) != source:
-                    raise ValueError('source identity changed during build')
-                built = checkout / artifact
-                binary_hash = digest(built)
-                shutil.copy2(built, executable)
-                if digest(executable) != binary_hash:
-                    raise ValueError('frozen executable copy mismatch')
-                # Link actions record the actual production LTO command for this revision.
-                with (directory / 'link-actions.json').open('w') as actions:
-                    subprocess.run([*bazel, 'aquery', 'mnemonic("CppLink", //xff/cli:xff_full)',
-                                    *options, '--output=jsonproto'], cwd=checkout, stdout=actions,
-                                   stderr=log, check=True)
-            saved = {'source': source, 'sha256': binary_hash, 'bytes': executable.stat().st_size,
-                     'command': command, 'query': query, 'artifact': artifact,
-                     'elapsed_seconds': time.monotonic() - started,
-                     'completed_at': datetime.now(timezone.utc).isoformat(),
-                     'configuration': {name: digest(checkout / name) for name in
-                                       ('.bazelrc', '.bazelversion', 'MODULE.bazel', 'MODULE.bazel.lock',
-                                        'bazelmod/llvm.MODULE.bazel') if (checkout / name).is_file()}}
-            write(identity, saved)
+            saved = freeze_build(checkout, directory, sha, args.disk_cache, args.jobs, args.build_library_path)
+            binary_hash = saved['sha256']
             status[sha] = {'status': 'built', 'sha256': binary_hash, 'seconds': saved['elapsed_seconds']}
             print(f'BUILT {index}/{len(order)} {sha[:10]} {binary_hash} {saved["elapsed_seconds"]:.1f}s', flush=True)
         except (subprocess.CalledProcessError, ValueError, OSError) as error:
