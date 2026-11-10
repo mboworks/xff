@@ -39,5 +39,4 @@ bazel_dep(name = "platforms", version = "1.1.0")
 
 bazel_dep(name = "googletest", version = "1.18.0.bcr.1")
 bazel_dep(name = "google_benchmark", version = "1.10.0", repo_name = "com_github_google_benchmark")
-# MBO provides status matchers for tests and the status macros required by STYLE_CPP.md.
 bazel_dep(name = "mboworks_mbo", version = "0.16.0")
