@@ -698,6 +698,23 @@ cc_test(
 )
 
 cc_test(
+    name = "archive_duplicate_metadata_test",
+    srcs = ["archive_duplicate_metadata_test.cc"],
+    deps = [
+        ":archive_fs_cc",
+        ":memory_archive_test_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+        "@xff_extras_api//:vfs_cc",
+    ],
+)
+
+cc_test(
     name = "archive_member_key_test",
     srcs = ["archive_member_key_test.cc"],
     deps = [
