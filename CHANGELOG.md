@@ -3,6 +3,9 @@
 
 # 0.11.0
 
+- Avoid eager wide-character conversion for ASCII TAR member names while preserving non-ASCII
+  decoding and legacy trailing-slash directory detection.
+
 - Keep archive member metadata consistent with the first stored entry selected for content reads
   when normalized member names repeat.
 

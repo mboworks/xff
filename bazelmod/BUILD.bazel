@@ -22,6 +22,7 @@ exports_files([
     "abseil-cctz-empty-format.patch",
     "abseil-lazy-corefoundation.patch",
     "dev.MODULE.bazel",
+    "libarchive-tar-ascii-pathname.patch",
     "libarchive-xar.patch",
     "extras.MODULE.bazel",
     "llvm.MODULE.bazel",
