@@ -55,6 +55,9 @@ fixture/tool/launcher/binary checks and no invalid-data marker. The measurement 
 surfaces; both views and the oldest/latest versions loaded without browser errors.
 The importer subsequently validated all 130 observations against the original retained
 production executables and ThinLTO link evidence. Staging is separate from publication.
+The [publication qualification](benchmarks/extended-dense-publication-20261116.json) records
+405,600 checked chart coordinates, lossless compaction, 650 unchanged prior catalog entries,
+807 unchanged packed reports and successful browser loads of all seven available datasets.
 
 These are local Linux measurements on Drogon. They do not populate the GitHub CI datasets,
 and no equivalent macOS historical extended population has been collected. Existing local

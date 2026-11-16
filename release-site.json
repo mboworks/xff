@@ -220,6 +220,7 @@
     "docs/benchmarks/direct-line-scan-spans-20261109-macos.json.gz": "docs/benchmarks/direct-line-scan-spans-20261109-macos.json.gz",
     "docs/benchmarks/prepared-member-name-20261109-linux.json.gz": "docs/benchmarks/prepared-member-name-20261109-linux.json.gz",
     "docs/benchmarks/prepared-member-name-20261109-macos.json.gz": "docs/benchmarks/prepared-member-name-20261109-macos.json.gz",
-    "docs/benchmarks/extended-tar-diagnostic-20261115.json": "docs/benchmarks/extended-tar-diagnostic-20261115.json"
+    "docs/benchmarks/extended-tar-diagnostic-20261115.json": "docs/benchmarks/extended-tar-diagnostic-20261115.json",
+    "docs/benchmarks/extended-dense-publication-20261116.json": "docs/benchmarks/extended-dense-publication-20261116.json"
   }
 }

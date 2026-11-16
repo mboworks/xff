@@ -137,7 +137,8 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
       const hashes = binary.binaries
         ?.map((entry) => `${entry.name}: ${entry.sha256 || "Not recorded"}`)
         .join("\n");
-      root.querySelector("[data-binary-hash]").title = binary.sha256 || hashes || "";
+      root.querySelector("[data-binary-hash]").title =
+        binary.sha256 || hashes || "";
       root.querySelector("[data-binary-sha256]").textContent =
         binary.sha256 || hashes || "";
       root.querySelector("[data-binary-evidence]").textContent = binary.reason;
