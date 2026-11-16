@@ -269,6 +269,12 @@ regresses 3-11% across the two sessions. Keep this tradeoff visible when compari
 
 ## Toolchain follow-up
 
+- [ ] Fix explicit Linux `--config=clang_opt --config=lto`: the configured action
+      combines Bazel split ThinLTO indexing with `-ffat-lto-objects`, and the compiler
+      does not emit `word.indexing.o`. The scanner qualification retains the failed
+      action and succeeds with shipping `xff_production_lto`. Keep shipping object
+      sharing intact and verify feature/configuration order before a separate fix.
+
 - [ ] Complete the Clang/LLVM 23.1.2 upgrade: validate native macOS linking, Linux LTO, the
       LLVM 22 MSan compiler/runtime override, matching formatting, full CI, benchmark results,
       and stripped binary sizes before merging the separate follow-up to #936.
@@ -511,12 +517,15 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       keep the specialized pools and retain [all variants and counterexamples](docs/benchmarks/shared-stage-workers-20261107.md).
       Future reuse designs must preserve independent root/mount allowances, leaf jobs, owner
       draining and JC gates, and remove the repeatable Linux comparison regression before adoption.
-- [ ] Qualify direct span reads in `content::ScanLines` separately from O18. Native
-      profiling attributes 43.94% of sampled baseline CPU to zeroing beneath its owning
-      64 KiB read loop. Reuse `ReadInto` only with initialized-range, binary/EOF/error
-      tests and native/memory/archive controls; retain O07's rejected variants rather
-      than assuming removal of zeroing is always a win. See the current O18 qualification
-      notes in [the performance analysis](docs/performance-analysis.md).
+- [x] Qualify direct span reads in `content::ScanLines` separately from O18. Retain
+      the distinct 43.94% and current 40.81% sampled CPU zeroing profiles; neither
+      predicts elapsed gains. Compare stack and lazy overwrite heap storage with
+      native/memory/archive and incapable-stream controls, preserving initialized
+      prefixes, changing capabilities, EOF, binary detection and late errors.
+      Both-host complete native/engine/kernel/image-control qualification selects stack
+      storage, with measured legacy and high-worker costs retained. Keep O07's
+      rejected variants and every adverse result in
+      [the scanner report](docs/benchmarks/direct-line-scan-spans-20261109.md).
 - [ ] O18: Qualify byte-bounded overlap with backpressure, ordered publication and cancellation;
       avoid per-batch throwaway threads and nested waits on the same saturated pool.
       Retain the [ordered-output credit experiment](docs/benchmarks/ordered-output-credit-20261107.md).
@@ -526,10 +535,22 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       Retain ordinary-path costs and anomalous Linux populations alongside large-output gains.
       Keep full source/decoder/derived-cache/renderer-temporary admission and broader JC gates
       open; output credit is not a whole-process cap. No public crossover setting is exposed.
+- [ ] Benchmark qualification: independent CLI copies must preserve `xff`/`xff_full`
+      basenames, because invocation names select configuration. Retain earlier controls
+      with different names, disclose that limitation and revisit conclusions depending
+      only on those controls. The scanner qualification adds a matching-basename cohort.
 - [ ] Benchmark qualification: distinguish repeated execution of one image from independent
       file-backed baseline copies. Retain both controls when investigating unexplained native
       costs, and compare loaded code/data identities before repeating full populations for a
       build-ID-only change. Preserve all observations rather than choosing a favorable cohort.
+- [x] Qualify delayed, bounded stdout buffering independently of broader O18 admission.
+      Merged PR #1156 retains full/minimal native production measurements on both hosts
+      and adverse controls in [the report](docs/benchmarks/bounded-stdout-buffer-20261109.md).
+      The 16-case stream-contract test, current-head checks and post-merge Test/Benchmarks
+      pass; a 4 KiB stdout buffer does not complete source/decoder/derived-cache budgets.
+- [ ] Keep the performance-analysis index below the Markdown service request limit before
+      appending further findings. Retain full results and sources in linked qualification
+      reports; consider local rendering or independently renderable sections for further growth.
 - [ ] O18a: Redesign queued cancellation after both measured policies fail cross-platform
       qualification. The deterministic nine-to-four backend-call proof and exact serial/recycling
       tests pass, but acquire-load and explicit-stop screens expose ordinary Mac costs. Retain
@@ -564,6 +585,14 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       +27% on Mac and +11% on Linux. Eliminate those costs without arbitrary count/size thresholds,
       preserving identity, budgets, duplicate semantics, exact-content oracles and the rejected
       root-offset variant. Native source identity and streamed-ZIP sizes remain separate open work.
+- [x] O19b4a: Make archive index metadata follow the first normalized stored header, matching
+      content selection before retaining payload locators. Preserve synthesized-parent replacement,
+      first symlink targets, file/directory types, unique listings and direct-child counts with
+      dedicated regression tests.
+- [ ] O19b4: Qualify reuse of validated plain-TAR payload locators independently of name
+      preparation. The 10,000-member native search still spends roughly 8-13 seconds replaying
+      headers. Preserve format validation, exact source identity, duplicate selection, nested and
+      sequential-source fallbacks, and shared read budgets; do not bypass decoder checks.
 - [ ] O19b: Qualify archive seeking/index/replay and decoder admission independently. Investigate
       native/memory ZIP seeking before concurrency; preserve sequential-source and shared-budget fallbacks.
 - [x] O19c: Qualify caller-owned reads for immutable memory and archive-member cursors, including
@@ -590,6 +619,11 @@ EP/JC/P work; candidates are not speedup claims until measured on both platforms
       separate hardware diagnostics are retained in
       [the allocation decisions](docs/benchmarks/archive-directory-allocation-20261105.md);
       microbenchmark gains alone do not qualify either runtime implementation.
+- [x] O19g3: Qualify once-per-open requested member-name normalization, preserving nullable
+      C pathnames, normalization, duplicate/nonregular selection, source ownership and errors.
+      [Both-host measurements and complete data](docs/benchmarks/prepared-member-name-20261109.md)
+      retain first/missing/reopened/fresh-wrapper controls, slower results, and the Linux
+      missing-member microbenchmark tradeoff; no universal speedup is claimed.
 - [x] O19i: Bound initial archive-directory result storage to reduce small-listing vector
       reallocations, retaining tiny/root/chain costs and complete native controls. Full both-host
       qualification and the held O19g variants are in
@@ -1561,3 +1595,11 @@ this as intentional accounting.
       harness versions, slower cases and all raw observations in
       [the decision report](docs/benchmarks/language-list-reserve-20261107.md).
       Generated immutable catalog representation remains a separate O14 candidate.
+
+### Shared local measurement ownership
+
+- [ ] Coordinate performance measurements and compiler work across simultaneous worktrees/tasks
+      with an explicit host-level lease. Per-campaign locks alone do not prevent contamination;
+      retain contention records, wait for foreign work rather than terminating it, and qualify
+      each affected cohort only after an uncontended rerun. The member-name report records a
+      concrete benchmark overlap and an independently started MSan compiler.

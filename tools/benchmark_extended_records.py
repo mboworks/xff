@@ -118,7 +118,8 @@ def validate(record, source=None):
     require(record['identity'] == observation_identity(record),
             'extended record identity changed')
     contract = record['contract']
-    require(contract['recipe'] == suite.RECIPE and contract['cases'] == [asdict(case) for case in suite.cases()],
+    require(contract['recipe'] in (suite.RECIPE, suite.DENSE_RECIPE)
+            and contract['cases'] == [asdict(case) for case in suite.cases(contract['recipe'])],
             'extended workload contract changed')
     require(contract['warmup_rounds'] == 1 and contract['estimator'] == 'mean-fastest'
             and (contract['repetitions'], contract['keep']) == (9, 7), 'invalid extended sampling')

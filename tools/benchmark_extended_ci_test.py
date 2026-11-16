@@ -69,6 +69,7 @@ class BenchmarkExtendedCiTest(unittest.TestCase):
 
     def test_complete_head_and_identical_parent_controls_are_retained_after_final_checks(self):
         value = self.collect()
+        self.assertEqual(value['contract']['recipe'], ci.suite.DENSE_RECIPE)
         self.assertEqual(value['origin'], 'local')
         self.assertEqual(value['comparison'], 'parent')
         self.assertEqual(len(value['rows']), len(self.fixture.cases))

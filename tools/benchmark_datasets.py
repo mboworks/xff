@@ -56,6 +56,9 @@ def build_catalog(root):
         if not report or not commit or records.is_preview(record):
             continue
         local = records.is_local(record)
+        if (not local and record.get('kind') == 'extended-production-view'
+                and report['contract'].get('comparison') != 'traditional'):
+            continue  # Parent comparisons remain linked evidence, not another CI history.
         batch_path = path.parent.parent / 'batch.json' if local else path.parent / 'batch.json'
         manifest = records.read(batch_path) if records.exists(batch_path) else {}
         contract = manifest.get('contract', {})
@@ -65,6 +68,9 @@ def build_catalog(root):
                            architecture=report['contract'].get('machine'), recipe=recipe(report, contract))
         key = identity(description)
         dataset = datasets.setdefault(key, dict(id=key, **description, machines=[], methods={}, observations=[]))
+        if not local:
+            dataset['history_series'] = 'github-ci-' + records.platform_key(record) + '/' + (
+                report['contract'].get('machine') or 'unknown')
         machine = dict(machine_id=contract.get('machine_id'), host_id=environment.get('host_id'),
                        architecture=environment.get('machine'), cpu_count=environment.get('cpu_count'))
         if local and machine not in dataset['machines']:
@@ -198,7 +204,8 @@ def render(catalog):
                  str(len({item['commit'] for item in dataset['observations']}))]
         rows.append('<tr>' + ''.join('<td>' + html.escape(cell) + '</td>' for cell in cells) + '</tr>')
     return ('<details><summary>Measurement datasets and methods</summary>'
-            '<p>Each dataset records its machine series and workload recipe. '
+            '<p>Each row records a collectable machine series and workload recipe. '
+            'CI recipes extend the same platform history in the viewer; their recipe IDs and raw observations stay immutable. '
             'The same recipe on another machine produces a separate series. '
             'Driver, compiler/build identity, reference tools, allocation, storage and sampling provenance '
             'remain attached to each observation. Compatibility for collection does not imply interchangeable timings.</p>'

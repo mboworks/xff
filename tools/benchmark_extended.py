@@ -14,6 +14,8 @@ import tarfile
 
 
 RECIPE = 'extended-production-v1'
+DENSE_RECIPE = 'extended-production-v2'
+FILE_COUNTS = (10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000)
 MTIME = 1577923200  # 2020-01-02 00:00:00 UTC.
 PATTERN = r'(ERROR|WARN) service=api_[0-9]+ status=5[0-9]{2}'
 TASKS = ('files-exact', 'name-native', 'metadata-time', 'content-regex', 'archive-tar')
@@ -36,11 +38,14 @@ class Case:
         return f'{self.name}/{self.shape}/{self.files}/{self.cpus}'
 
 
-def cases():
-    """Include large traversal cells without making every archive trial a 100k scan."""
+def cases(recipe=RECIPE):
+    """Preserve the original campaign and provide a complete grid for new collection."""
+    if recipe not in (RECIPE, DENSE_RECIPE):
+        raise ValueError('unknown extended recipe: ' + recipe)
     return [Case(name, shape, count, cpus) for name in TASKS
             for shape in ('broad', 'deep')
-            for count in ((100, 1000, 10000) if name == 'archive-tar' else (100, 10000, 100000))
+            for count in (FILE_COUNTS if recipe == DENSE_RECIPE else
+                          (100, 1000, 10000) if name == 'archive-tar' else (100, 10000, 100000))
             for cpus in (1, 3)]
 
 

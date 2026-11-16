@@ -3,6 +3,9 @@
 
 # 0.11.0
 
+- Keep archive member metadata consistent with the first stored entry selected for content reads
+  when normalized member names repeat.
+
 - Adapt ordered content-output scheduling to heavy batches, apply byte backpressure, and share the matcher/coordinator CPU allowance while preserving whole-file validation and cancellation.
 
 - Avoid redundant 64 KiB buffer clearing in legacy archive extraction.

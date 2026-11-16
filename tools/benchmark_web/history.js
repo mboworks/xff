@@ -131,10 +131,15 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
       root.querySelector("[data-binary-state]").title = binary.reason;
       root.querySelector("[data-binary-hash]").textContent = binary.sha256
         ? `${binary.sha256.slice(0, 12)}...`
-        : "Not recorded";
-      root.querySelector("[data-binary-hash]").title = binary.sha256 || "";
+        : binary.binaries?.length > 1
+          ? `${binary.binaries.length} binaries`
+          : "Not recorded";
+      const hashes = binary.binaries
+        ?.map((entry) => `${entry.name}: ${entry.sha256 || "Not recorded"}`)
+        .join("\n");
+      root.querySelector("[data-binary-hash]").title = binary.sha256 || hashes || "";
       root.querySelector("[data-binary-sha256]").textContent =
-        binary.sha256 || "";
+        binary.sha256 || hashes || "";
       root.querySelector("[data-binary-evidence]").textContent = binary.reason;
       root.querySelector("[data-platform-details]").textContent =
         record.platform_details || record.identity;

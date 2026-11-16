@@ -71,7 +71,7 @@ def collect(build_root, root, launcher_path, collection=None, series=None, exist
         records.require(collection['head_sha'] == head['sha'], 'workflow head/build mismatch')
         collection = dict(collection, base_sha=anchor['sha'])
     series = series or ('github-ci-' + platform_name)
-    cases = suite.cases()
+    cases = suite.cases(suite.DENSE_RECIPE)
     affinity = cpu_allocation(max(case.cpus for case in cases), origin == 'ci')
     tools = {}
     for name in ('find', 'rg', 'tar'):
@@ -85,7 +85,7 @@ def collect(build_root, root, launcher_path, collection=None, series=None, exist
     output.mkdir(parents=True, exist_ok=True)
     controls, control_error = [], None
     with storage.fixture(root, existing_fixture) as (fixture, filesystem):
-        contract = {'recipe': suite.RECIPE, 'cases': [asdict(case) for case in cases], 'revisions': revisions,
+        contract = {'recipe': suite.DENSE_RECIPE, 'cases': [asdict(case) for case in cases], 'revisions': revisions,
                     'repetitions': 9, 'keep': 7, 'estimator': 'mean-fastest', 'warmup_rounds': 1,
                     'anchor': anchor, 'fixture': str(fixture),
                     'filesystem': 'tmpfs' if sys.platform == 'linux' else filesystem,

@@ -62,6 +62,7 @@ class BenchmarkExtendedSiteTest(unittest.TestCase):
         self.assertEqual(page.count('<!-- benchmark-datasets:start -->'), 1)
 
     def test_changing_ci_parent_keeps_same_dataset_and_exposes_actual_parent_per_version(self):
+        self.fixture.contract['recipe'] = suite.DENSE_RECIPE
         first = self.fixture.record(origin='ci', comparison='parent')
         records.retain(self.root, first, self.fixture.source())
         self.fixture.revisions.reverse()
@@ -69,14 +70,38 @@ class BenchmarkExtendedSiteTest(unittest.TestCase):
         second = self.fixture.record(origin='ci', comparison='parent')
         records.retain(self.root, second, self.fixture.source())
         self.assertEqual(site.publish(self.root), 4)
-        catalog = [item for item in records.read(self.root / 'catalog.json') if item.get('extended')]
-        self.assertEqual(len({item['series_id'] for item in catalog}), 2)
-        self.assertEqual({item['comparison_role'] for item in catalog}, {'Parent ' + 'a' * 12, 'Parent ' + 'b' * 12})
+        catalog = [item for item in records.read(self.root / 'catalog.json') if item.get('ci_history_view')]
+        self.assertEqual(len(catalog), 2)
+        self.assertEqual({item['platform'] for item in catalog}, {'linux / x86_64'})
         for entry in catalog:
             self.assertFalse(entry['local'])
             self.assertEqual(entry['source'], 'merged')
             self.assertIn('github.com/mboworks/xff/commit/', entry['links'][-1]['href'])
-        self.assertEqual(len(records.read(self.root / 'datasets.json')['datasets']), 2)
+            observation = entry['workload_observations'][0]
+            wrapper = records.read(self.root / observation['parent_report'] / 'report.json')
+            self.assertNotEqual(wrapper['head'], wrapper['base'])
+        self.assertEqual(len(records.read(self.root / 'datasets.json')['datasets']), 1)
+
+    def test_sparse_ci_does_not_activate_the_new_surface(self):
+        value = self.fixture.record(origin='ci', comparison='parent')
+        records.retain(self.root, value, self.fixture.source())
+        site.publish(self.root)
+        self.assertEqual(records.read(self.root / 'catalog.json'), [self.core])
+        self.assertEqual(len(list(self.root.glob('extended/views/*/*/report.json'))), 2)
+
+    def test_matching_dense_local_replaces_sparse_selection_without_changing_observations(self):
+        sparse = self.fixture.record()
+        sparse_path = records.retain(self.root, sparse)
+        original = sparse_path.read_bytes()
+        self.fixture.contract['recipe'] = suite.DENSE_RECIPE
+        dense = self.fixture.record()
+        records.retain(self.root, dense)
+        self.assertEqual(site.publish(self.root), 2)
+        entries = [item for item in records.read(self.root / 'catalog.json') if item.get('extended')]
+        self.assertEqual(len(entries), 2)
+        self.assertTrue(all(suite.DENSE_RECIPE in item['dataset_type'] for item in entries))
+        self.assertEqual(sparse_path.read_bytes(), original)
+        self.assertEqual(len(list(self.root.glob('extended/observations/*/report.json'))), 2)
 
     def test_publication_rejects_untrusted_ci_and_modified_raw_rows(self):
         value = self.fixture.record(origin='ci', comparison='parent')
@@ -101,16 +126,19 @@ class BenchmarkExtendedSiteTest(unittest.TestCase):
         self.assertTrue(all(item[2]['controls'] for item in selected))
 
     def test_ci_pr_labels_use_trusted_version_links_when_subject_has_no_pr_suffix(self):
+        self.fixture.contract['recipe'] = suite.DENSE_RECIPE
         self.fixture.revisions[0]['pr'] = 0
         value = self.fixture.record(origin='ci', comparison='parent')
         records.retain(self.root, value, self.fixture.source())
         (self.root / 'version-links.json').write_text(json.dumps({value['revision']['sha']: [
             {'label': 'PR #999', 'href': 'https://github.com/mboworks/xff/pull/999'}]}))
         site.publish(self.root)
-        entries = [item for item in records.read(self.root / 'catalog.json') if item.get('extended')]
+        entries = [item for item in records.read(self.root / 'catalog.json') if item.get('ci_history_view')]
+        self.assertEqual(len(entries), 1)
         self.assertTrue(all(item['label'] == 'PR #999 / ' + value['revision']['sha'][:10] for item in entries))
 
     def test_import_uses_complete_original_cells_and_actual_retained_builds(self):
+        self.fixture.contract['recipe'] = suite.DENSE_RECIPE
         campaign = self.fixture.root / 'campaign'
         campaign.mkdir()
         (campaign / 'contract.json').write_text(json.dumps(self.fixture.contract))

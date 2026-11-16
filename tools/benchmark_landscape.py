@@ -284,6 +284,11 @@ def figure(report, order='similarity', metric='percent', groups=None, normalizat
     rows = [row for row in rows if row['cpus'] in groups]
     pairs = ([tuple(pair) for pair in task_order['pairs']]
              if task_order is not None and order == 'similarity' else ordered_pairs(rows, order))
+    if task_order is not None:
+        missing = set(map(tuple, task_order['pairs'])) - set(pairs)
+        pairs.extend(sorted(missing))
+        if order == 'alphabetical':
+            pairs.sort()
     if not pairs:
         raise ValueError('no comparable measurements')
     lookup = {}
@@ -292,7 +297,7 @@ def figure(report, order='similarity', metric='percent', groups=None, normalizat
         if key in lookup:
             raise ValueError('duplicate comparison cell')
         lookup[key] = row
-    extent = max(1, max(abs(100 * (1 - r['xff_over_reference'])) for r in rows))
+    extent = max(1, max((abs(100 * (1 - r['xff_over_reference'])) for r in rows), default=1))
     extent, colorscale = comparison_colorscale(extent)
     traces = []
     ticks = []
@@ -311,12 +316,17 @@ def figure(report, order='similarity', metric='percent', groups=None, normalizat
                     values.append(None if row is None else 100 * (1 - row['xff_over_reference']))
                     texts.append('Missing measurement' if row is None else hover_table([
                         ('Task', task), ('Tree', dataset.title()),
-                        ('Allocation', matrix.allocation_label(report, cpu)), ('File count', f'{count:,}'),
+                        ('Allocation', row.get('workload', {}).get('allocation', matrix.allocation_label(report, cpu))),
+                        ('File count', f'{count:,}'),
                         ('Reference tool', reference), ('Relative performance', f'{values[-1]:+.2f}%'),
                         ('Performance factor', f'{1 / row["xff_over_reference"]:.2f}x (reference/xff)'),
                         ('xff/reference', f'{row["xff_over_reference"]:.2f}'),
                         ('XFF time', f'{row["xff_seconds"] * 1000:.3f} ms'),
                         ('Reference time', f'{row["reference_seconds"] * 1000:.3f} ms'),
+                        *[(label, row['workload'][key]) for label, key in (
+                            ('Workload recipe', 'recipe'), ('Production target', 'target'),
+                            ('XFF SHA-256', 'sha256'), ('Sampling', 'sampling'),
+                            ('Measured', 'measured'), ('Platform', 'platform')) if row.get('workload', {}).get(key)],
                     ]))
                 xgrid.append(xs)
                 ygrid.append(values)
@@ -353,7 +363,7 @@ def figure(report, order='similarity', metric='percent', groups=None, normalizat
         template='plotly_white'))
     if metric == 'factor':
         # Transform heights; keep the percentage-based colors identical in both views.
-        maximum = max(0.01, max(abs(math.log10(r['xff_over_reference'])) for r in rows))
+        maximum = max(0.01, max((abs(math.log10(r['xff_over_reference'])) for r in rows), default=0))
         target_step = maximum / 4
         decade = math.floor(math.log10(target_step))
         step = next(multiple * 10 ** decade for multiple in (1, 2, 5, 10)
@@ -521,6 +531,8 @@ def publish_history(root, catalog):
 
 
 def binary_evidence(path, record):
+    if record.get('kind') == 'ci-history-view':
+        return record['binary']
     proof = path.with_name('binary-verification.json')
     if benchmark_records.exists(proof):
         try:

@@ -8,9 +8,32 @@ The [frozen revision manifest](benchmarks/extended-history-revisions-20261107.js
 with the implementation.
 
 It follows the [chart sensitivity audit](benchmark-chart-sensitivity-audit.md). These workloads
-have their own recipe, `extended-production-v1`, and must remain a separate dataset from core
-measurements. They use the existing 3D visualization framework. The stale local Linux v2 dataset
+have their own recipe, `extended-production-v1`. Ongoing CI appends these five workloads to the
+existing platform history in the 3D viewer. Each workload retains its original sampling, fixture,
+binary and machine evidence; adding workloads does not redefine existing measurements or the
+core aggregate score. Older revisions retain empty slots for unmeasured workloads and sizes.
+The local 130-revision campaign keeps its own machine series and fixed reference, independently
+of CI. Collectable recipe IDs remain stable in the dataset registry and identify the CI history
+series they extend. The stale local Linux v2 dataset
 is outside this investigation.
+
+## Acceptance requirement and dense follow-up
+
+The sparse v1 campaign below is diagnostic evidence, not an acceptable final extended chart.
+New publication uses `extended-production-v2`: every workload measures all 13 file/member counts
+`10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000`, both shapes, and
+both CPU allocations. Each revision has 260 measured cells. Every new workload therefore has
+a continuous measured surface. Missing cells cannot be replaced with invented values, enlarged
+dots or interpolation presented as measurements. Older core-only revisions retain their original
+surface until their additional workloads have actually been measured.
+
+The [dense follow-up](benchmark-dense-history-20261115.md) records the replacement 130-revision
+collection, acceptance gates and separate TAR investigation. The old observations remain intact;
+the importer rejects an incomplete dense campaign. Sparse CI observations remain linked reports
+and do not activate the extended CI surface. When a matching dense local observation exists,
+the viewer selects it instead of offering the sparse version as another measurement history.
+Fixture bytes and per-case commands are unchanged; v2 versions the complete grid. The original
+v1 fixture identity still describes those deterministic bytes.
 
 ## Workloads fixed before collecting timings
 
@@ -84,6 +107,7 @@ python3.13 tools/benchmark_extended_build.py \
   --root=BUILD_ROOT --revisions=revisions.json --disk-cache=BAZEL_DISK_CACHE
 
 python3.13 tools/benchmark_extended_history.py \
+  --recipe=extended-production-v1 \
   --root=MEASUREMENT_ROOT --build-root=BUILD_ROOT --revisions=revisions.json \
   --fixture=/dev/shm/xff-extended-fixtures --resource-launcher=NATIVE_LAUNCHER
 
@@ -253,14 +277,14 @@ regression repeats. Its experiment populations remain separate from the original
 
 ## Continuous publication
 
-The `Benchmarks` workflow collects `extended-production-v1` independently on Linux and macOS.
-It uses the complete 60-cell grid above, one warm-up and nine measured rounds, retaining seven.
+The `Benchmarks` workflow collects `extended-production-v2` independently on Linux and macOS.
+It uses the complete 260-cell grid above, one warm-up and nine measured rounds, retaining seven.
 Each platform builds the full production head and its exact first parent with ThinLTO. Each
 configured executable is copied immediately after its own build/query, before any later Bazel
 invocation. Both Bazel servers stop before measurement. The original executables and build/link
 evidence are uploaded, downloaded again, and verified before their bytes are measured.
 
-Linux creates a new directory on verified `/dev/shm` tmpfs. macOS creates a disposable 2 GiB
+Linux creates a new directory on verified `/dev/shm` tmpfs. macOS creates a disposable 4 GiB
 case-sensitive HFS+ RAM image, records its device and volume UUID, and checks live ownership before
 formatting, use and release. Cleanup refuses changed ownership. Mac worker counts are requests;
 Linux records an allowed CPU mask. The fixture, executable, reference tools and native accounting
@@ -280,20 +304,31 @@ environment, pressure context and failed attempts remain in the report artifact.
 failure leaves a complete, checked head observation recoverable, with an explicit control error;
 a failed or incomplete head never becomes a publishable observation.
 
-The existing 3D browser offers two separate views per series: traditional tools and parent XFF.
-The actual parent remains visible for each version; changing parents does not create a new
-dataset. Original local history keeps its fixed PR #1130 reference, local origin and separate
-series. Core benchmarks, local fixed-reference history and CI parent comparisons retain their
-own contracts. Extended observations do not satisfy the core merged-PR coverage inventory.
-No unavailable sizes or worker allocations are invented.
+The existing CI dataset grows by five uniquely named workload slots. Core and extended results
+for the same platform, architecture and commit appear in one selected version, including when
+only one collection succeeded. Each workload's arithmetic uses its original report and sampling;
+the viewer does not combine samples from different machines or binaries. Per-workload hover
+details and linked observations expose the production target, binary hash, sampling and machine.
+An overall binary state uses the weakest component evidence and lists each binary separately.
+
+The aggregate performance overview retains the core workload population, so adding tests cannot
+create a score change. Historical versions without the new measurements show empty slots in
+every chart order; unsupported sizes and worker allocations stay empty. CI's paired parent
+comparison remains linked from the extended observation instead of becoming another selectable
+dataset. The actual parent remains visible per version. Original local history keeps its two
+traditional/fixed-reference views, PR #1130 anchor, local origin and separate machine series.
+Extended observations do not satisfy the core merged-PR coverage inventory.
 
 The publisher recovers valid completed platform artifacts even when another job failed. A
 retry of failed jobs preserves successful platforms from their original attempts. CI publication
 checks the trusted workflow, main push, repository, run/attempt, exact head and GitHub's actual
 first parent. An artifact's own claims cannot establish that provenance. Complete observations
 are immutable under `benchmarks/extended/observations/`; generated views live under
-`benchmarks/extended/views/`. The dataset registry includes those views without putting them into
-the core benchmark normalizer or overview. Build/report artifacts retain the existing 30-day
+`benchmarks/extended/views/`. Combined CI presentation files live under `benchmarks/history/ci/`;
+their reports retain source links and identities rather than copying raw samples. Reference
+normalization is computed independently from the original workload contracts before presentation.
+The dataset registry preserves existing collectable recipe IDs and records the CI history series
+they extend. Build/report artifacts retain the existing 30-day
 retention policy; publication retains the validated observations.
 
 ### Import the original measured history
@@ -313,7 +348,8 @@ python3.13 tools/benchmark_extended_site.py publish --root=SITE/benchmarks
 ```
 
 Publication runs after the ordinary core renderer and before site compaction. Existing core
-catalog entries remain intact. Tests cover known chart heights, warm-up exclusion, missing cells,
+observations remain immutable; the CI catalog points at the combined presentation. Earlier
+qualification covers known chart heights, warm-up exclusion, missing cells,
 stable parent datasets, local/CI separation, packed observations, idempotent publication,
 untrusted provenance, partial workflow recovery and RAM-resource ownership. Synthetic test
 observations are explicitly labeled and are never performance evidence.

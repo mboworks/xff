@@ -20,7 +20,7 @@ class BenchmarkExtendedStorageTest(unittest.TestCase):
         self.root = Path(self.temporary.name).resolve() / 'collection'
         self.device = '/dev/disk987'
         self.attached = False
-        self.image = 'ram://4194304'
+        self.image = 'ram://8388608'
         self.uuid = 'synthetic-owned-uuid'
         self.commands = []
 
@@ -57,6 +57,7 @@ class BenchmarkExtendedStorageTest(unittest.TestCase):
                 self.assertTrue(self.attached)
             self.assertFalse(self.attached)
         commands = self.commands
+        self.assertIn(['hdiutil', 'attach', '-nomount', self.image], commands)
         self.assertLess(commands.index(['hdiutil', 'info', '-plist']),
                         commands.index(['newfs_hfs', '-s', '-v', 'XffExtended', self.device]))
         self.assertEqual(json.loads((self.root / 'storage-release.json').read_text())['uuid'], self.uuid)

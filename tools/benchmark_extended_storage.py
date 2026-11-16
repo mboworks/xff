@@ -80,7 +80,7 @@ def fixture(root, existing=None):
         return
     if sys.platform != 'darwin':
         raise ValueError('extended fixtures support Linux and macOS')
-    image = 'ram://4194304'  # 2 GiB; the full recipe uses approximately 1 GiB.
+    image = 'ram://8388608'  # 4 GiB for both native and TAR fixtures across the complete v2 grid.
     result = subprocess.check_output(['hdiutil', 'attach', '-nomount', image], text=True).strip()
     if not re.fullmatch(r'/dev/disk[0-9]+', result):
         raise ValueError('ambiguous newly attached RAM device: ' + result)

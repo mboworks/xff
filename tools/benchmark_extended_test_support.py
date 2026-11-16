@@ -69,7 +69,7 @@ class ExtendedFixture:
             samples = []
             for round_number in range(10):
                 for label in commands:
-                    seconds = 100 if round_number == 0 else {'xff': 2, 'anchor': 1, 'find': 4}[label]
+                    seconds = 100 if round_number == 0 else {'xff': 2, 'anchor': 1, 'find': 4, 'rg': 4, 'tar': 4}[label]
                     samples.append({'label': label, 'round': round_number,
                                     'phase': 'warmup' if round_number == 0 else 'measured',
                                     'elapsed_seconds': seconds, 'user_cpu_seconds': seconds / 2,

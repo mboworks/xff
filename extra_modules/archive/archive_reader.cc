@@ -40,6 +40,13 @@
 #include "xff/archive/member_path.h"
 
 namespace xff::archive {
+
+bool archive_reader_internal::EntryMatchesNormalizedName(struct ::archive_entry& entry, std::string_view wanted) {
+  // XFF_ABI_POINTER: libarchive returns a borrowed pathname, possibly absent.
+  const char* stored = ::archive_entry_pathname(&entry);
+  return stored != nullptr && NormalizeMemberName(stored) == wanted;
+}
+
 namespace {
 
 // The streaming block size for both the header walk and the content read: one value, so the two
@@ -192,8 +199,7 @@ absl::StatusOr<std::string> ReadMemberOfOpened(
     if (status != ARCHIVE_OK && status != ARCHIVE_WARN) {
       return absl::DataLossError(absl::StrCat("archive read failed: ", LastError(handle)));
     }
-    const char* const stored = ::archive_entry_pathname(entry);
-    if (stored == nullptr || NormalizeMemberName(stored) != wanted) {
+    if (!archive_reader_internal::EntryMatchesNormalizedName(*entry, wanted)) {
       continue;  // not this one; libarchive skips its data on the next header read
     }
     return ReadPositionedEntry(handle_ref, *entry, member, max_bytes);
@@ -385,6 +391,7 @@ class MemberSource final : public vfs::ReadSource {
 
   absl::StatusOr<std::unique_ptr<vfs::ReadStream>> Open() const override {
     MBO_ASSIGN_OR_RETURN(auto session, OpenSourceSession(source_));
+    const std::string_view wanted = NormalizeMemberName(member_);
     // XFF_ABI_POINTER: archive_read_next_header returns a borrowed C entry.
     struct ::archive_entry* entry = nullptr;
     while (true) {
@@ -396,9 +403,7 @@ class MemberSource final : public vfs::ReadSource {
         MBO_RETURN_IF_ERROR(session->error);
         return absl::DataLossError(LastError(session->handle.get()));
       }
-      // XFF_ABI_POINTER: archive_entry_pathname returns a borrowed NUL-terminated name.
-      const char* stored = ::archive_entry_pathname(entry);
-      if (stored == nullptr || NormalizeMemberName(stored) != NormalizeMemberName(member_)) {
+      if (!archive_reader_internal::EntryMatchesNormalizedName(*entry, wanted)) {
         continue;
       }
       if (::archive_entry_filetype(entry) != AE_IFREG) {

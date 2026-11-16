@@ -48,6 +48,7 @@ cc_library(
     ],
     visibility = ["//xff/cli/testing:__pkg__"],
     deps = [
+        ":buffered_listing_output_cc",
         ":config_validation_cc",
         ":diagnostics_cc",
         ":globals_cc",
@@ -84,6 +85,23 @@ cc_library(
         "@mboworks_mbo//mbo/status:status_macros_cc",
         "@mboworks_mbo//mbo/types:optional_ref_cc",
         "@xff_extras_api//:vfs_cc",
+    ],
+)
+
+cc_library(
+    name = "buffered_listing_output_cc",
+    hdrs = ["buffered_listing_output.h"],
+)
+
+cc_test(
+    name = "buffered_listing_output_test",
+    size = "small",
+    srcs = ["buffered_listing_output_test.cc"],
+    deps = [
+        ":buffered_listing_output_cc",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
     ],
 )
 

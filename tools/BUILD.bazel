@@ -935,6 +935,7 @@ test_suite(
         ":benchmark_extended_test",
         ":benchmark_fixture_test",
         ":benchmark_history_test",
+        ":benchmark_history_views_test",
         ":benchmark_landscape_test",
         ":benchmark_layouts_test",
         ":benchmark_local_test",
@@ -1313,6 +1314,17 @@ py_binary(
 )
 
 py_library(
+    name = "benchmark_history_views_lib",
+    srcs = ["benchmark_history_views.py"],
+    imports = ["."],
+    deps = [
+        ":benchmark_landscape_lib",
+        ":benchmark_matrix_lib",
+        ":benchmark_records_lib",
+    ],
+)
+
+py_library(
     name = "benchmark_extended_site_lib",
     srcs = ["benchmark_extended_site.py"],
     imports = ["."],
@@ -1320,9 +1332,25 @@ py_library(
         ":benchmark_datasets_lib",
         ":benchmark_extended_lib",
         ":benchmark_extended_records_lib",
+        ":benchmark_history_views_lib",
         ":benchmark_landscape_lib",
         ":benchmark_matrix_lib",
         ":benchmark_normalization_lib",
+    ],
+)
+
+py_test(
+    name = "benchmark_history_views_test",
+    size = "small",
+    srcs = ["benchmark_history_views_test.py"],
+    deps = [
+        ":benchmark_extended_records_lib",
+        ":benchmark_extended_test_support_lib",
+        ":benchmark_history_views_lib",
+        ":benchmark_landscape_lib",
+        ":benchmark_matrix_lib",
+        ":benchmark_overview_lib",
+        ":benchmark_records_lib",
     ],
 )
 
@@ -1333,6 +1361,7 @@ py_binary(
         ":benchmark_datasets_lib",
         ":benchmark_extended_lib",
         ":benchmark_extended_records_lib",
+        ":benchmark_history_views_lib",
         ":benchmark_landscape_lib",
         ":benchmark_matrix_lib",
         ":benchmark_normalization_lib",
@@ -1355,6 +1384,7 @@ py_test(
     size = "small",
     srcs = ["benchmark_extended_records_test.py"],
     deps = [
+        ":benchmark_extended_lib",
         ":benchmark_extended_records_lib",
         ":benchmark_extended_test_support_lib",
     ],

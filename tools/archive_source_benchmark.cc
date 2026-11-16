@@ -375,6 +375,76 @@ void RegisterZip() {
 
 // NOLINTEND(*-magic-numbers)
 
+// Control the early-success and missing-name paths separately from last-member replay.
+// Fresh means a new member wrapper, not cold operating-system caches: every iteration
+// opens a new archive cursor, while the immutable memory fixture stays resident.
+void MeasureMemberOpenControl(benchmark::State& state, bool missing, bool fresh) {
+  constexpr std::size_t kPayload = 128;
+  auto bytes = MakeTar(static_cast<std::size_t>(state.range(0)), kPayload);
+  if (!bytes.ok()) {
+    state.SkipWithError(bytes.status().ToString());
+    return;
+  }
+  const auto source = vfs::MemoryReadSource(std::move(*bytes));
+  const std::string_view name = missing ? "absent" : "file-0";
+  const std::string request = state.range(1) == 0 ? std::string(name) : absl::StrCat("././", name, "///");
+  const auto member = MemberReadSource(source, request);
+  const std::string expected(kPayload, 'x');
+  // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores): benchmark loop controls measured iterations.
+  for (const auto unused : state) {
+    auto result = fresh ? vfs::ReadSourceBytes(*MemberReadSource(source, request), kPayload)
+                        : vfs::ReadSourceBytes(*member, kPayload);
+    if (missing ? result.status().code() != absl::StatusCode::kNotFound : (!result.ok() || *result != expected)) {
+      state.SkipWithError("first/missing member control differs from its fixture");
+      return;
+    }
+    benchmark::DoNotOptimize(result);
+  }
+  state.SetItemsProcessed(state.iterations());
+}
+
+void RegisterMemberOpenControls() {
+  struct ControlCase {
+    std::string_view name;
+    bool missing;
+    bool fresh;
+  };
+
+  constexpr auto kCases = std::to_array<ControlCase>({
+      {
+          .name = "first/reopen",
+          .missing = false,
+          .fresh = false,
+      },
+      {
+          .name = "first/fresh-wrapper",
+          .missing = false,
+          .fresh = true,
+      },
+      {
+          .name = "missing/reopen",
+          .missing = true,
+          .fresh = false,
+      },
+      {
+          .name = "missing/fresh-wrapper",
+          .missing = true,
+          .fresh = true,
+      },
+  });
+  constexpr auto kCounts = std::to_array<std::int64_t>({10, 10'000});
+  for (const auto& control : kCases) {
+    const std::string name = absl::StrCat("archive-open-control/", control.name);
+    // XFF_ABI_POINTER: Google Benchmark returns a borrowed mutable registration object.
+    auto* registration = benchmark::RegisterBenchmark(name, MeasureMemberOpenControl, control.missing, control.fresh);
+    for (const auto count : kCounts) {
+      registration->Args({count, 0});
+      registration->Args({count, 1});
+    }
+    registration->Unit(benchmark::kMicrosecond)->UseRealTime()->MinTime(0.02)->MinWarmUpTime(0.01)->Repetitions(9);
+  }
+}
+
 void RegisterAll() {
   constexpr auto kSources = std::to_array<SourceCase>({
       {.name = "legacy", .kind = SourceKind::kLegacy},
@@ -399,6 +469,7 @@ void RegisterAll() {
   }
   RegisterLarge(kSources);
   RegisterZip();
+  RegisterMemberOpenControls();
 }
 
 }  // namespace

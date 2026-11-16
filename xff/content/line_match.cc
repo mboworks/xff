@@ -16,6 +16,7 @@
 #include "xff/content/line_match.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -23,6 +24,7 @@
 #include <vector>
 
 #include "absl/functional/function_ref.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "mbo/status/status_macros.h"
 #include "xff/vfs/local_fs.h"
@@ -116,8 +118,21 @@ absl::StatusOr<LineScanResult> ScanLines(
     absl::FunctionRef<bool(std::size_t, std::string_view)> visit) {
   LineScanResult result;
   StreamLines lines(visit);
+  // Direct reads initialize only their returned prefix. No other byte is observed.
+  std::array<char, 65'536> read_buffer;
   for (;;) {
-    MBO_ASSIGN_OR_RETURN(const auto block, stream.Read(65'536));
+    std::string owned;
+    std::string_view block;
+    if (stream.SupportsReadInto()) {
+      MBO_ASSIGN_OR_RETURN(const auto count, stream.ReadInto(read_buffer));
+      if (count > read_buffer.size()) {
+        return absl::DataLossError("ReadInto returned more bytes than its buffer");
+      }
+      block = std::string_view(read_buffer.data(), count);
+    } else {
+      MBO_ASSIGN_OR_RETURN(owned, stream.Read(read_buffer.size()));
+      block = owned;
+    }
     if (block.empty()) {
       if (!result.binary) {
         lines.Finish();
@@ -125,7 +140,7 @@ absl::StatusOr<LineScanResult> ScanLines(
       return result;
     }
     const auto sniff = static_cast<std::size_t>(std::min<std::uint64_t>(block.size(), binary_scan_bytes));
-    result.binary = result.binary || std::string_view(block).substr(0, sniff).contains('\0');
+    result.binary = result.binary || block.substr(0, sniff).contains('\0');
     binary_scan_bytes -= sniff;
     if (result.binary) {
       lines.Discard();

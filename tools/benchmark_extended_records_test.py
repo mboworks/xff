@@ -7,6 +7,7 @@ import gzip
 import json
 import unittest
 
+import benchmark_extended as suite
 import benchmark_extended_records as records
 from benchmark_extended_test_support import ExtendedFixture
 
@@ -27,6 +28,18 @@ class BenchmarkExtendedRecordsTest(unittest.TestCase):
         (directory / 'xff_full').write_bytes(b'changed')
         with self.assertRaisesRegex(ValueError, 'frozen binary changed'):
             records.build_proof(directory, value['revision'])
+
+    def test_versioned_grid_is_bound_and_unknown_or_reduced_contracts_are_rejected(self):
+        self.fixture.contract['recipe'] = suite.DENSE_RECIPE
+        value = self.fixture.record()
+        records.validate(value)
+        for mutate in (lambda r: r['contract'].update(recipe='invented'),
+                       lambda r: r['contract']['cases'].pop()):
+            changed = copy.deepcopy(value)
+            mutate(changed)
+            changed['identity'] = records.observation_identity(changed)
+            with self.assertRaisesRegex(ValueError, 'workload contract changed'):
+                records.validate(changed)
 
     def test_changed_rows_oracle_commands_environment_and_sampling_are_rejected(self):
         value = self.fixture.record()

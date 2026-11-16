@@ -13,6 +13,7 @@ import re
 import benchmark_datasets
 import benchmark_extended as suite
 import benchmark_extended_records as records
+import benchmark_history_views
 import benchmark_landscape as landscape
 import benchmark_matrix as matrix
 import benchmark_normalization
@@ -70,13 +71,22 @@ def retained(root):
                     bool(record.get('controls')), record['identity'])
             if key not in selected or rank > selected[key][0]:
                 selected[key] = (rank, path, record, view, description)
-    return sorted(selected.values(), key=lambda item: (item[2]['revision']['date'], item[2]['revision']['sha'], item[3]))
+    values = list(selected.values())
+    def population(item):
+        record = item[2]
+        return (record['origin'], record['series'], record['platform'], record['machine'],
+                record['revision']['sha'], item[3], record['comparison'], record['contract']['anchor']['sha'])
+    dense = {population(item) for item in values if item[2]['contract']['recipe'] == suite.DENSE_RECIPE}
+    values = [item for item in values if item[2]['contract']['recipe'] == suite.DENSE_RECIPE
+              or population(item) not in dense]
+    return sorted(values, key=lambda item: (item[2]['revision']['date'], item[2]['revision']['sha'], item[3]))
 
 
 def publish(root, repository='mboworks/xff'):
     selected = retained(root)
     catalog_path = root / 'catalog.json'
-    catalog = [item for item in records.read(catalog_path) if not item.get('extended')] if catalog_path.exists() else []
+    catalog = benchmark_history_views.original_catalog(records.read(catalog_path)) if catalog_path.exists() else []
+    ci_views = []
     links_path = root / 'version-links.json'
     version_links = records.read(links_path) if links_path.exists() else {}
     groups = {}
@@ -88,6 +98,7 @@ def publish(root, repository='mboworks/xff'):
         order = landscape.common_task_order([matrix.relative_results(wrapper['tool_comparisons']) for *_, wrapper in group])
         windows = benchmark_normalization.reference_windows([(record['identity'], wrapper) for _, record, _, _, wrapper in group])
         for path, record, view, description, wrapper in group:
+            recipe = record['contract']['recipe']
             revision = record['revision']
             anchor = record['contract']['anchor']
             directory = root / 'extended' / 'views' / series_id / revision['sha']
@@ -104,7 +115,7 @@ def publish(root, repository='mboworks/xff'):
             raw = html.escape(os.path.relpath(path, directory), quote=True)
             title = ('Traditional tools' if view == 'traditional' else 'Parent XFF' if record['comparison'] == 'parent'
                      else 'Fixed XFF ' + anchor['sha'][:12])
-            introduction = ('<p>Extended production suite: <code>' + suite.RECIPE + '</code>; full production CLI. '
+            introduction = ('<p>Extended production suite: <code>' + recipe + '</code>; full production CLI. '
                             + html.escape(title) + '. <a href="' + raw + '">Original observations and provenance</a>.</p>')
             document = document.replace('</h1>', '</h1>' + introduction, 1)
             (directory / 'index.html').write_text(document)
@@ -122,9 +133,9 @@ def publish(root, repository='mboworks/xff'):
                               'href': f'https://github.com/{repository}/commit/{anchor["sha"]}'}]
             origin_label = 'Local / ' + record['series'] if local else 'CI / ' + record['platform']
             collection = record.get('collection') or {}
-            catalog.append({'platform': origin_label + ' / ' + suite.RECIPE + ' / ' + title,
+            entry = {'platform': origin_label + ' / ' + recipe + ' / ' + title,
                             'platform_name': record['platform'] + ' / ' + record['machine'],
-                            'dataset_type': suite.RECIPE + ' / ' + title, 'commit': revision['sha'],
+                            'dataset_type': recipe + ' / ' + title, 'commit': revision['sha'],
                             'label': label, 'date': datetime.fromisoformat(revision['date']).astimezone(timezone.utc).isoformat(),
                             'measurement_date': record['completed_at'],
                             'source': 'experiment' if experiment else 'merged',
@@ -136,8 +147,15 @@ def publish(root, repository='mboworks/xff'):
                             'binary': landscape.binary_evidence(directory / 'report.json', wrapper),
                             'report': directory.relative_to(root).as_posix() + '/',
                             'figures': (directory / 'landscape.json').relative_to(root).as_posix(),
-                            'identity': record['contract']['platform'] + ' / ' + suite.RECIPE,
-                            'platform_details': record['contract']['platform']})
+                            'identity': record['contract']['platform'] + ' / ' + recipe,
+                            'platform_details': record['contract']['platform']}
+            if local:
+                catalog.append(entry)
+            elif view == 'traditional' and recipe == suite.DENSE_RECIPE:
+                parent_series = records.identity(descriptor(record, 'anchor'))
+                entry['parent_report'] = f'extended/views/{parent_series}/{revision["sha"]}/'
+                ci_views.append((entry, directory / 'report.json', wrapper, normalization))
+    catalog = benchmark_history_views.publish(root, catalog, ci_views)
     catalog_path.write_text(json.dumps(catalog, indent=2, allow_nan=False) + '\n')
     landscape.publish_history(root, catalog)
     benchmark_datasets.publish(root)
