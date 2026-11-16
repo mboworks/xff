@@ -5547,7 +5547,8 @@
           "batch_identity": null,
           "method": "d5d3cc11ba721f4c7d396e590f004a128a54cb2f12c32c6e77a16ca4fd4285b4"
         }
-      ]
+      ],
+      "history_series": "github-ci-linux/x86_64"
     },
     {
       "id": "f3c7d13ef219bb708594e94cd7e1df7b4413ae1b9985c39ee411076af8ee8ad2",
@@ -6020,7 +6021,8 @@
           "batch_identity": null,
           "method": "584108cf2082bd5ff752ac6bfb15b6a7f9cfeac0ec40ee3ec1eb430e4dcadcb1"
         }
-      ]
+      ],
+      "history_series": "github-ci-linux/x86_64"
     },
     {
       "id": "51c719d35f675393eb6d1231e3a62af25fea8f97df81bb4444f41b144a741d6a",
@@ -15640,7 +15642,8 @@
           "batch_identity": null,
           "method": "25ac47565ce2e1f74aa407a3bb08e229b2815b3435df8934ce58e2947dad3a23"
         }
-      ]
+      ],
+      "history_series": "github-ci-macos/arm64"
     },
     {
       "id": "75966a6dcc14eac29f795829b2860c9704abe808aa935b8d96642eee4e48d554",
@@ -16078,7 +16081,8 @@
           "batch_identity": null,
           "method": "d89a00381df4703f9e65c0f3a0acf80e81a47ce26333886b63af842ae0918813"
         }
-      ]
+      ],
+      "history_series": "github-ci-macos/arm64"
     },
     {
       "id": "079f9c0f8e9fed989b6444b2574673db1d5101758ffffa547b3abfcb0cf5e95d",
