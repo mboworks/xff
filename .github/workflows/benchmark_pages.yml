@@ -4,7 +4,14 @@ name: Publish benchmarks
 
 on:
   workflow_run:
-    workflows: [Test, Benchmarks, Release, Benchmark backfill]
+    workflows:
+      [
+        Test,
+        Benchmarks,
+        Release,
+        Benchmark backfill,
+        Extended benchmark backfill,
+      ]
     types: [completed]
   workflow_dispatch: {}
   schedule:

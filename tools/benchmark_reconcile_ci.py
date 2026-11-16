@@ -13,6 +13,7 @@ import tempfile
 import zipfile
 
 import benchmark_campaign
+import benchmark_extended_campaign
 import benchmark_extended_records
 import benchmark_history
 import benchmark_preview_ci
@@ -125,7 +126,7 @@ def retain_measurement(api, root, run, inventory=None):
     return retained
 
 
-def retain_extended(api, root, run, inventory=None):
+def retain_extended(api, root, run, inventory=None, strict_network=False):
     """Recover complete platforms independently, including successful earlier attempts."""
     selected = latest_artifacts(artifacts(api, run, 'benchmark-extended-report-') if inventory is None else
                                 [item for item in inventory if item['name'].startswith('benchmark-extended-report-')])
@@ -138,14 +139,18 @@ def retain_extended(api, root, run, inventory=None):
             retained = retain_extended_artifact(api, root, run, item, match.group(1)) or retained
         except (ValueError, KeyError, OSError, zipfile.BadZipFile,
                 subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+            if strict_network and isinstance(error, (subprocess.CalledProcessError, subprocess.TimeoutExpired)):
+                raise
             print(f"::warning::extended run {run['id']} {item['name']}: {error}", flush=True)
     return retained
 
 
 def retain_extended_artifact(api, root, run, item, platform):
+    historical = item['name'].startswith('benchmark-extended-backfill-report-')
+    job_id = item['name'][len('benchmark-extended-backfill-report-'):].rsplit('-', 1)[0] if historical else platform
     collections = root / 'extended' / 'collections' / str(run['id'])
-    markers = {*collections.glob('*/' + platform + '.json'),
-               *(path.with_suffix('') for path in collections.glob('*/' + platform + '.json.gz'))}
+    markers = {*collections.glob('*/' + job_id + '.json'),
+               *(path.with_suffix('') for path in collections.glob('*/' + job_id + '.json.gz'))}
     for marker in markers:
         saved = benchmark_extended_records.read(marker)
         observation = root / 'extended' / 'observations' / saved['identity'] / 'report.json'
@@ -166,15 +171,62 @@ def retain_extended_artifact(api, root, run, item, platform):
     attempt = collection['run_attempt']
     source = dict(run if attempt == run['run_attempt'] else
                   api.request(f"actions/runs/{run['id']}/attempts/{attempt}"))
-    commit = api.request(f"commits/{source['head_sha']}")
+    if historical:
+        if collection.get('campaign_job') != job_id or collection['run_attempt'] != int(item['name'].rsplit('-', 1)[1]):
+            raise ValueError('historical artifact job/attempt mismatch')
+        plan_name = 'benchmark-extended-backfill-plan-' + str(collection['campaign_attempt'])
+        plans = [entry for entry in artifacts(api, run, plan_name) if entry['name'] == plan_name]
+        if len(plans) != 1:
+            raise ValueError('historical source plan unavailable or ambiguous')
+        with tempfile.TemporaryDirectory(prefix='xff-extended-plan-') as temporary:
+            directory = Path(temporary)
+            extract(api.request(f"actions/artifacts/{plans[0]['id']}/zip", raw=True), directory)
+            source['extended_backfill_plan'] = json.loads((directory / 'campaign.json').read_text())
+        benchmark_extended_campaign.validate_job(source['extended_backfill_plan'], job_id,
+                                                  api.repository, source['head_sha'])
+        relationship = api.request(f"compare/{record['revision']['sha']}...{source['head_sha']}")
+        if relationship['status'] not in ('ahead', 'identical'):
+            raise ValueError('historical target is not an ancestor of the trusted workflow source')
+    commit = api.request(f"commits/{record['revision']['sha'] if historical else source['head_sha']}")
     if not commit.get('parents'):
         raise ValueError('extended source has no first parent')
     source['base_sha'] = commit['parents'][0]['sha']
     benchmark_extended_records.retain(root, record, source)
-    marker = collections / str(attempt) / (platform + '.json')
+    marker = collections / str(attempt) / (job_id + '.json')
     marker.parent.mkdir(parents=True, exist_ok=True)
     marker.write_text(json.dumps({'identity': record['identity'], 'artifact_id': item['id']}) + '\n')
     return True
+
+
+def retain_extended_backfill(api, root, run, strict_network=False):
+    """Keep every valid revision/platform/attempt from a partially failed batch."""
+    retained = False
+    inventory = run_artifacts(api, root, run)
+    for item in inventory:
+        match = re.fullmatch(r'benchmark-extended-backfill-report-(linux|macos)-[0-9a-f]{40}-[1-9][0-9]*', item['name'])
+        if not match or item.get('expired') or (item.get('expires_at') and
+                datetime.fromisoformat(item['expires_at']) <= datetime.now(timezone.utc)):
+            continue
+        try:
+            retained = retain_extended_artifact(api, root, run, item, match.group(1)) or retained
+        except (ValueError, KeyError, OSError, zipfile.BadZipFile,
+                subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+            if strict_network and isinstance(error, (subprocess.CalledProcessError, subprocess.TimeoutExpired)):
+                raise
+            print(f"::warning::extended backfill {run['id']} {item['name']}: {error}", flush=True)
+    return retained
+
+
+def recover_extended(api, root):
+    """Recover valid pending publication data before scheduling new measurements."""
+    since = (datetime.now(timezone.utc) - timedelta(days=30)).date().isoformat()
+    for workflow, event, retain in (('benchmarks.yml', 'push', retain_extended),
+                                   ('benchmark_extended_backfill.yml', 'workflow_dispatch', retain_extended_backfill)):
+        runs = api.pages(f'actions/workflows/{workflow}/runs?status=completed&branch=main&created=%3E%3D{since}',
+                         'workflow_runs')
+        for run in reversed(runs):
+            if run.get('event') == event and run.get('head_branch') == 'main':
+                retain(api, root, run, strict_network=True)
 
 
 def retain_benchmarks(api, root, run):
@@ -223,6 +275,7 @@ def reconcile(api, root):
     failures = []
     for workflow, event, status, retain in (
             ('benchmarks.yml', 'push', 'completed', retain_benchmarks),
+            ('benchmark_extended_backfill.yml', 'workflow_dispatch', 'completed', retain_extended_backfill),
             ('benchmark_backfill.yml', 'workflow_dispatch', 'completed', retain_backfill)):
         runs = api.pages(f'actions/workflows/{workflow}/runs?status={status}&branch=main&created=%3E%3D{since}',
                          'workflow_runs')
@@ -258,8 +311,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repository', required=True)
     parser.add_argument('--root', type=Path, required=True)
+    parser.add_argument('--extended-only', action='store_true', help='Recover checkpoints before planning an extended batch')
     args = parser.parse_args()
-    reconcile(benchmark_preview_ci.GitHub(args.repository), args.root)
+    (recover_extended if args.extended_only else reconcile)(benchmark_preview_ci.GitHub(args.repository), args.root)
 
 
 if __name__ == '__main__':
