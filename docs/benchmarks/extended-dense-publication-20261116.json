@@ -1,0 +1,34 @@
+{
+  "original_catalog_entries_preserved": 650,
+  "original_packed_reports_unchanged": 807,
+  "local_revisions": 130,
+  "local_views": 260,
+  "validated_cells": 33800,
+  "oracle_checked_invocations": 1014000,
+  "plotted_coordinates_checked": 405600,
+  "browser_pending": false,
+  "elapsed_seconds": 252.82946266699582,
+  "site_bytes": 767938492,
+  "local_only": true,
+  "browser": {
+    "datasets_loaded": 7,
+    "page_errors": 0,
+    "http_errors": 0,
+    "compacted_preview": "http://127.0.0.1:52370/qualified/benchmarks/"
+  },
+  "source_revision": "268f16ec7cf336f7884d030d3f90f5fb4d5a2d17",
+  "publication_base": "2fa84f8192bc5ecea0e9ad79e282d06c59a375eb",
+  "contract_sha256": "e02536cedcf686d249809d00b22805e4f33daacbba42fd3b1178132c8eb42600",
+  "validation": {
+    "macos_bazel_targets": 18,
+    "linux_direct_cases": 200,
+    "tooling_ownership_cases": 6,
+    "trunk": "37 changed files, no issues after wrapped-line formatting fix"
+  },
+  "limits": [
+    "Local Linux history only; no historical extended macOS or CI population.",
+    "No measurements or original binary identities are relabeled as current-head CI.",
+    "Data is staged, not published; extended CI historical backfill is a separate newest-first follow-up."
+  ],
+  "renderer_sha256": "15f9f4b604f16027d24710cee62903d248620c5b0701d1b7c0e2f570f038ca59"
+}

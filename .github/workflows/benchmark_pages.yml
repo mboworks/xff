@@ -73,6 +73,8 @@ jobs:
             python3 source/tools/benchmark_landscape.py --site-root=site/benchmarks \
               --renderer-js=source/tools/benchmark_web/dist/landscape.js --pulls=pulls.json \
               --repository="${GITHUB_REPOSITORY}"
+            python3 source/tools/benchmark_extended_site.py publish \
+              --root=site/benchmarks --repository="${GITHUB_REPOSITORY}"
             python3 source/tools/site_artwork.py source/docs/assets site
             python3 source/tools/compact_site.py site
             git -C site add --all

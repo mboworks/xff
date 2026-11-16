@@ -12,6 +12,19 @@ import benchmark_extended as suite
 
 
 class BenchmarkExtendedTest(unittest.TestCase):
+    def test_dense_grid_is_complete_for_every_workload_shape_and_allocation(self):
+        cases = suite.cases(suite.DENSE_RECIPE)
+        self.assertEqual(len(cases), 260)
+        self.assertEqual(len({case.key for case in cases}), 260)
+        for name in suite.TASKS:
+            for shape in ('broad', 'deep'):
+                for cpus in (1, 3):
+                    self.assertEqual([case.files for case in cases
+                                      if (case.name, case.shape, case.cpus) == (name, shape, cpus)],
+                                     list(suite.FILE_COUNTS))
+        with self.assertRaisesRegex(ValueError, 'unknown extended recipe'):
+            suite.cases('invented-recipe')
+
     def test_case_grid_has_unique_cells_and_bounded_archive_sizes(self):
         cases = suite.cases()
         self.assertEqual(len(cases), 60)

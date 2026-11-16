@@ -248,7 +248,7 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn('group: benchmark-publication-latest', workflow)
         reconcile = repository_file('tools/benchmark_reconcile_ci.py').read_text()
         self.assertIn('benchmark_preview_ci.collect', reconcile)
-        self.assertIn("('benchmarks.yml', 'push', 'success', retain_measurement)", reconcile)
+        self.assertIn("('benchmarks.yml', 'push', 'completed', retain_benchmarks)", reconcile)
         self.assertIn("('benchmark_backfill.yml', 'workflow_dispatch', 'completed', retain_backfill)", reconcile)
 
     def test_fifth_candidate_requires_unresolved_fourth_agreement(self):

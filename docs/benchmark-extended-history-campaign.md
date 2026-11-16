@@ -8,9 +8,32 @@ The [frozen revision manifest](benchmarks/extended-history-revisions-20261107.js
 with the implementation.
 
 It follows the [chart sensitivity audit](benchmark-chart-sensitivity-audit.md). These workloads
-have their own recipe, `extended-production-v1`, and must remain a separate dataset from core
-measurements. They use the existing 3D visualization framework. The stale local Linux v2 dataset
+have their own recipe, `extended-production-v1`. Ongoing CI appends these five workloads to the
+existing platform history in the 3D viewer. Each workload retains its original sampling, fixture,
+binary and machine evidence; adding workloads does not redefine existing measurements or the
+core aggregate score. Older revisions retain empty slots for unmeasured workloads and sizes.
+The local 130-revision campaign keeps its own machine series and fixed reference, independently
+of CI. Collectable recipe IDs remain stable in the dataset registry and identify the CI history
+series they extend. The stale local Linux v2 dataset
 is outside this investigation.
+
+## Acceptance requirement and dense follow-up
+
+The sparse v1 campaign below is diagnostic evidence, not an acceptable final extended chart.
+New publication uses `extended-production-v2`: every workload measures all 13 file/member counts
+`10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000`, both shapes, and
+both CPU allocations. Each revision has 260 measured cells. Every new workload therefore has
+a continuous measured surface. Missing cells cannot be replaced with invented values, enlarged
+dots or interpolation presented as measurements. Older core-only revisions retain their original
+surface until their additional workloads have actually been measured.
+
+The [dense follow-up](benchmark-dense-history-20261115.md) records the replacement 130-revision
+collection, acceptance gates and separate TAR investigation. The old observations remain intact;
+the importer rejects an incomplete dense campaign. Sparse CI observations remain linked reports
+and do not activate the extended CI surface. When a matching dense local observation exists,
+the viewer selects it instead of offering the sparse version as another measurement history.
+Fixture bytes and per-case commands are unchanged; v2 versions the complete grid. The original
+v1 fixture identity still describes those deterministic bytes.
 
 ## Workloads fixed before collecting timings
 
@@ -84,6 +107,7 @@ python3.13 tools/benchmark_extended_build.py \
   --root=BUILD_ROOT --revisions=revisions.json --disk-cache=BAZEL_DISK_CACHE
 
 python3.13 tools/benchmark_extended_history.py \
+  --recipe=extended-production-v1 \
   --root=MEASUREMENT_ROOT --build-root=BUILD_ROOT --revisions=revisions.json \
   --fixture=/dev/shm/xff-extended-fixtures --resource-launcher=NATIVE_LAUNCHER
 
@@ -250,3 +274,110 @@ shard setup against merged PR #1149. It includes Linux/macOS production builds,
 the 1/3/10-worker grid, identical controls, rejected experiments and small-task
 regression repeats. Its experiment populations remain separate from the original
 130-revision history and the core CI benchmark contract.
+
+## Continuous publication
+
+The `Benchmarks` workflow collects `extended-production-v2` independently on Linux and macOS.
+It uses the complete 260-cell grid above, one warm-up and nine measured rounds, retaining seven.
+Each platform builds the full production head and its exact first parent with ThinLTO. Each
+configured executable is copied immediately after its own build/query, before any later Bazel
+invocation. Both Bazel servers stop before measurement. The original executables and build/link
+evidence are uploaded, downloaded again, and verified before their bytes are measured.
+
+Linux creates a new directory on verified `/dev/shm` tmpfs. macOS creates a disposable 4 GiB
+case-sensitive HFS+ RAM image, records its device and volume UUID, and checks live ownership before
+formatting, use and release. Cleanup refuses changed ownership. Mac worker counts are requests;
+Linux records an allowed CPU mask. The fixture, executable, reference tools and native accounting
+launcher are checked again after collection. No timing result is accepted after an integrity
+failure. Local Linux validation can reuse an existing verified fixture with `--fixture`; this
+does not remove that fixture and is forbidden for CI collections.
+
+CI Linux budgets three allowed logical CPUs, including hosts where those logical CPUs share
+guest-topology cores. The original local-history collector retains its distinct-core policy.
+The workflow checks capacity before production builds and records the allocation policy and
+logical CPU count. Actual post-merge CI collection still needs to be verified on its runner.
+
+Head cells rotate head XFF, first-parent XFF and the traditional tool through execution order.
+A second complete grid measures the parent against itself as a diagnostic control. All successful
+outputs must match the independent oracle. Raw warm-ups, measured samples, command lines,
+environment, pressure context and failed attempts remain in the report artifact. A control
+failure leaves a complete, checked head observation recoverable, with an explicit control error;
+a failed or incomplete head never becomes a publishable observation.
+
+The existing CI dataset grows by five uniquely named workload slots. Core and extended results
+for the same platform, architecture and commit appear in one selected version, including when
+only one collection succeeded. Each workload's arithmetic uses its original report and sampling;
+the viewer does not combine samples from different machines or binaries. Per-workload hover
+details and linked observations expose the production target, binary hash, sampling and machine.
+An overall binary state uses the weakest component evidence and lists each binary separately.
+
+The aggregate performance overview retains the core workload population, so adding tests cannot
+create a score change. Historical versions without the new measurements show empty slots in
+every chart order; unsupported sizes and worker allocations stay empty. CI's paired parent
+comparison remains linked from the extended observation instead of becoming another selectable
+dataset. The actual parent remains visible per version. Original local history keeps its two
+traditional/fixed-reference views, PR #1130 anchor, local origin and separate machine series.
+Extended observations do not satisfy the core merged-PR coverage inventory.
+
+The publisher recovers valid completed platform artifacts even when another job failed. A
+retry of failed jobs preserves successful platforms from their original attempts. CI publication
+checks the trusted workflow, main push, repository, run/attempt, exact head and GitHub's actual
+first parent. An artifact's own claims cannot establish that provenance. Complete observations
+are immutable under `benchmarks/extended/observations/`; generated views live under
+`benchmarks/extended/views/`. Combined CI presentation files live under `benchmarks/history/ci/`;
+their reports retain source links and identities rather than copying raw samples. Reference
+normalization is computed independently from the original workload contracts before presentation.
+The dataset registry preserves existing collectable recipe IDs and records the CI history series
+they extend. Build/report artifacts retain the existing 30-day
+retention policy; publication retains the validated observations.
+
+### Import the original measured history
+
+Use the original measurement directory and retained build tree. The importer validates every
+declared cell, exact commands, output oracle, sample population, source identity and production
+link evidence. It reads and hashes the retained executables; rebuilding a revision cannot
+retroactively verify its original measurements. Incomplete or invalid campaigns are rejected.
+
+```sh
+python3.13 tools/benchmark_extended_site.py import \
+  --campaign=MEASUREMENT_ROOT --build-root=BUILD_ROOT \
+  --root=SITE/benchmarks --series=linux-zen5-extended-20261107 \
+  --platform=linux --machine=x86_64
+
+python3.13 tools/benchmark_extended_site.py publish --root=SITE/benchmarks
+```
+
+Publication runs after the ordinary core renderer and before site compaction. Existing core
+observations remain immutable; the CI catalog points at the combined presentation. Earlier
+qualification covers known chart heights, warm-up exclusion, missing cells,
+stable parent datasets, local/CI separation, packed observations, idempotent publication,
+untrusted provenance, partial workflow recovery and RAM-resource ownership. Synthetic test
+observations are explicitly labeled and are never performance evidence.
+
+### Native pipeline and imported-view qualification (2026-11-09)
+
+The [qualification summary](benchmarks/extended-history-continuous-qualification-20261109.json)
+records the actual import, compacted-browser and native collector checks. All 130 original
+revisions and 7,800 cells passed validation against their original retained executables and link
+evidence. Both 130-version datasets joined a copy of the published catalog without changing any
+of its 588 existing entries. Every chart order reproduces the recorded ratios: 60 measured
+coordinates and 20 unavailable coordinates per view. Chromium selected the oldest, middle and
+latest versions in both datasets with correct binary evidence and no page errors.
+
+Each native collector completed 60 head cells and 60 identical-parent control cells on Linux
+and macOS: 3,600 independently checked invocations per platform. Both source revisions produce
+byte-identical production executables on their respective host. This validates the pipeline;
+it is not evidence of a performance improvement. The frozen driver source is
+`96765e1859c3d48ac0f04092c0613b4e8ad8ae21`, against first parent
+`52950f937ad371e1450538faf7983024b324688d`. Subsequent changes tighten validation and improve
+build logging/publication without changing native commands, sampling or C++ sources.
+
+Linux preserved its explicitly borrowed tmpfs fixture. The new macOS RAM volume recorded UUID
+`A03B359F-E90E-38C0-96B4-439E7BF90389`; its image, device and volume identity were checked before
+release, and device/mount absence was checked afterward. Its former device number is not an
+authorization to detach any future device. Raw observations, builds and failed-attempt support
+remain outside the source tree, with hashes and evidence locations in the summary.
+
+The original imported observations remain local history with a fixed reference. Publishing that
+data and verifying the first actual post-merge extended CI run are separate final steps.
+Changing workloads, sampling or resource accounting requires a separately identified contract.

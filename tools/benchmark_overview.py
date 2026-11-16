@@ -24,6 +24,8 @@ def population(rows, threshold):
 
 def summarize(report, threshold=None, minimum_files=1):
     """Normalize each XFF/main change by the corresponding reference-tool change."""
+    if report.get('presentation') == 'ci-history-v1':
+        return summarize(report['overview_report'], threshold, minimum_files)
     if threshold is None:
         threshold = report.get('alarm', {}).get('threshold_percent', 15)
     if not math.isfinite(threshold) or threshold <= 0 or minimum_files < 1:

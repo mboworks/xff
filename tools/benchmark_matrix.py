@@ -169,6 +169,15 @@ def matrices(report):
 
 def relative_results(report):
     """Compare only participants performing the same task on the same tree."""
+    if report.get('presentation') == 'ci-history-v1':
+        rows = []
+        for workload in report['workload_reports']:
+            for row in relative_results(workload['report']):
+                row['task'] = workload['namespace'] + row['task']
+                row['workload'] = dict(workload['observation'],
+                                       allocation=allocation_label(workload['report'], row['cpus']))
+                rows.append(row)
+        return rows
     rows = []
     for task in report['tasks']:
         participants = task['participants']
@@ -244,6 +253,14 @@ def ratio_html(value, ratio):
 
 
 def render_html(report):
+    if report.get('presentation') == 'ci-history-v1':
+        return ''.join('<h3>' + html.escape(workload['name']) + '</h3><p><a href="' +
+                       html.escape(workload['observation']['href'], quote=True) + '">Original observation</a>; ' +
+                       html.escape(workload['observation']['target']) + '.' +
+                       (' <a href="' + html.escape(workload['observation']['parent_href'], quote=True) +
+                        '">Paired parent comparison</a>.' if workload['observation'].get('parent_href') else '') +
+                       '</p>' + render_html(workload['report'])
+                       for workload in report['workload_reports'])
     result = ['<p>' + html.escape(policy(report)) + '; absolute tables: elapsed milliseconds; delta T is current minus main, also in milliseconds. '
               'Ratio tables: xff/reference, greater than 1 means xff is slower. '
               'Dark red ratios mean xff is slower; dark green means faster; equal ratios stay neutral. '

@@ -5241,3 +5241,10 @@ name once per streamed open. Preserve nullable C names, ownership, duplicate sel
 Both-host shipping CLI, last-member/listing and first/missing controls retain slower results,
 including the Linux missing-member tradeoff. Plain-TAR payload locators and host-wide measurement
 coordination remain separate open tasks; broader O19 work is not complete.
+
+## Performance queue after the extended viewer
+
+The [follow-up ledger](benchmark-performance-follow-up.md) records already landed improvements,
+the implemented TAR ASCII/wide-pathname candidate and its outstanding Linux qualification,
+and the next current-main investigations. Finish the viewer and dense backfill integration
+before resuming those performance changes.

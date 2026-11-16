@@ -8,13 +8,41 @@ import base64
 from datetime import date
 import io
 import json
+from pathlib import Path
 import re
 import subprocess
+import sys
+import tempfile
 import zipfile
 
+import benchmark_history
 import benchmark_preview_ci
 
 PLATFORMS = ('linux', 'macos')
+
+
+def report_available(api, run, artifact, platform):
+    # Retrieval failures propagate: an API timeout is not evidence that costly
+    # measurements must be repeated. Only received, invalid data is rejected.
+    raw = api.request(f"actions/artifacts/{artifact['id']}/zip", raw=True)
+    try:
+        if len(raw) > 128 * 1024 * 1024:
+            raise ValueError('benchmark report archive exceeds 128 MiB')
+        with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+            entry = archive.getinfo(artifact['name'] + '.json')
+            if entry.file_size > 128 * 1024 * 1024:
+                raise ValueError('benchmark report exceeds 128 MiB')
+            report = json.loads(archive.read(entry))
+        if report.get('platform') != platform or report.get('head') != run['head_sha'] or not report.get('tool_comparisons'):
+            raise ValueError('report lacks matching head/platform/viewer measurements')
+        # Use the publisher's actual completeness, command and binary-identity
+        # checks, writing only into a disposable local directory.
+        with tempfile.TemporaryDirectory(prefix='xff-recovery-report-') as temporary:
+            benchmark_history.retain(Path(temporary), report, run)
+        return True
+    except (ValueError, KeyError, zipfile.BadZipFile) as error:
+        print(f"::warning::unpublishable run {run['id']} {platform}: {error}", file=sys.stderr, flush=True)
+        return False
 
 
 def catalog(api):
@@ -33,7 +61,7 @@ def inventory(api, since, number=None):
     entries = catalog(api)
     covered = set()
     for entry in entries:
-        if entry.get('source') != 'merged' or entry.get('local'):
+        if entry.get('source') != 'merged' or entry.get('local') or entry.get('extended'):
             continue
         platform = entry.get('platform_name', '').split(' / ')[0].lower()
         sha = entry.get('commit', '')
@@ -104,12 +132,13 @@ def inventory(api, since, number=None):
         active = any(run['status'] != 'completed' for run in source_runs)
         available = {platform for platform in PLATFORMS if (sha, platform) in pending_backfills}
         for run in source_runs:
-            if run.get('conclusion') != 'success':
+            if run.get('status') != 'completed':
                 continue
             artifacts = api.pages(f"actions/runs/{run['id']}/artifacts", 'artifacts')
             for artifact in artifacts:
                 match = re.fullmatch(r'benchmark-report-(linux|macos)-[A-Za-z0-9_.-]+', artifact['name'])
-                if match and not artifact.get('expired') and artifact['created_at'] >= run['run_started_at']:
+                if (match and not artifact.get('expired') and artifact['created_at'] >= run['run_started_at']
+                        and report_available(api, run, artifact, match.group(1))):
                     available.add(match.group(1))
         state = ('measuring' if active else 'awaiting publication' if set(missing) <= available
                  else 'needs backfill')
@@ -142,8 +171,16 @@ def main():
     campaigns = api.pages('actions/workflows/benchmark_backfill.yml/runs?branch=main', 'workflow_runs')
     if any(run['status'] != 'completed' for run in campaigns):
         raise ValueError('a backfill campaign is already active or queued; retry after it finishes')
-    selected = candidates[:args.batch_size]
-    platforms = sorted({platform for row in selected for platform in row['missing']})
+    # A cross-product of different missing-platform sets would repeat successful
+    # configurations. Recover the oldest gap and batch only identical requests.
+    def requested(row):
+        return tuple(platform for platform in PLATFORMS if platform in row['missing']
+                     and platform not in row.get('available_artifacts', []))
+
+    platforms = requested(candidates[0])
+    if not platforms:
+        raise ValueError('backfill candidate has no unavailable platform')
+    selected = [row for row in candidates if requested(row) == platforms][:args.batch_size]
     # The deployed workflow must support the revisions input added by PR #1147.
     subprocess.run(['gh', 'workflow', 'run', 'benchmark_backfill.yml', '--repo', api.repository,
                     '--ref', 'main', '-f', 'revisions=' + ','.join(row['commit'] for row in selected),

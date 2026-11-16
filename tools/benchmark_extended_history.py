@@ -49,6 +49,10 @@ def freeze(path, value):
 
 def cpu_allocation(count):
     """Prefer separate physical cores over sibling hardware threads."""
+    if sys.platform == 'darwin':
+        if count > (os.cpu_count() or 0):
+            raise ValueError('worker count exceeds available logical CPUs')
+        return []
     cores = {}
     for cpu in sorted(os.sched_getaffinity(0)):
         topology = Path(f'/sys/devices/system/cpu/cpu{cpu}/topology')
@@ -65,7 +69,8 @@ def worker(connection, spec, wanted, separator, failure_path):
     sample = None
     try:
         os.setsid()
-        os.sched_setaffinity(0, spec['affinity'])
+        if spec['affinity']:
+            os.sched_setaffinity(0, spec['affinity'])
         with open(spec['stdin'], 'rb') as source:
             sample = process_resources.measure_pipeline(
                 [spec['command']], source=source, cwd=spec['cwd'], environment=spec['environment'],
@@ -110,6 +115,10 @@ def invoke(spec, wanted, separator, failure_path, timeout=120):
 
 
 def host_context():
+    if sys.platform == 'darwin':
+        return {'utc': datetime.now(timezone.utc).isoformat(), 'loadavg': os.getloadavg(),
+                'vm_stat': subprocess.check_output(['vm_stat'], text=True),
+                'memory_pressure': subprocess.check_output(['sysctl', 'vm.swapusage'], text=True)}
     return {'utc': datetime.now(timezone.utc).isoformat(), 'loadavg': os.getloadavg(),
             'meminfo': Path('/proc/meminfo').read_text(),
             'cpu_stat': Path('/proc/stat').read_text(),
@@ -173,6 +182,8 @@ def main():
     parser.add_argument('--fixture', type=Path, required=True)
     parser.add_argument('--resource-launcher', type=Path, required=True)
     parser.add_argument('--cases', type=Path, help='Optional frozen JSON list of Case records for qualification')
+    parser.add_argument('--recipe', choices=(suite.RECIPE, suite.DENSE_RECIPE), default=suite.DENSE_RECIPE,
+                        help='Versioned workload grid; v2 measures every size for every workload')
     parser.add_argument('--repetitions', type=int, default=9)
     parser.add_argument('--keep', type=int, default=7)
     parser.add_argument('--limit', type=int, help='Stop cleanly after this many new cells; contract is unchanged')
@@ -186,7 +197,7 @@ def main():
     if (root / 'invalid.json').exists():
         raise ValueError('campaign identity changed previously; inspect invalid.json before starting a new campaign')
     revisions = json.loads(args.revisions.read_text())
-    cases = [suite.Case(**case) for case in json.loads(args.cases.read_text())] if args.cases else suite.cases()
+    cases = [suite.Case(**case) for case in json.loads(args.cases.read_text())] if args.cases else suite.cases(args.recipe)
     if not revisions or not cases or len({r['sha'] for r in revisions}) != len(revisions) or len({c.key for c in cases}) != len(cases):
         raise ValueError('empty or duplicate revisions/cases')
     affinity = cpu_allocation(max(case.cpus for case in cases))
@@ -215,7 +226,7 @@ def main():
     filesystem = subprocess.check_output(['findmnt', '-n', '-o', 'FSTYPE', '-T', str(fixture.parent)], text=True).strip()
     if filesystem != 'tmpfs':
         raise ValueError('fixtures must reside on tmpfs, found: ' + filesystem)
-    contract = {'recipe': suite.RECIPE, 'cases': [asdict(case) for case in cases], 'revisions': revisions,
+    contract = {'recipe': args.recipe, 'cases': [asdict(case) for case in cases], 'revisions': revisions,
                 'repetitions': args.repetitions, 'keep': args.keep, 'estimator': 'mean-fastest',
                 'warmup_rounds': 1, 'anchor': anchor, 'fixture': str(fixture), 'filesystem': filesystem,
                 'tools': tools, 'launcher': launcher, 'affinity': affinity, 'platform': platform.platform(),
@@ -223,7 +234,10 @@ def main():
                 'python': sys.version, 'drivers': {Path(module).name: digest(module) for module in
                                                  (__file__, suite.__file__, process_resources.__file__)},
                 'build_contract_sha256': digest(builds / 'build-contract.json'),
-                'order': 'seed 20261107 shuffles revisions and cells; participant start rotates each round',
+                'order': ('oldest and anchor first; seed 20261107 shuffles remaining revisions; '
+                          'seed 20261108 shuffles cells; participant start rotates each round'
+                          if args.recipe == suite.DENSE_RECIPE else
+                          'seed 20261107 shuffles revisions and cells; participant start rotates each round'),
                 'output_retention': 'all outputs checked; successful output hash/count retained; failing output gzip retained'}
     # cpu MHz fluctuates: record it as context, never as a resume identity field.
     contract['cpuinfo'] = '\n'.join(line for line in contract['cpuinfo'].splitlines() if not line.startswith('cpu MHz'))
@@ -234,6 +248,12 @@ def main():
     freeze(root / 'fixtures.json', manifest)
     order = list(revisions)
     random.Random(20261107).shuffle(order)
+    if args.recipe == suite.DENSE_RECIPE:
+        # Obtain complete old/current surfaces first, then continue the declared
+        # history. No endpoint cells need collecting again in a separate run.
+        endpoints = {revisions[0]['sha'], anchor['sha']}
+        order = [revisions[0], *([anchor] if anchor['sha'] != revisions[0]['sha'] else []),
+                 *[revision for revision in order if revision['sha'] not in endpoints]]
     ordered_cases = list(cases)
     random.Random(20261108).shuffle(ordered_cases)
     progress = {'total': len(order) * len(cases), 'completed': 0, 'new_cells': 0, 'state': 'running'}
