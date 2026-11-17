@@ -362,6 +362,39 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "archive_tar_pathname_test_support_cc",
+    testonly = True,
+    hdrs = ["archive_tar_pathname_test_support.h"],
+    include_prefix = "xff/archive",
+)
+
+cc_test(
+    name = "archive_tar_pathname_test",
+    size = "small",
+    srcs = ["archive_tar_pathname_test.cc"],
+    deps = [
+        ":archive_reader_cc",
+        ":archive_tar_pathname_test_support_cc",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_test(
+    name = "archive_tar_pathname_unicode_test",
+    size = "small",
+    srcs = ["archive_tar_pathname_unicode_test.cc"],
+    deps = [
+        ":archive_reader_cc",
+        ":archive_tar_pathname_test_support_cc",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
 cc_test(
     name = "archive_reader_test",
     size = "small",
