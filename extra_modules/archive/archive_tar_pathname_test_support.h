@@ -13,7 +13,7 @@ namespace xff::archive::archive_tar_pathname_test_support {
 // A zero-length USTAR member followed by two end blocks. Construct the header directly:
 // a writer may normalize the deliberately inconsistent regular-file/trailing-slash pair.
 inline std::string MakeTar(std::string_view name, char type = '0') {
-  std::string bytes(3 * 512, '\0');
+  std::string bytes(std::size_t{3} * 512, '\0');
   bytes.replace(0, name.size(), name);
   bytes.replace(100, 7, "0000644");
   bytes.replace(108, 7, "0000000");
@@ -30,7 +30,7 @@ inline std::string MakeTar(std::string_view name, char type = '0') {
   }
   for (std::size_t index = 154; index > 148;) {
     bytes[--index] = static_cast<char>('0' + (checksum & 7U));
-    checksum >>= 3;
+    checksum >>= 3U;
   }
   bytes[154] = '\0';
   bytes[155] = ' ';
