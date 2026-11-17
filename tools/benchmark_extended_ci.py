@@ -132,7 +132,8 @@ def collect(build_root, root, launcher_path, collection=None, series=None, exist
                                  'parent', origin, collection, controls,
                                  ('https://github.com/' + collection['repository'] + '/actions/runs/'
                                   + str(collection['run_id']) + '/attempts/' + str(collection['run_attempt'])
-                                  + ' (benchmark-extended-build-' + platform_name + ')') if collection is not None
+                                  + ' (' + collection.get('build_artifact', 'benchmark-extended-build-' + platform_name)
+                                  + ')') if collection is not None
                                  else 'original frozen full-production executable used for local paired validation',
                                  control_error=control_error)
     record['storage_release'] = records.read(root / 'storage-release.json')

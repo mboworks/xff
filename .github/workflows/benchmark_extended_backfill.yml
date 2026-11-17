@@ -1,0 +1,204 @@
+# SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+# SPDX-License-Identifier: Apache-2.0
+name: Extended benchmark backfill
+
+on:
+  workflow_dispatch:
+    inputs:
+      # Validated 1..100 revision bound, never executable input.
+      batch_size:
+        description: Missing revisions per batch (1..100, newest first)
+        type: number
+        default: 10
+      # Fixed platform choices only select the runner matrix.
+      platform:
+        description: Platforms to recover
+        type: choice
+        options: [both, linux, macos]
+        default: both
+
+permissions:
+  contents: read
+
+# Plan only after the preceding batch finishes, so retained successful artifacts
+# become checkpoints even when the publisher has not reached this batch yet.
+concurrency:
+  group: benchmark-extended-backfill
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      count: ${{ steps.plan.outputs.count }}
+      attempt: ${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: coverage-pages
+          path: benchmark-history
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /benchmarks/catalog.json
+            /benchmarks/extended/observations/
+            /benchmarks/extended/collections/
+            /benchmarks/reconciliation/
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Recover successful artifacts before selecting missing work
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 tools/benchmark_reconcile_ci.py --extended-only \
+            --repository="${GITHUB_REPOSITORY}" --root=benchmark-history/benchmarks
+      - name: Freeze newest-first revision and platform selection
+        id: plan
+        env:
+          BATCH_SIZE: ${{ inputs.batch_size }}
+          PLATFORM: ${{ inputs.platform }}
+        run: |
+          set -euo pipefail
+          platforms=()
+          if [[ "${PLATFORM}" != both ]]; then
+            platforms+=(--platform="${PLATFORM}")
+          fi
+          matrix="$(python3 tools/benchmark_extended_campaign.py --repo=. \
+            --history-root=benchmark-history/benchmarks --repository="${GITHUB_REPOSITORY}" \
+            --batch-size="${BATCH_SIZE}" --output=campaign.json "${platforms[@]}")"
+          echo "matrix=${matrix}" >>"${GITHUB_OUTPUT}"
+          echo "count=$(jq '.include | length' <<<"${matrix}")" >>"${GITHUB_OUTPUT}"
+          python3 - <<'PY'
+          import json, os
+          plan = json.load(open('campaign.json'))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
+              out.write(f"Newest-first extended backfill: {len(plan['jobs'])} missing platform jobs.\n\n")
+              for job in plan['jobs']:
+                  out.write(f"- {job['platform']}: PR #{job['revision']['pr']} / {job['revision']['sha']}\n")
+              if not plan['jobs']:
+                  out.write('All selected platform histories are complete.\n')
+          PY
+      - uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-extended-backfill-plan-${{ github.run_attempt }}
+          path: campaign.json
+          if-no-files-found: error
+          retention-days: 30
+
+  backfill:
+    needs: plan
+    if: needs.plan.outputs.count != '0'
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    name: Extended ${{ matrix.platform }} PR ${{ matrix.revision.pr }} (${{ matrix.revision.sha }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: benchmark-extended-backfill-plan-${{ needs.plan.outputs.attempt }}
+          path: campaign
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: bazel-contrib/setup-bazel@0.19.1
+      - uses: ./.github/actions/bazel-cache-restore
+        with:
+          namespace: default
+      - name: Install historical runtime and reference tools
+        run: |
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            bash tools/prepare_benchmark_runtime.sh "${RUNNER_TEMP}/historical-runtime"
+          else
+            brew install findutils ripgrep gnu-tar
+          fi
+      - name: Check three-worker capacity and freeze full production builds
+        env:
+          CAMPAIGN_JOB: ${{ matrix.id }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0, 'tools')
+          from benchmark_extended_ci import cpu_allocation
+          print('Extended allocation:', cpu_allocation(3, ci=True))
+          PY
+          python3 tools/benchmark_extended_backfill.py build --repo="${GITHUB_WORKSPACE}" \
+            --root="${RUNNER_TEMP}/extended-build" --plan=campaign/campaign.json --job="${CAMPAIGN_JOB}" \
+            --disk-cache="${HOME}/.cache/bazel-disk"
+          tar -cf "${RUNNER_TEMP}/benchmark-extended-build.tar" -C "${RUNNER_TEMP}/extended-build" .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-extended-backfill-build-${{ matrix.id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/benchmark-extended-build.tar
+          retention-days: 30
+          if-no-files-found: error
+      - uses: actions/download-artifact@v8
+        with:
+          name: benchmark-extended-backfill-build-${{ matrix.id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/extended-retention
+      - name: Restore original retained executable bytes
+        run: |
+          mkdir -p "${RUNNER_TEMP}/extended-retained-build"
+          tar -xf "${RUNNER_TEMP}/extended-retention/benchmark-extended-build.tar" -C "${RUNNER_TEMP}/extended-retained-build"
+      - name: Measure complete historical head and parent controls in memory
+        env:
+          CAMPAIGN_JOB: ${{ matrix.id }}
+          CAMPAIGN_ATTEMPT: ${{ needs.plan.outputs.attempt }}
+        run: |
+          python3 tools/benchmark_extended_backfill.py collect \
+            --build-root="${RUNNER_TEMP}/extended-retained-build" --root="${RUNNER_TEMP}/extended-measurements" \
+            --plan=campaign/campaign.json --job="${CAMPAIGN_JOB}" --repository="${GITHUB_REPOSITORY}" \
+            --source-head="${GITHUB_SHA}" --run-id="${GITHUB_RUN_ID}" --run-attempt="${GITHUB_RUN_ATTEMPT}" \
+            --plan-attempt="${CAMPAIGN_ATTEMPT}"
+      - name: Stage historical runtime receipts inside the report artifact root
+        if: always() && runner.os == 'Linux'
+        run: |
+          mkdir -p "${RUNNER_TEMP}/extended-measurements/runtime"
+          for name in runtime-receipt.json package-sha256.txt sources.list; do
+            if [[ -f "${RUNNER_TEMP}/historical-runtime/${name}" ]]; then
+              cp "${RUNNER_TEMP}/historical-runtime/${name}" "${RUNNER_TEMP}/extended-measurements/runtime/${name}"
+            fi
+          done
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: benchmark-extended-backfill-report-${{ matrix.id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/extended-measurements/observation.json
+            ${{ runner.temp }}/extended-measurements/measurements
+            ${{ runner.temp }}/extended-measurements/storage.json
+            ${{ runner.temp }}/extended-measurements/storage-release.json
+            ${{ runner.temp }}/extended-measurements/runtime
+          retention-days: 30
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: benchmark-extended-backfill-logs-${{ matrix.id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/extended-build/binaries/*/build.log
+            ${{ runner.temp }}/extended-build/binaries/*/build.json
+            ${{ runner.temp }}/extended-build/binaries/*/link-actions.json
+          retention-days: 30
+          if-no-files-found: warn

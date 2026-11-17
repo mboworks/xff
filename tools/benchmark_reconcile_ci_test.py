@@ -7,11 +7,13 @@ from datetime import datetime, timezone
 import gzip
 import io
 import json
+import subprocess
 import unittest
 from unittest import mock
 import zipfile
 
 import benchmark_extended_records as records
+import benchmark_extended_campaign as campaign
 import benchmark_reconcile_ci as reconcile
 from benchmark_extended_test_support import ExtendedFixture
 
@@ -20,6 +22,13 @@ def archive(value):
     output = io.BytesIO()
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as zipped:
         zipped.writestr('observation.json', json.dumps(value))
+    return output.getvalue()
+
+
+def plan_archive(plan):
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as zipped:
+        zipped.writestr('campaign.json', json.dumps(plan))
     return output.getvalue()
 
 
@@ -150,6 +159,89 @@ class BenchmarkReconcileCiTest(unittest.TestCase):
         marker.write_text(json.dumps(cached))
         reconcile.run_artifacts(self.api, self.root, source)
         self.assertEqual(self.api.requests, ['actions/runs/12/artifacts'])
+
+    def historical(self):
+        self.fixture.contract['recipe'] = records.suite.DENSE_RECIPE
+        value = self.fixture.record(origin='ci', comparison='parent')
+        (self.fixture.root / 'catalog.json').write_text('[]')
+        revision = {key: value['revision'][key] for key in ('sha', 'date', 'subject', 'pr')}
+        revision['parent'] = value['contract']['anchor']['sha']
+        driver = dict(revision, sha='f' * 40, parent=revision['sha'])
+        with mock.patch.object(campaign, 'mainline', return_value=[driver, revision]):
+            plan = campaign.make_plan(self.fixture.root, self.fixture.root, 'owner/repo', oldest=revision['sha'])
+        job_id = 'linux-' + revision['sha']
+        value['collection'].update(campaign_identity=plan['identity'], campaign_job=job_id,
+                                   campaign_attempt=1, workflow_head_sha=driver['sha'])
+        value['identity'] = records.observation_identity(value)
+        self.api.source.update(name=campaign.WORKFLOW, path=campaign.WORKFLOW_PATH,
+                               event='workflow_dispatch', head_sha=driver['sha'])
+        self.api.items = [{'name': 'benchmark-extended-backfill-report-' + job_id + '-1', 'id': 101,
+                           'created_at': '2026-11-08T00:00:00Z', 'expired': False},
+                          {'name': 'benchmark-extended-backfill-plan-1', 'id': 102,
+                           'created_at': '2026-11-08T00:00:00Z', 'expired': False}]
+        self.api.raw = {101: archive(value), 102: plan_archive(plan)}
+        original = self.api.request
+        def request(path, raw=False):
+            if path.startswith('compare/'):
+                return {'status': 'ahead'}
+            return original(path, raw)
+        self.api.request = request
+        return value, plan
+
+    def test_historical_batch_keeps_successful_previous_attempt_before_publication(self):
+        value, _ = self.historical()
+        self.assertTrue(reconcile.retain_extended_backfill(self.api, self.root, dict(self.api.source, run_attempt=2)))
+        retained = records.read(self.root / 'extended/observations' / value['identity'] / 'report.json')
+        self.assertEqual(retained['publication_source']['head_sha'], 'f' * 40)
+        view = records.view_report(retained, 'traditional')
+        self.assertEqual(view['source']['head_sha'], value['revision']['sha'])
+        self.assertEqual(view['source']['workflow_head_sha'], 'f' * 40)
+        self.assertEqual(records.benchmark_provenance.describe(view)['state'], 'Verified against Retention')
+        self.assertEqual(campaign.checkpoints(self.root, records), {('linux', value['revision']['sha'])})
+        self.assertFalse(reconcile.retain_extended_backfill(self.api, self.root, dict(self.api.source, run_attempt=2)))
+
+    def test_historical_plan_job_parent_or_workflow_cannot_be_substituted(self):
+        value, plan = self.historical()
+        for change in ('plan', 'parent', 'workflow', 'artifact', 'missing-plan'):
+            with self.subTest(change=change):
+                modified = copy.deepcopy(plan)
+                source = dict(self.api.source)
+                if change == 'plan':
+                    modified['jobs'][0]['revision']['sha'] = 'e' * 40
+                    modified['identity'] = campaign.identity({k: v for k, v in modified.items() if k != 'identity'})
+                elif change == 'parent':
+                    self.api.commit['parents'][0]['sha'] = 'e' * 40
+                elif change == 'workflow':
+                    source['event'] = 'pull_request'
+                elif change == 'artifact':
+                    self.api.items[0]['name'] = 'benchmark-extended-backfill-report-linux-' + 'e' * 40 + '-1'
+                elif change == 'missing-plan':
+                    self.api.items = self.api.items[:1]
+                self.api.raw[102] = plan_archive(modified)
+                self.assertFalse(reconcile.retain_extended_backfill(self.api, self.root, source))
+                self.assertFalse(list(self.root.glob('extended/observations/*/report.json')))
+                value, plan = self.historical()
+                self.api.commit['parents'][0]['sha'] = value['contract']['anchor']['sha']
+
+    def test_recovery_transport_failure_aborts_planning_instead_of_repeating_measurements(self):
+        self.historical()
+        original = self.api.request
+        def request(path, raw=False):
+            if path.startswith('actions/artifacts/'):
+                raise subprocess.CalledProcessError(1, ['gh', 'api'], stderr=b'transient HTTP 503')
+            return original(path, raw)
+        self.api.request = request
+        with self.assertRaises(subprocess.CalledProcessError):
+            reconcile.retain_extended_backfill(self.api, self.root, self.api.source, strict_network=True)
+        self.assertFalse(list(self.root.glob('extended/observations/*/report.json')))
+
+    def test_unrelated_historical_commit_cannot_enter_ci_history(self):
+        self.historical()
+        original = self.api.request
+        self.api.request = lambda path, raw=False: ({'status': 'diverged'} if path.startswith('compare/') else
+                                                     original(path, raw))
+        self.assertFalse(reconcile.retain_extended_backfill(self.api, self.root, self.api.source))
+        self.assertFalse(list(self.root.glob('extended/observations/*/report.json')))
 
 
 if __name__ == '__main__':

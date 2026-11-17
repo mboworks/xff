@@ -74,15 +74,54 @@ No tail collection has started and the original measurements do not need repeati
 PR #1153 supplies continuous extended Linux/macOS collection and combines those CI workloads
 with the corresponding original platform/revision in the viewer. Its historical local importer
 does not turn local observations into CI measurements. The existing GitHub backfill workflow
-still collects core benchmarks; historical extended CI scheduling is a separate follow-up.
+still collects core benchmarks; historical extended CI scheduling uses the separate
+`Extended benchmark backfill` workflow.
 
-That follow-up should walk main merges newest first, back to the beginning of CI collection,
-and independently track complete Linux/macOS extended observations. Start with ten revisions
-per campaign batch and bounded parallel jobs, publish completed observations together after
-each batch, and skip validated results on resume. A failed platform must not discard the other
-platform or repeat its completed work. Failed and pending artifacts must remain recoverable
-before scheduling replacements. Scaling toward 100 revisions per batch is a later operational
-choice; publishing once per individual cell or revision is not required.
+It walks main's first-parent merges newest first, back to the oldest retained CI commit
+(currently PR #868, `c092e8245ff843ab2f622cc39a0f226ff95d9f61`). Missing commits between
+catalog entries are included. Linux/macOS completion is independent. The default batch is
+ten missing revisions, validated between 1 and 100; each revision requires at most two jobs,
+with at most eight active jobs. A 100-revision batch therefore has at most 200 matrix jobs.
+
+After the workflow is merged onto main, start or resume it with:
+
+```sh
+gh workflow run benchmark_extended_backfill.yml --repo mboworks/xff --ref main \
+  -f batch_size=10 -f platform=both
+```
+
+Repeat that command for the next missing batch, or select `platform=linux`/`platform=macos`.
+Queued batches plan after their predecessor finishes. Planning first recovers valid retained
+artifacts from completed continuous/backfill runs, including failed workflows and successful
+earlier attempts; it does not wait for their Pages publication. Published catalog entries and
+validated raw checkpoints both satisfy completion. Transport failures during checkpoint
+recovery fail planning instead of silently scheduling expensive duplicate measurements.
+Invalid/missing/expired reports remain missing and are eligible for retry. An empty plan exits
+without starting measurement jobs. Retry failed jobs or start a new batch; successful partner
+platforms are preserved. No automatic whole-history dispatch is performed by merging this code.
+
+Each job builds the exact historical full-production head and actual first parent with ThinLTO,
+copies each configured executable immediately after its build, records link/configuration
+evidence, uploads/downloads the original bytes and shuts down build servers before timing.
+The current trusted driver collects the complete 260-cell head grid and identical-parent
+control grid using RAM fixtures. The recipe, fixture oracle, interleaving and fastest-7/9
+sampling remain identical to continuous CI. Both historical builds and raw reports are retained
+as 30-day artifacts, with attempt-specific names; no historical script is executed as a driver.
+
+The report binds the historical target separately from the workflow source, frozen campaign,
+job, repository and attempts. Publication downloads the frozen plan, checks trusted main-only
+workflow metadata, actual GitHub first-parent identity and ancestry, then validates the complete
+measurement/build proof. Report self-claims cannot substitute for those independent checks.
+Every valid revision/platform in a partially failed batch is retained independently. The shared
+publisher processes the batch after workflow completion and can also recover it on schedule;
+publishing every individual revision is unnecessary. Existing core and local data are preserved.
+
+Begin with ten revisions and inspect actual runner duration, artifact size and total
+`storage-report.json` before increasing batch size. The 200 MB warning remains a review point;
+the existing site is already substantially larger. Full-history storage growth and lossless
+representation work remain tracked in [site storage](site-storage.md). Do not remove or round
+observations to make the backfill fit. A 100-revision input is a supported bound, not a claim
+that its full cost or Pages deployment has already been qualified on hosted runners.
 
 Keep the current measurement contract and original core observations. New CI results add
 the five workload slots to the existing CI history; unmeasured older slots remain empty.

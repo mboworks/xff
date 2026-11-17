@@ -14,6 +14,7 @@ import re
 import tempfile
 
 import benchmark_extended as suite
+import benchmark_extended_campaign as campaign
 import benchmark_extended_report as report
 import benchmark_provenance
 
@@ -158,14 +159,28 @@ def validate(record, source=None):
         require(record['comparison'] == 'parent' and collection['head_sha'] == revision['sha']
                 and collection['base_sha'] == contract['anchor']['sha'], 'CI revision/parent changed')
         if source is not None:
-            require(source['name'] == 'Benchmarks' and source['path'] == '.github/workflows/benchmarks.yml'
-                    and source['event'] == 'push' and source['head_branch'] == 'main' and source['status'] == 'completed',
+            historical = 'campaign_identity' in collection
+            require(source['head_branch'] == 'main' and source['status'] == 'completed' and
+                    ((source['name'], source['path'], source['event']) ==
+                     ((campaign.WORKFLOW, campaign.WORKFLOW_PATH, 'workflow_dispatch') if historical else
+                      ('Benchmarks', '.github/workflows/benchmarks.yml', 'push'))),
                     'untrusted extended workflow')
             require(all(str(collection[key]) == str(source[field]) for key, field in
-                        [('run_id', 'id'), ('run_attempt', 'run_attempt'), ('head_sha', 'head_sha')]),
+                        [('run_id', 'id'), ('run_attempt', 'run_attempt'),
+                         ('workflow_head_sha' if historical else 'head_sha', 'head_sha')]),
                     'extended workflow provenance mismatch')
             require(collection['repository'] == source['repository']['full_name'], 'extended repository mismatch')
             require(source['base_sha'] == contract['anchor']['sha'], 'extended anchor is not the trusted first parent')
+            if historical:
+                plan = source['extended_backfill_plan']
+                job = campaign.validate_job(plan, collection['campaign_job'], collection['repository'], source['head_sha'])
+                require(contract['recipe'] == plan['contract']['recipe']
+                        and collection['campaign_identity'] == plan['identity'] and job['platform'] == record['platform']
+                        and job['arch'] == record['machine']
+                        and (job['revision']['sha'], job['revision']['parent']) ==
+                        (revision['sha'], contract['anchor']['sha']), 'historical plan/build mismatch')
+                require(type(collection['campaign_attempt']) is int and
+                        1 <= collection['campaign_attempt'] <= collection['run_attempt'], 'invalid campaign attempt')
     validate_rows(record['rows'], contract, revision)
     if record.get('controls'):
         validate_rows(record['controls'], contract, contract['anchor'])
@@ -203,6 +218,10 @@ def view_report(record, view):
         adapted['contract']['affinity_by_cpu_count'] = {str(n): None for n in adapted['contract']['cpu_counts']}
     source = record.get('publication_source', {'head_sha': record['revision']['sha']})
     source = dict(source, reference_time=record['revision']['date'])
+    if (record.get('collection') or {}).get('campaign_identity'):
+        # The wrapper names the measured commit; original workflow/plan provenance
+        # remains attached to the immutable observation and separately identified.
+        source = dict(source, workflow_head_sha=source['head_sha'], head_sha=record['revision']['sha'])
     if record['origin'] == 'local':
         source = dict(source, created_at=record['completed_at'], reference_time=record['revision']['date'],
                       event='local', head_branch='local')
@@ -244,6 +263,8 @@ def retain(root, record, source=None):
         record = dict(record, publication_source={key: source[key] for key in
                       ('id', 'run_attempt', 'created_at', 'head_sha', 'head_branch', 'event',
                        'name', 'path', 'status', 'repository', 'base_sha')})
+        if 'extended_backfill_plan' in source:
+            record['publication_source']['extended_backfill_plan'] = source['extended_backfill_plan']
     destination = root / 'extended' / 'observations' / record['identity'] / 'report.json'
     if destination.exists() or destination.with_suffix('.json.gz').exists():
         require(observation_identity(read(destination)) == observation_identity(record),

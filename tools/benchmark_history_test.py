@@ -631,7 +631,7 @@ class BenchmarkHistoryTest(unittest.TestCase):
 
     def test_release_refresh_reconciles_measurement_artifacts(self):
         publish = repository_file(".github/workflows/benchmark_pages.yml").read_text()
-        self.assertIn("workflows: [Test, Benchmarks, Release, Benchmark backfill]", publish)
+        self.assertRegex(publish, r'workflows:\s*\[\s*Test,\s*Benchmarks,\s*Release,\s*Benchmark backfill,\s*Extended benchmark backfill,?\s*\]')
         self.assertIn("workflow_dispatch: {}", publish)
         self.assertIn("fetch-depth: 0", publish)
         self.assertIn("benchmark_reconcile_ci.py", publish)
