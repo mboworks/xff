@@ -5556,6 +5556,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "d5d3cc11ba721f4c7d396e590f004a128a54cb2f12c32c6e77a16ca4fd4285b4"
+        },
+        {
+          "commit": "d740fcd0910dda7946c87c4141a6d8a429a41356",
+          "date": "2026-11-16T23:40:47Z",
+          "measured": "2026-11-16T23:40:50Z",
+          "report": "runs/43981360144/1/linux/report.json",
+          "report_identity": "a396b7c94a7c75e26890ae522bb3851e0d8076be49ddafb711666a32250b53a8",
+          "batch": null,
+          "batch_identity": null,
+          "method": "d5d3cc11ba721f4c7d396e590f004a128a54cb2f12c32c6e77a16ca4fd4285b4"
         }
       ],
       "history_series": "github-ci-linux/x86_64"
@@ -5714,6 +5724,91 @@
             "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
             "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
           }
+        },
+        "e36fbe6fc2bc74795b2d9ef7031e8c20f1bef88ad6f0e4848752fdf331ad9a3f": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "5ea02023b2db53f991518ac64773d1bff5ce9f6147118e2da4478cd0410452dd",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "017e3e47559613b83654bc4d34d0094385d8449395a413d3ba82c34604f5892f",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "6ab7a3e80cfd4ab35650bf11f48b662f616cd622c1f67d367d0341bc2f9c2245",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "d740fcd0910dda7946c87c4141a6d8a429a41356",
+              "tree": "b5cb111692be0bc2094485fcc9b3e11cc35c7572",
+              "clean": true
+            },
+            "sha256": "158de92534269d4994a02bd654a6530a87cf727d757b717dd655976637eddd0b",
+            "bytes": 18578472,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 226.12349957499998,
+            "completed_at": "2026-11-17T00:32:08.517331+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "a1b717e5f126819f6a2186927cc2bb5f0f7af309774b76337f0ef6bb42af19d8",
+              "MODULE.bazel.lock": "5dea16828186673a9e15de6c9184ee2593364f28bd5988691d938dd308078621",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+          "cpu_count": null,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
         }
       },
       "observations": [
@@ -5726,6 +5821,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "d2f21634ffc9fd81188cce28e5aff03e14d9b233bfd2985db3b70b67ba648f7f"
+        },
+        {
+          "commit": "d740fcd0910dda7946c87c4141a6d8a429a41356",
+          "date": "2026-11-16T23:40:47Z",
+          "measured": "2026-11-17T00:40:52.423910+00:00",
+          "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/d740fcd0910dda7946c87c4141a6d8a429a41356/report.json",
+          "report_identity": "ca8ff979040f56ba63a1d38639d41f34e03e63e6cfe012cc28061b5d2b0cc767",
+          "batch": null,
+          "batch_identity": null,
+          "method": "e36fbe6fc2bc74795b2d9ef7031e8c20f1bef88ad6f0e4848752fdf331ad9a3f"
         }
       ],
       "history_series": "github-ci-linux/x86_64"
@@ -6352,6 +6457,85 @@
             "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
             "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
           }
+        },
+        "478dc7eef69854521eadc9babc1ae2cc18783a89c2c0740fb02677191e635b13": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "341c60fcf26de436113d1a068ddf5b64bda09c7e1ad7d088f644a5211b18f22c",
+              "version": "find (GNU findutils) 4.11.0\nPackaged by Homebrew\nCopyright (C) 2026 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, Bernhard Voelker,\nand Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "5646999cee2444b3e07c1602b7f3427b0c05fe19aca6f59009abdf806a6fe6ea",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "d740fcd0910dda7946c87c4141a6d8a429a41356",
+              "tree": "b5cb111692be0bc2094485fcc9b3e11cc35c7572",
+              "clean": true
+            },
+            "sha256": "db269fd56f80cc05784641ac81f713647f42afcca984fac74516531a694e7b8a",
+            "bytes": 10035480,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 341.31434516700006,
+            "completed_at": "2026-11-17T00:34:17.244212+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "a1b717e5f126819f6a2186927cc2bb5f0f7af309774b76337f0ef6bb42af19d8",
+              "MODULE.bazel.lock": "5dea16828186673a9e15de6c9184ee2593364f28bd5988691d938dd308078621",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": null,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
         }
       },
       "observations": [
@@ -6364,6 +6548,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "d2b2141034ece88f5c54e80e68fac2813730e42001b81aa786f89d50bc67c8f2"
+        },
+        {
+          "commit": "d740fcd0910dda7946c87c4141a6d8a429a41356",
+          "date": "2026-11-16T23:40:47Z",
+          "measured": "2026-11-17T00:48:32.575705+00:00",
+          "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/d740fcd0910dda7946c87c4141a6d8a429a41356/report.json",
+          "report_identity": "f6b4392bb4959478b92ded33d23c10c8dbeee49dadf471fe9a73ff857681efca",
+          "batch": null,
+          "batch_identity": null,
+          "method": "478dc7eef69854521eadc9babc1ae2cc18783a89c2c0740fb02677191e635b13"
         }
       ],
       "history_series": "github-ci-macos/arm64"
@@ -14063,6 +14257,46 @@
             "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
             "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
           }
+        },
+        "7628e8ec4e9a2eb4045910da345a9dc6b34773c849f35473f08d90e0e64fe0b5": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.7.2-arm64-arm-64bit-Mach-O",
+              "sha256": "6c0ed3efc994f93eb962f517d27fa9afb981f036ffb7a759f8ea3b0899792c76"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.5 (Homebrew)",
+              "sha256": "ffe65ac524ca5b26e281e8a95b50b49e411002ce016c1e054d5f88529eba2c0c"
+            }
+          },
+          "build": "3b3b81861e2756020cd5b7d5ecf75188c7d6ddfba9b21b814eb8c702f760a199",
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": 3,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "parent": "/Users/runner/work/_temp",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          },
+          "resource_accounting": {
+            "sha256": "aad19fda9d3b541aadd06c087a651810efe44db062655732664cb23062f05ba3",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+          }
         }
       },
       "observations": [
@@ -16035,6 +16269,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "c0e068ce38394bbb5c254121d25703acfece7e1d4f8403fe087255c81e8b34db"
+        },
+        {
+          "commit": "d740fcd0910dda7946c87c4141a6d8a429a41356",
+          "date": "2026-11-16T23:40:47Z",
+          "measured": "2026-11-16T23:40:50Z",
+          "report": "runs/43981360144/1/macos/report.json",
+          "report_identity": "d39de8bdfacb92ad4169079411fa028457de7ded5a78fe2822c309bd6805c271",
+          "batch": null,
+          "batch_identity": null,
+          "method": "7628e8ec4e9a2eb4045910da345a9dc6b34773c849f35473f08d90e0e64fe0b5"
         }
       ],
       "history_series": "github-ci-macos/arm64"
