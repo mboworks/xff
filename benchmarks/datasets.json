@@ -5546,6 +5546,186 @@
           "batch": null,
           "batch_identity": null,
           "method": "d5d3cc11ba721f4c7d396e590f004a128a54cb2f12c32c6e77a16ca4fd4285b4"
+        },
+        {
+          "commit": "40aa47615dbcdccd94ea3941b6893ab858132d4e",
+          "date": "2026-11-16T22:24:35Z",
+          "measured": "2026-11-16T22:24:39Z",
+          "report": "runs/43969775827/1/linux/report.json",
+          "report_identity": "97e3c1fae330a77753897724a8e4b110df186273fd66a6ced5a48a4752804fc8",
+          "batch": null,
+          "batch_identity": null,
+          "method": "d5d3cc11ba721f4c7d396e590f004a128a54cb2f12c32c6e77a16ca4fd4285b4"
+        }
+      ],
+      "history_series": "github-ci-linux/x86_64"
+    },
+    {
+      "id": "986e6001c351721dc004c38383bc30d645d6d1ba3810778b0cd41f5297a437ce",
+      "series": "github-ci-linux",
+      "kind": "ci",
+      "platform": "linux",
+      "architecture": "x86_64",
+      "recipe": {
+        "files": [
+          10,
+          20,
+          50,
+          100,
+          200,
+          500,
+          1000,
+          2000,
+          5000,
+          10000,
+          20000,
+          50000,
+          100000
+        ],
+        "cpus": [
+          1,
+          3
+        ],
+        "depth": null,
+        "repetitions": 9,
+        "keep": 7,
+        "estimator": "mean-fastest",
+        "fixture_version": null,
+        "custom_fixtures": false,
+        "trees": [
+          "broad",
+          "deep"
+        ],
+        "tasks": {
+          "archive-tar": [
+            "tar",
+            "xff"
+          ],
+          "content-regex": [
+            "rg",
+            "xff"
+          ],
+          "files-exact": [
+            "find",
+            "xff"
+          ],
+          "metadata-time": [
+            "find",
+            "xff"
+          ],
+          "name-native": [
+            "find",
+            "xff"
+          ]
+        },
+        "allocation": "logical-cpus",
+        "memory_required": true,
+        "warmup_rounds": 1,
+        "order": null,
+        "cache": null,
+        "output": null,
+        "suite": "extended-production-v2",
+        "comparison": "traditional",
+        "production_target": "//xff/cli:xff_full"
+      },
+      "machines": [],
+      "methods": {
+        "d2f21634ffc9fd81188cce28e5aff03e14d9b233bfd2985db3b70b67ba648f7f": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "5ea02023b2db53f991518ac64773d1bff5ce9f6147118e2da4478cd0410452dd",
+              "version": "find (GNU findutils) 4.10.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "017e3e47559613b83654bc4d34d0094385d8449395a413d3ba82c34604f5892f",
+              "version": "ripgrep 15.1.0\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "6ab7a3e80cfd4ab35650bf11f48b662f616cd622c1f67d367d0341bc2f9c2245",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "40aa47615dbcdccd94ea3941b6893ab858132d4e",
+              "tree": "d25a57c8e2957c9cd1bdf97f5662c6660642e04d",
+              "clean": true
+            },
+            "sha256": "158de92534269d4994a02bd654a6530a87cf727d757b717dd655976637eddd0b",
+            "bytes": 18578472,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 242.202939377,
+            "completed_at": "2026-11-16T22:37:42.872713+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "f8ca4d09bc89ade7f062e5a0947f556c0299f53b1f19ec3c1116022651c07391",
+              "MODULE.bazel.lock": "039f48ebfa54657e82435aa905b5b6e79d9385cec933d9aa9965aa96aab1926c",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+          "cpu_count": null,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        }
+      },
+      "observations": [
+        {
+          "commit": "40aa47615dbcdccd94ea3941b6893ab858132d4e",
+          "date": "2026-11-16T22:24:35Z",
+          "measured": "2026-11-16T22:46:09.871811+00:00",
+          "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/40aa47615dbcdccd94ea3941b6893ab858132d4e/report.json",
+          "report_identity": "a734c1387070942b0b761bd0cdd9992374d45bc7bc842331b72fddb592721d3c",
+          "batch": null,
+          "batch_identity": null,
+          "method": "d2f21634ffc9fd81188cce28e5aff03e14d9b233bfd2985db3b70b67ba648f7f"
         }
       ],
       "history_series": "github-ci-linux/x86_64"
@@ -6023,6 +6203,170 @@
         }
       ],
       "history_series": "github-ci-linux/x86_64"
+    },
+    {
+      "id": "41b09f2b3114384d777ae611807128aa2f18a6713f43f32c671c2d38b1ed92f2",
+      "series": "github-ci-macos",
+      "kind": "ci",
+      "platform": "macos",
+      "architecture": "arm64",
+      "recipe": {
+        "files": [
+          10,
+          20,
+          50,
+          100,
+          200,
+          500,
+          1000,
+          2000,
+          5000,
+          10000,
+          20000,
+          50000,
+          100000
+        ],
+        "cpus": [
+          1,
+          3
+        ],
+        "depth": null,
+        "repetitions": 9,
+        "keep": 7,
+        "estimator": "mean-fastest",
+        "fixture_version": null,
+        "custom_fixtures": false,
+        "trees": [
+          "broad",
+          "deep"
+        ],
+        "tasks": {
+          "archive-tar": [
+            "tar",
+            "xff"
+          ],
+          "content-regex": [
+            "rg",
+            "xff"
+          ],
+          "files-exact": [
+            "find",
+            "xff"
+          ],
+          "metadata-time": [
+            "find",
+            "xff"
+          ],
+          "name-native": [
+            "find",
+            "xff"
+          ]
+        },
+        "allocation": "workers",
+        "memory_required": true,
+        "warmup_rounds": 1,
+        "order": null,
+        "cache": null,
+        "output": null,
+        "suite": "extended-production-v2",
+        "comparison": "traditional",
+        "production_target": "//xff/cli:xff_full"
+      },
+      "machines": [],
+      "methods": {
+        "d2b2141034ece88f5c54e80e68fac2813730e42001b81aa786f89d50bc67c8f2": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "341c60fcf26de436113d1a068ddf5b64bda09c7e1ad7d088f644a5211b18f22c",
+              "version": "find (GNU findutils) 4.11.0\nPackaged by Homebrew\nCopyright (C) 2026 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, Bernhard Voelker,\nand Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "5646999cee2444b3e07c1602b7f3427b0c05fe19aca6f59009abdf806a6fe6ea",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "40aa47615dbcdccd94ea3941b6893ab858132d4e",
+              "tree": "d25a57c8e2957c9cd1bdf97f5662c6660642e04d",
+              "clean": true
+            },
+            "sha256": "a33d7c7f5184d4bedcffe74385e4e3bb5e41349e5d2ecd7f78a190731dae0fc9",
+            "bytes": 10035464,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 237.74280254099995,
+            "completed_at": "2026-11-16T22:38:19.656571+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "f8ca4d09bc89ade7f062e5a0947f556c0299f53b1f19ec3c1116022651c07391",
+              "MODULE.bazel.lock": "039f48ebfa54657e82435aa905b5b6e79d9385cec933d9aa9965aa96aab1926c",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": null,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        }
+      },
+      "observations": [
+        {
+          "commit": "40aa47615dbcdccd94ea3941b6893ab858132d4e",
+          "date": "2026-11-16T22:24:35Z",
+          "measured": "2026-11-16T22:49:22.496402+00:00",
+          "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/40aa47615dbcdccd94ea3941b6893ab858132d4e/report.json",
+          "report_identity": "cdb37a99ee2d6ff61eb0622cfff9a6244b856c90e2cc57fd2fef15af21c01308",
+          "batch": null,
+          "batch_identity": null,
+          "method": "d2b2141034ece88f5c54e80e68fac2813730e42001b81aa786f89d50bc67c8f2"
+        }
+      ],
+      "history_series": "github-ci-macos/arm64"
     },
     {
       "id": "51c719d35f675393eb6d1231e3a62af25fea8f97df81bb4444f41b144a741d6a",
@@ -13679,6 +14023,46 @@
             "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
             "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
           }
+        },
+        "c0e068ce38394bbb5c254121d25703acfece7e1d4f8403fe087255c81e8b34db": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "status": "available",
+              "version": "BSD find; macOS-26.7.2-arm64-arm-64bit-Mach-O",
+              "sha256": "6c0ed3efc994f93eb962f517d27fa9afb981f036ffb7a759f8ea3b0899792c76"
+            },
+            "rg": {
+              "status": "available",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67"
+            },
+            "fzf": {
+              "status": "available",
+              "version": "0.74.5 (Homebrew)",
+              "sha256": "ffe65ac524ca5b26e281e8a95b50b49e411002ce016c1e054d5f88529eba2c0c"
+            }
+          },
+          "build": "3b3b81861e2756020cd5b7d5ecf75188c7d6ddfba9b21b814eb8c702f760a199",
+          "sampling": null,
+          "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": 3,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "parent": "/Users/runner/work/_temp",
+            "filesystem": "unverified host filesystem",
+            "memory_required": false,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+          },
+          "resource_accounting": {
+            "sha256": "c4818630e89e08a0243950491313d6a029461509e5eb75f9a96887edfd46ea21",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded",
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown"
+          }
         }
       },
       "observations": [
@@ -15641,6 +16025,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "25ac47565ce2e1f74aa407a3bb08e229b2815b3435df8934ce58e2947dad3a23"
+        },
+        {
+          "commit": "40aa47615dbcdccd94ea3941b6893ab858132d4e",
+          "date": "2026-11-16T22:24:35Z",
+          "measured": "2026-11-16T22:24:39Z",
+          "report": "runs/43969775827/1/macos/report.json",
+          "report_identity": "79692d1bbd171310f13a7a0011aba5fc5d0670d6be17305955a6092008d6eaee",
+          "batch": null,
+          "batch_identity": null,
+          "method": "c0e068ce38394bbb5c254121d25703acfece7e1d4f8403fe087255c81e8b34db"
         }
       ],
       "history_series": "github-ci-macos/arm64"
