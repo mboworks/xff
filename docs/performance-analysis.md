@@ -941,6 +941,13 @@ entries, preserve basic versus birth-time requests, and keep pruning and error p
 
 ### Archive and scheduling limits
 
+The [TAR ASCII pathname experiment](benchmarks/tar-ascii-pathname-20261115.md) removes eager
+wide-character conversion used only for libarchive's regular-member trailing-slash check.
+Non-ASCII and escape-bearing paths retain the original conversion/fallback. Production macOS
+comparisons and a separate repetition show reduced large-listing wall time; Linux qualification
+remains pending while the historical backfill runs. This does not remove archive indexing or
+the independent-cursor replay costs described below.
+
 The VFS already requires concurrent-safe calls, and `ReadSource` explicitly allows concurrent
 `Open` calls with independently owned single-threaded cursors. `CollectedEntry` can retain the
 mounted filesystem owner. These contracts make selected archive parallelism plausible; it is

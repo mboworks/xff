@@ -1,0 +1,30 @@
+diff --git a/libarchive/archive_read_support_format_tar.c b/libarchive/archive_read_support_format_tar.c
+--- a/libarchive/archive_read_support_format_tar.c
++++ b/libarchive/archive_read_support_format_tar.c
+@@ -582,6 +582,26 @@
+ 		 * directory: This is needed for certain old tar
+ 		 * variants and even for some broken newer ones.
+ 		 */
++		/* Avoid allocating and converting a wide pathname merely to
++		 * inspect an ASCII slash. Keep the existing wide-character
++		 * path for non-ASCII names and escape-based stateful encodings.
++		 */
++		p = archive_entry_pathname(entry);
++		if (p != NULL) {
++			for (l = 0; p[l] != '\0'; ++l) {
++				if ((unsigned char)p[l] >= 0x80 ||
++				    (unsigned char)p[l] == 0x1b)
++					break;
++			}
++			if (p[l] == '\0') {
++				if (l > 0 && p[l - 1] == '/') {
++					archive_entry_set_filetype(entry, AE_IFDIR);
++					tar->entry_bytes_remaining = 0;
++					tar->entry_padding = 0;
++				}
++				return (r);
++			}
++		}
+ 		if ((wp = archive_entry_pathname_w(entry)) != NULL) {
+ 			l = wcslen(wp);
+ 			if (l > 0 && wp[l - 1] == L'/') {

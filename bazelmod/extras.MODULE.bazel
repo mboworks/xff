@@ -82,7 +82,11 @@ bazel_dep(name = "libexpat", version = "2.9.0")
 single_version_override(
     module_name = "libarchive",
     patch_strip = 1,
-    patches = ["//bazelmod:libarchive-xar.patch"],
+    patches = [
+        "//bazelmod:libarchive-xar.patch",
+        # Preserve non-ASCII decoding; skip wide conversion for the TAR ASCII slash check.
+        "//bazelmod:libarchive-tar-ascii-pathname.patch",
+    ],
 )
 
 bazel_dep(name = "xff_apple", version = "0.0.0")

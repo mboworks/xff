@@ -1,8 +1,9 @@
 # Performance follow-up after the extended viewer
 
-Finish PR #1153 and prepare the complete `extended-production-v2` history first.
-Performance implementation and timing are deferred during that work. This ledger preserves
-the completed candidate and the next investigations; it does not claim they have all qualified.
+PR #1153 merged as `40aa47615dbcdccd94ea3941b6893ab858132d4e`. The complete local
+130-revision history is collected and publication-qualified. The separate GitHub historical
+backfill and the pathname optimization are the next changes. This ledger distinguishes
+qualified implementations, already merged changes, rejected trials and planned investigations.
 
 The new history covers 130 merged revisions, ending at PR #1130. It does not measure the
 later changes below. Its fixed-reference and traditional-tool views retain their actual
@@ -13,7 +14,7 @@ It is collection/publication work, separate from the performance candidate below
 
 ## First separate performance PR: TAR pathname conversion
 
-**Implemented; macOS qualified; Linux validation outstanding.** This is the Unicode/wide-character
+**Implemented and qualified on macOS and Linux, with explicit small-archive Linux costs.** This is the Unicode/wide-character
 hotspot discovered while examining the TAR comparison, not an unimplemented proposal.
 
 - Source base: `42d87175e0e8261493f3bfcf1f9b82c5626edc9f` (main through #1159).
@@ -43,12 +44,13 @@ hotspot discovered while examining the TAR comparison, not an unimplemented prop
   `tar-pathname-candidate.bundle` contains the candidate branch and requires the base commit
   above; SHA-256 is `2cea6e3865584a93f7d0f7970212e95908b38dbc458be6a02d63d3500a75b434`.
   This preserves the implementation for another session without publishing a performance PR.
-- Next gate: isolated Linux baseline/candidate production builds, the seven affected archive
-  suites, and paired tmpfs measurements with the same independent oracle and baseline control.
-  Preserve failed populations and recheck fixture, tool, launcher and executable hashes.
-  Build and test before timing; do not combine samples with viewer history.
-- No PR has been opened and no candidate code has been pushed. Open its separate performance
-  PR immediately after that remaining qualification succeeds. Keep its code out of #1153.
+- Linux qualification now passes all seven suites and two independent complete 16-cell
+  populations (3,584 oracle-checked invocations). At 10k/100k members, wall time decreases
+  by approximately 15-27%; 100-member cases regress by approximately 3-6%, repeatedly.
+  [The full report](benchmarks/tar-ascii-pathname-20261115.md#linux-qualification-after-pr-1153)
+  retains every adverse cell, control, executable identity and cleanup receipt.
+- The rebased implementation is `4ce229dca5e706b1651d76c1259b66b6155e7706` on merged #1153.
+  It is ready for its separate performance PR. Current pushed-head CI remains a merge gate.
 
 ## Already landed after the historical endpoint
 
@@ -93,3 +95,15 @@ Each selected optimization needs its own source and executable identities, both-
 correctness results, raw paired measurements, controls and limitations. Retain rejected
 trials so later sessions do not repeat them. The existing
 [performance analysis](performance-analysis.md) remains the detailed record of older trials.
+
+## Other preserved optimization trials
+
+The [candidate completion audit](performance-candidate-completion-audit.md) and
+[performance analysis](performance-analysis.md) retain the larger O01-O32 inventory.
+Their historical statements about pending PR CI describe the original experiment date;
+they are not a list of currently unmerged implementations. In particular, rejected
+shared-executor, output-credit, direct-vector, JSON-reservation and arena/container
+trials must not be submitted as established improvements. Open historical executor PRs
+#992/#996/#997/#998 remain research and require fresh current-main qualification.
+The next implementation candidates are the four investigations above, after measuring
+current main; none has an additional completed qualification waiting to be landed here.

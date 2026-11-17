@@ -164,7 +164,8 @@
     "docs/benchmarks/direct-line-scan-spans-20261109.md": "docs/benchmarks/direct-line-scan-spans-20261109.html",
     "docs/benchmarks/prepared-member-name-20261109.md": "docs/benchmarks/prepared-member-name-20261109.html",
     "docs/benchmark-dense-history-20261115.md": "docs/benchmark-dense-history-20261115.html",
-    "docs/benchmark-performance-follow-up.md": "docs/benchmark-performance-follow-up.html"
+    "docs/benchmark-performance-follow-up.md": "docs/benchmark-performance-follow-up.html",
+    "docs/benchmarks/tar-ascii-pathname-20261115.md": "docs/benchmarks/tar-ascii-pathname-20261115.html"
   },
   "generated_html": {
     "XFF.md": {
@@ -221,6 +222,8 @@
     "docs/benchmarks/prepared-member-name-20261109-linux.json.gz": "docs/benchmarks/prepared-member-name-20261109-linux.json.gz",
     "docs/benchmarks/prepared-member-name-20261109-macos.json.gz": "docs/benchmarks/prepared-member-name-20261109-macos.json.gz",
     "docs/benchmarks/extended-tar-diagnostic-20261115.json": "docs/benchmarks/extended-tar-diagnostic-20261115.json",
-    "docs/benchmarks/extended-dense-publication-20261116.json": "docs/benchmarks/extended-dense-publication-20261116.json"
+    "docs/benchmarks/extended-dense-publication-20261116.json": "docs/benchmarks/extended-dense-publication-20261116.json",
+    "docs/benchmarks/tar-ascii-pathname-20261115.json.gz": "docs/benchmarks/tar-ascii-pathname-20261115.json.gz",
+    "docs/benchmarks/tar-ascii-pathname-linux-20261116.json.gz": "docs/benchmarks/tar-ascii-pathname-linux-20261116.json.gz"
   }
 }
