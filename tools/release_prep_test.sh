@@ -290,22 +290,126 @@ test_release_elf_link_optimizations_are_scoped() {
   fi
 }
 
-# Every workflow uses setup-bazel's opt-in cache model. setup-bazelisk unconditionally touched its
-# legacy Actions cache and emitted HTTP 400 warnings even though xff owns explicit bounded caches.
-test_workflows_use_setup_bazel() {
-  setup_count=0
-  for workflow in "${HERE}"/../.github/workflows/*.yml; do
-    if [ "$(count_lines_with 'bazelbuild/setup-bazelisk' "${workflow}")" -ne 0 ]; then
-      fail "workflow $(basename "${workflow}"): setup-bazelisk must not be used"
+# Return the complete setup-bazel refs from workflow steps, including quoted uses values.
+setup_bazel_refs() {
+  local line use
+  local uses_pattern='^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*([^[:space:]]+)'
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    if [[ "${line}" =~ ${uses_pattern} ]]; then
+      use="${BASH_REMATCH[2]}"
+      use="${use#\"}"
+      use="${use%\"}"
+      use="${use#\'}"
+      use="${use%\'}"
+      case "${use}" in
+        bazel-contrib/setup-bazel | bazel-contrib/setup-bazel@) printf '%s\n' 'unpinned' ;;
+        bazel-contrib/setup-bazel@*) printf '%s\n' "${use#*@}" ;;
+      esac
     fi
-    workflow_setup_count=$(count_lines_with 'uses: bazel-contrib/setup-bazel@' "${workflow}")
-    setup_count=$((setup_count + workflow_setup_count))
-    if [ "${workflow_setup_count}" -ne "$(count_lines_with 'uses: bazel-contrib/setup-bazel@0.19.1' "${workflow}")" ]; then
-      fail "workflow $(basename "${workflow}"): every setup-bazel use must pin 0.19.1"
+  done <"$1"
+}
+
+# Main CI owns the intended release pin. Check exact equality everywhere so an upgrade needs
+# only workflow edits. setup-bazelisk's unconditional legacy cache remains forbidden.
+check_workflows_use_setup_bazel() {
+  local workflows="$1" main_refs intended_version workflow refs ref
+  if [[ ! -f "${workflows}/main.yml" ]]; then
+    echo 'workflows: main.yml must declare the intended setup-bazel version' >&2
+    return 1
+  fi
+  main_refs="$(setup_bazel_refs "${workflows}/main.yml")"
+  intended_version="${main_refs%%$'\n'*}"
+  if [[ ! "${intended_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo 'workflow main.yml: setup-bazel must pin a full X.Y.Z release version' >&2
+    return 1
+  fi
+  for workflow in "${workflows}"/*.yml "${workflows}"/*.yaml; do
+    [[ -f "${workflow}" ]] || continue
+    if [ "$(count_lines_with 'bazelbuild/setup-bazelisk' "${workflow}")" -ne 0 ]; then
+      echo "workflow $(basename "${workflow}"): setup-bazelisk must not be used" >&2
+      return 1
+    fi
+    refs="$(setup_bazel_refs "${workflow}")"
+    [[ -n "${refs}" ]] || continue
+    while IFS= read -r ref; do
+      if [[ "${ref}" != "${intended_version}" ]]; then
+        echo "workflow $(basename "${workflow}"): setup-bazel@${ref} must match main.yml's intended version ${intended_version}" >&2
+        return 1
+      fi
+    done <<<"${refs}"
+  done
+}
+
+test_workflows_use_setup_bazel() {
+  local out
+  if ! out="$(check_workflows_use_setup_bazel "${HERE}/../.github/workflows" 2>&1)"; then
+    fail "${out}"
+  fi
+}
+
+test_setup_bazel_version_validation() {
+  local root version out
+  root="$(mktemp -d)"
+  trap 'rm -rf "${root}"' RETURN
+  # A coordinated upgrade must pass without changing the checker. Exercise both YAML suffixes,
+  # multiple occurrences, quoting, and a comment containing an unrelated action ref.
+  for version in 0.19.1 0.19.2 12.34.56; do
+    printf '  - uses: bazel-contrib/setup-bazel@%s\n' "${version}" "${version}" >"${root}/main.yml"
+    printf '  - name: Setup Bazel\n    uses: "bazel-contrib/setup-bazel@%s" # release\n' "${version}" >"${root}/release.yml"
+    printf "  - uses: 'bazel-contrib/setup-bazel@%s'\n" "${version}" >"${root}/fuzz.yaml"
+    printf '# - uses: bazel-contrib/setup-bazel@unrelated\n' >>"${root}/main.yml"
+    if ! out="$(check_workflows_use_setup_bazel "${root}" 2>&1)"; then
+      fail "consistent setup-bazel upgrade to ${version}: ${out}"
     fi
   done
-  if [ "${setup_count}" -eq 0 ]; then
-    fail "workflows: setup-bazel must be used"
+  # Prefix matches must not pass: every occurrence must equal the intended version exactly.
+  for version in 12.34.5 12.34.560 main; do
+    printf '  - uses: bazel-contrib/setup-bazel@%s\n' "${version}" >"${root}/release.yml"
+    if out="$(check_workflows_use_setup_bazel "${root}" 2>&1)"; then
+      fail "mixed setup-bazel refs: accepted ${version} alongside 12.34.56"
+    else
+      case "${out}" in
+        *"release.yml"*"intended version 12.34.56"*) ;;
+        *) fail "mixed setup-bazel diagnostic: ${out}" ;;
+      esac
+    fi
+  done
+  printf '  - uses: bazel-contrib/setup-bazel@12.34.56\n' >"${root}/release.yml"
+  printf '  - uses: bazel-contrib/setup-bazel@\n' >>"${root}/release.yml"
+  if check_workflows_use_setup_bazel "${root}" >/dev/null 2>&1; then
+    fail 'empty setup-bazel ref outside main.yml must fail'
+  fi
+  printf '  - uses: bazel-contrib/setup-bazel@12.34.56\n' >"${root}/release.yml"
+  printf '  - uses: bazel-contrib/setup-bazel@12.34.57\n' >"${root}/fuzz.yaml"
+  if check_workflows_use_setup_bazel "${root}" >/dev/null 2>&1; then
+    fail 'mixed setup-bazel refs in .yaml workflows must fail'
+  fi
+  printf '  - uses: bazel-contrib/setup-bazel@12.34.56\n' >"${root}/fuzz.yaml"
+  printf '  - uses: bazelbuild/setup-bazelisk@v1\n' >>"${root}/release.yml"
+  if check_workflows_use_setup_bazel "${root}" >/dev/null 2>&1; then
+    fail 'legacy setup-bazelisk must remain forbidden'
+  fi
+  printf '  - uses: bazel-contrib/setup-bazel@12.34.56\n' >"${root}/release.yml"
+  printf '  - uses: bazel-contrib/setup-bazel@12.34.57\n' >>"${root}/main.yml"
+  if check_workflows_use_setup_bazel "${root}" >/dev/null 2>&1; then
+    fail 'mixed setup-bazel refs within main.yml must fail'
+  fi
+  # Agreement alone is insufficient: main CI must specify a full release version.
+  for version in main latest 12.34 ''; do
+    printf '  - uses: bazel-contrib/setup-bazel@%s\n' "${version}" >"${root}/main.yml"
+    cp "${root}/main.yml" "${root}/release.yml"
+    cp "${root}/main.yml" "${root}/fuzz.yaml"
+    if check_workflows_use_setup_bazel "${root}" >/dev/null 2>&1; then
+      fail "invalid intended setup-bazel ref: accepted '${version}'"
+    fi
+  done
+  printf '  - uses: actions/checkout@v7\n' >"${root}/main.yml"
+  if check_workflows_use_setup_bazel "${root}" >/dev/null 2>&1; then
+    fail 'missing intended setup-bazel ref must fail'
+  fi
+  mkdir "${root}/empty"
+  if check_workflows_use_setup_bazel "${root}/empty" >/dev/null 2>&1; then
+    fail 'missing main.yml must fail'
   fi
 }
 
@@ -316,6 +420,7 @@ test_release_reference_uses_clang
 test_release_binaries_use_shared_configuration_and_staging
 test_release_elf_link_optimizations_are_scoped
 test_workflows_use_setup_bazel
+test_setup_bazel_version_validation
 
 if [ "${FAILED}" -ne 0 ]; then
   echo "release_prep_test: FAILED" >&2

@@ -51,6 +51,9 @@ invocation remains available with a prebuilt `--resource-launcher`; see
 Pre-commit owns changed-file formatting and policy checks, plus fast, narrowly triggered checker
 self-tests. Its Python hooks use the managed Python 3.13 environment. Process-measurement and fuzz
 scheduler suites belong to Bazel, so commits do not run those suites or start recursive Bazel builds.
+The release-prep check takes the first `setup-bazel` release version in `.github/workflows/main.yml`
+as the intended pin and requires every workflow occurrence to match it exactly. Update the workflow
+references together when upgrading the action; the check has no separate version literal to update.
 Main and release coverage CI run these suites through their existing Bazel test/coverage commands,
 without additional direct unit-test invocations. The Pages workflow is a compatibility exception:
 it checks out historical release tags and tests that tag's site builder directly, since older tags

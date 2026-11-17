@@ -121,7 +121,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - uses: bazel-contrib/setup-bazel@0.19.1
+      - uses: bazel-contrib/setup-bazel@0.19.2
       - uses: ./.github/actions/bazel-cache-restore
         with:
           namespace: default
