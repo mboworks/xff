@@ -6206,35 +6206,6 @@
     "platform_details": "macOS 26.6 / arm64"
   },
   {
-    "platform": "macos / arm64",
-    "commit": "5733057fefb1a98184309453a4b0314b5e56e163",
-    "label": "PR 996 / 5733057fef",
-    "platform_name": "macos / arm64",
-    "dataset_type": "broad/v1 + deep/v1",
-    "source": "pr-996",
-    "source_label": "PR #996 preview",
-    "links": [
-      {
-        "label": "PR #996 preview",
-        "href": "https://github.com/mboworks/xff/pull/996"
-      }
-    ],
-    "binary": {
-      "state": "Not verified",
-      "sha256": "9c2a07601fd5858d0e616b05b6577da15ac17dba408c4d6b20a6eedb3ddc6b71",
-      "reason": "Retention verification does not match this measurement."
-    },
-    "date": "2026-10-10T04:24:48Z",
-    "measurement_date": "2026-10-10T04:53:08Z",
-    "backfill": false,
-    "run": 38023972672,
-    "attempt": 1,
-    "report": "previews/996/38023972672/1/macos/",
-    "figures": "previews/996/38023972672/1/macos/landscape.json",
-    "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS 26.6.2 / arm64"
-  },
-  {
     "platform": "linux / x86_64",
     "commit": "5733057fefb1a98184309453a4b0314b5e56e163",
     "label": "PR 996 / 5733057fef",
@@ -6265,30 +6236,30 @@
   },
   {
     "platform": "macos / arm64",
-    "commit": "22d8cad354bcf73827f963b6376fa43a9711a27a",
-    "label": "PR 997 / 22d8cad354",
+    "commit": "5733057fefb1a98184309453a4b0314b5e56e163",
+    "label": "PR 996 / 5733057fef",
     "platform_name": "macos / arm64",
     "dataset_type": "broad/v1 + deep/v1",
-    "source": "pr-997",
-    "source_label": "PR #997 preview",
+    "source": "pr-996",
+    "source_label": "PR #996 preview",
     "links": [
       {
-        "label": "PR #997 preview",
-        "href": "https://github.com/mboworks/xff/pull/997"
+        "label": "PR #996 preview",
+        "href": "https://github.com/mboworks/xff/pull/996"
       }
     ],
     "binary": {
       "state": "Not verified",
-      "sha256": "662a563882c158949ad8058f67bc85807f60f263e28aad2412342465770c9123",
+      "sha256": "9c2a07601fd5858d0e616b05b6577da15ac17dba408c4d6b20a6eedb3ddc6b71",
       "reason": "Retention verification does not match this measurement."
     },
-    "date": "2026-10-10T05:06:14Z",
-    "measurement_date": "2026-10-10T05:32:59Z",
+    "date": "2026-10-10T04:24:48Z",
+    "measurement_date": "2026-10-10T04:53:08Z",
     "backfill": false,
-    "run": 38026365782,
+    "run": 38023972672,
     "attempt": 1,
-    "report": "previews/997/38026365782/1/macos/",
-    "figures": "previews/997/38026365782/1/macos/landscape.json",
+    "report": "previews/996/38023972672/1/macos/",
+    "figures": "previews/996/38023972672/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
     "platform_details": "macOS 26.6.2 / arm64"
   },
@@ -6323,30 +6294,30 @@
   },
   {
     "platform": "macos / arm64",
-    "commit": "c360eefe87b5f2d4bab833c69699fca5752e9d22",
-    "label": "PR 998 / c360eefe87",
+    "commit": "22d8cad354bcf73827f963b6376fa43a9711a27a",
+    "label": "PR 997 / 22d8cad354",
     "platform_name": "macos / arm64",
     "dataset_type": "broad/v1 + deep/v1",
-    "source": "pr-998",
-    "source_label": "PR #998 preview",
+    "source": "pr-997",
+    "source_label": "PR #997 preview",
     "links": [
       {
-        "label": "PR #998 preview",
-        "href": "https://github.com/mboworks/xff/pull/998"
+        "label": "PR #997 preview",
+        "href": "https://github.com/mboworks/xff/pull/997"
       }
     ],
     "binary": {
       "state": "Not verified",
-      "sha256": "732e9f852de57110f20b105040798b17d194aa01ac4178caa4a31912094f0fc7",
+      "sha256": "662a563882c158949ad8058f67bc85807f60f263e28aad2412342465770c9123",
       "reason": "Retention verification does not match this measurement."
     },
-    "date": "2026-10-10T05:36:06Z",
-    "measurement_date": "2026-10-10T06:00:49Z",
+    "date": "2026-10-10T05:06:14Z",
+    "measurement_date": "2026-10-10T05:32:59Z",
     "backfill": false,
-    "run": 38028058460,
+    "run": 38026365782,
     "attempt": 1,
-    "report": "previews/998/38028058460/1/macos/",
-    "figures": "previews/998/38028058460/1/macos/landscape.json",
+    "report": "previews/997/38026365782/1/macos/",
+    "figures": "previews/997/38026365782/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
     "platform_details": "macOS 26.6.2 / arm64"
   },
@@ -6381,30 +6352,30 @@
   },
   {
     "platform": "macos / arm64",
-    "commit": "b4a4b6ac554687c6b86dde233b0d143c45535e1e",
-    "label": "PR 992 / b4a4b6ac55",
+    "commit": "c360eefe87b5f2d4bab833c69699fca5752e9d22",
+    "label": "PR 998 / c360eefe87",
     "platform_name": "macos / arm64",
     "dataset_type": "broad/v1 + deep/v1",
-    "source": "pr-992",
-    "source_label": "PR #992 preview",
+    "source": "pr-998",
+    "source_label": "PR #998 preview",
     "links": [
       {
-        "label": "PR #992 preview",
-        "href": "https://github.com/mboworks/xff/pull/992"
+        "label": "PR #998 preview",
+        "href": "https://github.com/mboworks/xff/pull/998"
       }
     ],
     "binary": {
       "state": "Not verified",
-      "sha256": "b8c9f31b368f8199014274553df1fec3a4964111540ed712d10884ff8ac1bdc7",
+      "sha256": "732e9f852de57110f20b105040798b17d194aa01ac4178caa4a31912094f0fc7",
       "reason": "Retention verification does not match this measurement."
     },
-    "date": "2026-10-10T10:29:39Z",
-    "measurement_date": "2026-10-10T10:55:56Z",
+    "date": "2026-10-10T05:36:06Z",
+    "measurement_date": "2026-10-10T06:00:49Z",
     "backfill": false,
-    "run": 38045084588,
+    "run": 38028058460,
     "attempt": 1,
-    "report": "previews/992/38045084588/1/macos/",
-    "figures": "previews/992/38045084588/1/macos/landscape.json",
+    "report": "previews/998/38028058460/1/macos/",
+    "figures": "previews/998/38028058460/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
     "platform_details": "macOS 26.6.2 / arm64"
   },
@@ -6439,61 +6410,32 @@
   },
   {
     "platform": "macos / arm64",
-    "commit": "a8d5a7ea353736f18c704a3a8eaf59ab852f8f45",
-    "label": "PR 1162 / a8d5a7ea35",
+    "commit": "b4a4b6ac554687c6b86dde233b0d143c45535e1e",
+    "label": "PR 992 / b4a4b6ac55",
     "platform_name": "macos / arm64",
     "dataset_type": "broad/v1 + deep/v1",
-    "source": "pr-1162",
-    "source_label": "PR #1162 preview",
+    "source": "pr-992",
+    "source_label": "PR #992 preview",
     "links": [
       {
-        "label": "PR #1162 preview",
-        "href": "https://github.com/mboworks/xff/pull/1162"
+        "label": "PR #992 preview",
+        "href": "https://github.com/mboworks/xff/pull/992"
       }
     ],
     "binary": {
       "state": "Not verified",
-      "sha256": "6c1cb44c2d22a2aa7f41ef56affdc24e6efcd8fad804a5058a537bc15164f196",
+      "sha256": "b8c9f31b368f8199014274553df1fec3a4964111540ed712d10884ff8ac1bdc7",
       "reason": "Retention verification does not match this measurement."
     },
-    "date": "2026-11-16T22:27:07Z",
-    "measurement_date": "2026-11-16T23:27:14Z",
+    "date": "2026-10-10T10:29:39Z",
+    "measurement_date": "2026-10-10T10:55:56Z",
     "backfill": false,
-    "run": 43970185959,
+    "run": 38045084588,
     "attempt": 1,
-    "report": "previews/1162/43970185959/1/macos/",
-    "figures": "previews/1162/43970185959/1/macos/landscape.json",
-    "identity": "xff benchmarks - macOS-26.7.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS 26.7.2 / arm64"
-  },
-  {
-    "platform": "linux / x86_64",
-    "commit": "a8d5a7ea353736f18c704a3a8eaf59ab852f8f45",
-    "label": "PR 1162 / a8d5a7ea35",
-    "platform_name": "linux / x86_64",
-    "dataset_type": "broad/v1 + deep/v1",
-    "source": "pr-1162",
-    "source_label": "PR #1162 preview",
-    "links": [
-      {
-        "label": "PR #1162 preview",
-        "href": "https://github.com/mboworks/xff/pull/1162"
-      }
-    ],
-    "binary": {
-      "state": "Not verified",
-      "sha256": "64ff587e719cf6f269774666b201c2a08e004fd66778634798a237c8e76c1f68",
-      "reason": "Retention verification does not match this measurement."
-    },
-    "date": "2026-11-16T22:27:07Z",
-    "measurement_date": "2026-11-16T23:27:14Z",
-    "backfill": false,
-    "run": 43970185959,
-    "attempt": 1,
-    "report": "previews/1162/43970185959/1/linux/",
-    "figures": "previews/1162/43970185959/1/linux/landscape.json",
-    "identity": "xff benchmarks - Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
-    "platform_details": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43"
+    "report": "previews/992/38045084588/1/macos/",
+    "figures": "previews/992/38045084588/1/macos/landscape.json",
+    "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "platform_details": "macOS 26.6.2 / arm64"
   },
   {
     "platform": "linux / x86_64",
