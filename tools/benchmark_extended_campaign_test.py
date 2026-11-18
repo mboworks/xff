@@ -36,6 +36,28 @@ class BenchmarkExtendedCampaignTest(unittest.TestCase):
         self.assertEqual([job['revision']['sha'] for job in jobs], ['e' * 40] * 2 + ['d' * 40] * 2)
         self.assertEqual([job['platform'] for job in jobs], ['linux', 'macos'] * 2)
 
+    def test_new_linux_jobs_pin_the_historical_runtime_distribution(self):
+        plan = self.plan([], oldest='b' * 40, limit=1)
+        self.assertEqual([(job['platform'], job['os'], job['arch']) for job in plan['jobs']],
+                         [('linux', 'ubuntu-24.04', 'x86_64'), ('macos', 'macos-latest', 'arm64')])
+
+    def test_original_mixed_plan_remains_valid_for_successful_macos_recovery(self):
+        plan = self.plan([], oldest='b' * 40, limit=1)
+        plan['jobs'][0]['os'] = 'ubuntu-latest'
+        plan['identity'] = campaign.identity({key: value for key, value in plan.items() if key != 'identity'})
+        frozen = copy.deepcopy(plan)
+        self.assertEqual(campaign.validate_job(plan, plan['jobs'][1]['id'], 'owner/repo', plan['source_head']),
+                         plan['jobs'][1])
+        self.assertEqual(plan, frozen)
+
+    def test_other_runner_or_architecture_is_not_accepted_as_a_legacy_plan(self):
+        for runner, arch in [('ubuntu-26.04', 'x86_64'), ('ubuntu-latest', 'arm64'), ('macos-latest', 'x86_64')]:
+            plan = self.plan([], oldest='b' * 40, limit=1)
+            plan['jobs'][0].update(os=runner, arch=arch)
+            plan['identity'] = campaign.identity({key: value for key, value in plan.items() if key != 'identity'})
+            with self.assertRaisesRegex(ValueError, 'wrong historical runner'):
+                campaign.validate_plan(plan)
+
     def test_completed_platform_does_not_repeat_when_its_partner_failed(self):
         jobs = campaign.select_jobs(self.revisions, {('linux', 'e' * 40)}, ['linux', 'macos'], 1)
         self.assertEqual([(job['platform'], job['revision']['sha']) for job in jobs], [('macos', 'e' * 40)])

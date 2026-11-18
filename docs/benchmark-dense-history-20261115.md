@@ -127,6 +127,21 @@ Keep the current measurement contract and original core observations. New CI res
 the five workload slots to the existing CI history; unmeasured older slots remain empty.
 Native Mac and Drogon history remain useful independent local evidence, not CI replacements.
 
+### First hosted batch and Linux runner correction
+
+[The first hosted batch](https://github.com/mboworks/xff/actions/runs/44177510657)
+selected ten revisions on both platforms. All ten macOS jobs succeeded. All ten Linux jobs
+stopped during runtime preparation, before building or measuring: the planner selected
+`ubuntu-latest`, which supplied Ubuntu 26.04, while `prepare_benchmark_runtime.sh` requires
+Ubuntu 24.04 for historical compiler dependencies. New Linux plans use `ubuntu-24.04`.
+The actual-distribution guard remains enforced.
+
+The original immutable mixed-platform plan still validates for artifact recovery; changing
+new runner selection must not invalidate its ten successful macOS results. Resume with a new
+main-branch dispatch after the runner correction merges. The planner recovers those reports
+before selecting missing jobs. Rerunning the original run uses its original workflow source
+and repeats the Linux setup failure.
+
 The first preparation attempt hit the per-user quota on `/dev/shm`, despite free filesystem
 space. It collected no timing cells. Its contract, log and process receipt are preserved in
 `failed-preparation-shm-quota/`; its partial fixture remains separate. The replacement runtime
