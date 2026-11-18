@@ -14,7 +14,8 @@ import subprocess
 import benchmark_extended as suite
 import benchmark_records as records
 
-PLATFORMS = {'linux': ('ubuntu-latest', 'x86_64'), 'macos': ('macos-latest', 'arm64')}
+# Historical toolchains need ICU 70 and libxml2.so.2 from the 24.04 runtime preparer.
+PLATFORMS = {'linux': ('ubuntu-24.04', 'x86_64'), 'macos': ('macos-latest', 'arm64')}
 SHA = re.compile('[0-9a-f]{40}')
 WORKFLOW = 'Extended benchmark backfill'
 WORKFLOW_PATH = '.github/workflows/benchmark_extended_backfill.yml'
@@ -129,7 +130,14 @@ def validate_plan(plan):
     seen = set()
     for job in plan['jobs']:
         revision, platform = job['revision'], job['platform']
-        require(platform in platforms and (job['os'], job['arch']) == PLATFORMS[platform], 'wrong historical runner')
+        # The first campaign used ubuntu-latest. Keep its immutable mixed-platform
+        # plan valid so successful macOS reports remain recoverable. New plans
+        # always select the pinned runner above; the runtime preparer still checks
+        # the actual Linux distribution before any historical build or timing.
+        runners = (PLATFORMS.get(platform),)
+        if platform == 'linux':
+            runners += (('ubuntu-latest', 'x86_64'),)
+        require(platform in platforms and (job['os'], job['arch']) in runners, 'wrong historical runner')
         require(SHA.fullmatch(revision['sha']) is not None and SHA.fullmatch(revision['parent'] or '') is not None,
                 'invalid historical revision or first parent')
         require(datetime.fromisoformat(revision['date']).tzinfo is not None, 'historical date needs a timezone')
