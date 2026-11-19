@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { test } from "node:test";
 import { chromium } from "playwright";
+import { figures as databaseFigures } from "./database_figures.js";
 
 const tools = fileURLToPath(new URL("..", import.meta.url));
 const bundle = fileURLToPath(new URL("dist/landscape.js", import.meta.url));
@@ -17,6 +18,221 @@ const options = {
   args: ["--enable-webgl", "--ignore-gpu-blocklist"],
 };
 if (process.env.CHROME_PATH) options.executablePath = process.env.CHROME_PATH;
+
+test("database chart coordinates match the Python renderer for all orders and scales", () => {
+  const fixture = JSON.parse(
+    execFileSync(
+      process.env.PYTHON || "python3",
+      [
+        "-c",
+        `
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import benchmark_landscape as landscape
+import benchmark_matrix as matrix
+from benchmark_landscape_test import report
+r=report((1,3))
+r['tasks'].pop(4)
+rows=matrix.relative_results(r)
+order=landscape.common_task_order([rows])
+model=dict(rows=rows,normalization={},order=order,overview={},counts=r['contract']['file_counts'],
+           cpus=r['contract']['cpu_counts'],allocations={str(n):matrix.allocation_label(r,n) for n in (1,3)},
+           title=matrix.platform_title(r))
+print(json.dumps(dict(model=model,expected=landscape.figures(r,{},order))))
+`,
+        tools,
+      ],
+      { encoding: "utf8" },
+    ),
+  );
+  const actual = databaseFigures(fixture.model);
+  for (const order of ["similarity", "average", "alphabetical"])
+    for (const scale of ["percent", "factor"]) {
+      const source = fixture.expected[order][scale].data.filter(
+        (row) => row.type === "surface",
+      );
+      const target = actual[order][scale].data.filter(
+        (row) => row.type === "surface",
+      );
+      assert.equal(target.length, source.length);
+      target.forEach((row, index) => {
+        for (const axis of ["x", "y", "z", "surfacecolor"])
+          assert.deepEqual(
+            row[axis],
+            source[index][axis],
+            `${order}/${scale}/${index}/${axis}`,
+          );
+      });
+    }
+});
+
+test("series database browser shows loading, reuses data and downloads exact originals", async () => {
+  const temporary = mkdtempSync(join(tmpdir(), "xff-database-browser-"));
+  execFileSync(process.env.PYTHON || "python3", [
+    "-c",
+    `
+import sys
+from pathlib import Path
+sys.path.insert(0,sys.argv[1])
+import benchmark_database as database
+import benchmark_extended_records as records
+import benchmark_extended_site as site
+from benchmark_extended_test_support import ExtendedFixture
+fixture=ExtendedFixture()
+root=Path(sys.argv[2]);(root/'index.html').write_text('<h1>History</h1>');(root/'catalog.json').write_text('[]')
+for revision in fixture.revisions:
+ record=records.make_record(fixture.contract,revision,fixture.rows(revision),fixture.builds,'linux','x86_64','synthetic-only','fixed-anchor',retention_reference='synthetic retained executable')
+ path=records.retain(root,record)
+ path.with_name('proof.json').write_text('{ "proof": "unchanged bytes" }'+chr(10))
+site.publish(root)
+database.publish(root,Path(sys.argv[1])/'benchmark_web/dist')
+fixture.close()
+`,
+    tools,
+    temporary,
+  ]);
+  const manifest = JSON.parse(
+    readFileSync(join(temporary, "database-manifest.json"), "utf8"),
+  );
+  const first = manifest.catalog.find((row) =>
+    row.platform.includes("Traditional tools"),
+  );
+  const requests = [];
+  let staleManifest = false;
+  const server = createServer((request, response) => {
+    try {
+      const name = new URL(request.url, "http://localhost").pathname;
+      requests.push(name);
+      let file = readFileSync(
+        join(temporary, name === "/" ? "index.html" : name),
+      );
+      if (name === "/database-manifest.json" && staleManifest) {
+        staleManifest = false;
+        const stale = structuredClone(manifest);
+        stale.series.forEach((series) => {
+          series.file = "data/superseded.sqlite.zst";
+        });
+        file = JSON.stringify(stale);
+      }
+      response.setHeader(
+        "Content-Type",
+        name.endsWith(".js")
+          ? "text/javascript"
+          : name.endsWith(".json")
+            ? "application/json"
+            : name.endsWith(".wasm")
+              ? "application/wasm"
+              : name.endsWith(".css")
+                ? "text/css"
+                : "application/octet-stream",
+      );
+      if (name === "/" || name.endsWith(".html"))
+        response.setHeader("Content-Type", "text/html");
+      if (name.endsWith(".sqlite.zst"))
+        setTimeout(() => response.end(file), 300);
+      else response.end(file);
+    } catch {
+      response.writeHead(404);
+      response.end();
+    }
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const browser = await chromium.launch(options);
+  try {
+    const page = await browser.newPage({ acceptDownloads: true });
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    const url = `http://127.0.0.1:${server.address().port}/?report=${first.record_id}`;
+    let releaseDatabase;
+    const heldDatabase = new Promise((resolve) => {
+      releaseDatabase = resolve;
+    });
+    await page.route("**/*.sqlite.zst", async (route) => {
+      await heldDatabase;
+      return route.continue();
+    });
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.locator("#database-loading").waitFor({ state: "visible" });
+    assert.ok(await page.locator(".loading-spinner").isVisible());
+    releaseDatabase();
+    await page.locator("#database-loading").waitFor({ state: "hidden" });
+    assert.equal(
+      await page.locator("[data-control=platform]").inputValue(),
+      first.platform,
+    );
+    assert.equal(await page.locator("#report-table tbody tr").count(), 8);
+    const fetches = requests.filter((path) =>
+      path.endsWith(".sqlite.zst"),
+    ).length;
+    await page.locator("[data-control=version]").evaluate((el) => {
+      el.value = "1";
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await page.locator("#database-loading").waitFor({ state: "hidden" });
+    const other = manifest.catalog.find(
+      (row) => row.platform !== first.platform,
+    );
+    await page.locator("[data-control=platform]").selectOption(other.platform);
+    await page.locator("#database-loading").waitFor({ state: "hidden" });
+    assert.equal(
+      requests.filter((path) => path.endsWith(".sqlite.zst")).length,
+      fetches,
+    );
+    const downloadPromise = page.waitForEvent("download");
+    await page
+      .getByRole("button", { name: "Download original JSON", exact: true })
+      .click();
+    const download = await downloadPromise;
+    const path = join(temporary, "download.json");
+    await download.saveAs(path);
+    const value = JSON.parse(readFileSync(path, "utf8"));
+    assert.equal(value.kind, "extended-production");
+    assert.equal(value.origin, "local");
+    const proof = page
+      .locator("#report-actions option")
+      .filter({ hasText: "proof.json" })
+      .first();
+    await page
+      .getByLabel("Original observation document")
+      .selectOption(await proof.getAttribute("value"));
+    const proofDownloadPromise = page.waitForEvent("download");
+    await page
+      .getByRole("button", { name: "Download original JSON", exact: true })
+      .click();
+    const proofDownload = await proofDownloadPromise;
+    await proofDownload.saveAs(path);
+    assert.equal(
+      readFileSync(path, "utf8"),
+      '{ "proof": "unchanged bytes" }\n',
+    );
+    assert.equal(errors.length, 0, errors.join("\n"));
+    assert.equal(
+      requests.some(
+        (path) =>
+          path.endsWith("/report.json") || path.endsWith("landscape.json"),
+      ),
+      false,
+    );
+    staleManifest = true;
+    const freshPage = await browser.newPage();
+    freshPage.on("pageerror", (error) => errors.push(error.message));
+    await freshPage.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
+    await freshPage
+      .locator("#database-loading")
+      .waitFor({ state: "hidden", timeout: 60000 });
+    assert.equal(await freshPage.locator("#report-table tbody tr").count(), 8);
+    assert.ok(requests.includes("/data/superseded.sqlite.zst"));
+    assert.equal(errors.length, 0, errors.join("\n"));
+  } finally {
+    await browser.close();
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+    rmSync(temporary, { recursive: true, force: true });
+  }
+});
 
 test("offline chart: picking, highlights, sorting, scale, orbit, resize and collapse", async () => {
   const temporary = mkdtempSync(join(tmpdir(), "xff-landscape-"));

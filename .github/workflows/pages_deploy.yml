@@ -48,13 +48,22 @@ jobs:
         run: |
           snapshot="$(git -C site rev-parse HEAD)"
           echo "Retained site snapshot: ${snapshot}" >> "${GITHUB_STEP_SUMMARY}"
+      - uses: ./source/.github/actions/benchmark-storage
+        with:
+          source: source
       - name: Stage complete site
         run: |
           set -euo pipefail
           mkdir -p public
           rsync --archive --exclude='.git' site/ public/
           python3 source/tools/site_artwork.py source/docs/assets public
+          python3 source/tools/benchmark_database_storage.py stage-deployment public/benchmarks
           python3 source/tools/compact_site.py public
+          bytes="$(jq '.total_bytes' public/storage-report.json)"
+          if (( bytes > 1000000000 )); then
+            echo "Published site exceeds the 1 GB Pages site limit: ${bytes} bytes" >&2
+            exit 1
+          fi
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
@@ -69,12 +78,17 @@ jobs:
         run: |
           python3 source/tools/verify_benchmark_publication.py \
             --index=public/benchmarks/index.html --url="${PAGE_URL}benchmarks/index.html"
+          if [[ -f public/benchmarks/database-manifest.json ]]; then
+            python3 source/tools/verify_benchmark_publication.py \
+              --index=public/benchmarks/database-manifest.json --url="${PAGE_URL}benchmarks/database-manifest.json"
+          fi
       - name: Update current PR overviews from the deployed snapshot
         if: hashFiles('public/benchmarks/index.html') != ''
         env:
           GH_TOKEN: ${{ github.token }}
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
+          python3 source/tools/benchmark_database_storage.py expand site/benchmarks --prefix=previews/
           python3 source/tools/site_storage.py expand-benchmarks site/benchmarks/previews
           python3 source/tools/benchmark_preview_ci.py comment-retained --repository="${GITHUB_REPOSITORY}" \
             --root=site/benchmarks --site-url="${PAGE_URL}benchmarks/"

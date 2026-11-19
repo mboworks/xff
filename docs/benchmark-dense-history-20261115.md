@@ -71,6 +71,12 @@ No tail collection has started and the original measurements do not need repeati
 
 ## GitHub historical continuation
 
+The [database storage transition](benchmark-series-databases.md#backfill-transition) preserves
+in-flight measurements and frozen plans. After that PR merges, the next publisher migrates the
+latest retained data automatically. New main-branch planners restore database-backed extended
+and reconciliation checkpoints before recovering artifacts and selecting missing work. Hold the
+next dispatch until the compatible publisher is deployed; do not restart successful measurements.
+
 PR #1153 supplies continuous extended Linux/macOS collection and combines those CI workloads
 with the corresponding original platform/revision in the viewer. Its historical local importer
 does not turn local observations into CI measurements. The existing GitHub backfill workflow

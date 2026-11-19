@@ -16,6 +16,7 @@ import urllib.request
 
 import benchmark_backfill as batch
 import benchmark_datasets as datasets
+import benchmark_database_storage as database
 
 
 CATALOG_URL = 'https://mboworks.github.io/xff/benchmarks/datasets.json'
@@ -178,6 +179,8 @@ def download_observations(args, root):
     selection = args.dataset_selection
     if selection is None or not selection['same_machine']:
         return
+    if (getattr(args, 'dataset_catalog', None) or {}).get('storage', {}).get('format') == 'sqlite-zstd':
+        restore_database_observations(args, root, selection['dataset']['observations'])
     fetched = set()
     for observation in selection['dataset']['observations']:
         for field in ('batch', 'report'):
@@ -187,7 +190,7 @@ def download_observations(args, root):
             datasets.relative_path(path)
             url = urllib.parse.urljoin(args.catalog_url, path)
             try:
-                value = read_url(url)
+                value = json.loads((root / path).read_text()) if (root / path).exists() else read_url(url)
             except urllib.error.HTTPError as error:
                 if error.code != 404:
                     raise
@@ -198,3 +201,32 @@ def download_observations(args, root):
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(json.dumps(value))
             fetched.add(path)
+
+
+def restore_database_observations(args, root, observations):
+    """Download only aggregates containing the selected machine's original JSON."""
+    manifest_url = urllib.parse.urljoin(args.catalog_url, database.MANIFEST)
+    manifest = read_url(manifest_url, 32 * 1024 * 1024)
+    wanted = {observation[field] for observation in observations for field in ('batch', 'report')
+              if observation.get(field)}
+    selected = [series for series in manifest['series'] if wanted.intersection(series.get('paths', []))]
+    if wanted - {path for series in selected for path in series.get('paths', [])}:
+        raise ValueError('selected dataset has observations absent from database index')
+    manifest['series'] = selected
+    root.mkdir(parents=True, exist_ok=True)
+    (root / database.MANIFEST).write_text(json.dumps(manifest))
+    database.read_manifest(root)
+    for series in selected:
+        target = root.joinpath(*database.relative(series['file']).parts)
+        url = urllib.parse.urljoin(manifest_url, series['file'])
+        if urllib.parse.urlsplit(url).scheme != 'https':
+            raise ValueError('benchmark database requires HTTPS')
+        with urllib.request.urlopen(url, timeout=120) as response:
+            if urllib.parse.urlsplit(response.geturl()).scheme != 'https':
+                raise ValueError('benchmark database redirected away from HTTPS')
+            data = response.read(series['compressed_bytes'] + 1)
+        if len(data) != series['compressed_bytes']:
+            raise ValueError('benchmark database download size differs from manifest')
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+    database.expand(root, tuple(sorted(wanted)))

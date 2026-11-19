@@ -147,6 +147,8 @@ def legacy_router():
     return r'''<!doctype html><meta charset="utf-8"><title>Page not found</title>
 <h1>Page not found</h1><p>The requested page is unavailable.</p>
 <script>
+const benchmark=location.pathname.match(/^(.*\/benchmarks\/)(.+)$/);
+if(benchmark){const path=benchmark[2].replace(/(?:index\.html|[^/]+\.json(?:\.gz)?)$/, '');location.replace(benchmark[1]+"?"+new URLSearchParams({path})+"#report");}
 const match=location.pathname.match(/^(.*\/coverage\/)((?:main|pr\/\d+|tag\/[^/]+|runs\/\d+\/\d+))\/lcov\/(.*)$/);
 if(match)location.replace(match[1]+"view.html?"+new URLSearchParams({report:match[2],file:decodeURIComponent(match[3])||"index.html"})+location.hash);
 </script>

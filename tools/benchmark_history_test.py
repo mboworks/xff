@@ -414,7 +414,10 @@ class BenchmarkHistoryTest(unittest.TestCase):
                 source = re.split(r'\n  [a-z][a-z-]*:', source, maxsplit=1)[0]
                 self.assertIn('fetch-depth: 0', source)
                 self.assertIn('ref: coverage-pages', source)
-                self.assertIn('sparse-checkout: benchmarks/runs', source)
+                self.assertIn('/benchmarks/runs/', source)
+                self.assertIn('/benchmarks/database-manifest.json', source)
+                self.assertIn('/benchmarks/data/', source)
+                self.assertIn('uses: ./.github/actions/benchmark-storage', source)
                 self.assertIn('git rev-list --first-parent HEAD^1 > benchmark-baseline-revisions.txt', source)
                 self.assertIn('--baseline-root=benchmark-baseline/benchmarks', source)
                 self.assertIn('--baseline-revisions=benchmark-baseline-revisions.txt', source)

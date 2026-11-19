@@ -52,6 +52,8 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /benchmarks/catalog.json
+            /benchmarks/database-manifest.json
+            /benchmarks/data/
             /benchmarks/extended/observations/
             /benchmarks/extended/collections/
             /benchmarks/reconciliation/
@@ -59,6 +61,11 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
+      - uses: ./.github/actions/benchmark-storage
+      - name: Restore retained database checkpoints for planning
+        run: >-
+          python3 tools/benchmark_database_storage.py expand benchmark-history/benchmarks
+          --prefix=extended/ --prefix=reconciliation/
       - name: Recover successful artifacts before selecting missing work
         env:
           GH_TOKEN: ${{ github.token }}

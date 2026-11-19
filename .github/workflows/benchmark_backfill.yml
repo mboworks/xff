@@ -39,11 +39,18 @@ jobs:
         with:
           ref: coverage-pages
           path: benchmark-history
-          sparse-checkout: benchmarks/runs
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /benchmarks/runs/
+            /benchmarks/database-manifest.json
+            /benchmarks/data/
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
+      - uses: ./.github/actions/benchmark-storage
+      - name: Restore retained database history for planning
+        run: python3 tools/benchmark_database_storage.py expand benchmark-history/benchmarks --prefix=runs/
       - name: Freeze the historical revision selection
         id: plan
         env:

@@ -35,6 +35,7 @@ def compact(root, now):
         shutil.copyfile(source / (name + '.js'), root / (name.replace('_', '-') + '.js'))
     if (root / 'coverage').is_dir():
         shutil.copyfile(source / 'coverage_viewer.js', root / 'coverage/viewer.js')
+    if (root / 'coverage').is_dir() or (root / 'benchmarks/database-manifest.json').exists():
         (root / '404.html').write_text(coverage_storage.legacy_router())
     result = sizes(root)
     total = sum(entry['bytes'] for entry in result.values())

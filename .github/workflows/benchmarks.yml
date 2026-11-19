@@ -542,11 +542,16 @@ jobs:
         with:
           ref: coverage-pages
           path: benchmark-baseline
-          sparse-checkout: benchmarks/runs
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /benchmarks/runs/
+            /benchmarks/database-manifest.json
+            /benchmarks/data/
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
+      - uses: ./.github/actions/benchmark-storage
       - uses: actions/download-artifact@v8
         with:
           pattern: benchmark-shard-*
