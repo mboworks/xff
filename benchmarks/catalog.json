@@ -6438,6 +6438,64 @@
     "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
   },
   {
+    "platform": "macos / arm64",
+    "commit": "a02e031a6b26439aa7b3933655c0a5fa0fb6851b",
+    "label": "PR 1167 / a02e031a6b",
+    "platform_name": "macos / arm64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "pr-1167",
+    "source_label": "PR #1167 preview",
+    "links": [
+      {
+        "label": "PR #1167 preview",
+        "href": "https://github.com/mboworks/xff/pull/1167"
+      }
+    ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "ecc68629ad4a1cbd2e9c78391ed1bf90094fe9e9ca7ef9131cfa36cdd4269ea2",
+      "reason": "Retention verification does not match this measurement."
+    },
+    "date": "2026-11-19T02:03:00Z",
+    "measurement_date": "2026-11-19T02:44:26Z",
+    "backfill": false,
+    "run": 44441430092,
+    "attempt": 1,
+    "report": "previews/1167/44441430092/1/macos/",
+    "figures": "previews/1167/44441430092/1/macos/landscape.json",
+    "identity": "xff benchmarks - macOS-26.7.2-arm64-arm-64bit-Mach-O",
+    "platform_details": "macOS 26.7.2 / arm64"
+  },
+  {
+    "platform": "linux / x86_64",
+    "commit": "a02e031a6b26439aa7b3933655c0a5fa0fb6851b",
+    "label": "PR 1167 / a02e031a6b",
+    "platform_name": "linux / x86_64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "pr-1167",
+    "source_label": "PR #1167 preview",
+    "links": [
+      {
+        "label": "PR #1167 preview",
+        "href": "https://github.com/mboworks/xff/pull/1167"
+      }
+    ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "64ff587e719cf6f269774666b201c2a08e004fd66778634798a237c8e76c1f68",
+      "reason": "Retention verification does not match this measurement."
+    },
+    "date": "2026-11-19T02:03:00Z",
+    "measurement_date": "2026-11-19T02:44:26Z",
+    "backfill": false,
+    "run": 44441430092,
+    "attempt": 1,
+    "report": "previews/1167/44441430092/1/linux/",
+    "figures": "previews/1167/44441430092/1/linux/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43"
+  },
+  {
     "platform": "linux / x86_64",
     "commit": "00d4f84df01e00f1ce2d7c83576ac38b2eb2fb7b",
     "label": "PR #1055 / 00d4f84df0",
