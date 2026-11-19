@@ -6439,64 +6439,6 @@
   },
   {
     "platform": "linux / x86_64",
-    "commit": "98a90aedaf38e2959a42d03e78ae3cd6fe1621ea",
-    "label": "PR 1166 / 98a90aedaf",
-    "platform_name": "linux / x86_64",
-    "dataset_type": "broad/v1 + deep/v1",
-    "source": "pr-1166",
-    "source_label": "PR #1166 preview",
-    "links": [
-      {
-        "label": "PR #1166 preview",
-        "href": "https://github.com/mboworks/xff/pull/1166"
-      }
-    ],
-    "binary": {
-      "state": "Not verified",
-      "sha256": "64ff587e719cf6f269774666b201c2a08e004fd66778634798a237c8e76c1f68",
-      "reason": "Retention verification does not match this measurement."
-    },
-    "date": "2026-11-18T00:27:17Z",
-    "measurement_date": "2026-11-18T01:06:18Z",
-    "backfill": false,
-    "run": 44207944702,
-    "attempt": 1,
-    "report": "previews/1166/44207944702/1/linux/",
-    "figures": "previews/1166/44207944702/1/linux/landscape.json",
-    "identity": "xff benchmarks - Linux-7.0.0-1016-aws-x86_64-with-glibc2.43",
-    "platform_details": "Linux-7.0.0-1016-aws-x86_64-with-glibc2.43"
-  },
-  {
-    "platform": "macos / arm64",
-    "commit": "98a90aedaf38e2959a42d03e78ae3cd6fe1621ea",
-    "label": "PR 1166 / 98a90aedaf",
-    "platform_name": "macos / arm64",
-    "dataset_type": "broad/v1 + deep/v1",
-    "source": "pr-1166",
-    "source_label": "PR #1166 preview",
-    "links": [
-      {
-        "label": "PR #1166 preview",
-        "href": "https://github.com/mboworks/xff/pull/1166"
-      }
-    ],
-    "binary": {
-      "state": "Not verified",
-      "sha256": "fbdc297aac21368929946154b6be3bfe2cfacd9fe4731335e516433e1d2e4599",
-      "reason": "Retention verification does not match this measurement."
-    },
-    "date": "2026-11-18T00:27:17Z",
-    "measurement_date": "2026-11-18T01:06:18Z",
-    "backfill": false,
-    "run": 44207944702,
-    "attempt": 1,
-    "report": "previews/1166/44207944702/1/macos/",
-    "figures": "previews/1166/44207944702/1/macos/landscape.json",
-    "identity": "xff benchmarks - macOS-26.7.2-arm64-arm-64bit-Mach-O",
-    "platform_details": "macOS 26.7.2 / arm64"
-  },
-  {
-    "platform": "linux / x86_64",
     "commit": "00d4f84df01e00f1ce2d7c83576ac38b2eb2fb7b",
     "label": "PR #1055 / 00d4f84df0",
     "platform_name": "linux / x86_64",
