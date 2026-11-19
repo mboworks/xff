@@ -3,7 +3,8 @@
 The complete Pages deployment shares one storage budget across coverage, benchmarks, release
 sites, and assets. `storage-report.json` reports each section's file count and byte total.
 Publication emits a warning at **200 MB**, so we can review growth before it disrupts deployment.
-The final packaging guard remains 9 GB. Git history is not part of the deployed site; publishers
+The retained-tree safety guard is 9 GB; the final public deployment additionally enforces the
+1,000,000,000-byte Pages site limit. Git history is not part of the deployed site; publishers
 restore the site with a shallow checkout and do not rewrite old publication commits. Source
 checkouts that need complete commit history use `blob:none` filtering to avoid fetching historical
 report contents.
@@ -29,16 +30,18 @@ HTML. Garbage collection removes only detail archives and bases no longer refere
 seven-day report. The shared viewer loads the selected report and source page on demand.
 Historical detail URLs route through this viewer; expired details show an explanation.
 
-Raw benchmark reports and coverage summaries are available as `.json.gz` downloads. Gzip preserves
-the original observation bytes. Chart data interns repeated JSON values before compression; the
-browser reconstructs the same values without rounding, resampling, or changing normalization.
-Standalone reports share their chart payload with the history explorer. Large report tables are
-packed HTML loaded at their original URL, preserving navigation and relative assets.
+Benchmarks use [one zstd-compressed SQLite aggregate per dataseries](benchmark-series-databases.md)
+and one shared renderer. Original JSON documents, samples and proof sidecars remain byte-exact and
+downloadable from the viewer. Chart order, scale and CPU views are derived from numeric comparison
+rows without rounding, resampling or changing normalization. The retained branch keeps current and
+previous database generations; the public site includes only current generations. Large databases
+use small Git transport parts which are assembled into one file per series during deployment.
 
-The browser uses its built-in `DecompressionStream` support; no archive library, remote renderer,
-or server-side execution is required. Packed report viewing requires JavaScript. Raw compressed
-JSON remains downloadable without it. Loading a historical report performs a small decompression
-step instead of transferring repeated generated markup.
+Coverage summaries and legacy reports retain gzip downloads and the browser's built-in
+`DecompressionStream` reader. The database viewer uses locally served SQL.js and zstd WebAssembly
+in a worker, with a loading spinner through decompression and chart preparation. Viewing and
+extracting original benchmark JSON require JavaScript. No remote renderer or server execution is
+required. Historical links route through the shared viewer.
 
 All publishers compact the retained `coverage-pages` branch **before committing**, then inspect
 and deploy the complete site. Benchmark publication expands its stored inputs in the disposable
@@ -97,9 +100,9 @@ No report, measurement, coverage aggregate or retained source detail was deleted
 
 ## Priorities after the 200 MB review
 
-- Replace packed generated summary/table HTML with one shared renderer driven by compact records.
-- Generate chart order, scale, and CPU-pair views from one numeric matrix in the browser instead
-  of storing precomputed views, even though repeated values are currently interned.
+- Completed: replace packed benchmark summary/table HTML with a shared renderer and generate chart
+  order, scale and CPU-pair views from one numeric matrix. See the
+  [2026-11-19 qualification](benchmark-series-databases.md#qualification-and-limits).
 - Evaluate column-oriented benchmark observations and shared invocation/tool dictionaries. Keep
   original observations and provenance recoverable; never evict release or merged-PR data to
   meet a size target.

@@ -1,0 +1,102 @@
+{
+  "snapshot": "03bd081a292526df117cfcae8160d833e941d508",
+  "restored": 3108,
+  "verified_inputs": 3110,
+  "original_json_bytes": 8168894339,
+  "mismatches": [],
+  "elapsed_seconds": 22.638433124870062,
+  "schema": 1,
+  "scope": "Already-published history, including first completed hosted extended backfill; no new measurements",
+  "input_comparison": "Original byte SHA-256, with datasets.json compared excluding the new storage descriptor",
+  "benchmark_bytes_before": 700456771,
+  "deployment": {
+    "current_database_bytes": 447536030,
+    "previous_database_bytes": 447531318,
+    "public_files": 17,
+    "retained_files": 32,
+    "max_retained_blob_bytes": 50331648,
+    "series": [
+      {
+        "id": "70843ea8529d0482cd21",
+        "label": "Local / linux-zen5 / x86_64 / broad/v1 + deep/v1",
+        "reports": 70,
+        "documents": 295,
+        "compressed_bytes": 40117057,
+        "expanded_bytes": 118923264
+      },
+      {
+        "id": "4901bf1af9adc07cb002",
+        "label": "Local / linux-zen5 / x86_64 / broad/v2 + deep/v2",
+        "reports": 72,
+        "documents": 146,
+        "compressed_bytes": 41548827,
+        "expanded_bytes": 122155008
+      },
+      {
+        "id": "01d2ba9eac89098b2a50",
+        "label": "Local / macos-m5-pro / arm64 / broad/v1 + deep/v1",
+        "reports": 72,
+        "documents": 156,
+        "compressed_bytes": 42329144,
+        "expanded_bytes": 123154432
+      },
+      {
+        "id": "4a99ef151c72690d3a58",
+        "label": "CI / linux / x86_64",
+        "reports": 203,
+        "documents": 1308,
+        "compressed_bytes": 175180452,
+        "expanded_bytes": 543412224
+      },
+      {
+        "id": "39010b8edc41b3483291",
+        "label": "CI / macos / arm64",
+        "reports": 203,
+        "documents": 880,
+        "compressed_bytes": 148360550,
+        "expanded_bytes": 472625152
+      }
+    ]
+  },
+  "qualification": "All current deployment files assembled and compressed SHA-256 verified; retained blobs at most 48 MiB",
+  "browser": {
+    "results": [
+      {
+        "series": "CI / linux / x86_64",
+        "comparisons": 728,
+        "load_ms": 35945,
+        "status": "linux / x86_64 \u00b7 PR #1166 / 8dc98fb54c \u00b7 728 measured comparisons \u00b7 Verified against Retention",
+        "documents": 4
+      },
+      {
+        "series": "CI / macos / arm64",
+        "comparisons": 728,
+        "load_ms": 2078,
+        "status": "macos / arm64 \u00b7 PR #1166 / 8dc98fb54c \u00b7 728 measured comparisons \u00b7 Verified against Retention",
+        "documents": 4
+      }
+    ],
+    "errors": []
+  },
+  "final_transport_roundtrip": {
+    "checked_original_byte_hashes": 3109,
+    "mismatches": [],
+    "datasets_json": "Semantic check excluding new storage descriptor recorded in initial qualification"
+  },
+  "real_chart_comparison": [
+    {
+      "series": "CI / linux / x86_64",
+      "checked_coordinate_values": 17472,
+      "max_absolute_error": 1.1102230246251565e-16,
+      "tolerance": 1e-12,
+      "mismatches": 0
+    },
+    {
+      "series": "CI / macos / arm64",
+      "checked_coordinate_values": 17472,
+      "max_absolute_error": 5.551115123125783e-17,
+      "tolerance": 1e-12,
+      "mismatches": 0
+    }
+  ]
+}

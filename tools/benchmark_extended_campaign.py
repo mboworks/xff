@@ -13,6 +13,7 @@ import subprocess
 
 import benchmark_extended as suite
 import benchmark_records as records
+import benchmark_database_storage
 
 # Historical toolchains need ICU 70 and libxml2.so.2 from the 24.04 runtime preparer.
 PLATFORMS = {'linux': ('ubuntu-24.04', 'x86_64'), 'macos': ('macos-latest', 'arm64')}
@@ -157,6 +158,7 @@ def validate_job(plan, job_id, repository, source_head):
 
 def checkpoints(history, observations):
     """Validate retained raw checkpoints, including data not yet on the catalog."""
+    benchmark_database_storage.expand(history, ('extended/',))
     recovered = set()
     paths = {*history.glob('extended/observations/*/report.json'),
              *(path.with_suffix('') for path in history.glob('extended/observations/*/report.json.gz'))}

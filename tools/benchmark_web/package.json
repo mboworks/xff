@@ -7,6 +7,8 @@
     "test": "node --test landscape.test.mjs"
   },
   "dependencies": {
+    "@bokuweb/zstd-wasm": "0.0.27",
+    "sql.js": "1.14.1",
     "three": "0.187.0"
   },
   "devDependencies": {

@@ -5,9 +5,11 @@
 from datetime import datetime, timezone
 import gzip
 import json
+import benchmark_database_storage
 
 
 def paths(root):
+    benchmark_database_storage.expand(root, ('runs/', 'backfills/', 'local/'))
     return sorted([*root.glob('runs/*/*/**/report.json'),
                    *root.glob('backfills/*/*/*/*/report.json'),
                    *root.glob('local/*/*/*/report.json')])
@@ -15,6 +17,7 @@ def paths(root):
 
 def run_paths(root):
     """Canonical report paths for either expanded or packed retained runs."""
+    benchmark_database_storage.expand(root, ('runs/',))
     return sorted({*root.glob('runs/*/*/**/report.json'),
                    *(path.with_suffix('') for path in root.glob('runs/*/*/**/report.json.gz'))})
 
@@ -59,6 +62,7 @@ def preference(record):
 
 
 def replacements(root):
+    benchmark_database_storage.expand(root, ('backfills/',))
     selected = {}
     for path in root.glob('backfills/*/*/*/*/report.json'):
         record = json.loads(path.read_text())

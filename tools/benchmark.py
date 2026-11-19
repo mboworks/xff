@@ -26,6 +26,7 @@ import benchmark_datasets as datasets
 import benchmark_discovery as discovery
 import benchmark_local as local
 import benchmark_records as records
+import benchmark_database_storage
 
 
 def machine_identity():
@@ -44,6 +45,7 @@ def machine_identity():
 def published_history(args):
     """Read only local observation JSON from the Pages ref, never its site files."""
     if args.history_root:
+        benchmark_database_storage.expand(args.history_root)
         yield args.history_root
         return
     if getattr(args, 'dataset_catalog', None) is not None and not args.no_fetch:
@@ -58,8 +60,11 @@ def published_history(args):
         print('No published history ref available; checking local batches only.', file=sys.stderr)
         yield None
         return
-    paths = batch.git(args.repo, 'ls-tree', '-r', '--name-only', args.history_ref, '--', 'benchmarks/local').splitlines()
-    paths = [path for path in paths if path.endswith(('/batch.json', '/status.json', '/report.json', '/report.json.gz'))]
+    paths = batch.git(args.repo, 'ls-tree', '-r', '--name-only', args.history_ref, '--',
+                      'benchmarks/local', 'benchmarks/data', 'benchmarks/database-manifest.json').splitlines()
+    paths = [path for path in paths if path.endswith(('/batch.json', '/status.json', '/report.json', '/report.json.gz',
+                                                   '.sqlite.zst', '/database-manifest.json'))
+             or (path.startswith('benchmarks/data/') and '.sqlite.zst.part' in path)]
     with tempfile.TemporaryDirectory(prefix='xff-benchmark-inventory-') as directory:
         root = Path(directory)
         if paths:
@@ -69,6 +74,7 @@ def published_history(args):
                 archive.seek(0)
                 with tarfile.open(fileobj=archive) as contents:
                     contents.extractall(root, filter='data')
+        benchmark_database_storage.expand(root / 'benchmarks', ('local/',))
         yield root / 'benchmarks'
 
 
@@ -513,6 +519,7 @@ def upload(args):
         subprocess.run(['git', '-C', str(args.repo), 'worktree', 'add', '--detach', str(checkout),
                         f'{args.remote}/{args.pages_ref}'], check=True)
         try:
+            benchmark_database_storage.expand(checkout / 'benchmarks', ('local/',))
             interactive = not args.batch
             if interactive:
                 directories = choose_upload(upload_candidates(args.root, checkout / 'benchmarks'))

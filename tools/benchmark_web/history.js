@@ -3,7 +3,15 @@
 import { chartSidebar, panelStyle, reserveChart, viewOptions } from "./view.js";
 import { renderOverview } from "./overview.js";
 
-window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
+window.XffBenchmarkHistory = function historyExplorer(
+  root,
+  catalog,
+  options = {},
+) {
+  const initialRecord = catalog.find(
+    (row) => row.record_id === options.initialRecord,
+  );
+  let initialSelection = initialRecord?.record_id;
   const chartPanel = root.querySelector("#benchmark-history-chart");
   const foldControl = root.ownerDocument.querySelector(
     "[data-history-chart-toggle]",
@@ -172,9 +180,15 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     status.title = status.textContent;
     status.hidden = false;
     try {
-      const response = await fetch(record.figures, { signal: pending.signal });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const figures = await response.json();
+      const figures = options.provider
+        ? await options.provider.load(record, pending.signal)
+        : await (async () => {
+            const response = await fetch(record.figures, {
+              signal: pending.signal,
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+          })();
       if (request !== serial) return;
       loadedFigures = figures;
       const previous = allocations.value;
@@ -227,13 +241,18 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     if (!records.length) return;
     version.max = String(records.length - 1);
     version.disabled = records.length < 2;
-    const matching = records.findIndex((row) => row.commit === commit);
+    const matching = records.findIndex(
+      (row) =>
+        (initialSelection && row.record_id === initialSelection) ||
+        row.commit === commit,
+    );
+    initialSelection = null;
     version.value = String(matching < 0 ? records.length - 1 : matching);
     updateVersionControls();
     selectVersion();
   }
   function selectSource() {
-    const previous = platform.value;
+    const previous = platform.value || initialRecord?.platform;
     const available = new Set(
       catalog
         .filter(
@@ -280,6 +299,8 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
       if (event.target.open) requestAnimationFrame(() => chart?.resize());
     });
   if (catalog.length) {
+    if (source && initialRecord)
+      source.value = initialRecord.source || "merged";
     if (
       source &&
       !catalog.some((row) => (row.source || "merged") === source.value)

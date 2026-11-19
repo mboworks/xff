@@ -1447,8 +1447,10 @@ this as intentional accounting.
       bytes. [The immutable snapshot and breakdown](docs/site-storage.md#2026-11-05-review) show
       479 MB of benchmarks and 162 MB of coverage; exact benchmark duplicates save only 2.25 MB.
       No historical observations or coverage aggregates were deleted.
-- [ ] Prototype a shared generated-table renderer against the 94.61 MB packed benchmark HTML;
-      preserve historical navigation, exact table values, relative assets and downloadable reports.
+- [x] Replace generated benchmark report pages with a shared table/chart renderer and per-series
+      SQLite/zstd aggregates; preserve exact JSON, provenance, historical navigation and backfill
+      checkpoints. [Qualification and rollout](docs/benchmark-series-databases.md) cover 620
+      selectable reports, five databases and verified byte-exact restoration of the real history.
 - [ ] Measure lossless column-oriented benchmark observations/shared invocation dictionaries against
       the 288.38 MB raw reports. Preserve every sample, original provenance, local/backfill contracts
       and exact recoverability; do not round data or evict release/merged-PR observations.

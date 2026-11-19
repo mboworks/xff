@@ -18,6 +18,7 @@ import benchmark_extended_records
 import benchmark_history
 import benchmark_preview_ci
 import benchmark_records
+import benchmark_database_storage
 
 
 def extract(raw, destination):
@@ -219,6 +220,7 @@ def retain_extended_backfill(api, root, run, strict_network=False):
 
 def recover_extended(api, root):
     """Recover valid pending publication data before scheduling new measurements."""
+    benchmark_database_storage.expand(root, ('extended/', 'reconciliation/'))
     since = (datetime.now(timezone.utc) - timedelta(days=30)).date().isoformat()
     for workflow, event, retain in (('benchmarks.yml', 'push', retain_extended),
                                    ('benchmark_extended_backfill.yml', 'workflow_dispatch', retain_extended_backfill)):

@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+# SPDX-License-Identifier: Apache-2.0
+name: Benchmark database runtime
+description: Install the pinned zstd binding for trusted Python benchmark storage tools
+inputs:
+  source:
+    description: Trusted source checkout directory
+    default: .
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v7
+      with:
+        python-version: "3.13"
+    - shell: bash
+      env:
+        SOURCE_DIR: ${{ inputs.source }}
+      run: python3 -m pip install --require-hashes -r "${SOURCE_DIR}/tools/benchmark-requirements.txt"

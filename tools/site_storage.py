@@ -72,6 +72,8 @@ def compact_json(path, intern=False):
 
 def expand_benchmarks(root):
     """Expand only machine-readable inputs needed by trusted publisher programs."""
+    import benchmark_database_storage
+    benchmark_database_storage.expand(root)
     for name in ('report.json.gz', 'normalization.json.gz', 'artifact.json.gz', 'landscape.json.gz'):
         for path in root.rglob(name):
             destination = path.with_suffix('')
@@ -87,6 +89,8 @@ def expand_benchmarks(root):
 
 def compact_benchmarks(root):
     """Share chart data between the history explorer and each standalone report."""
+    if (root / 'database-manifest.json').exists():
+        return  # Already packed by the verified aggregate publisher.
     decoder = json.JSONDecoder()
     for page in root.rglob('index.html'):
         content = page.read_text()

@@ -58,6 +58,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: "24"
+      - uses: ./source/.github/actions/benchmark-storage
+        with:
+          source: source
       - name: Build pinned benchmark renderer
         working-directory: source/tools/benchmark_web
         run: |
@@ -82,6 +85,8 @@ jobs:
               --repository="${GITHUB_REPOSITORY}"
             python3 source/tools/benchmark_extended_site.py publish \
               --root=site/benchmarks --repository="${GITHUB_REPOSITORY}"
+            python3 source/tools/benchmark_database.py --root=site/benchmarks \
+              --renderer-dir=source/tools/benchmark_web/dist
             python3 source/tools/site_artwork.py source/docs/assets site
             python3 source/tools/compact_site.py site
             git -C site add --all
