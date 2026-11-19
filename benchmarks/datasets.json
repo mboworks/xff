@@ -5716,6 +5716,91 @@
       },
       "machines": [],
       "methods": {
+        "2d3f616f54d34a96105586c5383e28ef61a4994655bdc3374b46ecff4d30a62c": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "3ee2c3c0b4dd9aacebfd2f0fbae44bad36348203acff78a44888dd58c05f811c",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "1b0219369190ab8125bb85f346cc0f95d92c635f",
+              "tree": "7d7ba85cf05994337462c17469c18acf53437b92",
+              "clean": true
+            },
+            "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+            "bytes": 18471624,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 256.269864792,
+            "completed_at": "2026-11-19T00:43:12.236725+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+          "cpu_count": null,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
         "3d1a5acb96aa3a761b6a28c5a26c9c325adfe136a10d826d6b3820670a99c0ac": {
           "driver": null,
           "tools": {
@@ -5775,6 +5860,91 @@
               ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
               "MODULE.bazel": "9cde9bdafb0d53c721fcddc99f44dc6d20101b2bf7603ec480634b5b138d1a7c",
               "MODULE.bazel.lock": "9ca7002edbfcdb5fa52b571dbd8b99518acc9ec650784f5a82fe2de647102138",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_count": null,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "cd2ee3c1fc51903b8242f669cd5bc656d2519297fd808f39173530ee8d42d8bc": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "3ee2c3c0b4dd9aacebfd2f0fbae44bad36348203acff78a44888dd58c05f811c",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "31dc55b400f376ee09f5c8582513f33ec395945d",
+              "tree": "00b447285cd6d70922141e539516f4916d449a57",
+              "clean": true
+            },
+            "sha256": "8c4c7c88f891bbc4ff6e1fedd86ecd3bf54c85ea1299275f3214a33a01ffc61a",
+            "bytes": 18471616,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 230.65277528900003,
+            "completed_at": "2026-11-19T01:08:09.981351+00:00",
+            "configuration": {
+              ".bazelrc": "cd0b8927e7af4002929d31b83fa71b4884ab016387b841e4d562aeb2c8dd168e",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
               "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
             }
           },
@@ -5946,6 +6116,261 @@
               "MODULE.bazel": "f8ca4d09bc89ade7f062e5a0947f556c0299f53b1f19ec3c1116022651c07391",
               "MODULE.bazel.lock": "039f48ebfa54657e82435aa905b5b6e79d9385cec933d9aa9965aa96aab1926c",
               "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+          "cpu_count": null,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "05feea3236f89afbcbf11b1cad77cc3102e883ca2a780df04fbf9818bf021ff4": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "3ee2c3c0b4dd9aacebfd2f0fbae44bad36348203acff78a44888dd58c05f811c",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "52950f937ad371e1450538faf7983024b324688d",
+              "tree": "f99e563e2f1d6762190aee03c9ed0fd2c3e846f1",
+              "clean": true
+            },
+            "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+            "bytes": 18471624,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 167.08203082900002,
+            "completed_at": "2026-11-19T00:19:54.235311+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_count": null,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "03ad83b0d2884a6dc1efb46890e5d03b36384e411683db480185568c0e0978c7": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "3ee2c3c0b4dd9aacebfd2f0fbae44bad36348203acff78a44888dd58c05f811c",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "57a3cfb50b02c77a6de2700e4d059215ae2343d6",
+              "tree": "f457d9675257dab7f78f382353c43d01f7b4753d",
+              "clean": true
+            },
+            "sha256": "8c4c7c88f891bbc4ff6e1fedd86ecd3bf54c85ea1299275f3214a33a01ffc61a",
+            "bytes": 18471616,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 231.73640499700002,
+            "completed_at": "2026-11-19T00:44:19.345120+00:00",
+            "configuration": {
+              ".bazelrc": "cd0b8927e7af4002929d31b83fa71b4884ab016387b841e4d562aeb2c8dd168e",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_count": null,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "c2cc39294845c9b72ef3335ac259870e2640649e17af0cf793078bee06b0c7d3": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "3ee2c3c0b4dd9aacebfd2f0fbae44bad36348203acff78a44888dd58c05f811c",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "5e622db924ff9dfefec36684319fcc1ac664ba87",
+              "tree": "7298e9119c6dd386cc77958192f23545c78528be",
+              "clean": true
+            },
+            "sha256": "e7dde055eb43fd504126ef0b69d52af5cb55b47ce7e079c7a370f55fcb9380b7",
+            "bytes": 18473368,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 564.296774234,
+            "completed_at": "2026-11-19T01:17:04.195934+00:00",
+            "configuration": {
+              ".bazelrc": "c9ad460455c535982a7723db0f17a17fb73f8f2c52c34d2a8decc53d45025211",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "5ca469c9517d86aff3ed066c97e722f83d54435f071902c6f697418974be65ef",
+              "MODULE.bazel.lock": "077380d17c357f5517927f3040d17073c70cd6f3a9cca81ecf87e7dfc49dca85",
+              "bazelmod/llvm.MODULE.bazel": "84be80cd60001d81dda163bd1777b00097cdfd263b757ae6e8982754ca25d381"
             }
           },
           "sampling": null,
@@ -6481,6 +6906,91 @@
             "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
           }
         },
+        "316fb6851dca82aea4841f4572f6dc03f312519a869fdd32fc5f6c6fab50a046": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "3ee2c3c0b4dd9aacebfd2f0fbae44bad36348203acff78a44888dd58c05f811c",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "a600f8e307feef9a7238fa253e9ce1b682a38758",
+              "tree": "7b23af466f284356568b2d9a10a9e655c1a5b92a",
+              "clean": true
+            },
+            "sha256": "6fb57f6873e8911345fdb50216b54c99834c9c674728b9490a87184c5e1646bc",
+            "bytes": 18565816,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 173.10322490600004,
+            "completed_at": "2026-11-19T00:21:16.847887+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_count": null,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
         "3e21e17abbd0f72a59c0e868474f3cec782f9a9c28c8fa6527400d43446f5632": {
           "driver": null,
           "tools": {
@@ -6546,6 +7056,91 @@
           "sampling": null,
           "environment": null,
           "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+          "cpu_count": null,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "10d858361b35769f5d80edfeab20992681a18d16f63780f45fd712b23e7e9143": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "3ee2c3c0b4dd9aacebfd2f0fbae44bad36348203acff78a44888dd58c05f811c",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "c80d63135ed8f57c0a059b73ad95b9e9f9b75a15",
+              "tree": "77eee7667fad82b76ed410bd1b88971a639e7d2b",
+              "clean": true
+            },
+            "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+            "bytes": 18471624,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 172.65793186500002,
+            "completed_at": "2026-11-19T00:21:14.749641+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
           "cpu_count": null,
           "affinity": {
             "1": [
@@ -6821,6 +7416,261 @@
             "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
           }
         },
+        "85c9657589f523ddad770700f2385039db9508fc107e112807c9cdc754137606": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "3ee2c3c0b4dd9aacebfd2f0fbae44bad36348203acff78a44888dd58c05f811c",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "ed883ecc527bc551e778845d054afc27c9b6b024",
+              "tree": "a87345e26773f055012eda945f7201719e4145ff",
+              "clean": true
+            },
+            "sha256": "cc0ea2bb09deaa809e8748de992a30df193b675ee473edabfa513d54fe8ca704",
+            "bytes": 18568288,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 182.65367335300004,
+            "completed_at": "2026-11-19T00:21:45.933232+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_count": null,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "5f0fa70e8c03c4b26204abe86d8c9fcac7a3037373239b95b2ce9fd78132390d": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "3ee2c3c0b4dd9aacebfd2f0fbae44bad36348203acff78a44888dd58c05f811c",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "efffe2529f26c1c7ca61763fa5fbb17efd573f6f",
+              "tree": "7d3a77282504106243f88397d6fdcb9e57840a71",
+              "clean": true
+            },
+            "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+            "bytes": 18471624,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 168.29856799699996,
+            "completed_at": "2026-11-19T00:21:02.745863+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_count": null,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "1322dc9e277308716352393a942125701f91764745d09233b775b6846b9039e3": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b",
+              "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb",
+              "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "3ee2c3c0b4dd9aacebfd2f0fbae44bad36348203acff78a44888dd58c05f811c",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "f221c2c16a878855d12734b476286b54b5af9123",
+              "tree": "6ef1e5869d62eff0312bb920cdb5d839e67d2e21",
+              "clean": true
+            },
+            "sha256": "e7dde055eb43fd504126ef0b69d52af5cb55b47ce7e079c7a370f55fcb9380b7",
+            "bytes": 18473368,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/home/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/k8-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 438.67384715000003,
+            "completed_at": "2026-11-19T01:27:04.612755+00:00",
+            "configuration": {
+              ".bazelrc": "c9ad460455c535982a7723db0f17a17fb73f8f2c52c34d2a8decc53d45025211",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "5ca469c9517d86aff3ed066c97e722f83d54435f071902c6f697418974be65ef",
+              "MODULE.bazel.lock": "077380d17c357f5517927f3040d17073c70cd6f3a9cca81ecf87e7dfc49dca85",
+              "bazelmod/llvm.MODULE.bazel": "84be80cd60001d81dda163bd1777b00097cdfd263b757ae6e8982754ca25d381"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_count": null,
+          "affinity": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
         "c60f0b6469e53339568e907112a30757282494ad6b4fd36a126a5165313711a7": {
           "driver": null,
           "tools": {
@@ -6909,6 +7759,16 @@
       },
       "observations": [
         {
+          "commit": "1b0219369190ab8125bb85f346cc0f95d92c635f",
+          "date": "2026-11-08T16:13:47Z",
+          "measured": "2026-11-19T00:50:50.865080+00:00",
+          "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/1b0219369190ab8125bb85f346cc0f95d92c635f/report.json",
+          "report_identity": "763c75bc2e2d0fe98015e65ad23cb2d4e76275c483d26d8e8d82f7d8ef33c077",
+          "batch": null,
+          "batch_identity": null,
+          "method": "2d3f616f54d34a96105586c5383e28ef61a4994655bdc3374b46ecff4d30a62c"
+        },
+        {
           "commit": "21ea5f51687b62c7225013ccb2b11bb478785480",
           "date": "2026-11-09T21:57:38Z",
           "measured": "2026-11-18T23:07:58.179339+00:00",
@@ -6917,6 +7777,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "3d1a5acb96aa3a761b6a28c5a26c9c325adfe136a10d826d6b3820670a99c0ac"
+        },
+        {
+          "commit": "31dc55b400f376ee09f5c8582513f33ec395945d",
+          "date": "2026-11-08T13:39:40Z",
+          "measured": "2026-11-19T01:20:45.008223+00:00",
+          "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/31dc55b400f376ee09f5c8582513f33ec395945d/report.json",
+          "report_identity": "c6ccbc66512e403fa7b87e7a63974cadb855a9a954848c4c2da35471fe992e0c",
+          "batch": null,
+          "batch_identity": null,
+          "method": "cd2ee3c1fc51903b8242f669cd5bc656d2519297fd808f39173530ee8d42d8bc"
         },
         {
           "commit": "40aa47615dbcdccd94ea3941b6893ab858132d4e",
@@ -6937,6 +7807,36 @@
           "batch": null,
           "batch_identity": null,
           "method": "b3a7dd38719f67351d9e5846e04a1266dc96ec82ba8abc92f57be1a2d3bc2aeb"
+        },
+        {
+          "commit": "52950f937ad371e1450538faf7983024b324688d",
+          "date": "2026-11-08T23:13:25Z",
+          "measured": "2026-11-19T00:24:53.972250+00:00",
+          "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/52950f937ad371e1450538faf7983024b324688d/report.json",
+          "report_identity": "421c71446536a9e7f3acd9f4cb28566648fe0ea8bc0000a3b7e4bc5d7601803f",
+          "batch": null,
+          "batch_identity": null,
+          "method": "05feea3236f89afbcbf11b1cad77cc3102e883ca2a780df04fbf9818bf021ff4"
+        },
+        {
+          "commit": "57a3cfb50b02c77a6de2700e4d059215ae2343d6",
+          "date": "2026-11-08T14:33:43Z",
+          "measured": "2026-11-19T00:49:31.096876+00:00",
+          "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/57a3cfb50b02c77a6de2700e4d059215ae2343d6/report.json",
+          "report_identity": "624689b8523d960312c41640e9af159eead544d0aa422aeeb61755a3245053d2",
+          "batch": null,
+          "batch_identity": null,
+          "method": "03ad83b0d2884a6dc1efb46890e5d03b36384e411683db480185568c0e0978c7"
+        },
+        {
+          "commit": "5e622db924ff9dfefec36684319fcc1ac664ba87",
+          "date": "2026-11-08T03:20:59Z",
+          "measured": "2026-11-19T01:24:19.932443+00:00",
+          "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/5e622db924ff9dfefec36684319fcc1ac664ba87/report.json",
+          "report_identity": "7f3b2f5443f43aaa9bc51dcf934a7486400cbaa44d53c08016f9a33e5ffd751b",
+          "batch": null,
+          "batch_identity": null,
+          "method": "c2cc39294845c9b72ef3335ac259870e2640649e17af0cf793078bee06b0c7d3"
         },
         {
           "commit": "7db7c43d3e23a38d84985e9816a63f664c8d29b3",
@@ -6999,6 +7899,16 @@
           "method": "83b1f087b77981b28b4e685813e37c32edfdef43ac1efd99609a4c9fb5e891af"
         },
         {
+          "commit": "a600f8e307feef9a7238fa253e9ce1b682a38758",
+          "date": "2026-11-09T02:57:11Z",
+          "measured": "2026-11-19T00:27:00.732737+00:00",
+          "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/a600f8e307feef9a7238fa253e9ce1b682a38758/report.json",
+          "report_identity": "a7a2d88bc002abe4338da99afe982dbfd2ea952eaad6f41a2559ddcc43bf20d4",
+          "batch": null,
+          "batch_identity": null,
+          "method": "316fb6851dca82aea4841f4572f6dc03f312519a869fdd32fc5f6c6fab50a046"
+        },
+        {
           "commit": "ad3be8a12e05ec5ca1c1c346f3c8b12390163a28",
           "date": "2026-11-09T08:03:11Z",
           "measured": "2026-11-18T23:35:17.550533+00:00",
@@ -7007,6 +7917,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "3e21e17abbd0f72a59c0e868474f3cec782f9a9c28c8fa6527400d43446f5632"
+        },
+        {
+          "commit": "c80d63135ed8f57c0a059b73ad95b9e9f9b75a15",
+          "date": "2026-11-08T17:37:43Z",
+          "measured": "2026-11-19T00:26:23.446948+00:00",
+          "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/c80d63135ed8f57c0a059b73ad95b9e9f9b75a15/report.json",
+          "report_identity": "cc1c6d2893c01d74bd9669ec8f8f649e3e19c5a4b14d2b76c2357da7c66ffca3",
+          "batch": null,
+          "batch_identity": null,
+          "method": "10d858361b35769f5d80edfeab20992681a18d16f63780f45fd712b23e7e9143"
         },
         {
           "commit": "cc30ffd2f85cd32fb902750af5023b6596889faf",
@@ -7037,6 +7957,36 @@
           "batch": null,
           "batch_identity": null,
           "method": "bc0c3ad0a1a1cf28c0b364812bbdaa91fe2a9c924b0978ba6ec35be0c68f8ae8"
+        },
+        {
+          "commit": "ed883ecc527bc551e778845d054afc27c9b6b024",
+          "date": "2026-11-09T05:01:04Z",
+          "measured": "2026-11-19T00:28:00.839321+00:00",
+          "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/ed883ecc527bc551e778845d054afc27c9b6b024/report.json",
+          "report_identity": "50fb155764003829b126cfaf92759ac4e983c3c3da83dda01977e61b6d56f37c",
+          "batch": null,
+          "batch_identity": null,
+          "method": "85c9657589f523ddad770700f2385039db9508fc107e112807c9cdc754137606"
+        },
+        {
+          "commit": "efffe2529f26c1c7ca61763fa5fbb17efd573f6f",
+          "date": "2026-11-08T20:13:00Z",
+          "measured": "2026-11-19T00:25:57.733560+00:00",
+          "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/efffe2529f26c1c7ca61763fa5fbb17efd573f6f/report.json",
+          "report_identity": "66091dc34328836ea93e198471460aa8b80ca8530d26ed5bb964231b83fe226d",
+          "batch": null,
+          "batch_identity": null,
+          "method": "5f0fa70e8c03c4b26204abe86d8c9fcac7a3037373239b95b2ce9fd78132390d"
+        },
+        {
+          "commit": "f221c2c16a878855d12734b476286b54b5af9123",
+          "date": "2026-11-08T02:24:28Z",
+          "measured": "2026-11-19T01:32:19.881316+00:00",
+          "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/f221c2c16a878855d12734b476286b54b5af9123/report.json",
+          "report_identity": "d7d4a931deb1c44a889f31a1fff01a000ac173382d126c9058e957c4fd1aae2c",
+          "batch": null,
+          "batch_identity": null,
+          "method": "1322dc9e277308716352393a942125701f91764745d09233b775b6846b9039e3"
         },
         {
           "commit": "fa2e4e30e5e610af415bc696222d30f44b78fb0b",
@@ -7595,6 +8545,85 @@
       },
       "machines": [],
       "methods": {
+        "a1e79efa3f12a9d54586c6d56c6f401fe78978e6d536817a962d5eaa5a59da89": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "341c60fcf26de436113d1a068ddf5b64bda09c7e1ad7d088f644a5211b18f22c",
+              "version": "find (GNU findutils) 4.11.0\nPackaged by Homebrew\nCopyright (C) 2026 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, Bernhard Voelker,\nand Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "5646999cee2444b3e07c1602b7f3427b0c05fe19aca6f59009abdf806a6fe6ea",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "1b0219369190ab8125bb85f346cc0f95d92c635f",
+              "tree": "7d7ba85cf05994337462c17469c18acf53437b92",
+              "clean": true
+            },
+            "sha256": "bc3b77d133b0ed99603ee78c715ae84fb3dc2fa7a988da1ceebde2b7c309a945",
+            "bytes": 9991976,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 411.818738166,
+            "completed_at": "2026-11-19T00:57:22.578570+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": null,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
         "cdd643f4d20d72a00241e6343d29ce4c28a375046dc7d3394caf3907caad701f": {
           "driver": null,
           "tools": {
@@ -7654,6 +8683,85 @@
               ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
               "MODULE.bazel": "9cde9bdafb0d53c721fcddc99f44dc6d20101b2bf7603ec480634b5b138d1a7c",
               "MODULE.bazel.lock": "9ca7002edbfcdb5fa52b571dbd8b99518acc9ec650784f5a82fe2de647102138",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": null,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "efbfdc0402353bbef7b58666ec749255e286254ef55523425f224c2f4904c90c": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "341c60fcf26de436113d1a068ddf5b64bda09c7e1ad7d088f644a5211b18f22c",
+              "version": "find (GNU findutils) 4.11.0\nPackaged by Homebrew\nCopyright (C) 2026 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, Bernhard Voelker,\nand Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "5646999cee2444b3e07c1602b7f3427b0c05fe19aca6f59009abdf806a6fe6ea",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "31dc55b400f376ee09f5c8582513f33ec395945d",
+              "tree": "00b447285cd6d70922141e539516f4916d449a57",
+              "clean": true
+            },
+            "sha256": "28593cb3d13ab50d6b9f56360fbe98d2da3b1ffa49ea8fed03e67fe31e4634b0",
+            "bytes": 9990232,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 361.63898229200004,
+            "completed_at": "2026-11-19T01:16:23.022780+00:00",
+            "configuration": {
+              ".bazelrc": "cd0b8927e7af4002929d31b83fa71b4884ab016387b841e4d562aeb2c8dd168e",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
               "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
             }
           },
@@ -7813,6 +8921,243 @@
               "MODULE.bazel": "f8ca4d09bc89ade7f062e5a0947f556c0299f53b1f19ec3c1116022651c07391",
               "MODULE.bazel.lock": "039f48ebfa54657e82435aa905b5b6e79d9385cec933d9aa9965aa96aab1926c",
               "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": null,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "3aec898c73a90cbc7914e04ec35102f949439bef66d1cc429e03c72f71d467de": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "341c60fcf26de436113d1a068ddf5b64bda09c7e1ad7d088f644a5211b18f22c",
+              "version": "find (GNU findutils) 4.11.0\nPackaged by Homebrew\nCopyright (C) 2026 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, Bernhard Voelker,\nand Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "5646999cee2444b3e07c1602b7f3427b0c05fe19aca6f59009abdf806a6fe6ea",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "52950f937ad371e1450538faf7983024b324688d",
+              "tree": "f99e563e2f1d6762190aee03c9ed0fd2c3e846f1",
+              "clean": true
+            },
+            "sha256": "b35496f1dcdd36a9a8ef29e6ee9a9aab833e5aa2e16d3e678a057b4e05e8544d",
+            "bytes": 9992024,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 403.1269955419999,
+            "completed_at": "2026-11-19T00:24:27.836881+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": null,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "1ca17d5dc25cbea6a0616b255449edefdf429049119bb760f3335acd4bd425a6": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "341c60fcf26de436113d1a068ddf5b64bda09c7e1ad7d088f644a5211b18f22c",
+              "version": "find (GNU findutils) 4.11.0\nPackaged by Homebrew\nCopyright (C) 2026 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, Bernhard Voelker,\nand Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "5646999cee2444b3e07c1602b7f3427b0c05fe19aca6f59009abdf806a6fe6ea",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "57a3cfb50b02c77a6de2700e4d059215ae2343d6",
+              "tree": "f457d9675257dab7f78f382353c43d01f7b4753d",
+              "clean": true
+            },
+            "sha256": "ff476c46cf5795255ac9482e5b5e5f8b1752adc658c4500f9c949d4ef341fc8e",
+            "bytes": 9990232,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 733.793308541,
+            "completed_at": "2026-11-19T01:18:50.488867+00:00",
+            "configuration": {
+              ".bazelrc": "cd0b8927e7af4002929d31b83fa71b4884ab016387b841e4d562aeb2c8dd168e",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": null,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "0c3dde3691b4a08cf2da3c171c4cc3ce61700ecbefb1baabfafe4281ec2d8a78": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "341c60fcf26de436113d1a068ddf5b64bda09c7e1ad7d088f644a5211b18f22c",
+              "version": "find (GNU findutils) 4.11.0\nPackaged by Homebrew\nCopyright (C) 2026 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, Bernhard Voelker,\nand Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "5646999cee2444b3e07c1602b7f3427b0c05fe19aca6f59009abdf806a6fe6ea",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "5e622db924ff9dfefec36684319fcc1ac664ba87",
+              "tree": "7298e9119c6dd386cc77958192f23545c78528be",
+              "clean": true
+            },
+            "sha256": "e9f3964c8a61882d0e594928d378a79e72d0db47b3b15ab4a2c21bc7f4f64ec1",
+            "bytes": 9992024,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 705.553791375,
+            "completed_at": "2026-11-19T01:27:40.036851+00:00",
+            "configuration": {
+              ".bazelrc": "c9ad460455c535982a7723db0f17a17fb73f8f2c52c34d2a8decc53d45025211",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "5ca469c9517d86aff3ed066c97e722f83d54435f071902c6f697418974be65ef",
+              "MODULE.bazel.lock": "077380d17c357f5517927f3040d17073c70cd6f3a9cca81ecf87e7dfc49dca85",
+              "bazelmod/llvm.MODULE.bazel": "84be80cd60001d81dda163bd1777b00097cdfd263b757ae6e8982754ca25d381"
             }
           },
           "sampling": null,
@@ -8306,6 +9651,85 @@
             "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
           }
         },
+        "b368ea295994c7eadb985a5cf7ccc446eaffe81fe3c28e191cb0e0b6b8bb4a9e": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "341c60fcf26de436113d1a068ddf5b64bda09c7e1ad7d088f644a5211b18f22c",
+              "version": "find (GNU findutils) 4.11.0\nPackaged by Homebrew\nCopyright (C) 2026 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, Bernhard Voelker,\nand Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "5646999cee2444b3e07c1602b7f3427b0c05fe19aca6f59009abdf806a6fe6ea",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "a600f8e307feef9a7238fa253e9ce1b682a38758",
+              "tree": "7b23af466f284356568b2d9a10a9e655c1a5b92a",
+              "clean": true
+            },
+            "sha256": "7c336a8e99abe1304d3abec958e0319eb5d5aafe6fd73eab5be3391c9a8277f6",
+            "bytes": 10033704,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 377.828955416,
+            "completed_at": "2026-11-19T00:23:08.080342+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": null,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
         "68a8f386ff0ea793225cb8bdbced0d4aa33c3607ebe65685e39798860d52c06f": {
           "driver": null,
           "tools": {
@@ -8360,6 +9784,85 @@
             "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff_full",
             "elapsed_seconds": 558.698245375,
             "completed_at": "2026-11-17T23:03:20.537311+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": null,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "241d9fb77b79200cb780c40253c8ac7a769d24622fc09f8d985d88ea305a026e": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "341c60fcf26de436113d1a068ddf5b64bda09c7e1ad7d088f644a5211b18f22c",
+              "version": "find (GNU findutils) 4.11.0\nPackaged by Homebrew\nCopyright (C) 2026 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, Bernhard Voelker,\nand Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "5646999cee2444b3e07c1602b7f3427b0c05fe19aca6f59009abdf806a6fe6ea",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "c80d63135ed8f57c0a059b73ad95b9e9f9b75a15",
+              "tree": "77eee7667fad82b76ed410bd1b88971a639e7d2b",
+              "clean": true
+            },
+            "sha256": "2aaec07dc0718847236e4a217d39759acef1d51055c01b5e38b0b1e9208b09ba",
+            "bytes": 9992024,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 377.0263237500001,
+            "completed_at": "2026-11-19T00:43:39.908825+00:00",
             "configuration": {
               ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
               ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
@@ -8701,6 +10204,164 @@
             "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
           }
         },
+        "17fa3db5fc53cd500ef928868e1267501a93f2cb135d13c86555b40aedfa85d8": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "341c60fcf26de436113d1a068ddf5b64bda09c7e1ad7d088f644a5211b18f22c",
+              "version": "find (GNU findutils) 4.11.0\nPackaged by Homebrew\nCopyright (C) 2026 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, Bernhard Voelker,\nand Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "5646999cee2444b3e07c1602b7f3427b0c05fe19aca6f59009abdf806a6fe6ea",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "efffe2529f26c1c7ca61763fa5fbb17efd573f6f",
+              "tree": "7d3a77282504106243f88397d6fdcb9e57840a71",
+              "clean": true
+            },
+            "sha256": "5dd599d2f2cfddf21474153bd4f8498ee588f3b10fd8e04ae5c99e38425a45b7",
+            "bytes": 9992040,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 555.5557433330001,
+            "completed_at": "2026-11-19T00:28:49.994410+00:00",
+            "configuration": {
+              ".bazelrc": "d194a75cb8f8e5d39dd3dc8a853aae4d1215a4539aafa92fb044713ef1ddbea1",
+              ".bazelversion": "4d9dfd02f463b487bd0bff68cf9292b3626b31c81febb54e8911e493f64793d0",
+              "MODULE.bazel": "14ac2e29445ee90680e1ec7d6debaeb0b2fb22ef29326eb74acf9d5ac52ce75d",
+              "MODULE.bazel.lock": "c5448fb90798589c71e18295711c61ca471d8088e05e194245905bc5dcc68e71",
+              "bazelmod/llvm.MODULE.bazel": "91fe1ae8bc722dc8af130906212774bfc28ade948d265cd3e6c72f67c50e08aa"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": null,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "f361f0664ca897cb1693fc3a7283fde9985dd3db3185d4282164f8859a438b81": {
+          "driver": null,
+          "tools": {
+            "find": {
+              "sha256": "341c60fcf26de436113d1a068ddf5b64bda09c7e1ad7d088f644a5211b18f22c",
+              "version": "find (GNU findutils) 4.11.0\nPackaged by Homebrew\nCopyright (C) 2026 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, Bernhard Voelker,\nand Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=1)",
+              "status": "available"
+            },
+            "rg": {
+              "sha256": "bd9f4c328a191f387c84f5d867a0a3e539560002489a0a97d3fc16de8190bd67",
+              "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+              "status": "available"
+            },
+            "tar": {
+              "sha256": "5646999cee2444b3e07c1602b7f3427b0c05fe19aca6f59009abdf806a6fe6ea",
+              "version": "tar (GNU tar) 1.35\nCopyright (C) 2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by John Gilmore and Jay Fenlason.",
+              "status": "available"
+            }
+          },
+          "build": {
+            "source": {
+              "revision": "f221c2c16a878855d12734b476286b54b5af9123",
+              "tree": "6ef1e5869d62eff0312bb920cdb5d839e67d2e21",
+              "clean": true
+            },
+            "sha256": "e49b3660cf21281d91d06a1f8ad5058cc773797afaec42990b81ebf320486ccd",
+            "bytes": 9992024,
+            "command": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "build",
+              "//xff/cli:xff_full",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3"
+            ],
+            "query": [
+              "bazel",
+              "--nosystem_rc",
+              "--nohome_rc",
+              "cquery",
+              "config(//xff/cli:xff_full, target)",
+              "--config=clang_release",
+              "--config=xff_full",
+              "--disk_cache=/Users/runner/.cache/bazel-disk",
+              "--jobs=3",
+              "--output=starlark",
+              "--starlark:expr=target.files_to_run.executable.path"
+            ],
+            "artifact": "bazel-out/darwin_arm64-opt/bin/xff/cli/xff_full",
+            "elapsed_seconds": 374.93755575,
+            "completed_at": "2026-11-19T01:29:50.044180+00:00",
+            "configuration": {
+              ".bazelrc": "c9ad460455c535982a7723db0f17a17fb73f8f2c52c34d2a8decc53d45025211",
+              ".bazelversion": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+              "MODULE.bazel": "5ca469c9517d86aff3ed066c97e722f83d54435f071902c6f697418974be65ef",
+              "MODULE.bazel.lock": "077380d17c357f5517927f3040d17073c70cd6f3a9cca81ecf87e7dfc49dca85",
+              "bazelmod/llvm.MODULE.bazel": "84be80cd60001d81dda163bd1777b00097cdfd263b757ae6e8982754ca25d381"
+            }
+          },
+          "sampling": null,
+          "environment": null,
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_count": null,
+          "affinity": {
+            "1": null,
+            "3": null
+          },
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
         "d2f1b765ed74ec39948282d30388dbd117761aeda34753cc64c5e73706767ac3": {
           "driver": null,
           "tools": {
@@ -8783,6 +10444,16 @@
       },
       "observations": [
         {
+          "commit": "1b0219369190ab8125bb85f346cc0f95d92c635f",
+          "date": "2026-11-08T16:13:47Z",
+          "measured": "2026-11-19T01:13:45.653861+00:00",
+          "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/1b0219369190ab8125bb85f346cc0f95d92c635f/report.json",
+          "report_identity": "3316fe7e1d5ec73a02fcf543ec2f9614d19b8b174cbf8a2890db52a3b1b86eae",
+          "batch": null,
+          "batch_identity": null,
+          "method": "a1e79efa3f12a9d54586c6d56c6f401fe78978e6d536817a962d5eaa5a59da89"
+        },
+        {
           "commit": "21ea5f51687b62c7225013ccb2b11bb478785480",
           "date": "2026-11-09T21:57:38Z",
           "measured": "2026-11-17T21:38:19.217491+00:00",
@@ -8791,6 +10462,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "cdd643f4d20d72a00241e6343d29ce4c28a375046dc7d3394caf3907caad701f"
+        },
+        {
+          "commit": "31dc55b400f376ee09f5c8582513f33ec395945d",
+          "date": "2026-11-08T13:39:40Z",
+          "measured": "2026-11-19T01:42:24.210553+00:00",
+          "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/31dc55b400f376ee09f5c8582513f33ec395945d/report.json",
+          "report_identity": "f7bb05a08f4acc1065979013ad9ebc036c61eff1eea7d84b6a31fcc093eefb9d",
+          "batch": null,
+          "batch_identity": null,
+          "method": "efbfdc0402353bbef7b58666ec749255e286254ef55523425f224c2f4904c90c"
         },
         {
           "commit": "40aa47615dbcdccd94ea3941b6893ab858132d4e",
@@ -8811,6 +10492,36 @@
           "batch": null,
           "batch_identity": null,
           "method": "63169c2d6f3d8bb89cc8f0ceafb6710d4d14ab701bec123c017b2b8a13dfa49c"
+        },
+        {
+          "commit": "52950f937ad371e1450538faf7983024b324688d",
+          "date": "2026-11-08T23:13:25Z",
+          "measured": "2026-11-19T00:41:08.347119+00:00",
+          "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/52950f937ad371e1450538faf7983024b324688d/report.json",
+          "report_identity": "b4c1b1eb18846bdf74fbe7db072a28d180af2eaee6b84ec9706a2427a6bc1356",
+          "batch": null,
+          "batch_identity": null,
+          "method": "3aec898c73a90cbc7914e04ec35102f949439bef66d1cc429e03c72f71d467de"
+        },
+        {
+          "commit": "57a3cfb50b02c77a6de2700e4d059215ae2343d6",
+          "date": "2026-11-08T14:33:43Z",
+          "measured": "2026-11-19T01:41:38.196614+00:00",
+          "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/57a3cfb50b02c77a6de2700e4d059215ae2343d6/report.json",
+          "report_identity": "11a07a00d705ad0b948ce87032a517d3f9c6b529a9725eeef5b41196bf042bfc",
+          "batch": null,
+          "batch_identity": null,
+          "method": "1ca17d5dc25cbea6a0616b255449edefdf429049119bb760f3335acd4bd425a6"
+        },
+        {
+          "commit": "5e622db924ff9dfefec36684319fcc1ac664ba87",
+          "date": "2026-11-08T03:20:59Z",
+          "measured": "2026-11-19T01:44:48.377572+00:00",
+          "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/5e622db924ff9dfefec36684319fcc1ac664ba87/report.json",
+          "report_identity": "b8c1308f6ff8fe7c544cf80a156939ee4f13e23efd828d1b60f86f960861e85a",
+          "batch": null,
+          "batch_identity": null,
+          "method": "0c3dde3691b4a08cf2da3c171c4cc3ce61700ecbefb1baabfafe4281ec2d8a78"
         },
         {
           "commit": "7db7c43d3e23a38d84985e9816a63f664c8d29b3",
@@ -8873,6 +10584,16 @@
           "method": "76b199c2b8ec028e4650ef3c6046770433026b2e781e352d132f8cffa593c390"
         },
         {
+          "commit": "a600f8e307feef9a7238fa253e9ce1b682a38758",
+          "date": "2026-11-09T02:57:11Z",
+          "measured": "2026-11-19T00:43:47.432995+00:00",
+          "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/a600f8e307feef9a7238fa253e9ce1b682a38758/report.json",
+          "report_identity": "8a3e1af891237e9a5e741177631c96ee16a9ab17f2b21a22b9facf4252df010c",
+          "batch": null,
+          "batch_identity": null,
+          "method": "b368ea295994c7eadb985a5cf7ccc446eaffe81fe3c28e191cb0e0b6b8bb4a9e"
+        },
+        {
           "commit": "ad3be8a12e05ec5ca1c1c346f3c8b12390163a28",
           "date": "2026-11-09T08:03:11Z",
           "measured": "2026-11-17T23:27:42.057226+00:00",
@@ -8881,6 +10602,16 @@
           "batch": null,
           "batch_identity": null,
           "method": "68a8f386ff0ea793225cb8bdbced0d4aa33c3607ebe65685e39798860d52c06f"
+        },
+        {
+          "commit": "c80d63135ed8f57c0a059b73ad95b9e9f9b75a15",
+          "date": "2026-11-08T17:37:43Z",
+          "measured": "2026-11-19T01:01:24.298536+00:00",
+          "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/c80d63135ed8f57c0a059b73ad95b9e9f9b75a15/report.json",
+          "report_identity": "fdd43aca3a15c860d0f2c2da34e2961a3403a266e0d445da536d304a8783f82b",
+          "batch": null,
+          "batch_identity": null,
+          "method": "241d9fb77b79200cb780c40253c8ac7a769d24622fc09f8d985d88ea305a026e"
         },
         {
           "commit": "cc30ffd2f85cd32fb902750af5023b6596889faf",
@@ -8921,6 +10652,26 @@
           "batch": null,
           "batch_identity": null,
           "method": "26d547e6fa6612d69c46e92502afef551b9a77562bc023219144c8ced7c46681"
+        },
+        {
+          "commit": "efffe2529f26c1c7ca61763fa5fbb17efd573f6f",
+          "date": "2026-11-08T20:13:00Z",
+          "measured": "2026-11-19T00:48:30.603795+00:00",
+          "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/efffe2529f26c1c7ca61763fa5fbb17efd573f6f/report.json",
+          "report_identity": "9da3ac4468bbab8d4877481dcee90491ea96e864a6494fba38dc8e26bc46d845",
+          "batch": null,
+          "batch_identity": null,
+          "method": "17fa3db5fc53cd500ef928868e1267501a93f2cb135d13c86555b40aedfa85d8"
+        },
+        {
+          "commit": "f221c2c16a878855d12734b476286b54b5af9123",
+          "date": "2026-11-08T02:24:28Z",
+          "measured": "2026-11-19T01:40:49.090910+00:00",
+          "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/f221c2c16a878855d12734b476286b54b5af9123/report.json",
+          "report_identity": "7c0f34d703362f95080d9b8b52e9fd2dff8502c546c3feff575e7e453db7a852",
+          "batch": null,
+          "batch_identity": null,
+          "method": "f361f0664ca897cb1693fc3a7283fde9985dd3db3185d4282164f8859a438b81"
         },
         {
           "commit": "fa2e4e30e5e610af415bc696222d30f44b78fb0b",

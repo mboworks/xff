@@ -6206,35 +6206,6 @@
     "platform_details": "macOS 26.6 / arm64"
   },
   {
-    "platform": "linux / x86_64",
-    "commit": "5733057fefb1a98184309453a4b0314b5e56e163",
-    "label": "PR 996 / 5733057fef",
-    "platform_name": "linux / x86_64",
-    "dataset_type": "broad/v1 + deep/v1",
-    "source": "pr-996",
-    "source_label": "PR #996 preview",
-    "links": [
-      {
-        "label": "PR #996 preview",
-        "href": "https://github.com/mboworks/xff/pull/996"
-      }
-    ],
-    "binary": {
-      "state": "Not verified",
-      "sha256": "5363da5ee76d2164fbc0db7810cdb0c95466f8933d0354331aa1d2627f0a6628",
-      "reason": "Retention verification does not match this measurement."
-    },
-    "date": "2026-10-10T04:24:48Z",
-    "measurement_date": "2026-10-10T04:53:08Z",
-    "backfill": false,
-    "run": 38023972672,
-    "attempt": 1,
-    "report": "previews/996/38023972672/1/linux/",
-    "figures": "previews/996/38023972672/1/linux/landscape.json",
-    "identity": "xff benchmarks - Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
-    "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
-  },
-  {
     "platform": "macos / arm64",
     "commit": "5733057fefb1a98184309453a4b0314b5e56e163",
     "label": "PR 996 / 5733057fef",
@@ -6265,30 +6236,30 @@
   },
   {
     "platform": "linux / x86_64",
-    "commit": "22d8cad354bcf73827f963b6376fa43a9711a27a",
-    "label": "PR 997 / 22d8cad354",
+    "commit": "5733057fefb1a98184309453a4b0314b5e56e163",
+    "label": "PR 996 / 5733057fef",
     "platform_name": "linux / x86_64",
     "dataset_type": "broad/v1 + deep/v1",
-    "source": "pr-997",
-    "source_label": "PR #997 preview",
+    "source": "pr-996",
+    "source_label": "PR #996 preview",
     "links": [
       {
-        "label": "PR #997 preview",
-        "href": "https://github.com/mboworks/xff/pull/997"
+        "label": "PR #996 preview",
+        "href": "https://github.com/mboworks/xff/pull/996"
       }
     ],
     "binary": {
       "state": "Not verified",
-      "sha256": "14809cecf39cfbcd9aa36a97229ecf2be23667f586faf11c1ce52f1d8c06daa8",
+      "sha256": "5363da5ee76d2164fbc0db7810cdb0c95466f8933d0354331aa1d2627f0a6628",
       "reason": "Retention verification does not match this measurement."
     },
-    "date": "2026-10-10T05:06:14Z",
-    "measurement_date": "2026-10-10T05:32:59Z",
+    "date": "2026-10-10T04:24:48Z",
+    "measurement_date": "2026-10-10T04:53:08Z",
     "backfill": false,
-    "run": 38026365782,
+    "run": 38023972672,
     "attempt": 1,
-    "report": "previews/997/38026365782/1/linux/",
-    "figures": "previews/997/38026365782/1/linux/landscape.json",
+    "report": "previews/996/38023972672/1/linux/",
+    "figures": "previews/996/38023972672/1/linux/landscape.json",
     "identity": "xff benchmarks - Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
     "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
   },
@@ -6323,30 +6294,30 @@
   },
   {
     "platform": "linux / x86_64",
-    "commit": "c360eefe87b5f2d4bab833c69699fca5752e9d22",
-    "label": "PR 998 / c360eefe87",
+    "commit": "22d8cad354bcf73827f963b6376fa43a9711a27a",
+    "label": "PR 997 / 22d8cad354",
     "platform_name": "linux / x86_64",
     "dataset_type": "broad/v1 + deep/v1",
-    "source": "pr-998",
-    "source_label": "PR #998 preview",
+    "source": "pr-997",
+    "source_label": "PR #997 preview",
     "links": [
       {
-        "label": "PR #998 preview",
-        "href": "https://github.com/mboworks/xff/pull/998"
+        "label": "PR #997 preview",
+        "href": "https://github.com/mboworks/xff/pull/997"
       }
     ],
     "binary": {
       "state": "Not verified",
-      "sha256": "01ffd8f93af5ce89a6362a69ea3621607c96b34c660a898f39ab6559b5112843",
+      "sha256": "14809cecf39cfbcd9aa36a97229ecf2be23667f586faf11c1ce52f1d8c06daa8",
       "reason": "Retention verification does not match this measurement."
     },
-    "date": "2026-10-10T05:36:06Z",
-    "measurement_date": "2026-10-10T06:00:49Z",
+    "date": "2026-10-10T05:06:14Z",
+    "measurement_date": "2026-10-10T05:32:59Z",
     "backfill": false,
-    "run": 38028058460,
+    "run": 38026365782,
     "attempt": 1,
-    "report": "previews/998/38028058460/1/linux/",
-    "figures": "previews/998/38028058460/1/linux/landscape.json",
+    "report": "previews/997/38026365782/1/linux/",
+    "figures": "previews/997/38026365782/1/linux/landscape.json",
     "identity": "xff benchmarks - Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
     "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
   },
@@ -6381,30 +6352,30 @@
   },
   {
     "platform": "linux / x86_64",
-    "commit": "b4a4b6ac554687c6b86dde233b0d143c45535e1e",
-    "label": "PR 992 / b4a4b6ac55",
+    "commit": "c360eefe87b5f2d4bab833c69699fca5752e9d22",
+    "label": "PR 998 / c360eefe87",
     "platform_name": "linux / x86_64",
     "dataset_type": "broad/v1 + deep/v1",
-    "source": "pr-992",
-    "source_label": "PR #992 preview",
+    "source": "pr-998",
+    "source_label": "PR #998 preview",
     "links": [
       {
-        "label": "PR #992 preview",
-        "href": "https://github.com/mboworks/xff/pull/992"
+        "label": "PR #998 preview",
+        "href": "https://github.com/mboworks/xff/pull/998"
       }
     ],
     "binary": {
       "state": "Not verified",
-      "sha256": "cd89b77dce9620f62675e61568878023d9fc84f4fb683a9e8946a98fcb8e54bd",
+      "sha256": "01ffd8f93af5ce89a6362a69ea3621607c96b34c660a898f39ab6559b5112843",
       "reason": "Retention verification does not match this measurement."
     },
-    "date": "2026-10-10T10:29:39Z",
-    "measurement_date": "2026-10-10T10:55:56Z",
+    "date": "2026-10-10T05:36:06Z",
+    "measurement_date": "2026-10-10T06:00:49Z",
     "backfill": false,
-    "run": 38045084588,
+    "run": 38028058460,
     "attempt": 1,
-    "report": "previews/992/38045084588/1/linux/",
-    "figures": "previews/992/38045084588/1/linux/landscape.json",
+    "report": "previews/998/38028058460/1/linux/",
+    "figures": "previews/998/38028058460/1/linux/landscape.json",
     "identity": "xff benchmarks - Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
     "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
   },
@@ -6436,6 +6407,35 @@
     "figures": "previews/992/38045084588/1/macos/landscape.json",
     "identity": "xff benchmarks - macOS-26.6.2-arm64-arm-64bit-Mach-O",
     "platform_details": "macOS 26.6.2 / arm64"
+  },
+  {
+    "platform": "linux / x86_64",
+    "commit": "b4a4b6ac554687c6b86dde233b0d143c45535e1e",
+    "label": "PR 992 / b4a4b6ac55",
+    "platform_name": "linux / x86_64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "pr-992",
+    "source_label": "PR #992 preview",
+    "links": [
+      {
+        "label": "PR #992 preview",
+        "href": "https://github.com/mboworks/xff/pull/992"
+      }
+    ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "cd89b77dce9620f62675e61568878023d9fc84f4fb683a9e8946a98fcb8e54bd",
+      "reason": "Retention verification does not match this measurement."
+    },
+    "date": "2026-10-10T10:29:39Z",
+    "measurement_date": "2026-10-10T10:55:56Z",
+    "backfill": false,
+    "run": 38045084588,
+    "attempt": 1,
+    "report": "previews/992/38045084588/1/linux/",
+    "figures": "previews/992/38045084588/1/linux/landscape.json",
+    "identity": "xff benchmarks - Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "platform_details": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
   },
   {
     "platform": "linux / x86_64",
@@ -9879,7 +9879,7 @@
     "commit": "1b0219369190ab8125bb85f346cc0f95d92c635f",
     "label": "PR #1147 / 1b02193691",
     "platform_name": "linux / x86_64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -9890,7 +9890,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -9899,9 +9899,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42498819268/attempts/1 (benchmark-build-linux) at 2026-11-08T18:44:34.889305+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42498819268/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-08T18:44:34.889305+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-1b0219369190ab8125bb85f346cc0f95d92c635f-1) at 2026-11-19T00:57:27.369287+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-1b0219369190ab8125bb85f346cc0f95d92c635f-1)",
+          "verified_at": "2026-11-19T00:57:27.369287+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e"
+      "reason": "Core workloads: Verified against Retention / a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e; Extended workloads: Verified against Retention / 98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec"
     },
     "date": "2026-11-08T16:13:47Z",
     "measurement_date": null,
@@ -10047,6 +10055,76 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42498819268/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-08T18:44:34.889305+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/1b0219369190ab8125bb85f346cc0f95d92c635f/report.json",
+        "identity": "a6fc9c2b6aaada6e9e98b447b65ed0afcc7129bb7c350ddd5adee881df3223ab",
+        "href": "../../../../extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/1b0219369190ab8125bb85f346cc0f95d92c635f/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+        "measured": "2026-11-19T00:50:50.865080+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "allowed-logical-cpus",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "x86_64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-1b0219369190ab8125bb85f346cc0f95d92c635f-1) at 2026-11-19T00:57:27.369287+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-1b0219369190ab8125bb85f346cc0f95d92c635f-1)",
+          "verified_at": "2026-11-19T00:57:27.369287+00:00"
+        },
+        "parent_report": "extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/1b0219369190ab8125bb85f346cc0f95d92c635f/",
+        "parent_href": "../../../../extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/1b0219369190ab8125bb85f346cc0f95d92c635f/"
       }
     ]
   },
@@ -12031,7 +12109,7 @@
     "commit": "31dc55b400f376ee09f5c8582513f33ec395945d",
     "label": "PR #1146 / 31dc55b400",
     "platform_name": "linux / x86_64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -12042,7 +12120,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -12051,9 +12129,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42486013719/attempts/1 (benchmark-build-linux) at 2026-11-08T15:41:56.271897+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42486013719/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-08T15:41:56.271897+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "8c4c7c88f891bbc4ff6e1fedd86ecd3bf54c85ea1299275f3214a33a01ffc61a",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-31dc55b400f376ee09f5c8582513f33ec395945d-1) at 2026-11-19T01:24:37.632109+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-31dc55b400f376ee09f5c8582513f33ec395945d-1)",
+          "verified_at": "2026-11-19T01:24:37.632109+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e"
+      "reason": "Core workloads: Verified against Retention / a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e; Extended workloads: Verified against Retention / 8c4c7c88f891bbc4ff6e1fedd86ecd3bf54c85ea1299275f3214a33a01ffc61a"
     },
     "date": "2026-11-08T13:39:40Z",
     "measurement_date": null,
@@ -12199,6 +12285,76 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42486013719/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-08T15:41:56.271897+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/31dc55b400f376ee09f5c8582513f33ec395945d/report.json",
+        "identity": "a17771ebbb112daf8652879a892fd77b2121ad2859de364db1ecccf74c019319",
+        "href": "../../../../extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/31dc55b400f376ee09f5c8582513f33ec395945d/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "8c4c7c88f891bbc4ff6e1fedd86ecd3bf54c85ea1299275f3214a33a01ffc61a",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+        "measured": "2026-11-19T01:20:45.008223+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "allowed-logical-cpus",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "x86_64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "8c4c7c88f891bbc4ff6e1fedd86ecd3bf54c85ea1299275f3214a33a01ffc61a",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-31dc55b400f376ee09f5c8582513f33ec395945d-1) at 2026-11-19T01:24:37.632109+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-31dc55b400f376ee09f5c8582513f33ec395945d-1)",
+          "verified_at": "2026-11-19T01:24:37.632109+00:00"
+        },
+        "parent_report": "extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/31dc55b400f376ee09f5c8582513f33ec395945d/",
+        "parent_href": "../../../../extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/31dc55b400f376ee09f5c8582513f33ec395945d/"
       }
     ]
   },
@@ -16357,7 +16513,7 @@
     "commit": "52950f937ad371e1450538faf7983024b324688d",
     "label": "PR #1150 / 52950f937a",
     "platform_name": "linux / x86_64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -16368,7 +16524,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -16377,9 +16533,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42534134015/attempts/1 (benchmark-build-linux) at 2026-11-09T00:20:38.193129+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42534134015/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-09T00:20:38.193129+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-52950f937ad371e1450538faf7983024b324688d-1) at 2026-11-19T00:29:18.559449+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-52950f937ad371e1450538faf7983024b324688d-1)",
+          "verified_at": "2026-11-19T00:29:18.559449+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e"
+      "reason": "Core workloads: Verified against Retention / a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e; Extended workloads: Verified against Retention / 98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec"
     },
     "date": "2026-11-08T23:13:25Z",
     "measurement_date": null,
@@ -16525,6 +16689,76 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42534134015/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-09T00:20:38.193129+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/52950f937ad371e1450538faf7983024b324688d/report.json",
+        "identity": "545d3d4f0e86fefbdee27303418ba02bb8179d88cb614d3d64ba64f09aba441d",
+        "href": "../../../../extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/52950f937ad371e1450538faf7983024b324688d/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+        "measured": "2026-11-19T00:24:53.972250+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "allowed-logical-cpus",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "x86_64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-52950f937ad371e1450538faf7983024b324688d-1) at 2026-11-19T00:29:18.559449+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-52950f937ad371e1450538faf7983024b324688d-1)",
+          "verified_at": "2026-11-19T00:29:18.559449+00:00"
+        },
+        "parent_report": "extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/52950f937ad371e1450538faf7983024b324688d/",
+        "parent_href": "../../../../extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/52950f937ad371e1450538faf7983024b324688d/"
       }
     ]
   },
@@ -16880,7 +17114,7 @@
     "commit": "57a3cfb50b02c77a6de2700e4d059215ae2343d6",
     "label": "PR #1145 / 57a3cfb50b",
     "platform_name": "linux / x86_64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -16891,7 +17125,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -16900,9 +17134,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42490418192/attempts/1 (benchmark-build-linux) at 2026-11-08T17:19:34.551713+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42490418192/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-08T17:19:34.551713+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "8c4c7c88f891bbc4ff6e1fedd86ecd3bf54c85ea1299275f3214a33a01ffc61a",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-57a3cfb50b02c77a6de2700e4d059215ae2343d6-1) at 2026-11-19T00:53:42.779526+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-57a3cfb50b02c77a6de2700e4d059215ae2343d6-1)",
+          "verified_at": "2026-11-19T00:53:42.779526+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e"
+      "reason": "Core workloads: Verified against Retention / a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e; Extended workloads: Verified against Retention / 8c4c7c88f891bbc4ff6e1fedd86ecd3bf54c85ea1299275f3214a33a01ffc61a"
     },
     "date": "2026-11-08T14:33:43Z",
     "measurement_date": null,
@@ -17048,6 +17290,76 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42490418192/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-08T17:19:34.551713+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/57a3cfb50b02c77a6de2700e4d059215ae2343d6/report.json",
+        "identity": "ae11071c5521b4705c9f09c61872c9b5f985bbad956e1440757e6b0b0a686e39",
+        "href": "../../../../extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/57a3cfb50b02c77a6de2700e4d059215ae2343d6/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "8c4c7c88f891bbc4ff6e1fedd86ecd3bf54c85ea1299275f3214a33a01ffc61a",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+        "measured": "2026-11-19T00:49:31.096876+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "allowed-logical-cpus",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "x86_64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "8c4c7c88f891bbc4ff6e1fedd86ecd3bf54c85ea1299275f3214a33a01ffc61a",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-57a3cfb50b02c77a6de2700e4d059215ae2343d6-1) at 2026-11-19T00:53:42.779526+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-57a3cfb50b02c77a6de2700e4d059215ae2343d6-1)",
+          "verified_at": "2026-11-19T00:53:42.779526+00:00"
+        },
+        "parent_report": "extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/57a3cfb50b02c77a6de2700e4d059215ae2343d6/",
+        "parent_href": "../../../../extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/57a3cfb50b02c77a6de2700e4d059215ae2343d6/"
       }
     ]
   },
@@ -17749,7 +18061,7 @@
     "commit": "5e622db924ff9dfefec36684319fcc1ac664ba87",
     "label": "PR #1142 / 5e622db924",
     "platform_name": "linux / x86_64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -17760,7 +18072,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "c7f6deb1af2f21dd5e937b3fc91628997e48ec2933765960513a86bdcb27ae41",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -17769,9 +18081,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42442346691/attempts/1 (benchmark-build-linux) at 2026-11-08T05:31:47.034036+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42442346691/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-08T05:31:47.034036+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "e7dde055eb43fd504126ef0b69d52af5cb55b47ce7e079c7a370f55fcb9380b7",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-5e622db924ff9dfefec36684319fcc1ac664ba87-1) at 2026-11-19T01:30:44.830103+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-5e622db924ff9dfefec36684319fcc1ac664ba87-1)",
+          "verified_at": "2026-11-19T01:30:44.830103+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / c7f6deb1af2f21dd5e937b3fc91628997e48ec2933765960513a86bdcb27ae41"
+      "reason": "Core workloads: Verified against Retention / c7f6deb1af2f21dd5e937b3fc91628997e48ec2933765960513a86bdcb27ae41; Extended workloads: Verified against Retention / e7dde055eb43fd504126ef0b69d52af5cb55b47ce7e079c7a370f55fcb9380b7"
     },
     "date": "2026-11-08T03:20:59Z",
     "measurement_date": null,
@@ -17917,6 +18237,76 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42442346691/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-08T05:31:47.034036+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/5e622db924ff9dfefec36684319fcc1ac664ba87/report.json",
+        "identity": "1cb2a41277da1584808dbb72747920a64e9443518a1a3cca926b809898d927e2",
+        "href": "../../../../extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/5e622db924ff9dfefec36684319fcc1ac664ba87/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "e7dde055eb43fd504126ef0b69d52af5cb55b47ce7e079c7a370f55fcb9380b7",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+        "measured": "2026-11-19T01:24:19.932443+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "allowed-logical-cpus",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "x86_64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "e7dde055eb43fd504126ef0b69d52af5cb55b47ce7e079c7a370f55fcb9380b7",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-5e622db924ff9dfefec36684319fcc1ac664ba87-1) at 2026-11-19T01:30:44.830103+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-5e622db924ff9dfefec36684319fcc1ac664ba87-1)",
+          "verified_at": "2026-11-19T01:30:44.830103+00:00"
+        },
+        "parent_report": "extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/5e622db924ff9dfefec36684319fcc1ac664ba87/",
+        "parent_href": "../../../../extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/5e622db924ff9dfefec36684319fcc1ac664ba87/"
       }
     ]
   },
@@ -28559,7 +28949,7 @@
     "commit": "a600f8e307feef9a7238fa253e9ce1b682a38758",
     "label": "PR #1152 / a600f8e307",
     "platform_name": "linux / x86_64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -28570,7 +28960,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "fee4d1544dffd9cb098d0d75c9cbdd67120fb47eea5993fe2ed5ffb76d7b0f56",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -28579,9 +28969,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42553697889/attempts/1 (benchmark-build-linux) at 2026-11-09T03:41:51.159937+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42553697889/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-09T03:41:51.159937+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "6fb57f6873e8911345fdb50216b54c99834c9c674728b9490a87184c5e1646bc",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-a600f8e307feef9a7238fa253e9ce1b682a38758-1) at 2026-11-19T00:31:28.542146+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-a600f8e307feef9a7238fa253e9ce1b682a38758-1)",
+          "verified_at": "2026-11-19T00:31:28.542146+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / fee4d1544dffd9cb098d0d75c9cbdd67120fb47eea5993fe2ed5ffb76d7b0f56"
+      "reason": "Core workloads: Verified against Retention / fee4d1544dffd9cb098d0d75c9cbdd67120fb47eea5993fe2ed5ffb76d7b0f56; Extended workloads: Verified against Retention / 6fb57f6873e8911345fdb50216b54c99834c9c674728b9490a87184c5e1646bc"
     },
     "date": "2026-11-09T02:57:11Z",
     "measurement_date": null,
@@ -28727,6 +29125,76 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42553697889/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-09T03:41:51.159937+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/a600f8e307feef9a7238fa253e9ce1b682a38758/report.json",
+        "identity": "3db29662c2d893b1ff587552e1163c64db94dbae2589f782df649881d26f9b13",
+        "href": "../../../../extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/a600f8e307feef9a7238fa253e9ce1b682a38758/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "6fb57f6873e8911345fdb50216b54c99834c9c674728b9490a87184c5e1646bc",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+        "measured": "2026-11-19T00:27:00.732737+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "allowed-logical-cpus",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "x86_64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "6fb57f6873e8911345fdb50216b54c99834c9c674728b9490a87184c5e1646bc",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-a600f8e307feef9a7238fa253e9ce1b682a38758-1) at 2026-11-19T00:31:28.542146+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-a600f8e307feef9a7238fa253e9ce1b682a38758-1)",
+          "verified_at": "2026-11-19T00:31:28.542146+00:00"
+        },
+        "parent_report": "extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/a600f8e307feef9a7238fa253e9ce1b682a38758/",
+        "parent_href": "../../../../extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/a600f8e307feef9a7238fa253e9ce1b682a38758/"
       }
     ]
   },
@@ -33500,7 +33968,7 @@
     "commit": "c80d63135ed8f57c0a059b73ad95b9e9f9b75a15",
     "label": "PR #1148 / c80d63135e",
     "platform_name": "linux / x86_64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -33511,7 +33979,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -33520,9 +33988,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42505908871/attempts/1 (benchmark-build-linux) at 2026-11-08T20:21:19.178215+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42505908871/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-08T20:21:19.178215+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-c80d63135ed8f57c0a059b73ad95b9e9f9b75a15-1) at 2026-11-19T00:30:49.967524+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-c80d63135ed8f57c0a059b73ad95b9e9f9b75a15-1)",
+          "verified_at": "2026-11-19T00:30:49.967524+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e"
+      "reason": "Core workloads: Verified against Retention / a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e; Extended workloads: Verified against Retention / 98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec"
     },
     "date": "2026-11-08T17:37:43Z",
     "measurement_date": null,
@@ -33668,6 +34144,76 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42505908871/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-08T20:21:19.178215+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/c80d63135ed8f57c0a059b73ad95b9e9f9b75a15/report.json",
+        "identity": "91e767b83106185bcf11202c313caef9e4bc0e3a2ec2d0c86a7e669f86157014",
+        "href": "../../../../extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/c80d63135ed8f57c0a059b73ad95b9e9f9b75a15/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+        "measured": "2026-11-19T00:26:23.446948+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "allowed-logical-cpus",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "x86_64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-c80d63135ed8f57c0a059b73ad95b9e9f9b75a15-1) at 2026-11-19T00:30:49.967524+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-c80d63135ed8f57c0a059b73ad95b9e9f9b75a15-1)",
+          "verified_at": "2026-11-19T00:30:49.967524+00:00"
+        },
+        "parent_report": "extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/c80d63135ed8f57c0a059b73ad95b9e9f9b75a15/",
+        "parent_href": "../../../../extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/c80d63135ed8f57c0a059b73ad95b9e9f9b75a15/"
       }
     ]
   },
@@ -39240,7 +39786,7 @@
     "commit": "ed883ecc527bc551e778845d054afc27c9b6b024",
     "label": "PR #1151 / ed883ecc52",
     "platform_name": "linux / x86_64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -39251,7 +39797,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "633d81bfbc206a6c2ac188d6081d787c69aff844a1a9c8e6efa3769312d39953",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -39260,9 +39806,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42564885478/attempts/1 (benchmark-build-linux) at 2026-11-09T05:49:47.798706+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42564885478/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-09T05:49:47.798706+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "cc0ea2bb09deaa809e8748de992a30df193b675ee473edabfa513d54fe8ca704",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-ed883ecc527bc551e778845d054afc27c9b6b024-1) at 2026-11-19T00:32:54.288671+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-ed883ecc527bc551e778845d054afc27c9b6b024-1)",
+          "verified_at": "2026-11-19T00:32:54.288671+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / 633d81bfbc206a6c2ac188d6081d787c69aff844a1a9c8e6efa3769312d39953"
+      "reason": "Core workloads: Verified against Retention / 633d81bfbc206a6c2ac188d6081d787c69aff844a1a9c8e6efa3769312d39953; Extended workloads: Verified against Retention / cc0ea2bb09deaa809e8748de992a30df193b675ee473edabfa513d54fe8ca704"
     },
     "date": "2026-11-09T05:01:04Z",
     "measurement_date": null,
@@ -39408,6 +39962,76 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42564885478/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-09T05:49:47.798706+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/ed883ecc527bc551e778845d054afc27c9b6b024/report.json",
+        "identity": "3b2c12fe47971a7a808fa444c5f794cdcd5082c32599582887cf836e9a69019d",
+        "href": "../../../../extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/ed883ecc527bc551e778845d054afc27c9b6b024/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "cc0ea2bb09deaa809e8748de992a30df193b675ee473edabfa513d54fe8ca704",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+        "measured": "2026-11-19T00:28:00.839321+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "allowed-logical-cpus",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "x86_64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "cc0ea2bb09deaa809e8748de992a30df193b675ee473edabfa513d54fe8ca704",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-ed883ecc527bc551e778845d054afc27c9b6b024-1) at 2026-11-19T00:32:54.288671+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-ed883ecc527bc551e778845d054afc27c9b6b024-1)",
+          "verified_at": "2026-11-19T00:32:54.288671+00:00"
+        },
+        "parent_report": "extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/ed883ecc527bc551e778845d054afc27c9b6b024/",
+        "parent_href": "../../../../extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/ed883ecc527bc551e778845d054afc27c9b6b024/"
       }
     ]
   },
@@ -39416,7 +40040,7 @@
     "commit": "efffe2529f26c1c7ca61763fa5fbb17efd573f6f",
     "label": "PR #1149 / efffe2529f",
     "platform_name": "linux / x86_64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -39427,7 +40051,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -39436,9 +40060,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42518987368/attempts/1 (benchmark-build-linux) at 2026-11-08T21:38:52.451645+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42518987368/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-08T21:38:52.451645+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-efffe2529f26c1c7ca61763fa5fbb17efd573f6f-1) at 2026-11-19T00:30:08.895289+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-efffe2529f26c1c7ca61763fa5fbb17efd573f6f-1)",
+          "verified_at": "2026-11-19T00:30:08.895289+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e"
+      "reason": "Core workloads: Verified against Retention / a1e4301d125b3a9caaa415af93dacc66cdbe95d8a3515ff05d264f453e5c7f7e; Extended workloads: Verified against Retention / 98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec"
     },
     "date": "2026-11-08T20:13:00Z",
     "measurement_date": null,
@@ -39584,6 +40216,76 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42518987368/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-08T21:38:52.451645+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/efffe2529f26c1c7ca61763fa5fbb17efd573f6f/report.json",
+        "identity": "63731895b125aadd1c98c47b4f3c0cf6f48f1e2856ec3f9cae4c8c5a7944276a",
+        "href": "../../../../extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/efffe2529f26c1c7ca61763fa5fbb17efd573f6f/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+        "measured": "2026-11-19T00:25:57.733560+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "allowed-logical-cpus",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "x86_64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "98a6a4aaed3d4e2ab9a38b1d36ec0fad70fcac1ec02bf05ab19261559d1ddbec",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-efffe2529f26c1c7ca61763fa5fbb17efd573f6f-1) at 2026-11-19T00:30:08.895289+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-efffe2529f26c1c7ca61763fa5fbb17efd573f6f-1)",
+          "verified_at": "2026-11-19T00:30:08.895289+00:00"
+        },
+        "parent_report": "extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/efffe2529f26c1c7ca61763fa5fbb17efd573f6f/",
+        "parent_href": "../../../../extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/efffe2529f26c1c7ca61763fa5fbb17efd573f6f/"
       }
     ]
   },
@@ -39933,7 +40635,7 @@
     "commit": "f221c2c16a878855d12734b476286b54b5af9123",
     "label": "PR #1141 / f221c2c16a",
     "platform_name": "linux / x86_64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -39944,7 +40646,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "c7f6deb1af2f21dd5e937b3fc91628997e48ec2933765960513a86bdcb27ae41",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -39953,9 +40655,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42438412064/attempts/1 (benchmark-build-linux) at 2026-11-08T04:22:45.625816+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42438412064/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-08T04:22:45.625816+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "e7dde055eb43fd504126ef0b69d52af5cb55b47ce7e079c7a370f55fcb9380b7",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-f221c2c16a878855d12734b476286b54b5af9123-1) at 2026-11-19T01:36:46.175801+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-f221c2c16a878855d12734b476286b54b5af9123-1)",
+          "verified_at": "2026-11-19T01:36:46.175801+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / c7f6deb1af2f21dd5e937b3fc91628997e48ec2933765960513a86bdcb27ae41"
+      "reason": "Core workloads: Verified against Retention / c7f6deb1af2f21dd5e937b3fc91628997e48ec2933765960513a86bdcb27ae41; Extended workloads: Verified against Retention / e7dde055eb43fd504126ef0b69d52af5cb55b47ce7e079c7a370f55fcb9380b7"
     },
     "date": "2026-11-08T02:24:28Z",
     "measurement_date": null,
@@ -40101,6 +40811,76 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42438412064/attempts/1 (benchmark-build-linux)",
           "verified_at": "2026-11-08T04:22:45.625816+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/f221c2c16a878855d12734b476286b54b5af9123/report.json",
+        "identity": "d5873c9437096c25fdee179c82c8c7202216c58eeb910fe5d6e3863587e6827f",
+        "href": "../../../../extended/views/55a6083bc23ab3e65825f0848c2a5502491a24d526d9edf3387718fe6498af5a/f221c2c16a878855d12734b476286b54b5af9123/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "e7dde055eb43fd504126ef0b69d52af5cb55b47ce7e079c7a370f55fcb9380b7",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+        "measured": "2026-11-19T01:32:19.881316+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": [
+              0
+            ],
+            "3": [
+              0,
+              1,
+              2
+            ]
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "allowed-logical-cpus",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "x86_64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "tmpfs",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "e7dde055eb43fd504126ef0b69d52af5cb55b47ce7e079c7a370f55fcb9380b7",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-f221c2c16a878855d12734b476286b54b5af9123-1) at 2026-11-19T01:36:46.175801+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-linux-f221c2c16a878855d12734b476286b54b5af9123-1)",
+          "verified_at": "2026-11-19T01:36:46.175801+00:00"
+        },
+        "parent_report": "extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/f221c2c16a878855d12734b476286b54b5af9123/",
+        "parent_href": "../../../../extended/views/f85541a4b92f0a2013494f9c3e008c47193cac257978d3a082829950f5ab1737/f221c2c16a878855d12734b476286b54b5af9123/"
       }
     ]
   },
@@ -45095,7 +45875,7 @@
     "commit": "1b0219369190ab8125bb85f346cc0f95d92c635f",
     "label": "PR #1147 / 1b02193691",
     "platform_name": "macos / arm64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -45106,7 +45886,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "cbd977cae0fb1712a732333ad0d4ef4850ba81bcf65d245171231683c6f0683d",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -45115,9 +45895,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42498819268/attempts/1 (benchmark-build-macos) at 2026-11-08T18:44:35.989920+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42498819268/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-08T18:44:35.989920+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "bc3b77d133b0ed99603ee78c715ae84fb3dc2fa7a988da1ceebde2b7c309a945",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-1b0219369190ab8125bb85f346cc0f95d92c635f-1) at 2026-11-19T01:31:37.963263+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-1b0219369190ab8125bb85f346cc0f95d92c635f-1)",
+          "verified_at": "2026-11-19T01:31:37.963263+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / cbd977cae0fb1712a732333ad0d4ef4850ba81bcf65d245171231683c6f0683d"
+      "reason": "Core workloads: Verified against Retention / cbd977cae0fb1712a732333ad0d4ef4850ba81bcf65d245171231683c6f0683d; Extended workloads: Verified against Retention / bc3b77d133b0ed99603ee78c715ae84fb3dc2fa7a988da1ceebde2b7c309a945"
     },
     "date": "2026-11-08T16:13:47Z",
     "measurement_date": null,
@@ -45257,6 +46045,70 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42498819268/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-08T18:44:35.989920+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/1b0219369190ab8125bb85f346cc0f95d92c635f/report.json",
+        "identity": "494f8206518a56ba2020f0adcc1813889566a0e8f6c0867e62026f1b6d2e6b0e",
+        "href": "../../../../extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/1b0219369190ab8125bb85f346cc0f95d92c635f/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "bc3b77d133b0ed99603ee78c715ae84fb3dc2fa7a988da1ceebde2b7c309a945",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+        "measured": "2026-11-19T01:13:45.653861+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": null,
+            "3": null
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "unpinned-workers",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "arm64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "bc3b77d133b0ed99603ee78c715ae84fb3dc2fa7a988da1ceebde2b7c309a945",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-1b0219369190ab8125bb85f346cc0f95d92c635f-1) at 2026-11-19T01:31:37.963263+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-1b0219369190ab8125bb85f346cc0f95d92c635f-1)",
+          "verified_at": "2026-11-19T01:31:37.963263+00:00"
+        },
+        "parent_report": "extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/1b0219369190ab8125bb85f346cc0f95d92c635f/",
+        "parent_href": "../../../../extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/1b0219369190ab8125bb85f346cc0f95d92c635f/"
       }
     ]
   },
@@ -47169,7 +48021,7 @@
     "commit": "31dc55b400f376ee09f5c8582513f33ec395945d",
     "label": "PR #1146 / 31dc55b400",
     "platform_name": "macos / arm64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -47180,7 +48032,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "c4c9b77844a5044e44acc5f13374e018d419f23b88b84843f00e5cf12edd444c",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -47189,9 +48041,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42486013719/attempts/1 (benchmark-build-macos) at 2026-11-08T15:41:57.247162+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42486013719/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-08T15:41:57.247162+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "28593cb3d13ab50d6b9f56360fbe98d2da3b1ffa49ea8fed03e67fe31e4634b0",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-31dc55b400f376ee09f5c8582513f33ec395945d-1) at 2026-11-19T02:00:41.118545+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-31dc55b400f376ee09f5c8582513f33ec395945d-1)",
+          "verified_at": "2026-11-19T02:00:41.118545+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / c4c9b77844a5044e44acc5f13374e018d419f23b88b84843f00e5cf12edd444c"
+      "reason": "Core workloads: Verified against Retention / c4c9b77844a5044e44acc5f13374e018d419f23b88b84843f00e5cf12edd444c; Extended workloads: Verified against Retention / 28593cb3d13ab50d6b9f56360fbe98d2da3b1ffa49ea8fed03e67fe31e4634b0"
     },
     "date": "2026-11-08T13:39:40Z",
     "measurement_date": null,
@@ -47331,6 +48191,70 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42486013719/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-08T15:41:57.247162+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/31dc55b400f376ee09f5c8582513f33ec395945d/report.json",
+        "identity": "ba374db85b80be7abfbd954a682a43c6357d6ce24d7005649749fed9e057d64f",
+        "href": "../../../../extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/31dc55b400f376ee09f5c8582513f33ec395945d/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "28593cb3d13ab50d6b9f56360fbe98d2da3b1ffa49ea8fed03e67fe31e4634b0",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+        "measured": "2026-11-19T01:42:24.210553+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": null,
+            "3": null
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "unpinned-workers",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "arm64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "28593cb3d13ab50d6b9f56360fbe98d2da3b1ffa49ea8fed03e67fe31e4634b0",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-31dc55b400f376ee09f5c8582513f33ec395945d-1) at 2026-11-19T02:00:41.118545+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-31dc55b400f376ee09f5c8582513f33ec395945d-1)",
+          "verified_at": "2026-11-19T02:00:41.118545+00:00"
+        },
+        "parent_report": "extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/31dc55b400f376ee09f5c8582513f33ec395945d/",
+        "parent_href": "../../../../extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/31dc55b400f376ee09f5c8582513f33ec395945d/"
       }
     ]
   },
@@ -51339,7 +52263,7 @@
     "commit": "52950f937ad371e1450538faf7983024b324688d",
     "label": "PR #1150 / 52950f937a",
     "platform_name": "macos / arm64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -51350,7 +52274,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "7638df4e26c0a1410b9bda69274916025718b0615a0a2bb41db41da1ce56d465",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -51359,9 +52283,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42534134015/attempts/1 (benchmark-build-macos) at 2026-11-09T00:20:39.093533+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42534134015/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-09T00:20:39.093533+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "b35496f1dcdd36a9a8ef29e6ee9a9aab833e5aa2e16d3e678a057b4e05e8544d",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-52950f937ad371e1450538faf7983024b324688d-1) at 2026-11-19T00:56:00.148923+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-52950f937ad371e1450538faf7983024b324688d-1)",
+          "verified_at": "2026-11-19T00:56:00.148923+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / 7638df4e26c0a1410b9bda69274916025718b0615a0a2bb41db41da1ce56d465"
+      "reason": "Core workloads: Verified against Retention / 7638df4e26c0a1410b9bda69274916025718b0615a0a2bb41db41da1ce56d465; Extended workloads: Verified against Retention / b35496f1dcdd36a9a8ef29e6ee9a9aab833e5aa2e16d3e678a057b4e05e8544d"
     },
     "date": "2026-11-08T23:13:25Z",
     "measurement_date": null,
@@ -51501,6 +52433,70 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42534134015/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-09T00:20:39.093533+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/52950f937ad371e1450538faf7983024b324688d/report.json",
+        "identity": "22157bab2f40b0e5a5a031ccea6e668b399d6d54f06dc04f2eaef7f74ff4c6ad",
+        "href": "../../../../extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/52950f937ad371e1450538faf7983024b324688d/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "b35496f1dcdd36a9a8ef29e6ee9a9aab833e5aa2e16d3e678a057b4e05e8544d",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+        "measured": "2026-11-19T00:41:08.347119+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": null,
+            "3": null
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "unpinned-workers",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "arm64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "b35496f1dcdd36a9a8ef29e6ee9a9aab833e5aa2e16d3e678a057b4e05e8544d",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-52950f937ad371e1450538faf7983024b324688d-1) at 2026-11-19T00:56:00.148923+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-52950f937ad371e1450538faf7983024b324688d-1)",
+          "verified_at": "2026-11-19T00:56:00.148923+00:00"
+        },
+        "parent_report": "extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/52950f937ad371e1450538faf7983024b324688d/",
+        "parent_href": "../../../../extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/52950f937ad371e1450538faf7983024b324688d/"
       }
     ]
   },
@@ -51844,7 +52840,7 @@
     "commit": "57a3cfb50b02c77a6de2700e4d059215ae2343d6",
     "label": "PR #1145 / 57a3cfb50b",
     "platform_name": "macos / arm64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -51855,7 +52851,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "63d34100328033f60531d101a9b05791a9f6767bf7fb6ecc607210801834b022",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -51864,9 +52860,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42490418192/attempts/1 (benchmark-build-macos) at 2026-11-08T17:19:35.441858+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42490418192/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-08T17:19:35.441858+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "ff476c46cf5795255ac9482e5b5e5f8b1752adc658c4500f9c949d4ef341fc8e",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-57a3cfb50b02c77a6de2700e4d059215ae2343d6-1) at 2026-11-19T01:58:52.281507+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-57a3cfb50b02c77a6de2700e4d059215ae2343d6-1)",
+          "verified_at": "2026-11-19T01:58:52.281507+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / 63d34100328033f60531d101a9b05791a9f6767bf7fb6ecc607210801834b022"
+      "reason": "Core workloads: Verified against Retention / 63d34100328033f60531d101a9b05791a9f6767bf7fb6ecc607210801834b022; Extended workloads: Verified against Retention / ff476c46cf5795255ac9482e5b5e5f8b1752adc658c4500f9c949d4ef341fc8e"
     },
     "date": "2026-11-08T14:33:43Z",
     "measurement_date": null,
@@ -52006,6 +53010,70 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42490418192/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-08T17:19:35.441858+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/57a3cfb50b02c77a6de2700e4d059215ae2343d6/report.json",
+        "identity": "6f34613563983202c8519099b26c5ab6d96f2f62dc8972dbb0b16525022eb21c",
+        "href": "../../../../extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/57a3cfb50b02c77a6de2700e4d059215ae2343d6/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "ff476c46cf5795255ac9482e5b5e5f8b1752adc658c4500f9c949d4ef341fc8e",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+        "measured": "2026-11-19T01:41:38.196614+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": null,
+            "3": null
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "unpinned-workers",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "arm64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "ff476c46cf5795255ac9482e5b5e5f8b1752adc658c4500f9c949d4ef341fc8e",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-57a3cfb50b02c77a6de2700e4d059215ae2343d6-1) at 2026-11-19T01:58:52.281507+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-57a3cfb50b02c77a6de2700e4d059215ae2343d6-1)",
+          "verified_at": "2026-11-19T01:58:52.281507+00:00"
+        },
+        "parent_report": "extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/57a3cfb50b02c77a6de2700e4d059215ae2343d6/",
+        "parent_href": "../../../../extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/57a3cfb50b02c77a6de2700e4d059215ae2343d6/"
       }
     ]
   },
@@ -52683,7 +53751,7 @@
     "commit": "5e622db924ff9dfefec36684319fcc1ac664ba87",
     "label": "PR #1142 / 5e622db924",
     "platform_name": "macos / arm64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -52694,7 +53762,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "9ac7fb504d571b0d94fa7b42c80a331994caa159ba4feb43e36f49c49bb17f08",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -52703,9 +53771,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42442346691/attempts/1 (benchmark-build-macos) at 2026-11-08T05:31:48.005880+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42442346691/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-08T05:31:48.005880+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "e9f3964c8a61882d0e594928d378a79e72d0db47b3b15ab4a2c21bc7f4f64ec1",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-5e622db924ff9dfefec36684319fcc1ac664ba87-1) at 2026-11-19T02:01:22.491753+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-5e622db924ff9dfefec36684319fcc1ac664ba87-1)",
+          "verified_at": "2026-11-19T02:01:22.491753+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / 9ac7fb504d571b0d94fa7b42c80a331994caa159ba4feb43e36f49c49bb17f08"
+      "reason": "Core workloads: Verified against Retention / 9ac7fb504d571b0d94fa7b42c80a331994caa159ba4feb43e36f49c49bb17f08; Extended workloads: Verified against Retention / e9f3964c8a61882d0e594928d378a79e72d0db47b3b15ab4a2c21bc7f4f64ec1"
     },
     "date": "2026-11-08T03:20:59Z",
     "measurement_date": null,
@@ -52845,6 +53921,70 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42442346691/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-08T05:31:48.005880+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/5e622db924ff9dfefec36684319fcc1ac664ba87/report.json",
+        "identity": "94eec5d502568fe45a8080dfe7aa92c0f631dba33390b24c07ef31b7781e152f",
+        "href": "../../../../extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/5e622db924ff9dfefec36684319fcc1ac664ba87/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "e9f3964c8a61882d0e594928d378a79e72d0db47b3b15ab4a2c21bc7f4f64ec1",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+        "measured": "2026-11-19T01:44:48.377572+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": null,
+            "3": null
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "unpinned-workers",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "arm64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "e9f3964c8a61882d0e594928d378a79e72d0db47b3b15ab4a2c21bc7f4f64ec1",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-5e622db924ff9dfefec36684319fcc1ac664ba87-1) at 2026-11-19T02:01:22.491753+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-5e622db924ff9dfefec36684319fcc1ac664ba87-1)",
+          "verified_at": "2026-11-19T02:01:22.491753+00:00"
+        },
+        "parent_report": "extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/5e622db924ff9dfefec36684319fcc1ac664ba87/",
+        "parent_href": "../../../../extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/5e622db924ff9dfefec36684319fcc1ac664ba87/"
       }
     ]
   },
@@ -63096,7 +64236,7 @@
     "commit": "a600f8e307feef9a7238fa253e9ce1b682a38758",
     "label": "PR #1152 / a600f8e307",
     "platform_name": "macos / arm64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -63107,7 +64247,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "10a7ede06097dc4228a46874299eaef1e5dda33c79469919ef794272a3cf90a5",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -63116,9 +64256,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42553697889/attempts/1 (benchmark-build-macos) at 2026-11-09T03:41:51.991901+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42553697889/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-09T03:41:51.991901+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "7c336a8e99abe1304d3abec958e0319eb5d5aafe6fd73eab5be3391c9a8277f6",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-a600f8e307feef9a7238fa253e9ce1b682a38758-1) at 2026-11-19T01:01:11.428534+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-a600f8e307feef9a7238fa253e9ce1b682a38758-1)",
+          "verified_at": "2026-11-19T01:01:11.428534+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / 10a7ede06097dc4228a46874299eaef1e5dda33c79469919ef794272a3cf90a5"
+      "reason": "Core workloads: Verified against Retention / 10a7ede06097dc4228a46874299eaef1e5dda33c79469919ef794272a3cf90a5; Extended workloads: Verified against Retention / 7c336a8e99abe1304d3abec958e0319eb5d5aafe6fd73eab5be3391c9a8277f6"
     },
     "date": "2026-11-09T02:57:11Z",
     "measurement_date": null,
@@ -63258,6 +64406,70 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42553697889/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-09T03:41:51.991901+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/a600f8e307feef9a7238fa253e9ce1b682a38758/report.json",
+        "identity": "32efcaf4bd4e7f89a4ba3d86f908aef26135528fc3938dfd9cdd6f0096953971",
+        "href": "../../../../extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/a600f8e307feef9a7238fa253e9ce1b682a38758/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "7c336a8e99abe1304d3abec958e0319eb5d5aafe6fd73eab5be3391c9a8277f6",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+        "measured": "2026-11-19T00:43:47.432995+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": null,
+            "3": null
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "unpinned-workers",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "arm64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "7c336a8e99abe1304d3abec958e0319eb5d5aafe6fd73eab5be3391c9a8277f6",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-a600f8e307feef9a7238fa253e9ce1b682a38758-1) at 2026-11-19T01:01:11.428534+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-a600f8e307feef9a7238fa253e9ce1b682a38758-1)",
+          "verified_at": "2026-11-19T01:01:11.428534+00:00"
+        },
+        "parent_report": "extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/a600f8e307feef9a7238fa253e9ce1b682a38758/",
+        "parent_href": "../../../../extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/a600f8e307feef9a7238fa253e9ce1b682a38758/"
       }
     ]
   },
@@ -67863,7 +69075,7 @@
     "commit": "c80d63135ed8f57c0a059b73ad95b9e9f9b75a15",
     "label": "PR #1148 / c80d63135e",
     "platform_name": "macos / arm64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -67874,7 +69086,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "8a384551bc3127f6ea6710f026a709455055804e46f8cc3fc3d97555c751d96b",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -67883,9 +69095,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42505908871/attempts/1 (benchmark-build-macos) at 2026-11-08T20:21:20.325344+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42505908871/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-08T20:21:20.325344+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "2aaec07dc0718847236e4a217d39759acef1d51055c01b5e38b0b1e9208b09ba",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-c80d63135ed8f57c0a059b73ad95b9e9f9b75a15-1) at 2026-11-19T01:17:45.910486+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-c80d63135ed8f57c0a059b73ad95b9e9f9b75a15-1)",
+          "verified_at": "2026-11-19T01:17:45.910486+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / 8a384551bc3127f6ea6710f026a709455055804e46f8cc3fc3d97555c751d96b"
+      "reason": "Core workloads: Verified against Retention / 8a384551bc3127f6ea6710f026a709455055804e46f8cc3fc3d97555c751d96b; Extended workloads: Verified against Retention / 2aaec07dc0718847236e4a217d39759acef1d51055c01b5e38b0b1e9208b09ba"
     },
     "date": "2026-11-08T17:37:43Z",
     "measurement_date": null,
@@ -68025,6 +69245,70 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42505908871/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-08T20:21:20.325344+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/c80d63135ed8f57c0a059b73ad95b9e9f9b75a15/report.json",
+        "identity": "132524046704ba32020a27f91cc962648e305eb85d95d71f475128336bbee965",
+        "href": "../../../../extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/c80d63135ed8f57c0a059b73ad95b9e9f9b75a15/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "2aaec07dc0718847236e4a217d39759acef1d51055c01b5e38b0b1e9208b09ba",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+        "measured": "2026-11-19T01:01:24.298536+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": null,
+            "3": null
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "unpinned-workers",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "arm64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "2aaec07dc0718847236e4a217d39759acef1d51055c01b5e38b0b1e9208b09ba",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-c80d63135ed8f57c0a059b73ad95b9e9f9b75a15-1) at 2026-11-19T01:17:45.910486+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-c80d63135ed8f57c0a059b73ad95b9e9f9b75a15-1)",
+          "verified_at": "2026-11-19T01:17:45.910486+00:00"
+        },
+        "parent_report": "extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/c80d63135ed8f57c0a059b73ad95b9e9f9b75a15/",
+        "parent_href": "../../../../extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/c80d63135ed8f57c0a059b73ad95b9e9f9b75a15/"
       }
     ]
   },
@@ -73635,7 +74919,7 @@
     "commit": "efffe2529f26c1c7ca61763fa5fbb17efd573f6f",
     "label": "PR #1149 / efffe2529f",
     "platform_name": "macos / arm64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -73646,7 +74930,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "2418a678ef4aa7a823dce87705247bbc2c58b4c0f43ccf62ba8882df0c01d6d5",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -73655,9 +74939,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42518987368/attempts/1 (benchmark-build-macos) at 2026-11-08T21:38:53.514798+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42518987368/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-08T21:38:53.514798+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "5dd599d2f2cfddf21474153bd4f8498ee588f3b10fd8e04ae5c99e38425a45b7",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-efffe2529f26c1c7ca61763fa5fbb17efd573f6f-1) at 2026-11-19T01:07:08.884941+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-efffe2529f26c1c7ca61763fa5fbb17efd573f6f-1)",
+          "verified_at": "2026-11-19T01:07:08.884941+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / 2418a678ef4aa7a823dce87705247bbc2c58b4c0f43ccf62ba8882df0c01d6d5"
+      "reason": "Core workloads: Verified against Retention / 2418a678ef4aa7a823dce87705247bbc2c58b4c0f43ccf62ba8882df0c01d6d5; Extended workloads: Verified against Retention / 5dd599d2f2cfddf21474153bd4f8498ee588f3b10fd8e04ae5c99e38425a45b7"
     },
     "date": "2026-11-08T20:13:00Z",
     "measurement_date": null,
@@ -73797,6 +75089,70 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42518987368/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-08T21:38:53.514798+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/efffe2529f26c1c7ca61763fa5fbb17efd573f6f/report.json",
+        "identity": "ec772e6b278a1b2efb0c92d7954a8da8b8023a86c37f83c7df3fc3ef6fb45837",
+        "href": "../../../../extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/efffe2529f26c1c7ca61763fa5fbb17efd573f6f/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "5dd599d2f2cfddf21474153bd4f8498ee588f3b10fd8e04ae5c99e38425a45b7",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+        "measured": "2026-11-19T00:48:30.603795+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": null,
+            "3": null
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "unpinned-workers",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "arm64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "5dd599d2f2cfddf21474153bd4f8498ee588f3b10fd8e04ae5c99e38425a45b7",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-efffe2529f26c1c7ca61763fa5fbb17efd573f6f-1) at 2026-11-19T01:07:08.884941+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-efffe2529f26c1c7ca61763fa5fbb17efd573f6f-1)",
+          "verified_at": "2026-11-19T01:07:08.884941+00:00"
+        },
+        "parent_report": "extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/efffe2529f26c1c7ca61763fa5fbb17efd573f6f/",
+        "parent_href": "../../../../extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/efffe2529f26c1c7ca61763fa5fbb17efd573f6f/"
       }
     ]
   },
@@ -74134,7 +75490,7 @@
     "commit": "f221c2c16a878855d12734b476286b54b5af9123",
     "label": "PR #1141 / f221c2c16a",
     "platform_name": "macos / arm64",
-    "dataset_type": "Core workloads",
+    "dataset_type": "Core + extended workloads",
     "source": "merged",
     "source_label": "Merged history",
     "links": [
@@ -74145,7 +75501,7 @@
     ],
     "binary": {
       "state": "Verified against Retention",
-      "sha256": "127f5233c0be9d3de0c86cc111be7adbecd66507006031980d692e26d2135900",
+      "sha256": null,
       "binaries": [
         {
           "name": "Core workloads",
@@ -74154,9 +75510,17 @@
           "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/42438412064/attempts/1 (benchmark-build-macos) at 2026-11-08T04:22:46.749559+00:00.",
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42438412064/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-08T04:22:46.749559+00:00"
+        },
+        {
+          "name": "Extended workloads",
+          "state": "Verified against Retention",
+          "sha256": "e49b3660cf21281d91d06a1f8ad5058cc773797afaec42990b81ebf320486ccd",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-f221c2c16a878855d12734b476286b54b5af9123-1) at 2026-11-19T01:52:19.224805+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-f221c2c16a878855d12734b476286b54b5af9123-1)",
+          "verified_at": "2026-11-19T01:52:19.224805+00:00"
         }
       ],
-      "reason": "Core workloads: Verified against Retention / 127f5233c0be9d3de0c86cc111be7adbecd66507006031980d692e26d2135900"
+      "reason": "Core workloads: Verified against Retention / 127f5233c0be9d3de0c86cc111be7adbecd66507006031980d692e26d2135900; Extended workloads: Verified against Retention / e49b3660cf21281d91d06a1f8ad5058cc773797afaec42990b81ebf320486ccd"
     },
     "date": "2026-11-08T02:24:28Z",
     "measurement_date": null,
@@ -74296,6 +75660,70 @@
           "retention_reference": "https://github.com/mboworks/xff/actions/runs/42438412064/attempts/1 (benchmark-build-macos)",
           "verified_at": "2026-11-08T04:22:46.749559+00:00"
         }
+      },
+      {
+        "name": "Extended workloads",
+        "report": "extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/f221c2c16a878855d12734b476286b54b5af9123/report.json",
+        "identity": "263e38b07a4e83152aa84813a1058e156efed3683f390c7812aca257fbb60fb8",
+        "href": "../../../../extended/views/689c8327988ff00f4a2293be416c339c1d51ac57d4c6d1d859aa277168b7c8e0/f221c2c16a878855d12734b476286b54b5af9123/",
+        "recipe": "extended-production-v2",
+        "target": "//xff/cli:xff_full",
+        "sha256": "e49b3660cf21281d91d06a1f8ad5058cc773797afaec42990b81ebf320486ccd",
+        "sampling": "mean of fastest 7/9 runs",
+        "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+        "measured": "2026-11-19T01:40:49.090910+00:00",
+        "contract": {
+          "suite": "extended-production-v2",
+          "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+          "cpu_counts": [
+            1,
+            3
+          ],
+          "file_counts": [
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+            2000,
+            5000,
+            10000,
+            20000,
+            50000,
+            100000
+          ],
+          "affinity_by_cpu_count": {
+            "1": null,
+            "3": null
+          },
+          "repetitions": 9,
+          "retained": 7,
+          "estimator": "mean-fastest",
+          "cpu_policy": "unpinned-workers",
+          "comparison": "traditional",
+          "production_target": "//xff/cli:xff_full",
+          "machine": "arm64",
+          "warmup_rounds": 1,
+          "storage": {
+            "filesystem": "case-sensitive HFS+",
+            "memory_required": true
+          },
+          "resource_accounting": {
+            "wall_method": "monotonic wall time includes native launcher startup, output draining and teardown",
+            "memory_method": "native pipeline fork/wait4 v1; native pre-exec footprint included; launcher usage excluded"
+          }
+        },
+        "binary": {
+          "state": "Verified against Retention",
+          "sha256": "e49b3660cf21281d91d06a1f8ad5058cc773797afaec42990b81ebf320486ccd",
+          "reason": "SHA-256 checked against https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-f221c2c16a878855d12734b476286b54b5af9123-1) at 2026-11-19T01:52:19.224805+00:00.",
+          "retention_reference": "https://github.com/mboworks/xff/actions/runs/44425916493/attempts/1 (benchmark-extended-backfill-build-macos-f221c2c16a878855d12734b476286b54b5af9123-1)",
+          "verified_at": "2026-11-19T01:52:19.224805+00:00"
+        },
+        "parent_report": "extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/f221c2c16a878855d12734b476286b54b5af9123/",
+        "parent_href": "../../../../extended/views/fd38b1c7f92c92ab369b06e600f9e1abf2337215cec40d5a242bc61a94e66538/f221c2c16a878855d12734b476286b54b5af9123/"
       }
     ]
   },
