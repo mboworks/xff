@@ -6496,6 +6496,180 @@
     "platform_details": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43"
   },
   {
+    "platform": "macos / arm64",
+    "commit": "0e20cfc5d7600fd6a3975ab0361a3ad943767bcc",
+    "label": "PR 1168 / 0e20cfc5d7",
+    "platform_name": "macos / arm64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "pr-1168",
+    "source_label": "PR #1168 preview",
+    "links": [
+      {
+        "label": "PR #1168 preview",
+        "href": "https://github.com/mboworks/xff/pull/1168"
+      }
+    ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "5baa8777bd43c52b8d6b3ed2d35a6de5e153acc77ca26d758d269ad6150e3ef1",
+      "reason": "Retention verification does not match this measurement."
+    },
+    "date": "2026-11-23T22:07:28Z",
+    "measurement_date": "2026-11-23T23:11:09Z",
+    "backfill": false,
+    "run": 45276568976,
+    "attempt": 1,
+    "report": "previews/1168/45276568976/1/macos/",
+    "figures": "previews/1168/45276568976/1/macos/landscape.json",
+    "identity": "xff benchmarks - macOS-26.7.2-arm64-arm-64bit-Mach-O",
+    "platform_details": "macOS 26.7.2 / arm64"
+  },
+  {
+    "platform": "linux / x86_64",
+    "commit": "0e20cfc5d7600fd6a3975ab0361a3ad943767bcc",
+    "label": "PR 1168 / 0e20cfc5d7",
+    "platform_name": "linux / x86_64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "pr-1168",
+    "source_label": "PR #1168 preview",
+    "links": [
+      {
+        "label": "PR #1168 preview",
+        "href": "https://github.com/mboworks/xff/pull/1168"
+      }
+    ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "64ff587e719cf6f269774666b201c2a08e004fd66778634798a237c8e76c1f68",
+      "reason": "Retention verification does not match this measurement."
+    },
+    "date": "2026-11-23T22:07:28Z",
+    "measurement_date": "2026-11-23T23:11:09Z",
+    "backfill": false,
+    "run": 45276568976,
+    "attempt": 1,
+    "report": "previews/1168/45276568976/1/linux/",
+    "figures": "previews/1168/45276568976/1/linux/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "macos / arm64",
+    "commit": "71fbf3b48da17b4246450091c47ffb24de3ea681",
+    "label": "PR 1169 / 71fbf3b48d",
+    "platform_name": "macos / arm64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "pr-1169",
+    "source_label": "PR #1169 preview",
+    "links": [
+      {
+        "label": "PR #1169 preview",
+        "href": "https://github.com/mboworks/xff/pull/1169"
+      }
+    ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "728be21b851fa098226a9bebd4a6340dd45cdb603bed6a383a62835831964d40",
+      "reason": "Retention verification does not match this measurement."
+    },
+    "date": "2026-11-23T22:07:42Z",
+    "measurement_date": "2026-11-23T23:14:00Z",
+    "backfill": false,
+    "run": 45276605776,
+    "attempt": 1,
+    "report": "previews/1169/45276605776/1/macos/",
+    "figures": "previews/1169/45276605776/1/macos/landscape.json",
+    "identity": "xff benchmarks - macOS-26.7.2-arm64-arm-64bit-Mach-O",
+    "platform_details": "macOS 26.7.2 / arm64"
+  },
+  {
+    "platform": "linux / x86_64",
+    "commit": "71fbf3b48da17b4246450091c47ffb24de3ea681",
+    "label": "PR 1169 / 71fbf3b48d",
+    "platform_name": "linux / x86_64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "pr-1169",
+    "source_label": "PR #1169 preview",
+    "links": [
+      {
+        "label": "PR #1169 preview",
+        "href": "https://github.com/mboworks/xff/pull/1169"
+      }
+    ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "64ff587e719cf6f269774666b201c2a08e004fd66778634798a237c8e76c1f68",
+      "reason": "Retention verification does not match this measurement."
+    },
+    "date": "2026-11-23T22:07:42Z",
+    "measurement_date": "2026-11-23T23:14:00Z",
+    "backfill": false,
+    "run": 45276605776,
+    "attempt": 1,
+    "report": "previews/1169/45276605776/1/linux/",
+    "figures": "previews/1169/45276605776/1/linux/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43"
+  },
+  {
+    "platform": "macos / arm64",
+    "commit": "0f29e6f70b301e20eea3ea37950255f16a744821",
+    "label": "PR 1170 / 0f29e6f70b",
+    "platform_name": "macos / arm64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "pr-1170",
+    "source_label": "PR #1170 preview",
+    "links": [
+      {
+        "label": "PR #1170 preview",
+        "href": "https://github.com/mboworks/xff/pull/1170"
+      }
+    ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "45f4d4129f7eb293e826dfd1e66891519ca5b882614cd88694fa8eaffc388010",
+      "reason": "Retention verification does not match this measurement."
+    },
+    "date": "2026-11-23T22:07:46Z",
+    "measurement_date": "2026-11-23T23:09:22Z",
+    "backfill": false,
+    "run": 45276620451,
+    "attempt": 1,
+    "report": "previews/1170/45276620451/1/macos/",
+    "figures": "previews/1170/45276620451/1/macos/landscape.json",
+    "identity": "xff benchmarks - macOS-26.7.2-arm64-arm-64bit-Mach-O",
+    "platform_details": "macOS 26.7.2 / arm64"
+  },
+  {
+    "platform": "linux / x86_64",
+    "commit": "0f29e6f70b301e20eea3ea37950255f16a744821",
+    "label": "PR 1170 / 0f29e6f70b",
+    "platform_name": "linux / x86_64",
+    "dataset_type": "broad/v1 + deep/v1",
+    "source": "pr-1170",
+    "source_label": "PR #1170 preview",
+    "links": [
+      {
+        "label": "PR #1170 preview",
+        "href": "https://github.com/mboworks/xff/pull/1170"
+      }
+    ],
+    "binary": {
+      "state": "Not verified",
+      "sha256": "64ff587e719cf6f269774666b201c2a08e004fd66778634798a237c8e76c1f68",
+      "reason": "Retention verification does not match this measurement."
+    },
+    "date": "2026-11-23T22:07:46Z",
+    "measurement_date": "2026-11-23T23:09:22Z",
+    "backfill": false,
+    "run": 45276620451,
+    "attempt": 1,
+    "report": "previews/1170/45276620451/1/linux/",
+    "figures": "previews/1170/45276620451/1/linux/landscape.json",
+    "identity": "xff benchmarks - Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+    "platform_details": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43"
+  },
+  {
     "platform": "linux / x86_64",
     "commit": "00d4f84df01e00f1ce2d7c83576ac38b2eb2fb7b",
     "label": "PR #1055 / 00d4f84df0",
