@@ -6,10 +6,6 @@
       "files": 34,
       "bytes": 543465
     },
-    "coverage": {
-      "files": 10735,
-      "bytes": 13266388
-    },
     "benchmarks": {
       "files": 8390,
       "bytes": 736600909
@@ -30,29 +26,33 @@
       "files": 4,
       "bytes": 9173
     },
+    "docs": {
+      "files": 7,
+      "bytes": 79309
+    },
     "xff_extras_api": {
       "files": 21,
       "bytes": 126921
     },
-    "docs": {
-      "files": 7,
-      "bytes": 79309
+    "coverage": {
+      "files": 10735,
+      "bytes": 13266388
     },
     "site": {
       "files": 442,
       "bytes": 16899029
     },
-    ".github": {
-      "files": 2,
-      "bytes": 32056
+    "releases": {
+      "files": 29,
+      "bytes": 6916561
     },
     "extra_modules": {
       "files": 84,
       "bytes": 519549
     },
-    "releases": {
-      "files": 29,
-      "bytes": 6916561
+    ".github": {
+      "files": 2,
+      "bytes": 32056
     }
   },
   "coverage_detail_days": 7,
