@@ -1,14 +1,18 @@
 {
   "schema": 1,
-  "total_bytes": 777345201,
+  "total_bytes": 777309685,
   "sections": {
     "root": {
       "files": 34,
       "bytes": 543465
     },
+    "coverage": {
+      "files": 10735,
+      "bytes": 13266388
+    },
     "benchmarks": {
       "files": 8390,
-      "bytes": 736600909
+      "bytes": 736565393
     },
     "xff": {
       "files": 248,
@@ -26,33 +30,29 @@
       "files": 4,
       "bytes": 9173
     },
-    "docs": {
-      "files": 7,
-      "bytes": 79309
-    },
     "xff_extras_api": {
       "files": 21,
       "bytes": 126921
     },
-    "coverage": {
-      "files": 10735,
-      "bytes": 13266388
+    "docs": {
+      "files": 7,
+      "bytes": 79309
     },
     "site": {
       "files": 442,
       "bytes": 16899029
     },
-    "releases": {
-      "files": 29,
-      "bytes": 6916561
+    ".github": {
+      "files": 2,
+      "bytes": 32056
     },
     "extra_modules": {
       "files": 84,
       "bytes": 519549
     },
-    ".github": {
-      "files": 2,
-      "bytes": 32056
+    "releases": {
+      "files": 29,
+      "bytes": 6916561
     }
   },
   "coverage_detail_days": 7,
